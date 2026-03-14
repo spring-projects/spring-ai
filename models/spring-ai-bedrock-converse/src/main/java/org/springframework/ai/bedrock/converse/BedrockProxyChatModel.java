@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,11 @@ import software.amazon.awssdk.services.bedrockruntime.model.DocumentSource;
 import software.amazon.awssdk.services.bedrockruntime.model.ImageBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ImageSource;
 import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfiguration;
+import software.amazon.awssdk.services.bedrockruntime.model.JsonSchemaDefinition;
 import software.amazon.awssdk.services.bedrockruntime.model.Message;
+import software.amazon.awssdk.services.bedrockruntime.model.OutputConfig;
+import software.amazon.awssdk.services.bedrockruntime.model.OutputFormat;
+import software.amazon.awssdk.services.bedrockruntime.model.OutputFormatStructure;
 import software.amazon.awssdk.services.bedrockruntime.model.S3Location;
 import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
@@ -324,6 +328,8 @@ public class BedrockProxyChatModel implements ChatModel {
 						: this.defaultOptions.getInternalToolExecutionEnabled())
 				.cacheOptions(runtimeOptions.getCacheOptions() != null ? runtimeOptions.getCacheOptions()
 						: this.defaultOptions.getCacheOptions())
+				.outputSchema(runtimeOptions.getOutputSchema() != null ? runtimeOptions.getOutputSchema()
+						: this.defaultOptions.getOutputSchema())
 				.build();
 		}
 
@@ -537,6 +543,23 @@ public class BedrockProxyChatModel implements ChatModel {
 			.additionalModelRequestFields(additionalModelRequestFields)
 			.toolConfig(toolConfiguration)
 			.requestMetadata(requestMetadata)
+			.outputConfig(buildOutputConfig(updatedRuntimeOptions))
+			.build();
+	}
+
+	private OutputConfig buildOutputConfig(BedrockChatOptions options) {
+		String schema = options.getOutputSchema();
+		if (schema == null) {
+			return null;
+		}
+
+		return OutputConfig.builder()
+			.textFormat(OutputFormat.builder()
+				.type("json_schema")
+				.structure(OutputFormatStructure.builder()
+					.jsonSchema(JsonSchemaDefinition.builder().schema(schema).name("response_schema").build())
+					.build())
+				.build())
 			.build();
 	}
 
@@ -616,13 +639,27 @@ public class BedrockProxyChatModel implements ChatModel {
 		else if (BedrockMediaFormat.isSupportedDocumentFormat(mimeType)) { // Document
 
 			return ContentBlock.fromDocument(DocumentBlock.builder()
-				.name(media.getName())
+				.name(sanitizeDocumentName(media.getName()))
 				.format(BedrockMediaFormat.getDocumentFormat(mimeType))
 				.source(DocumentSource.builder().bytes(SdkBytes.fromByteArray(media.getDataAsByteArray())).build())
 				.build());
 		}
 
 		throw new IllegalArgumentException("Unsupported media format: " + mimeType);
+	}
+
+	/**
+	 * Sanitizes a document name to conform to Amazon Bedrock's naming restrictions. The
+	 * name can only contain alphanumeric characters, whitespace characters (no more than
+	 * one in a row), hyphens, parentheses, and square brackets.
+	 * @param name the document name to sanitize
+	 * @return the sanitized document name
+	 * @see <a href=
+	 * "https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_DocumentBlock.html">DocumentBlock
+	 * API Reference</a>
+	 */
+	static String sanitizeDocumentName(String name) {
+		return name.replaceAll("[^a-zA-Z0-9\\s\\-()\\[\\]]", "-");
 	}
 
 	private static byte[] getContentMediaData(Object mediaData) {
@@ -823,6 +860,7 @@ public class BedrockProxyChatModel implements ChatModel {
 				.additionalModelRequestFields(converseRequest.additionalModelRequestFields())
 				.toolConfig(converseRequest.toolConfig())
 				.requestMetadata(converseRequest.requestMetadata())
+				.outputConfig(converseRequest.outputConfig())
 				.build();
 
 			Usage accumulatedUsage = null;

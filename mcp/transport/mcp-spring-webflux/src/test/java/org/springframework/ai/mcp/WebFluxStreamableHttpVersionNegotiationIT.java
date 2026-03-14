@@ -1,5 +1,5 @@
 /*
- * Copyright 2026-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.ProtocolVersions;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,8 +63,10 @@ class WebFluxStreamableHttpVersionNegotiationIT {
 		.build();
 
 	private final BiFunction<McpSyncServerExchange, McpSchema.CallToolRequest, McpSchema.CallToolResult> toolHandler = (
-			exchange, request) -> new McpSchema.CallToolResult(
-					exchange.transportContext().get("protocol-version").toString(), null);
+			exchange, request) -> McpSchema.CallToolResult.builder()
+				.content(List
+					.of(new McpSchema.TextContent(exchange.transportContext().get("protocol-version").toString())))
+				.build();
 
 	private final WebFluxStreamableServerTransportProvider mcpStreamableServerTransportProvider = WebFluxStreamableServerTransportProvider
 		.builder()
@@ -73,7 +76,7 @@ class WebFluxStreamableHttpVersionNegotiationIT {
 
 	private final McpSyncServer mcpServer = McpServer.sync(this.mcpStreamableServerTransportProvider)
 		.capabilities(McpSchema.ServerCapabilities.builder().tools(false).build())
-		.tools(new McpServerFeatures.SyncToolSpecification(this.toolSpec, null, this.toolHandler))
+		.tools(new McpServerFeatures.SyncToolSpecification(this.toolSpec, this.toolHandler))
 		.build();
 
 	@BeforeEach
@@ -107,25 +110,38 @@ class WebFluxStreamableHttpVersionNegotiationIT {
 			.requestTimeout(Duration.ofHours(10))
 			.build();
 
-		client.initialize();
+		try {
+			client.initialize();
 
-		McpSchema.CallToolResult response = client.callTool(new McpSchema.CallToolRequest("test-tool", Map.of()));
+			McpSchema.CallToolResult response = client.callTool(new McpSchema.CallToolRequest("test-tool", Map.of()));
 
-		var calls = this.recordingFilterFunction.getCalls();
-		assertThat(calls).filteredOn(c -> !c.body().contains("\"method\":\"initialize\""))
-			// GET /mcp ; POST notification/initialized ; POST tools/call
-			.hasSize(3)
-			.map(McpTestRequestRecordingExchangeFilterFunction.Call::headers)
-			.allSatisfy(headers -> assertThat(headers).containsEntry("mcp-protocol-version",
-					ProtocolVersions.MCP_2025_11_25));
+			// The background GET /mcp reconnect is fired asynchronously after initialize;
+			// wait for it to be recorded before asserting on the full call count.
+			Awaitility.await()
+				.atMost(Duration.ofSeconds(5))
+				.until(() -> this.recordingFilterFunction.getCalls()
+					.stream()
+					.filter(c -> !c.body().contains("\"method\":\"initialize\""))
+					.count() >= 3);
 
-		assertThat(response).isNotNull();
-		assertThat(response.content()).hasSize(1)
-			.first()
-			.extracting(McpSchema.TextContent.class::cast)
-			.extracting(McpSchema.TextContent::text)
-			.isEqualTo(ProtocolVersions.MCP_2025_11_25);
-		this.mcpServer.close();
+			var calls = this.recordingFilterFunction.getCalls();
+			assertThat(calls).filteredOn(c -> !c.body().contains("\"method\":\"initialize\""))
+				// GET /mcp ; POST notification/initialized ; POST tools/call
+				.hasSize(3)
+				.map(McpTestRequestRecordingExchangeFilterFunction.Call::headers)
+				.allSatisfy(headers -> assertThat(headers).containsEntry("mcp-protocol-version",
+						ProtocolVersions.MCP_2025_11_25));
+
+			assertThat(response).isNotNull();
+			assertThat(response.content()).hasSize(1)
+				.first()
+				.extracting(McpSchema.TextContent.class::cast)
+				.extracting(McpSchema.TextContent::text)
+				.isEqualTo(ProtocolVersions.MCP_2025_11_25);
+		}
+		finally {
+			client.close();
+		}
 	}
 
 	@Test
@@ -136,28 +152,32 @@ class WebFluxStreamableHttpVersionNegotiationIT {
 			.build();
 		var client = McpClient.sync(transport).requestTimeout(Duration.ofHours(10)).build();
 
-		client.initialize();
+		try {
+			client.initialize();
 
-		McpSchema.CallToolResult response = client.callTool(new McpSchema.CallToolRequest("test-tool", Map.of()));
+			McpSchema.CallToolResult response = client.callTool(new McpSchema.CallToolRequest("test-tool", Map.of()));
 
-		var calls = this.recordingFilterFunction.getCalls();
-		// Initialize tells the server the Client's latest supported version
-		// FIXME: Set the correct protocol version on GET /mcp
-		assertThat(calls)
-			.filteredOn(c -> !c.body().contains("\"method\":\"initialize\"") && c.method().equals(HttpMethod.POST))
-			// POST notification/initialized ; POST tools/call
-			.hasSize(2)
-			.map(McpTestRequestRecordingExchangeFilterFunction.Call::headers)
-			.allSatisfy(headers -> assertThat(headers).containsEntry("mcp-protocol-version",
-					ProtocolVersions.MCP_2025_11_25));
+			var calls = this.recordingFilterFunction.getCalls();
+			// Initialize tells the server the Client's latest supported version
+			// FIXME: Set the correct protocol version on GET /mcp
+			assertThat(calls)
+				.filteredOn(c -> !c.body().contains("\"method\":\"initialize\"") && c.method().equals(HttpMethod.POST))
+				// POST notification/initialized ; POST tools/call
+				.hasSize(2)
+				.map(McpTestRequestRecordingExchangeFilterFunction.Call::headers)
+				.allSatisfy(headers -> assertThat(headers).containsEntry("mcp-protocol-version",
+						ProtocolVersions.MCP_2025_11_25));
 
-		assertThat(response).isNotNull();
-		assertThat(response.content()).hasSize(1)
-			.first()
-			.extracting(McpSchema.TextContent.class::cast)
-			.extracting(McpSchema.TextContent::text)
-			.isEqualTo(ProtocolVersions.MCP_2025_11_25);
-		this.mcpServer.close();
+			assertThat(response).isNotNull();
+			assertThat(response.content()).hasSize(1)
+				.first()
+				.extracting(McpSchema.TextContent.class::cast)
+				.extracting(McpSchema.TextContent::text)
+				.isEqualTo(ProtocolVersions.MCP_2025_11_25);
+		}
+		finally {
+			client.close();
+		}
 	}
 
 }

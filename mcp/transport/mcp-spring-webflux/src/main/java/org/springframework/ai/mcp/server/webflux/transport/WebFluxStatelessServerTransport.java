@@ -1,5 +1,5 @@
 /*
- * Copyright 2026-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -155,7 +155,9 @@ public final class WebFluxStatelessServerTransport implements McpStatelessServer
 							catch (IOException e) {
 								logger.error("Failed to serialize response: {}", e.getMessage());
 								return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-									.bodyValue(new McpError("Failed to serialize response"));
+									.bodyValue(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+										.message("Failed to serialize response")
+										.build());
 							}
 						});
 				}
@@ -166,12 +168,17 @@ public final class WebFluxStatelessServerTransport implements McpStatelessServer
 				}
 				else {
 					return ServerResponse.badRequest()
-						.bodyValue(new McpError("The server accepts either requests or notifications"));
+						.bodyValue(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
+							.message("The server accepts either requests or notifications")
+							.build());
 				}
 			}
 			catch (IllegalArgumentException | IOException e) {
 				logger.error("Failed to deserialize message: {}", e.getMessage());
-				return ServerResponse.badRequest().bodyValue(new McpError("Invalid message format"));
+				return ServerResponse.badRequest()
+					.bodyValue(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
+						.message("Invalid message format")
+						.build());
 			}
 		}).contextWrite(ctx -> ctx.put(McpTransportContext.KEY, transportContext));
 	}

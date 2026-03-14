@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import org.testcontainers.utility.DockerImageName;
  */
 public final class QdrantImage {
 
-	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("qdrant/qdrant:v1.9.7");
+	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("qdrant/qdrant:v1.13.0");
 
 	private QdrantImage() {
 

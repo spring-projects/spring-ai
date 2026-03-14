@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -226,7 +226,7 @@ public class CreateGeminiRequestTests {
 		// Explicitly enable the function
 
 		requestPrompt = client.buildRequestPrompt(new Prompt("Test message content",
-				GoogleGenAiChatOptions.builder().toolName(TOOL_FUNCTION_NAME).build()));
+				GoogleGenAiChatOptions.builder().toolNames(TOOL_FUNCTION_NAME).build()));
 
 		request = client.createGeminiRequest(requestPrompt);
 

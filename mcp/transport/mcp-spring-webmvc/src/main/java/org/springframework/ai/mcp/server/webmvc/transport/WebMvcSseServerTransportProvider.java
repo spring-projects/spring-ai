@@ -1,5 +1,5 @@
 /*
- * Copyright 2026-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -228,6 +228,18 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 			.then();
 	}
 
+	@Override
+	public Mono<Void> notifyClient(String sessionId, String method, Object params) {
+		return Mono.defer(() -> {
+			McpServerSession session = this.sessions.get(sessionId);
+			if (session == null) {
+				logger.debug("Session {} not found", sessionId);
+				return Mono.empty();
+			}
+			return session.sendNotification(method, params);
+		});
+	}
+
 	/**
 	 * Initiates a graceful shutdown of the transport. This method:
 	 * <ul>
@@ -365,14 +377,20 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 		}
 
 		if (request.param(SESSION_ID).isEmpty()) {
-			return ServerResponse.badRequest().body(new McpError("Session ID missing in message endpoint"));
+			return ServerResponse.badRequest()
+				.body(McpError.builder(McpSchema.ErrorCodes.METHOD_NOT_FOUND)
+					.message("Session ID missing in message endpoint")
+					.build());
 		}
 
 		String sessionId = request.param(SESSION_ID).get();
 		McpServerSession session = this.sessions.get(sessionId);
 
 		if (session == null) {
-			return ServerResponse.status(HttpStatus.NOT_FOUND).body(new McpError("Session not found: " + sessionId));
+			return ServerResponse.status(HttpStatus.NOT_FOUND)
+				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+					.message("Session not found: " + sessionId)
+					.build());
 		}
 
 		try {
@@ -391,11 +409,13 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 		}
 		catch (IllegalArgumentException | IOException e) {
 			logger.error("Failed to deserialize message: {}", e.getMessage());
-			return ServerResponse.badRequest().body(new McpError("Invalid message format"));
+			return ServerResponse.badRequest()
+				.body(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST).message("Invalid message format").build());
 		}
 		catch (Exception e) {
 			logger.error("Error handling message: {}", e.getMessage());
-			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new McpError(e.getMessage()));
+			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR).message(e.getMessage()).build());
 		}
 	}
 

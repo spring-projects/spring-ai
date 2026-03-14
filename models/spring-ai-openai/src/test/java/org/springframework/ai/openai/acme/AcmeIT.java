@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ public class AcmeIT extends AbstractIT {
 		// Step 1 - load documents
 		JsonReader jsonReader = new JsonReader(this.bikesResource, "name", "price", "shortDescription", "description");
 
-		var textSplitter = new TokenTextSplitter();
+		var textSplitter = TokenTextSplitter.builder().build();
 
 		// Step 2 - Create embeddings and save to vector store
 

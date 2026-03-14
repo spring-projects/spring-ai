@@ -1,5 +1,5 @@
 /*
- * Copyright 2026-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 
 package org.springframework.ai.mcp.utils;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 import reactor.core.publisher.Mono;
@@ -36,7 +36,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
  */
 public class McpTestRequestRecordingExchangeFilterFunction implements HandlerFilterFunction {
 
-	private final List<Call> calls = new ArrayList<>();
+	private final List<Call> calls = new CopyOnWriteArrayList<>();
 
 	@Override
 	public Mono<ServerResponse> filter(ServerRequest request, HandlerFunction next) {

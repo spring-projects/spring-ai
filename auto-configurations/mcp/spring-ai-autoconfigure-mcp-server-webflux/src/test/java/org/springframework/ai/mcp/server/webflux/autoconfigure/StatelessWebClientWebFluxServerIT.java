@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -152,7 +152,7 @@ public class StatelessWebClientWebFluxServerIT {
 						CallToolResult response = mcpClient.callTool(toolRequest);
 
 						assertThat(response).isNotNull();
-						assertThat(response.isError()).isNull();
+						assertThat(response.isError()).isFalse();
 						String responseText = ((TextContent) response.content().get(0)).text();
 						assertThat(responseText).contains("CALL RESPONSE");
 
@@ -269,7 +269,8 @@ public class StatelessWebClientWebFluxServerIT {
 							"properties": {}
 						}
 						""").build())
-				.callHandler((exchange, request) -> new CallToolResult(List.of(new TextContent("CALL RESPONSE")), null))
+				.callHandler((exchange,
+						request) -> CallToolResult.builder().content(List.of(new TextContent("CALL RESPONSE"))).build())
 				.build();
 
 			// Tool 2

@@ -1,5 +1,5 @@
 /*
- * Copyright 2026-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -195,7 +195,7 @@ public class SyncServerMcpTransportContextIT {
 
 		var mcpServer = McpServer.sync(this.streamableServerTransport)
 			.capabilities(McpSchema.ServerCapabilities.builder().tools(true).build())
-			.tools(new McpServerFeatures.SyncToolSpecification(this.tool, null, this.statefulHandler))
+			.tools(new McpServerFeatures.SyncToolSpecification(this.tool, this.statefulHandler))
 			.build();
 
 		McpSchema.InitializeResult initResult = this.streamableClient.initialize();
@@ -221,7 +221,7 @@ public class SyncServerMcpTransportContextIT {
 
 		var mcpServer = McpServer.sync(this.sseServerTransport)
 			.capabilities(McpSchema.ServerCapabilities.builder().tools(true).build())
-			.tools(new McpServerFeatures.SyncToolSpecification(this.tool, null, this.statefulHandler))
+			.tools(new McpServerFeatures.SyncToolSpecification(this.tool, this.statefulHandler))
 			.build();
 
 		McpSchema.InitializeResult initResult = this.sseClient.initialize();

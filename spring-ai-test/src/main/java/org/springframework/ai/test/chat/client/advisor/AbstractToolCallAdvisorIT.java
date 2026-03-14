@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,7 +104,7 @@ public abstract class AbstractToolCallAdvisorIT {
 
 			var response = ChatClient.create(getChatModel())
 				.prompt()
-				.advisors(ToolCallAdvisor.builder().disableMemory().build(),
+				.advisors(ToolCallAdvisor.builder().disableInternalConversationHistory().build(),
 						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(500).build())
 							.build())
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?"))
@@ -139,7 +139,7 @@ public abstract class AbstractToolCallAdvisorIT {
 		void callDefaultAdvisorConfigurationWithExternalMemory() {
 
 			var chatClient = ChatClient.builder(getChatModel())
-				.defaultAdvisors(ToolCallAdvisor.builder().disableMemory().build(),
+				.defaultAdvisors(ToolCallAdvisor.builder().disableInternalConversationHistory().build(),
 						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().build()).build())
 				.build();
 
@@ -199,7 +199,7 @@ public abstract class AbstractToolCallAdvisorIT {
 
 			Flux<String> response = ChatClient.create(getChatModel())
 				.prompt()
-				.advisors(ToolCallAdvisor.builder().disableMemory().build(),
+				.advisors(ToolCallAdvisor.builder().disableInternalConversationHistory().build(),
 						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(500).build())
 							.build())
 				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
@@ -238,7 +238,7 @@ public abstract class AbstractToolCallAdvisorIT {
 		void streamDefaultAdvisorConfigurationWithExternalMemory() {
 
 			var chatClient = ChatClient.builder(getChatModel())
-				.defaultAdvisors(ToolCallAdvisor.builder().disableMemory().build(),
+				.defaultAdvisors(ToolCallAdvisor.builder().disableInternalConversationHistory().build(),
 						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().build()).build())
 				.build();
 

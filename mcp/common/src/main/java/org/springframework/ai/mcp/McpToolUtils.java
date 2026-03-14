@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -203,8 +203,6 @@ public final class McpToolUtils {
 		SharedSyncToolSpecification sharedSpec = toSharedSyncToolSpecification(toolCallback, mimeType);
 
 		return new McpServerFeatures.SyncToolSpecification(sharedSpec.tool(),
-				(exchange, map) -> sharedSpec.sharedHandler()
-					.apply(exchange, new CallToolRequest(sharedSpec.tool().name(), map)),
 				(exchange, request) -> sharedSpec.sharedHandler().apply(exchange, request));
 	}
 
@@ -261,13 +259,21 @@ public final class McpToolUtils {
 						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchangeOrContext)));
 				if (mimeType != null && mimeType.toString().startsWith("image")) {
 					McpSchema.Annotations annotations = new McpSchema.Annotations(List.of(Role.ASSISTANT), null);
-					return new McpSchema.CallToolResult(
-							List.of(new McpSchema.ImageContent(annotations, callResult, mimeType.toString())), false);
+					return McpSchema.CallToolResult.builder()
+						.content(List.of(new McpSchema.ImageContent(annotations, callResult, mimeType.toString())))
+						.isError(false)
+						.build();
 				}
-				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
+				return McpSchema.CallToolResult.builder()
+					.content(List.of(new McpSchema.TextContent(callResult)))
+					.isError(false)
+					.build();
 			}
 			catch (Exception e) {
-				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(e.getMessage())), true);
+				return McpSchema.CallToolResult.builder()
+					.content(List.of(new McpSchema.TextContent(e.getMessage())))
+					.isError(true)
+					.build();
 			}
 		});
 	}

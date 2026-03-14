@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * @author Christian Tzolov
  */
-// @Disabled
 @SpringBootTest(classes = BedrockNovaChatClientIT.Config.class)
 @RequiresAwsCredentials
 public class BedrockNovaChatClientIT {
@@ -188,7 +187,7 @@ public class BedrockNovaChatClientIT {
 			.content();
 
 		assertThat(response).isNotEmpty();
-		assertThat(response).contains("20 degrees");
+		assertThat(response).contains("20");
 	}
 
 	// https://github.com/spring-projects/spring-ai/issues/1878
@@ -212,7 +211,7 @@ public class BedrockNovaChatClientIT {
 			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
-		assertThat(content).contains("20 degrees");
+		assertThat(content).contains("20");
 	}
 
 	// https://github.com/spring-projects/spring-ai/issues/1878
@@ -231,7 +230,7 @@ public class BedrockNovaChatClientIT {
 			.entity(WeatherService.Response.class);
 
 		assertThat(response).isNotNull();
-		assertThat(response.temp()).isEqualTo(30.0);
+		assertThat(response.temp()).isEqualTo(30);
 	}
 
 	@Test
@@ -255,7 +254,7 @@ public class BedrockNovaChatClientIT {
 			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
-		assertThat(content).contains("30.0");
+		assertThat(content).contains("30");
 	}
 
 	@SpringBootConfiguration

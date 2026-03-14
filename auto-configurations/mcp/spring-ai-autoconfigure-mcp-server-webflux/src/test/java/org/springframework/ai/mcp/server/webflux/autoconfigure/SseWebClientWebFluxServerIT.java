@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -160,7 +160,7 @@ public class SseWebClientWebFluxServerIT {
 						CallToolResult response = mcpClient.callTool(toolRequest);
 
 						assertThat(response).isNotNull();
-						assertThat(response.isError()).isNull();
+						assertThat(response.isError()).isFalse();
 						String responseText = ((TextContent) response.content().get(0)).text();
 						assertThat(responseText).contains("CALL RESPONSE");
 						assertThat(responseText).contains("Response Test Sampling Message with model hint OpenAi");
@@ -353,9 +353,10 @@ public class SseWebClientWebFluxServerIT {
 					exchange
 						.progressNotification(new ProgressNotification(progressToken, 1.0, 1.0, "sampling completed"));
 
-					return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(
-							"CALL RESPONSE: " + samplingResponse.toString() + ", " + elicitationResult.toString())),
-							null);
+					return McpSchema.CallToolResult.builder()
+						.content(List.of(new McpSchema.TextContent(
+								"CALL RESPONSE: " + samplingResponse.toString() + ", " + elicitationResult.toString())))
+						.build();
 				})
 				.build();
 

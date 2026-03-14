@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright 2023-2025 the original author or authors.
+  ~ Copyright 2023-present the original author or authors.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -109,7 +109,6 @@
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-azure-openai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-bedrock-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-elevenlabs</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-huggingface</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai-sdk</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-minimax</module>
@@ -186,7 +185,6 @@
 		<module>models/spring-ai-bedrock</module>
 		<module>models/spring-ai-bedrock-converse</module>
 		<module>models/spring-ai-elevenlabs</module>
-		<module>models/spring-ai-huggingface</module>
 		<module>models/spring-ai-minimax</module>
 		<module>models/spring-ai-mistral-ai</module>
 		<module>models/spring-ai-oci-genai</module>
@@ -210,7 +208,6 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-google-genai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-google-genai-embedding</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-elevenlabs</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-huggingface</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-minimax</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-mistral-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-oci-genai</module>
@@ -242,7 +239,7 @@
 		<module>spring-ai-integration-tests</module>
 
 		<module>mcp/common</module>
-		<module>mcp/mcp-annotations-spring</module>
+		<module>mcp/mcp-annotations</module>
 		<module>mcp/transport/mcp-spring-webflux</module>
 		<module>mcp/transport/mcp-spring-webmvc</module>
 	</modules>
@@ -295,18 +292,21 @@
 		<azure-open-ai-client.version>1.0.0-beta.16</azure-open-ai-client.version>
 		<openai-sdk.version>4.17.0</openai-sdk.version>
 		<azure-identity.version>1.18.2</azure-identity.version>
+		<openai-sdk.version>4.13.0</openai-sdk.version>
+		<anthropic-sdk.version>2.16.1</anthropic-sdk.version>
+		<azure-identity.version>1.18.1</azure-identity.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
 		<kotlin.version>2.2.21</kotlin.version>
 
 		<!-- NOTE: keep bedrockruntime and awssdk versions aligned -->
-		<bedrockruntime.version>2.36.3</bedrockruntime.version>
-		<awssdk.version>2.36.3</awssdk.version>
+		<bedrockruntime.version>2.41.22</bedrockruntime.version>
+		<awssdk.version>2.41.22</awssdk.version>
 
 		<djl.version>0.32.0</djl.version>
 		<onnxruntime.version>1.19.2</onnxruntime.version>
 		<oci-sdk-version>3.63.1</oci-sdk-version>
 		<com.google.cloud.version>26.72.0</com.google.cloud.version>
-		<com.google.genai.version>1.37.0</com.google.genai.version>
+		<com.google.genai.version>1.42.0</com.google.genai.version>
 		<ibm.sdk.version>9.20.0</ibm.sdk.version>
 		<jsonschema.version>5.0.0</jsonschema.version>
 		<swagger-annotations.version>2.2.38</swagger-annotations.version>
@@ -355,10 +355,7 @@
 		<json-unit-assertj.version>5.1.0</json-unit-assertj.version>
 
 		<!-- MCP-->
-		<!-- TODO Update to 1.0.0-RC1 when released -->
-		<mcp.sdk.version>1.0.0-SNAPSHOT</mcp.sdk.version>
-		<!-- TODO Update to 1.0.0-alpha when released -->
-		<mcp-annotations.version>1.0.0-SNAPSHOT</mcp-annotations.version>
+		<mcp.sdk.version>1.1.0</mcp.sdk.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>
@@ -877,7 +874,6 @@
 								<exclude>org.springframework.ai.bedrock/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.bedrock.converse/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.elevenlabs/**/*IT.java</exclude>
-								<exclude>org.springframework.ai.huggingface/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.minimax/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.mistralai/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.oci/**/*IT.java</exclude>
@@ -964,7 +960,7 @@
 							</includes>
 
 							<dependenciesToScan>
-								<dependency>org.springframework.ai:spring-ai-anthropic</dependency>
+								<dependency>org.springframework.ai:spring-ai-anthropic-legacy</dependency>
 							</dependenciesToScan> -->
 						</configuration>
 						<executions>

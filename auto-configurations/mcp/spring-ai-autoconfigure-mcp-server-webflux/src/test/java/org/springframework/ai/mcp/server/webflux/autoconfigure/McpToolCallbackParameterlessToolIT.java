@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,14 +115,10 @@ class McpToolCallbackParameterlessToolIT {
 
 				// Create a tool specification that returns a simple response
 				McpServerFeatures.SyncToolSpecification toolSpec = new McpServerFeatures.SyncToolSpecification(
-						parameterlessTool, (exchange, arguments) -> {
+						parameterlessTool, (exchange, request) -> {
 							McpSchema.TextContent content = new McpSchema.TextContent(
 									"Current time: " + Instant.now().toString());
-							return new McpSchema.CallToolResult(List.of(content), false, null);
-						}, (exchange, request) -> {
-							McpSchema.TextContent content = new McpSchema.TextContent(
-									"Current time: " + Instant.now().toString());
-							return new McpSchema.CallToolResult(List.of(content), false, null);
+							return McpSchema.CallToolResult.builder().content(List.of(content)).isError(false).build();
 						});
 
 				// Add the tool with incomplete schema to the server

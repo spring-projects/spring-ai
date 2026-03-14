@@ -1,5 +1,5 @@
 /*
- * Copyright 2026-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -254,6 +254,18 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 	// actually
 	// doing that.
 
+	@Override
+	public Mono<Void> notifyClient(String sessionId, String method, Object params) {
+		return Mono.defer(() -> {
+			McpServerSession session = this.sessions.get(sessionId);
+			if (session == null) {
+				logger.debug("Session {} not found", sessionId);
+				return Mono.empty();
+			}
+			return session.sendNotification(method, params);
+		});
+	}
+
 	/**
 	 * Initiates a graceful shutdown of all the sessions. This method ensures all active
 	 * sessions are properly closed and cleaned up.
@@ -381,14 +393,19 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 		}
 
 		if (request.queryParam("sessionId").isEmpty()) {
-			return ServerResponse.badRequest().bodyValue(new McpError("Session ID missing in message endpoint"));
+			return ServerResponse.badRequest()
+				.bodyValue(McpError.builder(McpSchema.ErrorCodes.METHOD_NOT_FOUND)
+					.message("Session ID missing in message endpoint")
+					.build());
 		}
 
 		McpServerSession session = this.sessions.get(request.queryParam("sessionId").get());
 
 		if (session == null) {
 			return ServerResponse.status(HttpStatus.NOT_FOUND)
-				.bodyValue(new McpError("Session not found: " + request.queryParam("sessionId").get()));
+				.bodyValue(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+					.message("Session not found: " + request.queryParam("sessionId").get())
+					.build());
 		}
 
 		McpTransportContext transportContext = this.contextExtractor.extract(request);
@@ -402,12 +419,17 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 					// - the error is signalled on the SSE connection
 					// return ServerResponse.ok().build();
 					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-						.bodyValue(new McpError(error.getMessage()));
+						.bodyValue(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+							.message(error.getMessage())
+							.build());
 				});
 			}
 			catch (IllegalArgumentException | IOException e) {
 				logger.error("Failed to deserialize message: {}", e.getMessage());
-				return ServerResponse.badRequest().bodyValue(new McpError("Invalid message format"));
+				return ServerResponse.badRequest()
+					.bodyValue(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
+						.message("Invalid message format")
+						.build());
 			}
 		}).contextWrite(ctx -> ctx.put(McpTransportContext.KEY, transportContext));
 	}

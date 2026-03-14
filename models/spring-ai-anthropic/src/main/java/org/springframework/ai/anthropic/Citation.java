@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.springframework.ai.anthropic;
 
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.ai.anthropic.api.CitationDocument;
 import org.springframework.util.Assert;
 
 /**
@@ -44,23 +43,9 @@ import org.springframework.util.Assert;
  * start/end indices</li>
  * </ul>
  *
- * <h3>Example Usage</h3>
- *
- * <pre>{@code
- * ChatResponse response = chatModel.call(prompt);
- *
- * List<Citation> citations = (List<Citation>) response.getMetadata().get("citations");
- *
- * for (Citation citation : citations) {
- *     System.out.println("Document: " + citation.getDocumentTitle());
- *     System.out.println("Location: " + citation.getLocationDescription());
- *     System.out.println("Text: " + citation.getCitedText());
- * }
- * }</pre>
- *
  * @author Soby Chacko
  * @since 1.1.0
- * @see CitationDocument
+ * @see AnthropicCitationDocument
  */
 public final class Citation {
 

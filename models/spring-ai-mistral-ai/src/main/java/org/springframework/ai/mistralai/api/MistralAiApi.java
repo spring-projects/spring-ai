@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1094,8 +1094,9 @@ public class MistralAiApi {
 	/**
 	 * Message comprising the conversation.
 	 *
-	 * @param rawContent The contents of the message. Can be either a {@link MediaContent}
-	 * or a {@link String}. The response message content is always a {@link String}.
+	 * @param rawContent The content of the message. For request, message content can be
+	 * either a list of {@link MediaContent} or a {@link String}. For response, only
+	 * {@link String} is supported as message content for now.
 	 * @param role The role of the messages author. Could be one of the {@link Role}
 	 * types.
 	 * @param name The name of the author of the message.

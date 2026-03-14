@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,12 +27,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Unit Tests for {@link AnthropicChatAutoConfiguration}'s conditional enabling of models.
  *
- * @author Ilayaperumal Gopinathan
+ * @author Soby Chacko
  */
-public class AnthropicModelConfigurationTests {
+class AnthropicModelConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.anthropic.apiKey=" + System.getenv("ANTHROPIC_API_KEY"))
+		.withPropertyValues("spring.ai.anthropic.api-key=" + System.getenv("ANTHROPIC_API_KEY"))
 		.withConfiguration(SpringAiTestAutoConfigurations.of(AnthropicChatAutoConfiguration.class));
 
 	@Test

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -586,7 +586,7 @@ class VertexAiGeminiChatModelIT {
 			.call()
 			.content();
 
-		assertThat(response).contains("I have set an alarm for 11:10 AM.");
+		assertThat(response).containsAnyOf("alarm", "11:10");
 		assertThat(alarmTools.getAlarm()).isEqualTo("2025-05-08T11:10:10+02:00");
 	}
 

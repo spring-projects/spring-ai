@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -242,12 +242,8 @@ public class OpenAiSdkChatModel implements ChatModel {
 			@Nullable ObservationRegistry observationRegistry,
 			@Nullable ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 
-		if (options == null) {
-			this.options = OpenAiSdkChatOptions.builder().model(DEFAULT_MODEL_NAME).build();
-		}
-		else {
-			this.options = options;
-		}
+		this.options = Objects.requireNonNullElse(options,
+				OpenAiSdkChatOptions.builder().model(DEFAULT_MODEL_NAME).build());
 		this.openAiClient = Objects.requireNonNullElseGet(openAiClient,
 				() -> OpenAiSdkSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
 						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
@@ -267,6 +263,35 @@ public class OpenAiSdkChatModel implements ChatModel {
 		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
 		this.toolCallingManager = Objects.requireNonNullElse(toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER);
 		this.toolExecutionEligibilityPredicate = Objects.requireNonNullElse(toolExecutionEligibilityPredicate,
+				new DefaultToolExecutionEligibilityPredicate());
+	}
+
+	private OpenAiSdkChatModel(Builder builder) {
+		if (builder.options == null) {
+			this.options = OpenAiSdkChatOptions.builder().model(DEFAULT_MODEL_NAME).build();
+		}
+		else {
+			this.options = builder.options;
+		}
+		this.openAiClient = Objects.requireNonNullElseGet(builder.openAiClient,
+				() -> OpenAiSdkSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
+						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
+						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
+						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
+						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
+						this.options.getCustomHeaders()));
+
+		this.openAiClientAsync = Objects.requireNonNullElseGet(builder.openAiClientAsync,
+				() -> OpenAiSdkSetup.setupAsyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
+						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
+						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
+						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
+						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
+						this.options.getCustomHeaders()));
+
+		this.observationRegistry = Objects.requireNonNullElse(builder.observationRegistry, ObservationRegistry.NOOP);
+		this.toolCallingManager = Objects.requireNonNullElse(builder.toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER);
+		this.toolExecutionEligibilityPredicate = Objects.requireNonNullElse(builder.toolExecutionEligibilityPredicate,
 				new DefaultToolExecutionEligibilityPredicate());
 	}
 
@@ -730,48 +755,16 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * @return the prompt with merged options
 	 */
 	Prompt buildRequestPrompt(Prompt prompt) {
-		// Process runtime options
-		OpenAiSdkChatOptions runtimeOptions = null;
+		OpenAiSdkChatOptions.Builder<?> requestBuilder = this.options.mutate();
+
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-						OpenAiSdkChatOptions.class);
-			}
-			else {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						OpenAiSdkChatOptions.class);
-			}
-		}
-
-		// Define request options by merging runtime options and default options
-		OpenAiSdkChatOptions requestOptions = OpenAiSdkChatOptions.builder()
-			.from(this.options)
-			.merge(runtimeOptions != null ? runtimeOptions : OpenAiSdkChatOptions.builder().build())
-			.build();
-
-		// Merge @JsonIgnore-annotated options explicitly since they are ignored by
-		// Jackson, used by ModelOptionsUtils.
-		if (runtimeOptions != null) {
-			if (runtimeOptions.getTopK() != null) {
+			if (prompt.getOptions().getTopK() != null) {
 				logger.warn("The topK option is not supported by OpenAI chat models. Ignoring.");
 			}
+			requestBuilder.combineWith(prompt.getOptions().mutate());
+		}
 
-			requestOptions.setInternalToolExecutionEnabled(runtimeOptions.getInternalToolExecutionEnabled() != null
-					? runtimeOptions.getInternalToolExecutionEnabled()
-					: this.options.getInternalToolExecutionEnabled());
-			requestOptions.setToolNames(
-					ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(), this.options.getToolNames()));
-			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
-					this.options.getToolCallbacks()));
-			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
-					this.options.getToolContext()));
-		}
-		else {
-			requestOptions.setInternalToolExecutionEnabled(this.options.getInternalToolExecutionEnabled());
-			requestOptions.setToolNames(this.options.getToolNames());
-			requestOptions.setToolCallbacks(this.options.getToolCallbacks());
-			requestOptions.setToolContext(this.options.getToolContext());
-		}
+		OpenAiSdkChatOptions requestOptions = requestBuilder.build();
 
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
 
@@ -1426,10 +1419,8 @@ public class OpenAiSdkChatModel implements ChatModel {
 		 * Builds a new {@link OpenAiSdkChatModel} instance.
 		 * @return the configured chat model
 		 */
-		@SuppressWarnings("deprecation")
 		public OpenAiSdkChatModel build() {
-			return new OpenAiSdkChatModel(this.openAiClient, this.openAiClientAsync, this.options,
-					this.toolCallingManager, this.observationRegistry, this.toolExecutionEligibilityPredicate);
+			return new OpenAiSdkChatModel(this);
 		}
 
 	}

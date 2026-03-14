@@ -153,6 +153,11 @@ The wiki pages
 [IntelliJ IDEA Editor Settings](https://github.com/spring-projects/spring-framework/wiki/IntelliJ-IDEA-Editor-Settings)
 define the source file coding standards we use along with some IDEA editor settings we customize.
 
+Run checkstyle manually:
+```shell
+./mvnw process-sources -P checkstyle-check
+```
+
 ## Contributing
 
 Your contributions are always welcome! Please read the [contribution guidelines](CONTRIBUTING.adoc) first.
