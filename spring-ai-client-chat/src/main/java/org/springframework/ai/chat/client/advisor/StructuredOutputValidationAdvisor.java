@@ -100,7 +100,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 
 		String jsonSchemaText = JsonSchemaGenerator.generateForType(outputType);
 
-		logger.info("Generated JSON Schema:\n" + jsonSchemaText);
+		logger.info("Generated JSON Schema:\n{}", jsonSchemaText);
 
 		var mcpJsonMapper = new JacksonMcpJsonMapper(jsonMapper);
 
@@ -164,7 +164,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 					// However, this might lead to confusion and more complex prompts.
 					// Instead, we rely on the LLM to generate a new output based on the
 					// validation error.
-					logger.warn("JSON validation failed: " + validationResponse);
+					logger.warn("JSON validation failed: {}", validationResponse);
 
 					String validationErrorMessage = "Output JSON validation failed because of: "
 							+ validationResponse.errorMessage();
@@ -197,7 +197,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		// TODO: should we consider validation for multiple results?
 		String json = chatClientResponse.chatResponse().getResult().getOutput().getText();
 
-		logger.debug("Validating JSON output against schema. Attempts left: " + this.maxRepeatAttempts);
+		logger.debug("Validating JSON output against schema. Attempts left: {}", this.maxRepeatAttempts);
 
 		return this.jsonvalidator.validate(this.jsonSchema, json);
 	}

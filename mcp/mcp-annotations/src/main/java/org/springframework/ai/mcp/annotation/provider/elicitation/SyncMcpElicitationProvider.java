@@ -113,7 +113,7 @@ public class SyncMcpElicitationProvider {
 			logger.warn("No elicitation methods found");
 		}
 		if (elicitationHandlers.size() > 1) {
-			logger.warn("Multiple elicitation methods found: " + elicitationHandlers.size());
+			logger.warn("Multiple elicitation methods found: {}", elicitationHandlers.size());
 		}
 
 		return elicitationHandlers;
