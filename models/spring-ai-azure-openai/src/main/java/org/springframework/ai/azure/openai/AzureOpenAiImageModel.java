@@ -24,6 +24,7 @@ import com.azure.ai.openai.models.ImageGenerationQuality;
 import com.azure.ai.openai.models.ImageGenerationResponseFormat;
 import com.azure.ai.openai.models.ImageGenerationStyle;
 import com.azure.ai.openai.models.ImageSize;
+import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.core.JacksonException;
@@ -38,8 +39,14 @@ import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.ImageResponseMetadata;
+import org.springframework.ai.image.observation.ImageModelObservationContext;
+import org.springframework.ai.image.observation.ImageModelObservationConvention;
+import org.springframework.ai.image.observation.ImageModelObservationDocumentation;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.observation.conventions.AiProvider;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.util.JacksonUtils;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
@@ -48,6 +55,7 @@ import org.springframework.util.Assert;
  *
  * @author Benoit Moussaud
  * @author Sebastien Deleuze
+ * @author Yanming Zhou
  * @see ImageModel
  * @see com.azure.ai.openai.OpenAIClient
  * @since 1.0.0
@@ -64,19 +72,48 @@ public class AzureOpenAiImageModel implements ImageModel {
 
 	private final JsonMapper jsonMapper;
 
+	private final RetryTemplate retryTemplate;
+
+	private final ObservationRegistry observationRegistry;
+
+	private ImageModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
+
 	public AzureOpenAiImageModel(OpenAIClient openAIClient) {
 		this(openAIClient, AzureOpenAiImageOptions.builder().deploymentName(DEFAULT_DEPLOYMENT_NAME).build());
 	}
 
 	public AzureOpenAiImageModel(OpenAIClient microsoftOpenAiClient, AzureOpenAiImageOptions options) {
+		this(microsoftOpenAiClient, options, RetryUtils.DEFAULT_RETRY_TEMPLATE, ObservationRegistry.NOOP);
+	}
+
+	public AzureOpenAiImageModel(OpenAIClient microsoftOpenAiClient, AzureOpenAiImageOptions options,
+			RetryTemplate retryTemplate) {
+		this(microsoftOpenAiClient, options, retryTemplate, ObservationRegistry.NOOP);
+	}
+
+	public AzureOpenAiImageModel(OpenAIClient microsoftOpenAiClient, AzureOpenAiImageOptions options,
+			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
 		Assert.notNull(microsoftOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
 		Assert.notNull(options, "AzureOpenAiChatOptions must not be null");
+		Assert.notNull(retryTemplate, "retryTemplate must not be null");
+		Assert.notNull(observationRegistry, "observationRegistry must not be null");
 		this.openAIClient = microsoftOpenAiClient;
 		this.defaultOptions = options;
 		this.jsonMapper = JsonMapper.builder()
 			.addModules(JacksonUtils.instantiateAvailableModules())
 			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
 			.build();
+		this.retryTemplate = retryTemplate;
+		this.observationRegistry = observationRegistry;
+	}
+
+	/**
+	 * Use the provided convention for reporting observation data
+	 * @param observationConvention The provided convention
+	 */
+	public void setObservationConvention(ImageModelObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
 	}
 
 	public AzureOpenAiImageOptions getDefaultOptions() {
@@ -92,20 +129,32 @@ public class AzureOpenAiImageModel implements ImageModel {
 					toPrettyJson(imageGenerationOptions));
 		}
 
-		var images = this.openAIClient.getImageGenerations(deploymentOrModelName, imageGenerationOptions);
+		var observationContext = ImageModelObservationContext.builder()
+			.imagePrompt(imagePrompt)
+			.provider(AiProvider.AZURE_OPENAI.name())
+			.build();
 
-		if (logger.isTraceEnabled()) {
-			logger.trace("Azure ImageGenerations: {}", toPrettyJson(images));
-		}
+		return ImageModelObservationDocumentation.IMAGE_MODEL_OPERATION
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
+				var images = RetryUtils.execute(this.retryTemplate,
+						() -> this.openAIClient.getImageGenerations(deploymentOrModelName, imageGenerationOptions));
 
-		List<ImageGeneration> imageGenerations = images.getData().stream().map(entry -> {
-			var image = new Image(entry.getUrl(), entry.getBase64Data());
-			var metadata = new AzureOpenAiImageGenerationMetadata(entry.getRevisedPrompt());
-			return new ImageGeneration(image, metadata);
-		}).toList();
+				if (logger.isTraceEnabled()) {
+					logger.trace("Azure ImageGenerations: {}", toPrettyJson(images));
+				}
 
-		ImageResponseMetadata openAiImageResponseMetadata = AzureOpenAiImageResponseMetadata.from(images);
-		return new ImageResponse(imageGenerations, openAiImageResponseMetadata);
+				List<ImageGeneration> imageGenerations = images.getData().stream().map(entry -> {
+					var image = new Image(entry.getUrl(), entry.getBase64Data());
+					var metadata = new AzureOpenAiImageGenerationMetadata(entry.getRevisedPrompt());
+					return new ImageGeneration(image, metadata);
+				}).toList();
+
+				ImageResponseMetadata openAiImageResponseMetadata = AzureOpenAiImageResponseMetadata.from(images);
+				return new ImageResponse(imageGenerations, openAiImageResponseMetadata);
+			});
+
 	}
 
 	private String toPrettyJson(Object object) {
