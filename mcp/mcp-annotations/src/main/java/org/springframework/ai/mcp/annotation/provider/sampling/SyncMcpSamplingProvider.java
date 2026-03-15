@@ -112,7 +112,7 @@ public class SyncMcpSamplingProvider {
 			logger.warn("No sampling methods found");
 		}
 		if (samplingHandlers.size() > 1) {
-			logger.warn("Multiple sampling methods found: " + samplingHandlers.size());
+			logger.warn("Multiple sampling methods found: {}", samplingHandlers.size());
 		}
 
 		return samplingHandlers;
