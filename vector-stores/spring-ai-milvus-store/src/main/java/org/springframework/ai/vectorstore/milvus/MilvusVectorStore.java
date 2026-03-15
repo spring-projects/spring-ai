@@ -142,6 +142,7 @@ import org.springframework.util.StringUtils;
  * @author Soby Chacko
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author chabinhwang
  * @see org.springframework.ai.vectorstore.VectorStore
  * @see io.milvus.client.MilvusServiceClient
  */
@@ -246,7 +247,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
-		for (Document document : documents) {
+		for (int i = 0; i < documents.size(); i++) {
+			Document document = documents.get(i);
 			docIdArray.add(document.getId());
 			// Use a (future) DocumentTextLayoutFormatter instance to extract
 			// the content used to compute the embeddings
@@ -254,7 +256,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			Gson gson = new Gson();
 			String jsonString = gson.toJson(document.getMetadata());
 			metadataArray.add(gson.fromJson(jsonString, JsonObject.class));
-			embeddingArray.add(EmbeddingUtils.toList(embeddings.get(documents.indexOf(document))));
+			embeddingArray.add(EmbeddingUtils.toList(embeddings.get(i)));
 		}
 
 		List<InsertParam.Field> fields = new ArrayList<>();

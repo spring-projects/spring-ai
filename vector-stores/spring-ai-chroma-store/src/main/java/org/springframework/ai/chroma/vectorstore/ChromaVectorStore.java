@@ -60,6 +60,7 @@ import org.springframework.util.CollectionUtils;
  * @author Soby Chacko
  * @author Thomas Vitale
  * @author Jonghoon Park
+ * @author chabinhwang
  */
 public class ChromaVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -157,11 +158,12 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		List<float[]> documentEmbeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
-		for (Document document : documents) {
+		for (int i = 0; i < documents.size(); i++) {
+			Document document = documents.get(i);
 			ids.add(document.getId());
 			metadatas.add(document.getMetadata());
 			contents.add(document.getText());
-			embeddings.add(documentEmbeddings.get(documents.indexOf(document)));
+			embeddings.add(documentEmbeddings.get(i));
 		}
 
 		this.chromaApi.upsertEmbeddings(this.tenantName, this.databaseName, this.requireCollectionId(),

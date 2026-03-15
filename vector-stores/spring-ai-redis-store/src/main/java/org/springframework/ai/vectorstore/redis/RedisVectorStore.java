@@ -236,6 +236,7 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Soby Chacko
  * @author Jihoon Kim
+ * @author chabinhwang
  * @see VectorStore
  * @see EmbeddingModel
  * @since 1.0.0
@@ -357,9 +358,10 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 					this.batchingStrategy);
 
-			for (Document document : documents) {
+			for (int i = 0; i < documents.size(); i++) {
+				Document document = documents.get(i);
 				var fields = new HashMap<String, Object>();
-				float[] embedding = embeddings.get(documents.indexOf(document));
+				float[] embedding = embeddings.get(i);
 
 				// Normalize embeddings for COSINE distance metric
 				if (this.distanceMetric == DistanceMetric.COSINE) {
