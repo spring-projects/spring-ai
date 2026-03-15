@@ -20,9 +20,9 @@ import com.azure.cosmos.CosmosAsyncClient;
 import com.azure.cosmos.CosmosClientBuilder;
 import com.azure.identity.DefaultAzureCredentialBuilder;
 
-import org.springframework.ai.chat.memory.repository.cosmosdb.CosmosDBChatMemoryRepository;
-import org.springframework.ai.chat.memory.repository.cosmosdb.CosmosDBChatMemoryRepositoryConfig;
 import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
+import org.springframework.ai.model.chat.memory.repository.cosmosdb.CosmosDBChatMemoryRepository;
+import org.springframework.ai.model.chat.memory.repository.cosmosdb.CosmosDBChatMemoryRepositoryConfig;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

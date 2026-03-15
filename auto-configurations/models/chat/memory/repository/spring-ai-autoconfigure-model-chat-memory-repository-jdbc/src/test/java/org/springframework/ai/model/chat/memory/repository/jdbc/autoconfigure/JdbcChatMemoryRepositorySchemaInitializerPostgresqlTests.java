@@ -58,7 +58,7 @@ class JdbcChatMemoryRepositorySchemaInitializerPostgresqlTests {
 		this.contextRunner.run(context -> assertThat(context.getBean(JdbcChatMemoryRepositorySchemaInitializer.class))
 			.extracting("settings.schemaLocations")
 			.asInstanceOf(InstanceOfAssertFactories.LIST)
-			.containsOnly("classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-postgresql.sql"));
+			.containsOnly("classpath:org/springframework/ai/model/chat/memory/repository/jdbc/schema-postgresql.sql"));
 	}
 
 }

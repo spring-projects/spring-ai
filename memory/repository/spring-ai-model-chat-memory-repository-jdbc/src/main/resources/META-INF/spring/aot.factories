@@ -1,2 +1,2 @@
 org.springframework.aot.hint.RuntimeHintsRegistrar=\
-org.springframework.ai.chat.memory.repository.jdbc.aot.hint.JdbcChatMemoryRepositoryRuntimeHints
+org.springframework.ai.model.chat.memory.repository.jdbc.aot.hint.JdbcChatMemoryRepositoryRuntimeHints

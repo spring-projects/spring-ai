@@ -18,7 +18,7 @@ package org.springframework.ai.model.chat.memory.repository.cosmosdb.autoconfigu
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.chat.memory.repository.cosmosdb.CosmosDBChatMemoryRepositoryConfig;
+import org.springframework.ai.model.chat.memory.repository.cosmosdb.CosmosDBChatMemoryRepositoryConfig;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Configuration;
