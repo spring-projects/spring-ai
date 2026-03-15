@@ -21,10 +21,12 @@ import java.util.List;
 
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.httpclient.autoconfigure.SseHttpClientTransportAutoConfiguration;
+import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -32,6 +34,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 
 /**
  * Tests for {@link SseHttpClientTransportAutoConfiguration}.
@@ -153,6 +158,18 @@ public class SseHttpClientTransportAutoConfigurationTests {
 			});
 	}
 
+	@Test
+	void customizerIsApplied() {
+		this.applicationContext.withUserConfiguration(CustomizerConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.sse.connections.server1.url=http://localhost:8080")
+			.run(context -> {
+				assertThat(context.getBean("sseHttpClientTransports", List.class)).hasSize(1);
+				McpClientCustomizer<HttpClientSseClientTransport.Builder> customizer = context
+					.getBean(McpClientCustomizer.class);
+				verify(customizer).customize(eq("server1"), any(HttpClientSseClientTransport.Builder.class));
+			});
+	}
+
 	private String getSseEndpoint(HttpClientSseClientTransport transport) {
 		Field privateField = ReflectionUtils.findField(HttpClientSseClientTransport.class, "sseEndpoint");
 		ReflectionUtils.makeAccessible(privateField);
@@ -165,6 +182,17 @@ public class SseHttpClientTransportAutoConfigurationTests {
 		@Bean
 		JsonMapper jsonMapper() {
 			return new JsonMapper();
+		}
+
+	}
+
+	@Configuration
+	static class CustomizerConfiguration {
+
+		@Bean
+		@SuppressWarnings("unchecked")
+		McpClientCustomizer<HttpClientSseClientTransport.Builder> customizer() {
+			return Mockito.mock(McpClientCustomizer.class);
 		}
 
 	}

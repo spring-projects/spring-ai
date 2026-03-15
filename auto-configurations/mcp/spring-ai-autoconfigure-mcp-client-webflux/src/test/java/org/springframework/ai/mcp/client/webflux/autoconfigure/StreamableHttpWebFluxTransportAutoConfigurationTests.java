@@ -20,10 +20,12 @@ import java.lang.reflect.Field;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHttpTransport;
+import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -33,6 +35,9 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 
 /**
  * Tests for {@link StreamableHttpWebFluxTransportAutoConfiguration}.
@@ -190,6 +195,18 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 			});
 	}
 
+	@Test
+	void customizerIsApplied() {
+		this.applicationContext.withUserConfiguration(CustomizerConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080")
+			.run(context -> {
+				assertThat(context.getBean("streamableHttpWebFluxClientTransports", List.class)).hasSize(1);
+				McpClientCustomizer<WebClientStreamableHttpTransport.Builder> customizer = context
+					.getBean(McpClientCustomizer.class);
+				verify(customizer).customize(eq("server1"), any(WebClientStreamableHttpTransport.Builder.class));
+			});
+	}
+
 	private String getStreamableHttpEndpoint(WebClientStreamableHttpTransport transport) {
 		Field privateField = ReflectionUtils.findField(WebClientStreamableHttpTransport.class, "endpoint");
 		ReflectionUtils.makeAccessible(privateField);
@@ -212,6 +229,17 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 		@Bean
 		JsonMapper jsonMapper() {
 			return new JsonMapper();
+		}
+
+	}
+
+	@Configuration
+	static class CustomizerConfiguration {
+
+		@Bean
+		@SuppressWarnings("unchecked")
+		McpClientCustomizer<WebClientStreamableHttpTransport.Builder> customizer() {
+			return Mockito.mock(McpClientCustomizer.class);
 		}
 
 	}

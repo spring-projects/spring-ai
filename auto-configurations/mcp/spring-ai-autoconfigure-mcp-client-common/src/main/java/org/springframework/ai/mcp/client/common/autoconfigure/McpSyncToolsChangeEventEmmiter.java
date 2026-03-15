@@ -20,7 +20,7 @@ import io.modelcontextprotocol.client.McpClient.SyncSpec;
 import io.modelcontextprotocol.util.Assert;
 
 import org.springframework.ai.mcp.McpToolsChangedEvent;
-import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;
+import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.context.ApplicationEventPublisher;
 
 /**
@@ -29,7 +29,7 @@ import org.springframework.context.ApplicationEventPublisher;
  *
  * @author Christian Tzolov
  */
-public class McpSyncToolsChangeEventEmmiter implements McpSyncClientCustomizer {
+public class McpSyncToolsChangeEventEmmiter implements McpClientCustomizer<SyncSpec> {
 
 	private final ApplicationEventPublisher applicationEventPublisher;
 

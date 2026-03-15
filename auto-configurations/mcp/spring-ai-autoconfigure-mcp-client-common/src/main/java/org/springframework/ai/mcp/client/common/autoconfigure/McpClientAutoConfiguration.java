@@ -29,8 +29,7 @@ import org.springframework.ai.mcp.annotation.spring.ClientMcpSyncHandlersRegistr
 import org.springframework.ai.mcp.client.common.autoconfigure.configurer.McpAsyncClientConfigurer;
 import org.springframework.ai.mcp.client.common.autoconfigure.configurer.McpSyncClientConfigurer;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
-import org.springframework.ai.mcp.customizer.McpAsyncClientCustomizer;
-import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;
+import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -85,8 +84,8 @@ import org.springframework.util.CollectionUtils;
  * </ul>
  * <li>Customization Options:
  * <ul>
- * <li>Extensible through {@link McpSyncClientCustomizer} and
- * {@link McpAsyncClientCustomizer}
+ * <li>Extensible through {@link McpClientCustomizer}{@code <McpClient.SyncSpec>} and
+ * {@link McpClientCustomizer}{@code <McpClient.AsyncSpec>}
  * <li>Configurable timeouts and client information
  * <li>Support for custom transport implementations
  * </ul>
@@ -95,8 +94,7 @@ import org.springframework.util.CollectionUtils;
  * @see McpSyncClient
  * @see McpAsyncClient
  * @see McpClientCommonProperties
- * @see McpSyncClientCustomizer
- * @see McpAsyncClientCustomizer
+ * @see McpClientCustomizer
  * @see StdioTransportAutoConfiguration
  */
 @AutoConfiguration(afterName = {
@@ -220,8 +218,9 @@ public class McpClientAutoConfiguration {
 	 * Creates the default {@link McpSyncClientConfigurer} if none is provided.
 	 *
 	 * <p>
-	 * This configurer aggregates all available {@link McpSyncClientCustomizer} instances
-	 * to allow for customization of MCP sync client creation.
+	 * This configurer aggregates all available
+	 * {@link McpClientCustomizer}{@code <McpClient.SyncSpec>} instances to allow for
+	 * customization of MCP sync client creation.
 	 * @param customizerProvider provider of MCP sync client customizers
 	 * @return the configured MCP sync client configurer
 	 */
@@ -229,7 +228,8 @@ public class McpClientAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	McpSyncClientConfigurer mcpSyncClientConfigurer(ObjectProvider<McpSyncClientCustomizer> customizerProvider) {
+	McpSyncClientConfigurer mcpSyncClientConfigurer(
+			ObjectProvider<McpClientCustomizer<McpClient.SyncSpec>> customizerProvider) {
 		return new McpSyncClientConfigurer(customizerProvider.orderedStream().toList());
 	}
 
@@ -301,7 +301,8 @@ public class McpClientAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	McpAsyncClientConfigurer mcpAsyncClientConfigurer(ObjectProvider<McpAsyncClientCustomizer> customizerProvider) {
+	McpAsyncClientConfigurer mcpAsyncClientConfigurer(
+			ObjectProvider<McpClientCustomizer<McpClient.AsyncSpec>> customizerProvider) {
 		return new McpAsyncClientConfigurer(customizerProvider.orderedStream().toList());
 	}
 

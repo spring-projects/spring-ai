@@ -20,14 +20,14 @@ import java.util.List;
 
 import io.modelcontextprotocol.client.McpClient;
 
-import org.springframework.ai.mcp.customizer.McpAsyncClientCustomizer;
+import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.util.Assert;
 
 public class McpAsyncClientConfigurer {
 
-	private List<McpAsyncClientCustomizer> customizers;
+	private List<McpClientCustomizer<McpClient.AsyncSpec>> customizers;
 
-	public McpAsyncClientConfigurer(List<McpAsyncClientCustomizer> customizers) {
+	public McpAsyncClientConfigurer(List<McpClientCustomizer<McpClient.AsyncSpec>> customizers) {
 		Assert.notNull(customizers, "customizers must not be null");
 		this.customizers = customizers;
 	}
@@ -39,7 +39,7 @@ public class McpAsyncClientConfigurer {
 
 	private void applyCustomizers(String name, McpClient.AsyncSpec spec) {
 		if (this.customizers != null) {
-			for (McpAsyncClientCustomizer customizer : this.customizers) {
+			for (McpClientCustomizer<McpClient.AsyncSpec> customizer : this.customizers) {
 				customizer.customize(name, spec);
 			}
 		}
