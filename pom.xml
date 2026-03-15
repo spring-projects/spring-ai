@@ -304,6 +304,9 @@
 		<!-- Protobuf -->
 		<protobuf-java.version>3.25.8</protobuf-java.version>
 
+		<!-- GRPC netty shaded -->
+		<grpc-netty-shaded.version>1.76.0</grpc-netty-shaded.version>
+
 		<!-- readers/writer/stores dependencies-->
 		<pdfbox.version>3.0.5</pdfbox.version>
 		<pgvector.version>0.1.6</pgvector.version>
