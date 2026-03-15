@@ -16,16 +16,21 @@
 
 package org.springframework.ai.openaisdk.setup;
 
+import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 
+import com.openai.azure.credential.AzureApiKeyCredential;
 import com.openai.client.OpenAIClient;
+import com.openai.core.ClientOptions;
 import com.openai.models.ChatModel;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 public class OpenAiSdkSetupTests {
 
@@ -117,6 +122,19 @@ public class OpenAiSdkSetupTests {
 				false, null, Duration.ofSeconds(30), 2, null, null);
 
 		assertNotNull(client);
+	}
+
+	@Test
+	void setupSyncClient_usesApiKeyHeader_notBearerToken_forMicrosoftFoundry() throws Exception {
+		OpenAIClient client = OpenAiSdkSetup.setupSyncClient("https://my-resource.openai.azure.com/", "my-foundry-key",
+				null, null, null, null, true, false, null, Duration.ofSeconds(30), 2, null, null);
+
+		Field field = client.getClass().getDeclaredField("clientOptions");
+		field.setAccessible(true);
+		ClientOptions options = (ClientOptions) field.get(client);
+		assertInstanceOf(AzureApiKeyCredential.class, options.credential());
+		assertThat(options.headers().values("api-key")).containsExactly("my-foundry-key");
+		assertThat(options.headers().values("Authorization")).isEmpty();
 	}
 
 }
