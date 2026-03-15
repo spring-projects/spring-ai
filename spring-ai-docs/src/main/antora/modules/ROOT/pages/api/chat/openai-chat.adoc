@@ -189,7 +189,7 @@ The `JSON_SCHEMA` type enables link:https://platform.openai.com/docs/guides/stru
 | spring.ai.openai.chat.options.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
 | spring.ai.openai.chat.options.internal-tool-execution-enabled | If false, the Spring AI will not handle the tool calls internally, but will proxy them to the client. Then it is the client's responsibility to handle the tool calls, dispatch them to the appropriate function, and return the results. If true (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | true
 | spring.ai.openai.chat.options.service-tier | Specifies the link:https://platform.openai.com/docs/api-reference/responses/create#responses_create-service_tier[processing type] used for serving the request. | -
-| spring.ai.openai.chat.options.extra-body | Additional parameters to include in the request. Accepts any key-value pairs that are flattened to the top level of the JSON request. Intended for use with OpenAI-compatible servers (vLLM, Ollama, etc.) that support parameters beyond the standard OpenAI API. The official OpenAI API ignores unknown parameters. See <<openai-compatible-servers>> for details. | -
+| spring.ai.openai.chat.options.extra-body | Additional parameters to include in the request. Accepts any key-value pairs that are flattened to the top level of the JSON request. Intended for use with OpenAI-compatible servers (vLLM, Ollama, etc.) that support parameters beyond the standard OpenAI API. The official OpenAI API rejects unknown parameters with a 400 error. See <<openai-compatible-servers>> for details. | -
 |====
 
 [NOTE]
@@ -773,7 +773,7 @@ Any key-value pairs provided in `extraBody` are included at the top level of the
 [IMPORTANT]
 ====
 The `extraBody` parameter is intended for use with OpenAI-compatible servers, not the official OpenAI API.
-While the official OpenAI API will ignore unknown parameters, they serve no purpose there.
+The official OpenAI API rejects unknown parameters with a 400 error.
 Always consult your specific server's documentation to determine which parameters are supported.
 ====
 
