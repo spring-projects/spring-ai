@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.openai.azure.AzureOpenAIServiceVersion;
+import com.openai.azure.credential.AzureApiKeyCredential;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
@@ -74,7 +75,12 @@ public final class OpenAiSdkSetup {
 
 		String calculatedApiKey = apiKey != null ? apiKey : detectApiKey(modelProvider);
 		if (calculatedApiKey != null) {
-			builder.apiKey(calculatedApiKey);
+			if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY) {
+				builder.credential(AzureApiKeyCredential.create(calculatedApiKey));
+			}
+			else {
+				builder.apiKey(calculatedApiKey);
+			}
 		}
 		else {
 			if (credential != null) {
@@ -127,7 +133,12 @@ public final class OpenAiSdkSetup {
 
 		String calculatedApiKey = apiKey != null ? apiKey : detectApiKey(modelProvider);
 		if (calculatedApiKey != null) {
-			builder.apiKey(calculatedApiKey);
+			if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY) {
+				builder.credential(AzureApiKeyCredential.create(calculatedApiKey));
+			}
+			else {
+				builder.apiKey(calculatedApiKey);
+			}
 		}
 		else {
 			if (credential != null) {
