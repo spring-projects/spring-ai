@@ -591,8 +591,8 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 			// Assert.state(this.model != null, "model must be set");
 			return new MistralAiChatOptions(this.model, this.temperature, this.topP, this.maxTokens, this.safePrompt,
 					this.randomSeed, this.responseFormat, this.stopSequences, this.frequencyPenalty,
-					this.presencePenalty, this.n, this.tools, this.toolChoice, new ArrayList<>(this.toolCallbacks),
-					new HashSet<>(this.toolNames), this.internalToolExecutionEnabled, new HashMap<>(this.toolContext));
+					this.presencePenalty, this.n, this.tools, this.toolChoice, this.toolCallbacks, this.toolNames,
+					this.internalToolExecutionEnabled, this.toolContext);
 		}
 
 	}

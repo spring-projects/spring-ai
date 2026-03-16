@@ -89,9 +89,9 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 		this.enhancements = enhancements;
 		this.streamOptions = streamOptions;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks != null ? new ArrayList<>(toolCallbacks) : new ArrayList<>();
-		this.toolNames = toolNames != null ? new HashSet<>(toolNames) : new HashSet<>();
-		this.toolContext = toolContext != null ? new HashMap<>(toolContext) : new HashMap<>();
+		this.toolCallbacks = toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(toolCallbacks);
+		this.toolNames = toolNames == null ? new HashSet<>() : new HashSet<>(toolNames);
+		this.toolContext = toolContext == null ? new HashMap<>() : new HashMap<>(toolContext);
 		this.enableStreamUsage = enableStreamUsage;
 		this.reasoningEffort = reasoningEffort;
 	}
@@ -836,9 +836,8 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 			return new AzureOpenAiChatOptions(this.maxTokens, this.temperature, this.topP, this.logitBias, this.user,
 					this.n, this.stopSequences, this.presencePenalty, this.frequencyPenalty, this.model,
 					this.responseFormat, this.seed, this.logprobs, this.topLogProbs, this.maxCompletionTokens,
-					this.enhancements, this.streamOptions, this.internalToolExecutionEnabled,
-					new ArrayList<>(this.toolCallbacks), new HashSet<>(this.toolNames), new HashMap<>(this.toolContext),
-					this.enableStreamUsage, this.reasoningEffort);
+					this.enhancements, this.streamOptions, this.internalToolExecutionEnabled, this.toolCallbacks,
+					this.toolNames, this.toolContext, this.enableStreamUsage, this.reasoningEffort);
 		}
 
 	}

@@ -75,7 +75,8 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 			@Nullable Boolean penalizeNewline, @Nullable List<String> stop, @Nullable String model,
 			@Nullable Object format, @Nullable String keepAlive, @Nullable Boolean truncate,
 			@Nullable ThinkOption thinkOption, @Nullable Boolean internalToolExecutionEnabled,
-			List<ToolCallback> toolCallbacks, Set<String> toolNames, Map<String, Object> toolContext) {
+			@Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames,
+			@Nullable Map<String, Object> toolContext) {
 		this.useNUMA = useNUMA;
 		this.numCtx = numCtx;
 		this.numBatch = numBatch;
@@ -112,9 +113,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.truncate = truncate;
 		this.thinkOption = thinkOption;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks;
-		this.toolNames = toolNames;
-		this.toolContext = toolContext;
+		this.toolCallbacks = toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(toolCallbacks);
+		this.toolNames = toolNames == null ? new HashSet<>() : new HashSet<>(toolNames);
+		this.toolContext = toolContext == null ? new HashMap<>() : new HashMap<>(toolContext);
 	}
 
 	// Following fields are options which must be set when the model is loaded into
