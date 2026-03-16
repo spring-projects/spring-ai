@@ -32,7 +32,6 @@
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-mcp</artifactId>
 			<version>${project.parent.version}</version>
-			<optional>true</optional>
 		</dependency>
 
 		<dependency>
