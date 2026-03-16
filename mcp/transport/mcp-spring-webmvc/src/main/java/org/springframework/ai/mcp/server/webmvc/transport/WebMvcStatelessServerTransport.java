@@ -18,7 +18,6 @@ package org.springframework.ai.mcp.server.webmvc.transport;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonDefaults;
@@ -127,7 +126,7 @@ public final class WebMvcStatelessServerTransport implements McpStatelessServerT
 		}
 
 		try {
-			Map<String, List<String>> headers = request.headers().asHttpHeaders().asMultiValueMap();
+			var headers = HeaderUtils.collectHeaders(request);
 			this.securityValidator.validateHeaders(headers);
 		}
 		catch (ServerTransportSecurityException e) {
