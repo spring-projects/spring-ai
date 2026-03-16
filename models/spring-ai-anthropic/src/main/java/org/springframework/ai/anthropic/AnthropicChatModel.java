@@ -599,7 +599,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		// Define request options by merging runtime options and default options
-		AnthropicChatOptions.Builder<?> mergedBuilder = this.options.mutate();
+		AnthropicChatOptions.Builder mergedBuilder = this.options.mutate();
 		if (runtimeOptions != null) {
 			mergedBuilder.combineWith(runtimeOptions.mutate());
 		}

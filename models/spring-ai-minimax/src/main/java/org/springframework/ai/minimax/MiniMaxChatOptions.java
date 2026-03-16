@@ -186,8 +186,8 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
-	public static Builder<?> builder() {
-		return new Builder<>();
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	public static MiniMaxChatOptions fromOptions(MiniMaxChatOptions fromOptions) {
@@ -408,7 +408,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public MiniMaxChatOptions.Builder<?> mutate() {
+	public Builder mutate() {
 		return MiniMaxChatOptions.builder()
 			// ChatOptions
 			.model(this.model)
@@ -433,7 +433,14 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 			.toolChoice(this.toolChoice);
 	}
 
-	public static class Builder<B extends Builder<B>> extends DefaultToolCallingChatOptions.Builder<B> {
+	// public Builder class exposed to users. Avoids having to deal with noisy generic
+	// parameters.
+	public static class Builder extends AbstractBuilder<Builder> {
+
+	}
+
+	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
+			extends DefaultToolCallingChatOptions.Builder<B> {
 
 		protected @Nullable Integer n;
 
@@ -483,7 +490,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 
 		public B combineWith(ChatOptions.Builder<?> other) {
 			super.combineWith(other);
-			if (other instanceof MiniMaxChatOptions.Builder<?> that) {
+			if (other instanceof AbstractBuilder<?> that) {
 				if (that.n != null) {
 					this.n = that.n;
 				}

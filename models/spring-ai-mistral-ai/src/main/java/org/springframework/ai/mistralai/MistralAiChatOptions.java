@@ -210,8 +210,8 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 		}
 	}
 
-	public static Builder<?> builder() {
-		return new Builder<>();
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	public static MistralAiChatOptions fromOptions(MistralAiChatOptions fromOptions) {
@@ -420,7 +420,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 		return mutate().build();
 	}
 
-	public MistralAiChatOptions.Builder<?> mutate() {
+	public Builder mutate() {
 		return builder()
 			// ChatOptions
 			.model(this.model)
@@ -478,8 +478,14 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 				&& Objects.equals(this.toolContext, other.toolContext);
 	}
 
-	public static class Builder<B extends Builder<B>> extends DefaultToolCallingChatOptions.Builder<B>
-			implements StructuredOutputChatOptions.Builder<B> {
+	// public Builder class exposed to users. Avoids having to deal with noisy generic
+	// parameters.
+	public static class Builder extends AbstractBuilder<Builder> {
+
+	}
+
+	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
+			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
 
 		private @Nullable Boolean safePrompt;
 
@@ -555,7 +561,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 		@Override
 		public B combineWith(ChatOptions.Builder<?> other) {
 			super.combineWith(other);
-			if (other instanceof Builder<?> that) {
+			if (other instanceof AbstractBuilder<?> that) {
 				if (that.safePrompt != null) {
 					this.safePrompt = that.safePrompt;
 				}

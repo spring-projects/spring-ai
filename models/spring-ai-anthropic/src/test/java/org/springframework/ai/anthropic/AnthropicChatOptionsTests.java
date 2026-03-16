@@ -32,6 +32,7 @@ import com.anthropic.models.messages.ToolChoice;
 import com.anthropic.models.messages.ToolChoiceAuto;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.anthropic.AnthropicChatOptions.Builder;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
 
@@ -44,8 +45,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * @author Soby Chacko
  */
-class AnthropicChatOptionsTests<B extends AnthropicChatOptions.Builder<B>>
-		extends AbstractChatOptionsTests<AnthropicChatOptions, B> {
+class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOptions, Builder> {
 
 	@Override
 	protected Class<AnthropicChatOptions> getConcreteOptionsClass() {
@@ -53,9 +53,8 @@ class AnthropicChatOptionsTests<B extends AnthropicChatOptions.Builder<B>>
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	protected B readyToBuildBuilder() {
-		return (B) AnthropicChatOptions.builder().model(Model.CLAUDE_HAIKU_4_5).maxTokens(500);
+	protected Builder readyToBuildBuilder() {
+		return AnthropicChatOptions.builder().model(Model.CLAUDE_HAIKU_4_5).maxTokens(500);
 	}
 
 	@Test

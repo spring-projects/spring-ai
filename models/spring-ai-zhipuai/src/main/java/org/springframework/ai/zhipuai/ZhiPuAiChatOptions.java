@@ -167,8 +167,8 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 		this.toolContext = toolContext;
 	}
 
-	public static Builder<?> builder() {
-		return new Builder<>();
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	public static ZhiPuAiChatOptions fromOptions(ZhiPuAiChatOptions fromOptions) {
@@ -409,7 +409,7 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public ZhiPuAiChatOptions.Builder<?> mutate() {
+	public Builder mutate() {
 		return ZhiPuAiChatOptions.builder()
 			// ChatOptions
 			.model(this.model)
@@ -435,7 +435,14 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 			.thinking(this.thinking);
 	}
 
-	public static class Builder<B extends Builder<B>> extends DefaultToolCallingChatOptions.Builder<B> {
+	// public Builder class exposed to users. Avoids having to deal with noisy generic
+	// parameters.
+	public static class Builder extends AbstractBuilder<Builder> {
+
+	}
+
+	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
+			extends DefaultToolCallingChatOptions.Builder<B> {
 
 		protected @Nullable List<ZhiPuAiApi.FunctionTool> tools;
 
@@ -493,7 +500,7 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 		@Override
 		public B combineWith(ChatOptions.Builder<?> other) {
 			super.combineWith(other);
-			if (other instanceof ZhiPuAiChatOptions.Builder<?> that) {
+			if (other instanceof AbstractBuilder<?> that) {
 				if (that.tools != null) {
 					this.tools = that.tools;
 				}

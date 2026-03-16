@@ -16,6 +16,7 @@
 
 package org.springframework.ai.deepseek;
 
+import org.springframework.ai.deepseek.DeepSeekChatOptions.Builder;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
 
@@ -24,8 +25,7 @@ import org.springframework.ai.test.options.AbstractChatOptionsTests;
  *
  * @author Geng Rong
  */
-class DeepSeekChatOptionsTests<B extends DeepSeekChatOptions.Builder<B>>
-		extends AbstractChatOptionsTests<DeepSeekChatOptions, B> {
+class DeepSeekChatOptionsTests extends AbstractChatOptionsTests<DeepSeekChatOptions, Builder> {
 
 	@Override
 	protected Class<DeepSeekChatOptions> getConcreteOptionsClass() {
@@ -33,9 +33,8 @@ class DeepSeekChatOptionsTests<B extends DeepSeekChatOptions.Builder<B>>
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	protected B readyToBuildBuilder() {
-		return (B) DeepSeekChatOptions.builder().model(DeepSeekApi.DEFAULT_CHAT_MODEL);
+	protected Builder readyToBuildBuilder() {
+		return DeepSeekChatOptions.builder().model(DeepSeekApi.DEFAULT_CHAT_MODEL);
 	}
 
 }

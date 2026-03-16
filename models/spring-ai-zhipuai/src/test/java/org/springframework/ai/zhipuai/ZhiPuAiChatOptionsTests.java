@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.zhipuai.ZhiPuAiChatOptions.Builder;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest;
 
@@ -37,8 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author YunKui Lu
  */
-class ZhiPuAiChatOptionsTests<B extends ZhiPuAiChatOptions.Builder<B>>
-		extends AbstractChatOptionsTests<ZhiPuAiChatOptions, B> {
+class ZhiPuAiChatOptionsTests extends AbstractChatOptionsTests<ZhiPuAiChatOptions, Builder> {
 
 	@Override
 	protected Class<ZhiPuAiChatOptions> getConcreteOptionsClass() {
@@ -46,9 +46,8 @@ class ZhiPuAiChatOptionsTests<B extends ZhiPuAiChatOptions.Builder<B>>
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	protected B readyToBuildBuilder() {
-		return (B) ZhiPuAiChatOptions.builder();
+	protected Builder readyToBuildBuilder() {
+		return ZhiPuAiChatOptions.builder();
 	}
 
 	@Test
@@ -239,9 +238,9 @@ class ZhiPuAiChatOptionsTests<B extends ZhiPuAiChatOptions.Builder<B>>
 
 	@Test
 	void testBuilderChaining() {
-		ZhiPuAiChatOptions.Builder<?> builder = ZhiPuAiChatOptions.builder();
+		Builder builder = ZhiPuAiChatOptions.builder();
 
-		ZhiPuAiChatOptions.Builder<?> result = builder.model("test-model").temperature(0.7).maxTokens(100);
+		Builder result = builder.model("test-model").temperature(0.7).maxTokens(100);
 
 		assertThat(result).isSameAs(builder);
 

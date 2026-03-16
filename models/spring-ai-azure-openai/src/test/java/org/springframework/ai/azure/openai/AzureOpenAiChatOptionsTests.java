@@ -25,6 +25,7 @@ import com.azure.ai.openai.models.AzureChatOCREnhancementConfiguration;
 import com.azure.ai.openai.models.ChatCompletionStreamOptions;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.azure.openai.AzureOpenAiChatOptions.Builder;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,8 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Alexandros Pappas
  */
-class AzureOpenAiChatOptionsTests<B extends AzureOpenAiChatOptions.Builder<B>>
-		extends AbstractChatOptionsTests<AzureOpenAiChatOptions, B> {
+class AzureOpenAiChatOptionsTests extends AbstractChatOptionsTests<AzureOpenAiChatOptions, Builder> {
 
 	@Override
 	protected Class<AzureOpenAiChatOptions> getConcreteOptionsClass() {
@@ -43,8 +43,8 @@ class AzureOpenAiChatOptionsTests<B extends AzureOpenAiChatOptions.Builder<B>>
 	}
 
 	@Override
-	protected B readyToBuildBuilder() {
-		return (B) AzureOpenAiChatOptions.builder();
+	protected Builder readyToBuildBuilder() {
+		return AzureOpenAiChatOptions.builder();
 	}
 
 	@Test

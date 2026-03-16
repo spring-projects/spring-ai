@@ -252,8 +252,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		this.labels = labels;
 	}
 
-	public static Builder<?> builder() {
-		return new Builder<>();
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	public static GoogleGenAiChatOptions fromOptions(GoogleGenAiChatOptions fromOptions) {
@@ -568,7 +568,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	}
 
 	@Override
-	public GoogleGenAiChatOptions.Builder<?> mutate() {
+	public Builder mutate() {
 		return GoogleGenAiChatOptions.builder()
 			// ChatOptions
 			.model(this.model)
@@ -608,9 +608,16 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 
 	}
 
+	// public Builder class exposed to users. Avoids having to deal with noisy generic
+	// parameters.
 	@NullMarked // TODO: move at package level
-	public static class Builder<B extends Builder<B>> extends DefaultToolCallingChatOptions.Builder<B>
-			implements StructuredOutputChatOptions.Builder<B> {
+	public static class Builder extends AbstractBuilder<Builder> {
+
+	}
+
+	@NullMarked // TODO: move at package level
+	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
+			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
 
 		protected @Nullable Integer candidateCount;
 
@@ -738,7 +745,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 
 		public B combineWith(ChatOptions.Builder<?> other) {
 			super.combineWith(other);
-			if (other instanceof GoogleGenAiChatOptions.Builder<?> that) {
+			if (other instanceof AbstractBuilder<?> that) {
 				if (that.candidateCount != null) {
 					this.candidateCount = that.candidateCount;
 				}

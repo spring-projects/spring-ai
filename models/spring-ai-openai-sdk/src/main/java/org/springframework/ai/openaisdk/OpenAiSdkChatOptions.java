@@ -633,8 +633,8 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 		}
 	}
 
-	public static Builder<?> builder() {
-		return new Builder<>();
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	public static OpenAiSdkChatOptions fromOptions(OpenAiSdkChatOptions fromOptions) {
@@ -647,7 +647,7 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 	}
 
 	@Override
-	public OpenAiSdkChatOptions.Builder<?> mutate() {
+	public Builder mutate() {
 		return builder()
 			// AbstractOpenAiSdkOptions
 			.baseUrl(this.getBaseUrl())
@@ -843,9 +843,16 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 
 	}
 
+	// public Builder class exposed to users. Avoids having to deal with noisy generic
+	// parameters.
 	@NullMarked // TODO: move at package level
-	public static class Builder<B extends Builder<B>> extends DefaultToolCallingChatOptions.Builder<B>
-			implements StructuredOutputChatOptions.Builder<B> {
+	public static class Builder extends AbstractBuilder<Builder> {
+
+	}
+
+	@NullMarked // TODO: move at package level
+	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
+			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
 
 		// AbstractOpenAiSdkOptions fields
 		protected @Nullable String baseUrl;
@@ -1121,7 +1128,7 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 		@Override
 		public B combineWith(ChatOptions.Builder<?> other) {
 			super.combineWith(other);
-			if (other instanceof Builder<?> that) {
+			if (other instanceof AbstractBuilder<?> that) {
 				if (that.baseUrl != null) {
 					this.baseUrl = that.baseUrl;
 				}
