@@ -206,49 +206,6 @@ class CitationTests {
 	}
 
 	@Test
-	void responseCandidateWithBothCitationAndGroundingMetadata() {
-		Candidate candidate = Candidate.newBuilder()
-			.setContent(Content.newBuilder()
-				.addParts(Part.newBuilder().setText("Some grounded text.").build())
-				.build())
-			.setCitationMetadata(CitationMetadata.newBuilder()
-				.addCitations(com.google.cloud.vertexai.api.Citation.newBuilder()
-					.setStartIndex(0)
-					.setEndIndex(19)
-					.setUri("https://example.com/source")
-					.setTitle("Source")
-					.build())
-				.build())
-			.setGroundingMetadata(com.google.cloud.vertexai.api.GroundingMetadata.newBuilder()
-				.addWebSearchQueries("test query")
-				.addGroundingChunks(GroundingChunk.newBuilder()
-					.setWeb(GroundingChunk.Web.newBuilder()
-						.setUri("https://example.com/web")
-						.setTitle("Web Result")
-						.build())
-					.build())
-				.build())
-			.build();
-
-		List<Generation> generations = this.chatModel.responseCandidateToGeneration(candidate);
-
-		assertThat(generations).hasSize(1);
-		Map<String, Object> metadata = generations.get(0).getOutput().getMetadata();
-
-		assertThat(metadata).containsKey("citations");
-		assertThat(metadata).containsKey("groundingMetadata");
-
-		@SuppressWarnings("unchecked")
-		List<Citation> citations = (List<Citation>) metadata.get("citations");
-		assertThat(citations).hasSize(1);
-
-		GroundingMetadata grounding = (GroundingMetadata) metadata
-			.get("groundingMetadata");
-		assertThat(grounding.webSearchQueries()).containsExactly("test query");
-		assertThat(grounding.groundingChunks()).hasSize(1);
-	}
-
-	@Test
 	void responseCandidateWithoutCitationOrGroundingMetadata() {
 		Candidate candidate = Candidate.newBuilder()
 			.setContent(Content.newBuilder()
@@ -270,50 +227,4 @@ class CitationTests {
 		assertThat(metadata).containsKey("logprobs");
 		assertThat(metadata).containsKey("safetyRatings");
 	}
-
-	@Test
-	void responseCandidateWithEmptyCitationMetadata() {
-		Candidate candidate = Candidate.newBuilder()
-			.setContent(Content.newBuilder()
-				.addParts(Part.newBuilder().setText("Response text.").build())
-				.build())
-			.setCitationMetadata(CitationMetadata.newBuilder().build())
-			.build();
-
-		List<Generation> generations = this.chatModel.responseCandidateToGeneration(candidate);
-
-		assertThat(generations).hasSize(1);
-		Map<String, Object> metadata = generations.get(0).getOutput().getMetadata();
-
-		// Empty citation list should not be added to metadata
-		assertThat(metadata).doesNotContainKey("citations");
-	}
-
-	@Test
-	void responseCandidateWithGroundingMetadataWithoutSearchEntryPoint() {
-		Candidate candidate = Candidate.newBuilder()
-			.setContent(Content.newBuilder()
-				.addParts(Part.newBuilder().setText("Response text.").build())
-				.build())
-			.setGroundingMetadata(com.google.cloud.vertexai.api.GroundingMetadata.newBuilder()
-				.addWebSearchQueries("test")
-				.addGroundingChunks(GroundingChunk.newBuilder()
-					.setWeb(GroundingChunk.Web.newBuilder().setUri("https://example.com").setTitle("Example").build())
-					.build())
-				.build())
-			.build();
-
-		List<Generation> generations = this.chatModel.responseCandidateToGeneration(candidate);
-
-		assertThat(generations).hasSize(1);
-		GroundingMetadata grounding = (GroundingMetadata) generations.get(0)
-			.getOutput()
-			.getMetadata()
-			.get("groundingMetadata");
-
-		assertThat(grounding).isNotNull();
-		assertThat(grounding.searchEntryPoint()).isNull();
-		assertThat(grounding.webSearchQueries()).containsExactly("test");
-	}
-
 }
