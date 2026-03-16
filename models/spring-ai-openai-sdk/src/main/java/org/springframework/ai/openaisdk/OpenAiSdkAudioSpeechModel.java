@@ -122,7 +122,7 @@ public final class OpenAiSdkAudioSpeechModel implements TextToSpeechModel {
 		SpeechCreateParams.Builder paramsBuilder = SpeechCreateParams.builder()
 			.model(SpeechModel.of(mergedOptions.getModel()))
 			.input(inputText)
-			.voice(SpeechCreateParams.Voice.of(mergedOptions.getVoice()));
+			.voice(SpeechCreateParams.Voice.ofString(mergedOptions.getVoice()));
 
 		if (mergedOptions.getResponseFormat() != null) {
 			paramsBuilder.responseFormat(SpeechCreateParams.ResponseFormat.of(mergedOptions.getResponseFormat()));
