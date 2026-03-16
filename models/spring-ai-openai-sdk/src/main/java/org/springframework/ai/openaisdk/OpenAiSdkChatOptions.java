@@ -1218,54 +1218,18 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 
 		@Override
 		public OpenAiSdkChatOptions build() {
-			OpenAiSdkChatOptions options = new OpenAiSdkChatOptions();
-			// AbstractOpenAiSdkOptions
-			options.setBaseUrl(this.baseUrl);
-			options.setApiKey(this.apiKey);
-			options.setCredential(this.credential);
-			options.setModel(this.model);
-			options.setMicrosoftDeploymentName(this.microsoftDeploymentName);
-			options.setMicrosoftFoundryServiceVersion(this.microsoftFoundryServiceVersion);
-			options.setOrganizationId(this.organizationId);
-			options.setMicrosoftFoundry(Boolean.TRUE.equals(this.isMicrosoftFoundry));
-			options.setGitHubModels(Boolean.TRUE.equals(this.isGitHubModels));
-			options.setTimeout(this.timeout != null ? this.timeout : AbstractOpenAiSdkOptions.DEFAULT_TIMEOUT);
-			options.setMaxRetries(
-					this.maxRetries != null ? this.maxRetries : AbstractOpenAiSdkOptions.DEFAULT_MAX_RETRIES);
-			options.setProxy(this.proxy);
-			options.setCustomHeaders(this.customHeaders);
-			// ChatOptions
-			options.setFrequencyPenalty(this.frequencyPenalty);
-			options.setMaxTokens(this.maxTokens);
-			options.setPresencePenalty(this.presencePenalty);
-			options.setStop(this.stopSequences);
-			options.setTemperature(this.temperature);
-			options.setTopP(this.topP);
-			// ToolCallingChatOptions
-			options.setToolCallbacks(this.toolCallbacks);
-			options.setToolNames(this.toolNames);
-			options.setToolContext(this.toolContext);
-			options.setInternalToolExecutionEnabled(this.internalToolExecutionEnabled);
-			// OpenAI SDK specific
-			options.setLogitBias(this.logitBias);
-			options.setLogprobs(this.logprobs);
-			options.setTopLogprobs(this.topLogprobs);
-			options.setMaxCompletionTokens(this.maxCompletionTokens);
-			options.setN(this.n);
-			options.setOutputModalities(this.outputModalities);
-			options.setOutputAudio(this.outputAudio);
-			options.setResponseFormat(this.responseFormat);
-			options.setStreamOptions(this.streamOptions);
-			options.setSeed(this.seed);
-			options.setToolChoice(this.toolChoice);
-			options.setUser(this.user);
-			options.setParallelToolCalls(this.parallelToolCalls);
-			options.setStore(this.store);
-			options.setMetadata(this.metadata);
-			options.setReasoningEffort(this.reasoningEffort);
-			options.setVerbosity(this.verbosity);
-			options.setServiceTier(this.serviceTier);
-			return options;
+			return new OpenAiSdkChatOptions(this.baseUrl, this.apiKey, this.credential, this.model,
+					this.microsoftDeploymentName, this.microsoftFoundryServiceVersion, this.organizationId,
+					Boolean.TRUE.equals(this.isMicrosoftFoundry), Boolean.TRUE.equals(this.isGitHubModels),
+					this.timeout != null ? this.timeout : AbstractOpenAiSdkOptions.DEFAULT_TIMEOUT,
+					this.maxRetries != null ? this.maxRetries : AbstractOpenAiSdkOptions.DEFAULT_MAX_RETRIES,
+					this.proxy, this.customHeaders, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
+					this.stopSequences, this.temperature, this.topP, this.toolCallbacks, this.toolNames,
+					this.toolContext, this.internalToolExecutionEnabled, this.logitBias, this.logprobs,
+					this.topLogprobs, this.maxCompletionTokens, this.n, this.outputModalities, this.outputAudio,
+					this.responseFormat, this.streamOptions, this.seed, this.toolChoice, this.user,
+					this.parallelToolCalls, this.store, this.metadata, this.reasoningEffort, this.verbosity,
+					this.serviceTier);
 		}
 
 	}
