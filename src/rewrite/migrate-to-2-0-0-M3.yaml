@@ -7,8 +7,9 @@ description: >
   Spring AI 2.0.0-M3. Run this recipe to perform all changes in one step.
 
   Included migrations:
-    - M3MigrateMcpAnnotations:    org.springaicommunity:mcp-annotations → spring-ai-mcp-annotations
-    - M3MigrateMcpSpringTransports: io.modelcontextprotocol.sdk mcp-spring-webflux/webmvc → org.springframework.ai
+    - M3MigrateMcpAnnotations:              org.springaicommunity:mcp-annotations → spring-ai-mcp-annotations
+    - M3MigrateMcpSpringTransports:         io.modelcontextprotocol.sdk mcp-spring-webflux/webmvc → org.springframework.ai
+    - M3MigrateMcpClientCustomizer:         McpAsyncClientCustomizer / McpSyncClientCustomizer → McpClientCustomizer<B>
 
 tags:
   - spring-ai
@@ -18,6 +19,7 @@ tags:
 recipeList:
   - org.springframework.ai.migration.M3MigrateMcpAnnotations
   - org.springframework.ai.migration.M3MigrateMcpSpringTransports
+  - org.springframework.ai.migration.M3MigrateMcpClientCustomizer
 
 ---
 type: specs.openrewrite.org/v1beta/recipe
@@ -107,22 +109,27 @@ tags:
 recipeList:
 
   # -------------------------------------------------------------------------
-  # Maven: change group ID for the WebFlux transport
+  # Maven: change group ID for the WebFlux transport.
+  # Text-based regex replacement is used instead of
+  # org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId because that
+  # recipe requires Maven to fully resolve the POM model first — which fails
+  # when the dependency declares no <version> (version managed via BOM/parent).
+  # The \s+ capture group preserves whatever whitespace/indentation the file uses.
   # -------------------------------------------------------------------------
-  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
-      oldGroupId: io.modelcontextprotocol.sdk
-      oldArtifactId: mcp-spring-webflux
-      newGroupId: org.springframework.ai
-      newArtifactId: mcp-spring-webflux
+  - org.openrewrite.text.FindAndReplace:
+      find: "<groupId>io\\.modelcontextprotocol\\.sdk</groupId>(\\s+)<artifactId>mcp-spring-webflux</artifactId>"
+      replace: "<groupId>org.springframework.ai</groupId>$1<artifactId>mcp-spring-webflux</artifactId>"
+      regex: true
+      filePattern: "**/pom.xml"
 
   # -------------------------------------------------------------------------
-  # Maven: change group ID for the WebMvc transport
+  # Maven: change group ID for the WebMvc transport (same rationale as above).
   # -------------------------------------------------------------------------
-  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
-      oldGroupId: io.modelcontextprotocol.sdk
-      oldArtifactId: mcp-spring-webmvc
-      newGroupId: org.springframework.ai
-      newArtifactId: mcp-spring-webmvc
+  - org.openrewrite.text.FindAndReplace:
+      find: "<groupId>io\\.modelcontextprotocol\\.sdk</groupId>(\\s+)<artifactId>mcp-spring-webmvc</artifactId>"
+      replace: "<groupId>org.springframework.ai</groupId>$1<artifactId>mcp-spring-webmvc</artifactId>"
+      regex: true
+      filePattern: "**/pom.xml"
 
   # -------------------------------------------------------------------------
   # Java: server transport classes (WebFlux)
@@ -192,3 +199,72 @@ recipeList:
       find: "import io.modelcontextprotocol.json.McpJsonMapper;"
       replace: "import io.modelcontextprotocol.json.McpJsonDefaults;\nimport io.modelcontextprotocol.json.McpJsonMapper;"
       filePattern: "**/*.java"
+
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.springframework.ai.migration.M3MigrateMcpClientCustomizer
+displayName: Migrate McpAsyncClientCustomizer and McpSyncClientCustomizer to McpClientCustomizer
+description: >
+  Replaces the removed `McpAsyncClientCustomizer` and `McpSyncClientCustomizer` interfaces
+  with the new generic `McpClientCustomizer<B>` interface introduced in Spring AI 2.0.0-M3.
+
+  Changes applied:
+    - Import `org.springframework.ai.mcp.customizer.McpAsyncClientCustomizer`
+        → `org.springframework.ai.mcp.customizer.McpClientCustomizer`
+        + adds `import io.modelcontextprotocol.client.McpClient;`
+    - Import `org.springframework.ai.mcp.customizer.McpSyncClientCustomizer`
+        → `org.springframework.ai.mcp.customizer.McpClientCustomizer`
+        + adds `import io.modelcontextprotocol.client.McpClient;`
+    - Simple-name usage `McpAsyncClientCustomizer` → `McpClientCustomizer<McpClient.AsyncSpec>`
+    - Simple-name usage `McpSyncClientCustomizer` → `McpClientCustomizer<McpClient.SyncSpec>`
+
+  NOTE: `McpSyncHttpClientRequestCustomizer` and `McpAsyncHttpClientRequestCustomizer`
+  (from `io.modelcontextprotocol.client.transport.customizer`) are no longer applied by
+  the auto-configurations. Migrate them manually to
+  `McpClientCustomizer<HttpClientSseClientTransport.Builder>` or
+  `McpClientCustomizer<HttpClientStreamableHttpTransport.Builder>` as appropriate.
+
+tags:
+  - spring-ai
+  - mcp
+  - migration
+
+recipeList:
+
+  # -------------------------------------------------------------------------
+  # Step 1 — rewrite the fully-qualified import for McpAsyncClientCustomizer.
+  # The McpClient import is added at the same time because the new parameterised
+  # type McpClientCustomizer<McpClient.AsyncSpec> requires it at the call-site.
+  # -------------------------------------------------------------------------
+  - org.openrewrite.text.FindAndReplace:
+      find: "import org.springframework.ai.mcp.customizer.McpAsyncClientCustomizer;"
+      replace: "import io.modelcontextprotocol.client.McpClient;\nimport org.springframework.ai.mcp.customizer.McpClientCustomizer;"
+      filePattern: "**/*.java"
+
+  # -------------------------------------------------------------------------
+  # Step 2 — rewrite the fully-qualified import for McpSyncClientCustomizer.
+  # -------------------------------------------------------------------------
+  - org.openrewrite.text.FindAndReplace:
+      find: "import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;"
+      replace: "import io.modelcontextprotocol.client.McpClient;\nimport org.springframework.ai.mcp.customizer.McpClientCustomizer;"
+      filePattern: "**/*.java"
+
+  # -------------------------------------------------------------------------
+  # Step 3 — replace simple-name occurrences of McpAsyncClientCustomizer
+  # (return types, implements clauses, parameter types, variable declarations).
+  # Must run AFTER the import replacement so the import line is not touched
+  # again (it no longer contains "McpAsyncClientCustomizer" at this point).
+  # -------------------------------------------------------------------------
+  - org.openrewrite.text.FindAndReplace:
+      find: "McpAsyncClientCustomizer"
+      replace: "McpClientCustomizer<McpClient.AsyncSpec>"
+      filePattern: "**/*.java"
+
+  # -------------------------------------------------------------------------
+  # Step 4 — replace simple-name occurrences of McpSyncClientCustomizer.
+  # -------------------------------------------------------------------------
+  - org.openrewrite.text.FindAndReplace:
+      find: "McpSyncClientCustomizer"
+      replace: "McpClientCustomizer<McpClient.SyncSpec>"
+      filePattern: "**/*.java"
+
