@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.google.genai.GoogleGenAiChatOptions.Builder;
 import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
 
@@ -30,8 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Dan Dobrin
  */
-public class GoogleGenAiChatOptionsTest<B extends GoogleGenAiChatOptions.Builder<B>>
-		extends AbstractChatOptionsTests<GoogleGenAiChatOptions, B> {
+public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleGenAiChatOptions, Builder> {
 
 	@Override
 	protected Class<GoogleGenAiChatOptions> getConcreteOptionsClass() {
@@ -40,8 +40,8 @@ public class GoogleGenAiChatOptionsTest<B extends GoogleGenAiChatOptions.Builder
 
 	@Override
 	@SuppressWarnings("unchecked")
-	protected B readyToBuildBuilder() {
-		return (B) GoogleGenAiChatOptions.builder();
+	protected Builder readyToBuildBuilder() {
+		return GoogleGenAiChatOptions.builder();
 	}
 
 	@Test

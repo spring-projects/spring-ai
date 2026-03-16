@@ -176,8 +176,8 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		this.toolContext = toolContext;
 	}
 
-	public static Builder<?> builder() {
-		return new Builder<>();
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	@Override
@@ -358,7 +358,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public DeepSeekChatOptions.Builder<?> mutate() {
+	public Builder mutate() {
 		return DeepSeekChatOptions.builder()
 			// ChatOptions
 			.model(this.model)
@@ -419,7 +419,13 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		return fromOptions.mutate().build();
 	}
 
-	public static class Builder<B extends Builder<B>> extends DefaultToolCallingChatOptions.Builder<B> {
+	// public Builder class exposed to users. Avoids having to deal with noisy generic parameters.
+	public static class Builder extends AbstractBuilder<Builder> {
+
+	}
+
+	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
+			extends DefaultToolCallingChatOptions.Builder<B> {
 
 		protected @Nullable ResponseFormat responseFormat;
 
@@ -472,7 +478,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 
 		public B combineWith(ChatOptions.Builder<?> other) {
 			super.combineWith(other);
-			if (other instanceof DeepSeekChatOptions.Builder<?> that) {
+			if (other instanceof AbstractBuilder<?> that) {
 				if (that.responseFormat != null) {
 					this.responseFormat = that.responseFormat;
 				}

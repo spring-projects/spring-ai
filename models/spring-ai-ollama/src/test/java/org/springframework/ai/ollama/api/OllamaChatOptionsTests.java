@@ -24,6 +24,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import tools.jackson.core.JacksonException;
 
+import org.springframework.ai.ollama.api.OllamaChatOptions.Builder;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
 import org.springframework.ai.util.ResourceUtils;
 
@@ -35,8 +36,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author Mark Pollack
  * @author Nicolas Krier
  */
-class OllamaChatOptionsTests<B extends OllamaChatOptions.Builder<B>>
-		extends AbstractChatOptionsTests<OllamaChatOptions, B> {
+class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions, Builder> {
 
 	@Override
 	protected Class<OllamaChatOptions> getConcreteOptionsClass() {
@@ -44,8 +44,8 @@ class OllamaChatOptionsTests<B extends OllamaChatOptions.Builder<B>>
 	}
 
 	@Override
-	protected B readyToBuildBuilder() {
-		return (B) OllamaChatOptions.builder();
+	protected Builder readyToBuildBuilder() {
+		return OllamaChatOptions.builder();
 	}
 
 	@Test

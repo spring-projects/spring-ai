@@ -755,7 +755,7 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * @return the prompt with merged options
 	 */
 	Prompt buildRequestPrompt(Prompt prompt) {
-		OpenAiSdkChatOptions.Builder<?> requestBuilder = this.options.mutate();
+		OpenAiSdkChatOptions.Builder requestBuilder = this.options.mutate();
 
 		if (prompt.getOptions() != null) {
 			if (prompt.getOptions().getTopK() != null) {

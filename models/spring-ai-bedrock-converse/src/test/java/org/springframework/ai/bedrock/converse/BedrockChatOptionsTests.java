@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.bedrock.converse.BedrockChatOptions.Builder;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
 
@@ -31,8 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Sun Yuhan
  */
-class BedrockChatOptionsTests<B extends BedrockChatOptions.Builder<B>>
-		extends AbstractChatOptionsTests<BedrockChatOptions, B> {
+class BedrockChatOptionsTests extends AbstractChatOptionsTests<BedrockChatOptions, Builder> {
 
 	@Override
 	protected Class<BedrockChatOptions> getConcreteOptionsClass() {
@@ -40,9 +40,8 @@ class BedrockChatOptionsTests<B extends BedrockChatOptions.Builder<B>>
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	protected B readyToBuildBuilder() {
-		return (B) BedrockChatOptions.builder();
+	protected Builder readyToBuildBuilder() {
+		return BedrockChatOptions.builder();
 	}
 
 	@Test

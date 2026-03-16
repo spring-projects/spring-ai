@@ -115,8 +115,8 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		this.outputSchema = outputSchema;
 	}
 
-	public static Builder<?> builder() {
-		return new Builder<>();
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	public static BedrockChatOptions fromOptions(BedrockChatOptions fromOptions) {
@@ -281,7 +281,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	}
 
 	@Override
-	public BedrockChatOptions.Builder<?> mutate() {
+	public Builder mutate() {
 		return BedrockChatOptions.builder()
 			// ChatOptions
 			.model(this.model)
@@ -331,8 +331,14 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 				this.toolNames, this.toolContext, this.internalToolExecutionEnabled, this.cacheOptions);
 	}
 
-	public static class Builder<B extends Builder<B>> extends DefaultToolCallingChatOptions.Builder<B>
-			implements StructuredOutputChatOptions.Builder<B> {
+	// public Builder class exposed to users. Avoids having to deal with noisy generic
+	// parameters.
+	public static class Builder extends AbstractBuilder<Builder> {
+
+	}
+
+	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
+			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
 
 		protected Map<String, String> requestParameters = new HashMap<>();
 
@@ -352,7 +358,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 
 		public B combineWith(ChatOptions.Builder<?> other) {
 			super.combineWith(other);
-			if (other instanceof BedrockChatOptions.Builder<?> that) {
+			if (other instanceof AbstractBuilder<?> that) {
 				if (that.requestParameters != null) {
 					this.requestParameters = that.requestParameters;
 				}

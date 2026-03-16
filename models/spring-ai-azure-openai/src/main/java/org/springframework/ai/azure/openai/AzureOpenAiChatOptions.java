@@ -339,8 +339,8 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
-	public static Builder<?> builder() {
-		return new Builder<>();
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	public static AzureOpenAiChatOptions fromOptions(AzureOpenAiChatOptions fromOptions) {
@@ -348,7 +348,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public AzureOpenAiChatOptions.Builder<?> mutate() {
+	public Builder mutate() {
 		return AzureOpenAiChatOptions.builder()
 			// ChatOptions
 			.deploymentName(getDeploymentName())// alias for model in azure
@@ -619,7 +619,14 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 				this.temperature, this.topP);
 	}
 
-	public static class Builder<B extends Builder<B>> extends DefaultToolCallingChatOptions.Builder<B> {
+	// public Builder class exposed to users. Avoids having to deal with noisy generic
+	// parameters.
+	public static class Builder extends AbstractBuilder<Builder> {
+
+	}
+
+	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
+			extends DefaultToolCallingChatOptions.Builder<B> {
 
 		protected @Nullable Map<String, Integer> logitBias;
 
@@ -644,9 +651,6 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 		protected @Nullable Boolean enableStreamUsage;
 
 		protected @Nullable String reasoningEffort;
-
-		public Builder() {
-		}
 
 		public B deploymentName(@Nullable String deploymentName) {
 			return this.model(deploymentName);
@@ -786,7 +790,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 		@Override
 		public B combineWith(ChatOptions.Builder<?> other) {
 			super.combineWith(other);
-			if (other instanceof Builder<?> that) {
+			if (other instanceof AbstractBuilder<?> that) {
 				if (that.logitBias != null) {
 					this.logitBias = that.logitBias;
 				}

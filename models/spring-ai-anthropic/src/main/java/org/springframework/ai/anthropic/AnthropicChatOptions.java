@@ -192,8 +192,8 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	 * Creates a new builder for AnthropicChatOptions.
 	 * @return a new builder instance
 	 */
-	public static Builder<?> builder() {
-		return new Builder<>();
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	@Override
@@ -485,7 +485,7 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	}
 
 	@Override
-	public Builder<?> mutate() {
+	public Builder mutate() {
 		return builder()
 			// AbstractAnthropicOptions
 			.model(this.getModel())
@@ -570,8 +570,14 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	/**
 	 * Builder for creating {@link AnthropicChatOptions} instances.
 	 */
-	public static class Builder<B extends Builder<B>> extends DefaultToolCallingChatOptions.Builder<B>
-			implements StructuredOutputChatOptions.Builder<B> {
+	// public Builder class exposed to users. Avoids having to deal with noisy generic
+	// parameters.
+	public static class Builder extends AbstractBuilder<Builder> {
+
+	}
+
+	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
+			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
 
 		// AbstractAnthropicOptions fields
 		private @Nullable String baseUrl;
@@ -829,7 +835,7 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		@Override
 		public B combineWith(ChatOptions.Builder<?> other) {
 			super.combineWith(other);
-			if (other instanceof Builder<?> options) {
+			if (other instanceof AbstractBuilder<?> options) {
 				if (options.baseUrl != null) {
 					this.baseUrl = options.baseUrl;
 				}

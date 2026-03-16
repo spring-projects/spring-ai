@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.openaisdk.OpenAiSdkChatModel.ResponseFormat;
 import org.springframework.ai.openaisdk.OpenAiSdkChatOptions;
+import org.springframework.ai.openaisdk.OpenAiSdkChatOptions.Builder;
 import org.springframework.ai.openaisdk.OpenAiSdkChatOptions.StreamOptions;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
 import org.springframework.ai.tool.ToolCallback;
@@ -39,8 +40,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * @author Julien Dubois
  */
-public class OpenAiSdkChatOptionsTests<B extends OpenAiSdkChatOptions.Builder<B>>
-		extends AbstractChatOptionsTests<OpenAiSdkChatOptions, B> {
+public class OpenAiSdkChatOptionsTests extends AbstractChatOptionsTests<OpenAiSdkChatOptions, Builder> {
 
 	@Override
 	protected Class<OpenAiSdkChatOptions> getConcreteOptionsClass() {
@@ -48,9 +48,8 @@ public class OpenAiSdkChatOptionsTests<B extends OpenAiSdkChatOptions.Builder<B>
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	protected B readyToBuildBuilder() {
-		return (B) OpenAiSdkChatOptions.builder();
+	protected Builder readyToBuildBuilder() {
+		return OpenAiSdkChatOptions.builder();
 	}
 
 	@Test
@@ -312,9 +311,9 @@ public class OpenAiSdkChatOptionsTests<B extends OpenAiSdkChatOptions.Builder<B>
 
 	@Test
 	void testBuilderChaining() {
-		OpenAiSdkChatOptions.Builder<?> builder = OpenAiSdkChatOptions.builder();
+		Builder builder = OpenAiSdkChatOptions.builder();
 
-		OpenAiSdkChatOptions.Builder<?> result = builder.model("test-model").temperature(0.7).maxTokens(100);
+		Builder result = builder.model("test-model").temperature(0.7).maxTokens(100);
 
 		assertThat(result).isSameAs(builder);
 

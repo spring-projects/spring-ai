@@ -391,12 +391,12 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * <li>Thinking-capable models (e.g., qwen3:*-thinking, deepseek-r1, deepseek-v3.1)
 	 * <strong>auto-enable thinking by default</strong> when this field is not set.</li>
 	 * <li>Standard models (e.g., qwen2.5:*, llama3.2) do not enable thinking by default.</li>
-	 * <li>To explicitly control behavior, use {@link Builder#enableThinking()} or
-	 * {@link Builder#disableThinking()}.</li>
+	 * <li>To explicitly control behavior, use {@link AbstractBuilder#enableThinking()} or
+	 * {@link AbstractBuilder#disableThinking()}.</li>
 	 * </ul>
 	 * <p>
-	 * Use {@link Builder#enableThinking()}, {@link Builder#disableThinking()}, or
-	 * {@link Builder#thinkHigh()} to configure this option.
+	 * Use {@link AbstractBuilder#enableThinking()}, {@link AbstractBuilder#disableThinking()}, or
+	 * {@link AbstractBuilder#thinkHigh()} to configure this option.
 	 *
 	 * @see ThinkOption
 	 * @see ThinkOption.ThinkBoolean
@@ -431,8 +431,8 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	@JsonIgnore
 	private Map<String, Object> toolContext;
 
-	public static Builder<?> builder() {
-		return new Builder<>();
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	/**
@@ -883,7 +883,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	public OllamaChatOptions.Builder<?> mutate() {
+	public Builder mutate() {
 		return OllamaChatOptions.builder()
 			// ChatOptions
 			.model(this.model)
@@ -976,8 +976,14 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 				this.internalToolExecutionEnabled, this.toolContext);
 	}
 
-	public static class Builder<B extends Builder<B>> extends DefaultToolCallingChatOptions.Builder<B>
-			implements StructuredOutputChatOptions.Builder<B> {
+	// public Builder class exposed to users. Avoids having to deal with noisy generic
+	// parameters.
+	public static class Builder extends AbstractBuilder<Builder> {
+
+	}
+
+	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
+			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
 
 		protected @Nullable Boolean useNUMA;
 
@@ -1036,7 +1042,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		@Override
 		public B combineWith(ChatOptions.Builder<?> other) {
 			super.combineWith(other);
-			if (other instanceof Builder<?> options) {
+			if (other instanceof AbstractBuilder<?> options) {
 				if (options.format != null) {
 					this.format = options.format;
 				}
