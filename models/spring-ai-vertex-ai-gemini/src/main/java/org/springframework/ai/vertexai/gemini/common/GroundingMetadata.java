@@ -34,9 +34,9 @@ import org.springframework.lang.Nullable;
  * @author Alessio Subbaiah
  * @since 1.0.0
  */
-public record VertexAiGeminiGroundingMetadata(List<String> webSearchQueries,
-		@Nullable SearchEntryPoint searchEntryPoint, List<GroundingChunk> groundingChunks,
-		List<GroundingSupport> groundingSupports) {
+public record GroundingMetadata(List<String> webSearchQueries,
+                                @Nullable SearchEntryPoint searchEntryPoint, List<GroundingChunk> groundingChunks,
+                                List<GroundingSupport> groundingSupports) {
 
 	/**
 	 * Represents a search entry point containing rendered HTML content for displaying
@@ -64,7 +64,6 @@ public record VertexAiGeminiGroundingMetadata(List<String> webSearchQueries,
 		 * @param title the title of the web page
 		 */
 		public record WebSource(String uri, String title) {
-
 		}
 
 		/**
@@ -75,7 +74,6 @@ public record VertexAiGeminiGroundingMetadata(List<String> webSearchQueries,
 		 * @param text the text content of the retrieved context
 		 */
 		public record RetrievedContext(String uri, String title, String text) {
-
 		}
 
 	}

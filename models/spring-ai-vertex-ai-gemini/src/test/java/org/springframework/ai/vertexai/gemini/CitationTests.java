@@ -22,11 +22,9 @@ import java.util.Map;
 
 import com.google.cloud.vertexai.VertexAI;
 import com.google.cloud.vertexai.api.Candidate;
-import com.google.cloud.vertexai.api.Citation;
 import com.google.cloud.vertexai.api.CitationMetadata;
 import com.google.cloud.vertexai.api.Content;
 import com.google.cloud.vertexai.api.GroundingChunk;
-import com.google.cloud.vertexai.api.GroundingMetadata;
 import com.google.cloud.vertexai.api.GroundingSupport;
 import com.google.cloud.vertexai.api.Part;
 import com.google.cloud.vertexai.api.SearchEntryPoint;
@@ -40,8 +38,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiCitation;
-import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiGroundingMetadata;
+import org.springframework.ai.vertexai.gemini.common.Citation;
+import org.springframework.ai.vertexai.gemini.common.GroundingMetadata;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -52,7 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Alessio Subbaiah
  */
 @ExtendWith(MockitoExtension.class)
-class VertexAiGeminiCitationTests {
+class CitationTests {
 
 	@Mock
 	private VertexAI vertexAI;
@@ -78,7 +76,7 @@ class VertexAiGeminiCitationTests {
 				.addParts(Part.newBuilder().setText("The Eiffel Tower is in Paris.").build())
 				.build())
 			.setCitationMetadata(CitationMetadata.newBuilder()
-				.addCitations(Citation.newBuilder()
+				.addCitations(com.google.cloud.vertexai.api.Citation.newBuilder()
 					.setStartIndex(0)
 					.setEndIndex(28)
 					.setUri("https://example.com/eiffel")
@@ -86,7 +84,7 @@ class VertexAiGeminiCitationTests {
 					.setLicense("CC-BY-4.0")
 					.setPublicationDate(Date.newBuilder().setYear(2024).setMonth(3).setDay(15).build())
 					.build())
-				.addCitations(Citation.newBuilder()
+				.addCitations(com.google.cloud.vertexai.api.Citation.newBuilder()
 					.setStartIndex(10)
 					.setEndIndex(28)
 					.setUri("https://example.com/paris")
@@ -103,11 +101,11 @@ class VertexAiGeminiCitationTests {
 
 		assertThat(metadata).containsKey("citations");
 		@SuppressWarnings("unchecked")
-		List<VertexAiGeminiCitation> citations = (List<VertexAiGeminiCitation>) metadata.get("citations");
+		List<Citation> citations = (List<Citation>) metadata.get("citations");
 
 		assertThat(citations).hasSize(2);
 
-		VertexAiGeminiCitation first = citations.get(0);
+		Citation first = citations.get(0);
 		assertThat(first.startIndex()).isEqualTo(0);
 		assertThat(first.endIndex()).isEqualTo(28);
 		assertThat(first.uri()).isEqualTo("https://example.com/eiffel");
@@ -115,7 +113,7 @@ class VertexAiGeminiCitationTests {
 		assertThat(first.license()).isEqualTo("CC-BY-4.0");
 		assertThat(first.publicationDate()).isEqualTo(LocalDate.of(2024, 3, 15));
 
-		VertexAiGeminiCitation second = citations.get(1);
+		Citation second = citations.get(1);
 		assertThat(second.startIndex()).isEqualTo(10);
 		assertThat(second.endIndex()).isEqualTo(28);
 		assertThat(second.uri()).isEqualTo("https://example.com/paris");
@@ -129,7 +127,7 @@ class VertexAiGeminiCitationTests {
 			.setContent(Content.newBuilder()
 				.addParts(Part.newBuilder().setText("Blackbeard was a famous pirate.").build())
 				.build())
-			.setGroundingMetadata(GroundingMetadata.newBuilder()
+			.setGroundingMetadata(com.google.cloud.vertexai.api.GroundingMetadata.newBuilder()
 				.addWebSearchQueries("famous pirates history")
 				.addWebSearchQueries("Blackbeard pirate")
 				.setSearchEntryPoint(
@@ -168,7 +166,7 @@ class VertexAiGeminiCitationTests {
 		Map<String, Object> metadata = generations.get(0).getOutput().getMetadata();
 
 		assertThat(metadata).containsKey("groundingMetadata");
-		VertexAiGeminiGroundingMetadata grounding = (VertexAiGeminiGroundingMetadata) metadata
+		GroundingMetadata grounding = (GroundingMetadata) metadata
 			.get("groundingMetadata");
 
 		// Web search queries
@@ -181,13 +179,13 @@ class VertexAiGeminiCitationTests {
 		// Grounding chunks
 		assertThat(grounding.groundingChunks()).hasSize(2);
 
-		VertexAiGeminiGroundingMetadata.GroundingChunk webChunk = grounding.groundingChunks().get(0);
+		GroundingMetadata.GroundingChunk webChunk = grounding.groundingChunks().get(0);
 		assertThat(webChunk.web()).isNotNull();
 		assertThat(webChunk.web().uri()).isEqualTo("https://example.com/pirates");
 		assertThat(webChunk.web().title()).isEqualTo("Famous Pirates");
 		assertThat(webChunk.retrievedContext()).isNull();
 
-		VertexAiGeminiGroundingMetadata.GroundingChunk retrievedChunk = grounding.groundingChunks().get(1);
+		GroundingMetadata.GroundingChunk retrievedChunk = grounding.groundingChunks().get(1);
 		assertThat(retrievedChunk.web()).isNull();
 		assertThat(retrievedChunk.retrievedContext()).isNotNull();
 		assertThat(retrievedChunk.retrievedContext().uri()).isEqualTo("https://datastore.example.com/doc1");
@@ -197,7 +195,7 @@ class VertexAiGeminiCitationTests {
 		// Grounding supports
 		assertThat(grounding.groundingSupports()).hasSize(1);
 
-		VertexAiGeminiGroundingMetadata.GroundingSupport support = grounding.groundingSupports().get(0);
+		GroundingMetadata.GroundingSupport support = grounding.groundingSupports().get(0);
 		assertThat(support.segment()).isNotNull();
 		assertThat(support.segment().partIndex()).isEqualTo(0);
 		assertThat(support.segment().startIndex()).isEqualTo(0);
@@ -214,14 +212,14 @@ class VertexAiGeminiCitationTests {
 				.addParts(Part.newBuilder().setText("Some grounded text.").build())
 				.build())
 			.setCitationMetadata(CitationMetadata.newBuilder()
-				.addCitations(Citation.newBuilder()
+				.addCitations(com.google.cloud.vertexai.api.Citation.newBuilder()
 					.setStartIndex(0)
 					.setEndIndex(19)
 					.setUri("https://example.com/source")
 					.setTitle("Source")
 					.build())
 				.build())
-			.setGroundingMetadata(GroundingMetadata.newBuilder()
+			.setGroundingMetadata(com.google.cloud.vertexai.api.GroundingMetadata.newBuilder()
 				.addWebSearchQueries("test query")
 				.addGroundingChunks(GroundingChunk.newBuilder()
 					.setWeb(GroundingChunk.Web.newBuilder()
@@ -241,10 +239,10 @@ class VertexAiGeminiCitationTests {
 		assertThat(metadata).containsKey("groundingMetadata");
 
 		@SuppressWarnings("unchecked")
-		List<VertexAiGeminiCitation> citations = (List<VertexAiGeminiCitation>) metadata.get("citations");
+		List<Citation> citations = (List<Citation>) metadata.get("citations");
 		assertThat(citations).hasSize(1);
 
-		VertexAiGeminiGroundingMetadata grounding = (VertexAiGeminiGroundingMetadata) metadata
+		GroundingMetadata grounding = (GroundingMetadata) metadata
 			.get("groundingMetadata");
 		assertThat(grounding.webSearchQueries()).containsExactly("test query");
 		assertThat(grounding.groundingChunks()).hasSize(1);
@@ -297,7 +295,7 @@ class VertexAiGeminiCitationTests {
 			.setContent(Content.newBuilder()
 				.addParts(Part.newBuilder().setText("Response text.").build())
 				.build())
-			.setGroundingMetadata(GroundingMetadata.newBuilder()
+			.setGroundingMetadata(com.google.cloud.vertexai.api.GroundingMetadata.newBuilder()
 				.addWebSearchQueries("test")
 				.addGroundingChunks(GroundingChunk.newBuilder()
 					.setWeb(GroundingChunk.Web.newBuilder().setUri("https://example.com").setTitle("Example").build())
@@ -308,7 +306,7 @@ class VertexAiGeminiCitationTests {
 		List<Generation> generations = this.chatModel.responseCandidateToGeneration(candidate);
 
 		assertThat(generations).hasSize(1);
-		VertexAiGeminiGroundingMetadata grounding = (VertexAiGeminiGroundingMetadata) generations.get(0)
+		GroundingMetadata grounding = (GroundingMetadata) generations.get(0)
 			.getOutput()
 			.getMetadata()
 			.get("groundingMetadata");

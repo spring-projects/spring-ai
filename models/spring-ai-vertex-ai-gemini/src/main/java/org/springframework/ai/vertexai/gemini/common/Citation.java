@@ -34,7 +34,7 @@ import org.springframework.lang.Nullable;
  * @author Alessio Subbaiah
  * @since 1.0.0
  */
-public record VertexAiGeminiCitation(int startIndex, int endIndex, String uri, String title, String license,
-		@Nullable LocalDate publicationDate) {
+public record Citation(int startIndex, int endIndex, String uri, String title, String license,
+                       @Nullable LocalDate publicationDate) {
 
 }
