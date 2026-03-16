@@ -84,8 +84,8 @@ import org.springframework.util.CollectionUtils;
  * </ul>
  * <li>Customization Options:
  * <ul>
- * <li>Extensible through {@link McpClientCustomizer}{@code <McpClient.SyncSpec>} and
- * {@link McpClientCustomizer}{@code <McpClient.AsyncSpec>}
+ * <li>Extensible through {@link McpClientCustomizer<McpClient.SyncSpec>} and
+ * {@link McpClientCustomizer<McpClient.AsyncSpec>}
  * <li>Configurable timeouts and client information
  * <li>Support for custom transport implementations
  * </ul>
@@ -219,7 +219,7 @@ public class McpClientAutoConfiguration {
 	 *
 	 * <p>
 	 * This configurer aggregates all available
-	 * {@link McpClientCustomizer}{@code <McpClient.SyncSpec>} instances to allow for
+	 * {@link McpClientCustomizer<McpClient.SyncSpec>} instances to allow for
 	 * customization of MCP sync client creation.
 	 * @param customizerProvider provider of MCP sync client customizers
 	 * @return the configured MCP sync client configurer

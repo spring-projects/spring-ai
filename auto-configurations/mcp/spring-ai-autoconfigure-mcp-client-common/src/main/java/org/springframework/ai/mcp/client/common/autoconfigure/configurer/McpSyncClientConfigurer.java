@@ -27,9 +27,9 @@ import org.springframework.util.Assert;
  * Configurer class for customizing MCP synchronous clients.
  *
  * <p>
- * This class manages a collection of
- * {@link McpClientCustomizer}{@code <McpClient.SyncSpec>} instances that can be applied
- * to customize the configuration of MCP synchronous clients during their creation.
+ * This class manages a collection of {@link McpClientCustomizer<McpClient.SyncSpec>}
+ * instances that can be applied to customize the configuration of MCP synchronous clients
+ * during their creation.
  *
  * <p>
  * The configurer applies customizations in the order they are registered, allowing for

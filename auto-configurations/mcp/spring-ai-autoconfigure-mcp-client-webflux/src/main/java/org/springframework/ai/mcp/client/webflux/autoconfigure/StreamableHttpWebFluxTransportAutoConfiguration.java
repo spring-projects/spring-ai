@@ -55,9 +55,8 @@ import org.springframework.web.reactive.function.client.WebClient;
  * <li>Configures WebClient.Builder for HTTP client operations
  * <li>Sets up JsonMapper for JSON serialization/deserialization
  * <li>Supports multiple named server connections with different base URLs
- * <li>Applies
- * {@link McpClientCustomizer}{@code <WebClientStreamableHttpTransport.Builder>} beans to
- * each transport builder.
+ * <li>Applies {@link McpClientCustomizer<WebClientStreamableHttpTransport.Builder>} beans
+ * to each transport builder.
  * </ul>
  *
  * @see WebClientStreamableHttpTransport
@@ -86,7 +85,7 @@ public class StreamableHttpWebFluxTransportAutoConfiguration {
 	 * @param jsonMapperProvider the provider for JsonMapper or a new instance if not
 	 * available
 	 * @param transportCustomizers provider for
-	 * {@link McpClientCustomizer}{@code <WebClientStreamableHttpTransport.Builder>} beans
+	 * {@link McpClientCustomizer<WebClientStreamableHttpTransport.Builder>} beans
 	 * @return list of named MCP transports
 	 */
 	@Bean
@@ -102,8 +101,9 @@ public class StreamableHttpWebFluxTransportAutoConfiguration {
 
 		for (Map.Entry<String, ConnectionParameters> serverParameters : streamableProperties.getConnections()
 			.entrySet()) {
+			String connectionName = serverParameters.getKey();
 			String url = Objects.requireNonNull(serverParameters.getValue().url(),
-					"Missing url for server named " + serverParameters.getKey());
+					"Missing url for server named " + connectionName);
 			var webClientBuilder = webClientBuilderTemplate.clone().baseUrl(url);
 			String streamableHttpEndpoint = Objects.requireNonNullElse(serverParameters.getValue().endpoint(), "/mcp");
 
@@ -112,11 +112,10 @@ public class StreamableHttpWebFluxTransportAutoConfiguration {
 				.jsonMapper(new JacksonMcpJsonMapper(jsonMapper));
 
 			for (McpClientCustomizer<WebClientStreamableHttpTransport.Builder> customizer : transportCustomizers) {
-				customizer.customize(serverParameters.getKey(), transportBuilder);
+				customizer.customize(connectionName, transportBuilder);
 			}
 
-			streamableHttpTransports
-				.add(new NamedClientMcpTransport(serverParameters.getKey(), transportBuilder.build()));
+			streamableHttpTransports.add(new NamedClientMcpTransport(connectionName, transportBuilder.build()));
 		}
 
 		return streamableHttpTransports;

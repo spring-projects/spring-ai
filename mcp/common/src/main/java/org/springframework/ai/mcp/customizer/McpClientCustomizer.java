@@ -23,17 +23,17 @@ package org.springframework.ai.mcp.customizer;
  * transports, through Spring's customizer pattern. Implementations can modify the
  * component's configuration before it is used in the application.
  * <p>
- * Use {@code McpCustomizer<McpClient.SyncSpec>} for synchronous clients,
- * {@code McpCustomizer<McpClient.AsyncSpec>} for asynchronous clients, or
- * {@code McpCustomizer<HttpClientStreamableHttpTransport.Builder>} for transports.
+ * Use for example {@code McpCustomizer<McpClient.SyncSpec>} for clients (here,
+ * synchronous), or {@code McpCustomizer<HttpClientStreamableHttpTransport.Builder>} for
+ * transports (here, HttpClient Streamable HTTP).
  *
- * @param <T> the type of the MCP component to customize, e.g.
+ * @param <B> the type of the MCP component to customize, e.g.
  * {@link io.modelcontextprotocol.client.McpClient.SyncSpec} or
  * {@link io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport.Builder}
  * @author Daniel Garnier-Moiroux
  * @since 2.0.0
  */
-public interface McpClientCustomizer<T> {
+public interface McpClientCustomizer<B> {
 
 	/**
 	 * Customizes an MCP client component.
@@ -41,8 +41,8 @@ public interface McpClientCustomizer<T> {
 	 * This method is called for each MCP component being created, allowing for
 	 * component-specific customizations based on the component's name.
 	 * @param name the name of the MCP component being customized
-	 * @param component the component to customize
+	 * @param componentBuilder the component to customize
 	 */
-	void customize(String name, T component);
+	void customize(String name, B componentBuilder);
 
 }

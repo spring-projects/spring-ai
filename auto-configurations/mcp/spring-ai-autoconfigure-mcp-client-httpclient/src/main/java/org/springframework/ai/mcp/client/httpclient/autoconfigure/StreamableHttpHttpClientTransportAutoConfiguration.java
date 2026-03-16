@@ -55,9 +55,8 @@ import org.springframework.context.annotation.Bean;
  * connections
  * <li>Configures JsonMapper for JSON serialization/deserialization
  * <li>Supports multiple named server connections with different URLs
- * <li>Applies
- * {@link McpClientCustomizer}{@code <HttpClientStreamableHttpTransport.Builder>} beans to
- * each transport builder.
+ * <li>Applies {@link McpClientCustomizer<HttpClientStreamableHttpTransport.Builder>}
+ * beans to each transport builder.
  * </ul>
  *
  * @see HttpClientStreamableHttpTransport
@@ -81,16 +80,15 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 	 * <li>Server URL from properties
 	 * <li>JsonMapper for JSON processing
 	 * <li>All available
-	 * {@link McpClientCustomizer}{@code <HttpClientStreamableHttpTransport.Builder>}
-	 * beans applied with the connection name and transport builder
+	 * {@link McpClientCustomizer<HttpClientStreamableHttpTransport.Builder>} beans
+	 * applied with the connection name and transport builder
 	 * </ul>
 	 * @param streamableProperties the Streamable HTTP client properties containing server
 	 * configurations
 	 * @param jsonMapperProvider the provider for JsonMapper or a new instance if not
 	 * available
 	 * @param transportCustomizers provider for
-	 * {@link McpClientCustomizer}{@code <HttpClientStreamableHttpTransport.Builder>}
-	 * beans
+	 * {@link McpClientCustomizer<HttpClientStreamableHttpTransport.Builder>} beans
 	 * @return list of named MCP transports
 	 */
 	@Bean

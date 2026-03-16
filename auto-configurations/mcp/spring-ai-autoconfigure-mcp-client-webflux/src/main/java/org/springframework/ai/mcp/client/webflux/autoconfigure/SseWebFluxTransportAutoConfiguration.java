@@ -57,8 +57,8 @@ import org.springframework.web.reactive.function.client.WebClient;
  * <li>Configures WebClient.Builder for HTTP client operations
  * <li>Sets up JsonMapper for JSON serialization/deserialization
  * <li>Supports multiple named server connections with different base URLs
- * <li>Applies {@link McpClientCustomizer}{@code <WebFluxSseClientTransport.Builder>}
- * beans to each transport builder.
+ * <li>Applies {@link McpClientCustomizer<WebFluxSseClientTransport.Builder>} beans to
+ * each transport builder.
  * </ul>
  *
  * @see WebFluxSseClientTransport
@@ -92,7 +92,7 @@ public class SseWebFluxTransportAutoConfiguration {
 	 * @param jsonMapperProvider the provider for JsonMapper or a new instance if not
 	 * available
 	 * @param transportCustomizers provider for
-	 * {@link McpClientCustomizer}{@code <WebFluxSseClientTransport.Builder>} beans
+	 * {@link McpClientCustomizer<WebFluxSseClientTransport.Builder>} beans
 	 * @return list of named MCP transports
 	 */
 	@Bean
@@ -106,8 +106,9 @@ public class SseWebFluxTransportAutoConfiguration {
 		var jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::shared);
 
 		for (Map.Entry<String, SseParameters> serverParameters : connectionDetails.getConnections().entrySet()) {
+			String connectionName = serverParameters.getKey();
 			String url = Objects.requireNonNull(serverParameters.getValue().url(),
-					"Missing url for server named " + serverParameters.getKey());
+					"Missing url for server named " + connectionName);
 			var webClientBuilder = webClientBuilderTemplate.clone().baseUrl(url);
 			String sseEndpoint = Objects.requireNonNullElse(serverParameters.getValue().sseEndpoint(), "/sse");
 			var transportBuilder = WebFluxSseClientTransport.builder(webClientBuilder)
@@ -115,10 +116,10 @@ public class SseWebFluxTransportAutoConfiguration {
 				.jsonMapper(new JacksonMcpJsonMapper(jsonMapper));
 
 			for (McpClientCustomizer<WebFluxSseClientTransport.Builder> customizer : transportCustomizers) {
-				customizer.customize(serverParameters.getKey(), transportBuilder);
+				customizer.customize(connectionName, transportBuilder);
 			}
 
-			sseTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transportBuilder.build()));
+			sseTransports.add(new NamedClientMcpTransport(connectionName, transportBuilder.build()));
 		}
 
 		return sseTransports;
