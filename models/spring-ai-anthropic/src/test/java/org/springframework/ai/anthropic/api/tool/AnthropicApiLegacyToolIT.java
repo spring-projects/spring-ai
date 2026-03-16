@@ -16,7 +16,9 @@
 
 package org.springframework.ai.anthropic.api.tool;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
@@ -127,7 +129,14 @@ public class AnthropicApiLegacyToolIT {
 
 		logger.info("FunctionCalls from the LLM: " + functionCalls);
 
-		MockWeatherService.Request request = ModelOptionsUtils.mapToClass(functionCalls.invoke().parameters(),
+		Map<String, Object> parameters = functionCalls.invoke().parameters();
+		Map<String, Object> normalizedParams = new HashMap<>();
+		parameters.forEach((k, v) -> {
+			if (k != null) {
+				normalizedParams.put(k.toLowerCase(), v);
+			}
+		});
+		MockWeatherService.Request request = ModelOptionsUtils.mapToClass(normalizedParams,
 				MockWeatherService.Request.class);
 
 		logger.info("Resolved function request param: " + request);
