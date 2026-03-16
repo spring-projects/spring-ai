@@ -31,7 +31,7 @@ import org.springframework.lang.Nullable;
  * grounding
  * @param groundingSupports the mappings between response text segments and their
  * supporting grounding chunks
- * @author Alessio Subbaiah
+ * @author Arun Subbaiah
  * @since 1.0.0
  */
 public record GroundingMetadata(List<String> webSearchQueries,

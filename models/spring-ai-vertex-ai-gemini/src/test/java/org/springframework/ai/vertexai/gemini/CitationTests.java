@@ -47,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit tests for citation and grounding metadata extraction in
  * {@link VertexAiGeminiChatModel#responseCandidateToGeneration(Candidate)}.
  *
- * @author Alessio Subbaiah
+ * @author Arun Subbaiah
  */
 @ExtendWith(MockitoExtension.class)
 class CitationTests {

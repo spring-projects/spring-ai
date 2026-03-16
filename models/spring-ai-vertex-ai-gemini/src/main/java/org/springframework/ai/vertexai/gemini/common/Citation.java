@@ -31,7 +31,7 @@ import org.springframework.lang.Nullable;
  * @param title the title of the cited source
  * @param license the license under which the cited source is available
  * @param publicationDate the publication date of the cited source, or null if unavailable
- * @author Alessio Subbaiah
+ * @author Arun Subbaiah
  * @since 1.0.0
  */
 public record Citation(int startIndex, int endIndex, String uri, String title, String license,
