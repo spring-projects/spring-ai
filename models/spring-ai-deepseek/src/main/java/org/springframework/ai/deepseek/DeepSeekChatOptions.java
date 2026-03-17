@@ -157,7 +157,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 			@Nullable Double temperature, @Nullable Double topP, @Nullable Boolean logprobs,
 			@Nullable Integer topLogprobs, @Nullable List<DeepSeekApi.FunctionTool> tools,
 			@Nullable Object toolChoice, @Nullable Boolean internalToolExecutionEnabled,
-			List<ToolCallback> toolCallbacks, Set<String> toolNames, Map<String, Object> toolContext) {
+			@Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames, @Nullable Map<String, Object> toolContext) {
 		this.model = model;
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
@@ -171,9 +171,9 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		this.tools = tools;
 		this.toolChoice = toolChoice;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks;
-		this.toolNames = toolNames;
-		this.toolContext = toolContext;
+		this.toolCallbacks = toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(toolCallbacks);
+		this.toolNames = toolNames == null ? new HashSet<>() : new HashSet<>(toolNames);
+		this.toolContext = toolContext ==  null ? new HashMap<>() : new HashMap<>(toolContext);
 	}
 
 	public static Builder builder() {

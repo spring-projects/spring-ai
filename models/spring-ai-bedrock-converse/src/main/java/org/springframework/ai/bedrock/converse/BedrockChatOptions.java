@@ -96,8 +96,9 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 
 	protected BedrockChatOptions(String model, Double frequencyPenalty, Integer maxTokens, Double presencePenalty,
 			Map<String, String> requestParameters, List<String> stopSequences, Double temperature, Integer topK,
-			Double topP, Boolean internalToolExecutionEnabled, List<ToolCallback> toolCallbacks, Set<String> toolNames,
-			Map<String, Object> toolContext, BedrockCacheOptions cacheOptions, String outputSchema) {
+			Double topP, Boolean internalToolExecutionEnabled, @Nullable List<ToolCallback> toolCallbacks,
+			@Nullable Set<String> toolNames, @Nullable Map<String, Object> toolContext,
+			BedrockCacheOptions cacheOptions, String outputSchema) {
 		this.model = model;
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
@@ -108,9 +109,9 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		this.topK = topK;
 		this.topP = topP;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks;
-		this.toolNames = toolNames;
-		this.toolContext = toolContext;
+		this.toolCallbacks = toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(toolCallbacks);
+		this.toolNames = toolNames == null ? new HashSet<>() : new HashSet<>(toolNames);
+		this.toolContext = toolContext == null ? new HashMap<>() : new HashMap<>(toolContext);
 		this.cacheOptions = cacheOptions;
 		this.outputSchema = outputSchema;
 	}

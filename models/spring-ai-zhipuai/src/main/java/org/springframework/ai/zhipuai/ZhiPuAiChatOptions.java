@@ -147,8 +147,8 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 	protected ZhiPuAiChatOptions(String model, Integer maxTokens, List<String> stop, Double temperature, Double topP,
 			List<ZhiPuAiApi.FunctionTool> tools, String toolChoice, String user, String requestId, Boolean doSample,
 			ChatCompletionRequest.ResponseFormat responseFormat, ChatCompletionRequest.Thinking thinking,
-			Boolean internalToolExecutionEnabled, List<ToolCallback> toolCallbacks, Set<String> toolNames,
-			Map<String, Object> toolContext) {
+			Boolean internalToolExecutionEnabled, @Nullable List<ToolCallback> toolCallbacks,
+			@Nullable Set<String> toolNames, @Nullable Map<String, Object> toolContext) {
 		this.model = model;
 		this.maxTokens = maxTokens;
 		this.stop = stop;
@@ -162,9 +162,9 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 		this.responseFormat = responseFormat;
 		this.thinking = thinking;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks;
-		this.toolNames = toolNames;
-		this.toolContext = toolContext;
+		this.toolCallbacks = toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(toolCallbacks);
+		this.toolNames = toolNames == null ? new HashSet<>() : new HashSet<>(toolNames);
+		this.toolContext = toolContext == null ? new HashMap<>() : new HashMap<>(toolContext);
 	}
 
 	public static Builder builder() {

@@ -165,8 +165,9 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	protected MiniMaxChatOptions(String model, Double frequencyPenalty, Integer maxTokens, Integer n,
 			Double presencePenalty, MiniMaxApi.ChatCompletionRequest.ResponseFormat responseFormat, Integer seed,
 			List<String> stop, Double temperature, Double topP, Boolean maskSensitiveInfo,
-			List<MiniMaxApi.FunctionTool> tools, String toolChoice, List<ToolCallback> toolCallbacks,
-			Set<String> toolNames, Map<String, Object> toolContext, Boolean internalToolExecutionEnabled) {
+			List<MiniMaxApi.FunctionTool> tools, String toolChoice, @Nullable List<ToolCallback> toolCallbacks,
+			@Nullable Set<String> toolNames, @Nullable Map<String, Object> toolContext,
+			Boolean internalToolExecutionEnabled) {
 		this.model = model;
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
@@ -180,9 +181,9 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		this.maskSensitiveInfo = maskSensitiveInfo;
 		this.tools = tools;
 		this.toolChoice = toolChoice;
-		this.toolCallbacks = toolCallbacks;
-		this.toolNames = toolNames;
-		this.toolContext = toolContext;
+		this.toolCallbacks = toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(toolCallbacks);
+		this.toolNames = toolNames == null ? new HashSet<>() : new HashSet<>(toolNames);
+		this.toolContext = toolContext == null ? new HashMap<>() : new HashMap<>(toolContext);
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 

@@ -20,6 +20,7 @@ import java.net.Proxy;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -903,10 +904,11 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 			options.topP = this.topP;
 			options.topK = this.topK;
 			// ToolCallingChatOptions fields
-			options.toolCallbacks = this.toolCallbacks;
-			options.toolNames = this.toolNames;
+			options.toolCallbacks = this.toolCallbacks == null ? new ArrayList<>()
+					: new ArrayList<>(this.toolCallbacks);
+			options.toolNames = this.toolNames == null ? new HashSet<>() : new HashSet<>(this.toolNames);
 			options.internalToolExecutionEnabled = this.internalToolExecutionEnabled;
-			options.toolContext = this.toolContext;
+			options.toolContext = this.toolContext == null ? new HashMap<>() : new HashMap<>(this.toolContext);
 			// Anthropic-specific fields
 			options.metadata = this.metadata;
 			options.toolChoice = this.toolChoice;

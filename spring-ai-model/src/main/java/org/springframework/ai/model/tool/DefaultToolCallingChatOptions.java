@@ -215,21 +215,21 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	public static class Builder<B extends Builder<B>> extends DefaultChatOptionsBuilder<B>
 			implements ToolCallingChatOptions.Builder<B> {
 
-		protected List<ToolCallback> toolCallbacks = new ArrayList<>();
+		protected @Nullable List<ToolCallback> toolCallbacks;
 
-		protected Set<String> toolNames = new HashSet<>();
+		protected @Nullable Set<String> toolNames;
 
-		protected Map<String, Object> toolContext = new HashMap<>();
+		protected @Nullable Map<String, Object> toolContext;
 
 		protected @Nullable Boolean internalToolExecutionEnabled;
 
 		@Override
 		public B toolCallbacks(@Nullable List<ToolCallback> toolCallbacks) {
-			if (toolCallbacks == null) {
-				this.toolCallbacks.clear();
+			if (toolCallbacks != null) {
+				this.toolCallbacks = new ArrayList<>(toolCallbacks);
 			}
 			else {
-				this.toolCallbacks = new ArrayList<>(toolCallbacks);
+				this.toolCallbacks = null;
 			}
 			return self();
 		}
@@ -237,6 +237,9 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		@Override
 		public B toolCallbacks(ToolCallback... toolCallbacks) {
 			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			if (this.toolCallbacks == null) {
+				this.toolCallbacks = new ArrayList<>();
+			}
 			this.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
 			return self();
 		}
@@ -244,10 +247,10 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		@Override
 		public B toolNames(@Nullable Set<String> toolNames) {
 			if (toolNames != null) {
-				this.toolNames = toolNames;
+				this.toolNames = new HashSet<>(toolNames);
 			}
 			else {
-				this.toolNames.clear();
+				this.toolNames = null;
 			}
 			return self();
 		}
@@ -255,6 +258,9 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		@Override
 		public B toolNames(String... toolNames) {
 			Assert.notNull(toolNames, "toolNames cannot be null");
+			if (this.toolNames == null) {
+				this.toolNames = new HashSet<>();
+			}
 			this.toolNames.addAll(Set.of(toolNames));
 			return self();
 		}
@@ -262,10 +268,13 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		@Override
 		public B toolContext(@Nullable Map<String, Object> context) {
 			if (context != null) {
+				if (this.toolContext == null) {
+					this.toolContext = new HashMap<>();
+				}
 				this.toolContext.putAll(context);
 			}
 			else {
-				this.toolContext.clear();
+				this.toolContext = null;
 			}
 			return self();
 		}
@@ -274,6 +283,9 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		public B toolContext(String key, Object value) {
 			Assert.hasText(key, "key cannot be null");
 			Assert.notNull(value, "value cannot be null");
+			if (this.toolContext == null) {
+				this.toolContext = new HashMap<>();
+			}
 			this.toolContext.put(key, value);
 			return self();
 		}
@@ -287,9 +299,15 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		@Override
 		public ToolCallingChatOptions build() {
 			DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
-			options.setToolCallbacks(this.toolCallbacks);
-			options.setToolNames(this.toolNames);
-			options.setToolContext(this.toolContext);
+			if (this.toolCallbacks != null) {
+				options.setToolCallbacks(this.toolCallbacks);
+			}
+			if (this.toolNames != null) {
+				options.setToolNames(this.toolNames);
+			}
+			if (this.toolContext != null) {
+				options.setToolContext(this.toolContext);
+			}
 			options.setInternalToolExecutionEnabled(this.internalToolExecutionEnabled);
 
 			options.setModel(this.model);
@@ -306,12 +324,22 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		@Override
 		public B combineWith(ChatOptions.Builder<?> other) {
 			super.combineWith(other);
-			if (other instanceof Builder<?> options) {
-				this.toolCallbacks = options.toolCallbacks;
-				this.toolNames = options.toolNames;
-				this.toolContext.putAll(options.toolContext);
-				if (options.internalToolExecutionEnabled != null) {
-					this.internalToolExecutionEnabled = options.internalToolExecutionEnabled;
+			if (other instanceof Builder<?> that) {
+				if (that.toolCallbacks != null) {
+					this.toolCallbacks = new ArrayList<>(that.toolCallbacks);
+				}
+				if (that.toolNames != null) {
+					this.toolNames = new HashSet<>(that.toolNames);
+				}
+				if (that.toolContext != null) {
+					if (this.toolContext == null) {
+						this.toolContext = new HashMap<>();
+					}
+					this.toolContext.putAll(that.toolContext); // TODO:replace instead of
+																// merge?
+				}
+				if (that.internalToolExecutionEnabled != null) {
+					this.internalToolExecutionEnabled = that.internalToolExecutionEnabled;
 				}
 			}
 			return self();
