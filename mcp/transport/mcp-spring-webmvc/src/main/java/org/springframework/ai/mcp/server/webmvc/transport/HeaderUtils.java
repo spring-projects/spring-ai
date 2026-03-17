@@ -39,8 +39,8 @@ final class HeaderUtils {
 			.asHttpHeaders()
 			.headerNames()
 			.stream()
-			.collect(Collectors.toUnmodifiableMap(String::toLowerCase, name -> request.headers().header(name),
-					(l1, l2) -> {
+			.collect(Collectors.<String, String, List<String>>toUnmodifiableMap(String::toLowerCase,
+					name -> request.headers().header(name), (l1, l2) -> {
 						var merged = new ArrayList<>(l1);
 						merged.addAll(l2);
 						return Collections.unmodifiableList(merged);
