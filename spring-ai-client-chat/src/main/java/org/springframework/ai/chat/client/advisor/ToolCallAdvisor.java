@@ -260,8 +260,34 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 			// Holder for aggregated response (set when aggregation completes)
 			AtomicReference<ChatClientResponse> aggregatedResponseRef = new AtomicReference<>();
 
+			if (!this.streamToolCallResponses) {
+				return streamWithoutToolCallResponses(responseFlux, aggregatedResponseRef, finalRequest,
+						streamAdvisorChain, originalRequest, optionsCopy);
+			}
+
 			return streamWithToolCallResponses(responseFlux, aggregatedResponseRef, finalRequest, streamAdvisorChain,
 					originalRequest, optionsCopy);
+		});
+	}
+
+	/**
+	 * Buffers a single streaming iteration so that intermediate chunks are only emitted
+	 * if the completed iteration does not resolve to a tool call.
+	 */
+	private Flux<ChatClientResponse> streamWithoutToolCallResponses(Flux<ChatClientResponse> responseFlux,
+			AtomicReference<ChatClientResponse> aggregatedResponseRef, ChatClientRequest finalRequest,
+			StreamAdvisorChain streamAdvisorChain, ChatClientRequest originalRequest,
+			ToolCallingChatOptions optionsCopy) {
+
+		return responseFlux.collectList().flatMapMany(bufferedResponses -> {
+			if (bufferedResponses.isEmpty()) {
+				return this.doFinalizeLoopStream(Flux.empty(), streamAdvisorChain);
+			}
+
+			return new ChatClientMessageAggregator()
+				.aggregateChatClientResponse(Flux.fromIterable(bufferedResponses), aggregatedResponseRef::set)
+				.thenMany(Flux.defer(() -> this.handleBufferedToolCallRecursion(bufferedResponses,
+						aggregatedResponseRef.get(), finalRequest, streamAdvisorChain, originalRequest, optionsCopy)));
 		});
 	}
 
@@ -287,9 +313,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 
 			// Emit all streaming chunks first, then append any recursive results
 			return streamingBranch.concatWith(recursionBranch);
-		})
-			.filter(ccr -> this.streamToolCallResponses
-					|| !(ccr.chatResponse() != null && ccr.chatResponse().hasToolCalls()));
+		});
 	}
 
 	/**
@@ -344,6 +368,54 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 				return this.internalStream(streamAdvisorChain, originalRequest, optionsCopy, nextInstructions);
 			}
 		});
+		return toolCallFlux.subscribeOn(Schedulers.boundedElastic());
+	}
+
+	private Flux<ChatClientResponse> handleBufferedToolCallRecursion(List<ChatClientResponse> bufferedResponses,
+			ChatClientResponse aggregatedResponse, ChatClientRequest finalRequest,
+			StreamAdvisorChain streamAdvisorChain, ChatClientRequest originalRequest,
+			ToolCallingChatOptions optionsCopy) {
+
+		if (aggregatedResponse == null) {
+			return this.doFinalizeLoopStream(Flux.empty(), streamAdvisorChain);
+		}
+
+		aggregatedResponse = this.doAfterStream(aggregatedResponse, streamAdvisorChain);
+
+		ChatResponse chatResponse = aggregatedResponse.chatResponse();
+		boolean isToolCall = chatResponse != null && chatResponse.hasToolCalls();
+
+		if (!isToolCall) {
+			return this.doFinalizeLoopStream(Flux.fromIterable(bufferedResponses), streamAdvisorChain);
+		}
+
+		Assert.notNull(chatResponse, "redundant check that should never fail, but here to help NullAway");
+		final ChatClientResponse finalAggregatedResponse = aggregatedResponse;
+
+		Flux<ChatClientResponse> toolCallFlux = Flux.deferContextual(ctx -> {
+			ToolExecutionResult toolExecutionResult;
+			try {
+				ToolCallReactiveContextHolder.setContext(ctx);
+				toolExecutionResult = this.toolCallingManager.executeToolCalls(finalRequest.prompt(), chatResponse);
+			}
+			finally {
+				ToolCallReactiveContextHolder.clearContext();
+			}
+
+			if (toolExecutionResult.returnDirect()) {
+				return Flux.just(finalAggregatedResponse.mutate()
+					.chatResponse(ChatResponse.builder()
+						.from(chatResponse)
+						.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+						.build())
+					.build());
+			}
+
+			List<Message> nextInstructions = this.doGetNextInstructionsForToolCallStream(finalRequest,
+					finalAggregatedResponse, toolExecutionResult);
+			return this.internalStream(streamAdvisorChain, originalRequest, optionsCopy, nextInstructions);
+		});
+
 		return toolCallFlux.subscribeOn(Schedulers.boundedElastic());
 	}
 
