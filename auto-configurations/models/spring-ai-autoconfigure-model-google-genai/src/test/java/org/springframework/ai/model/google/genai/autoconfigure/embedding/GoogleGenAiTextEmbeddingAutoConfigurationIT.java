@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,11 +48,10 @@ public class GoogleGenAiTextEmbeddingAutoConfigurationIT {
 		contextRunner.run(context -> {
 			GoogleGenAiTextEmbeddingModel embeddingModel = context.getBean(GoogleGenAiTextEmbeddingModel.class);
 
-			EmbeddingResponse embeddingResponse = embeddingModel
-				.embedForResponse(List.of("Hello World", "World is big"));
-			assertThat(embeddingResponse.getResults()).hasSize(2);
+			// Default model (gemini-embedding-001) supports batch size 1 on Gemini API
+			EmbeddingResponse embeddingResponse = embeddingModel.embedForResponse(List.of("Hello World"));
+			assertThat(embeddingResponse.getResults()).hasSize(1);
 			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
-			assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
 			assertThat(embeddingResponse.getMetadata().getModel()).isNotNull();
 		});
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,8 @@ public class MockWeatherService implements Function<MockWeatherService.Request, 
 
 	@Override
 	public Response apply(Request request) {
-		logger.info("Received weather request for location: " + request.location() + ", lat: " + request.lat()
-				+ ", lon: " + request.lon() + ", unit: " + request.unit());
+		logger.info("Received weather request for location: {}, lat: {}, lon: {}, unit: {}", request.location(),
+				request.lat(), request.lon(), request.unit());
 		double temperature = 0;
 		if (request.location().contains("Paris")) {
 			temperature = 15;

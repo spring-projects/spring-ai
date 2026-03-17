@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,9 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.test.options.AbstractChatOptionsTests;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.zhipuai.ZhiPuAiChatOptions.Builder;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest;
 
@@ -36,7 +38,17 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author YunKui Lu
  */
-class ZhiPuAiChatOptionsTests {
+class ZhiPuAiChatOptionsTests extends AbstractChatOptionsTests<ZhiPuAiChatOptions, Builder> {
+
+	@Override
+	protected Class<ZhiPuAiChatOptions> getConcreteOptionsClass() {
+		return ZhiPuAiChatOptions.class;
+	}
+
+	@Override
+	protected Builder readyToBuildBuilder() {
+		return ZhiPuAiChatOptions.builder();
+	}
 
 	@Test
 	void testBuilderWithAllFields() {
@@ -226,9 +238,9 @@ class ZhiPuAiChatOptionsTests {
 
 	@Test
 	void testBuilderChaining() {
-		ZhiPuAiChatOptions.Builder builder = ZhiPuAiChatOptions.builder();
+		Builder builder = ZhiPuAiChatOptions.builder();
 
-		ZhiPuAiChatOptions.Builder result = builder.model("test-model").temperature(0.7).maxTokens(100);
+		Builder result = builder.model("test-model").temperature(0.7).maxTokens(100);
 
 		assertThat(result).isSameAs(builder);
 

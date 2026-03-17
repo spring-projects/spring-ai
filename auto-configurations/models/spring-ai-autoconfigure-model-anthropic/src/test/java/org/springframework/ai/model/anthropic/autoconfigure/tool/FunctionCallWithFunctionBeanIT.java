@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.ai.model.anthropic.autoconfigure.tool;
 import java.util.List;
 import java.util.function.Function;
 
+import com.anthropic.models.messages.Model;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
@@ -26,7 +27,6 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
-import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -42,28 +42,32 @@ import org.springframework.context.annotation.Description;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Integration test for tool calling via Spring bean-registered function callbacks.
+ *
+ * @author Soby Chacko
+ */
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".*")
 class FunctionCallWithFunctionBeanIT {
 
 	private final Logger logger = LoggerFactory.getLogger(FunctionCallWithFunctionBeanIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.anthropic.apiKey=" + System.getenv("ANTHROPIC_API_KEY"))
+		.withPropertyValues("spring.ai.anthropic.api-key=" + System.getenv("ANTHROPIC_API_KEY"))
 		.withConfiguration(SpringAiTestAutoConfigurations.of(AnthropicChatAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test
 	void functionCallTest() {
-
 		this.contextRunner
-			.withPropertyValues(
-					"spring.ai.anthropic.chat.options.model=" + AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue())
+			.withPropertyValues("spring.ai.anthropic.chat.options.model=" + Model.CLAUDE_HAIKU_4_5.asString())
 			.run(context -> {
 
 				AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
 
 				var userMessage = new UserMessage(
-						"What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan? Return the temperature in Celsius.");
+						"What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan?"
+								+ " Return the temperature in Celsius.");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 						AnthropicChatOptions.builder().toolNames("weatherFunction").build()));
@@ -78,22 +82,20 @@ class FunctionCallWithFunctionBeanIT {
 				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
-
 			});
 	}
 
 	@Test
 	void functionCallWithPortableFunctionCallingOptions() {
-
 		this.contextRunner
-			.withPropertyValues(
-					"spring.ai.anthropic.chat.options.model=" + AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue())
+			.withPropertyValues("spring.ai.anthropic.chat.options.model=" + Model.CLAUDE_HAIKU_4_5.asString())
 			.run(context -> {
 
 				AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
 
 				var userMessage = new UserMessage(
-						"What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan? Return the temperature in Celsius.");
+						"What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan?"
+								+ " Return the temperature in Celsius.");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 						ToolCallingChatOptions.builder().toolNames("weatherFunction").build()));
@@ -113,8 +115,6 @@ class FunctionCallWithFunctionBeanIT {
 			return new MockWeatherService();
 		}
 
-		// Relies on the Request's JsonClassDescription annotation to provide the
-		// function description.
 		@Bean
 		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunction3() {
 			MockWeatherService weatherService = new MockWeatherService();

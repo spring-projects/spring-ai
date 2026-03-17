@@ -1,0 +1,270 @@
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.springframework.ai.migration.MigrateToSpringAI200M3
+displayName: Migrate to Spring AI 2.0.0-M3
+description: >
+  Umbrella recipe that applies all breaking-change migrations required for
+  Spring AI 2.0.0-M3. Run this recipe to perform all changes in one step.
+
+  Included migrations:
+    - M3MigrateMcpAnnotations:              org.springaicommunity:mcp-annotations → spring-ai-mcp-annotations
+    - M3MigrateMcpSpringTransports:         io.modelcontextprotocol.sdk mcp-spring-webflux/webmvc → org.springframework.ai
+    - M3MigrateMcpClientCustomizer:         McpAsyncClientCustomizer / McpSyncClientCustomizer → McpClientCustomizer<B>
+
+tags:
+  - spring-ai
+  - mcp
+  - migration
+
+recipeList:
+  - org.springframework.ai.migration.M3MigrateMcpAnnotations
+  - org.springframework.ai.migration.M3MigrateMcpSpringTransports
+  - org.springframework.ai.migration.M3MigrateMcpClientCustomizer
+
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.springframework.ai.migration.M3MigrateMcpAnnotations
+displayName: Migrate MCP annotations from springaicommunity to Spring AI
+description: >
+  Migrates all MCP annotation, method-callback, provider, and context classes from the
+  removed `org.springaicommunity:mcp-annotations` library to their new locations
+  inside `org.springframework.ai:spring-ai-mcp-annotations`.
+
+  Package changes:
+    org.springaicommunity.mcp.annotation.*  → org.springframework.ai.mcp.annotation.*
+    org.springaicommunity.mcp.method.*      → org.springframework.ai.mcp.annotation.method.*
+    org.springaicommunity.mcp.provider.*    → org.springframework.ai.mcp.annotation.provider.*
+    org.springaicommunity.mcp.context.*     → org.springframework.ai.mcp.annotation.context.*
+
+tags:
+  - spring-ai
+  - mcp
+  - migration
+
+recipeList:
+
+  # -------------------------------------------------------------------------
+  # Maven: remove the old external dependency (classes are now in spring-ai)
+  # -------------------------------------------------------------------------
+  - org.openrewrite.maven.RemoveDependency:
+      groupId: org.springaicommunity
+      artifactId: mcp-annotations
+
+  # -------------------------------------------------------------------------
+  # Java: text-based package renamings (no classpath resolution needed).
+  # Sub-packages (method, provider, context) must come before the parent
+  # annotation package to avoid double-rewriting already-replaced strings.
+  # -------------------------------------------------------------------------
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "org.springaicommunity.mcp.method."
+      replace: "org.springframework.ai.mcp.annotation.method."
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "org.springaicommunity.mcp.provider."
+      replace: "org.springframework.ai.mcp.annotation.provider."
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "org.springaicommunity.mcp.context."
+      replace: "org.springframework.ai.mcp.annotation.context."
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "org.springaicommunity.mcp.annotation."
+      replace: "org.springframework.ai.mcp.annotation."
+      filePattern: "**/*.java"
+
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.springframework.ai.migration.M3MigrateMcpSpringTransports
+displayName: Migrate MCP Spring transport modules from MCP Java SDK to Spring AI
+description: >
+  Migrates the `mcp-spring-webflux` and `mcp-spring-webmvc` transport modules
+  from the MCP Java SDK (`io.modelcontextprotocol.sdk`) to Spring AI
+  (`org.springframework.ai`).
+
+  Maven dependency group ID changes:
+    io.modelcontextprotocol.sdk:mcp-spring-webflux  → org.springframework.ai:mcp-spring-webflux
+    io.modelcontextprotocol.sdk:mcp-spring-webmvc   → org.springframework.ai:mcp-spring-webmvc
+
+  Java package changes (server transports):
+    io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider        → org.springframework.ai.mcp.server.webflux.transport
+    io.modelcontextprotocol.server.transport.WebFluxStreamableServerTransportProvider → org.springframework.ai.mcp.server.webflux.transport
+    io.modelcontextprotocol.server.transport.WebFluxStatelessServerTransport           → org.springframework.ai.mcp.server.webflux.transport
+    io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider         → org.springframework.ai.mcp.server.webmvc.transport
+    io.modelcontextprotocol.server.transport.WebMvcStreamableServerTransportProvider  → org.springframework.ai.mcp.server.webmvc.transport
+    io.modelcontextprotocol.server.transport.WebMvcStatelessServerTransport            → org.springframework.ai.mcp.server.webmvc.transport
+
+  Java package changes (client transports):
+    io.modelcontextprotocol.client.transport.WebFluxSseClientTransport          → org.springframework.ai.mcp.client.webflux.transport
+    io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport   → org.springframework.ai.mcp.client.webflux.transport
+
+tags:
+  - spring-ai
+  - mcp
+  - migration
+
+recipeList:
+
+  # -------------------------------------------------------------------------
+  # Maven: change group ID for the WebFlux transport.
+  # Text-based regex replacement is used instead of
+  # org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId because that
+  # recipe requires Maven to fully resolve the POM model first — which fails
+  # when the dependency declares no <version> (version managed via BOM/parent).
+  # The \s+ capture group preserves whatever whitespace/indentation the file uses.
+  # -------------------------------------------------------------------------
+  - org.openrewrite.text.FindAndReplace:
+      find: "<groupId>io\\.modelcontextprotocol\\.sdk</groupId>(\\s+)<artifactId>mcp-spring-webflux</artifactId>"
+      replace: "<groupId>org.springframework.ai</groupId>$1<artifactId>mcp-spring-webflux</artifactId>"
+      regex: true
+      filePattern: "**/pom.xml"
+
+  # -------------------------------------------------------------------------
+  # Maven: change group ID for the WebMvc transport (same rationale as above).
+  # -------------------------------------------------------------------------
+  - org.openrewrite.text.FindAndReplace:
+      find: "<groupId>io\\.modelcontextprotocol\\.sdk</groupId>(\\s+)<artifactId>mcp-spring-webmvc</artifactId>"
+      replace: "<groupId>org.springframework.ai</groupId>$1<artifactId>mcp-spring-webmvc</artifactId>"
+      regex: true
+      filePattern: "**/pom.xml"
+
+  # -------------------------------------------------------------------------
+  # Java: server transport classes (WebFlux)
+  # FindAndReplace is used instead of ChangeType because the old artifacts are
+  # no longer on the classpath, making AST-based type resolution impossible.
+  # -------------------------------------------------------------------------
+  - org.openrewrite.text.FindAndReplace:
+      find: "io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider"
+      replace: "org.springframework.ai.mcp.server.webflux.transport.WebFluxSseServerTransportProvider"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "io.modelcontextprotocol.server.transport.WebFluxStreamableServerTransportProvider"
+      replace: "org.springframework.ai.mcp.server.webflux.transport.WebFluxStreamableServerTransportProvider"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "io.modelcontextprotocol.server.transport.WebFluxStatelessServerTransport"
+      replace: "org.springframework.ai.mcp.server.webflux.transport.WebFluxStatelessServerTransport"
+      filePattern: "**/*.java"
+
+  # -------------------------------------------------------------------------
+  # Java: server transport classes (WebMvc)
+  # -------------------------------------------------------------------------
+  - org.openrewrite.text.FindAndReplace:
+      find: "io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider"
+      replace: "org.springframework.ai.mcp.server.webmvc.transport.WebMvcSseServerTransportProvider"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "io.modelcontextprotocol.server.transport.WebMvcStreamableServerTransportProvider"
+      replace: "org.springframework.ai.mcp.server.webmvc.transport.WebMvcStreamableServerTransportProvider"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "io.modelcontextprotocol.server.transport.WebMvcStatelessServerTransport"
+      replace: "org.springframework.ai.mcp.server.webmvc.transport.WebMvcStatelessServerTransport"
+      filePattern: "**/*.java"
+
+  # -------------------------------------------------------------------------
+  # Java: client transport classes (WebFlux)
+  # -------------------------------------------------------------------------
+  - org.openrewrite.text.FindAndReplace:
+      find: "io.modelcontextprotocol.client.transport.WebFluxSseClientTransport"
+      replace: "org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport"
+      replace: "org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHttpTransport"
+      filePattern: "**/*.java"
+
+  # -------------------------------------------------------------------------
+  # Java: McpJsonMapper.createDefault() → McpJsonDefaults.getMapper()
+  # The factory method moved from McpJsonMapper to McpJsonDefaults.
+  # Replace the call first, then the import so the import line is also updated.
+  # -------------------------------------------------------------------------
+  - org.openrewrite.text.FindAndReplace:
+      find: "McpJsonMapper.createDefault()"
+      replace: "McpJsonDefaults.getMapper()"
+      filePattern: "**/*.java"
+
+  # Always add the McpJsonDefaults import alongside McpJsonMapper.
+  # If McpJsonMapper is no longer used after the call-site replacement above,
+  # it will surface as an unused-import warning for manual cleanup.
+  - org.openrewrite.text.FindAndReplace:
+      find: "import io.modelcontextprotocol.json.McpJsonMapper;"
+      replace: "import io.modelcontextprotocol.json.McpJsonDefaults;\nimport io.modelcontextprotocol.json.McpJsonMapper;"
+      filePattern: "**/*.java"
+
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.springframework.ai.migration.M3MigrateMcpClientCustomizer
+displayName: Migrate McpAsyncClientCustomizer and McpSyncClientCustomizer to McpClientCustomizer
+description: >
+  Replaces the removed `McpAsyncClientCustomizer` and `McpSyncClientCustomizer` interfaces
+  with the new generic `McpClientCustomizer<B>` interface introduced in Spring AI 2.0.0-M3.
+
+  Changes applied:
+    - Import `org.springframework.ai.mcp.customizer.McpAsyncClientCustomizer`
+        → `org.springframework.ai.mcp.customizer.McpClientCustomizer`
+        + adds `import io.modelcontextprotocol.client.McpClient;`
+    - Import `org.springframework.ai.mcp.customizer.McpSyncClientCustomizer`
+        → `org.springframework.ai.mcp.customizer.McpClientCustomizer`
+        + adds `import io.modelcontextprotocol.client.McpClient;`
+    - Simple-name usage `McpAsyncClientCustomizer` → `McpClientCustomizer<McpClient.AsyncSpec>`
+    - Simple-name usage `McpSyncClientCustomizer` → `McpClientCustomizer<McpClient.SyncSpec>`
+
+  NOTE: `McpSyncHttpClientRequestCustomizer` and `McpAsyncHttpClientRequestCustomizer`
+  (from `io.modelcontextprotocol.client.transport.customizer`) are no longer applied by
+  the auto-configurations. Migrate them manually to
+  `McpClientCustomizer<HttpClientSseClientTransport.Builder>` or
+  `McpClientCustomizer<HttpClientStreamableHttpTransport.Builder>` as appropriate.
+
+tags:
+  - spring-ai
+  - mcp
+  - migration
+
+recipeList:
+
+  # -------------------------------------------------------------------------
+  # Step 1 — rewrite the fully-qualified import for McpAsyncClientCustomizer.
+  # The McpClient import is added at the same time because the new parameterised
+  # type McpClientCustomizer<McpClient.AsyncSpec> requires it at the call-site.
+  # -------------------------------------------------------------------------
+  - org.openrewrite.text.FindAndReplace:
+      find: "import org.springframework.ai.mcp.customizer.McpAsyncClientCustomizer;"
+      replace: "import io.modelcontextprotocol.client.McpClient;\nimport org.springframework.ai.mcp.customizer.McpClientCustomizer;"
+      filePattern: "**/*.java"
+
+  # -------------------------------------------------------------------------
+  # Step 2 — rewrite the fully-qualified import for McpSyncClientCustomizer.
+  # -------------------------------------------------------------------------
+  - org.openrewrite.text.FindAndReplace:
+      find: "import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;"
+      replace: "import io.modelcontextprotocol.client.McpClient;\nimport org.springframework.ai.mcp.customizer.McpClientCustomizer;"
+      filePattern: "**/*.java"
+
+  # -------------------------------------------------------------------------
+  # Step 3 — replace simple-name occurrences of McpAsyncClientCustomizer
+  # (return types, implements clauses, parameter types, variable declarations).
+  # Must run AFTER the import replacement so the import line is not touched
+  # again (it no longer contains "McpAsyncClientCustomizer" at this point).
+  # -------------------------------------------------------------------------
+  - org.openrewrite.text.FindAndReplace:
+      find: "McpAsyncClientCustomizer"
+      replace: "McpClientCustomizer<McpClient.AsyncSpec>"
+      filePattern: "**/*.java"
+
+  # -------------------------------------------------------------------------
+  # Step 4 — replace simple-name occurrences of McpSyncClientCustomizer.
+  # -------------------------------------------------------------------------
+  - org.openrewrite.text.FindAndReplace:
+      find: "McpSyncClientCustomizer"
+      replace: "McpClientCustomizer<McpClient.SyncSpec>"
+      filePattern: "**/*.java"
+

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -165,6 +165,11 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 
 	private NumericBoundary exclusive(Value value) {
 		return new NumericBoundary(value.value(), true);
+	}
+
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		emitJsonValue(value, context);
 	}
 
 	record Numeric(NumericBoundary lower, NumericBoundary upper) {

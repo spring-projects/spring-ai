@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.mistralai.MistralAiChatOptions.Builder;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
+import org.springframework.ai.test.options.AbstractChatOptionsTests;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * @author Alexandros Pappas
  */
-class MistralAiChatOptionsTests {
+class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOptions, Builder> {
 
 	@Test
 	void testBuilderWithAllFields() {
@@ -117,7 +120,7 @@ class MistralAiChatOptionsTests {
 
 	@Test
 	void testDefaultValues() {
-		MistralAiChatOptions options = new MistralAiChatOptions();
+		MistralAiChatOptions options = MistralAiChatOptions.builder().build();
 		assertThat(options.getModel()).isNull();
 		assertThat(options.getTemperature()).isNull();
 		assertThat(options.getTopP()).isEqualTo(1.0);
@@ -126,6 +129,7 @@ class MistralAiChatOptionsTests {
 		assertThat(options.getRandomSeed()).isNull();
 		assertThat(options.getStopSequences()).isNull();
 		assertThat(options.getResponseFormat()).isNull();
+		assertThat(options.getOutputSchema()).isNull();
 	}
 
 	@Test
@@ -448,6 +452,13 @@ class MistralAiChatOptionsTests {
 
 		assertThat(options.getResponseFormat()).isNotNull();
 		assertThat(options.getResponseFormat().getType()).isEqualTo(ResponseFormat.Type.JSON_SCHEMA);
+		ResponseFormat.JsonSchema jsonSchema = options.getResponseFormat().getJsonSchema();
+		assertThat(jsonSchema).isNotNull();
+		assertThat(jsonSchema.getName()).isEqualTo("custom_schema");
+		assertThat(jsonSchema.getStrict()).isTrue();
+		assertThat(jsonSchema.getSchema()).containsOnly(Assertions.entry("type", "object"),
+				Assertions.entry("properties", Map.of()));
+		assertThat(options.getOutputSchema()).isEqualTo(schema);
 	}
 
 	@Test
@@ -536,6 +547,16 @@ class MistralAiChatOptionsTests {
 		assertThat(options.getTemperature()).isEqualTo(0.7);
 		assertThat(options.getResponseFormat()).isNotNull();
 		assertThat(options.getResponseFormat().getType()).isEqualTo(ResponseFormat.Type.JSON_SCHEMA);
+	}
+
+	@Override
+	protected Class<MistralAiChatOptions> getConcreteOptionsClass() {
+		return MistralAiChatOptions.class;
+	}
+
+	@Override
+	protected Builder readyToBuildBuilder() {
+		return MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_SMALL).maxTokens(500);
 	}
 
 	// Test record for schema generation tests

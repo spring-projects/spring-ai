@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2023-2024 the original author or authors.
+  ~ Copyright 2023-present the original author or authors.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -31,14 +31,45 @@
 
     <scm>
         <url>https://github.com/spring-projects/spring-ai</url>
-        <connection>git://github.com/spring-projects/spring-ai.git</connection>
-        <developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
+        <connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
     </scm>
 
     <properties>
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.source>17</maven.compiler.source>
     </properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<!-- Override transitive grpc-netty-shaded to fix CVE-2025-55163 -->
+			<dependency>
+				<groupId>io.grpc</groupId>
+				<artifactId>grpc-netty-shaded</artifactId>
+				<version>${grpc-netty-shaded.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>io.grpc</groupId>
+				<artifactId>grpc-protobuf</artifactId>
+				<version>${grpc-netty-shaded.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>io.grpc</groupId>
+				<artifactId>grpc-protobuf-lite</artifactId>
+				<version>${grpc-netty-shaded.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>io.grpc</groupId>
+				<artifactId>grpc-api</artifactId>
+				<version>${grpc-netty-shaded.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>io.grpc</groupId>
+				<artifactId>grpc-stub</artifactId>
+				<version>${grpc-netty-shaded.version}</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
     <dependencies>
         <dependency>

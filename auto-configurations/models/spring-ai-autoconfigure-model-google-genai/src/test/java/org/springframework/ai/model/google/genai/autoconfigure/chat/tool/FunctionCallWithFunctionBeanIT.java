@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ public class FunctionCallWithFunctionBeanIT {
 
 			var options = GoogleGenAiChatOptions.builder()
 				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
-				.toolName("CurrentWeatherService")
+				.toolNames("CurrentWeatherService")
 				.build();
 
 			Prompt prompt = new Prompt("What's the weather like in San Francisco, Paris and in Tokyo?"
@@ -93,7 +93,7 @@ public class FunctionCallWithFunctionBeanIT {
 
 			var options = GoogleGenAiChatOptions.builder()
 				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
-				.toolName("CurrentWeatherService")
+				.toolNames("CurrentWeatherService")
 				.build();
 
 			Prompt prompt = new Prompt("What's the weather like in San Francisco, Paris and in Tokyo?"

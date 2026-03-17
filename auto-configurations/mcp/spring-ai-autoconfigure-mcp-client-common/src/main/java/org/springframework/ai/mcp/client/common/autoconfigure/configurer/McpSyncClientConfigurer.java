@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,29 +20,29 @@ import java.util.List;
 
 import io.modelcontextprotocol.client.McpClient;
 
-import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;
+import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.util.Assert;
 
 /**
  * Configurer class for customizing MCP synchronous clients.
  *
  * <p>
- * This class manages a collection of {@link McpSyncClientCustomizer} instances that can
- * be applied to customize the configuration of MCP synchronous clients during their
- * creation.
+ * This class manages a collection of {@link McpClientCustomizer<McpClient.SyncSpec>}
+ * instances that can be applied to customize the configuration of MCP synchronous clients
+ * during their creation.
  *
  * <p>
  * The configurer applies customizations in the order they are registered, allowing for
  * sequential modifications to the client specifications.
  *
- * @see McpSyncClientCustomizer
+ * @see McpClientCustomizer
  * @see McpClient.SyncSpec
  */
 public class McpSyncClientConfigurer {
 
-	private List<McpSyncClientCustomizer> customizers;
+	private List<McpClientCustomizer<McpClient.SyncSpec>> customizers;
 
-	public McpSyncClientConfigurer(List<McpSyncClientCustomizer> customizers) {
+	public McpSyncClientConfigurer(List<McpClientCustomizer<McpClient.SyncSpec>> customizers) {
 		Assert.notNull(customizers, "customizers must not be null");
 		this.customizers = customizers;
 	}
@@ -69,7 +69,7 @@ public class McpSyncClientConfigurer {
 	 */
 	private void applyCustomizers(String name, McpClient.SyncSpec spec) {
 		if (this.customizers != null) {
-			for (McpSyncClientCustomizer customizer : this.customizers) {
+			for (McpClientCustomizer<McpClient.SyncSpec> customizer : this.customizers) {
 				customizer.customize(name, spec);
 			}
 		}
