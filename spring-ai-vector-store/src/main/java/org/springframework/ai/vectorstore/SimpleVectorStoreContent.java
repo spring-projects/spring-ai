@@ -38,7 +38,7 @@ import org.springframework.util.Assert;
  * embeddings. This class is thread-safe and all its fields are final and deeply
  * immutable. The embedding vector is required for all instances of this class.
  */
-public final class SimpleVectorStoreContent implements Content {
+final class SimpleVectorStoreContent implements Content {
 
 	private final String id;
 
@@ -54,7 +54,7 @@ public final class SimpleVectorStoreContent implements Content {
 	 * @param text the content text, must not be null
 	 * @param embedding the embedding vector, must not be null
 	 */
-	public SimpleVectorStoreContent(@JsonProperty("text") @JsonAlias("content") String text,
+	SimpleVectorStoreContent(@JsonProperty("text") @JsonAlias("content") String text,
 			@JsonProperty("embedding") float[] embedding) {
 		this(text, new HashMap<>(), embedding);
 	}
@@ -65,7 +65,7 @@ public final class SimpleVectorStoreContent implements Content {
 	 * @param metadata the metadata map, must not be null
 	 * @param embedding the embedding vector, must not be null
 	 */
-	public SimpleVectorStoreContent(String text, Map<String, Object> metadata, float[] embedding) {
+	SimpleVectorStoreContent(String text, Map<String, Object> metadata, float[] embedding) {
 		this(text, metadata, new RandomIdGenerator(), embedding);
 	}
 
@@ -77,8 +77,7 @@ public final class SimpleVectorStoreContent implements Content {
 	 * @param idGenerator the ID generator to use, must not be null
 	 * @param embedding the embedding vector, must not be null
 	 */
-	public SimpleVectorStoreContent(String text, Map<String, Object> metadata, IdGenerator idGenerator,
-			float[] embedding) {
+	SimpleVectorStoreContent(String text, Map<String, Object> metadata, IdGenerator idGenerator, float[] embedding) {
 		this(idGenerator.generateId(text, metadata), text, metadata, embedding);
 	}
 
@@ -91,7 +90,7 @@ public final class SimpleVectorStoreContent implements Content {
 	 * @throws IllegalArgumentException if any parameter is null or if id is empty
 	 */
 	@JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-	public SimpleVectorStoreContent(@JsonProperty("id") @Nullable String id,
+	SimpleVectorStoreContent(@JsonProperty("id") @Nullable String id,
 			@JsonProperty("text") @JsonAlias("content") String text,
 			@JsonProperty("metadata") Map<String, Object> metadata, @JsonProperty("embedding") float[] embedding) {
 
