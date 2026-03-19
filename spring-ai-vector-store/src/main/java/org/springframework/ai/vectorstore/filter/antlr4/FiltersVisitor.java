@@ -24,128 +24,127 @@ package org.springframework.ai.vectorstore.filter.antlr4;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**
- * This interface defines a complete generic visitor for a parse tree produced by
- * {@link FiltersParser}.
+ * This interface defines a complete generic visitor for a parse tree produced
+ * by {@link FiltersParser}.
  *
- * @param <T> The return type of the visit operation. Use {@link Void} for operations with
- * no return type.
+ * @param <T> The return type of the visit operation. Use {@link Void} for
+ * operations with no return type.
  */
 public interface FiltersVisitor<T> extends ParseTreeVisitor<T> {
-
 	/**
 	 * Visit a parse tree produced by {@link FiltersParser#where}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitWhere(FiltersParser.WhereContext ctx);
-
 	/**
-	 * Visit a parse tree produced by the {@code NinExpression} labeled alternative in
-	 * {@link FiltersParser#booleanExpression}.
+	 * Visit a parse tree produced by the {@code NinExpression}
+	 * labeled alternative in {@link FiltersParser#booleanExpression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitNinExpression(FiltersParser.NinExpressionContext ctx);
-
 	/**
-	 * Visit a parse tree produced by the {@code AndExpression} labeled alternative in
-	 * {@link FiltersParser#booleanExpression}.
+	 * Visit a parse tree produced by the {@code AndExpression}
+	 * labeled alternative in {@link FiltersParser#booleanExpression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitAndExpression(FiltersParser.AndExpressionContext ctx);
-
 	/**
-	 * Visit a parse tree produced by the {@code InExpression} labeled alternative in
-	 * {@link FiltersParser#booleanExpression}.
+	 * Visit a parse tree produced by the {@code InExpression}
+	 * labeled alternative in {@link FiltersParser#booleanExpression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitInExpression(FiltersParser.InExpressionContext ctx);
-
 	/**
-	 * Visit a parse tree produced by the {@code NotExpression} labeled alternative in
-	 * {@link FiltersParser#booleanExpression}.
+	 * Visit a parse tree produced by the {@code NotExpression}
+	 * labeled alternative in {@link FiltersParser#booleanExpression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitNotExpression(FiltersParser.NotExpressionContext ctx);
-
 	/**
-	 * Visit a parse tree produced by the {@code CompareExpression} labeled alternative in
-	 * {@link FiltersParser#booleanExpression}.
+	 * Visit a parse tree produced by the {@code CompareExpression}
+	 * labeled alternative in {@link FiltersParser#booleanExpression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitCompareExpression(FiltersParser.CompareExpressionContext ctx);
-
 	/**
-	 * Visit a parse tree produced by the {@code OrExpression} labeled alternative in
-	 * {@link FiltersParser#booleanExpression}.
+	 * Visit a parse tree produced by the {@code OrExpression}
+	 * labeled alternative in {@link FiltersParser#booleanExpression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitOrExpression(FiltersParser.OrExpressionContext ctx);
-
 	/**
-	 * Visit a parse tree produced by the {@code GroupExpression} labeled alternative in
-	 * {@link FiltersParser#booleanExpression}.
+	 * Visit a parse tree produced by the {@code GroupExpression}
+	 * labeled alternative in {@link FiltersParser#booleanExpression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitGroupExpression(FiltersParser.GroupExpressionContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link FiltersParser#constantArray}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitConstantArray(FiltersParser.ConstantArrayContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link FiltersParser#compare}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitCompare(FiltersParser.CompareContext ctx);
-
 	/**
-	 * Visit a parse tree produced by {@link FiltersParser#identifier}.
+	 * Visit a parse tree produced by the {@code CompoundIdentifier}
+	 * labeled alternative in {@link FiltersParser#identifier}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitIdentifier(FiltersParser.IdentifierContext ctx);
-
+	T visitCompoundIdentifier(FiltersParser.CompoundIdentifierContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code IntegerConstant} labeled alternative in
-	 * {@link FiltersParser#constant}.
+	 * Visit a parse tree produced by the {@code SimpleIdentifier}
+	 * labeled alternative in {@link FiltersParser#identifier}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSimpleIdentifier(FiltersParser.SimpleIdentifierContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code QuotedIdentifier}
+	 * labeled alternative in {@link FiltersParser#identifier}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitQuotedIdentifier(FiltersParser.QuotedIdentifierContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code IntegerConstant}
+	 * labeled alternative in {@link FiltersParser#constant}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitIntegerConstant(FiltersParser.IntegerConstantContext ctx);
-
 	/**
-	 * Visit a parse tree produced by the {@code DecimalConstant} labeled alternative in
-	 * {@link FiltersParser#constant}.
+	 * Visit a parse tree produced by the {@code DecimalConstant}
+	 * labeled alternative in {@link FiltersParser#constant}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitDecimalConstant(FiltersParser.DecimalConstantContext ctx);
-
 	/**
-	 * Visit a parse tree produced by the {@code TextConstant} labeled alternative in
-	 * {@link FiltersParser#constant}.
+	 * Visit a parse tree produced by the {@code TextConstant}
+	 * labeled alternative in {@link FiltersParser#constant}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitTextConstant(FiltersParser.TextConstantContext ctx);
-
 	/**
-	 * Visit a parse tree produced by the {@code BooleanConstant} labeled alternative in
-	 * {@link FiltersParser#constant}.
+	 * Visit a parse tree produced by the {@code BooleanConstant}
+	 * labeled alternative in {@link FiltersParser#constant}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitBooleanConstant(FiltersParser.BooleanConstantContext ctx);
-
 }

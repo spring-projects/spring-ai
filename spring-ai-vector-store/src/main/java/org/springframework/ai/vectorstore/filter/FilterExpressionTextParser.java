@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,10 +31,14 @@ import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 
+import org.springframework.ai.vectorstore.filter.Filter.Operand;
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersBaseVisitor;
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersLexer;
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersParser;
+import org.springframework.ai.vectorstore.filter.antlr4.FiltersParser.CompoundIdentifierContext;
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersParser.NotExpressionContext;
+import org.springframework.ai.vectorstore.filter.antlr4.FiltersParser.QuotedIdentifierContext;
+import org.springframework.ai.vectorstore.filter.antlr4.FiltersParser.SimpleIdentifierContext;
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.util.Assert;
 
@@ -97,6 +101,7 @@ import org.springframework.util.Assert;
  * }</pre>
  *
  * @author Christian Tzolov
+ * @author Sun Yuhan
  */
 public class FilterExpressionTextParser {
 
@@ -185,8 +190,19 @@ public class FilterExpressionTextParser {
 		}
 
 		@Override
-		public Filter.Operand visitIdentifier(FiltersParser.IdentifierContext ctx) {
+		public Operand visitSimpleIdentifier(SimpleIdentifierContext ctx) {
 			return new Filter.Key(ctx.getText());
+		}
+
+		@Override
+		public Operand visitCompoundIdentifier(CompoundIdentifierContext ctx) {
+			return new Filter.Key(ctx.getText());
+		}
+
+		@Override
+		public Operand visitQuotedIdentifier(QuotedIdentifierContext ctx) {
+			String onceQuotedText = unescapeStringValue(ctx.getText());
+			return new Filter.Key(onceQuotedText);
 		}
 
 		@Override
@@ -235,23 +251,23 @@ public class FilterExpressionTextParser {
 
 		@Override
 		public Filter.Operand visitInExpression(FiltersParser.InExpressionContext ctx) {
-			return new Filter.Expression(Filter.ExpressionType.IN, this.visitIdentifier(ctx.identifier()),
-					this.visitConstantArray(ctx.constantArray()));
+			return new Filter.Expression(Filter.ExpressionType.IN, this.visit(ctx.identifier()),
+					this.visit(ctx.constantArray()));
 		}
 
 		@Override
 		public Filter.Operand visitNinExpression(FiltersParser.NinExpressionContext ctx) {
-			return new Filter.Expression(Filter.ExpressionType.NIN, this.visitIdentifier(ctx.identifier()),
-					this.visitConstantArray(ctx.constantArray()));
+			return new Filter.Expression(Filter.ExpressionType.NIN, this.visit(ctx.identifier()),
+					this.visit(ctx.constantArray()));
 		}
 
 		@Override
 		public Filter.Operand visitCompareExpression(FiltersParser.CompareExpressionContext ctx) {
-			return new Filter.Expression(this.covertCompare(ctx.compare().getText()),
-					this.visitIdentifier(ctx.identifier()), this.visit(ctx.constant()));
+			return new Filter.Expression(this.convertCompare(ctx.compare().getText()), this.visit(ctx.identifier()),
+					this.visit(ctx.constant()));
 		}
 
-		private Filter.ExpressionType covertCompare(String compare) {
+		private Filter.ExpressionType convertCompare(String compare) {
 			if (!COMP_EXPRESSION_TYPE_MAP.containsKey(compare)) {
 				throw new RuntimeException("Unknown compare operator: " + compare);
 			}

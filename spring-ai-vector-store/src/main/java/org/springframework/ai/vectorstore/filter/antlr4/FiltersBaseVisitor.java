@@ -24,209 +24,132 @@ package org.springframework.ai.vectorstore.filter.antlr4;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link FiltersVisitor}, which can be
- * extended to create a visitor which only needs to handle a subset of the available
- * methods.
+ * This class provides an empty implementation of {@link FiltersVisitor},
+ * which can be extended to create a visitor which only needs to handle a subset
+ * of the available methods.
  *
- * @param <T> The return type of the visit operation. Use {@link Void} for operations with
- * no return type.
+ * @param <T> The return type of the visit operation. Use {@link Void} for
+ * operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
 public class FiltersBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements FiltersVisitor<T> {
-
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>
-	 * The default implementation returns the result of calling {@link #visitChildren} on
-	 * {@code ctx}.
-	 * </p>
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitWhere(FiltersParser.WhereContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitWhere(FiltersParser.WhereContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>
-	 * The default implementation returns the result of calling {@link #visitChildren} on
-	 * {@code ctx}.
-	 * </p>
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitNinExpression(FiltersParser.NinExpressionContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitNinExpression(FiltersParser.NinExpressionContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>
-	 * The default implementation returns the result of calling {@link #visitChildren} on
-	 * {@code ctx}.
-	 * </p>
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitAndExpression(FiltersParser.AndExpressionContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitAndExpression(FiltersParser.AndExpressionContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>
-	 * The default implementation returns the result of calling {@link #visitChildren} on
-	 * {@code ctx}.
-	 * </p>
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitInExpression(FiltersParser.InExpressionContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitInExpression(FiltersParser.InExpressionContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>
-	 * The default implementation returns the result of calling {@link #visitChildren} on
-	 * {@code ctx}.
-	 * </p>
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitNotExpression(FiltersParser.NotExpressionContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitNotExpression(FiltersParser.NotExpressionContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>
-	 * The default implementation returns the result of calling {@link #visitChildren} on
-	 * {@code ctx}.
-	 * </p>
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitCompareExpression(FiltersParser.CompareExpressionContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitCompareExpression(FiltersParser.CompareExpressionContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>
-	 * The default implementation returns the result of calling {@link #visitChildren} on
-	 * {@code ctx}.
-	 * </p>
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitOrExpression(FiltersParser.OrExpressionContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitOrExpression(FiltersParser.OrExpressionContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>
-	 * The default implementation returns the result of calling {@link #visitChildren} on
-	 * {@code ctx}.
-	 * </p>
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitGroupExpression(FiltersParser.GroupExpressionContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitGroupExpression(FiltersParser.GroupExpressionContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>
-	 * The default implementation returns the result of calling {@link #visitChildren} on
-	 * {@code ctx}.
-	 * </p>
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitConstantArray(FiltersParser.ConstantArrayContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitConstantArray(FiltersParser.ConstantArrayContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>
-	 * The default implementation returns the result of calling {@link #visitChildren} on
-	 * {@code ctx}.
-	 * </p>
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitCompare(FiltersParser.CompareContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitCompare(FiltersParser.CompareContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>
-	 * The default implementation returns the result of calling {@link #visitChildren} on
-	 * {@code ctx}.
-	 * </p>
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitIdentifier(FiltersParser.IdentifierContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitCompoundIdentifier(FiltersParser.CompoundIdentifierContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>
-	 * The default implementation returns the result of calling {@link #visitChildren} on
-	 * {@code ctx}.
-	 * </p>
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitIntegerConstant(FiltersParser.IntegerConstantContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitSimpleIdentifier(FiltersParser.SimpleIdentifierContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>
-	 * The default implementation returns the result of calling {@link #visitChildren} on
-	 * {@code ctx}.
-	 * </p>
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitDecimalConstant(FiltersParser.DecimalConstantContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitQuotedIdentifier(FiltersParser.QuotedIdentifierContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>
-	 * The default implementation returns the result of calling {@link #visitChildren} on
-	 * {@code ctx}.
-	 * </p>
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitTextConstant(FiltersParser.TextConstantContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitIntegerConstant(FiltersParser.IntegerConstantContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
-	 * <p>
-	 * The default implementation returns the result of calling {@link #visitChildren} on
-	 * {@code ctx}.
-	 * </p>
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitBooleanConstant(FiltersParser.BooleanConstantContext ctx) {
-		return visitChildren(ctx);
-	}
-
+	@Override public T visitDecimalConstant(FiltersParser.DecimalConstantContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitTextConstant(FiltersParser.TextConstantContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitBooleanConstant(FiltersParser.BooleanConstantContext ctx) { return visitChildren(ctx); }
 }
