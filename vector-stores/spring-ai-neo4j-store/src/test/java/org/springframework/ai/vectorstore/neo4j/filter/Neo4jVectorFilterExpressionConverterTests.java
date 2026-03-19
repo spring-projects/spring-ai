@@ -126,7 +126,7 @@ public class Neo4jVectorFilterExpressionConverterTests {
 	@Test
 	public void testComplexIdentifiers() {
 		String vectorExpr = this.converter
-			.convertExpression(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
+			.convertExpression(new Expression(EQ, new Key("country 1 2 3"), new Value("BG")));
 		assertThat(vectorExpr).isEqualTo("node.`metadata.country 1 2 3` = \"BG\"");
 	}
 
@@ -137,6 +137,13 @@ public class Neo4jVectorFilterExpressionConverterTests {
 		String vectorExpr = this.converter.convertExpression(expr);
 		assertThat(vectorExpr)
 			.isEqualTo("node.`metadata.author` IN [\"john\",\"jill\"] AND node.`metadata.article_type` = \"blog\"");
+	}
+
+	@Test
+	public void testComplexIdentifiers3() {
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
+		assertThat(vectorExpr).isEqualTo("node.`metadata.\"country 1 2 3\"` = \"BG\"");
 	}
 
 	@Test
@@ -248,6 +255,27 @@ public class Neo4jVectorFilterExpressionConverterTests {
 					new Expression(GTE, new Key("valueB"), new Value(-10))));
 
 		assertThat(vectorExpr).isEqualTo("node.`metadata.valueA` <= -5 AND node.`metadata.valueB` >= -10");
+	}
+
+	@Test
+	public void testKeyWithBacktick() {
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("a` IS NOT NULL WITH node, score //"), new Value("v")));
+		assertThat(vectorExpr).isEqualTo("node.`metadata.a`` IS NOT NULL WITH node, score //` = \"v\"");
+	}
+
+	@Test
+	public void testKeyFromTextParser() {
+		Expression expr = new FilterExpressionTextParser().parse("\"safe_key\" == 'value'");
+		String vectorExpr = this.converter.convertExpression(expr);
+		assertThat(vectorExpr).isEqualTo("node.`metadata.safe_key` = \"value\"");
+	}
+
+	@Test
+	public void testKeyWithControlCharacters() {
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("key\nwith\nnewline"), new Value("v")));
+		assertThat(vectorExpr).isEqualTo("node.`metadata.key\nwith\nnewline` = \"v\"");
 	}
 
 }
