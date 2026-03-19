@@ -35,6 +35,7 @@ import com.github.victools.jsonschema.generator.SchemaVersion;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.jackson.JacksonSchemaModule;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
@@ -147,6 +148,7 @@ public final class JsonSchemaGenerator {
 			if (StringUtils.hasText(parameterDescription)) {
 				parameterNode.put("description", parameterDescription);
 			}
+			applyMethodParameterAnnotations(parameterNode, method.getParameters()[i]);
 			properties.set(parameterName, parameterNode);
 		}
 
@@ -254,6 +256,25 @@ public final class JsonSchemaGenerator {
 		}
 
 		return null;
+	}
+
+	private static void applyMethodParameterAnnotations(ObjectNode parameterNode, Parameter parameter) {
+		var arraySchemaAnnotation = parameter.getAnnotation(ArraySchema.class);
+		if (arraySchemaAnnotation != null) {
+			applyArraySchemaAnnotation(parameterNode, arraySchemaAnnotation);
+		}
+	}
+
+	private static void applyArraySchemaAnnotation(ObjectNode parameterNode, ArraySchema arraySchemaAnnotation) {
+		if (arraySchemaAnnotation.minItems() != Integer.MAX_VALUE) {
+			parameterNode.put("minItems", arraySchemaAnnotation.minItems());
+		}
+		if (arraySchemaAnnotation.maxItems() != Integer.MIN_VALUE) {
+			parameterNode.put("maxItems", arraySchemaAnnotation.maxItems());
+		}
+		if (arraySchemaAnnotation.uniqueItems()) {
+			parameterNode.put("uniqueItems", true);
+		}
 	}
 
 	// Based on the method in ModelOptionsUtils.

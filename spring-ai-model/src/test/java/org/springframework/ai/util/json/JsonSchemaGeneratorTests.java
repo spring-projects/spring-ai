@@ -26,6 +26,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
@@ -332,6 +333,20 @@ class JsonSchemaGeneratorTests {
 				""";
 
 		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForMethodWithArraySchemaAnnotations() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("arraySchemaMethod", List.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		JsonNode schemaNode = JsonParser.getJsonMapper().readTree(schema);
+
+		assertThat(schemaNode.at("/properties/buildIds/type").asText()).isEqualTo("array");
+		assertThat(schemaNode.at("/properties/buildIds/items/type").asText()).isEqualTo("string");
+		assertThat(schemaNode.at("/properties/buildIds/minItems").intValue()).isEqualTo(1);
+		assertThat(schemaNode.at("/properties/buildIds/maxItems").intValue()).isEqualTo(50);
+		assertThat(schemaNode.at("/required/0").asText()).isEqualTo("buildIds");
 	}
 
 	@Test
@@ -731,6 +746,10 @@ class JsonSchemaGeneratorTests {
 		}
 
 		public void complexMethod(List<String> items, TestData data, MoreTestData moreData) {
+		}
+
+		public void arraySchemaMethod(@ToolParam(description = "List of build identifiers") @ArraySchema(minItems = 1,
+				maxItems = 50) List<String> buildIds) {
 		}
 
 		public void timeMethod(Duration duration, LocalDateTime localDateTime, Instant instant) {
