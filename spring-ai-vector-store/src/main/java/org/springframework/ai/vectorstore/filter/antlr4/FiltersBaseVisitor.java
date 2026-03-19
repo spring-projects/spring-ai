@@ -199,7 +199,33 @@ public class FiltersBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	 * </p>
 	 */
 	@Override
-	public T visitIdentifier(FiltersParser.IdentifierContext ctx) {
+	public T visitCompoundIdentifier(FiltersParser.CompoundIdentifierContext ctx) {
+		return visitChildren(ctx);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation returns the result of calling {@link #visitChildren} on
+	 * {@code ctx}.
+	 * </p>
+	 */
+	@Override
+	public T visitSimpleIdentifier(FiltersParser.SimpleIdentifierContext ctx) {
+		return visitChildren(ctx);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation returns the result of calling {@link #visitChildren} on
+	 * {@code ctx}.
+	 * </p>
+	 */
+	@Override
+	public T visitQuotedIdentifier(FiltersParser.QuotedIdentifierContext ctx) {
 		return visitChildren(ctx);
 	}
 
