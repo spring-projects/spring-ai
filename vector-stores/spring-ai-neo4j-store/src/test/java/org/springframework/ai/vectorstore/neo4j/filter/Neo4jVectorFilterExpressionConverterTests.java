@@ -136,7 +136,7 @@ public class Neo4jVectorFilterExpressionConverterTests {
 			.parse("author in ['john', 'jill'] && 'article_type' == 'blog'");
 		String vectorExpr = this.converter.convertExpression(expr);
 		assertThat(vectorExpr)
-			.isEqualTo("node.`metadata.author` IN [\"john\",\"jill\"] AND node.`metadata.'article_type'` = \"blog\"");
+			.isEqualTo("node.`metadata.author` IN [\"john\",\"jill\"] AND node.`metadata.article_type` = \"blog\"");
 	}
 
 	@Test

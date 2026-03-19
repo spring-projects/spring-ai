@@ -305,7 +305,7 @@ public class FiltersBaseListener implements FiltersListener {
 	 * </p>
 	 */
 	@Override
-	public void enterIdentifier(FiltersParser.IdentifierContext ctx) {
+	public void enterCompoundIdentifier(FiltersParser.CompoundIdentifierContext ctx) {
 	}
 
 	/**
@@ -316,7 +316,51 @@ public class FiltersBaseListener implements FiltersListener {
 	 * </p>
 	 */
 	@Override
-	public void exitIdentifier(FiltersParser.IdentifierContext ctx) {
+	public void exitCompoundIdentifier(FiltersParser.CompoundIdentifierContext ctx) {
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation does nothing.
+	 * </p>
+	 */
+	@Override
+	public void enterSimpleIdentifier(FiltersParser.SimpleIdentifierContext ctx) {
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation does nothing.
+	 * </p>
+	 */
+	@Override
+	public void exitSimpleIdentifier(FiltersParser.SimpleIdentifierContext ctx) {
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation does nothing.
+	 * </p>
+	 */
+	@Override
+	public void enterQuotedIdentifier(FiltersParser.QuotedIdentifierContext ctx) {
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation does nothing.
+	 * </p>
+	 */
+	@Override
+	public void exitQuotedIdentifier(FiltersParser.QuotedIdentifierContext ctx) {
 	}
 
 	/**

@@ -126,11 +126,28 @@ public interface FiltersVisitor<T> extends ParseTreeVisitor<T> {
 	T visitCompare(FiltersParser.CompareContext ctx);
 
 	/**
-	 * Visit a parse tree produced by {@link FiltersParser#identifier}.
+	 * Visit a parse tree produced by the {@code CompoundIdentifier} labeled alternative
+	 * in {@link FiltersParser#identifier}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitIdentifier(FiltersParser.IdentifierContext ctx);
+	T visitCompoundIdentifier(FiltersParser.CompoundIdentifierContext ctx);
+
+	/**
+	 * Visit a parse tree produced by the {@code SimpleIdentifier} labeled alternative in
+	 * {@link FiltersParser#identifier}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSimpleIdentifier(FiltersParser.SimpleIdentifierContext ctx);
+
+	/**
+	 * Visit a parse tree produced by the {@code QuotedIdentifier} labeled alternative in
+	 * {@link FiltersParser#identifier}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitQuotedIdentifier(FiltersParser.QuotedIdentifierContext ctx);
 
 	/**
 	 * Visit a parse tree produced by the {@code LongConstant} labeled alternative in

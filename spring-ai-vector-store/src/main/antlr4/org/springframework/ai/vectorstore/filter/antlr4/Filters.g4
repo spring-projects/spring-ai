@@ -46,9 +46,9 @@ compare:
     EQUALS | GT | GE | LT | LE | NE;
 
 identifier
-    : IDENTIFIER DOT IDENTIFIER
-    | IDENTIFIER
-    | QUOTED_STRING
+    : IDENTIFIER DOT IDENTIFIER		# CompoundIdentifier
+    | IDENTIFIER					# SimpleIdentifier
+    | QUOTED_STRING					# QuotedIdentifier
     ;
 
 constant
