@@ -984,6 +984,27 @@ public class FiltersParser extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class IdentifierContext extends ParserRuleContext {
 
+		public IdentifierContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		@Override
+		public int getRuleIndex() {
+			return RULE_identifier;
+		}
+
+		public IdentifierContext() {
+		}
+
+		public void copyFrom(IdentifierContext ctx) {
+			super.copyFrom(ctx);
+		}
+
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class CompoundIdentifierContext extends IdentifierContext {
+
 		public List<TerminalNode> IDENTIFIER() {
 			return getTokens(FiltersParser.IDENTIFIER);
 		}
@@ -996,35 +1017,92 @@ public class FiltersParser extends Parser {
 			return getToken(FiltersParser.DOT, 0);
 		}
 
-		public TerminalNode QUOTED_STRING() {
-			return getToken(FiltersParser.QUOTED_STRING, 0);
-		}
-
-		public IdentifierContext(ParserRuleContext parent, int invokingState) {
-			super(parent, invokingState);
-		}
-
-		@Override
-		public int getRuleIndex() {
-			return RULE_identifier;
+		public CompoundIdentifierContext(IdentifierContext ctx) {
+			copyFrom(ctx);
 		}
 
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof FiltersListener)
-				((FiltersListener) listener).enterIdentifier(this);
+				((FiltersListener) listener).enterCompoundIdentifier(this);
 		}
 
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof FiltersListener)
-				((FiltersListener) listener).exitIdentifier(this);
+				((FiltersListener) listener).exitCompoundIdentifier(this);
 		}
 
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof FiltersVisitor)
-				return ((FiltersVisitor<? extends T>) visitor).visitIdentifier(this);
+				return ((FiltersVisitor<? extends T>) visitor).visitCompoundIdentifier(this);
+			else
+				return visitor.visitChildren(this);
+		}
+
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class SimpleIdentifierContext extends IdentifierContext {
+
+		public TerminalNode IDENTIFIER() {
+			return getToken(FiltersParser.IDENTIFIER, 0);
+		}
+
+		public SimpleIdentifierContext(IdentifierContext ctx) {
+			copyFrom(ctx);
+		}
+
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if (listener instanceof FiltersListener)
+				((FiltersListener) listener).enterSimpleIdentifier(this);
+		}
+
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if (listener instanceof FiltersListener)
+				((FiltersListener) listener).exitSimpleIdentifier(this);
+		}
+
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if (visitor instanceof FiltersVisitor)
+				return ((FiltersVisitor<? extends T>) visitor).visitSimpleIdentifier(this);
+			else
+				return visitor.visitChildren(this);
+		}
+
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class QuotedIdentifierContext extends IdentifierContext {
+
+		public TerminalNode QUOTED_STRING() {
+			return getToken(FiltersParser.QUOTED_STRING, 0);
+		}
+
+		public QuotedIdentifierContext(IdentifierContext ctx) {
+			copyFrom(ctx);
+		}
+
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if (listener instanceof FiltersListener)
+				((FiltersListener) listener).enterQuotedIdentifier(this);
+		}
+
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if (listener instanceof FiltersListener)
+				((FiltersListener) listener).exitQuotedIdentifier(this);
+		}
+
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if (visitor instanceof FiltersVisitor)
+				return ((FiltersVisitor<? extends T>) visitor).visitQuotedIdentifier(this);
 			else
 				return visitor.visitChildren(this);
 		}
@@ -1039,6 +1117,7 @@ public class FiltersParser extends Parser {
 			_errHandler.sync(this);
 			switch (getInterpreter().adaptivePredict(_input, 5, _ctx)) {
 				case 1:
+					_localctx = new CompoundIdentifierContext(_localctx);
 					enterOuterAlt(_localctx, 1); {
 					setState(74);
 					match(IDENTIFIER);
@@ -1049,12 +1128,14 @@ public class FiltersParser extends Parser {
 				}
 					break;
 				case 2:
+					_localctx = new SimpleIdentifierContext(_localctx);
 					enterOuterAlt(_localctx, 2); {
 					setState(77);
 					match(IDENTIFIER);
 				}
 					break;
 				case 3:
+					_localctx = new QuotedIdentifierContext(_localctx);
 					enterOuterAlt(_localctx, 3); {
 					setState(78);
 					match(QUOTED_STRING);

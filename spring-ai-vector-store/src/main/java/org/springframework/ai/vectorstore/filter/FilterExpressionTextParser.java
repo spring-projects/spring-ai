@@ -31,10 +31,14 @@ import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 
+import org.springframework.ai.vectorstore.filter.Filter.Operand;
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersBaseVisitor;
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersLexer;
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersParser;
+import org.springframework.ai.vectorstore.filter.antlr4.FiltersParser.CompoundIdentifierContext;
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersParser.NotExpressionContext;
+import org.springframework.ai.vectorstore.filter.antlr4.FiltersParser.QuotedIdentifierContext;
+import org.springframework.ai.vectorstore.filter.antlr4.FiltersParser.SimpleIdentifierContext;
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.util.Assert;
 
@@ -186,8 +190,19 @@ public class FilterExpressionTextParser {
 		}
 
 		@Override
-		public Filter.Operand visitIdentifier(FiltersParser.IdentifierContext ctx) {
+		public Operand visitSimpleIdentifier(SimpleIdentifierContext ctx) {
 			return new Filter.Key(ctx.getText());
+		}
+
+		@Override
+		public Operand visitCompoundIdentifier(CompoundIdentifierContext ctx) {
+			return new Filter.Key(ctx.getText());
+		}
+
+		@Override
+		public Operand visitQuotedIdentifier(QuotedIdentifierContext ctx) {
+			String onceQuotedText = unescapeStringValue(ctx.getText());
+			return new Filter.Key(onceQuotedText);
 		}
 
 		@Override
@@ -236,30 +251,30 @@ public class FilterExpressionTextParser {
 
 		@Override
 		public Filter.Operand visitInExpression(FiltersParser.InExpressionContext ctx) {
-			return new Filter.Expression(Filter.ExpressionType.IN, this.visitIdentifier(ctx.identifier()),
-					this.visitConstantArray(ctx.constantArray()));
+			return new Filter.Expression(Filter.ExpressionType.IN, this.visit(ctx.identifier()),
+					this.visit(ctx.constantArray()));
 		}
 
 		@Override
 		public Filter.Operand visitNinExpression(FiltersParser.NinExpressionContext ctx) {
-			return new Filter.Expression(Filter.ExpressionType.NIN, this.visitIdentifier(ctx.identifier()),
-					this.visitConstantArray(ctx.constantArray()));
+			return new Filter.Expression(Filter.ExpressionType.NIN, this.visit(ctx.identifier()),
+					this.visit(ctx.constantArray()));
 		}
 
 		@Override
 		public Filter.Operand visitCompareExpression(FiltersParser.CompareExpressionContext ctx) {
-			return new Filter.Expression(this.convertCompare(ctx.compare().getText()),
-					this.visitIdentifier(ctx.identifier()), this.visit(ctx.constant()));
+			return new Filter.Expression(this.convertCompare(ctx.compare().getText()), this.visit(ctx.identifier()),
+					this.visit(ctx.constant()));
 		}
 
 		@Override
 		public Filter.Operand visitIsNullExpression(FiltersParser.IsNullExpressionContext ctx) {
-			return new Filter.Expression(Filter.ExpressionType.ISNULL, this.visitIdentifier(ctx.identifier()));
+			return new Filter.Expression(Filter.ExpressionType.ISNULL, this.visit(ctx.identifier()));
 		}
 
 		@Override
 		public Filter.Operand visitIsNotNullExpression(FiltersParser.IsNotNullExpressionContext ctx) {
-			return new Filter.Expression(Filter.ExpressionType.ISNOTNULL, this.visitIdentifier(ctx.identifier()));
+			return new Filter.Expression(Filter.ExpressionType.ISNOTNULL, this.visit(ctx.identifier()));
 		}
 
 		private Filter.ExpressionType convertCompare(String compare) {
