@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.neo4j.filter;
 
+import org.neo4j.cypherdsl.support.schema_name.SchemaNames;
+
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
@@ -78,7 +80,11 @@ public class Neo4jVectorFilterExpressionConverter extends AbstractFilterExpressi
 
 	@Override
 	protected void doKey(Key key, StringBuilder context) {
-		context.append("node.").append("`metadata.").append(key.key().replace("\"", "")).append("`");
+		String sanitized = SchemaNames.sanitize("metadata." + key.key(), true)
+			.orElseThrow(() -> new IllegalArgumentException(
+					"Invalid or empty metadata key cannot be used in a Neo4j filter expression: '%s'"
+						.formatted(key.key())));
+		context.append("node.").append(sanitized);
 	}
 
 	@Override
