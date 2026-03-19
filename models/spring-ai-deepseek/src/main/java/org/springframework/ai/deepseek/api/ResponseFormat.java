@@ -18,6 +18,7 @@ package org.springframework.ai.deepseek.api;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -61,7 +62,8 @@ public final class ResponseFormat {
 		this.type = type;
 	}
 
-	private ResponseFormat(Type type) {
+	@JsonCreator
+	public ResponseFormat(@JsonProperty("type") Type type) {
 		this.type = type;
 	}
 
