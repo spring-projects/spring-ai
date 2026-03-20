@@ -1,6 +1,489 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-2-0-0-M3]]
+== Upgrading to 2.0.0-M3
+
+=== MCP Annotations Migrated into Spring AI
+
+The `org.springaicommunity:mcp-annotations` external library has been removed as a dependency of the `mcp-annotations` module.
+Its classes are now part of Spring AI itself under a new package structure.
+
+==== Impact
+
+* All MCP annotation and provider classes have new fully-qualified names.
+* The `org.springaicommunity:mcp-annotations` artifact is no longer provided transitively by Spring AI.
+* Any code importing from `org.springaicommunity.mcp.*` will fail to compile.
+
+==== Package Rename
+
+[cols="1,1", options="header"]
+|===
+| Old Package | New Package
+| `org.springaicommunity.mcp.annotation.*` | `org.springframework.ai.mcp.annotation.*`
+| `org.springaicommunity.mcp.method.*` | `org.springframework.ai.mcp.annotation.method.*`
+| `org.springaicommunity.mcp.provider.*` | `org.springframework.ai.mcp.annotation.provider.*`
+|===
+
+==== Migration
+
+Update all imports in your application code:
+
+[source,java]
+----
+// Before
+import org.springaicommunity.mcp.annotation.McpTool;
+import org.springaicommunity.mcp.annotation.McpPrompt;
+import org.springaicommunity.mcp.annotation.McpResource;
+import org.springaicommunity.mcp.annotation.McpSampling;
+import org.springaicommunity.mcp.provider.tool.SyncMcpToolProvider;
+import org.springaicommunity.mcp.provider.prompt.AsyncMcpPromptProvider;
+
+// After
+import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.McpPrompt;
+import org.springframework.ai.mcp.annotation.McpResource;
+import org.springframework.ai.mcp.annotation.McpSampling;
+import org.springframework.ai.mcp.annotation.provider.tool.SyncMcpToolProvider;
+import org.springframework.ai.mcp.annotation.provider.prompt.AsyncMcpPromptProvider;
+----
+
+If you declared `org.springaicommunity:mcp-annotations` as a direct Maven or Gradle dependency, remove it — the classes are now provided by Spring AI's `spring-ai-mcp-annotations` module.
+
+==== Automated Migration with OpenRewrite
+
+You can automate all import and dependency changes using the provided OpenRewrite recipe.
+
+Apply the https://github.com/spring-projects/spring-ai/blob/main/src/rewrite/migrate-to-2-0-0-M3.yaml[`migrate-to-2-0-0-M3.yaml`] recipe from the command line:
+
+[source,shell]
+----
+mvn org.openrewrite.maven:rewrite-maven-plugin:6.32.0:run \
+  -Drewrite.configLocation=https://raw.githubusercontent.com/spring-projects/spring-ai/refs/heads/main/src/rewrite/migrate-to-2-0-0-M3.yaml \
+  -Drewrite.activeRecipes=org.springframework.ai.migration.M3MigrateMcpAnnotations \
+  -Dmaven.compiler.failOnError=false
+----
+
+The recipe performs two changes automatically:
+
+1. **Removes** the `org.springaicommunity:mcp-annotations` Maven dependency.
+2. **Rewrites** all `import` statements across `.java` files to point to the new `org.springframework.ai.mcp.annotation.*` packages.
+
+To run all M3 migrations at once, use the umbrella recipe — see <<run-all-m3-migrations>>.
+
+=== MCP Spring Transport Modules Moved to Spring AI
+
+The `mcp-spring-webflux` and `mcp-spring-webmvc` transport modules are no longer shipped by the MCP Java SDK. Starting with Spring AI 2.0, they are part of the Spring AI project itself.
+
+==== Impact
+
+* The Maven group ID for both artifacts has changed.
+* Java package names for all Spring-specific transport classes have changed.
+* The MCP Java SDK version requirement has been bumped from `0.18.x` to `1.0.x`.
+
+==== Maven Dependency Group ID Change
+
+.Before
+[source,xml]
+----
+<dependency>
+    <groupId>io.modelcontextprotocol.sdk</groupId>
+    <artifactId>mcp-spring-webflux</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>io.modelcontextprotocol.sdk</groupId>
+    <artifactId>mcp-spring-webmvc</artifactId>
+</dependency>
+----
+
+.After
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>mcp-spring-webflux</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>mcp-spring-webmvc</artifactId>
+</dependency>
+----
+
+NOTE: When using the `spring-ai-bom` or a Spring AI MCP starter (`spring-ai-starter-mcp-server-webflux`, `spring-ai-starter-mcp-server-webmvc`, `spring-ai-starter-mcp-client-webflux`), **no explicit version is needed** — the BOM manages it automatically.
+
+==== Java Package Relocation
+
+All Spring-specific transport classes have moved to `org.springframework.ai` packages.
+
+.Server transports
+|===
+|Class |Old package |New package
+
+|`WebFluxSseServerTransportProvider`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webflux.transport`
+
+|`WebFluxStreamableServerTransportProvider`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webflux.transport`
+
+|`WebFluxStatelessServerTransport`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webflux.transport`
+
+|`WebMvcSseServerTransportProvider`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webmvc.transport`
+
+|`WebMvcStreamableServerTransportProvider`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webmvc.transport`
+
+|`WebMvcStatelessServerTransport`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webmvc.transport`
+|===
+
+.Client transports
+|===
+|Class |Old package |New package
+
+|`WebFluxSseClientTransport`
+|`io.modelcontextprotocol.client.transport`
+|`org.springframework.ai.mcp.client.webflux.transport`
+
+|`WebClientStreamableHttpTransport`
+|`io.modelcontextprotocol.client.transport`
+|`org.springframework.ai.mcp.client.webflux.transport`
+|===
+
+==== Migration
+
+Update your Java imports:
+
+[source,java]
+----
+// Before
+import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
+import io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider;
+import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
+import io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport;
+
+// After
+import org.springframework.ai.mcp.server.webflux.transport.WebFluxSseServerTransportProvider;
+import org.springframework.ai.mcp.server.webmvc.transport.WebMvcSseServerTransportProvider;
+import org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport;
+import org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHttpTransport;
+----
+
+NOTE: If you rely exclusively on Spring Boot auto-configuration via the Spring AI starters, **no Java code changes are required**. Only update your `pom.xml`/`build.gradle` dependency coordinates as described above.
+
+
+For the full MCP transport migration reference, see xref:api/mcp/mcp-overview.adoc#_upgrading_to_spring_ai_2_0[Upgrading to Spring AI 2.0].
+
+
+==== Automated Migration with OpenRewrite
+
+You can automate all Maven dependency and Java import changes using the provided OpenRewrite recipe:
+
+[source,shell]
+----
+mvn org.openrewrite.maven:rewrite-maven-plugin:6.32.0:run \
+  -Drewrite.configLocation=https://raw.githubusercontent.com/spring-projects/spring-ai/refs/heads/main/src/rewrite/migrate-to-2-0-0-M3.yaml \
+  -Drewrite.activeRecipes=org.springframework.ai.migration.M3MigrateMcpSpringTransports \
+  -Dmaven.compiler.failOnError=false
+----
+
+IMPORTANT: If your project declares `io.modelcontextprotocol.sdk:mcp-spring-webflux` or `mcp-spring-webmvc` *without* an explicit `<version>` (version managed via a BOM), Maven will refuse to parse the `pom.xml` and the recipe will never run.
+Pre-patch those files first, then run OpenRewrite:
+
+[source,shell]
+----
+# Step 1 – patch the groupIds directly so Maven can load the modules
+find . -name "pom.xml" -print0 \
+  | xargs -0 perl -i -0pe \
+    's{<groupId>io\.modelcontextprotocol\.sdk</groupId>(\s+)<artifactId>mcp-spring-webflux</artifactId>}{<groupId>org.springframework.ai</groupId>$1<artifactId>mcp-spring-webflux</artifactId>}g;
+     s{<groupId>io\.modelcontextprotocol\.sdk</groupId>(\s+)<artifactId>mcp-spring-webmvc</artifactId>}{<groupId>org.springframework.ai</groupId>$1<artifactId>mcp-spring-webmvc</artifactId>}g'
+
+# Step 2 – run OpenRewrite to migrate Java imports and remaining POM changes
+mvn org.openrewrite.maven:rewrite-maven-plugin:6.32.0:run \
+  -Drewrite.configLocation=https://raw.githubusercontent.com/spring-projects/spring-ai/refs/heads/main/src/rewrite/migrate-to-2-0-0-M3.yaml \
+  -Drewrite.activeRecipes=org.springframework.ai.migration.M3MigrateMcpSpringTransports \
+  -Dmaven.compiler.failOnError=false
+----
+
+To run all M3 migrations at once, use the umbrella recipe — see <<run-all-m3-migrations>>.
+
+=== MCP Client Customizer API Consolidated
+
+`McpAsyncClientCustomizer` and `McpSyncClientCustomizer` have been removed and replaced by a single generic interface `McpClientCustomizer<B>`.
+
+==== Impact
+
+* `McpAsyncClientCustomizer` no longer exists — compile error for any implementing bean.
+* `McpSyncClientCustomizer` no longer exists — compile error for any implementing bean.
+* `McpSyncClientConfigurer` and `McpAsyncClientConfigurer` constructors now accept `List<McpClientCustomizer<...>>` instead of the old type-specific lists.
+* In the HttpClient-based transport auto-configurations (`SseHttpClientTransportAutoConfiguration`, `StreamableHttpHttpClientTransportAutoConfiguration`), the SDK-level `McpSyncHttpClientRequestCustomizer` and `McpAsyncHttpClientRequestCustomizer` beans are **no longer applied**. Transport-level customization now goes through `McpClientCustomizer<HttpClientSseClientTransport.Builder>` and `McpClientCustomizer<HttpClientStreamableHttpTransport.Builder>` respectively.
+
+==== Migration
+
+Replace your customizer beans with the new generic interface, parameterized by the spec or builder type you need:
+
+[source,java]
+----
+// Before
+@Bean
+public McpSyncClientCustomizer mySyncCustomizer() {
+    return (name, spec) -> spec.requestTimeout(Duration.ofSeconds(30));
+}
+
+@Bean
+public McpAsyncClientCustomizer myAsyncCustomizer() {
+    return (name, spec) -> spec.requestTimeout(Duration.ofSeconds(30));
+}
+
+// After
+@Bean
+public McpClientCustomizer<McpClient.SyncSpec> mySyncCustomizer() {
+    return (name, spec) -> spec.requestTimeout(Duration.ofSeconds(30));
+}
+
+@Bean
+public McpClientCustomizer<McpClient.AsyncSpec> myAsyncCustomizer() {
+    return (name, spec) -> spec.requestTimeout(Duration.ofSeconds(30));
+}
+----
+
+For HttpClient transport customization (previously done via `McpSyncHttpClientRequestCustomizer` / `McpAsyncHttpClientRequestCustomizer`):
+
+[source,java]
+----
+// Before
+@Bean
+public McpSyncHttpClientRequestCustomizer myRequestCustomizer() {
+    return requestBuilder -> requestBuilder.header("Authorization", "Bearer token");
+}
+
+// After
+@Bean
+public McpClientCustomizer<HttpClientSseClientTransport.Builder> mySseTransportCustomizer() {
+    return (name, builder) -> builder.httpRequestCustomizer(
+        req -> req.header("Authorization", "Bearer token")
+    );
+}
+----
+
+==== Automated Migration with OpenRewrite
+
+You can automate the import and type changes using the provided OpenRewrite recipe:
+
+[source,shell]
+----
+mvn org.openrewrite.maven:rewrite-maven-plugin:6.32.0:run \
+  -Drewrite.configLocation=https://raw.githubusercontent.com/spring-projects/spring-ai/refs/heads/main/src/rewrite/migrate-to-2-0-0-M3.yaml \
+  -Drewrite.activeRecipes=org.springframework.ai.migration.M3MigrateMcpClientCustomizer \
+  -Dmaven.compiler.failOnError=false
+----
+
+The recipe performs the following changes automatically:
+
+1. **Replaces** the `McpAsyncClientCustomizer` and `McpSyncClientCustomizer` imports with `McpClientCustomizer` and adds the required `import io.modelcontextprotocol.client.McpClient;`.
+2. **Rewrites** `implements McpAsyncClientCustomizer` to `implements McpClientCustomizer<McpClient.AsyncSpec>`.
+3. **Rewrites** `implements McpSyncClientCustomizer` to `implements McpClientCustomizer<McpClient.SyncSpec>`.
+4. **Rewrites** all remaining usages (return types, variable declarations, parameter types).
+
+NOTE: `McpSyncHttpClientRequestCustomizer` and `McpAsyncHttpClientRequestCustomizer` beans are no longer applied by the transport auto-configurations. Their migration to `McpClientCustomizer<TransportBuilder>` requires a manual step — the target builder type depends on which transport you are configuring (SSE vs. Streamable HTTP).
+
+To run all M3 migrations at once, use the umbrella recipe — see <<run-all-m3-migrations>>.
+
+=== MCP WebMvc Transport Headers Normalized to Lowercase
+
+In `WebMvcSseServerTransportProvider`, `WebMvcStatelessServerTransport`, and `WebMvcStreamableServerTransportProvider`, the `Map<String, List<String>>` passed to `securityValidator.validateHeaders(headers)` now has all header names normalized to **lowercase**.
+
+Previously, header names were passed with their original HTTP case (e.g. `"Authorization"`, `"Content-Type"`). They are now always lowercase (e.g. `"authorization"`, `"content-type"`).
+
+==== Impact
+
+Custom `ServerTransportSecurityValidator` implementations that look up headers by their mixed-case names will silently fail to find them.
+
+==== Migration
+
+Update all header name lookups in your `ServerTransportSecurityValidator` to use lowercase keys:
+
+[source,java]
+----
+// Before
+public void validateHeaders(Map<String, List<String>> headers) {
+    List<String> authHeader = headers.get("Authorization");
+    // ...
+}
+
+// After
+public void validateHeaders(Map<String, List<String>> headers) {
+    List<String> authHeader = headers.get("authorization");
+    // ...
+}
+----
+
+=== Conversation History Removed from ToolContext
+
+Conversation history is no longer automatically added to `ToolContext`. The `TOOL_CALL_HISTORY` constant and `getToolCallHistory()` method have been removed from the `ToolContext` class.
+
+==== Impact
+
+* `ToolContext.TOOL_CALL_HISTORY` constant no longer exists
+* `ToolContext.getToolCallHistory()` method no longer exists
+* Conversation history is no longer automatically populated in `ToolContext`
+
+==== Why This Change?
+
+1. **Memory Efficiency**: Prevents unbounded memory growth in long conversations
+2. **Separation of Concerns**: Tools should operate on their parameters, not manage conversation state
+3. **Architecture Alignment**: Conversation context belongs at the advisor level, not in tool execution
+
+==== Migration
+
+If your application needs conversation history management, use `ToolCallAdvisor`:
+
+.Managing Conversation History with ToolCallAdvisor
+[source,java]
+----
+ChatClient chatClient = ChatClient.builder()
+    .defaultAdvisors(
+        new ToolCallAdvisor()
+            .conversationHistoryEnabled(true)  // Full history (default)
+    )
+    .build();
+----
+
+**How ToolCallAdvisor Works:**
+
+The `ToolCallAdvisor` manages conversation history at the advisor level:
+
+* **conversationHistoryEnabled=true** (default): Full conversation history is maintained and sent to the LLM between tool call iterations, allowing the LLM to synthesize results with full context
+* **conversationHistoryEnabled=false**: Only the most recent tool response is sent to the LLM (useful when ChatMemory advisor manages history separately)
+
+**Key Point:** The conversation history is used by the *LLM* to understand context and formulate responses, not by the *tools* themselves. Tools receive only their input parameters and any custom context you explicitly provide.
+
+**Custom Context in Tools:**
+
+`ToolContext` remains available for passing custom, application-specific data to tools:
+
+.Passing Custom Context to Tools
+[source,java]
+----
+ChatResponse response = chatClient.prompt()
+    .user("What's the weather in SF?")
+    .options(ChatOptionsBuilder.builder()
+        .toolContext("userId", "user123")
+        .toolContext("apiKey", "secret")
+        .build())
+    .call()
+    .chatResponse();
+----
+
+**Example Flow:**
+
+1. User asks: "What's the weather in SF and LA?"
+2. LLM requests tool calls: `getWeather(SF)` and `getWeather(LA)`
+3. Tools execute with only their parameters (no conversation history)
+4. ToolCallAdvisor collects tool results and conversation history
+5. LLM receives conversation context from advisor and synthesizes: "The weather in SF is 72°F and in LA is 85°F"
+
+The LLM sees the full conversation through the advisor chain, not through ToolContext.
+
+==== The access level of model internal methods changed to private
+
+* All `internalCall` and `internalStream` methods in model classes have been changed to `private`.
+
+===== Impact
+
+* Direct calls `xxxModel.internalCall` or `xxxModel.internalStream` method, will fail to compile.
+
+===== Migration
+
+* Replace all calls to `xxxModel.internalCall` with `xxxModel.call`.
+* Replace all calls to `xxxModel.internalStream` with `xxxModel.stream`.
++
+[source,java]
+----
+// Before
+ChatResponse response = model.internalCall(prompt, previousChatResponse);
+Flux<ChatResponse> responseFlux = model.internalStream(prompt, previousChatResponse);
+
+// After
+ChatResponse response = model.call(prompt);
+Flux<ChatResponse> responseFlux = model.stream(prompt);
+----
+
+=== OpenSearch Dependencies Upgraded
+
+The OpenSearch vector store dependencies have been upgraded to newer versions:
+
+* **OpenSearch Java Client**: `2.23.0` → `3.6.0`
+* **OpenSearch Testcontainers**: `2.0.1` → `4.1.0`
+
+==== Background
+
+This upgrade was necessary for compatibility with Spring Boot 4.1.x, which uses HttpClient5 (`org.apache.httpcomponents.client5:httpclient5`) version 5.6. This version of HttpClient has a gzip content formatter breaking change that required the OpenSearch Java Client upgrade. See https://github.com/opensearch-project/opensearch-java/pull/1851[OpenSearch Java PR #1851] for details.
+
+==== Impact
+
+The OpenSearch Java Client 3.x introduces breaking API changes that affect custom code interacting directly with the native OpenSearch client.
+
+==== Migration
+
+If you're using the OpenSearch vector store through Spring AI's `VectorStore` interface, no action is required. The upgrade is transparent.
+
+**Testcontainers class renamed**: `OpensearchContainer` → `OpenSearchContainer` (proper camelCase)
+
+Spring AI's internal implementation has been updated to handle these changes automatically.
+
+=== AbstractFilterExpressionConverter: doSingleValue is now abstract
+
+In `AbstractFilterExpressionConverter` (used by vector store filter expression converters), the method `doSingleValue(Object value, StringBuilder context)` has been changed from a concrete method to an abstract method. Custom vector store implementations that extend `AbstractFilterExpressionConverter` must now implement this method explicitly.
+
+==== Impact
+
+* Any custom `FilterExpressionConverter` that extends `AbstractFilterExpressionConverter` and did not override `doSingleValue()` will fail to compile.
+* Implementations must convert a single filter value (String, Number, Boolean, Date, etc.) into the target format and append it to the provided `StringBuilder` context.
+
+==== Migration
+
+Implement `doSingleValue(Object value, StringBuilder context)` in your custom converter. You can use the provided static helper methods:
+
+* **JSON-based filters** (e.g. PostgreSQL JSONPath, Neo4j Cypher, Weaviate): use `emitJsonValue(Object value, StringBuilder context)` to serialize values with proper quoting and escaping.
+* **Lucene-based filters** (e.g. Elasticsearch, OpenSearch, GemFire): use `emitLuceneString(String value, StringBuilder context)` for string values, and handle other types (numbers, booleans, dates) according to your store's query syntax.
+* **Other formats**: implement your own logic and append the result to `context`.
+
+NOTE: The framework normalizes values (e.g. ISO date strings converted to `Date`) before invoking `doSingleValue`, so your implementation receives already-normalized values. The static helper `normalizeDateString(Object)` is available if you need the same normalization when building expressions outside of the standard flow.
+
+
+[[run-all-m3-migrations]]
+=== Running All M3 Migrations at Once
+
+The umbrella recipe `MigrateToSpringAI200M3` applies all three automated M3 migrations in a single pass:
+
+[cols="1,2", options="header"]
+|===
+| Recipe | What it does
+| `M3MigrateMcpAnnotations` | Removes `org.springaicommunity:mcp-annotations` dependency and rewrites imports to `org.springframework.ai.mcp.annotation.*`
+| `M3MigrateMcpSpringTransports` | Updates Maven `<groupId>` and Java imports for the moved Spring transport modules
+| `M3MigrateMcpClientCustomizer` | Replaces `McpAsyncClientCustomizer` / `McpSyncClientCustomizer` with `McpClientCustomizer<B>`
+|===
+
+If any of your `pom.xml` files declare `io.modelcontextprotocol.sdk:mcp-spring-webflux` or `mcp-spring-webmvc` without an explicit `<version>`, run the Perl pre-patch first (see <<_automated_migration_with_openrewrite_2>>), then execute the umbrella recipe:
+
+[source,shell]
+----
+mvn org.openrewrite.maven:rewrite-maven-plugin:6.32.0:run \
+  -Drewrite.configLocation=https://raw.githubusercontent.com/spring-projects/spring-ai/refs/heads/main/src/rewrite/migrate-to-2-0-0-M3.yaml \
+  -Drewrite.activeRecipes=org.springframework.ai.migration.MigrateToSpringAI200M3 \
+  -Dmaven.compiler.failOnError=false
+----
+
 [[upgrading-to-2-0-0-M2]]
 == Upgrading to 2.0.0-M2
 

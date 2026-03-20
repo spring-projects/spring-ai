@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,7 +103,7 @@ class ToolCallbackKotlinIT : BaseOllamaIT() {
 	open class Config {
 
 		@Bean
-		@Description("Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
+		@Description("Find the weather conditions, forecasts, and temperatures for a location, like a city or state, represented by its geographical coordinates.")
 		open fun weatherInfo(): Function1<KotlinRequest, KotlinResponse> {
 			return MockKotlinWeatherService()
 		}

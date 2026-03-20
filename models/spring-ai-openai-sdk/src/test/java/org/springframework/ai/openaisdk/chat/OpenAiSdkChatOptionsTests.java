@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.springframework.ai.openaisdk.chat;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -26,8 +25,11 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.openaisdk.OpenAiSdkChatModel.ResponseFormat;
 import org.springframework.ai.openaisdk.OpenAiSdkChatOptions;
+import org.springframework.ai.openaisdk.OpenAiSdkChatOptions.Builder;
 import org.springframework.ai.openaisdk.OpenAiSdkChatOptions.StreamOptions;
+import org.springframework.ai.test.options.AbstractChatOptionsTests;
 import org.springframework.ai.tool.ToolCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,7 +40,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * @author Julien Dubois
  */
-public class OpenAiSdkChatOptionsTests {
+public class OpenAiSdkChatOptionsTests extends AbstractChatOptionsTests<OpenAiSdkChatOptions, Builder> {
+
+	@Override
+	protected Class<OpenAiSdkChatOptions> getConcreteOptionsClass() {
+		return OpenAiSdkChatOptions.class;
+	}
+
+	@Override
+	protected Builder readyToBuildBuilder() {
+		return OpenAiSdkChatOptions.builder();
+	}
 
 	@Test
 	void testBuilderWithAllFields() {
@@ -249,6 +261,7 @@ public class OpenAiSdkChatOptionsTests {
 		assertThat(options.getInternalToolExecutionEnabled()).isNull();
 		assertThat(options.getCustomHeaders()).isNotNull().isEmpty();
 		assertThat(options.getToolContext()).isNotNull().isEmpty();
+		assertThat(options.getOutputSchema()).isNull();
 	}
 
 	@Test
@@ -287,7 +300,6 @@ public class OpenAiSdkChatOptionsTests {
 			.logitBias(null)
 			.stop(null)
 			.metadata(null)
-			.customHeaders(null)
 			.build();
 
 		assertThat(options.getModel()).isNull();
@@ -295,14 +307,13 @@ public class OpenAiSdkChatOptionsTests {
 		assertThat(options.getLogitBias()).isNull();
 		assertThat(options.getStop()).isNull();
 		assertThat(options.getMetadata()).isNull();
-		assertThat(options.getCustomHeaders()).isNull();
 	}
 
 	@Test
 	void testBuilderChaining() {
-		OpenAiSdkChatOptions.Builder builder = OpenAiSdkChatOptions.builder();
+		Builder builder = OpenAiSdkChatOptions.builder();
 
-		OpenAiSdkChatOptions.Builder result = builder.model("test-model").temperature(0.7).maxTokens(100);
+		Builder result = builder.model("test-model").temperature(0.7).maxTokens(100);
 
 		assertThat(result).isSameAs(builder);
 
@@ -505,7 +516,7 @@ public class OpenAiSdkChatOptionsTests {
 
 	@Test
 	void testToolNamesSet() {
-		Set<String> toolNames = new HashSet<>(Arrays.asList("tool1", "tool2", "tool3"));
+		Set<String> toolNames = new HashSet<>(Set.of("tool1", "tool2", "tool3"));
 
 		OpenAiSdkChatOptions options = OpenAiSdkChatOptions.builder().toolNames(toolNames).build();
 
@@ -559,7 +570,7 @@ public class OpenAiSdkChatOptionsTests {
 	}
 
 	@Test
-	void testBuilderMerge() {
+	void testCombineWith() {
 		OpenAiSdkChatOptions base = OpenAiSdkChatOptions.builder()
 			.model("base-model")
 			.temperature(0.5)
@@ -568,7 +579,7 @@ public class OpenAiSdkChatOptionsTests {
 
 		OpenAiSdkChatOptions override = OpenAiSdkChatOptions.builder().model("override-model").topP(0.9).build();
 
-		OpenAiSdkChatOptions merged = OpenAiSdkChatOptions.builder().from(base).merge(override).build();
+		OpenAiSdkChatOptions merged = base.mutate().combineWith(override.mutate()).build();
 
 		// Model should be overridden
 		assertThat(merged.getModel()).isEqualTo("override-model");
@@ -581,7 +592,7 @@ public class OpenAiSdkChatOptionsTests {
 	}
 
 	@Test
-	void testBuilderFrom() {
+	void testMutateAndBuild() {
 		Map<String, Integer> logitBias = Map.of("token", 1);
 		List<String> stop = List.of("stop");
 		Map<String, String> metadata = Map.of("key", "value");
@@ -595,7 +606,7 @@ public class OpenAiSdkChatOptionsTests {
 			.metadata(metadata)
 			.build();
 
-		OpenAiSdkChatOptions copy = OpenAiSdkChatOptions.builder().from(source).build();
+		OpenAiSdkChatOptions copy = source.mutate().build();
 
 		assertThat(copy.getModel()).isEqualTo("source-model");
 		assertThat(copy.getTemperature()).isEqualTo(0.7);
@@ -603,12 +614,10 @@ public class OpenAiSdkChatOptionsTests {
 		assertThat(copy.getLogitBias()).isEqualTo(logitBias);
 		assertThat(copy.getStop()).isEqualTo(stop);
 		assertThat(copy.getMetadata()).isEqualTo(metadata);
-		// Verify collections are copied
-		assertThat(copy.getStop()).isNotSameAs(source.getStop());
 	}
 
 	@Test
-	void testMergeDoesNotOverrideWithNull() {
+	void testCombineWithDoesNotOverrideWithNull() {
 		OpenAiSdkChatOptions base = OpenAiSdkChatOptions.builder()
 			.model("base-model")
 			.temperature(0.5)
@@ -617,7 +626,7 @@ public class OpenAiSdkChatOptionsTests {
 
 		OpenAiSdkChatOptions override = OpenAiSdkChatOptions.builder().model(null).temperature(null).build();
 
-		OpenAiSdkChatOptions merged = OpenAiSdkChatOptions.builder().from(base).merge(override).build();
+		OpenAiSdkChatOptions merged = base.mutate().combineWith(override.mutate()).build();
 
 		// Null values should not override
 		assertThat(merged.getModel()).isEqualTo("base-model");
@@ -626,37 +635,23 @@ public class OpenAiSdkChatOptionsTests {
 	}
 
 	@Test
-	void testMergeWithEmptyCollections() {
-		ToolCallback callback = new ToolCallback() {
-			@Override
-			public org.springframework.ai.tool.definition.ToolDefinition getToolDefinition() {
-				return org.springframework.ai.tool.definition.DefaultToolDefinition.builder()
-					.name("tool")
-					.description("desc")
-					.inputSchema("{}")
-					.build();
-			}
-
-			@Override
-			public String call(String toolInput) {
-				return "result";
-			}
-		};
-
+	void testCombineWithPreservesNonNullValues() {
 		OpenAiSdkChatOptions base = OpenAiSdkChatOptions.builder()
-			.toolCallbacks(callback)
-			.toolNames("tool1")
-			.toolContext(Map.of("key", "value"))
+			.model("base-model")
+			.temperature(0.5)
+			.reasoningEffort("medium")
 			.build();
 
-		OpenAiSdkChatOptions override = new OpenAiSdkChatOptions();
+		OpenAiSdkChatOptions override = OpenAiSdkChatOptions.builder()
+			.model("override-model")
+			.reasoningEffort("high")
+			.build();
 
-		OpenAiSdkChatOptions merged = OpenAiSdkChatOptions.builder().from(base).merge(override).build();
+		OpenAiSdkChatOptions merged = base.mutate().combineWith(override.mutate()).build();
 
-		// Empty collections should not override
-		assertThat(merged.getToolCallbacks()).hasSize(1);
-		assertThat(merged.getToolNames()).hasSize(1);
-		assertThat(merged.getToolContext()).hasSize(1);
+		assertThat(merged.getModel()).isEqualTo("override-model");
+		assertThat(merged.getTemperature()).isEqualTo(0.5);
+		assertThat(merged.getReasoningEffort()).isEqualTo("high");
 	}
 
 	@Test
@@ -674,6 +669,29 @@ public class OpenAiSdkChatOptionsTests {
 		OpenAiSdkChatOptions options = new OpenAiSdkChatOptions();
 		// TopK is not supported by OpenAI, should always return null
 		assertThat(options.getTopK()).isNull();
+	}
+
+	@Test
+	void testSetOutputSchema() {
+		OpenAiSdkChatOptions options = new OpenAiSdkChatOptions();
+		// language=JSON
+		String schema = """
+				{
+					"type": "object",
+					"properties": {
+						"name": {
+							"type": "string"
+						}
+					}
+				}
+				""";
+
+		options.setOutputSchema(schema);
+
+		assertThat(options.getResponseFormat()).isNotNull();
+		assertThat(options.getResponseFormat().getType()).isEqualTo(ResponseFormat.Type.JSON_SCHEMA);
+		assertThat(options.getResponseFormat().getJsonSchema()).isEqualTo(schema);
+		assertThat(options.getOutputSchema()).isEqualTo(schema);
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import ai.onnxruntime.OrtSession;
 import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
@@ -76,6 +77,7 @@ import org.springframework.util.StringUtils;
  * </p>
  *
  * @author Christian Tzolov
+ * @author Soby Chacko
  * @since 1.0.0
  */
 public class TransformersEmbeddingModel extends AbstractEmbeddingModel implements InitializingBean {
@@ -120,23 +122,25 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	 * DJL, Huggingface tokenizer implementation of the {@link Tokenizer} interface that
 	 * converts sentences into token.
 	 */
+	@SuppressWarnings("NullAway.Init") // initialized in afterPropertiesSet()
 	private HuggingFaceTokenizer tokenizer;
 
 	/**
 	 * ONNX runtime configurations: https://onnxruntime.ai/docs/get-started/with-java.html
 	 */
-	private OrtEnvironment environment;
+	private final OrtEnvironment environment = OrtEnvironment.getEnvironment();
 
 	/**
 	 * Runtime session that wraps the ONNX generative and enables inference calls.
 	 */
+	@SuppressWarnings("NullAway.Init") // initialized in afterPropertiesSet()
 	private OrtSession session;
 
 	/**
 	 * Resource cache directory. Used to cache remote resources, such as the ONNX models,
 	 * to the local file system.
 	 */
-	private String resourceCacheDirectory;
+	private @Nullable String resourceCacheDirectory;
 
 	/**
 	 * Allow disabling the resource caching.
@@ -149,10 +153,12 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	 * enabled/disabled with the {@link #disableCaching} property and uses the
 	 * {@link #resourceCacheDirectory} for local storage.
 	 */
+	@SuppressWarnings("NullAway.Init")
 	private ResourceCacheService cacheService;
 
 	private String modelOutputName = DEFAULT_MODEL_OUTPUT_NAME;
 
+	@SuppressWarnings("NullAway.Init") // initialized in afterPropertiesSet()
 	private Set<String> onnxModelInputs;
 
 	/**
@@ -226,9 +232,6 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 		this.tokenizer = HuggingFaceTokenizer.newInstance(getCachedResource(this.tokenizerResource).getInputStream(),
 				this.tokenizerOptions);
 
-		// onnxruntime
-		this.environment = OrtEnvironment.getEnvironment();
-
 		try (var sessionOptions = new OrtSession.SessionOptions()) {
 			if (this.gpuDeviceId >= 0) {
 				sessionOptions.addCUDA(this.gpuDeviceId); // Run on a GPU or with another
@@ -257,6 +260,12 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	@Override
 	public float[] embed(String text) {
 		return embed(List.of(text)).get(0);
+	}
+
+	@Override
+	public String getEmbeddingContent(Document document) {
+		Assert.notNull(document, "Document must not be null");
+		return document.getFormattedContent(this.metadataMode);
 	}
 
 	@Override

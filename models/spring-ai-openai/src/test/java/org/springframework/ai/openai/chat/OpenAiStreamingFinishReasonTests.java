@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.springframework.ai.openai.chat;
 
 import java.util.List;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -112,14 +111,14 @@ public class OpenAiStreamingFinishReasonTests {
 	}
 
 	@Test
-	void testJsonDeserializationWithEmptyStringFinishReason() throws JsonProcessingException {
+	void testJsonDeserializationWithEmptyStringFinishReason() {
 		// Test the specific JSON from the issue report
 		String problematicJson = """
 				{
 					"id": "chatcmpl-msg_bdrk_012bpm3yfa9inEuftTWYQ46F",
 					"object": "chat.completion.chunk",
 					"created": 1726239401,
-					"model": "claude-3-5-sonnet-20240620",
+					"model": "claude-haiku-4-5",
 					"choices": [{
 						"index": 0,
 						"delta": {
@@ -147,7 +146,7 @@ public class OpenAiStreamingFinishReasonTests {
 	}
 
 	@Test
-	void testJsonDeserializationWithNullFinishReason() throws JsonProcessingException {
+	void testJsonDeserializationWithNullFinishReason() {
 		// Test with null finish_reason (should work fine)
 		String validJson = """
 				{
@@ -190,8 +189,7 @@ public class OpenAiStreamingFinishReasonTests {
 			// deserialized
 			var choice = new ChunkChoice(null, 0, new ChatCompletionMessage("", Role.ASSISTANT), null);
 			ChatCompletionChunk chunk = new ChatCompletionChunk("chatcmpl-msg_bdrk_012bpm3yfa9inEuftTWYQ46F",
-					List.of(choice), 1726239401L, "claude-3-5-sonnet-20240620", null, null, "chat.completion.chunk",
-					null);
+					List.of(choice), 1726239401L, "claude-haiku-4-5", null, null, "chat.completion.chunk", null);
 
 			given(this.openAiApi.chatCompletionStream(isA(ChatCompletionRequest.class), any()))
 				.willReturn(Flux.just(chunk));
@@ -222,7 +220,7 @@ public class OpenAiStreamingFinishReasonTests {
 					"id": "chatcmpl-msg_bdrk_012bpm3yfa9inEuftTWYQ46F",
 					"object": "chat.completion.chunk",
 					"created": 1726239401,
-					"model": "claude-3-5-sonnet-20240620",
+					"model": "claude-haiku-4-5",
 					"choices": [{
 						"index": 0,
 						"delta": {

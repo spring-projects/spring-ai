@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.springframework.ai.vectorstore.cassandra.autoconfigure;
 
 import java.time.Duration;
-import java.util.Objects;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
@@ -73,7 +72,7 @@ public class CassandraVectorStoreAutoConfiguration {
 			.table(properties.getTable())
 			.contentColumnName(properties.getContentColumnName())
 			.embeddingColumnName(properties.getEmbeddingColumnName())
-			.indexName(Objects.requireNonNull(properties.getIndexName(), "indexName must be set"))
+			.indexName(properties.getIndexName())
 			.fixedThreadPoolExecutorSize(properties.getFixedThreadPoolExecutorSize())
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))

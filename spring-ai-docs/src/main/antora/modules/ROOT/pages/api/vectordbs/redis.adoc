@@ -600,6 +600,74 @@ SemanticCacheAdvisor user1Advisor = SemanticCacheAdvisor.builder()
     .build();
 ----
 
+=== System Prompt Isolation
+
+The `SemanticCacheAdvisor` automatically isolates cached responses based on the system prompt.
+This ensures that the same user query with different system prompts returns different cached responses, which is essential for applications with multiple AI personas or context-dependent behavior.
+
+[source,java]
+----
+SemanticCacheAdvisor cacheAdvisor = SemanticCacheAdvisor.builder()
+    .cache(semanticCache)
+    .build();
+
+// Query with technical support persona
+ChatResponse technicalResponse = ChatClient.builder(chatModel)
+    .build()
+    .prompt()
+    .system("You are a technical support specialist. Provide detailed technical answers.")
+    .user("How do I reset my password?")
+    .advisors(cacheAdvisor)
+    .call()
+    .chatResponse();
+
+// Same query with customer service persona - cache MISS (different context)
+ChatResponse serviceResponse = ChatClient.builder(chatModel)
+    .build()
+    .prompt()
+    .system("You are a friendly customer service agent. Keep responses brief and helpful.")
+    .user("How do I reset my password?")
+    .advisors(cacheAdvisor)
+    .call()
+    .chatResponse();
+
+// Same query with technical support persona again - cache HIT
+ChatResponse technicalAgain = ChatClient.builder(chatModel)
+    .build()
+    .prompt()
+    .system("You are a technical support specialist. Provide detailed technical answers.")
+    .user("How do I reset my password?")
+    .advisors(cacheAdvisor)
+    .call()
+    .chatResponse();
+// Returns the cached technical response
+----
+
+**How it works:**
+
+The advisor computes a deterministic hash of the system prompt and uses it as a metadata filter when storing and retrieving cached responses:
+
+* Same user question + same system prompt → cache hit
+* Same user question + different system prompt → cache miss (separate cache entry)
+* Queries without a system prompt share a common cache space
+
+=== Context-Aware Cache API
+
+For advanced use cases, you can use the context-aware cache methods directly:
+
+[source,java]
+----
+// Store with explicit context hash
+String contextHash = "technical-support-context";
+semanticCache.set("How do I reset my password?", response, contextHash);
+
+// Retrieve with context filtering
+Optional<ChatResponse> cached = semanticCache.get("How do I reset my password?", contextHash);
+
+// Different context hash returns empty (no match)
+Optional<ChatResponse> otherContext = semanticCache.get("How do I reset my password?", "billing-context");
+----
+
 === Tuning the Similarity Threshold
 
 The similarity threshold determines how closely a query must match a cached entry to be considered a hit.

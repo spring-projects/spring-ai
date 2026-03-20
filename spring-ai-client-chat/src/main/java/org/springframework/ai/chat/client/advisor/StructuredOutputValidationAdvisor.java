@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,16 +20,16 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.json.TypeRef;
-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.json.schema.JsonSchemaValidator.ValidationResponse;
-import io.modelcontextprotocol.json.schema.jackson.DefaultJsonSchemaValidator;
+import io.modelcontextprotocol.json.schema.jackson3.DefaultJsonSchemaValidator;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
@@ -86,26 +86,26 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 	private final int maxRepeatAttempts;
 
 	private StructuredOutputValidationAdvisor(int advisorOrder, Type outputType, int maxRepeatAttempts,
-			ObjectMapper objectMapper) {
+			JsonMapper jsonMapper) {
 		Assert.notNull(advisorOrder, "advisorOrder must not be null");
 		Assert.notNull(outputType, "outputType must not be null");
 		Assert.isTrue(advisorOrder > BaseAdvisor.HIGHEST_PRECEDENCE && advisorOrder < BaseAdvisor.LOWEST_PRECEDENCE,
 				"advisorOrder must be between HIGHEST_PRECEDENCE and LOWEST_PRECEDENCE");
 		Assert.isTrue(maxRepeatAttempts >= 0, "repeatAttempts must be greater than or equal to 0");
-		Assert.notNull(objectMapper, "objectMapper must not be null");
+		Assert.notNull(jsonMapper, "jsonMapper must not be null");
 
 		this.advisorOrder = advisorOrder;
 
-		this.jsonvalidator = new DefaultJsonSchemaValidator(objectMapper);
+		this.jsonvalidator = new DefaultJsonSchemaValidator(jsonMapper);
 
 		String jsonSchemaText = JsonSchemaGenerator.generateForType(outputType);
 
-		logger.info("Generated JSON Schema:\n" + jsonSchemaText);
+		logger.info("Generated JSON Schema:\n{}", jsonSchemaText);
 
-		var jsonMapper = new JacksonMcpJsonMapper(JsonParser.getObjectMapper());
+		var mcpJsonMapper = new JacksonMcpJsonMapper(jsonMapper);
 
 		try {
-			this.jsonSchema = jsonMapper.readValue(jsonSchemaText, MAP_TYPE_REF);
+			this.jsonSchema = mcpJsonMapper.readValue(jsonSchemaText, MAP_TYPE_REF);
 		}
 		catch (Exception e) {
 			throw new IllegalArgumentException("Failed to parse JSON schema", e);
@@ -164,7 +164,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 					// However, this might lead to confusion and more complex prompts.
 					// Instead, we rely on the LLM to generate a new output based on the
 					// validation error.
-					logger.warn("JSON validation failed: " + validationResponse);
+					logger.warn("JSON validation failed: {}", validationResponse);
 
 					String validationErrorMessage = "Output JSON validation failed because of: "
 							+ validationResponse.errorMessage();
@@ -197,7 +197,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		// TODO: should we consider validation for multiple results?
 		String json = chatClientResponse.chatResponse().getResult().getOutput().getText();
 
-		logger.debug("Validating JSON output against schema. Attempts left: " + this.maxRepeatAttempts);
+		logger.debug("Validating JSON output against schema. Attempts left: {}", this.maxRepeatAttempts);
 
 		return this.jsonvalidator.validate(this.jsonSchema, json);
 	}
@@ -237,7 +237,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 
 		private int maxRepeatAttempts = 3;
 
-		private ObjectMapper objectMapper = JsonParser.getObjectMapper();
+		private JsonMapper jsonMapper = JsonParser.getJsonMapper();
 
 		private Builder() {
 		}
@@ -306,12 +306,12 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		}
 
 		/**
-		 * Sets the ObjectMapper to be used for JSON processing.
-		 * @param objectMapper the ObjectMapper
+		 * Sets the JsonMapper to be used for JSON processing.
+		 * @param jsonMapper the JsonMapper
 		 * @return this builder
 		 */
-		public Builder objectMapper(ObjectMapper objectMapper) {
-			this.objectMapper = objectMapper;
+		public Builder jsonMapper(JsonMapper jsonMapper) {
+			this.jsonMapper = jsonMapper;
 			return this;
 		}
 
@@ -325,7 +325,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 				throw new IllegalArgumentException("outputType must be set");
 			}
 			return new StructuredOutputValidationAdvisor(this.advisorOrder, this.outputType, this.maxRepeatAttempts,
-					this.objectMapper);
+					this.jsonMapper);
 		}
 
 	}

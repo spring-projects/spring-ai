@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletion;
@@ -46,17 +45,12 @@ public class ZhiPuAiApiToolFunctionCallIT {
 
 	private final Logger logger = LoggerFactory.getLogger(ZhiPuAiApiToolFunctionCallIT.class);
 
-	MockWeatherService weatherService = new MockWeatherService();
+	private final MockWeatherService weatherService = new MockWeatherService();
 
-	ZhiPuAiApi zhiPuAiApi = ZhiPuAiApi.builder().apiKey(System.getenv("ZHIPU_AI_API_KEY")).build();
+	private final ZhiPuAiApi zhiPuAiApi = ZhiPuAiApi.builder().apiKey(System.getenv("ZHIPU_AI_API_KEY")).build();
 
-	private static <T> T fromJson(String json, Class<T> targetClass) {
-		try {
-			return new ObjectMapper().readValue(json, targetClass);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+	private <T> T fromJson(String json, Class<T> targetClass) {
+		return JsonMapper.shared().readValue(json, targetClass);
 	}
 
 	@SuppressWarnings("null")

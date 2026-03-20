@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.springframework.ai.deepseek;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,12 +28,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.deepseek.api.ResponseFormat;
+import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -51,58 +52,59 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	/**
 	 * ID of the model to use. You can use either use deepseek-reasoner or deepseek-chat.
 	 */
+	@SuppressWarnings("NullAway.Init")
 	private @JsonProperty("model") String model;
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
 	 * frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
 	 */
-	private @JsonProperty("frequency_penalty") Double frequencyPenalty;
+	private @JsonProperty("frequency_penalty") @Nullable Double frequencyPenalty;
 	/**
 	 * The maximum number of tokens that can be generated in the chat completion.
 	 * The total length of input tokens and generated tokens is limited by the model's context length.
 	 */
-	private @JsonProperty("max_tokens") Integer maxTokens;
+	private @JsonProperty("max_tokens") @Nullable Integer maxTokens;
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
 	 * appear in the text so far, increasing the model's likelihood to talk about new topics.
 	 */
-	private @JsonProperty("presence_penalty") Double presencePenalty;
+	private @JsonProperty("presence_penalty") @Nullable Double presencePenalty;
 	/**
 	 * An object specifying the format that the model must output. Setting to { "type":
 	 * "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 	 */
-	private @JsonProperty("response_format") ResponseFormat responseFormat;
+	private @JsonProperty("response_format") @Nullable ResponseFormat responseFormat;
 	/**
 	 * A string or a list containing up to 4 strings, upon encountering these words, the API will cease generating more tokens.
 	 */
-	private @JsonProperty("stop") List<String> stop;
+	private @JsonProperty("stop") @Nullable List<String> stop;
 	/**
 	 * What sampling temperature to use, between 0 and 2.
 	 * Higher values like 0.8 will make the output more random,
 	 * while lower values like 0.2 will make it more focused and deterministic.
 	 * We generally recommend altering this or top_p but not both.
 	 */
-	private @JsonProperty("temperature") Double temperature;
+	private @JsonProperty("temperature") @Nullable Double temperature;
 	/**
 	 * An alternative to sampling with temperature, called nucleus sampling,
 	 * where the model considers the results of the tokens with top_p probability mass.
 	 * So 0.1 means only the tokens comprising the top 10% probability mass are considered.
 	 * We generally recommend altering this or temperature but not both.
 	 */
-	private @JsonProperty("top_p") Double topP;
+	private @JsonProperty("top_p") @Nullable Double topP;
 	/**
 	 * Whether to return log probabilities of the output tokens or not.
 	 * If true, returns the log probabilities of each output token returned in the content of message.
 	 */
-	private @JsonProperty("logprobs") Boolean logprobs;
+	private @JsonProperty("logprobs") @Nullable Boolean logprobs;
 	/**
 	 * An integer between 0 and 20 specifying the number of most likely tokens to return at each token position,
 	 * each with an associated log probability. logprobs must be set to true if this parameter is used.
 	 */
-	private @JsonProperty("top_logprobs") Integer topLogprobs;
+	private @JsonProperty("top_logprobs") @Nullable Integer topLogprobs;
 
 
-	private @JsonProperty("tools") List<DeepSeekApi.FunctionTool> tools;
+	private @JsonProperty("tools") @Nullable List<DeepSeekApi.FunctionTool> tools;
 
 	/**
 	 * Controls which (if any) function is called by the model. none means the model will
@@ -114,13 +116,13 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	 * {@link DeepSeekApi.ChatCompletionRequest.ToolChoiceBuilder} to create a tool choice
 	 * object.
 	 */
-	private @JsonProperty("tool_choice") Object toolChoice;
+	private @JsonProperty("tool_choice") @Nullable Object toolChoice;
 
 	/**
 	 * Whether to enable the tool execution lifecycle internally in ChatModel.
 	 */
 	@JsonIgnore
-	private Boolean internalToolExecutionEnabled;
+	private @Nullable Boolean internalToolExecutionEnabled;
 
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
@@ -145,6 +147,35 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
 
+	// TODO: left here for ModelOptionUtils.merge*() for now
+	public DeepSeekChatOptions() {
+	}
+
+	protected DeepSeekChatOptions(String model, @Nullable Double frequencyPenalty,
+			@Nullable Integer maxTokens, @Nullable Double presencePenalty,
+			@Nullable ResponseFormat responseFormat, @Nullable List<String> stop,
+			@Nullable Double temperature, @Nullable Double topP, @Nullable Boolean logprobs,
+			@Nullable Integer topLogprobs, @Nullable List<DeepSeekApi.FunctionTool> tools,
+			@Nullable Object toolChoice, @Nullable Boolean internalToolExecutionEnabled,
+			@Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames, @Nullable Map<String, Object> toolContext) {
+		this.model = model;
+		this.frequencyPenalty = frequencyPenalty;
+		this.maxTokens = maxTokens;
+		this.presencePenalty = presencePenalty;
+		this.responseFormat = responseFormat;
+		this.stop = stop;
+		this.temperature = temperature;
+		this.topP = topP;
+		this.logprobs = logprobs;
+		this.topLogprobs = topLogprobs;
+		this.tools = tools;
+		this.toolChoice = toolChoice;
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+		this.toolCallbacks = toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(toolCallbacks);
+		this.toolNames = toolNames == null ? new HashSet<>() : new HashSet<>(toolNames);
+		this.toolContext = toolContext ==  null ? new HashMap<>() : new HashMap<>(toolContext);
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -159,90 +190,90 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public Double getFrequencyPenalty() {
+	public @Nullable Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
 
-	public void setFrequencyPenalty(Double frequencyPenalty) {
+	public void setFrequencyPenalty(@Nullable Double frequencyPenalty) {
 		this.frequencyPenalty = frequencyPenalty;
 	}
 
 	@Override
-	public Integer getMaxTokens() {
+	public @Nullable Integer getMaxTokens() {
 		return this.maxTokens;
 	}
 
-	public void setMaxTokens(Integer maxTokens) {
+	public void setMaxTokens(@Nullable Integer maxTokens) {
 		this.maxTokens = maxTokens;
 	}
 
 	@Override
-	public Double getPresencePenalty() {
+	public @Nullable Double getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
-	public void setPresencePenalty(Double presencePenalty) {
+	public void setPresencePenalty(@Nullable Double presencePenalty) {
 		this.presencePenalty = presencePenalty;
 	}
 
-	public ResponseFormat getResponseFormat() {
+	public @Nullable ResponseFormat getResponseFormat() {
 		return this.responseFormat;
 	}
 
-	public void setResponseFormat(ResponseFormat responseFormat) {
+	public void setResponseFormat(@Nullable ResponseFormat responseFormat) {
 		this.responseFormat = responseFormat;
 	}
 
 	@Override
 	@JsonIgnore
-	public List<String> getStopSequences() {
+	public @Nullable List<String> getStopSequences() {
 		return getStop();
 	}
 
 	@JsonIgnore
-	public void setStopSequences(List<String> stopSequences) {
+	public void setStopSequences(@Nullable List<String> stopSequences) {
 		setStop(stopSequences);
 	}
 
-	public List<String> getStop() {
+	public @Nullable List<String> getStop() {
 		return this.stop;
 	}
 
-	public void setStop(List<String> stop) {
+	public void setStop(@Nullable List<String> stop) {
 		this.stop = stop;
 	}
 
 	@Override
-	public Double getTemperature() {
+	public @Nullable Double getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(Double temperature) {
+	public void setTemperature(@Nullable Double temperature) {
 		this.temperature = temperature;
 	}
 
 	@Override
-	public Double getTopP() {
+	public @Nullable Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(Double topP) {
+	public void setTopP(@Nullable Double topP) {
 		this.topP = topP;
 	}
 
-	public List<DeepSeekApi.FunctionTool> getTools() {
+	public @Nullable List<DeepSeekApi.FunctionTool> getTools() {
 		return this.tools;
 	}
 
-	public void setTools(List<DeepSeekApi.FunctionTool> tools) {
+	public void setTools(@Nullable List<DeepSeekApi.FunctionTool> tools) {
 		this.tools = tools;
 	}
 
-	public Object getToolChoice() {
+	public @Nullable Object getToolChoice() {
 		return this.toolChoice;
 	}
 
-	public void setToolChoice(Object toolChoice) {
+	public void setToolChoice(@Nullable Object toolChoice) {
 		this.toolChoice = toolChoice;
 	}
 
@@ -277,9 +308,8 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@Nullable
 	@JsonIgnore
-	public Boolean getInternalToolExecutionEnabled() {
+	public @Nullable Boolean getInternalToolExecutionEnabled() {
 		return this.internalToolExecutionEnabled;
 	}
 
@@ -289,25 +319,25 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
-	public Boolean getLogprobs() {
+	public @Nullable Boolean getLogprobs() {
 		return this.logprobs;
 	}
 
-	public void setLogprobs(Boolean logprobs) {
+	public void setLogprobs(@Nullable Boolean logprobs) {
 		this.logprobs = logprobs;
 	}
 
-	public Integer getTopLogprobs() {
+	public @Nullable Integer getTopLogprobs() {
 		return this.topLogprobs;
 	}
 
-	public void setTopLogprobs(Integer topLogprobs) {
+	public void setTopLogprobs(@Nullable Integer topLogprobs) {
 		this.topLogprobs = topLogprobs;
 	}
 
 	@Override
 	@JsonIgnore
-	public Integer getTopK() {
+	public @Nullable Integer getTopK() {
 		return null;
 	}
 
@@ -324,7 +354,32 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	public DeepSeekChatOptions copy() {
-		return DeepSeekChatOptions.fromOptions(this);
+		return mutate().build();
+	}
+
+	@Override
+	public Builder mutate() {
+		return DeepSeekChatOptions.builder()
+			// ChatOptions
+			.model(this.model)
+			.frequencyPenalty(this.frequencyPenalty)
+			.maxTokens(this.maxTokens)
+			.presencePenalty(this.presencePenalty)
+			.stopSequences(this.stop)
+			.temperature(this.temperature)
+			.topP(this.topP)
+			.topK(this.getTopK()) // always null but here for consistency
+			// ToolCallingChatOptions
+			.toolCallbacks(this.getToolCallbacks())
+			.toolNames(this.getToolNames())
+			.toolContext(this.getToolContext())
+			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
+			// DeepSeek Specific
+			.responseFormat(this.responseFormat)
+			.logprobs(this.logprobs)
+			.topLogprobs(this.topLogprobs)
+			.tools(this.tools)
+			.toolChoice(this.toolChoice);
 	}
 
 	@Override
@@ -361,144 +416,97 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	}
 
 	public static DeepSeekChatOptions fromOptions(DeepSeekChatOptions fromOptions) {
-		return DeepSeekChatOptions.builder()
-				.model(fromOptions.getModel())
-				.frequencyPenalty(fromOptions.getFrequencyPenalty())
-				.logprobs(fromOptions.getLogprobs())
-				.topLogprobs(fromOptions.getTopLogprobs())
-				.maxTokens(fromOptions.getMaxTokens())
-				.presencePenalty(fromOptions.getPresencePenalty())
-				.responseFormat(fromOptions.getResponseFormat())
-				.stop(fromOptions.getStop() != null ? new ArrayList<>(fromOptions.getStop()) : null)
-				.temperature(fromOptions.getTemperature())
-				.topP(fromOptions.getTopP())
-				.tools(fromOptions.getTools())
-				.toolChoice(fromOptions.getToolChoice())
-				.toolCallbacks(
-						fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
-				.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
-				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
-				.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
-				.build();
+		return fromOptions.mutate().build();
 	}
 
-	public static final class Builder {
+	// public Builder class exposed to users. Avoids having to deal with noisy generic parameters.
+	public static class Builder extends AbstractBuilder<Builder> {
 
-		protected DeepSeekChatOptions options;
+	}
 
-		public Builder() {
-			this.options = new DeepSeekChatOptions();
-		}
+	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
+			extends DefaultToolCallingChatOptions.Builder<B> {
 
-		public Builder(DeepSeekChatOptions options) {
-			this.options = options;
-		}
+		protected @Nullable ResponseFormat responseFormat;
 
-		public Builder model(String model) {
-			this.options.model = model;
-			return this;
-		}
+		protected @Nullable Boolean logprobs;
 
-		public Builder model(DeepSeekApi.ChatModel deepseekAiChatModel) {
-			this.options.model = deepseekAiChatModel.getName();
-			return this;
-		}
+		protected @Nullable Integer topLogprobs;
 
-		public Builder frequencyPenalty(Double frequencyPenalty) {
-			this.options.frequencyPenalty = frequencyPenalty;
-			return this;
-		}
+		protected @Nullable List<DeepSeekApi.FunctionTool> tools;
 
-		public Builder logprobs(Boolean logprobs) {
-			this.options.logprobs = logprobs;
-			return this;
-		}
+		protected @Nullable Object toolChoice;
 
-		public Builder topLogprobs(Integer topLogprobs) {
-			this.options.topLogprobs = topLogprobs;
-			return this;
-		}
-
-		public Builder maxTokens(Integer maxTokens) {
-			this.options.maxTokens = maxTokens;
-			return this;
-		}
-
-		public Builder presencePenalty(Double presencePenalty) {
-			this.options.presencePenalty = presencePenalty;
-			return this;
-		}
-
-		public Builder responseFormat(ResponseFormat responseFormat) {
-			this.options.responseFormat = responseFormat;
-			return this;
-		}
-
-		public Builder stop(List<String> stop) {
-			this.options.stop = stop;
-			return this;
-		}
-
-		public Builder temperature(Double temperature) {
-			this.options.temperature = temperature;
-			return this;
-		}
-
-		public Builder topP(Double topP) {
-			this.options.topP = topP;
-			return this;
-		}
-
-		public Builder tools(List<DeepSeekApi.FunctionTool> tools) {
-			this.options.tools = tools;
-			return this;
-		}
-
-		public Builder toolChoice(Object toolChoice) {
-			this.options.toolChoice = toolChoice;
-			return this;
-		}
-
-		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
-			this.options.setToolCallbacks(toolCallbacks);
-			return this;
-		}
-
-		public Builder toolCallbacks(ToolCallback... toolCallbacks) {
-			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
-			return this;
-		}
-
-		public Builder toolNames(Set<String> toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			this.options.setToolNames(toolNames);
-			return this;
-		}
-
-		public Builder toolNames(String... toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			this.options.toolNames.addAll(Set.of(toolNames));
-			return this;
-		}
-
-		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
-			return this;
-		}
-
-		public Builder toolContext(Map<String, Object> toolContext) {
-			if (this.options.toolContext == null) {
-				this.options.toolContext = toolContext;
+		public B model(DeepSeekApi.@Nullable ChatModel deepseekAiChatModel) {
+			if (deepseekAiChatModel == null) {
+				this.model = null;
 			}
 			else {
-				this.options.toolContext.putAll(toolContext);
+				this.model = deepseekAiChatModel.getName();
 			}
-			return this;
+			return self();
 		}
 
+		public B responseFormat(@Nullable ResponseFormat responseFormat) {
+			this.responseFormat = responseFormat;
+			return self();
+		}
+
+		public B stop(@Nullable List<String> stop) {
+			return stopSequences(stop);
+		}
+
+		public B logprobs(@Nullable Boolean logprobs) {
+			this.logprobs = logprobs;
+			return self();
+		}
+
+		public B topLogprobs(@Nullable Integer topLogprobs) {
+			this.topLogprobs = topLogprobs;
+			return self();
+		}
+
+		public B tools(@Nullable List<DeepSeekApi.FunctionTool> tools) {
+			this.tools = tools;
+			return self();
+		}
+
+		public B toolChoice(@Nullable Object toolChoice) {
+			this.toolChoice = toolChoice;
+			return self();
+		}
+
+		public B combineWith(ChatOptions.Builder<?> other) {
+			super.combineWith(other);
+			if (other instanceof AbstractBuilder<?> that) {
+				if (that.responseFormat != null) {
+					this.responseFormat = that.responseFormat;
+				}
+				if (that.logprobs != null) {
+					this.logprobs = that.logprobs;
+				}
+				if (that.topLogprobs != null) {
+					this.topLogprobs = that.topLogprobs;
+				}
+				if (that.tools != null) {
+					this.tools = that.tools;
+				}
+				if (that.toolChoice != null) {
+					this.toolChoice = that.toolChoice;
+				}
+			}
+			return self();
+		}
+
+		@Override
+		@SuppressWarnings("NullAway")
 		public DeepSeekChatOptions build() {
-			return this.options;
+			// TODO Un-comment assertion when tool definitions merging will use the builder/customizer
+			// Assert.state(this.model != null, "model must not be null");
+			return new DeepSeekChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
+					this.responseFormat, this.stopSequences, this.temperature, this.topP, this.logprobs,
+					this.topLogprobs, this.tools, this.toolChoice, this.internalToolExecutionEnabled,
+					this.toolCallbacks, this.toolNames, this.toolContext);
 		}
 
 	}

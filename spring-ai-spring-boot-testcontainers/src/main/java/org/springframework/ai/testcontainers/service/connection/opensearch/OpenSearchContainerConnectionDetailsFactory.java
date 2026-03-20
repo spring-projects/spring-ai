@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package org.springframework.ai.testcontainers.service.connection.opensearch;
 
 import java.util.List;
 
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 
 import org.springframework.ai.vectorstore.opensearch.autoconfigure.OpenSearchConnectionDetails;
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionDetailsFactory;
@@ -28,11 +28,11 @@ import org.springframework.boot.testcontainers.service.connection.ContainerConne
  * @author Eddú Meléndez
  */
 class OpenSearchContainerConnectionDetailsFactory
-		extends ContainerConnectionDetailsFactory<OpensearchContainer<?>, OpenSearchConnectionDetails> {
+		extends ContainerConnectionDetailsFactory<OpenSearchContainer<?>, OpenSearchConnectionDetails> {
 
 	@Override
 	public OpenSearchConnectionDetails getContainerConnectionDetails(
-			ContainerConnectionSource<OpensearchContainer<?>> source) {
+			ContainerConnectionSource<OpenSearchContainer<?>> source) {
 		return new OpenSearchContainerConnectionDetails(source);
 	}
 
@@ -40,9 +40,9 @@ class OpenSearchContainerConnectionDetailsFactory
 	 * {@link OpenSearchConnectionDetails} backed by a {@link ContainerConnectionSource}.
 	 */
 	private static final class OpenSearchContainerConnectionDetails
-			extends ContainerConnectionDetails<OpensearchContainer<?>> implements OpenSearchConnectionDetails {
+			extends ContainerConnectionDetails<OpenSearchContainer<?>> implements OpenSearchConnectionDetails {
 
-		private OpenSearchContainerConnectionDetails(ContainerConnectionSource<OpensearchContainer<?>> source) {
+		private OpenSearchContainerConnectionDetails(ContainerConnectionSource<OpenSearchContainer<?>> source) {
 			super(source);
 		}
 

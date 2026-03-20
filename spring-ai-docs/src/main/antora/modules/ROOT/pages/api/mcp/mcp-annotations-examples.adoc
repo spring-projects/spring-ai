@@ -263,7 +263,7 @@ public class ClientHandlers {
 
         return CreateMessageResult.builder()
             .role(Role.ASSISTANT)
-            .content(new TextContent(response.getResult().getOutput().getContent()))
+            .content(new TextContent(response.getResult().getOutput().getText()))
             .model(request.modelPreferences().hints().get(0).name())
             .build();
     }
@@ -489,14 +489,14 @@ public class StatelessTools {
             @McpToolParam(description = "JSON string", required = true) String json) {
 
         try {
-            ObjectMapper mapper = new ObjectMapper();
+            JsonMapper mapper = new JsonMapper();
             mapper.readTree(json);
 
             return CallToolResult.builder()
                 .addTextContent("Valid JSON")
                 .structuredContent(Map.of("valid", true))
                 .build();
-        } catch (Exception e) {
+        } catch (JacksonException e) {
             return CallToolResult.builder()
                 .addTextContent("Invalid JSON: " + e.getMessage())
                 .structuredContent(Map.of("valid", false, "error", e.getMessage()))
@@ -532,7 +532,11 @@ This example demonstrates how to use MCP Sampling to generate creative content f
 
 === Sampling Server Implementation
 
-The server provides a weather tool that uses MCP Sampling to generate poems from different LLM providers:
+The server provides a weather tool that uses MCP Sampling to generate poems from different LLM providers.
+
+[NOTE]
+This example uses `McpSyncServerExchange` directly for fine-grained control over the low-level MCP API. For simpler cases, use `McpSyncRequestContext` which provides a higher-level, more convenient interface (e.g., `context.sampleEnabled()`, `context.sample(...)`, `context.info(...)`).
+
 
 [source,java]
 ----

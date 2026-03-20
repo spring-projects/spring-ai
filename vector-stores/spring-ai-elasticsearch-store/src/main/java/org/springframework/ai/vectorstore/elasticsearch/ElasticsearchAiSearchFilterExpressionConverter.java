@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,10 @@
 
 package org.springframework.ai.vectorstore.elasticsearch;
 
-import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
@@ -40,8 +37,6 @@ import org.springframework.util.Assert;
  */
 public class ElasticsearchAiSearchFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
-	private static final Pattern DATE_FORMAT_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z");
-
 	private final DateTimeFormatter dateFormat;
 
 	public ElasticsearchAiSearchFilterExpressionConverter() {
@@ -53,8 +48,8 @@ public class ElasticsearchAiSearchFilterExpressionConverter extends AbstractFilt
 		if (expression.type() == Filter.ExpressionType.IN || expression.type() == Filter.ExpressionType.NIN) {
 			Assert.state(expression.right() != null, "expression.right() must not be null");
 			context.append(getOperationSymbol(expression));
-			context.append("(");
 			this.convertOperand(expression.left(), context);
+			context.append("(");
 			this.convertOperand(expression.right(), context);
 			context.append(")");
 		}
@@ -119,14 +114,14 @@ public class ElasticsearchAiSearchFilterExpressionConverter extends AbstractFilt
 		if (filterValue.value() instanceof List list) {
 			int c = 0;
 			for (Object v : list) {
-				context.append(v);
+				this.doSingleValue(normalizeDateString(v), context);
 				if (c++ < list.size() - 1) {
 					this.doAddValueRangeSpitter(filterValue, context);
 				}
 			}
 		}
 		else {
-			this.doSingleValue(filterValue.value(), context);
+			this.doSingleValue(normalizeDateString(filterValue.value()), context);
 		}
 	}
 
@@ -136,18 +131,9 @@ public class ElasticsearchAiSearchFilterExpressionConverter extends AbstractFilt
 			context.append(this.dateFormat.format(date.toInstant()));
 		}
 		else if (value instanceof String text) {
-			if (DATE_FORMAT_PATTERN.matcher(text).matches()) {
-				try {
-					Instant date = Instant.from(this.dateFormat.parse(text));
-					context.append(this.dateFormat.format(date));
-				}
-				catch (DateTimeParseException e) {
-					throw new IllegalArgumentException("Invalid date type:" + text, e);
-				}
-			}
-			else {
-				context.append(text);
-			}
+			context.append("\"");
+			emitLuceneString(text, context);
+			context.append("\"");
 		}
 		else {
 			context.append(value);

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-  ~ Copyright 2023-2024 the original author or authors.
+  ~ Copyright 2023-present the original author or authors.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -68,24 +68,19 @@
 
 	<suppress files="[\\/]src[\\/]test[\\/]java[\\/]" id="bannedNullabilityImports" />
 	<!-- This list will gradually shrink as we migrate to JSpecify -->
-	<suppress files="auto-configurations[\\/]models" id="bannedNullabilityImports" />
+	<suppress files="auto-configurations[\\/]models[\\/]spring-ai-autoconfigure-model-" id="bannedNullabilityImports" />
 
-	<suppress files="models[\\/]spring-ai-anthropic" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-azure-openai" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-bedrock" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-bedrock-converse" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-deepseek" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-elevenlabs" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-google-genai" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-google-genai-embedding" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-huggingface" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-minimax" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-mistral-ai" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-oci-genai" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-ollama" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-openai" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-openai-sdk" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-postgresml" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-transformers" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-vertex-ai-embedding" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-vertex-ai-gemini" id="bannedNullabilityImports" />
@@ -96,5 +91,5 @@
 	<suppress files="spring-ai-spring-boot-starters" id="bannedNullabilityImports" />
 	<suppress files="spring-ai-spring-boot-testcontainers" id="bannedNullabilityImports" />
 
-	<suppress files="models|auto-configurations[\\/]models|spring-ai-integration-tests|spring-ai-spring-boot-docker-compose|spring-ai-spring-boot-starters|spring-ai-spring-boot-testcontainers" checks="JavadocPackage" />
+	<suppress files="models|auto-configurations[\\/]models[\\/]spring-ai-autoconfigure-model-|spring-ai-integration-tests|spring-ai-spring-boot-docker-compose|spring-ai-spring-boot-starters|spring-ai-spring-boot-testcontainers" checks="JavadocPackage" />
 </suppressions>

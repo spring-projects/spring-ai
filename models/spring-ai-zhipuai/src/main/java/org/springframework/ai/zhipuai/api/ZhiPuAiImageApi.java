@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ public class ZhiPuAiImageApi {
 	public ZhiPuAiImageApi(String baseUrl, String zhiPuAiToken, RestClient.Builder restClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl).defaultHeaders(h -> h.setBearerAuth(zhiPuAiToken)
+		this.restClient = restClientBuilder.clone().baseUrl(baseUrl).defaultHeaders(h -> h.setBearerAuth(zhiPuAiToken)
 		// h.setContentType(MediaType.APPLICATION_JSON);
 		).defaultStatusHandler(responseErrorHandler).build();
 	}

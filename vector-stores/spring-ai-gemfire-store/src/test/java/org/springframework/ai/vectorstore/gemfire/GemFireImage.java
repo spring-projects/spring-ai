@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import org.testcontainers.utility.DockerImageName;
  */
 public final class GemFireImage {
 
-	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("gemfire/gemfire-all:10.1-jdk17");
+	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("gemfire/gemfire-all:10.2-jdk17");
 
 	private GemFireImage() {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,11 +30,7 @@ public class BedrockConverseTestConfiguration {
 	@Bean
 	public BedrockProxyChatModel bedrockConverseChatModel() {
 
-		// String modelId = "anthropic.claude-3-5-sonnet-20240620-v1:0";
-		// String modelId = "anthropic.claude-3-5-sonnet-20241022-v2:0";
-		// String modelId = "meta.llama3-8b-instruct-v1:0";
-		// String modelId = "ai21.jamba-1-5-large-v1:0";
-		String modelId = "us.anthropic.claude-3-5-sonnet-20240620-v1:0";
+		String modelId = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 
 		return BedrockProxyChatModel.builder()
 			.credentialsProvider(EnvironmentVariableCredentialsProvider.create())

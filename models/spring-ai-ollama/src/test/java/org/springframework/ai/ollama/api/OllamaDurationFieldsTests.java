@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package org.springframework.ai.ollama.api;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -31,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class OllamaDurationFieldsTests {
 
 	@Test
-	public void testDurationFields() throws JsonMappingException, JsonProcessingException {
+	public void testDurationFields() {
 
 		var value = ModelOptionsUtils.jsonToObject("""
 				{

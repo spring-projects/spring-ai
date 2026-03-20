@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -45,6 +47,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Toshiaki Maki
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements InitializingBean {
 
@@ -87,7 +90,6 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 		this.createExtension = createExtension;
 	}
 
-	@SuppressWarnings("null")
 	@Override
 	public float[] embed(String text) {
 		return this.jdbcTemplate.queryForObject(
@@ -97,11 +99,16 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 	}
 
 	@Override
+	public String getEmbeddingContent(Document document) {
+		Assert.notNull(document, "Document must not be null");
+		return document.getFormattedContent(this.defaultOptions.getMetadataMode());
+	}
+
+	@Override
 	public float[] embed(Document document) {
 		return this.embed(document.getFormattedContent(this.defaultOptions.getMetadataMode()));
 	}
 
-	@SuppressWarnings("null")
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
 
@@ -146,10 +153,9 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 	 * @param requestOptions request options to merge.
 	 * @return the merged options.
 	 */
-	PostgresMlEmbeddingOptions mergeOptions(EmbeddingOptions requestOptions) {
+	PostgresMlEmbeddingOptions mergeOptions(@Nullable EmbeddingOptions requestOptions) {
 
-		PostgresMlEmbeddingOptions options = (this.defaultOptions != null) ? this.defaultOptions
-				: PostgresMlEmbeddingOptions.builder().build();
+		PostgresMlEmbeddingOptions options = this.defaultOptions;
 
 		if (requestOptions != null) {
 			options = ModelOptionsUtils.merge(requestOptions, options, PostgresMlEmbeddingOptions.class);
@@ -186,11 +192,11 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 
 		private final String cast;
 
-		private final String extensionName;
+		private final @Nullable String extensionName;
 
 		private final RowMapper<float[]> rowMapper;
 
-		VectorType(String cast, String extensionName, RowMapper<float[]> rowMapper) {
+		VectorType(String cast, @Nullable String extensionName, RowMapper<float[]> rowMapper) {
 			this.cast = cast;
 			this.extensionName = extensionName;
 			this.rowMapper = rowMapper;

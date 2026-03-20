@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.springframework.ai.azure.openai;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -31,12 +30,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -55,6 +56,45 @@ import org.springframework.util.Assert;
 public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 
 	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiChatOptions.class);
+
+	// Temporary constructor to maintain compat with ModelOptionUtils
+	public AzureOpenAiChatOptions() {
+	}
+
+	protected AzureOpenAiChatOptions(@Nullable Integer maxTokens, @Nullable Double temperature, @Nullable Double topP,
+			@Nullable Map<String, Integer> logitBias, @Nullable String user, @Nullable Integer n,
+			@Nullable List<String> stop, @Nullable Double presencePenalty, @Nullable Double frequencyPenalty,
+			@Nullable String deploymentName, @Nullable AzureOpenAiResponseFormat responseFormat, @Nullable Long seed,
+			@Nullable Boolean logprobs, @Nullable Integer topLogProbs, @Nullable Integer maxCompletionTokens,
+			@Nullable AzureChatEnhancementConfiguration enhancements,
+			@Nullable ChatCompletionStreamOptions streamOptions, @Nullable Boolean internalToolExecutionEnabled,
+			@Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames,
+			@Nullable Map<String, Object> toolContext, @Nullable Boolean enableStreamUsage,
+			@Nullable String reasoningEffort) {
+		this.maxTokens = maxTokens;
+		this.temperature = temperature;
+		this.topP = topP;
+		this.logitBias = logitBias;
+		this.user = user;
+		this.n = n;
+		this.stop = stop;
+		this.presencePenalty = presencePenalty;
+		this.frequencyPenalty = frequencyPenalty;
+		this.deploymentName = deploymentName;
+		this.responseFormat = responseFormat;
+		this.seed = seed;
+		this.logprobs = logprobs;
+		this.topLogProbs = topLogProbs;
+		this.maxCompletionTokens = maxCompletionTokens;
+		this.enhancements = enhancements;
+		this.streamOptions = streamOptions;
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+		this.toolCallbacks = toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(toolCallbacks);
+		this.toolNames = toolNames == null ? new HashSet<>() : new HashSet<>(toolNames);
+		this.toolContext = toolContext == null ? new HashMap<>() : new HashMap<>(toolContext);
+		this.enableStreamUsage = enableStreamUsage;
+		this.reasoningEffort = reasoningEffort;
+	}
 
 	/**
 	 * The maximum number of tokens to generate in the chat completion. The total length
@@ -129,7 +169,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	 * A collection of textual sequences that will end completions generation.
 	 */
 	@JsonProperty("stop")
-	private List<String> stop;
+	private List<String> stop = new ArrayList<>();
 
 	/**
 	 * A value that influences the probability of generated tokens appearing based on
@@ -304,31 +344,38 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	public static AzureOpenAiChatOptions fromOptions(AzureOpenAiChatOptions fromOptions) {
-		return builder().deploymentName(fromOptions.getDeploymentName())
-			.frequencyPenalty(fromOptions.getFrequencyPenalty() != null ? fromOptions.getFrequencyPenalty() : null)
-			.logitBias(fromOptions.getLogitBias())
-			.maxTokens(fromOptions.getMaxTokens())
-			.maxCompletionTokens(fromOptions.getMaxCompletionTokens())
-			.N(fromOptions.getN())
-			.presencePenalty(fromOptions.getPresencePenalty() != null ? fromOptions.getPresencePenalty() : null)
-			.stop(fromOptions.getStop() != null ? new ArrayList<>(fromOptions.getStop()) : null)
-			.temperature(fromOptions.getTemperature())
-			.topP(fromOptions.getTopP())
-			.user(fromOptions.getUser())
-			.toolCallbacks(
-					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
-			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
-			.responseFormat(fromOptions.getResponseFormat())
-			.streamUsage(fromOptions.getStreamUsage())
-			.reasoningEffort(fromOptions.getReasoningEffort())
-			.seed(fromOptions.getSeed())
-			.logprobs(fromOptions.isLogprobs())
-			.topLogprobs(fromOptions.getTopLogProbs())
-			.enhancements(fromOptions.getEnhancements())
-			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
-			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
-			.streamOptions(fromOptions.getStreamOptions())
-			.build();
+		return fromOptions.mutate().build();
+	}
+
+	@Override
+	public Builder mutate() {
+		return AzureOpenAiChatOptions.builder()
+			// ChatOptions
+			.deploymentName(getDeploymentName())// alias for model in azure
+			.frequencyPenalty(getFrequencyPenalty())
+			.maxTokens(getMaxTokens())
+			.presencePenalty(getPresencePenalty())
+			.stop(this.getStop() == null ? null : new ArrayList<>(this.getStop()))
+			.temperature(getTemperature())
+			.topP(getTopP())
+			// ToolCallingChatOptions
+			.toolCallbacks(new ArrayList<>(getToolCallbacks()))
+			.toolNames(new HashSet<>(getToolNames()))
+			.toolContext(new HashMap<>(getToolContext()))
+			.internalToolExecutionEnabled(getInternalToolExecutionEnabled())
+			// Azure Specific
+			.logitBias(getLogitBias())
+			.maxCompletionTokens(getMaxCompletionTokens())
+			.N(getN())
+			.user(getUser())
+			.responseFormat(getResponseFormat())
+			.streamUsage(getStreamUsage())
+			.reasoningEffort(getReasoningEffort())
+			.seed(getSeed())
+			.logprobs(isLogprobs())
+			.topLogprobs(getTopLogProbs())
+			.enhancements(getEnhancements())
+			.streamOptions(getStreamOptions());
 	}
 
 	@Override
@@ -531,9 +578,8 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public AzureOpenAiChatOptions copy() {
-		return fromOptions(this);
+		return mutate().build();
 	}
 
 	@Override
@@ -573,31 +619,46 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 				this.temperature, this.topP);
 	}
 
-	public static final class Builder {
+	// public Builder class exposed to users. Avoids having to deal with noisy generic
+	// parameters.
+	public static class Builder extends AbstractBuilder<Builder> {
 
-		protected AzureOpenAiChatOptions options;
+	}
 
-		public Builder() {
-			this.options = new AzureOpenAiChatOptions();
+	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
+			extends DefaultToolCallingChatOptions.Builder<B> {
+
+		protected @Nullable Map<String, Integer> logitBias;
+
+		protected @Nullable String user;
+
+		protected @Nullable Integer n;
+
+		protected @Nullable AzureOpenAiResponseFormat responseFormat;
+
+		protected @Nullable Long seed;
+
+		protected @Nullable Boolean logprobs;
+
+		protected @Nullable Integer topLogProbs;
+
+		protected @Nullable Integer maxCompletionTokens;
+
+		protected @Nullable AzureChatEnhancementConfiguration enhancements;
+
+		protected @Nullable ChatCompletionStreamOptions streamOptions;
+
+		protected @Nullable Boolean enableStreamUsage;
+
+		protected @Nullable String reasoningEffort;
+
+		public B deploymentName(@Nullable String deploymentName) {
+			return this.model(deploymentName);
 		}
 
-		public Builder(AzureOpenAiChatOptions options) {
-			this.options = options;
-		}
-
-		public Builder deploymentName(String deploymentName) {
-			this.options.deploymentName = deploymentName;
-			return this;
-		}
-
-		public Builder frequencyPenalty(Double frequencyPenalty) {
-			this.options.frequencyPenalty = frequencyPenalty;
-			return this;
-		}
-
-		public Builder logitBias(Map<String, Integer> logitBias) {
-			this.options.logitBias = logitBias;
-			return this;
+		public B logitBias(@Nullable Map<String, Integer> logitBias) {
+			this.logitBias = logitBias;
+			return self();
 		}
 
 		/**
@@ -623,16 +684,17 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 		 * @param maxTokens the maximum number of tokens to generate, or null to unset
 		 * @return this builder instance
 		 */
-		public Builder maxTokens(Integer maxTokens) {
-			if (maxTokens != null && this.options.maxCompletionTokens != null) {
+		@Override
+		public B maxTokens(@Nullable Integer maxTokens) {
+			if (maxTokens != null && this.maxCompletionTokens != null) {
 				logger
 					.warn("Both maxTokens and maxCompletionTokens are set. Azure OpenAI API does not support setting both parameters simultaneously. "
 							+ "The previously set maxCompletionTokens ({}) will be cleared and maxTokens ({}) will be used.",
-							this.options.maxCompletionTokens, maxTokens);
-				this.options.maxCompletionTokens = null;
+							this.maxCompletionTokens, maxTokens);
+				this.maxCompletionTokens = null;
 			}
-			this.options.maxTokens = maxTokens;
-			return this;
+			super.maxTokens(maxTokens);
+			return self();
 		}
 
 		/**
@@ -658,128 +720,124 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 		 * or null to unset
 		 * @return this builder instance
 		 */
-		public Builder maxCompletionTokens(Integer maxCompletionTokens) {
-			if (maxCompletionTokens != null && this.options.maxTokens != null) {
+		public B maxCompletionTokens(@Nullable Integer maxCompletionTokens) {
+			if (maxCompletionTokens != null && this.maxTokens != null) {
 				logger
 					.warn("Both maxTokens and maxCompletionTokens are set. Azure OpenAI API does not support setting both parameters simultaneously. "
 							+ "The previously set maxTokens ({}) will be cleared and maxCompletionTokens ({}) will be used.",
-							this.options.maxTokens, maxCompletionTokens);
-				this.options.maxTokens = null;
+							this.maxTokens, maxCompletionTokens);
+				super.maxTokens(null);
 			}
-			this.options.maxCompletionTokens = maxCompletionTokens;
-			return this;
+			this.maxCompletionTokens = maxCompletionTokens;
+			return self();
 		}
 
-		public Builder N(Integer n) {
-			this.options.n = n;
-			return this;
+		public B N(@Nullable Integer n) {
+			this.n = n;
+			return self();
 		}
 
-		public Builder presencePenalty(Double presencePenalty) {
-			this.options.presencePenalty = presencePenalty;
-			return this;
+		public B stop(@Nullable List<String> stop) {
+			super.stopSequences(stop);
+			return self();
 		}
 
-		public Builder stop(List<String> stop) {
-			this.options.stop = stop;
-			return this;
+		public B user(@Nullable String user) {
+			this.user = user;
+			return self();
 		}
 
-		public Builder temperature(Double temperature) {
-			this.options.temperature = temperature;
-			return this;
+		public B responseFormat(@Nullable AzureOpenAiResponseFormat responseFormat) {
+			this.responseFormat = responseFormat;
+			return self();
 		}
 
-		public Builder topP(Double topP) {
-			this.options.topP = topP;
-			return this;
+		public B streamUsage(@Nullable Boolean enableStreamUsage) {
+			this.enableStreamUsage = enableStreamUsage;
+			return self();
 		}
 
-		public Builder user(String user) {
-			this.options.user = user;
-			return this;
+		public B reasoningEffort(@Nullable String reasoningEffort) {
+			this.reasoningEffort = reasoningEffort;
+			return self();
 		}
 
-		public Builder responseFormat(AzureOpenAiResponseFormat responseFormat) {
-			this.options.responseFormat = responseFormat;
-			return this;
+		public B seed(@Nullable Long seed) {
+			this.seed = seed;
+			return self();
 		}
 
-		public Builder streamUsage(Boolean enableStreamUsage) {
-			this.options.enableStreamUsage = enableStreamUsage;
-			return this;
+		public B logprobs(@Nullable Boolean logprobs) {
+			this.logprobs = logprobs;
+			return self();
 		}
 
-		public Builder reasoningEffort(String reasoningEffort) {
-			this.options.reasoningEffort = reasoningEffort;
-			return this;
+		public B topLogprobs(@Nullable Integer topLogprobs) {
+			this.topLogProbs = topLogprobs;
+			return self();
 		}
 
-		public Builder seed(Long seed) {
-			this.options.seed = seed;
-			return this;
+		public B enhancements(@Nullable AzureChatEnhancementConfiguration enhancements) {
+			this.enhancements = enhancements;
+			return self();
 		}
 
-		public Builder logprobs(Boolean logprobs) {
-			this.options.logprobs = logprobs;
-			return this;
+		public B streamOptions(@Nullable ChatCompletionStreamOptions streamOptions) {
+			this.streamOptions = streamOptions;
+			return self();
 		}
 
-		public Builder topLogprobs(Integer topLogprobs) {
-			this.options.topLogProbs = topLogprobs;
-			return this;
-		}
-
-		public Builder enhancements(AzureChatEnhancementConfiguration enhancements) {
-			this.options.enhancements = enhancements;
-			return this;
-		}
-
-		public Builder toolContext(Map<String, Object> toolContext) {
-			if (this.options.toolContext == null) {
-				this.options.toolContext = toolContext;
+		@Override
+		public B combineWith(ChatOptions.Builder<?> other) {
+			super.combineWith(other);
+			if (other instanceof AbstractBuilder<?> that) {
+				if (that.logitBias != null) {
+					this.logitBias = that.logitBias;
+				}
+				if (that.user != null) {
+					this.user = that.user;
+				}
+				if (that.n != null) {
+					this.n = that.n;
+				}
+				if (that.responseFormat != null) {
+					this.responseFormat = that.responseFormat;
+				}
+				if (that.seed != null) {
+					this.seed = that.seed;
+				}
+				if (that.logprobs != null) {
+					this.logprobs = that.logprobs;
+				}
+				if (that.topLogProbs != null) {
+					this.topLogProbs = that.topLogProbs;
+				}
+				if (that.maxCompletionTokens != null) {
+					this.maxCompletionTokens = that.maxCompletionTokens;
+				}
+				if (that.enhancements != null) {
+					this.enhancements = that.enhancements;
+				}
+				if (that.streamOptions != null) {
+					this.streamOptions = that.streamOptions;
+				}
+				if (that.enableStreamUsage != null) {
+					this.enableStreamUsage = that.enableStreamUsage;
+				}
+				if (that.reasoningEffort != null) {
+					this.reasoningEffort = that.reasoningEffort;
+				}
 			}
-			else {
-				this.options.toolContext.putAll(toolContext);
-			}
-			return this;
+			return self();
 		}
 
-		public Builder streamOptions(ChatCompletionStreamOptions streamOptions) {
-			this.options.streamOptions = streamOptions;
-			return this;
-		}
-
-		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
-			this.options.setToolCallbacks(toolCallbacks);
-			return this;
-		}
-
-		public Builder toolCallbacks(ToolCallback... toolCallbacks) {
-			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
-			return this;
-		}
-
-		public Builder toolNames(Set<String> toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			this.options.setToolNames(toolNames);
-			return this;
-		}
-
-		public Builder toolNames(String... toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			this.options.toolNames.addAll(Set.of(toolNames));
-			return this;
-		}
-
-		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
-			return this;
-		}
-
+		@Override
 		public AzureOpenAiChatOptions build() {
-			return this.options;
+			return new AzureOpenAiChatOptions(this.maxTokens, this.temperature, this.topP, this.logitBias, this.user,
+					this.n, this.stopSequences, this.presencePenalty, this.frequencyPenalty, this.model,
+					this.responseFormat, this.seed, this.logprobs, this.topLogProbs, this.maxCompletionTokens,
+					this.enhancements, this.streamOptions, this.internalToolExecutionEnabled, this.toolCallbacks,
+					this.toolNames, this.toolContext, this.enableStreamUsage, this.reasoningEffort);
 		}
 
 	}

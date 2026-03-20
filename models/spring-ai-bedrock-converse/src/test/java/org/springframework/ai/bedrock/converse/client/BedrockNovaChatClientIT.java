@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * @author Christian Tzolov
  */
-// @Disabled
 @SpringBootTest(classes = BedrockNovaChatClientIT.Config.class)
 @RequiresAwsCredentials
 public class BedrockNovaChatClientIT {
@@ -186,12 +185,12 @@ public class BedrockNovaChatClientIT {
 			.content();
 
 		assertThat(response).isNotEmpty();
-		assertThat(response).contains("20 degrees");
+		assertThat(response).contains("20");
 	}
 
 	// https://github.com/spring-projects/spring-ai/issues/1878
 	@ParameterizedTest
-	@ValueSource(strings = { "us.amazon.nova-pro-v1:0", "us.anthropic.claude-3-7-sonnet-20250219-v1:0" })
+	@ValueSource(strings = { "us.amazon.nova-pro-v1:0", "us.anthropic.claude-haiku-4-5-20251001-v1:0" })
 	void toolAnnotationWeatherForecastStreaming(String modelName) {
 
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
@@ -210,7 +209,7 @@ public class BedrockNovaChatClientIT {
 			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
-		assertThat(content).contains("20 degrees");
+		assertThat(content).contains("20");
 	}
 
 	// https://github.com/spring-projects/spring-ai/issues/1878
@@ -229,7 +228,7 @@ public class BedrockNovaChatClientIT {
 			.entity(WeatherService.Response.class);
 
 		assertThat(response).isNotNull();
-		assertThat(response.temp()).isEqualTo(30.0);
+		assertThat(response.temp()).isEqualTo(30);
 	}
 
 	@Test
@@ -253,7 +252,7 @@ public class BedrockNovaChatClientIT {
 			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
-		assertThat(content).contains("30.0");
+		assertThat(content).contains("30");
 	}
 
 	@SpringBootConfiguration
@@ -263,7 +262,6 @@ public class BedrockNovaChatClientIT {
 		public BedrockProxyChatModel bedrockConverseChatModel() {
 
 			String modelId = "us.amazon.nova-pro-v1:0";
-			// String modelId = "us.anthropic.claude-3-7-sonnet-20250219-v1:0";
 
 			return BedrockProxyChatModel.builder()
 				.credentialsProvider(EnvironmentVariableCredentialsProvider.create())

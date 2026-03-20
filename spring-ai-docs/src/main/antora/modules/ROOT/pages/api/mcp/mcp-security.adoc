@@ -363,7 +363,7 @@ When using `spring-ai-starter-mcp-client`, configure a `McpSyncHttpClientRequest
 class McpConfiguration {
 
     @Bean
-    McpSyncClientCustomizer syncClientCustomizer() {
+    McpCustomizer<McpClient.SyncSpec> syncClientCustomizer() {
         return (name, syncSpec) ->
                 syncSpec.transportContextProvider(
                         new AuthenticationMcpTransportContextProvider()
@@ -400,7 +400,7 @@ When using `spring-ai-starter-mcp-client-webflux`, configure a `WebClient.Builde
 class McpConfiguration {
 
     @Bean
-    McpSyncClientCustomizer syncClientCustomizer() {
+    McpCustomizer<McpClient.SyncSpec> syncClientCustomizer() {
         return (name, syncSpec) ->
                 syncSpec.transportContextProvider(
                         new AuthenticationMcpTransportContextProvider()
@@ -454,13 +454,13 @@ Configure MCP clients programmatically instead of using Spring Boot properties. 
 ----
 @Bean
 McpSyncClient client(
-        ObjectMapper objectMapper,
+        JsonMapper jsonMapper,
         McpSyncHttpClientRequestCustomizer requestCustomizer,
         McpClientCommonProperties commonProps
 ) {
     var transport = HttpClientStreamableHttpTransport.builder(mcpServerUrl)
             .clientBuilder(HttpClient.newBuilder())
-            .jsonMapper(new JacksonMcpJsonMapper(objectMapper))
+            .jsonMapper(new JacksonMcpJsonMapper(jsonMapper))
             .httpRequestCustomizer(requestCustomizer)
             .build();
 
@@ -481,12 +481,12 @@ For WebClient-based clients:
 @Bean
 McpSyncClient client(
         WebClient.Builder mcpWebClientBuilder,
-        ObjectMapper objectMapper,
+        JsonMapper jsonMapper,
         McpClientCommonProperties commonProperties
 ) {
     var builder = mcpWebClientBuilder.baseUrl(mcpServerUrl);
     var transport = WebClientStreamableHttpTransport.builder(builder)
-            .jsonMapper(new JacksonMcpJsonMapper(objectMapper))
+            .jsonMapper(new JacksonMcpJsonMapper(jsonMapper))
             .build();
 
     var clientInfo = new McpSchema.Implementation("clientName", commonProperties.getVersion());

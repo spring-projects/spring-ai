@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.springframework.ai.minimax;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,12 +29,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.minimax.api.MiniMaxApi;
+import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -158,29 +158,41 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 
 	// @formatter:on
 
+	// TODO: left here for ModelOptionUtils.merge*()
+	public MiniMaxChatOptions() {
+	}
+
+	protected MiniMaxChatOptions(String model, Double frequencyPenalty, Integer maxTokens, Integer n,
+			Double presencePenalty, MiniMaxApi.ChatCompletionRequest.ResponseFormat responseFormat, Integer seed,
+			List<String> stop, Double temperature, Double topP, Boolean maskSensitiveInfo,
+			List<MiniMaxApi.FunctionTool> tools, String toolChoice, @Nullable List<ToolCallback> toolCallbacks,
+			@Nullable Set<String> toolNames, @Nullable Map<String, Object> toolContext,
+			Boolean internalToolExecutionEnabled) {
+		this.model = model;
+		this.frequencyPenalty = frequencyPenalty;
+		this.maxTokens = maxTokens;
+		this.n = n;
+		this.presencePenalty = presencePenalty;
+		this.responseFormat = responseFormat;
+		this.seed = seed;
+		this.stop = stop;
+		this.temperature = temperature;
+		this.topP = topP;
+		this.maskSensitiveInfo = maskSensitiveInfo;
+		this.tools = tools;
+		this.toolChoice = toolChoice;
+		this.toolCallbacks = toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(toolCallbacks);
+		this.toolNames = toolNames == null ? new HashSet<>() : new HashSet<>(toolNames);
+		this.toolContext = toolContext == null ? new HashMap<>() : new HashMap<>(toolContext);
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
 
 	public static MiniMaxChatOptions fromOptions(MiniMaxChatOptions fromOptions) {
-		return builder().model(fromOptions.getModel())
-			.frequencyPenalty(fromOptions.getFrequencyPenalty())
-			.maxTokens(fromOptions.getMaxTokens())
-			.N(fromOptions.getN())
-			.presencePenalty(fromOptions.getPresencePenalty())
-			.responseFormat(fromOptions.getResponseFormat())
-			.seed(fromOptions.getSeed())
-			.stop(fromOptions.getStop() != null ? new ArrayList<>(fromOptions.getStop()) : null)
-			.temperature(fromOptions.getTemperature())
-			.topP(fromOptions.getTopP())
-			.maskSensitiveInfo(fromOptions.getMaskSensitiveInfo())
-			.tools(fromOptions.getTools() != null ? new ArrayList<>(fromOptions.getTools()) : null)
-			.toolChoice(fromOptions.getToolChoice())
-			.toolCallbacks(fromOptions.getToolCallbacks())
-			.toolNames(fromOptions.getToolNames())
-			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
-			.toolContext(fromOptions.getToolContext())
-			.build();
+		return fromOptions.mutate().build();
 	}
 
 	@Override
@@ -340,9 +352,8 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@Nullable
 	@JsonIgnore
-	public Boolean getInternalToolExecutionEnabled() {
+	public @Nullable Boolean getInternalToolExecutionEnabled() {
 		return this.internalToolExecutionEnabled;
 	}
 
@@ -394,126 +405,121 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	public MiniMaxChatOptions copy() {
-		return fromOptions(this);
+		return mutate().build();
 	}
 
-	public static final class Builder {
+	@Override
+	public Builder mutate() {
+		return MiniMaxChatOptions.builder()
+			// ChatOptions
+			.model(this.model)
+			.frequencyPenalty(this.frequencyPenalty)
+			.maxTokens(this.maxTokens)
+			.presencePenalty(this.presencePenalty)
+			.stopSequences(this.stop)
+			.temperature(this.temperature)
+			.topK(this.getTopK()) // unused in this model
+			.topP(this.topP)
+			// ToolCallingChatOptions
+			.toolCallbacks(this.getToolCallbacks())
+			.toolNames(this.getToolNames())
+			.toolContext(this.getToolContext())
+			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
+			// MiniMax Specific
+			.N(this.n)
+			.responseFormat(this.responseFormat)
+			.seed(this.seed)
+			.maskSensitiveInfo(this.maskSensitiveInfo)
+			.tools(this.tools)
+			.toolChoice(this.toolChoice);
+	}
 
-		protected MiniMaxChatOptions options;
+	// public Builder class exposed to users. Avoids having to deal with noisy generic
+	// parameters.
+	public static class Builder extends AbstractBuilder<Builder> {
 
-		public Builder() {
-			this.options = new MiniMaxChatOptions();
+	}
+
+	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
+			extends DefaultToolCallingChatOptions.Builder<B> {
+
+		protected @Nullable Integer n;
+
+		protected MiniMaxApi.ChatCompletionRequest.@Nullable ResponseFormat responseFormat;
+
+		protected @Nullable Integer seed;
+
+		protected @Nullable Boolean maskSensitiveInfo;
+
+		protected @Nullable List<MiniMaxApi.FunctionTool> tools;
+
+		protected @Nullable String toolChoice;
+
+		public B N(@Nullable Integer n) {
+			this.n = n;
+			return self();
 		}
 
-		public Builder(MiniMaxChatOptions options) {
-			this.options = options;
+		public B responseFormat(MiniMaxApi.ChatCompletionRequest.@Nullable ResponseFormat responseFormat) {
+			this.responseFormat = responseFormat;
+			return self();
 		}
 
-		public Builder model(String model) {
-			this.options.model = model;
-			return this;
+		public B seed(@Nullable Integer seed) {
+			this.seed = seed;
+			return self();
 		}
 
-		public Builder frequencyPenalty(Double frequencyPenalty) {
-			this.options.frequencyPenalty = frequencyPenalty;
-			return this;
+		public B stop(@Nullable List<String> stop) {
+			return this.stopSequences(stop);
 		}
 
-		public Builder maxTokens(Integer maxTokens) {
-			this.options.maxTokens = maxTokens;
-			return this;
+		public B maskSensitiveInfo(@Nullable Boolean maskSensitiveInfo) {
+			this.maskSensitiveInfo = maskSensitiveInfo;
+			return self();
 		}
 
-		public Builder N(Integer n) {
-			this.options.n = n;
-			return this;
+		public B tools(@Nullable List<MiniMaxApi.FunctionTool> tools) {
+			this.tools = tools;
+			return self();
 		}
 
-		public Builder presencePenalty(Double presencePenalty) {
-			this.options.presencePenalty = presencePenalty;
-			return this;
+		public B toolChoice(@Nullable String toolChoice) {
+			this.toolChoice = toolChoice;
+			return self();
 		}
 
-		public Builder responseFormat(MiniMaxApi.ChatCompletionRequest.ResponseFormat responseFormat) {
-			this.options.responseFormat = responseFormat;
-			return this;
-		}
-
-		public Builder seed(Integer seed) {
-			this.options.seed = seed;
-			return this;
-		}
-
-		public Builder stop(List<String> stop) {
-			this.options.stop = stop;
-			return this;
-		}
-
-		public Builder temperature(Double temperature) {
-			this.options.temperature = temperature;
-			return this;
-		}
-
-		public Builder topP(Double topP) {
-			this.options.topP = topP;
-			return this;
-		}
-
-		public Builder maskSensitiveInfo(Boolean maskSensitiveInfo) {
-			this.options.maskSensitiveInfo = maskSensitiveInfo;
-			return this;
-		}
-
-		public Builder tools(List<MiniMaxApi.FunctionTool> tools) {
-			this.options.tools = tools;
-			return this;
-		}
-
-		public Builder toolChoice(String toolChoice) {
-			this.options.toolChoice = toolChoice;
-			return this;
-		}
-
-		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
-			this.options.setToolCallbacks(toolCallbacks);
-			return this;
-		}
-
-		public Builder toolCallbacks(ToolCallback... toolCallbacks) {
-			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
-			return this;
-		}
-
-		public Builder toolNames(Set<String> toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			this.options.setToolNames(toolNames);
-			return this;
-		}
-
-		public Builder toolNames(String... toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			this.options.toolNames.addAll(Set.of(toolNames));
-			return this;
-		}
-
-		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
-			return this;
-		}
-
-		public Builder toolContext(Map<String, Object> toolContext) {
-			if (this.options.toolContext == null) {
-				this.options.toolContext = toolContext;
+		public B combineWith(ChatOptions.Builder<?> other) {
+			super.combineWith(other);
+			if (other instanceof AbstractBuilder<?> that) {
+				if (that.n != null) {
+					this.n = that.n;
+				}
+				if (that.responseFormat != null) {
+					this.responseFormat = that.responseFormat;
+				}
+				if (that.seed != null) {
+					this.seed = that.seed;
+				}
+				if (that.maskSensitiveInfo != null) {
+					this.maskSensitiveInfo = that.maskSensitiveInfo;
+				}
+				if (that.tools != null) {
+					this.tools = that.tools;
+				}
+				if (that.toolChoice != null) {
+					this.toolChoice = that.toolChoice;
+				}
 			}
-			else {
-				this.options.toolContext.putAll(toolContext);
-			}
-			return this;
+			return self();
 		}
 
+		@Override
 		public MiniMaxChatOptions build() {
-			return this.options;
+			return new MiniMaxChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.n,
+					this.presencePenalty, this.responseFormat, this.seed, this.stopSequences, this.temperature,
+					this.topP, this.maskSensitiveInfo, this.tools, this.toolChoice, this.toolCallbacks, this.toolNames,
+					this.toolContext, this.internalToolExecutionEnabled);
 		}
 
 	}

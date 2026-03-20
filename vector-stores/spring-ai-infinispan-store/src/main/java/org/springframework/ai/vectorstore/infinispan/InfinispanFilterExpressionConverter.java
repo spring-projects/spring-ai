@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,9 @@
 package org.springframework.ai.vectorstore.infinispan;
 
 import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
@@ -33,11 +29,6 @@ import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpress
 import org.springframework.util.Assert;
 
 class InfinispanFilterExpressionConverter extends AbstractFilterExpressionConverter {
-
-	private static final Pattern DATE_FORMAT_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z");
-
-	private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
-		.withZone(ZoneOffset.UTC);
 
 	private int i = -1;
 
@@ -93,6 +84,87 @@ class InfinispanFilterExpressionConverter extends AbstractFilterExpressionConver
 		}
 
 		throw new IllegalArgumentException("Expected a Filter expression");
+	}
+
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		if (value instanceof Date date) {
+			// Dates are converted to epoch milliseconds for Ickle
+			context.append(date.toInstant().toEpochMilli());
+		}
+		else if (value instanceof String text) {
+			// Emit string with proper escaping for Ickle/JP-QL
+			emitInfinispanString(text, context);
+		}
+		else if (value instanceof Integer || value instanceof Long || value instanceof Float
+				|| value instanceof Double) {
+			// Numeric values without quotes
+			context.append(value);
+		}
+		else if (value instanceof Boolean) {
+			// Boolean values without quotes
+			context.append(value);
+		}
+		else if (value instanceof Instant instant) {
+			// Instant converted to epoch milliseconds
+			context.append(instant.toEpochMilli());
+		}
+		else {
+			// Default case - treat as string
+			emitInfinispanString(value.toString(), context);
+		}
+	}
+
+	/**
+	 * Emit a string value formatted for Infinispan Ickle query syntax. Ickle is based on
+	 * JP-QL which uses single-quote delimited strings. Special characters must be
+	 * properly escaped to prevent injection attacks.
+	 * @param value the string value to format
+	 * @param context the context to append the escaped string to
+	 */
+	protected static void emitInfinispanString(String value, StringBuilder context) {
+		context.append("'"); // Opening quote
+
+		for (int i = 0; i < value.length(); i++) {
+			char c = value.charAt(i);
+
+			switch (c) {
+				case '\'':
+					// Single quote → doubled (standard JP-QL/SQL escaping)
+					context.append("''");
+					break;
+				case '\\':
+					// Backslash → escaped
+					context.append("\\\\");
+					break;
+				case '\b':
+					context.append("\\b");
+					break;
+				case '\f':
+					context.append("\\f");
+					break;
+				case '\n':
+					context.append("\\n");
+					break;
+				case '\r':
+					context.append("\\r");
+					break;
+				case '\t':
+					context.append("\\t");
+					break;
+				default:
+					// Escape control characters (U+0000 to U+001F)
+					if (c < 0x20) {
+						context.append(String.format("\\u%04x", (int) c));
+					}
+					else {
+						context.append(c);
+					}
+					break;
+			}
+		}
+
+		context.append("'"); // Closing quote
 	}
 
 	private void doField(Filter.Expression expression, StringBuilder context) {
@@ -173,13 +245,15 @@ class InfinispanFilterExpressionConverter extends AbstractFilterExpressionConver
 			if (values.isEmpty()) {
 				throw new UnsupportedOperationException("Infinispan metadata filter IN must contain values");
 			}
-			first = values.get(0);
-			inStatement = formattedComparisonValues(values);
+			first = normalizeDateString(values.get(0));
+			inStatement = formattedComparisonValues(
+					values.stream().map(AbstractFilterExpressionConverter::normalizeDateString).toList());
 		}
 		else {
 			// single value
-			first = value.value();
-			inStatement = first instanceof String ? "'" + value.value() + "'" : value.value().toString();
+			first = normalizeDateString(value.value());
+			inStatement = first instanceof Date d ? String.valueOf(d.toInstant().toEpochMilli())
+					: first instanceof String ? "'" + first + "'" : first.toString();
 		}
 
 		String m = "m" + this.i + ".";
@@ -222,18 +296,10 @@ class InfinispanFilterExpressionConverter extends AbstractFilterExpressionConver
 	}
 
 	private String computeValue(String operator, Object value) {
+		value = normalizeDateString(value);
 		String m = "m" + this.i + ".";
 		String filterQuery = "";
-		if (value instanceof String text && DATE_FORMAT_PATTERN.matcher(text).matches()) {
-			try {
-				filterQuery = m + "value_date" + operator
-						+ Instant.from(DATE_TIME_FORMATTER.parse(text)).toEpochMilli();
-			}
-			catch (DateTimeParseException e) {
-				throw new IllegalArgumentException("Invalid date type:" + text, e);
-			}
-		}
-		else if (value instanceof Integer || value instanceof Long) {
+		if (value instanceof Integer || value instanceof Long) {
 			Long longValue = getLongValue(value);
 			filterQuery = m + "value_int" + operator + longValue;
 		}
@@ -274,7 +340,8 @@ class InfinispanFilterExpressionConverter extends AbstractFilterExpressionConver
 
 	private String formattedComparisonValues(Collection<?> comparisonValues) {
 		String inStatement = comparisonValues.stream()
-			.map(s -> s instanceof String || s instanceof Date ? "'" + s + "'" : s.toString())
+			.map(s -> s instanceof Date d ? String.valueOf(d.toInstant().toEpochMilli())
+					: s instanceof String ? "'" + s + "'" : s.toString())
 			.collect(Collectors.joining(", "));
 		return inStatement;
 	}

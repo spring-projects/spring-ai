@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ public interface ChatGenerationMetadata extends ResultMetadata {
 		/**
 		 * Set the reason this choice completed for the generation.
 		 */
-		Builder finishReason(String finishReason);
+		Builder finishReason(@Nullable String finishReason);
 
 		/**
 		 * Add metadata to the Generation result.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 
 package org.springframework.ai.google.genai.schema;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.node.ObjectNode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -52,6 +52,25 @@ class JsonSchemaConverterTests {
 		assertThatThrownBy(() -> JsonSchemaConverter.convertToOpenApiSchema(null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("JSON Schema node must not be null");
+	}
+
+	@Test
+	void convertToOpenApiSchemaShouldRejectDefs() {
+		String json = """
+				{
+					"$defs": {
+						"myDef": {
+							"type": "string"
+						}
+					},
+					"type": "object"
+				}
+				""";
+		ObjectNode schema = JsonSchemaConverter.fromJson(json);
+
+		assertThatThrownBy(() -> JsonSchemaConverter.convertToOpenApiSchema(schema))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("Google's Structured Output schema doesn't support $defs property");
 	}
 
 	@Test
@@ -166,6 +185,25 @@ class JsonSchemaConverterTests {
 
 			assertThat(result.get("properties").get("tags").get("type").asText()).isEqualTo("array");
 			assertThat(result.get("properties").get("tags").get("items").get("type").asText()).isEqualTo("string");
+		}
+
+		@Test
+		void shouldHandleNullableTypes() {
+			String json = """
+					{
+						"type": "object",
+						"properties": {
+							"nickname": {
+								"type": ["string", "null"]
+							}
+						}
+					}
+					""";
+
+			ObjectNode result = JsonSchemaConverter.convertToOpenApiSchema(JsonSchemaConverter.fromJson(json));
+
+			assertThat(result.get("properties").get("nickname").get("type").asText()).isEqualTo("string");
+			assertThat(result.get("properties").get("nickname").get("nullable").asBoolean()).isTrue();
 		}
 
 		@Test

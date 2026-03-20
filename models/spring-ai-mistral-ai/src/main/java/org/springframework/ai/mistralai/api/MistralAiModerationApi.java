@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.function.Consumer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpHeaders;
@@ -50,7 +51,8 @@ public class MistralAiModerationApi {
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
+		this.restClient = restClientBuilder.clone()
+			.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
@@ -76,7 +78,7 @@ public class MistralAiModerationApi {
 
 		private String baseUrl = DEFAULT_BASE_URL;
 
-		private String apiKey;
+		private @Nullable String apiKey;
 
 		private RestClient.Builder restClientBuilder = RestClient.builder();
 
@@ -107,6 +109,7 @@ public class MistralAiModerationApi {
 		}
 
 		public MistralAiModerationApi build() {
+			Assert.state(this.apiKey != null, "The API key must not be null");
 			return new MistralAiModerationApi(this.baseUrl, this.apiKey, this.restClientBuilder,
 					this.responseErrorHandler);
 		}
@@ -145,6 +148,7 @@ public class MistralAiModerationApi {
 		@JsonProperty("model") String model
 	) {
 
+		@SuppressWarnings("NullAway") // Not null per API documentation, likely a merge related issue
 		public MistralAiModerationRequest(String prompt) {
 			this(prompt, null);
 		}

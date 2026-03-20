@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -229,7 +229,7 @@ public class ElasticsearchVectorStoreObservationIT {
 		@Bean
 		ElasticsearchClient elasticsearchClient(Rest5Client restClient) {
 			return new ElasticsearchClient(new Rest5ClientTransport(restClient, new JacksonJsonpMapper(
-					new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))));
+					new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES))));
 		}
 
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,6 @@ package org.springframework.ai.vectorstore.gemfire.autoconfigure;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
@@ -30,6 +28,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
@@ -94,7 +94,7 @@ class GemFireVectorStoreAutoConfigurationAuthenticationIT {
 		Ports.Binding hostPort = Ports.Binding.bindPort(HTTP_SERVICE_PORT);
 		ExposedPort exposedPort = new ExposedPort(HTTP_SERVICE_PORT);
 		PortBinding mappedPort = new PortBinding(hostPort, exposedPort);
-		gemFireCluster = new GemFireCluster("gemfire/gemfire-all:10.1-jdk17", LOCATOR_COUNT, SERVER_COUNT);
+		gemFireCluster = new GemFireCluster("gemfire/gemfire-all:10.2-jdk17", LOCATOR_COUNT, SERVER_COUNT);
 		gemFireCluster.withConfiguration(GemFireCluster.SERVER_GLOB,
 				container -> container.withExposedPorts(HTTP_SERVICE_PORT)
 					.withCreateContainerCmdModifier(cmd -> cmd.getHostConfig().withPortBindings(mappedPort)));
@@ -135,7 +135,7 @@ class GemFireVectorStoreAutoConfigurationAuthenticationIT {
 
 	private Map<String, Object> parseIndex(String json) {
 		try {
-			JsonNode rootNode = new ObjectMapper().readTree(json);
+			JsonNode rootNode = JsonMapper.shared().readTree(json);
 			Map<String, Object> indexDetails = new HashMap<>();
 			if (rootNode.isObject()) {
 				if (rootNode.has("name")) {

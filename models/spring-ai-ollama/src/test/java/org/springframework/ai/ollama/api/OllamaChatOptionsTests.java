@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JacksonException;
 
+import org.springframework.ai.ollama.api.OllamaChatOptions.Builder;
+import org.springframework.ai.test.options.AbstractChatOptionsTests;
 import org.springframework.ai.util.ResourceUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,7 +36,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author Mark Pollack
  * @author Nicolas Krier
  */
-class OllamaChatOptionsTests {
+class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions, Builder> {
+
+	@Override
+	protected Class<OllamaChatOptions> getConcreteOptionsClass() {
+		return OllamaChatOptions.class;
+	}
+
+	@Override
+	protected Builder readyToBuildBuilder() {
+		return OllamaChatOptions.builder();
+	}
 
 	@Test
 	void testBasicOptions() {
@@ -82,16 +94,16 @@ class OllamaChatOptionsTests {
 		assertThat(optionsMap).containsEntry("num_predict", 100);
 		assertThat(optionsMap).containsEntry("top_k", 40);
 		assertThat(optionsMap).containsEntry("top_p", 0.9);
-		assertThat(optionsMap).containsEntry("tfs_z", 1.0);
-		assertThat(optionsMap).containsEntry("typical_p", 1.0);
+		assertThat(optionsMap).containsEntry("tfs_z", 1.0f);
+		assertThat(optionsMap).containsEntry("typical_p", 1.0f);
 		assertThat(optionsMap).containsEntry("repeat_last_n", 64);
 		assertThat(optionsMap).containsEntry("temperature", 0.7);
 		assertThat(optionsMap).containsEntry("repeat_penalty", 1.1);
 		assertThat(optionsMap).containsEntry("presence_penalty", 0.0);
 		assertThat(optionsMap).containsEntry("frequency_penalty", 0.0);
 		assertThat(optionsMap).containsEntry("mirostat", 2);
-		assertThat(optionsMap).containsEntry("mirostat_tau", 5.0);
-		assertThat(optionsMap).containsEntry("mirostat_eta", 0.1);
+		assertThat(optionsMap).containsEntry("mirostat_tau", 5.0f);
+		assertThat(optionsMap).containsEntry("mirostat_eta", 0.1f);
 	}
 
 	@Test
@@ -139,8 +151,7 @@ class OllamaChatOptionsTests {
 
 	@Test
 	void testOutputSchemaOptionWithJsonAsString() {
-		assertThatThrownBy(() -> OllamaChatOptions.builder().outputSchema("json"))
-			.hasCauseInstanceOf(JsonParseException.class)
+		assertThatThrownBy(() -> OllamaChatOptions.builder().outputSchema("json")).isInstanceOf(JacksonException.class)
 			.hasMessageContaining("Unrecognized token 'json'");
 	}
 
@@ -323,7 +334,7 @@ class OllamaChatOptionsTests {
 	@Test
 	void testGetOutputSchemaHandlesAllFormatTypes() {
 		var nullFormatOptions = OllamaChatOptions.builder().build();
-		assertThat(nullFormatOptions.getOutputSchema()).isNull();
+		assertThatThrownBy(nullFormatOptions::getOutputSchema).isInstanceOf(IllegalStateException.class);
 
 		var stringFormatOptions = OllamaChatOptions.builder().format("json").build();
 		assertThat(stringFormatOptions.getOutputSchema()).isEqualTo("json");

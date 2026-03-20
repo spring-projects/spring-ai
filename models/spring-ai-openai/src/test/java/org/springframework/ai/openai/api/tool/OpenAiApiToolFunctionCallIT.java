@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,11 @@ package org.springframework.ai.openai.api.tool;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -51,17 +50,14 @@ public class OpenAiApiToolFunctionCallIT {
 
 	private final Logger logger = LoggerFactory.getLogger(OpenAiApiToolFunctionCallIT.class);
 
-	MockWeatherService weatherService = new MockWeatherService();
+	private final MockWeatherService weatherService = new MockWeatherService();
 
-	OpenAiApi completionApi = OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build();
+	private final OpenAiApi completionApi = OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build();
 
-	private static <T> T fromJson(String json, Class<T> targetClass) {
-		try {
-			return new ObjectMapper().readValue(json, targetClass);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+	private final JsonMapper jsonMapper = new JsonMapper();
+
+	private <T> T fromJson(String json, Class<T> targetClass) {
+		return this.jsonMapper.readValue(json, targetClass);
 	}
 
 	@SuppressWarnings("null")

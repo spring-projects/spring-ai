@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.cloud.vertexai.VertexAI;
 import com.google.cloud.vertexai.api.Candidate;
 import com.google.cloud.vertexai.api.Candidate.FinishReason;
@@ -51,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
+import tools.jackson.databind.JsonNode;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -334,11 +334,11 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 
 	private static Struct jsonToStruct(String json) {
 		try {
-			JsonNode rootNode = ModelOptionsUtils.OBJECT_MAPPER.readTree(json);
+			JsonNode rootNode = ModelOptionsUtils.JSON_MAPPER.readTree(json);
 
 			Struct.Builder structBuilder = Struct.newBuilder();
 
-			if (rootNode.isTextual()) {
+			if (rootNode.isString()) {
 				structBuilder.putFields("result", Value.newBuilder().setStringValue(json).build());
 			}
 			else if (rootNode.isArray()) {
@@ -490,7 +490,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		return this.internalStream(requestPrompt, null);
 	}
 
-	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
+	private Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
 		return Flux.deferContextual(contextView -> {
 
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()

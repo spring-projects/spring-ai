@@ -61,7 +61,7 @@ The `ToolCallAdvisor` includes a `conversationHistoryEnabled` configuration opti
 
 By default (`conversationHistoryEnabled=true`), the advisor maintains the full conversation history internally during tool call iterations. This means each subsequent LLM call in the tool calling loop includes all previous messages (user message, assistant responses, tool responses).
 
-Use the `.disableMemory()` method to disable internal conversation history management. When disabled, only the last tool response message is passed to the next iteration. This is useful when:
+Use the `.disableInternalConversationHistory()` method to disable internal conversation history management. When disabled, only the last tool response message is passed to the next iteration. This is useful when:
 
 * You have a Chat Memory Advisor registered next in the chain that already manages conversation history
 * You want to reduce token usage by not duplicating history management
@@ -73,7 +73,7 @@ Example with conversation history disabled:
 ----
 var toolCallAdvisor = ToolCallAdvisor.builder()
     .toolCallingManager(toolCallingManager)
-    .disableMemory()  // Disable internal history - let ChatMemory handle it
+    .disableInternalConversationHistory()  // Disable internal history - let ChatMemory handle it
     .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 300)
     .build();
 
@@ -112,7 +112,7 @@ Key features:
 * Retries the call if validation fails, up to a configurable number of attempts
 * Augments the prompt with validation error messages on retry attempts to help the LLM correct its output
 * Uses `callAdvisorChain.copy(this)` to create a sub-chain for recursive calls
-* Optionally supports a custom `ObjectMapper` for JSON processing
+* Optionally supports a custom `JsonMapper` for JSON processing
 
 Example usage:
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 
 package org.springframework.ai.model.bedrock.cohere.autoconfigure;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.providers.AwsRegionProvider;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingModel;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi;
@@ -55,9 +55,9 @@ public class BedrockCohereEmbeddingAutoConfiguration {
 	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
 	public CohereEmbeddingBedrockApi cohereEmbeddingApi(AwsCredentialsProvider credentialsProvider,
 			AwsRegionProvider regionProvider, BedrockCohereEmbeddingProperties properties,
-			BedrockAwsConnectionProperties awsProperties, ObjectMapper objectMapper) {
+			BedrockAwsConnectionProperties awsProperties, JsonMapper jsonMapper) {
 		return new CohereEmbeddingBedrockApi(properties.getModel(), credentialsProvider, regionProvider.getRegion(),
-				objectMapper, awsProperties.getTimeout());
+				jsonMapper, awsProperties.getTimeout());
 	}
 
 	@Bean

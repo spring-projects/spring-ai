@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,8 @@ package org.springframework.ai.util;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -32,7 +31,7 @@ class JacksonUtilsTests {
 	 * https://github.com/spring-projects/spring-ai/issues/2921
 	 */
 	@Test
-	void usesCorrectClassLoader() throws JsonProcessingException, ClassNotFoundException {
+	void usesCorrectClassLoader() throws ClassNotFoundException {
 		ClassLoader previousLoader = Thread.currentThread().getContextClassLoader();
 		try {
 			// This parent CL cannot see the clazz class below. But this shouldn't matter.
