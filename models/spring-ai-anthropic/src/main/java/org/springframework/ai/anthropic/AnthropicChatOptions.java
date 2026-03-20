@@ -700,10 +700,32 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		}
 
 		/**
+		 * Convenience method to enable thinking with a specific budget and display
+		 * setting.
+		 * @param budgetTokens the thinking budget (must be >= 1024 and < maxTokens)
+		 * @param display controls how thinking content appears in the response
+		 * (SUMMARIZED or OMITTED)
+		 */
+		public B thinkingEnabled(long budgetTokens, ThinkingConfigEnabled.Display display) {
+			return thinking(ThinkingConfigParam
+				.ofEnabled(ThinkingConfigEnabled.builder().budgetTokens(budgetTokens).display(display).build()));
+		}
+
+		/**
 		 * Convenience method to let Claude adaptively decide whether to think.
 		 */
 		public B thinkingAdaptive() {
 			return thinking(ThinkingConfigParam.ofAdaptive(ThinkingConfigAdaptive.builder().build()));
+		}
+
+		/**
+		 * Convenience method to let Claude adaptively decide whether to think, with a
+		 * display setting.
+		 * @param display controls how thinking content appears in the response
+		 * (SUMMARIZED or OMITTED)
+		 */
+		public B thinkingAdaptive(ThinkingConfigAdaptive.Display display) {
+			return thinking(ThinkingConfigParam.ofAdaptive(ThinkingConfigAdaptive.builder().display(display).build()));
 		}
 
 		/**

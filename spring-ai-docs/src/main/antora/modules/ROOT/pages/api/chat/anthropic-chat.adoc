@@ -178,7 +178,7 @@ ChatResponse response = chatModel.call(
 | proxy | Proxy settings for the HTTP client. | -
 | customHeaders | Custom HTTP headers to include on all requests (client-level). | -
 | httpHeaders | Per-request HTTP headers. These are added to individual API calls via `MessageCreateParams.putAdditionalHeader()`. Useful for request-level tracking, beta API headers, or routing. | -
-| thinking | Thinking configuration. Use the convenience builders `thinkingEnabled(budgetTokens)`, `thinkingAdaptive()`, or `thinkingDisabled()`, or pass a raw `ThinkingConfigParam`. | -
+| thinking | Thinking configuration. Use the convenience builders `thinkingEnabled(budgetTokens)`, `thinkingEnabled(budgetTokens, display)`, `thinkingAdaptive()`, `thinkingAdaptive(display)`, or `thinkingDisabled()`, or pass a raw `ThinkingConfigParam`. The `display` parameter controls how thinking content appears in the response: `SUMMARIZED` (condensed summary) or `OMITTED` (redacted, signature only). | -
 | outputConfig | Output configuration for structured output (JSON schema) and effort control. Use `outputConfig(OutputConfig)` for full control, or the convenience methods `outputSchema(String)` and `effort(OutputConfig.Effort)`. Requires `claude-sonnet-4-6` or newer. | -
 |====
 
@@ -329,7 +329,7 @@ To enable thinking, configure the following:
 
 === Convenience Builder Methods
 
-`AnthropicChatOptions.Builder` provides convenience methods for the three thinking modes:
+`AnthropicChatOptions.Builder` provides convenience methods for thinking configuration:
 
 [source,java]
 ----
@@ -366,6 +366,45 @@ var options = AnthropicChatOptions.builder()
         ThinkingConfigEnabled.builder().budgetTokens(10000L).build()))
     .build();
 ----
+
+=== Thinking Display Setting
+
+By default, full thinking output is returned in the response. You can control this with the `display` parameter to reduce token costs:
+
+* **`SUMMARIZED`** — Claude still thinks fully, but returns a condensed summary instead of the raw chain-of-thought. Reduces output tokens while still providing insight into the reasoning.
+* **`OMITTED`** — Thinking is performed but completely redacted from the response. Only a cryptographic signature is returned (needed for multi-turn continuity). Lowest output token cost.
+
+[source,java]
+----
+import com.anthropic.models.messages.ThinkingConfigEnabled;
+import com.anthropic.models.messages.ThinkingConfigAdaptive;
+
+// Enabled thinking with summarized display
+var options = AnthropicChatOptions.builder()
+    .model("claude-sonnet-4-20250514")
+    .temperature(1.0)
+    .maxTokens(16000)
+    .thinkingEnabled(10000L, ThinkingConfigEnabled.Display.SUMMARIZED)
+    .build();
+
+// Enabled thinking with omitted display
+var options = AnthropicChatOptions.builder()
+    .model("claude-sonnet-4-20250514")
+    .temperature(1.0)
+    .maxTokens(16000)
+    .thinkingEnabled(10000L, ThinkingConfigEnabled.Display.OMITTED)
+    .build();
+
+// Adaptive thinking with summarized display
+var options = AnthropicChatOptions.builder()
+    .model("claude-sonnet-4-20250514")
+    .temperature(1.0)
+    .maxTokens(16000)
+    .thinkingAdaptive(ThinkingConfigAdaptive.Display.SUMMARIZED)
+    .build();
+----
+
+NOTE: The display setting does not affect the quality of the final answer — Claude performs the same amount of thinking regardless. It only controls what thinking content is returned in the response.
 
 === Non-streaming Example
 
