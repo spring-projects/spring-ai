@@ -44,4 +44,9 @@ public class PostgresChatMemoryRepositoryDialect implements JdbcChatMemoryReposi
 		return "DELETE FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ?";
 	}
 
+	@Override
+	public String getDeleteMessageSql() {
+		return "DELETE FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? AND content = ? AND type = ?";
+	}
+
 }
