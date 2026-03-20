@@ -334,6 +334,35 @@ class BedrockProxyChatModelIT {
 		assertThat(content).contains("30", "10", "15");
 	}
 
+	@ParameterizedTest(name = "{displayName} - {0} ")
+	@ValueSource(ints = { 50, 60 })
+	void streamFunctionCallTestWithMaxTokens(int maxTokens) {
+
+		UserMessage userMessage = new UserMessage(
+				// "What's the weather like in San Francisco? Return the result in
+				// Celsius.");
+				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = BedrockChatOptions.builder()
+			.maxTokens(maxTokens)
+			.model("us.anthropic.claude-3-5-sonnet-20240620-v1:0")
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description(
+						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
+		ChatResponse lastResponse = response.blockLast();
+		String finishReason = lastResponse.getResult().getMetadata().getFinishReason();
+
+		logger.info("Finish reason: {}", finishReason);
+		assertThat(finishReason).isEqualTo("max_tokens");
+	}
+
 	@Test
 	void validateCallResponseMetadata() {
 		String model = "anthropic.claude-3-5-sonnet-20240620-v1:0";
