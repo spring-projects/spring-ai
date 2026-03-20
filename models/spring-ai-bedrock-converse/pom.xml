@@ -82,6 +82,11 @@
 			<version>${bedrockruntime.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>org.apache.httpcomponents.client5</groupId>
+			<artifactId>httpclient5</artifactId>
+		</dependency>
+
 		<!-- test dependencies -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>

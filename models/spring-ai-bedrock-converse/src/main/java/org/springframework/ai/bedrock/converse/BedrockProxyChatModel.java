@@ -16,11 +16,9 @@
 
 package org.springframework.ai.bedrock.converse;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -79,6 +77,7 @@ import org.springframework.ai.bedrock.converse.api.BedrockCacheStrategy;
 import org.springframework.ai.bedrock.converse.api.BedrockMediaFormat;
 import org.springframework.ai.bedrock.converse.api.ConverseApiUtils;
 import org.springframework.ai.bedrock.converse.api.ConverseChatResponseStream;
+import org.springframework.ai.bedrock.converse.api.MediaFetcher;
 import org.springframework.ai.bedrock.converse.api.URLValidator;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
@@ -110,8 +109,8 @@ import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClientException;
 
 /**
  * A {@link ChatModel} implementation that uses the Amazon Bedrock Converse API to
@@ -173,6 +172,8 @@ public class BedrockProxyChatModel implements ChatModel {
 	 */
 	private ChatModelObservationConvention observationConvention;
 
+	private final MediaFetcher mediaFetcher;
+
 	public BedrockProxyChatModel(BedrockRuntimeClient bedrockRuntimeClient,
 			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, BedrockChatOptions defaultOptions,
 			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager) {
@@ -184,11 +185,20 @@ public class BedrockProxyChatModel implements ChatModel {
 			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, BedrockChatOptions defaultOptions,
 			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager,
 			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
+		this(bedrockRuntimeClient, bedrockRuntimeAsyncClient, defaultOptions, observationRegistry, toolCallingManager,
+				toolExecutionEligibilityPredicate, new MediaFetcher());
+	}
+
+	public BedrockProxyChatModel(BedrockRuntimeClient bedrockRuntimeClient,
+			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, BedrockChatOptions defaultOptions,
+			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager,
+			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate, MediaFetcher mediaFetcher) {
 
 		Assert.notNull(bedrockRuntimeClient, "bedrockRuntimeClient must not be null");
 		Assert.notNull(bedrockRuntimeAsyncClient, "bedrockRuntimeAsyncClient must not be null");
 		Assert.notNull(toolCallingManager, "toolCallingManager must not be null");
 		Assert.notNull(toolExecutionEligibilityPredicate, "toolExecutionEligibilityPredicate must not be null");
+		Assert.notNull(mediaFetcher, "mediaFetcher must not be null");
 
 		this.bedrockRuntimeClient = bedrockRuntimeClient;
 		this.bedrockRuntimeAsyncClient = bedrockRuntimeAsyncClient;
@@ -196,6 +206,7 @@ public class BedrockProxyChatModel implements ChatModel {
 		this.observationRegistry = observationRegistry;
 		this.toolCallingManager = toolCallingManager;
 		this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
+		this.mediaFetcher = mediaFetcher;
 	}
 
 	private static BedrockChatOptions from(ChatOptions options) {
@@ -538,7 +549,7 @@ public class BedrockProxyChatModel implements ChatModel {
 			.build();
 	}
 
-	private ContentBlock mapMediaToContentBlock(Media media) {
+	ContentBlock mapMediaToContentBlock(Media media) {
 
 		var mimeType = media.getMimeType();
 
@@ -549,9 +560,7 @@ public class BedrockProxyChatModel implements ChatModel {
 				videoSource = VideoSource.builder().bytes(SdkBytes.fromByteArrayUnsafe(bytes)).build();
 			}
 			else if (media.getData() instanceof String uriText) {
-				// if (URLValidator.isValidURLBasic(uriText)) {
 				videoSource = VideoSource.builder().s3Location(S3Location.builder().uri(uriText).build()).build();
-				// }
 			}
 			else if (media.getData() instanceof URL url) {
 				try {
@@ -576,29 +585,40 @@ public class BedrockProxyChatModel implements ChatModel {
 			}
 			else if (media.getData() instanceof String text) {
 
-				if (URLValidator.isValidURLBasic(text)) {
-					try {
-						URL url = new URL(text);
-						URLConnection connection = url.openConnection();
-						try (InputStream is = connection.getInputStream()) {
-							sourceBuilder.bytes(SdkBytes.fromByteArrayUnsafe(StreamUtils.copyToByteArray(is))).build();
+				if (text.startsWith("s3://")) {
+					sourceBuilder.s3Location(S3Location.builder().uri(text).build()).build();
+				}
+				else if (text.startsWith("http://") || text.startsWith("https://")) {
+					// Not base64
+					if (URLValidator.isValidURLStrict(text)) {
+						try {
+							byte[] bytes = this.mediaFetcher.fetch(URI.create(text));
+							sourceBuilder.bytes(SdkBytes.fromByteArrayUnsafe(bytes)).build();
+						}
+						catch (SecurityException | RestClientException e) {
+							throw new RuntimeException("Failed to read media data from URL: " + text, e);
 						}
 					}
-					catch (IOException e) {
-						throw new RuntimeException("Failed to read media data from URL: " + text, e);
+					else {
+						throw new SecurityException("URL is not valid under strict validation rules: " + text);
 					}
 				}
 				else {
+					// Assume it's base64-encoded image data
 					sourceBuilder.bytes(SdkBytes.fromByteArray(Base64.getDecoder().decode(text)));
 				}
 			}
 			else if (media.getData() instanceof URL url) {
 
-				try (InputStream is = url.openConnection().getInputStream()) {
-					byte[] imageBytes = StreamUtils.copyToByteArray(is);
-					sourceBuilder.bytes(SdkBytes.fromByteArrayUnsafe(imageBytes)).build();
+				try {
+					String protocol = url.getProtocol();
+					if (!"http".equalsIgnoreCase(protocol) && !"https".equalsIgnoreCase(protocol)) {
+						throw new SecurityException("Unsupported URL protocol: " + protocol);
+					}
+					byte[] bytes = this.mediaFetcher.fetch(url.toURI());
+					sourceBuilder.bytes(SdkBytes.fromByteArrayUnsafe(bytes)).build();
 				}
-				catch (IOException e) {
+				catch (SecurityException | RestClientException | URISyntaxException e) {
 					throw new IllegalArgumentException("Failed to read media data from URL: " + url, e);
 				}
 			}
@@ -635,38 +655,6 @@ public class BedrockProxyChatModel implements ChatModel {
 	 */
 	static String sanitizeDocumentName(String name) {
 		return name.replaceAll("[^a-zA-Z0-9\\s\\-()\\[\\]]", "-");
-	}
-
-	private static byte[] getContentMediaData(Object mediaData) {
-		if (mediaData instanceof byte[] bytes) {
-			return bytes;
-		}
-		else if (mediaData instanceof String text) {
-			if (URLValidator.isValidURLBasic(text)) {
-				try {
-					URL url = new URL(text);
-					URLConnection connection = url.openConnection();
-					try (InputStream is = connection.getInputStream()) {
-						return StreamUtils.copyToByteArray(is);
-					}
-				}
-				catch (IOException e) {
-					throw new RuntimeException("Failed to read media data from URL: " + text, e);
-				}
-			}
-			return text.getBytes();
-		}
-		else if (mediaData instanceof URL url) {
-			try (InputStream is = url.openConnection().getInputStream()) {
-				return StreamUtils.copyToByteArray(is);
-			}
-			catch (IOException e) {
-				throw new RuntimeException("Failed to read media data from URL: " + url, e);
-			}
-		}
-		else {
-			throw new IllegalArgumentException("Unsupported media data type: " + mediaData.getClass().getSimpleName());
-		}
 	}
 
 	/**
