@@ -343,7 +343,7 @@ class BedrockProxyChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{displayName} - {0} ")
-	@ValueSource(ints = { 50, 200 })
+	@ValueSource(ints = { 50, 60 })
 	void streamFunctionCallTestWithMaxTokens(int maxTokens) {
 
 		UserMessage userMessage = new UserMessage(
