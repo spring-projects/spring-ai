@@ -596,7 +596,14 @@ public class AzureOpenAiChatModel implements ChatModel {
 						.map(tc -> ((ChatCompletionsToolCall) tc)) // !!!
 						.toList();
 				}
-				var azureAssistantMessage = new ChatRequestAssistantMessage(message.getText());
+				// If there are tool calls but no text content, set content to null for compatibility
+				// with Anthropic API (and other OpenAI-compatible backends that require content to be
+				// either null or non-empty string)
+				String content = message.getText();
+				if ((content == null || content.isEmpty()) && !CollectionUtils.isEmpty(toolCalls)) {
+					content = null;
+				}
+				var azureAssistantMessage = new ChatRequestAssistantMessage(content);
 				azureAssistantMessage.setToolCalls(toolCalls);
 				return List.of(azureAssistantMessage);
 			case TOOL:

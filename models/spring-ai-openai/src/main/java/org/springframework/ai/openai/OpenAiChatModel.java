@@ -624,7 +624,14 @@ public class OpenAiChatModel implements ChatModel {
 					audioOutput = new AudioOutput(assistantMessage.getMedia().get(0).getId(), null, null, null);
 
 				}
-				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
+				// If there are tool calls but no text content, set content to null for compatibility
+				// with Anthropic API (and other OpenAI-compatible backends that require content to be
+				// either null or non-empty string)
+				String content = assistantMessage.getText();
+				if ((content == null || content.isEmpty()) && !CollectionUtils.isEmpty(toolCalls)) {
+					content = null;
+				}
+				return List.of(new ChatCompletionMessage(content,
 						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null, audioOutput, null, null));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
