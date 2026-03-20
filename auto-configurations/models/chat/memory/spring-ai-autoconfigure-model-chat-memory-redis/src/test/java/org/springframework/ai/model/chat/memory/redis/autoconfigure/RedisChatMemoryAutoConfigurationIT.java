@@ -16,46 +16,26 @@
 
 package org.springframework.ai.model.chat.memory.redis.autoconfigure;
 
-import com.redis.testcontainers.RedisStackContainer;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import redis.clients.jedis.JedisPooled;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.repository.redis.RedisChatMemoryRepository;
+import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
-@Testcontainers
 class RedisChatMemoryAutoConfigurationIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(RedisChatMemoryAutoConfigurationIT.class);
-
-	@Container
-	static RedisStackContainer redisContainer = new RedisStackContainer(
-			RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG))
-		.withExposedPorts(6379);
-
-	@BeforeAll
-	static void setup() {
-		logger.info("Redis container running on host: {} and port: {}", redisContainer.getHost(),
-				redisContainer.getFirstMappedPort());
-	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(
-				AutoConfigurations.of(RedisChatMemoryAutoConfiguration.class, DataRedisAutoConfiguration.class))
-		.withPropertyValues("spring.data.redis.host=" + redisContainer.getHost(),
-				"spring.data.redis.port=" + redisContainer.getFirstMappedPort(),
-				// Pass the same Redis connection properties to our chat memory properties
-				"spring.ai.chat.memory.redis.host=" + redisContainer.getHost(),
-				"spring.ai.chat.memory.redis.port=" + redisContainer.getFirstMappedPort());
+				AutoConfigurations.of(ChatMemoryAutoConfiguration.class, RedisChatMemoryAutoConfiguration.class))
+		.withBean(JedisPooled.class, () -> mock(JedisPooled.class))
+		.withPropertyValues("spring.ai.chat.memory.redis.initialize-schema=false");
 
 	@Test
 	void autoConfigurationRegistersExpectedBeans() {
@@ -84,6 +64,7 @@ class RedisChatMemoryAutoConfigurationIT {
 			ChatMemoryRepository repository = context.getBean(ChatMemoryRepository.class);
 
 			assertThat(repository).isSameAs(redisChatMemory);
+			assertThat(repository).isNotInstanceOf(InMemoryChatMemoryRepository.class);
 		});
 	}
 

@@ -18,7 +18,6 @@ package org.springframework.ai.model.chat.memory.redis.autoconfigure;
 
 import redis.clients.jedis.JedisPooled;
 
-import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.repository.redis.RedisChatMemoryRepository;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -34,7 +33,9 @@ import org.springframework.util.StringUtils;
  *
  * @author Brian Sam-Bodden
  */
-@AutoConfiguration(after = DataRedisAutoConfiguration.class)
+// Ordering is to make sure ChatMemoryRepository bean is redis one
+@AutoConfiguration(after = DataRedisAutoConfiguration.class,
+		beforeName = "org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration")
 @ConditionalOnClass({ RedisChatMemoryRepository.class, JedisPooled.class })
 @EnableConfigurationProperties(RedisChatMemoryProperties.class)
 public class RedisChatMemoryAutoConfiguration {
@@ -46,7 +47,7 @@ public class RedisChatMemoryAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean({ RedisChatMemoryRepository.class, ChatMemory.class, ChatMemoryRepository.class })
+	@ConditionalOnMissingBean(ChatMemoryRepository.class)
 	public RedisChatMemoryRepository redisChatMemory(JedisPooled jedisClient, RedisChatMemoryProperties properties) {
 		RedisChatMemoryRepository.Builder builder = RedisChatMemoryRepository.builder().jedisClient(jedisClient);
 
