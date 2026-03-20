@@ -132,12 +132,52 @@ class RedisFilterExpressionConverterTests {
 
 	@Test
 	void testSpecialCharactersInValues() {
-		// Test values with Redis special characters that need escaping
 		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("description"))
 			.convertExpression(new Expression(EQ, new Key("description"), new Value("test@value{with}special|chars")));
 
-		// Should properly escape special Redis characters
-		assertThat(vectorExpr).isEqualTo("@description:{test@value{with}special|chars}");
+		assertThat(vectorExpr).isEqualTo("@description:{test@value\\{with\\}special\\|chars}");
+	}
+
+	@Test
+	void testTagValueWithInjectionPayload() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("category")).convertExpression(
+				new Expression(EQ, new Key("category"), new Value("science} | @access_level:{restricted")));
+
+		assertThat(vectorExpr).isEqualTo("@category:{science\\} \\| @access_level:\\{restricted}");
+		assertThat(vectorExpr).doesNotContain("} | @");
+	}
+
+	@Test
+	void testTagValueInListWithSpecialChars() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("category")).convertExpression(new Expression(
+				IN, new Key("category"), new Value(List.of("science} | @access_level:{restricted", "normal"))));
+
+		assertThat(vectorExpr).isEqualTo("@category:{science\\} \\| @access_level:\\{restricted | normal}");
+		assertThat(vectorExpr).doesNotContain("} | @");
+	}
+
+	@Test
+	void testTagValueWithPipe() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("status"))
+			.convertExpression(new Expression(EQ, new Key("status"), new Value("active|inactive")));
+
+		assertThat(vectorExpr).isEqualTo("@status:{active\\|inactive}");
+	}
+
+	@Test
+	void testTagValueWithHyphen() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("type"))
+			.convertExpression(new Expression(EQ, new Key("type"), new Value("non-fiction")));
+
+		assertThat(vectorExpr).isEqualTo("@type:{non\\-fiction}");
+	}
+
+	@Test
+	void testTextValueWithSpecialChars() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.text("description"))
+			.convertExpression(new Expression(EQ, new Key("description"), new Value("hello@world.com")));
+
+		assertThat(vectorExpr).isEqualTo("@description:(hello\\@world\\.com)");
 	}
 
 	@Test
