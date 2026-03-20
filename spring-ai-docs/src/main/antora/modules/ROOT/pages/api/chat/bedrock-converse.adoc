@@ -120,7 +120,7 @@ At run-time you can override the default options by adding new, request specific
 [source,java]
 ----
 var options = BedrockChatOptions.builder()
-        .model("anthropic.claude-3-5-sonnet-20240620-v1:0")
+        .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
         .temperature(0.6)
         .maxTokens(300)
         .toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
