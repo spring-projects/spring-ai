@@ -116,11 +116,15 @@ public class MilvusFilterExpressionConverterTests {
 	@Test
 	public void testComplexIdentifiers() {
 		String vectorExpr = this.converter
-			.convertExpression(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
+			.convertExpression(new Expression(EQ, new Key("country 1 2 3"), new Value("BG")));
 		assertThat(vectorExpr).isEqualTo("metadata[\"country 1 2 3\"] == \"BG\"");
 
+		vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
+		assertThat(vectorExpr).isEqualTo("metadata[\"\\\"country 1 2 3\\\"\"] == \"BG\"");
+
 		vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("'country 1 2 3'"), new Value("BG")));
-		assertThat(vectorExpr).isEqualTo("metadata[\"country 1 2 3\"] == \"BG\"");
+		assertThat(vectorExpr).isEqualTo("metadata[\"'country 1 2 3'\"] == \"BG\"");
 	}
 
 	@Test
@@ -319,19 +323,24 @@ public class MilvusFilterExpressionConverterTests {
 	}
 
 	@Test
-	public void testDoubleQuotedKey() {
-		// "field with spaces" == "value"
+	public void testKeyWithSingleQuote() {
 		String vectorExpr = this.converter
-			.convertExpression(new Expression(EQ, new Key("\"field with spaces\""), new Value("value")));
-		assertThat(vectorExpr).isEqualTo("metadata[\"field with spaces\"] == \"value\"");
+			.convertExpression(new Expression(EQ, new Key("x' OR 1=1--"), new Value("dummy")));
+		assertThat(vectorExpr).isEqualTo("metadata[\"x' OR 1=1--\"] == \"dummy\"");
 	}
 
 	@Test
-	public void testSingleQuotedKey() {
-		// 'field with spaces' == "value"
+	public void testKeyWithDoubleQuote() {
 		String vectorExpr = this.converter
-			.convertExpression(new Expression(EQ, new Key("'field with spaces'"), new Value("value")));
-		assertThat(vectorExpr).isEqualTo("metadata[\"field with spaces\"] == \"value\"");
+			.convertExpression(new Expression(EQ, new Key("key\"inject"), new Value("v")));
+		assertThat(vectorExpr).isEqualTo("metadata[\"key\\\"inject\"] == \"v\"");
+	}
+
+	@Test
+	public void testKeyWithBackslash() {
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("key\\inject"), new Value("v")));
+		assertThat(vectorExpr).isEqualTo("metadata[\"key\\\\inject\"] == \"v\"");
 	}
 
 }

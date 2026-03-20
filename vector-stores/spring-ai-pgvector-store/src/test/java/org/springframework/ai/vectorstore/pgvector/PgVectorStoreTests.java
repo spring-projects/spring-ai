@@ -17,16 +17,22 @@
 package org.springframework.ai.vectorstore.pgvector;
 
 import java.util.Collections;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,6 +42,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Muthukumaran Navaneethakrishnan
@@ -102,6 +109,82 @@ public class PgVectorStoreTests {
 				}
 				assertThat(batches.get(9).getBatchSize()).as("Last batch should have size 989").isEqualTo(989);
 			});
+	}
+
+	@Test
+	void deleteByFilterDoublesSingleQuotesWhenMetadataKeyContainsApostrophe() {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel).build();
+
+		var expression = new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("O'Brien"),
+				new Filter.Value("n"));
+
+		store.doDelete(expression);
+
+		var sqlCaptor = ArgumentCaptor.forClass(String.class);
+		verify(jdbcTemplate).update(sqlCaptor.capture());
+		assertThat(sqlCaptor.getValue()).contains("O''Brien");
+		assertThat(sqlCaptor.getValue()).contains("$.\"" + "O''Brien\" == \"n\"");
+	}
+
+	@Test
+	void deleteByFilterDoublesSingleQuotesWhenStringValueContainsApostrophe() {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel).build();
+
+		var expression = new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("author"),
+				new Filter.Value("O'Connor"));
+
+		store.doDelete(expression);
+
+		var sqlCaptor = ArgumentCaptor.forClass(String.class);
+		verify(jdbcTemplate).update(sqlCaptor.capture());
+		assertThat(sqlCaptor.getValue()).contains("O''Connor");
+	}
+
+	@Test
+	void deleteByFilterFromTextParserDoublesSingleQuotesForQuotedKeyWithApostrophe() {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel).build();
+
+		var expression = new FilterExpressionTextParser().parse("\"vendor\" == \"ACME's\"");
+
+		store.doDelete(expression);
+
+		var sqlCaptor = ArgumentCaptor.forClass(String.class);
+		verify(jdbcTemplate).update(sqlCaptor.capture());
+		assertThat(sqlCaptor.getValue()).contains("ACME''s");
+	}
+
+	@Test
+	void similaritySearchDoublesSingleQuotesInsideJsonPathSqlLiteral() {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		when(embeddingModel.dimensions()).thenReturn(3);
+		when(embeddingModel.embed(anyString())).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
+		when(jdbcTemplate.query(anyString(), ArgumentMatchers.<RowMapper<Document>>any(), any(), any(), any(), any()))
+			.thenReturn(List.of());
+
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel).build();
+
+		var expression = new FilterExpressionTextParser().parse("\"O'Brien\" == 'x'");
+		var request = SearchRequest.builder()
+			.query("hello")
+			.topK(5)
+			.similarityThresholdAll()
+			.filterExpression(expression)
+			.build();
+
+		store.doSimilaritySearch(request);
+
+		var sqlCaptor = ArgumentCaptor.forClass(String.class);
+		verify(jdbcTemplate).query(sqlCaptor.capture(), ArgumentMatchers.<RowMapper<Document>>any(), any(), any(),
+				any(), any());
+		assertThat(sqlCaptor.getValue()).contains("metadata::jsonb @@ '");
+		assertThat(sqlCaptor.getValue()).contains("O''Brien");
 	}
 
 }

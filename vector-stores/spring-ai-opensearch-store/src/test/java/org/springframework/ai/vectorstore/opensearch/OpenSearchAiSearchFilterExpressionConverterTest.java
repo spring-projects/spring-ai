@@ -115,12 +115,16 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 	@Test
 	public void testComplexIdentifiers() {
 		String vectorExpr = this.converter
-			.convertExpression(new Filter.Expression(EQ, new Filter.Key("\"country 1 2 3\""), new Filter.Value("BG")));
-		assertThat(vectorExpr).isEqualTo("metadata.country 1 2 3:BG");
+			.convertExpression(new Filter.Expression(EQ, new Filter.Key("country 1 2 3"), new Filter.Value("BG")));
+		assertThat(vectorExpr).isEqualTo("metadata.country\\ 1\\ 2\\ 3:BG");
 
 		vectorExpr = this.converter
 			.convertExpression(new Filter.Expression(EQ, new Filter.Key("'country 1 2 3'"), new Filter.Value("BG")));
-		assertThat(vectorExpr).isEqualTo("metadata.country 1 2 3:BG");
+		assertThat(vectorExpr).isEqualTo("metadata.'country\\ 1\\ 2\\ 3':BG");
+
+		vectorExpr = this.converter
+			.convertExpression(new Filter.Expression(EQ, new Filter.Key("\"country 1 2 3\""), new Filter.Value("BG")));
+		assertThat(vectorExpr).isEqualTo("metadata.\\\"country\\ 1\\ 2\\ 3\\\":BG");
 	}
 
 	@Test
@@ -224,7 +228,28 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 		// tags[0] == "important"
 		String vectorExpr = this.converter
 			.convertExpression(new Filter.Expression(EQ, new Filter.Key("tags[0]"), new Filter.Value("important")));
-		assertThat(vectorExpr).isEqualTo("metadata.tags[0]:important");
+		assertThat(vectorExpr).isEqualTo("metadata.tags\\[0\\]:important");
+	}
+
+	@Test
+	public void testKeyWithSingleQuote() {
+		String vectorExpr = this.converter
+			.convertExpression(new Filter.Expression(EQ, new Filter.Key("x' OR 1=1--"), new Filter.Value("dummy")));
+		assertThat(vectorExpr).isEqualTo("metadata.x'\\ OR\\ 1\\=1\\-\\-:dummy");
+	}
+
+	@Test
+	public void testKeyWithDoubleQuote() {
+		String vectorExpr = this.converter
+			.convertExpression(new Filter.Expression(EQ, new Filter.Key("key\"inject"), new Filter.Value("v")));
+		assertThat(vectorExpr).isEqualTo("metadata.key\\\"inject:v");
+	}
+
+	@Test
+	public void testKeyWithColon() {
+		String vectorExpr = this.converter
+			.convertExpression(new Filter.Expression(EQ, new Filter.Key("key:name"), new Filter.Value("v")));
+		assertThat(vectorExpr).isEqualTo("metadata.key\\:name:v");
 	}
 
 }
