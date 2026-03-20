@@ -169,7 +169,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	 * A collection of textual sequences that will end completions generation.
 	 */
 	@JsonProperty("stop")
-	private List<String> stop = new ArrayList<>();
+	private List<String> stop;
 
 	/**
 	 * A value that influences the probability of generated tokens appearing based on

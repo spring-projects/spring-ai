@@ -214,6 +214,21 @@ class AzureOpenAiChatOptionsTests extends AbstractChatOptionsTests<AzureOpenAiCh
 	}
 
 	@Test
+	void testNoArgConstructorDefaultValues() {
+		AzureOpenAiChatOptions options = new AzureOpenAiChatOptions();
+
+		assertThat(options.getStop()).isNull();
+		assertThat(options.getStopSequences()).isNull();
+		assertThat(options.getDeploymentName()).isNull();
+		assertThat(options.getFrequencyPenalty()).isNull();
+		assertThat(options.getMaxTokens()).isNull();
+		assertThat(options.getN()).isNull();
+		assertThat(options.getPresencePenalty()).isNull();
+		assertThat(options.getTemperature()).isNull();
+		assertThat(options.getTopP()).isNull();
+	}
+
+	@Test
 	void testModelAndDeploymentNameRelationship() {
 		AzureOpenAiChatOptions options = new AzureOpenAiChatOptions();
 
