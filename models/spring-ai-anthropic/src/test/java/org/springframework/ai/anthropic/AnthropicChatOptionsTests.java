@@ -28,6 +28,9 @@ import com.anthropic.models.messages.JsonOutputFormat;
 import com.anthropic.models.messages.Metadata;
 import com.anthropic.models.messages.Model;
 import com.anthropic.models.messages.OutputConfig;
+import com.anthropic.models.messages.ThinkingConfigAdaptive;
+import com.anthropic.models.messages.ThinkingConfigEnabled;
+import com.anthropic.models.messages.ThinkingConfigParam;
 import com.anthropic.models.messages.ToolChoice;
 import com.anthropic.models.messages.ToolChoiceAuto;
 import org.junit.jupiter.api.Test;
@@ -566,6 +569,105 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		AnthropicChatOptions noOverride = AnthropicChatOptions.builder().build();
 		AnthropicChatOptions merged2 = base.mutate().combineWith(noOverride.mutate()).build();
 		assertThat(merged2.getInferenceGeo()).isEqualTo("us");
+	}
+
+	@Test
+	void testThinkingEnabledWithDisplay() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.thinkingEnabled(2048, ThinkingConfigEnabled.Display.SUMMARIZED)
+			.maxTokens(16384)
+			.build();
+
+		assertThat(options.getThinking()).isNotNull();
+		ThinkingConfigParam thinking = options.getThinking();
+		ThinkingConfigEnabled enabled = thinking.enabled().get();
+		assertThat(enabled.budgetTokens()).isEqualTo(2048);
+		assertThat(enabled.display()).isPresent();
+		assertThat(enabled.display().get()).isEqualTo(ThinkingConfigEnabled.Display.SUMMARIZED);
+	}
+
+	@Test
+	void testThinkingEnabledWithOmittedDisplay() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.thinkingEnabled(4096, ThinkingConfigEnabled.Display.OMITTED)
+			.maxTokens(16384)
+			.build();
+
+		ThinkingConfigEnabled enabled = options.getThinking().enabled().get();
+		assertThat(enabled.display()).isPresent();
+		assertThat(enabled.display().get()).isEqualTo(ThinkingConfigEnabled.Display.OMITTED);
+	}
+
+	@Test
+	void testThinkingEnabledWithoutDisplayHasNoDisplay() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder().thinkingEnabled(2048).maxTokens(16384).build();
+
+		ThinkingConfigEnabled enabled = options.getThinking().enabled().get();
+		assertThat(enabled.display()).isEmpty();
+	}
+
+	@Test
+	void testThinkingAdaptiveWithDisplay() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.thinkingAdaptive(ThinkingConfigAdaptive.Display.SUMMARIZED)
+			.maxTokens(16384)
+			.build();
+
+		assertThat(options.getThinking()).isNotNull();
+		ThinkingConfigAdaptive adaptive = options.getThinking().adaptive().get();
+		assertThat(adaptive.display()).isPresent();
+		assertThat(adaptive.display().get()).isEqualTo(ThinkingConfigAdaptive.Display.SUMMARIZED);
+	}
+
+	@Test
+	void testThinkingAdaptiveWithOmittedDisplay() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.thinkingAdaptive(ThinkingConfigAdaptive.Display.OMITTED)
+			.maxTokens(16384)
+			.build();
+
+		ThinkingConfigAdaptive adaptive = options.getThinking().adaptive().get();
+		assertThat(adaptive.display()).isPresent();
+		assertThat(adaptive.display().get()).isEqualTo(ThinkingConfigAdaptive.Display.OMITTED);
+	}
+
+	@Test
+	void testThinkingAdaptiveWithoutDisplayHasNoDisplay() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder().thinkingAdaptive().maxTokens(16384).build();
+
+		ThinkingConfigAdaptive adaptive = options.getThinking().adaptive().get();
+		assertThat(adaptive.display()).isEmpty();
+	}
+
+	@Test
+	void testThinkingDisplayPreservedInMutate() {
+		AnthropicChatOptions original = AnthropicChatOptions.builder()
+			.thinkingEnabled(2048, ThinkingConfigEnabled.Display.SUMMARIZED)
+			.maxTokens(16384)
+			.build();
+
+		AnthropicChatOptions copied = original.mutate().build();
+
+		ThinkingConfigEnabled enabled = copied.getThinking().enabled().get();
+		assertThat(enabled.budgetTokens()).isEqualTo(2048);
+		assertThat(enabled.display()).isPresent();
+		assertThat(enabled.display().get()).isEqualTo(ThinkingConfigEnabled.Display.SUMMARIZED);
+	}
+
+	@Test
+	void testThinkingDisplayPreservedInCombineWith() {
+		AnthropicChatOptions base = AnthropicChatOptions.builder().model("base-model").maxTokens(16384).build();
+
+		AnthropicChatOptions override = AnthropicChatOptions.builder()
+			.thinkingAdaptive(ThinkingConfigAdaptive.Display.OMITTED)
+			.build();
+
+		AnthropicChatOptions merged = base.mutate().combineWith(override.mutate()).build();
+
+		assertThat(merged.getModel()).isEqualTo("base-model");
+		ThinkingConfigAdaptive adaptive = merged.getThinking().adaptive().get();
+		assertThat(adaptive.display()).isPresent();
+		assertThat(adaptive.display().get()).isEqualTo(ThinkingConfigAdaptive.Display.OMITTED);
 	}
 
 }
