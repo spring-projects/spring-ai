@@ -4,29 +4,35 @@ The Spring AI Test module provides utilities and base classes for testing AI app
 
 ## Features
 
-- **BasicEvaluationTest**: A base test class for evaluating question-answer quality using AI models
+- **Evaluation Testing**: Resources for tests using the `Evaluator` API
 - **Vector Store Testing**: Utilities for testing vector store implementations
 - **Audio Testing**: Utilities for testing audio-related functionality
 
-## BasicEvaluationTest
+## Evaluation Testing
 
-The `BasicEvaluationTest` class provides a framework for evaluating the quality and relevance of AI-generated answers to questions.
+The module provides resources for writing evaluation-oriented tests with the `Evaluator` API.
 
 ### Usage
 
-Extend the `BasicEvaluationTest` class in your test classes:
+Use an `Evaluator` implementation in your test classes:
 
 ```java
 @SpringBootTest
-public class MyAiEvaluationTest extends BasicEvaluationTest {
+class MyAiEvaluationTest {
+
+    @Autowired
+    private ChatClient.Builder chatClientBuilder;
 
     @Test
-    public void testQuestionAnswerAccuracy() {
+    void testQuestionAnswerAccuracy() {
         String question = "What is the capital of France?";
         String answer = "The capital of France is Paris.";
-        
-        // Evaluate if the answer is accurate and related to the question
-        evaluateQuestionAndAnswer(question, answer, true);
+        List<Document> documents = List.of(new Document("Paris is the capital of France."));
+
+        Evaluator evaluator = new FactCheckingEvaluator(chatClientBuilder);
+        EvaluationRequest evaluationRequest = new EvaluationRequest(question, documents, answer);
+
+        assertThat(evaluator.evaluate(evaluationRequest).isPass()).isTrue();
     }
 }
 ```
@@ -39,10 +45,11 @@ The test requires:
 
 ### Evaluation Types
 
-- **Fact-based evaluation**: Use `factBased = true` for questions requiring factual accuracy
-- **General evaluation**: Use `factBased = false` for more subjective questions
+- **Relevancy evaluation**: Use `RelevancyEvaluator` for answer quality in context-driven flows such as RAG
+- **Fact-checking evaluation**: Use `FactCheckingEvaluator` for grounded factuality checks against provided context
+- **Custom evaluation**: Implement `Evaluator` when you need your own evaluation strategy
 
 The evaluation process:
-1. Checks if the answer is related to the question
-2. Evaluates the accuracy/appropriateness of the answer
-3. Fails the test with detailed feedback if the answer is inadequate
+1. Prepares the user question, supporting context, and model answer
+2. Evaluates the result with an `Evaluator`
+3. Asserts on the returned `EvaluationResponse`
