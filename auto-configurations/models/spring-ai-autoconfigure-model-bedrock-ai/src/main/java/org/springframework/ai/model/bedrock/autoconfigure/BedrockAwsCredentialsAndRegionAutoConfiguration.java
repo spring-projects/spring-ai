@@ -20,6 +20,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.jspecify.annotations.Nullable;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
@@ -33,8 +34,11 @@ import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.profiles.ProfileFile;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.regions.providers.AwsProfileRegionProvider;
 import software.amazon.awssdk.regions.providers.AwsRegionProvider;
+import software.amazon.awssdk.regions.providers.AwsRegionProviderChain;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
+import software.amazon.awssdk.regions.providers.InstanceProfileRegionProvider;
 import software.amazon.awssdk.services.sts.StsClient;
 import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
 import software.amazon.awssdk.services.sts.auth.StsWebIdentityTokenFileCredentialsProvider;
@@ -67,11 +71,41 @@ public class BedrockAwsCredentialsAndRegionAutoConfiguration {
 	@ConditionalOnMissingBean
 	public AwsRegionProvider regionProvider(BedrockAwsConnectionProperties properties) {
 
+		final List<AwsRegionProvider> regionProviders = new ArrayList<>();
+
 		if (StringUtils.hasText(properties.getRegion())) {
-			return new StaticRegionProvider(properties.getRegion());
+			regionProviders.add(new StaticRegionProvider(properties.getRegion()));
 		}
 
-		return DefaultAwsRegionProviderChain.builder().build();
+		if (properties.isInstanceProfile()) {
+			regionProviders.add(new InstanceProfileRegionProvider());
+		}
+
+		ProfileProperties profile = properties.getProfile();
+		if (profile != null && StringUtils.hasText(profile.getName())) {
+			regionProviders.add(createProfileRegionProvider(profile));
+		}
+
+		if (regionProviders.isEmpty()) {
+			return DefaultAwsRegionProviderChain.builder().build();
+		}
+
+		return new AwsRegionProviderChain(regionProviders.toArray(AwsRegionProvider[]::new));
+	}
+
+	private AwsProfileRegionProvider createProfileRegionProvider(ProfileProperties profile) {
+		Supplier<ProfileFile> profileFile = () -> {
+			if (StringUtils.hasText(profile.getConfigurationPath())) {
+				return ProfileFile.builder()
+					.type(ProfileFile.Type.CONFIGURATION)
+					.content(Paths.get(profile.getConfigurationPath()))
+					.build();
+			}
+			else {
+				return ProfileFile.defaultProfileFile();
+			}
+		};
+		return new AwsProfileRegionProvider(profileFile, profile.getName());
 	}
 
 	@Bean
