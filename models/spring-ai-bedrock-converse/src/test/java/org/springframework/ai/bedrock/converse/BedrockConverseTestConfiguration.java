@@ -16,11 +16,6 @@
 
 package org.springframework.ai.bedrock.converse;
 
-import java.time.Duration;
-
-import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
-
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 
@@ -29,15 +24,10 @@ public class BedrockConverseTestConfiguration {
 
 	@Bean
 	public BedrockProxyChatModel bedrockConverseChatModel() {
-
-		String modelId = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
-
 		return BedrockProxyChatModel.builder()
-			.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
-			.region(Region.US_EAST_1)
-			// .region(Region.US_EAST_1)
-			.timeout(Duration.ofSeconds(120))
-			.defaultOptions(BedrockChatOptions.builder().model(modelId).build())
+			.bedrockRuntimeClient(BedrockTestClients.SYNC_CLIENT)
+			.bedrockRuntimeAsyncClient(BedrockTestClients.ASYNC_CLIENT)
+			.defaultOptions(BedrockChatOptions.builder().model("us.anthropic.claude-haiku-4-5-20251001-v1:0").build())
 			.build();
 	}
 

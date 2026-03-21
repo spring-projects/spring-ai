@@ -16,8 +16,10 @@
 
 package org.springframework.ai.bedrock.converse.experiments;
 
-import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -42,8 +44,14 @@ public final class BedrockConverseChatModelMain {
 		var prompt = new Prompt("Tell me a joke?", ChatOptions.builder().model(modelId).build());
 
 		var chatModel = BedrockProxyChatModel.builder()
-			.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
-			.region(Region.US_EAST_1)
+			.bedrockRuntimeClient(BedrockRuntimeClient.builder()
+				.credentialsProvider(DefaultCredentialsProvider.builder().build())
+				.region(Region.US_EAST_1)
+				.build())
+			.bedrockRuntimeAsyncClient(BedrockRuntimeAsyncClient.builder()
+				.credentialsProvider(DefaultCredentialsProvider.builder().build())
+				.region(Region.US_EAST_1)
+				.build())
 			.build();
 
 		var chatResponse = chatModel.call(prompt);

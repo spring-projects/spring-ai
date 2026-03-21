@@ -27,6 +27,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import io.micrometer.observation.Observation;
@@ -143,6 +144,7 @@ import org.springframework.util.StringUtils;
  * @author Jihoon Kim
  * @author Soby Chacko
  * @author Sun Yuhan
+ * @author Matej Nedic
  * @since 1.0.0
  */
 public class BedrockProxyChatModel implements ChatModel {
@@ -930,18 +932,25 @@ public class BedrockProxyChatModel implements ChatModel {
 
 	public static final class Builder {
 
+		@Deprecated
 		private AwsCredentialsProvider credentialsProvider;
 
-		private Region region = Region.US_EAST_1;
+		@Deprecated
+		private Region region;
 
+		@Deprecated
 		private Duration timeout = Duration.ofMinutes(5L);
 
+		@Deprecated
 		private Duration connectionTimeout = Duration.ofSeconds(5L);
 
+		@Deprecated
 		private Duration asyncReadTimeout = Duration.ofSeconds(30L);
 
+		@Deprecated
 		private Duration connectionAcquisitionTimeout = Duration.ofSeconds(30L);
 
+		@Deprecated
 		private Duration socketTimeout = Duration.ofSeconds(30L);
 
 		private ToolCallingManager toolCallingManager;
@@ -959,12 +968,55 @@ public class BedrockProxyChatModel implements ChatModel {
 		private BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
 
 		private Builder() {
-			try {
-				this.region = DefaultAwsRegionProviderChain.builder().build().getRegion();
-			}
-			catch (SdkClientException e) {
-				logger.warn("Failed to load region from DefaultAwsRegionProviderChain, using US_EAST_1", e);
-			}
+		}
+
+		@Deprecated
+		public Builder credentialsProvider(AwsCredentialsProvider credentialsProvider) {
+			Assert.notNull(credentialsProvider, "'credentialsProvider' must not be null.");
+			this.credentialsProvider = credentialsProvider;
+			return this;
+		}
+
+		@Deprecated
+		public Builder region(Region region) {
+			Assert.notNull(region, "'region' must not be null.");
+			this.region = region;
+			return this;
+		}
+
+		@Deprecated
+		public Builder timeout(Duration timeout) {
+			Assert.notNull(timeout, "'timeout' must not be null.");
+			this.timeout = timeout;
+			return this;
+		}
+
+		@Deprecated
+		public Builder connectionTimeout(Duration connectionTimeout) {
+			Assert.notNull(connectionTimeout, "'connectionTimeout' must not be null.");
+			this.connectionTimeout = connectionTimeout;
+			return this;
+		}
+
+		@Deprecated
+		public Builder asyncReadTimeout(Duration asyncReadTimeout) {
+			Assert.notNull(asyncReadTimeout, "'asyncReadTimeout' must not be null.");
+			this.asyncReadTimeout = asyncReadTimeout;
+			return this;
+		}
+
+		@Deprecated
+		public Builder connectionAcquisitionTimeout(Duration connectionAcquisitionTimeout) {
+			Assert.notNull(connectionAcquisitionTimeout, "'connectionAcquisitionTimeout' must not be null.");
+			this.connectionAcquisitionTimeout = connectionAcquisitionTimeout;
+			return this;
+		}
+
+		@Deprecated
+		public Builder socketTimeout(Duration socketTimeout) {
+			Assert.notNull(socketTimeout, "'socketTimeout' must not be null.");
+			this.socketTimeout = socketTimeout;
+			return this;
 		}
 
 		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
@@ -975,48 +1027,6 @@ public class BedrockProxyChatModel implements ChatModel {
 		public Builder toolExecutionEligibilityPredicate(
 				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
-			return this;
-		}
-
-		public Builder credentialsProvider(AwsCredentialsProvider credentialsProvider) {
-			Assert.notNull(credentialsProvider, "'credentialsProvider' must not be null.");
-			this.credentialsProvider = credentialsProvider;
-			return this;
-		}
-
-		public Builder region(Region region) {
-			Assert.notNull(region, "'region' must not be null.");
-			this.region = region;
-			return this;
-		}
-
-		public Builder timeout(Duration timeout) {
-			Assert.notNull(timeout, "'timeout' must not be null.");
-			this.timeout = timeout;
-			return this;
-		}
-
-		public Builder connectionTimeout(Duration connectionTimeout) {
-			Assert.notNull(connectionTimeout, "'connectionTimeout' must not be null.");
-			this.connectionTimeout = connectionTimeout;
-			return this;
-		}
-
-		public Builder asyncReadTimeout(Duration asyncReadTimeout) {
-			Assert.notNull(asyncReadTimeout, "'asyncReadTimeout' must not be null.");
-			this.asyncReadTimeout = asyncReadTimeout;
-			return this;
-		}
-
-		public Builder connectionAcquisitionTimeout(Duration connectionAcquisitionTimeout) {
-			Assert.notNull(connectionAcquisitionTimeout, "'connectionAcquisitionTimeout' must not be null.");
-			this.connectionAcquisitionTimeout = connectionAcquisitionTimeout;
-			return this;
-		}
-
-		public Builder socketTimeout(Duration socketTimeout) {
-			Assert.notNull(socketTimeout, "'socketTimeout' must not be null.");
-			this.socketTimeout = socketTimeout;
 			return this;
 		}
 
@@ -1049,6 +1059,28 @@ public class BedrockProxyChatModel implements ChatModel {
 		}
 
 		public BedrockProxyChatModel build() {
+			BedrockProxyChatModel bedrockProxyChatModel;
+
+			if (this.bedrockRuntimeAsyncClient != null && this.bedrockRuntimeClient != null) {
+				bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
+						this.bedrockRuntimeAsyncClient, this.defaultOptions, this.observationRegistry,
+						Objects.requireNonNullElse(this.toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER),
+						this.toolExecutionEligibilityPredicate);
+
+				if (this.customObservationConvention != null) {
+					bedrockProxyChatModel.setObservationConvention(this.customObservationConvention);
+				}
+				return bedrockProxyChatModel;
+			}
+
+			if (this.region == null) {
+				try {
+					this.region = DefaultAwsRegionProviderChain.builder().build().getRegion();
+				}
+				catch (SdkClientException e) {
+					logger.warn("Failed to load region from DefaultAwsRegionProviderChain, using US_EAST_1", e);
+				}
+			}
 
 			if (this.bedrockRuntimeClient == null) {
 
@@ -1082,8 +1114,6 @@ public class BedrockProxyChatModel implements ChatModel {
 				this.bedrockRuntimeAsyncClient = builder.build();
 			}
 
-			BedrockProxyChatModel bedrockProxyChatModel = null;
-
 			if (this.toolCallingManager != null) {
 				bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
 						this.bedrockRuntimeAsyncClient, this.defaultOptions, this.observationRegistry,
@@ -1094,10 +1124,6 @@ public class BedrockProxyChatModel implements ChatModel {
 				bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
 						this.bedrockRuntimeAsyncClient, this.defaultOptions, this.observationRegistry,
 						DEFAULT_TOOL_CALLING_MANAGER, this.toolExecutionEligibilityPredicate);
-			}
-
-			if (this.customObservationConvention != null) {
-				bedrockProxyChatModel.setObservationConvention(this.customObservationConvention);
 			}
 
 			return bedrockProxyChatModel;

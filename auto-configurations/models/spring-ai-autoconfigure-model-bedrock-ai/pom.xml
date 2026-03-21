@@ -72,6 +72,13 @@
 			<version>${project.parent.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>sts</artifactId>
+			<version>${bedrockruntime.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- Boot dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

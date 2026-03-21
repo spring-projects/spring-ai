@@ -25,8 +25,6 @@ import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
-import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -165,14 +163,12 @@ public class BedrockProxyChatModelObservationIT {
 
 		@Bean
 		public BedrockProxyChatModel bedrockConverseChatModel(ObservationRegistry observationRegistry) {
-
-			String modelId = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
-
 			return BedrockProxyChatModel.builder()
-				.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
-				.region(Region.US_EAST_1)
+				.bedrockRuntimeClient(BedrockTestClients.SYNC_CLIENT)
+				.bedrockRuntimeAsyncClient(BedrockTestClients.ASYNC_CLIENT)
 				.observationRegistry(observationRegistry)
-				.defaultOptions(BedrockChatOptions.builder().model(modelId).build())
+				.defaultOptions(
+						BedrockChatOptions.builder().model("us.anthropic.claude-haiku-4-5-20251001-v1:0").build())
 				.build();
 		}
 

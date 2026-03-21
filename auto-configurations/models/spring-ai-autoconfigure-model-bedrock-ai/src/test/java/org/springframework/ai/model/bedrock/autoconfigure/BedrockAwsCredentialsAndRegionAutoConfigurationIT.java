@@ -33,7 +33,6 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @since 1.0.0
  */
 @RequiresAwsCredentials
-public class BedrockAwsConnectionConfigurationIT {
+public class BedrockAwsCredentialsAndRegionAutoConfigurationIT {
 
 	@Test
 	public void autoConfigureAWSCredentialAndRegionProvider() {
@@ -112,7 +111,6 @@ public class BedrockAwsConnectionConfigurationIT {
 	}
 
 	@EnableConfigurationProperties(BedrockAwsConnectionProperties.class)
-	@Import(BedrockAwsConnectionConfiguration.class)
 	static class TestAutoConfiguration {
 
 	}

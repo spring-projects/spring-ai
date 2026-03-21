@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingModel;
+import org.springframework.ai.model.bedrock.autoconfigure.BedrockAwsCredentialsAndRegionAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -34,7 +35,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BedrockCohereModelConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class,
+				BedrockAwsCredentialsAndRegionAutoConfiguration.class))
 		.withBean(JsonMapper.class, JsonMapper::new);
 
 	@Test

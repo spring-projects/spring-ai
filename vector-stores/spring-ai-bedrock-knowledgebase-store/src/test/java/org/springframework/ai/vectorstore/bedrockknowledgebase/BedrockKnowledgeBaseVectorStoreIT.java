@@ -246,7 +246,7 @@ class BedrockKnowledgeBaseVectorStoreIT {
 		BedrockAgentRuntimeClient bedrockAgentRuntimeClient() {
 			return BedrockAgentRuntimeClient.builder()
 				.region(Region.of(awsRegion))
-				.credentialsProvider(DefaultCredentialsProvider.create())
+				.credentialsProvider(DefaultCredentialsProvider.builder().build())
 				.build();
 		}
 
@@ -267,7 +267,7 @@ class BedrockKnowledgeBaseVectorStoreIT {
 		BedrockAgentRuntimeClient bedrockAgentRuntimeClient() {
 			return BedrockAgentRuntimeClient.builder()
 				.region(Region.of(awsRegion))
-				.credentialsProvider(DefaultCredentialsProvider.create())
+				.credentialsProvider(DefaultCredentialsProvider.builder().build())
 				.build();
 		}
 
@@ -287,7 +287,7 @@ class BedrockKnowledgeBaseVectorStoreIT {
 		BedrockAgentRuntimeClient bedrockAgentRuntimeClient() {
 			return BedrockAgentRuntimeClient.builder()
 				.region(Region.of(awsRegion))
-				.credentialsProvider(DefaultCredentialsProvider.create())
+				.credentialsProvider(DefaultCredentialsProvider.builder().build())
 				.build();
 		}
 
