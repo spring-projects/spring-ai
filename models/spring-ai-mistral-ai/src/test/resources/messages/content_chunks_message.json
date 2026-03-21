@@ -1,0 +1,42 @@
+{
+  "role": "user",
+  "content": [
+    {
+      "type": "image_url",
+      "image_url": {
+        "url": "https://example.com/image.png",
+        "detail": "Example image"
+      }
+    },
+    {
+      "type": "reference",
+      "reference_ids": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "type": "text",
+      "text": "content text"
+    },
+    {
+      "type": "thinking",
+      "thinking": [
+        {
+          "type": "reference",
+          "reference_ids": [
+            4,
+            5,
+            6
+          ]
+        },
+        {
+          "type": "text",
+          "text": "thinking text"
+        }
+      ],
+      "closed": true
+    }
+  ]
+}

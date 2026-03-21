@@ -275,20 +275,16 @@ class MistralAiChatCompletionRequestTests {
 		assertThat(chatCompletionMessages).hasSize(1);
 		var chatCompletionMessage = chatCompletionMessages.get(0);
 		assertThat(chatCompletionMessage.role()).isEqualTo(ChatCompletionMessage.Role.USER);
-		var rawContent = chatCompletionMessage.rawContent();
-		assertThat(rawContent).isNotNull();
-		var maps = (List<Map<String, Object>>) rawContent;
-		assertThat(maps).hasSize(2);
-		// @formatter:off
-		var textMap = maps.get(0);
-		assertThat(textMap).hasSize(2)
-				.containsEntry("type", "text")
-				.containsEntry("text", TEXT_CONTENT);
-		var imageUrlMap = maps.get(1);
-		assertThat(imageUrlMap).hasSize(2)
-				.containsEntry("type", "image_url")
-				.containsEntry("image_url", Map.of("url", IMAGE_URL));
-		// @formatter:on
+		var contentChunks = (List<MistralAiApi.ChatCompletionMessage.ContentChunk>) chatCompletionMessage.content();
+		assertThat(contentChunks).hasSize(2);
+		var textChunk = (MistralAiApi.ChatCompletionMessage.TextChunk) contentChunks.get(0);
+		assertThat(textChunk).isNotNull();
+		assertThat(textChunk.text()).isEqualTo(TEXT_CONTENT);
+		var imageUrlChunk = (MistralAiApi.ChatCompletionMessage.ImageUrlChunk) contentChunks.get(1);
+		assertThat(imageUrlChunk).isNotNull();
+		var imageUrl = imageUrlChunk.imageUrl();
+		assertThat(imageUrl.url()).isEqualTo(IMAGE_URL);
+		assertThat(imageUrl.detail()).isNull();
 	}
 
 	static class SimpleMessage extends AbstractMessage {

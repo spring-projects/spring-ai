@@ -17,7 +17,6 @@
 package org.springframework.ai.mistralai;
 
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -350,7 +349,7 @@ public class MistralAiChatModel implements ChatModel {
 			.doOnError(observation::error)
 			.doFinally(s -> observation.stop())
 			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
-			// @formatter:on;
+			// @formatter:on
 
 			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
 		});
@@ -366,7 +365,7 @@ public class MistralAiChatModel implements ChatModel {
 							toolCall.function().name(), toolCall.function().arguments()))
 					.toList();
 
-		var content = choice.message().content();
+		var content = choice.message().extractContent();
 		var assistantMessage = AssistantMessage.builder()
 			.content(content)
 			.properties(metadata)
@@ -507,14 +506,15 @@ public class MistralAiChatModel implements ChatModel {
 	}
 
 	private ChatCompletionMessage createUserChatCompletionMessage(Message message) {
-		Object content = message.getText();
+		var content = message.getText();
 		Assert.state(content != null, "content must not be null");
 
 		if (message instanceof UserMessage userMessage && !CollectionUtils.isEmpty(userMessage.getMedia())) {
-			List<ChatCompletionMessage.MediaContent> contentList = new ArrayList<>(
-					List.of(new ChatCompletionMessage.MediaContent((String) content)));
-			contentList.addAll(userMessage.getMedia().stream().map(this::mapToMediaContent).toList());
-			content = contentList;
+			var contentChunks = Stream.<ChatCompletionMessage.ContentChunk>concat(
+					Stream.of(new ChatCompletionMessage.TextChunk(content)), this.mapToImageUrlChunks(userMessage))
+				.toList();
+
+			return new ChatCompletionMessage(contentChunks, ChatCompletionMessage.Role.USER);
 		}
 
 		return new ChatCompletionMessage(content, ChatCompletionMessage.Role.USER);
@@ -526,24 +526,24 @@ public class MistralAiChatModel implements ChatModel {
 		return new ToolCall(toolCall.id(), toolCall.type(), function, null);
 	}
 
-	private ChatCompletionMessage.MediaContent mapToMediaContent(Media media) {
-		return new ChatCompletionMessage.MediaContent(new ChatCompletionMessage.MediaContent.ImageUrl(
-				this.fromMediaData(media.getMimeType(), media.getData())));
+	private Stream<ChatCompletionMessage.ImageUrlChunk> mapToImageUrlChunks(UserMessage userMessage) {
+		return userMessage.getMedia().stream().map(this::mapToImageUrlChunk);
 	}
 
-	private String fromMediaData(MimeType mimeType, Object mediaContentData) {
-		if (mediaContentData instanceof byte[] bytes) {
-			// Assume the bytes are an image. So, convert the bytes to a base64 encoded
-			// following the prefix pattern.
-			return String.format("data:%s;base64,%s", mimeType.toString(), Base64.getEncoder().encodeToString(bytes));
+	private ChatCompletionMessage.ImageUrlChunk mapToImageUrlChunk(Media media) {
+		return new ChatCompletionMessage.ImageUrlChunk(this.fromMediaData(media.getMimeType(), media.getData()));
+	}
+
+	private ChatCompletionMessage.ImageUrlChunk.ImageUrl fromMediaData(MimeType mimeType, Object mediaData) {
+		if (mediaData instanceof byte[] bytes) {
+			return ChatCompletionMessage.ImageUrlChunk.ImageUrl.fromImageData(mimeType, bytes);
 		}
-		else if (mediaContentData instanceof String text) {
-			// Assume the text is a URLs or a base64 encoded image prefixed by the user.
-			return text;
+		else if (mediaData instanceof String text) {
+			// Assume the text is a URL or a base64 encoded image prefixed by the user.
+			return new ChatCompletionMessage.ImageUrlChunk.ImageUrl(text, null);
 		}
 		else {
-			throw new IllegalArgumentException(
-					"Unsupported media data type: " + mediaContentData.getClass().getSimpleName());
+			throw new IllegalArgumentException("Unsupported media data type: " + mediaData.getClass().getSimpleName());
 		}
 	}
 
