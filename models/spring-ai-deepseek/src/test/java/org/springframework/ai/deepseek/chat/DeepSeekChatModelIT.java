@@ -225,7 +225,7 @@ class DeepSeekChatModelIT {
 				""";
 		UserMessage userMessage = new UserMessage(userMessageContent);
 		Message assistantMessage = DeepSeekAssistantMessage
-			.prefixAssistantMessage("{\"code\":200,\"result\":{\"total\":1,\"data\":[1");
+			.dsBuilder().content("{\"code\":200,\"result\":{\"total\":1,\"data\":[1").build();
 		Prompt prompt = new Prompt(List.of(userMessage, assistantMessage));
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).isEqualTo(",2,3]}}");

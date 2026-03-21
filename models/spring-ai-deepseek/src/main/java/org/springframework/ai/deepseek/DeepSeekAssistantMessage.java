@@ -43,15 +43,6 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 		this.prefix = prefix;
 	}
 
-	public static DeepSeekAssistantMessage prefixAssistantMessage(@Nullable String content) {
-		return prefixAssistantMessage(content, null);
-	}
-
-	public static DeepSeekAssistantMessage prefixAssistantMessage(@Nullable String content,
-			@Nullable String reasoningContent) {
-		return new Builder().content(content).prefix(true).reasoningContent(reasoningContent).build();
-	}
-
 	public @Nullable Boolean getPrefix() {
 		return this.prefix;
 	}
@@ -94,39 +85,15 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 				+ this.prefix + ", metadata=" + this.metadata + "]";
 	}
 
-	public static final class Builder {
+	public static Builder dsBuilder() {
+		return new Builder();
+	}
 
-		private @Nullable String content;
-
-		private Map<String, Object> properties = Map.of();
-
-		private List<ToolCall> toolCalls = List.of();
-
-		private List<Media> media = List.of();
+	public static final class Builder extends AssistantMessage.AbstractBuilder<Builder> {
 
 		private @Nullable Boolean prefix;
 
 		private @Nullable String reasoningContent;
-
-		public Builder content(@Nullable String content) {
-			this.content = content;
-			return this;
-		}
-
-		public Builder properties(Map<String, Object> properties) {
-			this.properties = properties;
-			return this;
-		}
-
-		public Builder toolCalls(List<ToolCall> toolCalls) {
-			this.toolCalls = toolCalls;
-			return this;
-		}
-
-		public Builder media(List<Media> media) {
-			this.media = media;
-			return this;
-		}
 
 		public Builder prefix(@Nullable Boolean prefix) {
 			this.prefix = prefix;
@@ -138,9 +105,10 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 			return this;
 		}
 
+		@Override
 		public DeepSeekAssistantMessage build() {
-			return new DeepSeekAssistantMessage(this.content, this.reasoningContent, this.prefix, this.properties,
-					this.toolCalls, this.media);
+			return new DeepSeekAssistantMessage(this.content, this.reasoningContent, this.prefix,
+					this.properties, this.toolCalls, this.media);
 		}
 
 	}
