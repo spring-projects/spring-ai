@@ -16,6 +16,9 @@
 
 package org.springframework.ai.tool.definition;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.util.ParsingUtils;
@@ -28,12 +31,21 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public record DefaultToolDefinition(String name, String description, String inputSchema) implements ToolDefinition {
+public record DefaultToolDefinition(String name, String description, String inputSchema,
+		Map<String, Object> metadata) implements ToolDefinition {
 
 	public DefaultToolDefinition {
 		Assert.hasText(name, "name cannot be null or empty");
 		Assert.hasText(description, "description cannot be null or empty");
 		Assert.hasText(inputSchema, "inputSchema cannot be null or empty");
+		metadata = Map.copyOf(metadata);
+	}
+
+	/**
+	 * Constructor for backward compatibility without metadata.
+	 */
+	public DefaultToolDefinition(String name, String description, String inputSchema) {
+		this(name, description, inputSchema, Collections.emptyMap());
 	}
 
 	public static Builder builder() {
@@ -47,6 +59,8 @@ public record DefaultToolDefinition(String name, String description, String inpu
 		private @Nullable String description;
 
 		private @Nullable String inputSchema;
+
+		private Map<String, Object> metadata = new HashMap<>();
 
 		private Builder() {
 		}
@@ -66,6 +80,16 @@ public record DefaultToolDefinition(String name, String description, String inpu
 			return this;
 		}
 
+		public Builder metadata(Map<String, Object> metadata) {
+			this.metadata = new HashMap<>(metadata);
+			return this;
+		}
+
+		public Builder addMetadata(String key, Object value) {
+			this.metadata.put(key, value);
+			return this;
+		}
+
 		public ToolDefinition build() {
 			Assert.state(this.name != null, "toolName cannot be null or empty");
 			if (!StringUtils.hasText(this.description)) {
@@ -73,7 +97,7 @@ public record DefaultToolDefinition(String name, String description, String inpu
 			}
 			Assert.state(this.description != null, "toolDescription cannot be null or empty");
 			Assert.state(this.inputSchema != null, "inputSchema cannot be null or empty");
-			return new DefaultToolDefinition(this.name, this.description, this.inputSchema);
+			return new DefaultToolDefinition(this.name, this.description, this.inputSchema, this.metadata);
 		}
 
 	}
