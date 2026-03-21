@@ -17,12 +17,15 @@
 package org.springframework.ai.bedrock.converse;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -401,29 +404,12 @@ class BedrockProxyChatModelIT {
 
 	@Test
 	void testSystemOnlyPromptCaching() {
-		// NOTE: Prompt caching is supported by the following models (as of 2025):
-		// - Claude 3 Opus 4.1, Claude Opus 4, Claude Sonnet 4.5, Claude Sonnet 4, Claude
-		// 3.7 Sonnet
-		// - Claude 3.5 Haiku, Claude 3.5 Sonnet v2
-		// - Amazon Nova Micro, Lite, Pro, Premier
-		//
-		// IMPORTANT: Newer Claude models require AWS Bedrock inference profiles instead
-		// of direct model IDs.
-		// If you get ValidationException about "on-demand throughput isn't supported",
-		// you need to:
-		// 1. Use an inference profile ARN/ID (e.g.,
-		// "us.anthropic.claude-haiku-4-5-20251001-v1:0")
-		// 2. Ensure your AWS account/region has cross-region inference profiles enabled
-		// 3. Or use Amazon Nova models which work with direct model IDs
-		//
-		// Amazon Nova models work without inference profiles and are used in this test
-		// for reliability.
+		// Claude Haiku 4.5 requires 4096+ tokens per cache checkpoint and must be
+		// invoked via a cross-region inference profile ID.
 		String model = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 
-		// Create a large system prompt (needs to exceed minimum token threshold for
-		// caching)
-		// Amazon Nova models require 1024+ tokens for caching to activate
-		// Each repetition adds ~160 tokens, so 7 repetitions = ~1120 tokens
+		// Each repetition adds ~158 tokens; 40 repetitions = ~6320 tokens, safely
+		// exceeding the 4096 token minimum required by Claude Haiku 4.5.
 		String basePrompt = """
 				You are an expert software architect with deep knowledge of distributed systems,
 				microservices, cloud computing, and software design patterns. Your role is to provide
@@ -441,14 +427,11 @@ class BedrockProxyChatModelIT {
 
 				""";
 
-		// Repeat to exceed 1024 token minimum (approximate: 1 token ≈ 4 characters)
-		StringBuilder largeSystemPromptBuilder = new StringBuilder();
-		for (int i = 0; i < 12; i++) {
-			largeSystemPromptBuilder.append(basePrompt);
-		}
-		largeSystemPromptBuilder.append("When answering questions, provide clear, structured responses with examples.");
+		// Repeat to exceed 4096 token minimum for Claude Haiku 4.5
+		// Using 40 repetitions (~6320 tokens) to safely exceed the threshold
 
-		String largeSystemPrompt = largeSystemPromptBuilder.toString();
+		String largeSystemPrompt = basePrompt.repeat(40)
+				+ "When answering questions, provide clear, structured responses with examples.";
 
 		BedrockCacheOptions cacheOptions = BedrockCacheOptions.builder()
 			.strategy(BedrockCacheStrategy.SYSTEM_ONLY)
@@ -460,56 +443,39 @@ class BedrockProxyChatModelIT {
 			.maxTokens(500)
 			.build();
 
-		// First request - should create cache
-		ChatResponse response1 = this.chatModel.call(new Prompt(
-				List.of(new SystemMessage(largeSystemPrompt), new UserMessage("What is a monolith?")), chatOptions));
-
-		// Verify first response is valid
-		assertThat(response1.getResults()).hasSize(1);
-		assertThat(response1.getResult().getOutput().getText()).isNotEmpty();
-
-		// Verify cache write tokens are present and positive (cache was created)
-		Integer cacheWrite1 = response1.getMetadata().get("cacheWriteInputTokens");
-		logger.info("First request - cacheWriteInputTokens: {}", cacheWrite1);
-		assertThat(cacheWrite1).as("First request should write tokens to cache").isNotNull().isPositive();
-
-		// Verify no cache read on first request
-		Integer cacheRead1 = response1.getMetadata().get("cacheReadInputTokens");
-		assertThat(cacheRead1).as("First request should not read from cache").isIn(null, 0);
-
-		// Second request with same system prompt - should hit cache
-		ChatResponse response2 = this.chatModel
-			.call(new Prompt(List.of(new SystemMessage(largeSystemPrompt), new UserMessage("What is a microservice?")),
-					chatOptions));
-
-		// Verify second response is valid
-		assertThat(response2.getResults()).hasSize(1);
-		assertThat(response2.getResult().getOutput().getText()).isNotEmpty();
-
-		// Verify cache read tokens are present and positive (cache was used)
-		Integer cacheRead2 = response2.getMetadata().get("cacheReadInputTokens");
-		logger.info("Second request - cacheReadInputTokens: {}", cacheRead2);
-		assertThat(cacheRead2).as("Second request should read tokens from cache").isNotNull().isPositive();
-
-		// Verify cache read matches what was written
-		assertThat(cacheRead2).as("Cache read tokens should match cache write tokens").isEqualTo(cacheWrite1);
-
-		// Verify no cache write on second request (reusing existing cache)
-		Integer cacheWrite2 = response2.getMetadata().get("cacheWriteInputTokens");
-		assertThat(cacheWrite2).as("Second request should not write new tokens to cache").isIn(null, 0);
+		// Send requests with the same system prompt until a cache read is observed.
+		// With cross-region inference profiles, initial requests may route to different
+		// regions and each write their own cache. Eventually a request will route to a
+		// region with an existing cache and return a positive cacheReadInputTokens.
+		List<String> questions = List.of("What is a monolith?", "What is a microservice?",
+				"What is event-driven architecture?", "What is a service mesh?", "What is CQRS?");
+		AtomicInteger questionIndex = new AtomicInteger(0);
+		Awaitility.await().atMost(Duration.ofMinutes(2)).pollInterval(Duration.ofSeconds(3)).untilAsserted(() -> {
+			String question = questions.get(questionIndex.getAndIncrement() % questions.size());
+			ChatResponse response = this.chatModel.call(
+					new Prompt(List.of(new SystemMessage(largeSystemPrompt), new UserMessage(question)), chatOptions));
+			assertThat(response.getResults()).hasSize(1);
+			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+			Integer cacheRead = response.getMetadata().get("cacheReadInputTokens");
+			Integer cacheWrite = response.getMetadata().get("cacheWriteInputTokens");
+			logger.info("[systemOnly] attempt={}, cacheWrite={}, cacheRead={}", questionIndex.get(), cacheWrite,
+					cacheRead);
+			assertThat(cacheRead).as("Should eventually read from cache").isNotNull().isPositive();
+			assertThat(cacheRead).as("Cache read should meet the 4096 token minimum for Claude Haiku 4.5")
+				.isGreaterThan(4096);
+			assertThat(cacheWrite).as("A cache read hit should not also write").isIn(null, 0);
+		});
 	}
 
 	@Test
 	void testToolsOnlyPromptCaching() {
-		// NOTE: Testing tools-only caching requires multiple large tool definitions to
-		// exceed 1K tokens
-		// IMPORTANT: This test requires a Claude model (e.g., Claude 3.5 Haiku, Claude
-		// 3.7 Sonnet)
-		// Amazon Nova models do NOT support tool caching and will return
-		// ValidationException
+		// IMPORTANT: This test requires a Claude model - Amazon Nova models do NOT
+		// support tool caching and will return ValidationException.
+		// Claude Haiku 4.5 requires 4096+ tokens of tool definitions for caching.
 		String model = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 
-		// Create multiple tool callbacks to exceed the 1K token minimum for caching
+		// Create multiple tool callbacks to exceed the 4096 token minimum for caching
+		// (Claude Haiku 4.5 requires 4096+ tokens)
 		// Each tool definition adds ~200-300 tokens, so we need 4-5 tools
 		List<FunctionToolCallback> toolCallbacks = createLargeToolCallbacks();
 
@@ -524,49 +490,31 @@ class BedrockProxyChatModelIT {
 			.maxTokens(500)
 			.build();
 
-		// First request - should create cache for tools
-		ChatResponse response1 = this.chatModel.call(new Prompt("What's the weather in Paris?", chatOptions));
-
-		// Verify first response is valid
-		assertThat(response1.getResults()).hasSize(1);
-		assertThat(response1.getResult().getOutput().getText()).isNotEmpty();
-
-		// Extract cache metrics from first request
-		Integer cacheWrite1 = response1.getMetadata().get("cacheWriteInputTokens");
-		Integer cacheRead1 = response1.getMetadata().get("cacheReadInputTokens");
-		logger.info("First request - cacheWriteInputTokens: {}, cacheReadInputTokens: {}", cacheWrite1, cacheRead1);
-
-		// The first request may either:
-		// 1. Create a new cache (cacheWrite > 0, cacheRead = 0) if no prior cache exists
-		// 2. Use existing cache (cacheRead > 0) if previous test ran within 5min TTL
-		// At least one should be positive to confirm caching is working
-		int firstRequestCache = (cacheWrite1 != null ? cacheWrite1 : 0) + (cacheRead1 != null ? cacheRead1 : 0);
-		assertThat(firstRequestCache).as("First request should either write or read from cache").isPositive();
-
-		// Second request with same tools - should hit cache
-		ChatResponse response2 = this.chatModel.call(new Prompt("What's the weather in Tokyo?", chatOptions));
-
-		// Verify second response is valid
-		assertThat(response2.getResults()).hasSize(1);
-		assertThat(response2.getResult().getOutput().getText()).isNotEmpty();
-
-		// Verify cache read tokens are present (tools were read from cache)
-		Integer cacheRead2 = response2.getMetadata().get("cacheReadInputTokens");
-		logger.info("Second request - cacheReadInputTokens: {}", cacheRead2);
-		assertThat(cacheRead2).as("Second request should read tool definitions from cache").isNotNull().isPositive();
-
-		// Verify the second request uses the same cache as was established in first
-		// request
-		int expectedTotalCache = (cacheWrite1 != null ? cacheWrite1 : 0) + (cacheRead1 != null ? cacheRead1 : 0);
-		assertThat(cacheRead2).as("Second request should read the same total cache").isEqualTo(expectedTotalCache);
+		// Send requests with the same tools until a cache read is observed.
+		// With cross-region inference profiles, initial requests may write to different
+		// regions. Eventually a request will hit a region with an existing cache.
+		List<String> cities = List.of("Paris", "Tokyo", "London", "New York", "Sydney");
+		AtomicInteger cityIndex = new AtomicInteger(0);
+		Awaitility.await().atMost(Duration.ofMinutes(2)).pollInterval(Duration.ofSeconds(3)).untilAsserted(() -> {
+			String city = cities.get(cityIndex.getAndIncrement() % cities.size());
+			ChatResponse response = this.chatModel.call(new Prompt("What's the weather in " + city + "?", chatOptions));
+			assertThat(response.getResults()).hasSize(1);
+			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+			Integer cacheRead = response.getMetadata().get("cacheReadInputTokens");
+			Integer cacheWrite = response.getMetadata().get("cacheWriteInputTokens");
+			logger.info("[toolsOnly] attempt={}, cacheWrite={}, cacheRead={}", cityIndex.get(), cacheWrite, cacheRead);
+			assertThat(cacheRead).as("Should eventually read tool definitions from cache").isNotNull().isPositive();
+			assertThat(cacheRead).as("Cache read should meet the 4096 token minimum for Claude Haiku 4.5")
+				.isGreaterThan(4096);
+			assertThat(cacheWrite).as("A cache read hit should not also write").isIn(null, 0);
+		});
 	}
 
 	@Test
 	void testSystemAndToolsPromptCaching() {
 		// NOTE: Testing combined caching requires both large system prompt and multiple
 		// tools
-		// IMPORTANT: This test requires a Claude model (e.g., Claude 3.5 Haiku, Claude
-		// 3.7 Sonnet)
+		// IMPORTANT: This test requires a Claude model that supports tool caching.
 		// Amazon Nova models do NOT support tool caching and will return
 		// ValidationException
 		String model = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
@@ -589,13 +537,8 @@ class BedrockProxyChatModelIT {
 
 				""";
 
-		StringBuilder largeSystemPromptBuilder = new StringBuilder();
-		for (int i = 0; i < 12; i++) {
-			largeSystemPromptBuilder.append(basePrompt);
-		}
-		largeSystemPromptBuilder.append("Provide detailed weather analysis with context and recommendations.");
-
-		String largeSystemPrompt = largeSystemPromptBuilder.toString();
+		String largeSystemPrompt = basePrompt.repeat(12)
+				+ "Provide detailed weather analysis with context and recommendations.";
 
 		// Create multiple tool callbacks
 		List<FunctionToolCallback> toolCallbacks = createLargeToolCallbacks();
@@ -611,50 +554,27 @@ class BedrockProxyChatModelIT {
 			.maxTokens(500)
 			.build();
 
-		// First request - should create cache for both tools and system
-		ChatResponse response1 = this.chatModel.call(new Prompt(
-				List.of(new SystemMessage(largeSystemPrompt), new UserMessage("What's the weather in Paris?")),
-				chatOptions));
-
-		// Verify first response is valid
-		assertThat(response1.getResults()).hasSize(1);
-		assertThat(response1.getResult().getOutput().getText()).isNotEmpty();
-
-		// Extract cache metrics from first request
-		Integer cacheWrite1 = response1.getMetadata().get("cacheWriteInputTokens");
-		Integer cacheRead1 = response1.getMetadata().get("cacheReadInputTokens");
-		logger.info("First request - cacheWriteInputTokens: {}, cacheReadInputTokens: {}", cacheWrite1, cacheRead1);
-
-		// The first request may either:
-		// 1. Create a new cache (cacheWrite > 0, cacheRead = 0) if no prior cache exists
-		// 2. Use existing cache (cacheRead > 0) if previous test ran within 5min TTL
-		// At least one should be positive to confirm caching is working
-		int firstRequestCache = (cacheWrite1 != null ? cacheWrite1 : 0) + (cacheRead1 != null ? cacheRead1 : 0);
-		assertThat(firstRequestCache).as("First request should either write or read from cache").isPositive();
-
-		// Second request with same tools and system - should hit both caches
-		ChatResponse response2 = this.chatModel.call(new Prompt(
-				List.of(new SystemMessage(largeSystemPrompt), new UserMessage("What's the weather in Tokyo?")),
-				chatOptions));
-
-		// Verify second response is valid
-		assertThat(response2.getResults()).hasSize(1);
-		assertThat(response2.getResult().getOutput().getText()).isNotEmpty();
-
-		// Verify cache read tokens are present (both caches were used)
-		Integer cacheRead2 = response2.getMetadata().get("cacheReadInputTokens");
-		Integer cacheWrite2 = response2.getMetadata().get("cacheWriteInputTokens");
-		logger.info("Second request - cacheReadInputTokens: {}, cacheWriteInputTokens: {}", cacheRead2, cacheWrite2);
-		assertThat(cacheRead2).as("Second request should read from both caches").isNotNull().isPositive();
-
-		// Verify the second request uses the same cache as was established in first
-		// request
-		// The total cache should be: what was written in first + what was read in first
-		int expectedTotalCache = (cacheWrite1 != null ? cacheWrite1 : 0) + (cacheRead1 != null ? cacheRead1 : 0);
-		assertThat(cacheRead2).as("Second request should read the same total cache").isEqualTo(expectedTotalCache);
-
-		// The combined cache should be substantial (tools + system > 3000 tokens)
-		assertThat(cacheRead2).as("Combined cache should be substantial").isGreaterThan(3000);
+		// Send requests with the same tools and system prompt until a cache read is
+		// observed. With cross-region inference profiles, initial requests may write to
+		// different regions. Eventually a request will hit a region with an existing
+		// cache.
+		List<String> cities = List.of("Paris", "Tokyo", "London", "New York", "Sydney");
+		AtomicInteger cityIndex = new AtomicInteger(0);
+		Awaitility.await().atMost(Duration.ofMinutes(2)).pollInterval(Duration.ofSeconds(3)).untilAsserted(() -> {
+			String city = cities.get(cityIndex.getAndIncrement() % cities.size());
+			ChatResponse response = this.chatModel.call(new Prompt(List.of(new SystemMessage(largeSystemPrompt),
+					new UserMessage("What's the weather in " + city + "?")), chatOptions));
+			assertThat(response.getResults()).hasSize(1);
+			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+			Integer cacheRead = response.getMetadata().get("cacheReadInputTokens");
+			Integer cacheWrite = response.getMetadata().get("cacheWriteInputTokens");
+			logger.info("[systemAndTools] attempt={}, cacheWrite={}, cacheRead={}", cityIndex.get(), cacheWrite,
+					cacheRead);
+			assertThat(cacheRead).as("Should eventually read from cache").isNotNull().isPositive();
+			assertThat(cacheRead).as("Cache read should meet the 4096 token minimum for Claude Haiku 4.5")
+				.isGreaterThan(4096);
+			assertThat(cacheWrite).as("A cache read hit should not also write").isIn(null, 0);
+		});
 	}
 
 	@Test
@@ -665,8 +585,12 @@ class BedrockProxyChatModelIT {
 		String model = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 
 		// Create a large system prompt to contribute to total token count
-		// Need 1024+ tokens total for caching to activate
-		String systemPrompt = """
+		// Claude Haiku 4.5 requires 4096+ tokens for caching to activate
+
+		// A modest system prompt is sufficient here; the messages field provides the
+		// token volume needed for the cache checkpoint (via verbose assistant turns
+		// below).
+		String largeSystemPrompt = """
 				You are a helpful AI assistant with expertise in career counseling and professional development.
 				You remember details from our conversation and use them to provide personalized responses.
 				Always acknowledge information shared by the user in previous messages when relevant to the current question.
@@ -674,37 +598,46 @@ class BedrockProxyChatModelIT {
 				When providing career guidance, consider market trends, skill development, networking, and work-life balance.
 				""";
 
-		// Repeat system prompt to ensure we have enough tokens (need 1024+ total)
-		// Claude tokenizes efficiently, so we need many repetitions
-		StringBuilder largeSystemPromptBuilder = new StringBuilder();
-		for (int i = 0; i < 15; i++) {
-			largeSystemPromptBuilder.append(systemPrompt);
-		}
-		String largeSystemPrompt = largeSystemPromptBuilder.toString();
+		// Build conversation history with verbose assistant responses so the messages
+		// field alone exceeds the 4,096 token minimum required by Claude Haiku 4.5 for a
+		// cache checkpoint. The system prompt lives in the system field and does not
+		// count
+		// toward the messages cache checkpoint threshold.
+		String verboseAssistantTurn = """
+				That's really fascinating to hear! Let me share some detailed thoughts on your situation.
+				Working in data science at a tech company in San Francisco puts you at the forefront of
+				innovation. The combination of machine learning and natural language processing is
+				particularly powerful right now, given the explosion of large language models and
+				transformer-based architectures. San Francisco's tech ecosystem offers unparalleled
+				networking opportunities, access to cutting-edge research, and exposure to world-class
+				engineering talent. The recommendation systems space is especially exciting because it
+				sits at the intersection of multiple disciplines: collaborative filtering, content-based
+				methods, matrix factorization, deep learning, and reinforcement learning from human
+				feedback. Companies like Netflix, Spotify, Amazon, and LinkedIn have published
+				extensively on their recommendation architectures, and the field continues to evolve
+				rapidly. Building production-grade recommendation systems requires not just modeling
+				skills but also expertise in data pipelines, feature engineering, A/B testing
+				frameworks, and real-time serving infrastructure. The ability to measure business
+				impact through metrics like click-through rate, conversion rate, and long-term
+				engagement is equally important. I'd be happy to dive deeper into any of these areas.
+				""".repeat(8);
 
-		// Build conversation history with multiple turns to exceed token minimum
-		// Each turn adds context that should be cached
 		List<Message> conversationHistory = new ArrayList<>();
 		conversationHistory.add(new SystemMessage(largeSystemPrompt));
 		conversationHistory
 			.add(new UserMessage("My name is Alice and I work as a data scientist at TechCorp in San Francisco."));
-		conversationHistory.add(new AssistantMessage("Nice to meet you, Alice! It's great to hear you work as a "
-				+ "data scientist at TechCorp in San Francisco. Data science is such an exciting field. "
-				+ "How long have you been working there?"));
+		conversationHistory.add(new AssistantMessage(verboseAssistantTurn));
 		conversationHistory.add(new UserMessage(
 				"I've been there for 3 years. I specialize in machine learning and natural language processing."));
-		conversationHistory.add(new AssistantMessage("That's wonderful, Alice! Three years at TechCorp working on ML "
-				+ "and NLP is impressive. Those are cutting-edge areas of data science. "
-				+ "What kind of NLP projects do you typically work on?"));
+		conversationHistory.add(new AssistantMessage(verboseAssistantTurn));
 		conversationHistory.add(new UserMessage(
 				"Recently I've been building a recommendation system that analyzes user behavior and preferences."));
-		conversationHistory
-			.add(new AssistantMessage("A recommendation system is a fantastic application of your ML and NLP skills! "
-					+ "Analyzing user behavior and preferences can really enhance user experience. "
-					+ "Are you using collaborative filtering, content-based methods, or hybrid approaches?"));
+		conversationHistory.add(new AssistantMessage(verboseAssistantTurn));
 
-		// NOW add the current user question with CONVERSATION_HISTORY caching enabled
-		// This will cache all previous conversation turns
+		// The cache point is placed on this final user message by CONVERSATION_HISTORY
+		// strategy. All preceding messages form the cached prefix. With 3 assistant turns
+		// at 8 repetitions each (~560 tokens/turn), the prefix exceeds the 4,096 token
+		// minimum required by Claude Haiku 4.5 for a messages cache checkpoint.
 		conversationHistory
 			.add(new UserMessage("Based on what I've told you about my work, what career advice would you give me?"));
 
@@ -718,61 +651,38 @@ class BedrockProxyChatModelIT {
 			.maxTokens(500)
 			.build();
 
-		// First request - should create cache for conversation history
-		ChatResponse response1 = this.chatModel.call(new Prompt(conversationHistory, chatOptions));
-
-		// Verify first response is valid
-		assertThat(response1.getResults()).hasSize(1);
-		assertThat(response1.getResult().getOutput().getText()).isNotEmpty();
-
-		// Verify response references the context (Alice, data scientist, etc.)
-		String responseText1 = response1.getResult().getOutput().getText().toLowerCase();
-		logger.info("First response: {}", responseText1);
-
-		// Extract cache metrics from first request
-		Integer cacheWrite1 = response1.getMetadata().get("cacheWriteInputTokens");
-		Integer cacheRead1 = response1.getMetadata().get("cacheReadInputTokens");
-		logger.info("First request - cacheWriteInputTokens: {}, cacheReadInputTokens: {}", cacheWrite1, cacheRead1);
-
-		// The first request may either:
-		// 1. Create a new cache (cacheWrite > 0, cacheRead = 0) if no prior cache
-		// exists
-		// 2. Use existing cache (cacheRead > 0) if previous test ran within 5min TTL
-		int firstRequestCache = (cacheWrite1 != null ? cacheWrite1 : 0) + (cacheRead1 != null ? cacheRead1 : 0);
-		assertThat(firstRequestCache).as("First request should either write or read from cache").isPositive();
-
-		// Second request: Continue the conversation with a follow-up question
-		// The conversation history should be read from cache
-		List<Message> extendedConversation = new ArrayList<>(conversationHistory);
-		extendedConversation.add(response1.getResult().getOutput()); // Add assistant's
-																		// response
-		extendedConversation.add(new UserMessage("What skills should I focus on developing to advance in my career?"));
-
-		ChatResponse response2 = this.chatModel.call(new Prompt(extendedConversation, chatOptions));
-
-		// Verify second response is valid
-		assertThat(response2.getResults()).hasSize(1);
-		assertThat(response2.getResult().getOutput().getText()).isNotEmpty();
-
-		// Verify cache read tokens are present
-		Integer cacheRead2 = response2.getMetadata().get("cacheReadInputTokens");
-		logger.info("Second request - cacheReadInputTokens: {}", cacheRead2);
-		assertThat(cacheRead2).as("Second request should read conversation history from cache")
-			.isNotNull()
-			.isPositive();
-
-		// The cache should be substantial (conversation history > 500 tokens)
-		assertThat(cacheRead2).as("Conversation cache should be substantial").isGreaterThan(500);
+		// Send the identical conversation history on every attempt until a cache read is
+		// observed. The cache key is derived from the full message list including the
+		// last
+		// user message, so the prompt must be byte-for-byte identical across attempts for
+		// a cross-region hit to occur. With cross-region inference profiles, initial
+		// requests may write to different regions; eventually a request will route to a
+		// region that already has the cache and return a positive cacheReadInputTokens.
+		AtomicInteger attemptIndex = new AtomicInteger(0);
+		Awaitility.await().atMost(Duration.ofMinutes(2)).pollInterval(Duration.ofSeconds(3)).untilAsserted(() -> {
+			ChatResponse response = this.chatModel.call(new Prompt(conversationHistory, chatOptions));
+			assertThat(response.getResults()).hasSize(1);
+			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+			Integer cacheRead = response.getMetadata().get("cacheReadInputTokens");
+			Integer cacheWrite = response.getMetadata().get("cacheWriteInputTokens");
+			logger.info("[conversationHistory] attempt={}, cacheWrite={}, cacheRead={}", attemptIndex.incrementAndGet(),
+					cacheWrite, cacheRead);
+			assertThat(cacheRead).as("Should eventually read conversation history from cache").isNotNull().isPositive();
+			assertThat(cacheRead).as("Cache read should meet the 4096 token minimum for Claude Haiku 4.5")
+				.isGreaterThan(4096);
+			assertThat(cacheWrite).as("A cache read hit should not also write").isIn(null, 0);
+		});
 	}
 
 	/**
-	 * Helper method to create multiple tool callbacks to exceed 1K token minimum for
-	 * caching. Creates 5 different weather-related tools with verbose descriptions to
-	 * ensure sufficient token count for Claude models (which tokenize more efficiently
-	 * than Nova models).
+	 * Helper method to create multiple tool callbacks with descriptions large enough to
+	 * exceed the 4096 token minimum required by Claude Haiku 4.5 for prompt caching.
+	 * Creates 5 different weather-related tools with repeated verbose descriptions.
 	 */
 	private List<FunctionToolCallback> createLargeToolCallbacks() {
-		return List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService()).description("""
+		// Each description is repeated to ensure total tool tokens exceed 4096,
+		// which is the minimum required by Claude Haiku 4.5 for prompt caching.
+		String weatherDesc = """
 				Get the current weather conditions for a specific location anywhere in the world.
 				This comprehensive weather service provides real-time meteorological data including:
 				- Current temperature in Celsius and Fahrenheit with feels-like temperature
@@ -787,88 +697,103 @@ class BedrockProxyChatModelIT {
 				- Sunrise and sunset times for the location
 				The service uses data from multiple meteorological stations and satellites to ensure
 				accuracy and reliability. Data is updated every 15 minutes for most locations worldwide.
-				""").inputType(MockWeatherService.Request.class).build(), FunctionToolCallback
-			.builder("getWeatherForecast", new MockWeatherService())
-			.description("""
-					Get the weather forecast for the next 7 days for a specific location with detailed predictions.
-					This advanced forecasting service provides comprehensive weather predictions including:
-					- Daily high and low temperatures with hourly breakdowns
-					- Precipitation probability percentage for each day and hour
-					- Expected precipitation amounts (rain, snow) in millimeters and inches
-					- Wind forecasts including speed, direction, and gust predictions
-					- Cloud coverage predictions and sky conditions (sunny, partly cloudy, overcast)
-					- Humidity levels and heat index/wind chill calculations
-					- Severe weather warnings and advisories if applicable
-					- Sunrise and sunset times for each day
-					- Moon phase information for planning outdoor activities
-					- Detailed text descriptions of expected conditions for each day
-					The forecast uses advanced meteorological models combining numerical weather prediction,
-					machine learning algorithms, and historical climate data to provide highly accurate
-					predictions. Forecasts are updated four times daily with improving accuracy for near-term
-					predictions and reasonable accuracy extending to 7 days out.
-					""")
-			.inputType(MockWeatherService.Request.class)
-			.build(), FunctionToolCallback.builder("getHistoricalWeather", new MockWeatherService()).description("""
-					Get historical weather data for a specific location and date range with comprehensive analysis.
-					This powerful historical weather service provides access to decades of weather records including:
-					- Temperature records: daily highs, lows, and averages for any date range
-					- Precipitation history: rainfall and snowfall amounts with accumulation totals
-					- Temperature trend analysis comparing to long-term averages and records
-					- Extreme weather events: heat waves, cold snaps, severe storms in the time period
-					- Climate comparisons showing how conditions compare to historical norms
-					- Monthly and seasonal summaries with statistical analysis
-					- Detailed day-by-day weather observations from official weather stations
-					- Notable weather events and their impacts during the requested time period
-					The historical data is sourced from official meteorological agencies and weather stations
-					with records extending back multiple decades. This tool is invaluable for understanding
-					climate trends, planning activities based on historical patterns, agricultural planning,
-					research purposes, and understanding how current weather compares to historical context.
-					Data quality indicators are provided to show the reliability of older records.
-					""").inputType(MockWeatherService.Request.class).build(),
-				FunctionToolCallback.builder("getWeatherAlerts", new MockWeatherService())
-					.description(
-							"""
-									Get active weather alerts and warnings for a specific location with critical safety information.
-									This essential safety service provides real-time alerts from official meteorological services including:
-									- Severe thunderstorm warnings with timing and intensity information
-									- Tornado warnings and watches with affected areas and safety instructions
-									- Hurricane and tropical storm alerts with projected paths and wind speeds
-									- Flash flood warnings and flood watches with affected waterways
-									- Winter storm warnings including snow, ice, and blizzard conditions
-									- Heat advisories and excessive heat warnings with health recommendations
-									- Wind advisories and high wind warnings with expected peak gusts
-									- Dense fog advisories affecting visibility and travel
-									- Air quality alerts for unhealthy pollution levels
-									- Fire weather warnings for dangerous wildfire conditions
-									Each alert includes the official alert level (advisory, watch, warning), affected geographic
-									areas, start and end times, detailed descriptions of the hazard, recommended actions for
-									safety, and contact information for local emergency management. Alerts are issued by
-									official national weather services and are updated in real-time as conditions evolve.
-									This service is critical for public safety and emergency preparedness.
-									""")
+				""".repeat(3);
+		String forecastDesc = """
+				Get the weather forecast for the next 7 days for a specific location with detailed predictions.
+				This advanced forecasting service provides comprehensive weather predictions including:
+				- Daily high and low temperatures with hourly breakdowns
+				- Precipitation probability percentage for each day and hour
+				- Expected precipitation amounts (rain, snow) in millimeters and inches
+				- Wind forecasts including speed, direction, and gust predictions
+				- Cloud coverage predictions and sky conditions (sunny, partly cloudy, overcast)
+				- Humidity levels and heat index/wind chill calculations
+				- Severe weather warnings and advisories if applicable
+				- Sunrise and sunset times for each day
+				- Moon phase information for planning outdoor activities
+				- Detailed text descriptions of expected conditions for each day
+				The forecast uses advanced meteorological models combining numerical weather prediction,
+				machine learning algorithms, and historical climate data to provide highly accurate
+				predictions. Forecasts are updated four times daily with improving accuracy for near-term
+				predictions and reasonable accuracy extending to 7 days out.
+				""".repeat(3);
+		String historicalDesc = """
+				Get historical weather data for a specific location and date range with comprehensive analysis.
+				This powerful historical weather service provides access to decades of weather records including:
+				- Temperature records: daily highs, lows, and averages for any date range
+				- Precipitation history: rainfall and snowfall amounts with accumulation totals
+				- Temperature trend analysis comparing to long-term averages and records
+				- Extreme weather events: heat waves, cold snaps, severe storms in the time period
+				- Climate comparisons showing how conditions compare to historical norms
+				- Monthly and seasonal summaries with statistical analysis
+				- Detailed day-by-day weather observations from official weather stations
+				- Notable weather events and their impacts during the requested time period
+				The historical data is sourced from official meteorological agencies and weather stations
+				with records extending back multiple decades. This tool is invaluable for understanding
+				climate trends, planning activities based on historical patterns, agricultural planning,
+				research purposes, and understanding how current weather compares to historical context.
+				Data quality indicators are provided to show the reliability of older records.
+				""".repeat(3);
+		String alertsDesc = """
+				Get active weather alerts and warnings for a specific location with critical safety information.
+				This essential safety service provides real-time alerts from official meteorological services including:
+				- Severe thunderstorm warnings with timing and intensity information
+				- Tornado warnings and watches with affected areas and safety instructions
+				- Hurricane and tropical storm alerts with projected paths and wind speeds
+				- Flash flood warnings and flood watches with affected waterways
+				- Winter storm warnings including snow, ice, and blizzard conditions
+				- Heat advisories and excessive heat warnings with health recommendations
+				- Wind advisories and high wind warnings with expected peak gusts
+				- Dense fog advisories affecting visibility and travel
+				- Air quality alerts for unhealthy pollution levels
+				- Fire weather warnings for dangerous wildfire conditions
+				Each alert includes the official alert level (advisory, watch, warning), affected geographic
+				areas, start and end times, detailed descriptions of the hazard, recommended actions for
+				safety, and contact information for local emergency management. Alerts are issued by
+				official national weather services and are updated in real-time as conditions evolve.
+				This service is critical for public safety and emergency preparedness.
+				""".repeat(3);
+		String climateDesc = """
+				Get long-term climate data and comprehensive statistics for a specific location.
+				This climate analysis service provides in-depth climatological information including:
+				- Long-term average temperatures: monthly and annual means over 30+ year periods
+				- Precipitation patterns: average rainfall and snowfall by month and season
+				- Seasonal trend analysis showing typical weather patterns throughout the year
+				- Climate classification according to Köppen-Geiger system
+				- Record high and low temperatures for each month with dates
+				- Average humidity levels, cloud coverage, and sunshine hours
+				- Wind patterns including prevailing wind directions and average speeds
+				- Growing season length and frost dates important for agriculture
+				- Climate change indicators showing temperature and precipitation trends
+				- Extreme weather frequency: how often severe events typically occur
+				- Comparison with global and regional climate averages
+				- Microclimate variations within the region based on elevation and geography
+				- Best and worst months for various outdoor activities based on climate
+				This comprehensive climate data is essential for long-term planning, understanding regional
+				climate characteristics, agricultural planning, construction projects, tourism planning,
+				and understanding local climate change impacts. Data is derived from decades of official
+				meteorological observations and is continuously updated as new climate normals are established.
+				""".repeat(3);
+		return List.of(
+				FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+					.description(weatherDesc)
 					.inputType(MockWeatherService.Request.class)
 					.build(),
-				FunctionToolCallback.builder("getClimateData", new MockWeatherService()).description("""
-						Get long-term climate data and comprehensive statistics for a specific location.
-						This climate analysis service provides in-depth climatological information including:
-						- Long-term average temperatures: monthly and annual means over 30+ year periods
-						- Precipitation patterns: average rainfall and snowfall by month and season
-						- Seasonal trend analysis showing typical weather patterns throughout the year
-						- Climate classification according to Köppen-Geiger system
-						- Record high and low temperatures for each month with dates
-						- Average humidity levels, cloud coverage, and sunshine hours
-						- Wind patterns including prevailing wind directions and average speeds
-						- Growing season length and frost dates important for agriculture
-						- Climate change indicators showing temperature and precipitation trends
-						- Extreme weather frequency: how often severe events typically occur
-						- Comparison with global and regional climate averages
-						- Microclimate variations within the region based on elevation and geography
-						- Best and worst months for various outdoor activities based on climate
-						This comprehensive climate data is essential for long-term planning, understanding regional
-						climate characteristics, agricultural planning, construction projects, tourism planning,
-						and understanding local climate change impacts. Data is derived from decades of official
-						meteorological observations and is continuously updated as new climate normals are established.
-						""").inputType(MockWeatherService.Request.class).build());
+				FunctionToolCallback.builder("getWeatherForecast", new MockWeatherService())
+					.description(forecastDesc)
+					.inputType(MockWeatherService.Request.class)
+					.build(),
+				FunctionToolCallback.builder("getHistoricalWeather", new MockWeatherService())
+					.description(historicalDesc)
+					.inputType(MockWeatherService.Request.class)
+					.build(),
+				FunctionToolCallback.builder("getWeatherAlerts", new MockWeatherService())
+					.description(alertsDesc)
+					.inputType(MockWeatherService.Request.class)
+					.build(),
+				FunctionToolCallback.builder("getClimateData", new MockWeatherService())
+					.description(climateDesc)
+					.inputType(MockWeatherService.Request.class)
+					.build());
 	}
 
 	@Test
