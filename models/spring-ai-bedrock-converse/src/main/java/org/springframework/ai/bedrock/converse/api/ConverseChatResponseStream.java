@@ -191,8 +191,12 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 	}
 
 	private Usage getCurrentUsage() {
+		TokenUsage nativeUsage = this.tokenUsageRef.get();
+		Integer cacheReadInt = nativeUsage != null ? nativeUsage.cacheReadInputTokens() : null;
+		Integer cacheWriteInt = nativeUsage != null ? nativeUsage.cacheWriteInputTokens() : null;
 		return new DefaultUsage(this.promptTokens.get(), this.generationTokens.get(), this.totalTokens.get(),
-				this.tokenUsageRef.get());
+				nativeUsage, cacheReadInt != null ? cacheReadInt.longValue() : null,
+				cacheWriteInt != null ? cacheWriteInt.longValue() : null);
 	}
 
 	/**

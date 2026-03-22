@@ -621,8 +621,9 @@ public final class OpenAiChatModel implements ChatModel {
 	}
 
 	private DefaultUsage getDefaultUsage(CompletionUsage usage) {
+		Long cacheRead = usage.promptTokensDetails().flatMap(details -> details.cachedTokens()).orElse(null);
 		return new DefaultUsage(Math.toIntExact(usage.promptTokens()), Math.toIntExact(usage.completionTokens()),
-				Math.toIntExact(usage.totalTokens()), usage);
+				Math.toIntExact(usage.totalTokens()), usage, cacheRead, null);
 	}
 
 	/**

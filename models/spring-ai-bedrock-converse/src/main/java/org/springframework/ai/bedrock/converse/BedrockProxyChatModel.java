@@ -728,7 +728,9 @@ public class BedrockProxyChatModel implements ChatModel {
 			.cacheWriteInputTokens(cacheWriteInputTokens)
 			.build();
 
-		DefaultUsage usage = new DefaultUsage(promptTokens, generationTokens, totalTokens, nativeTokenUsage);
+		DefaultUsage usage = new DefaultUsage(promptTokens, generationTokens, totalTokens, nativeTokenUsage,
+				cacheReadInputTokens != null ? cacheReadInputTokens.longValue() : null,
+				cacheWriteInputTokens != null ? cacheWriteInputTokens.longValue() : null);
 
 		Document modelResponseFields = response.additionalModelResponseFields();
 

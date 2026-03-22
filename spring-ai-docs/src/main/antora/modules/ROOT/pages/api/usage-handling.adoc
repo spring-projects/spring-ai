@@ -102,6 +102,44 @@ ChatResponse response = chatClient.prompt(prompt)
 Usage usage = response.getMetadata().getUsage();
 ```
 
+== Prompt Cache Usage Metrics
+
+For providers that support prompt caching, the `Usage` interface provides unified access to cache metrics without requiring provider-specific casting:
+
+```java
+Usage usage = response.getMetadata().getUsage();
+
+// Unified cache metrics — works across all providers
+Long cacheReadTokens = usage.getCacheReadInputTokens();
+Long cacheWriteTokens = usage.getCacheWriteInputTokens();
+
+if (cacheReadTokens != null && cacheReadTokens > 0) {
+    System.out.println("Cache hit: " + cacheReadTokens + " tokens read from cache");
+}
+if (cacheWriteTokens != null && cacheWriteTokens > 0) {
+    System.out.println("Cache write: " + cacheWriteTokens + " tokens written to cache");
+}
+```
+
+These methods return `null` for providers that do not support prompt caching.
+
+The following table shows prompt cache metrics availability by provider:
+
+[cols="1,1,1"]
+|===
+|Provider |Cache Read Tokens |Cache Write Tokens
+
+|Anthropic |Yes |Yes (`cacheCreationInputTokens`)
+|AWS Bedrock |Yes |Yes
+|OpenAI |Yes (`cachedTokens`) |No
+|Google Gemini |Yes (`cachedContentTokenCount`) |No
+|DeepSeek |No |No
+|Mistral |No |No
+|Ollama |No |No
+|===
+
+NOTE: For detailed provider-specific cache metrics (such as per-modality cache breakdowns in Gemini), use `getNativeUsage()` to access the provider's native usage object.
+
 == Benefits
 
 **Standardization**: Provides a consistent way to handle usage across different AI models

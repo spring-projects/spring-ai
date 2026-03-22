@@ -497,8 +497,12 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			// message_delta
 			long inputTokens = streamingState.getInputTokens();
 			long outputTokens = deltaEvent.usage().outputTokens();
-			Usage usage = new DefaultUsage(Math.toIntExact(inputTokens), Math.toIntExact(outputTokens),
-					Math.toIntExact(inputTokens + outputTokens), deltaEvent.usage());
+			Long cacheRead = deltaEvent.usage().cacheReadInputTokens().orElse(null);
+			Long cacheWrite = deltaEvent.usage().cacheCreationInputTokens().orElse(null);
+			Usage usage = new DefaultUsage(Integer.valueOf(Math.toIntExact(inputTokens)),
+					Integer.valueOf(Math.toIntExact(outputTokens)),
+					Integer.valueOf(Math.toIntExact(inputTokens + outputTokens)), deltaEvent.usage(), cacheRead,
+					cacheWrite);
 
 			Usage accumulatedUsage = previousChatResponse != null
 					? UsageCalculator.getCumulativeUsage(usage, previousChatResponse) : usage;
@@ -1054,8 +1058,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 		long inputTokens = usage.inputTokens();
 		long outputTokens = usage.outputTokens();
-		return new DefaultUsage(Math.toIntExact(inputTokens), Math.toIntExact(outputTokens),
-				Math.toIntExact(inputTokens + outputTokens), usage);
+		Long cacheRead = usage.cacheReadInputTokens().orElse(null);
+		Long cacheWrite = usage.cacheCreationInputTokens().orElse(null);
+		return new DefaultUsage(Integer.valueOf(Math.toIntExact(inputTokens)),
+				Integer.valueOf(Math.toIntExact(outputTokens)),
+				Integer.valueOf(Math.toIntExact(inputTokens + outputTokens)), usage, cacheRead, cacheWrite);
 	}
 
 	private @Nullable Citation convertTextCitation(TextCitation textCitation) {

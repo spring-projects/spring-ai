@@ -464,6 +464,12 @@ class BedrockProxyChatModelIT {
 			assertThat(cacheRead).as("Cache read should meet the 4096 token minimum for Claude Haiku 4.5")
 				.isGreaterThan(4096);
 			assertThat(cacheWrite).as("A cache read hit should not also write").isIn(null, 0);
+
+			// Verify unified Usage interface reports the same cache metrics
+			org.springframework.ai.chat.metadata.Usage springUsage = response.getMetadata().getUsage();
+			assertThat(springUsage.getCacheReadInputTokens())
+				.as("Usage interface should report same cache read tokens as metadata")
+				.isEqualTo(cacheRead.longValue());
 		});
 	}
 
