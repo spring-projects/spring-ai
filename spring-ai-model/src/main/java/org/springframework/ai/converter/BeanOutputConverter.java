@@ -279,6 +279,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * Provides the generated JSON schema for the target type.
 	 * @return The generated JSON schema.
 	 */
+	@Override
 	public String getJsonSchema() {
 		return this.jsonSchema;
 	}
