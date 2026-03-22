@@ -31,7 +31,8 @@ import org.jspecify.annotations.Nullable;
  * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
-@JsonPropertyOrder({ "promptTokens", "completionTokens", "totalTokens", "nativeUsage" })
+@JsonPropertyOrder({ "promptTokens", "completionTokens", "totalTokens", "cacheReadInputTokens", "cacheWriteInputTokens",
+		"nativeUsage" })
 public class DefaultUsage implements Usage {
 
 	private final Integer promptTokens;
@@ -41,6 +42,10 @@ public class DefaultUsage implements Usage {
 	private final int totalTokens;
 
 	private final @Nullable Object nativeUsage;
+
+	private final @Nullable Long cacheReadInputTokens;
+
+	private final @Nullable Long cacheWriteInputTokens;
 
 	/**
 	 * Create a new DefaultUsage with promptTokens, completionTokens, totalTokens and
@@ -56,11 +61,35 @@ public class DefaultUsage implements Usage {
 	 */
 	public DefaultUsage(@Nullable Integer promptTokens, @Nullable Integer completionTokens,
 			@Nullable Integer totalTokens, @Nullable Object nativeUsage) {
+		this(promptTokens, completionTokens, totalTokens, nativeUsage, null, null);
+	}
+
+	/**
+	 * Create a new DefaultUsage with all fields including prompt cache metrics.
+	 * @param promptTokens the number of tokens in the prompt, or {@code null} if not
+	 * available
+	 * @param completionTokens the number of tokens in the generation, or {@code null} if
+	 * not available
+	 * @param totalTokens the total number of tokens, or {@code null} to calculate from
+	 * promptTokens and completionTokens
+	 * @param nativeUsage the native usage object returned by the model provider, or
+	 * {@code null} to return the map of prompt, completion and total tokens.
+	 * @param cacheReadInputTokens the number of input tokens read from prompt cache, or
+	 * {@code null} if not available
+	 * @param cacheWriteInputTokens the number of input tokens written to prompt cache, or
+	 * {@code null} if not available
+	 * @since 2.0.0
+	 */
+	public DefaultUsage(@Nullable Integer promptTokens, @Nullable Integer completionTokens,
+			@Nullable Integer totalTokens, @Nullable Object nativeUsage, @Nullable Long cacheReadInputTokens,
+			@Nullable Long cacheWriteInputTokens) {
 		this.promptTokens = promptTokens != null ? promptTokens : 0;
 		this.completionTokens = completionTokens != null ? completionTokens : 0;
 		this.totalTokens = totalTokens != null ? totalTokens
 				: calculateTotalTokens(this.promptTokens, this.completionTokens);
 		this.nativeUsage = nativeUsage;
+		this.cacheReadInputTokens = cacheReadInputTokens;
+		this.cacheWriteInputTokens = cacheWriteInputTokens;
 	}
 
 	/**
@@ -100,8 +129,11 @@ public class DefaultUsage implements Usage {
 	@JsonCreator
 	public static DefaultUsage fromJson(@JsonProperty("promptTokens") Integer promptTokens,
 			@JsonProperty("completionTokens") Integer completionTokens,
-			@JsonProperty("totalTokens") Integer totalTokens, @JsonProperty("nativeUsage") Object nativeUsage) {
-		return new DefaultUsage(promptTokens, completionTokens, totalTokens, nativeUsage);
+			@JsonProperty("totalTokens") Integer totalTokens, @JsonProperty("nativeUsage") Object nativeUsage,
+			@JsonProperty("cacheReadInputTokens") @Nullable Long cacheReadInputTokens,
+			@JsonProperty("cacheWriteInputTokens") @Nullable Long cacheWriteInputTokens) {
+		return new DefaultUsage(promptTokens, completionTokens, totalTokens, nativeUsage, cacheReadInputTokens,
+				cacheWriteInputTokens);
 	}
 
 	@Override
@@ -129,6 +161,20 @@ public class DefaultUsage implements Usage {
 		return this.nativeUsage;
 	}
 
+	@Override
+	@JsonProperty("cacheReadInputTokens")
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public @Nullable Long getCacheReadInputTokens() {
+		return this.cacheReadInputTokens;
+	}
+
+	@Override
+	@JsonProperty("cacheWriteInputTokens")
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public @Nullable Long getCacheWriteInputTokens() {
+		return this.cacheWriteInputTokens;
+	}
+
 	private Integer calculateTotalTokens(Integer promptTokens, Integer completionTokens) {
 		return promptTokens + completionTokens;
 	}
@@ -145,7 +191,9 @@ public class DefaultUsage implements Usage {
 		DefaultUsage that = (DefaultUsage) o;
 		return this.totalTokens == that.totalTokens && Objects.equals(this.promptTokens, that.promptTokens)
 				&& Objects.equals(this.completionTokens, that.completionTokens)
-				&& Objects.equals(this.nativeUsage, that.nativeUsage);
+				&& Objects.equals(this.nativeUsage, that.nativeUsage)
+				&& Objects.equals(this.cacheReadInputTokens, that.cacheReadInputTokens)
+				&& Objects.equals(this.cacheWriteInputTokens, that.cacheWriteInputTokens);
 	}
 
 	@Override
@@ -154,13 +202,25 @@ public class DefaultUsage implements Usage {
 		result = 31 * result + Objects.hashCode(this.completionTokens);
 		result = 31 * result + this.totalTokens;
 		result = 31 * result + Objects.hashCode(this.nativeUsage);
+		result = 31 * result + Objects.hashCode(this.cacheReadInputTokens);
+		result = 31 * result + Objects.hashCode(this.cacheWriteInputTokens);
 		return result;
 	}
 
 	@Override
 	public String toString() {
-		return "DefaultUsage{" + "promptTokens=" + this.promptTokens + ", completionTokens=" + this.completionTokens
-				+ ", totalTokens=" + this.totalTokens + '}';
+		StringBuilder sb = new StringBuilder("DefaultUsage{");
+		sb.append("promptTokens=").append(this.promptTokens);
+		sb.append(", completionTokens=").append(this.completionTokens);
+		sb.append(", totalTokens=").append(this.totalTokens);
+		if (this.cacheReadInputTokens != null) {
+			sb.append(", cacheReadInputTokens=").append(this.cacheReadInputTokens);
+		}
+		if (this.cacheWriteInputTokens != null) {
+			sb.append(", cacheWriteInputTokens=").append(this.cacheWriteInputTokens);
+		}
+		sb.append('}');
+		return sb.toString();
 	}
 
 }
