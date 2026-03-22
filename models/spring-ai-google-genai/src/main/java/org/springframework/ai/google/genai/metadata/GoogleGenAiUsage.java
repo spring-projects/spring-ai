@@ -141,6 +141,11 @@ public class GoogleGenAiUsage extends DefaultUsage {
 		return this.cachedContentTokenCount;
 	}
 
+	@Override
+	public @Nullable Long getCacheReadInputTokens() {
+		return this.cachedContentTokenCount != null ? this.cachedContentTokenCount.longValue() : null;
+	}
+
 	/**
 	 * Returns the number of tokens present in tool-use prompts.
 	 * @return the tool-use prompt token count, or null if not available
