@@ -141,8 +141,15 @@ String response = ChatClient.create(this.chatModel)
 
 == Prompt Caching
 
-AWS Bedrock's https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html[prompt caching feature] allows you to cache frequently used prompts to reduce costs and improve response times for repeated interactions.
-When you cache a prompt, subsequent identical requests can reuse the cached content, significantly reducing the number of input tokens processed.
+AWS Bedrock's https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html[prompt caching feature] allows you to cache frequently used prompts to reduce costs and improve response times for repeated interactions. Bedrock supports explicit cache control — see xref:api/prompt-caching.adoc[Prompt Caching] for the core concepts, strategies, configuration properties, and portable API reference.
+
+This section covers Bedrock-specific behavior and limitations.
+
+=== Bedrock Cache Limits
+
+* Maximum of **4 cache breakpoints** per request.
+* Fixed **5-minute cache TTL** — the `promptCacheTtl` setting is ignored.
+* Bedrock supports only `promptCacheStrategy`. Advanced options like `promptCacheMultiBlockSystemCaching`, per-message-type TTL, and `promptCacheContentLengthFunction` are not applicable.
 
 [NOTE]
 ====
@@ -157,18 +164,6 @@ Different models have different minimum token thresholds for cache effectiveness
 - Model-specific requirements may vary - consult AWS Bedrock documentation
 ====
 
-=== Cache Strategies
-
-Spring AI provides strategic cache placement through the `BedrockCacheStrategy` enum:
-
-* `NONE`: Disables prompt caching completely (default)
-* `SYSTEM_ONLY`: Caches only the system message content
-* `TOOLS_ONLY`: Caches tool definitions only (Claude models only)
-* `SYSTEM_AND_TOOLS`: Caches both system message and tool definitions (Claude models only)
-* `CONVERSATION_HISTORY`: Caches entire conversation history in chat memory scenarios
-
-This strategic approach ensures optimal cache breakpoint placement while staying within AWS Bedrock's 4-breakpoint limit.
-
 [NOTE]
 ====
 *Amazon Nova Limitations*
@@ -180,94 +175,12 @@ If you attempt to use `TOOLS_ONLY` or `SYSTEM_AND_TOOLS` strategies with Nova mo
 Use `SYSTEM_ONLY` strategy for Amazon Nova models.
 ====
 
-=== Enabling Prompt Caching
-
-Enable prompt caching by setting `cacheOptions` on `BedrockChatOptions` and choosing a `strategy`.
-
-==== System-Only Caching
-
-The most common use case - cache system instructions across multiple requests:
-
-[source,java]
-----
-// Cache system message content
-ChatResponse response = chatModel.call(
-    new Prompt(
-        List.of(
-            new SystemMessage("You are a helpful AI assistant with extensive knowledge..."),
-            new UserMessage("What is machine learning?")
-        ),
-        BedrockChatOptions.builder()
-            .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
-            .cacheOptions(BedrockCacheOptions.builder()
-                .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
-                .build())
-            .maxTokens(500)
-            .build()
-    )
-);
-----
-
-==== Tools-Only Caching
-
-Cache large tool definitions while keeping system prompts dynamic (Claude models only):
-
-[source,java]
-----
-// Cache tool definitions only
-ChatResponse response = chatModel.call(
-    new Prompt(
-        "What's the weather in San Francisco?",
-        BedrockChatOptions.builder()
-            .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
-            .cacheOptions(BedrockCacheOptions.builder()
-                .strategy(BedrockCacheStrategy.TOOLS_ONLY)
-                .build())
-            .toolCallbacks(weatherToolCallbacks)  // Large tool definitions
-            .maxTokens(500)
-            .build()
-    )
-);
-----
-
-NOTE: This strategy is only supported on Claude models.
-Amazon Nova models will return a `ValidationException`.
-
-==== System and Tools Caching
-
-Cache both system instructions and tool definitions for maximum reuse (Claude models only):
-
-[source,java]
-----
-// Cache system message and tool definitions
-ChatResponse response = chatModel.call(
-    new Prompt(
-        List.of(
-            new SystemMessage("You are a weather analysis assistant..."),
-            new UserMessage("What's the weather like in Tokyo?")
-        ),
-        BedrockChatOptions.builder()
-            .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
-            .cacheOptions(BedrockCacheOptions.builder()
-                .strategy(BedrockCacheStrategy.SYSTEM_AND_TOOLS)
-                .build())
-            .toolCallbacks(weatherToolCallbacks)
-            .maxTokens(500)
-            .build()
-    )
-);
-----
-
-NOTE: This strategy uses 2 cache breakpoints (one for tools, one for system).
-Only supported on Claude models.
-
-==== Conversation History Caching
+=== Conversation History Caching with ChatClient
 
 Cache growing conversation history for multi-turn chatbots and assistants:
 
 [source,java]
 ----
-// Cache conversation history with ChatClient and memory
 ChatClient chatClient = ChatClient.builder(chatModel)
     .defaultSystem("You are a personalized career counselor...")
     .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory)
@@ -279,97 +192,11 @@ String response = chatClient.prompt()
     .user("What career advice would you give me?")
     .options(BedrockChatOptions.builder()
         .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
-        .cacheOptions(BedrockCacheOptions.builder()
-            .strategy(BedrockCacheStrategy.CONVERSATION_HISTORY)
-            .build())
+        .promptCacheStrategy(PromptCacheStrategy.CONVERSATION_HISTORY)
         .maxTokens(500)
         .build())
     .call()
     .content();
-----
-
-==== Using ChatClient Fluent API
-
-[source,java]
-----
-String response = ChatClient.create(chatModel)
-    .prompt()
-    .system("You are an expert document analyst...")
-    .user("Analyze this large document: " + document)
-    .options(BedrockChatOptions.builder()
-        .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
-        .cacheOptions(BedrockCacheOptions.builder()
-            .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
-            .build())
-        .build())
-    .call()
-    .content();
-----
-
-=== Usage Example
-
-Here's a complete example demonstrating prompt caching with cost tracking:
-
-[source,java]
-----
-// Create system content that will be reused multiple times
-String largeSystemPrompt = "You are an expert software architect specializing in distributed systems...";
-// (Ensure this is 1024+ tokens for cache effectiveness)
-
-// First request - creates cache
-ChatResponse firstResponse = chatModel.call(
-    new Prompt(
-        List.of(
-            new SystemMessage(largeSystemPrompt),
-            new UserMessage("What is microservices architecture?")
-        ),
-        BedrockChatOptions.builder()
-            .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
-            .cacheOptions(BedrockCacheOptions.builder()
-                .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
-                .build())
-            .maxTokens(500)
-            .build()
-    )
-);
-
-// Access cache-related token usage from metadata
-Integer cacheWrite1 = (Integer) firstResponse.getMetadata()
-    .getMetadata()
-    .get("cacheWriteInputTokens");
-Integer cacheRead1 = (Integer) firstResponse.getMetadata()
-    .getMetadata()
-    .get("cacheReadInputTokens");
-
-System.out.println("Cache creation tokens: " + cacheWrite1);
-System.out.println("Cache read tokens: " + cacheRead1);
-
-// Second request with same system prompt - reads from cache
-ChatResponse secondResponse = chatModel.call(
-    new Prompt(
-        List.of(
-            new SystemMessage(largeSystemPrompt),  // Same prompt - cache hit
-            new UserMessage("What are the benefits of event sourcing?")
-        ),
-        BedrockChatOptions.builder()
-            .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
-            .cacheOptions(BedrockCacheOptions.builder()
-                .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
-                .build())
-            .maxTokens(500)
-            .build()
-    )
-);
-
-Integer cacheWrite2 = (Integer) secondResponse.getMetadata()
-    .getMetadata()
-    .get("cacheWriteInputTokens");
-Integer cacheRead2 = (Integer) secondResponse.getMetadata()
-    .getMetadata()
-    .get("cacheReadInputTokens");
-
-System.out.println("Cache creation tokens: " + cacheWrite2); // Should be 0
-System.out.println("Cache read tokens: " + cacheRead2);      // Should be > 0
 ----
 
 === Token Usage Tracking

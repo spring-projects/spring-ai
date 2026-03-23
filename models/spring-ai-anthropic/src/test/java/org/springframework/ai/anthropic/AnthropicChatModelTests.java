@@ -206,6 +206,7 @@ class AnthropicChatModelTests {
 		assertThat(defaultOptions1.getModel()).isEqualTo(defaultOptions2.getModel());
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	void cacheOptionsIsMergedFromRuntimePrompt() {
 		AnthropicChatModel model = AnthropicChatModel.builder()
@@ -214,6 +215,7 @@ class AnthropicChatModelTests {
 			.options(AnthropicChatOptions.builder().model("default-model").maxTokens(1000).build())
 			.build();
 
+		// Deprecated native path: sets cacheOptions directly
 		AnthropicCacheOptions cacheOptions = AnthropicCacheOptions.builder()
 			.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
 			.build();
@@ -223,9 +225,10 @@ class AnthropicChatModelTests {
 		Prompt originalPrompt = new Prompt("Test", runtimeOptions);
 		Prompt requestPrompt = model.buildRequestPrompt(originalPrompt);
 
+		// Model converts deprecated native options to portable prompt cache fields
 		AnthropicChatOptions mergedOptions = (AnthropicChatOptions) requestPrompt.getOptions();
-		assertThat(mergedOptions.getCacheOptions()).isNotNull();
-		assertThat(mergedOptions.getCacheOptions().getStrategy()).isEqualTo(AnthropicCacheStrategy.SYSTEM_ONLY);
+		assertThat(mergedOptions.getPromptCacheStrategy())
+			.isEqualTo(org.springframework.ai.chat.prompt.PromptCacheStrategy.SYSTEM_ONLY);
 	}
 
 	@Test

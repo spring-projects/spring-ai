@@ -19,6 +19,7 @@ package org.springframework.ai.model.anthropic.autoconfigure;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
+import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -129,6 +130,45 @@ class AnthropicPropertiesTests {
 				assertThat(webSearch.getUserLocation().country()).isEqualTo("US");
 				assertThat(webSearch.getUserLocation().region()).isEqualTo("California");
 				assertThat(webSearch.getUserLocation().timezone()).isEqualTo("America/Los_Angeles");
+			});
+	}
+
+	@Test
+	void promptCacheProperties() {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.anthropic.api-key=API_KEY",
+					"spring.ai.prompt-cache.strategy=system-and-tools", "spring.ai.prompt-cache.ttl=5m",
+					"spring.ai.prompt-cache.min-content-length=1024")
+			.withConfiguration(
+					AutoConfigurations.of(AnthropicChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var promptCacheProperties = context.getBean(AnthropicPromptCacheProperties.class);
+				assertThat(promptCacheProperties.getStrategy())
+					.isEqualTo(org.springframework.ai.chat.prompt.PromptCacheStrategy.SYSTEM_AND_TOOLS);
+				assertThat(promptCacheProperties.getTtl()).isEqualTo(java.time.Duration.ofMinutes(5));
+				assertThat(promptCacheProperties.getMinContentLength()).isEqualTo(1024);
+
+				// Verify it's applied to the model's default options
+				var chatModel = context.getBean(AnthropicChatModel.class);
+				var defaultOptions = (AnthropicChatOptions) chatModel.getDefaultOptions();
+				assertThat(defaultOptions.getPromptCacheStrategy())
+					.isEqualTo(org.springframework.ai.chat.prompt.PromptCacheStrategy.SYSTEM_AND_TOOLS);
+			});
+	}
+
+	@Test
+	void promptCachePropertiesDefaultsToNone() {
+		new ApplicationContextRunner().withPropertyValues("spring.ai.anthropic.api-key=API_KEY")
+			.withConfiguration(
+					AutoConfigurations.of(AnthropicChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var promptCacheProperties = context.getBean(AnthropicPromptCacheProperties.class);
+				assertThat(promptCacheProperties.getStrategy())
+					.isEqualTo(org.springframework.ai.chat.prompt.PromptCacheStrategy.NONE);
+
+				var chatModel = context.getBean(AnthropicChatModel.class);
+				var defaultOptions = (AnthropicChatOptions) chatModel.getDefaultOptions();
+				assertThat(defaultOptions.getPromptCacheStrategy()).isNull();
 			});
 	}
 

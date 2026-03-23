@@ -25,10 +25,16 @@ import com.anthropic.models.messages.CacheControlEphemeral;
  * @author Austin Dase
  * @author Soby Chacko
  * @since 1.1.0
+ * @deprecated since 2.0.0-M5, use
+ * {@link org.springframework.ai.chat.prompt.PromptCacheChatOptions#getPromptCacheTtl()}
+ * or
+ * {@link org.springframework.ai.chat.prompt.PromptCacheChatOptions#getPromptCacheMessageTypeTtl()}
+ * instead.
  * @see <a href=
  * "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#1-hour-cache-duration">Anthropic
  * Prompt Caching</a>
  */
+@Deprecated(since = "2.0.0-M5", forRemoval = true)
 public enum AnthropicCacheTtl {
 
 	FIVE_MINUTES(CacheControlEphemeral.Ttl.TTL_5M),

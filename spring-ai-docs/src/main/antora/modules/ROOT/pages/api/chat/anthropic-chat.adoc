@@ -859,80 +859,22 @@ You cannot mix citation-enabled and citation-disabled documents in the same requ
 
 == Prompt Caching
 
-Anthropic's https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching[Prompt Caching] reduces costs and latency by caching repeated context across API calls. The Anthropic SDK module supports prompt caching with configurable strategies, TTL, and per-message-type settings.
+Anthropic's https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching[Prompt Caching] reduces costs and latency by caching repeated context across API calls. Anthropic supports explicit cache control — see xref:api/prompt-caching.adoc[Prompt Caching] for the core concepts, strategies, configuration properties, and portable API reference.
 
-=== Caching Strategies
+This section covers Anthropic-specific behavior and limitations.
 
-Five caching strategies are available via `AnthropicCacheStrategy`:
+=== Anthropic Cache Limits
 
-[cols="2,5", stripes=even]
-|====
-| Strategy | Description
-
-| `NONE` | No caching (default). No cache control headers are added.
-| `SYSTEM_ONLY` | Cache system message content. Uses 1 cache breakpoint.
-| `TOOLS_ONLY` | Cache tool definitions only. Uses 1 cache breakpoint.
-| `SYSTEM_AND_TOOLS` | Cache both system messages and tool definitions. Uses 2 cache breakpoints.
-| `CONVERSATION_HISTORY` | Cache system messages, tool definitions, and conversation messages. Uses up to 4 cache breakpoints.
-|====
-
-NOTE: Anthropic allows a maximum of 4 cache breakpoints per request. The implementation tracks breakpoint usage and stops adding cache control once the limit is reached.
-
-=== Basic Usage
-
-[source,java]
-----
-var options = AnthropicChatOptions.builder()
-    .model("claude-sonnet-4-20250514")
-    .maxTokens(1024)
-    .cacheOptions(AnthropicCacheOptions.builder()
-        .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
-        .build())
-    .build();
-
-ChatResponse response = chatModel.call(
-    new Prompt(List.of(
-        new SystemMessage("You are an expert assistant with deep domain knowledge..."),
-        new UserMessage("What is the capital of France?")),
-        options));
-----
-
-=== Cache Configuration Options
-
-`AnthropicCacheOptions` provides fine-grained control over caching behavior:
-
-[source,java]
-----
-var cacheOptions = AnthropicCacheOptions.builder()
-    .strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
-    .messageTypeTtl(MessageType.SYSTEM, AnthropicCacheTtl.ONE_HOUR)     // 1 hour TTL
-    .messageTypeMinContentLength(MessageType.SYSTEM, 100)                   // Min 100 chars
-    .multiBlockSystemCaching(true)                                          // Per-block caching
-    .build();
-----
-
-[cols="3,5,1", stripes=even]
-|====
-| Option | Description | Default
-
-| `strategy` | The caching strategy to use. | `NONE`
-| `messageTypeTtl` | TTL per message type. Available values: `FIVE_MINUTES`, `ONE_HOUR`. | `FIVE_MINUTES` for all types
-| `messageTypeMinContentLength` | Minimum content length required before caching a message type. | `1`
-| `contentLengthFunction` | Custom function to compute content length (e.g., token counting). | `String::length`
-| `multiBlockSystemCaching` | When `true`, each system message becomes a separate cacheable block; cache control is applied to the second-to-last block (static prefix pattern). When `false`, all system messages are joined into one block. | `false`
-|====
+* Maximum of **4 cache breakpoints** per request. The implementation tracks breakpoint usage and stops adding cache control once the limit is reached.
+* Supported TTL values: **5 minutes** (default) and **1 hour**. The portable `Duration`-based TTL is mapped to the nearest supported value.
+* Anthropic supports all `PromptCacheChatOptions` fields including `promptCacheMultiBlockSystemCaching`, per-message-type TTL, per-message-type min content lengths, and custom `promptCacheContentLengthFunction`.
 
 === Multi-Block System Caching
 
-When you have both a static system prompt and dynamic instructions, use multi-block system caching to cache only the static portion:
+When you have both a static system prompt and dynamic instructions, use `multiBlockSystemCaching` to cache only the static portion. Each system message becomes a separate cacheable block, with cache control applied to the second-to-last block:
 
 [source,java]
 ----
-var cacheOptions = AnthropicCacheOptions.builder()
-    .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
-    .multiBlockSystemCaching(true)
-    .build();
-
 ChatResponse response = chatModel.call(
     new Prompt(List.of(
         new SystemMessage("You are an expert knowledge base assistant..."),  // Static (cached)
@@ -940,7 +882,8 @@ ChatResponse response = chatModel.call(
         new UserMessage("What are the latest updates?")),
         AnthropicChatOptions.builder()
             .model("claude-sonnet-4-20250514")
-            .cacheOptions(cacheOptions)
+            .promptCacheStrategy(PromptCacheStrategy.SYSTEM_ONLY)
+            .promptCacheMultiBlockSystemCaching(true)
             .build()));
 ----
 
@@ -962,38 +905,6 @@ System.out.println("Cache read tokens: " + cacheRead);
 ----
 
 On the first request, `cacheCreationInputTokens` will be non-zero (tokens written to cache). On subsequent requests with the same cached prefix, `cacheReadInputTokens` will be non-zero (tokens read from cache at reduced cost).
-
-=== Conversation History Caching
-
-The `CONVERSATION_HISTORY` strategy caches the entire conversation context, including system messages, tool definitions, and the last user message. This is useful for multi-turn conversations where the growing context would otherwise be re-processed on every request:
-
-[source,java]
-----
-var cacheOptions = AnthropicCacheOptions.builder()
-    .strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
-    .build();
-
-var options = AnthropicChatOptions.builder()
-    .model("claude-sonnet-4-20250514")
-    .cacheOptions(cacheOptions)
-    .build();
-
-// First turn
-ChatResponse response1 = chatModel.call(
-    new Prompt(List.of(
-        new SystemMessage("You are a helpful assistant."),
-        new UserMessage("What is machine learning?")),
-        options));
-
-// Second turn - previous context is cached
-ChatResponse response2 = chatModel.call(
-    new Prompt(List.of(
-        new SystemMessage("You are a helpful assistant."),
-        new UserMessage("What is machine learning?"),
-        new AssistantMessage(response1.getResult().getOutput().getText()),
-        new UserMessage("Can you give me an example?")),
-        options));
-----
 
 == Structured Output
 
