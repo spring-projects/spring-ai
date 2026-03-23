@@ -26,6 +26,7 @@ import com.azure.ai.openai.models.ChatCompletionStreamOptions;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.azure.openai.AzureOpenAiChatOptions.Builder;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -406,6 +407,20 @@ class AzureOpenAiChatOptionsTests extends AbstractChatOptionsTests<AzureOpenAiCh
 
 		assertThat(optionsWithMaxCompletionTokens.getMaxTokens()).isNull();
 		assertThat(optionsWithMaxCompletionTokens.getMaxCompletionTokens()).isEqualTo(300);
+	}
+
+	@Test
+	void stopFieldShouldBeNullAfterJacksonRoundtrip() {
+		// Create options where stop is null (via builder)
+		var options = AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").build();
+		assertThat(options.getStop()).isNull();
+
+		// ModelOptionsUtils.merge() uses Jackson roundtrip internally
+		var source = AzureOpenAiChatOptions.builder().temperature(0.7).build();
+		var merged = ModelOptionsUtils.merge(source, options, AzureOpenAiChatOptions.class);
+
+		// Should be null, not []
+		assertThat(merged.getStop()).isNull();
 	}
 
 }
