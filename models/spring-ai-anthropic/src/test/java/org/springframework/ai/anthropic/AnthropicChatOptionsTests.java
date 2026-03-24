@@ -568,4 +568,35 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		assertThat(merged2.getInferenceGeo()).isEqualTo("us");
 	}
 
+	@Test
+	void testServiceTierBuilder() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder().serviceTier(AnthropicServiceTier.AUTO).build();
+		assertThat(options.getServiceTier()).isEqualTo(AnthropicServiceTier.AUTO);
+	}
+
+	@Test
+	void testServiceTierPreservedInMutate() {
+		AnthropicChatOptions original = AnthropicChatOptions.builder()
+			.serviceTier(AnthropicServiceTier.STANDARD_ONLY)
+			.build();
+		AnthropicChatOptions copied = original.mutate().build();
+		assertThat(copied.getServiceTier()).isEqualTo(AnthropicServiceTier.STANDARD_ONLY);
+	}
+
+	@Test
+	void testServiceTierCombineWith() {
+		AnthropicChatOptions base = AnthropicChatOptions.builder()
+			.serviceTier(AnthropicServiceTier.STANDARD_ONLY)
+			.build();
+		AnthropicChatOptions override = AnthropicChatOptions.builder().serviceTier(AnthropicServiceTier.AUTO).build();
+
+		AnthropicChatOptions merged = base.mutate().combineWith(override.mutate()).build();
+		assertThat(merged.getServiceTier()).isEqualTo(AnthropicServiceTier.AUTO);
+
+		// Null doesn't override
+		AnthropicChatOptions noOverride = AnthropicChatOptions.builder().build();
+		AnthropicChatOptions merged2 = base.mutate().combineWith(noOverride.mutate()).build();
+		assertThat(merged2.getServiceTier()).isEqualTo(AnthropicServiceTier.STANDARD_ONLY);
+	}
+
 }

@@ -193,6 +193,13 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	 */
 	private @Nullable String inferenceGeo;
 
+	/**
+	 * Determines whether to use priority capacity (if available) or standard capacity for
+	 * this request. See <a href="https://docs.claude.com/en/api/service-tiers">Service
+	 * Tiers</a>.
+	 */
+	private @Nullable AnthropicServiceTier serviceTier;
+
 	private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
 
 	/**
@@ -398,6 +405,14 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		this.inferenceGeo = inferenceGeo;
 	}
 
+	public @Nullable AnthropicServiceTier getServiceTier() {
+		return this.serviceTier;
+	}
+
+	public void setServiceTier(@Nullable AnthropicServiceTier serviceTier) {
+		this.serviceTier = serviceTier;
+	}
+
 	@Override
 	@JsonIgnore
 	public @Nullable String getOutputSchema() {
@@ -533,7 +548,8 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 			.outputConfig(this.outputConfig)
 			.httpHeaders(this.getHttpHeaders())
 			.skillContainer(this.getSkillContainer())
-			.inferenceGeo(this.inferenceGeo);
+			.inferenceGeo(this.inferenceGeo)
+			.serviceTier(this.serviceTier);
 	}
 
 	@Override
@@ -560,7 +576,8 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 				&& Objects.equals(this.outputConfig, that.outputConfig)
 				&& Objects.equals(this.httpHeaders, that.httpHeaders)
 				&& Objects.equals(this.skillContainer, that.skillContainer)
-				&& Objects.equals(this.inferenceGeo, that.inferenceGeo);
+				&& Objects.equals(this.inferenceGeo, that.inferenceGeo)
+				&& Objects.equals(this.serviceTier, that.serviceTier);
 	}
 
 	@Override
@@ -568,7 +585,8 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		return Objects.hash(this.getModel(), this.maxTokens, this.metadata, this.stopSequences, this.temperature,
 				this.topP, this.topK, this.toolChoice, this.thinking, this.disableParallelToolUse, this.toolCallbacks,
 				this.toolNames, this.internalToolExecutionEnabled, this.toolContext, this.citationDocuments,
-				this.cacheOptions, this.outputConfig, this.httpHeaders, this.skillContainer, this.inferenceGeo);
+				this.cacheOptions, this.outputConfig, this.httpHeaders, this.skillContainer, this.inferenceGeo,
+				this.serviceTier);
 	}
 
 	@Override
@@ -581,7 +599,8 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 				+ ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled + ", toolContext="
 				+ this.toolContext + ", citationDocuments=" + this.citationDocuments + ", cacheOptions="
 				+ this.cacheOptions + ", outputConfig=" + this.outputConfig + ", httpHeaders=" + this.httpHeaders
-				+ ", skillContainer=" + this.skillContainer + ", inferenceGeo=" + this.inferenceGeo + '}';
+				+ ", skillContainer=" + this.skillContainer + ", inferenceGeo=" + this.inferenceGeo + ", serviceTier="
+				+ this.serviceTier + '}';
 	}
 
 	/**
@@ -629,6 +648,8 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		private @Nullable AnthropicSkillContainer skillContainer;
 
 		private @Nullable String inferenceGeo;
+
+		private @Nullable AnthropicServiceTier serviceTier;
 
 		@Override
 		public B outputSchema(@Nullable String outputSchema) {
@@ -794,6 +815,16 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 			return self();
 		}
 
+		/**
+		 * Sets the service tier for capacity routing.
+		 * @param serviceTier the service tier (AUTO or STANDARD_ONLY)
+		 * @return this builder
+		 */
+		public B serviceTier(@Nullable AnthropicServiceTier serviceTier) {
+			this.serviceTier = serviceTier;
+			return self();
+		}
+
 		public B skill(String skillIdOrName) {
 			Assert.hasText(skillIdOrName, "Skill ID or name cannot be empty");
 			AnthropicSkill prebuilt = AnthropicSkill.fromId(skillIdOrName);
@@ -913,6 +944,9 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 				if (options.inferenceGeo != null) {
 					this.inferenceGeo = options.inferenceGeo;
 				}
+				if (options.serviceTier != null) {
+					this.serviceTier = options.serviceTier;
+				}
 			}
 			return self();
 		}
@@ -951,6 +985,7 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 			options.httpHeaders = this.httpHeaders;
 			options.skillContainer = this.skillContainer;
 			options.inferenceGeo = this.inferenceGeo;
+			options.serviceTier = this.serviceTier;
 			options.validateCitationConsistency();
 			return options;
 		}

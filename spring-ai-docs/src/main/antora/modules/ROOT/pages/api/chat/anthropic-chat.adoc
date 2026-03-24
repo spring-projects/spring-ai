@@ -60,6 +60,7 @@ Use the `spring.ai.anthropic.*` properties to configure the Anthropic connection
 | `spring.ai.anthropic.chat.options.temperature` | Sampling temperature | -
 | `spring.ai.anthropic.chat.options.top-p` | Top-p sampling | -
 | `spring.ai.anthropic.chat.options.top-k` | Top-k sampling | -
+| `spring.ai.anthropic.chat.options.service-tier` | Capacity routing: `auto` (use priority if available) or `standard_only` (always standard). See https://docs.claude.com/en/api/service-tiers[Service Tiers]. | -
 |====
 
 == Manual Configuration
@@ -181,6 +182,7 @@ ChatResponse response = chatModel.call(
 | thinking | Thinking configuration. Use the convenience builders `thinkingEnabled(budgetTokens)`, `thinkingAdaptive()`, or `thinkingDisabled()`, or pass a raw `ThinkingConfigParam`. | -
 | outputConfig | Output configuration for structured output (JSON schema) and effort control. Use `outputConfig(OutputConfig)` for full control, or the convenience methods `outputSchema(String)` and `effort(OutputConfig.Effort)`. Requires `claude-sonnet-4-6` or newer. | -
 | inferenceGeo | Controls the geographic region where the request is processed. Supported values: `us`, `eu`. Used for data residency compliance. Configurable via `spring.ai.anthropic.chat.options.inference-geo`. | -
+| serviceTier | Controls capacity routing for the request. Use `MessageCreateParams.ServiceTier.AUTO` to opportunistically use priority capacity, or `STANDARD_ONLY` to always use standard capacity. See https://docs.claude.com/en/api/service-tiers[Service Tiers]. | -
 |====
 
 === Tool Calling Options
@@ -1071,6 +1073,28 @@ ChatResponse response = chatModel.call(new Prompt("Tell me about France.", optio
 === StructuredOutputChatOptions Interface
 
 `AnthropicChatOptions` implements the `StructuredOutputChatOptions` interface, which provides portable `getOutputSchema()` and `setOutputSchema(String)` methods. This allows structured output to work with Spring AI's generic structured output infrastructure.
+
+== Service Tier
+
+Anthropic offers different https://docs.claude.com/en/api/service-tiers[service tiers] that control capacity routing for API requests. You can use `AnthropicServiceTier.AUTO` to opportunistically use priority capacity (lower latency) when available, or `STANDARD_ONLY` to always use standard capacity.
+
+Via Spring Boot properties:
+
+[source,properties]
+----
+spring.ai.anthropic.chat.options.service-tier=auto
+----
+
+Or programmatically per-request:
+
+[source,java]
+----
+var options = AnthropicChatOptions.builder()
+    .serviceTier(AnthropicServiceTier.AUTO)
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt("Hello", options));
+----
 
 == Per-Request HTTP Headers
 
