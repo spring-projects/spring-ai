@@ -191,8 +191,7 @@ public final class OpenAiSdkSetup {
 		if (baseUrl != null) {
 			if (baseUrl.endsWith("openai.azure.com") || baseUrl.endsWith("openai.azure.com/")
 					|| baseUrl.endsWith("cognitiveservices.azure.com")
-					|| baseUrl.endsWith("cognitiveservices.azure.com/")
-					|| baseUrl.endsWith("ai.azure.com")
+					|| baseUrl.endsWith("cognitiveservices.azure.com/") || baseUrl.endsWith("ai.azure.com")
 					|| baseUrl.endsWith("ai.azure.com/")) {
 				return ModelProvider.MICROSOFT_FOUNDRY;
 			}
