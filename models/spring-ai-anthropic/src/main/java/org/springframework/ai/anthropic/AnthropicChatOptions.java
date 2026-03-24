@@ -187,6 +187,12 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	@JsonIgnore
 	private @Nullable AnthropicSkillContainer skillContainer;
 
+	/**
+	 * Controls the geographic region for inference processing. Supported values: "us",
+	 * "eu". Used for data residency compliance.
+	 */
+	private @Nullable String inferenceGeo;
+
 	private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
 
 	/**
@@ -384,6 +390,14 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		this.skillContainer = skillContainer;
 	}
 
+	public @Nullable String getInferenceGeo() {
+		return this.inferenceGeo;
+	}
+
+	public void setInferenceGeo(@Nullable String inferenceGeo) {
+		this.inferenceGeo = inferenceGeo;
+	}
+
 	@Override
 	@JsonIgnore
 	public @Nullable String getOutputSchema() {
@@ -518,7 +532,8 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 			.cacheOptions(this.getCacheOptions())
 			.outputConfig(this.outputConfig)
 			.httpHeaders(this.getHttpHeaders())
-			.skillContainer(this.getSkillContainer());
+			.skillContainer(this.getSkillContainer())
+			.inferenceGeo(this.inferenceGeo);
 	}
 
 	@Override
@@ -544,7 +559,8 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 				&& Objects.equals(this.cacheOptions, that.cacheOptions)
 				&& Objects.equals(this.outputConfig, that.outputConfig)
 				&& Objects.equals(this.httpHeaders, that.httpHeaders)
-				&& Objects.equals(this.skillContainer, that.skillContainer);
+				&& Objects.equals(this.skillContainer, that.skillContainer)
+				&& Objects.equals(this.inferenceGeo, that.inferenceGeo);
 	}
 
 	@Override
@@ -552,7 +568,7 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		return Objects.hash(this.getModel(), this.maxTokens, this.metadata, this.stopSequences, this.temperature,
 				this.topP, this.topK, this.toolChoice, this.thinking, this.disableParallelToolUse, this.toolCallbacks,
 				this.toolNames, this.internalToolExecutionEnabled, this.toolContext, this.citationDocuments,
-				this.cacheOptions, this.outputConfig, this.httpHeaders, this.skillContainer);
+				this.cacheOptions, this.outputConfig, this.httpHeaders, this.skillContainer, this.inferenceGeo);
 	}
 
 	@Override
@@ -565,7 +581,7 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 				+ ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled + ", toolContext="
 				+ this.toolContext + ", citationDocuments=" + this.citationDocuments + ", cacheOptions="
 				+ this.cacheOptions + ", outputConfig=" + this.outputConfig + ", httpHeaders=" + this.httpHeaders
-				+ ", skillContainer=" + this.skillContainer + '}';
+				+ ", skillContainer=" + this.skillContainer + ", inferenceGeo=" + this.inferenceGeo + '}';
 	}
 
 	/**
@@ -611,6 +627,8 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		private Map<String, String> httpHeaders = new HashMap<>();
 
 		private @Nullable AnthropicSkillContainer skillContainer;
+
+		private @Nullable String inferenceGeo;
 
 		@Override
 		public B outputSchema(@Nullable String outputSchema) {
@@ -833,6 +851,16 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 			return self();
 		}
 
+		/**
+		 * Sets the geographic region for inference processing.
+		 * @param inferenceGeo the region identifier ("us" or "eu")
+		 * @return this builder
+		 */
+		public B inferenceGeo(@Nullable String inferenceGeo) {
+			this.inferenceGeo = inferenceGeo;
+			return self();
+		}
+
 		@Override
 		public B combineWith(ChatOptions.Builder<?> other) {
 			super.combineWith(other);
@@ -882,6 +910,9 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 				if (options.skillContainer != null) {
 					this.skillContainer = options.skillContainer;
 				}
+				if (options.inferenceGeo != null) {
+					this.inferenceGeo = options.inferenceGeo;
+				}
 			}
 			return self();
 		}
@@ -919,6 +950,7 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 			options.outputConfig = this.outputConfig;
 			options.httpHeaders = this.httpHeaders;
 			options.skillContainer = this.skillContainer;
+			options.inferenceGeo = this.inferenceGeo;
 			options.validateCitationConsistency();
 			return options;
 		}
