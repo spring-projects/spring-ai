@@ -541,4 +541,31 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		assertThat(options.getSkillContainer()).isNull();
 	}
 
+	@Test
+	void testInferenceGeoBuilder() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder().inferenceGeo("eu").build();
+		assertThat(options.getInferenceGeo()).isEqualTo("eu");
+	}
+
+	@Test
+	void testInferenceGeoPreservedInMutate() {
+		AnthropicChatOptions original = AnthropicChatOptions.builder().inferenceGeo("us").build();
+		AnthropicChatOptions copied = original.mutate().build();
+		assertThat(copied.getInferenceGeo()).isEqualTo("us");
+	}
+
+	@Test
+	void testInferenceGeoCombineWith() {
+		AnthropicChatOptions base = AnthropicChatOptions.builder().inferenceGeo("us").build();
+		AnthropicChatOptions override = AnthropicChatOptions.builder().inferenceGeo("eu").build();
+
+		AnthropicChatOptions merged = base.mutate().combineWith(override.mutate()).build();
+		assertThat(merged.getInferenceGeo()).isEqualTo("eu");
+
+		// Null doesn't override
+		AnthropicChatOptions noOverride = AnthropicChatOptions.builder().build();
+		AnthropicChatOptions merged2 = base.mutate().combineWith(noOverride.mutate()).build();
+		assertThat(merged2.getInferenceGeo()).isEqualTo("us");
+	}
+
 }

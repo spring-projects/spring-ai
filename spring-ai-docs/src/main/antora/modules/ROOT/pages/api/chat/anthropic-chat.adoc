@@ -180,6 +180,7 @@ ChatResponse response = chatModel.call(
 | httpHeaders | Per-request HTTP headers. These are added to individual API calls via `MessageCreateParams.putAdditionalHeader()`. Useful for request-level tracking, beta API headers, or routing. | -
 | thinking | Thinking configuration. Use the convenience builders `thinkingEnabled(budgetTokens)`, `thinkingAdaptive()`, or `thinkingDisabled()`, or pass a raw `ThinkingConfigParam`. | -
 | outputConfig | Output configuration for structured output (JSON schema) and effort control. Use `outputConfig(OutputConfig)` for full control, or the convenience methods `outputSchema(String)` and `effort(OutputConfig.Effort)`. Requires `claude-sonnet-4-6` or newer. | -
+| inferenceGeo | Controls the geographic region where the request is processed. Supported values: `us`, `eu`. Used for data residency compliance. Configurable via `spring.ai.anthropic.chat.options.inference-geo`. | -
 |====
 
 === Tool Calling Options

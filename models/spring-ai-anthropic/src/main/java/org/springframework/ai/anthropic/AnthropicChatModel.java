@@ -845,6 +845,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		if (requestOptions.getThinking() != null) {
 			builder.thinking(requestOptions.getThinking());
 		}
+		if (requestOptions.getInferenceGeo() != null) {
+			builder.inferenceGeo(requestOptions.getInferenceGeo());
+		}
 
 		// Add output configuration if specified (structured output / effort)
 		if (requestOptions.getOutputConfig() != null) {
