@@ -37,13 +37,13 @@ public class MockWeatherService implements Function<MockWeatherService.Request, 
 
 		double temperature = 0;
 		if (request.location().contains("Paris")) {
-			temperature = 15.5;
+			temperature = 15.123;
 		}
 		else if (request.location().contains("Tokyo")) {
-			temperature = 10.5;
+			temperature = 10.456;
 		}
 		else if (request.location().contains("San Francisco")) {
-			temperature = 30.5;
+			temperature = 30.789;
 		}
 
 		return new Response(temperature, 15, 20, 2, 53, 45, Unit.C);
