@@ -112,6 +112,8 @@ The prefix `spring.ai.minimax` is used as the property prefix that lets you conn
 | spring.ai.minimax.api-key    | The API Key           |  -
 |====
 
+TIP: The compatibility default remains `https://api.minimax.chat`. For the current hosted MiniMax platform and newer model families, override it to `https://api.minimax.io`. China users can override it with `https://api.minimaxi.com`.
+
 ==== Configuration Properties
 
 [NOTE]
@@ -238,5 +240,3 @@ EmbeddingResponse embeddingResponse = this.embeddingModel
 
 The `MiniMaxEmbeddingOptions` provides the configuration information for the embedding requests.
 The options class offers a `builder()` for easy options creation.
-
-

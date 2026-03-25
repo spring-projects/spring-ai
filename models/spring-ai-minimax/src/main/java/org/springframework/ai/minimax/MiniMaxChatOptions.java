@@ -107,6 +107,10 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	 */
 	private @JsonProperty("top_p") Double topP;
 	/**
+	 * Whether the model should return interleaved reasoning in a separate reasoning_details field.
+	 */
+	private @JsonProperty("reasoning_split") Boolean reasoningSplit;
+	/**
 	 * Mask the text information in the output that is easy to involve privacy issues,
 	 * including but not limited to email, domain name, link, ID number, home address, etc.
 	 * The default is true, which means enabling masking.
@@ -164,7 +168,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 
 	protected MiniMaxChatOptions(String model, Double frequencyPenalty, Integer maxTokens, Integer n,
 			Double presencePenalty, MiniMaxApi.ChatCompletionRequest.ResponseFormat responseFormat, Integer seed,
-			List<String> stop, Double temperature, Double topP, Boolean maskSensitiveInfo,
+			List<String> stop, Double temperature, Double topP, Boolean reasoningSplit, Boolean maskSensitiveInfo,
 			List<MiniMaxApi.FunctionTool> tools, String toolChoice, @Nullable List<ToolCallback> toolCallbacks,
 			@Nullable Set<String> toolNames, @Nullable Map<String, Object> toolContext,
 			Boolean internalToolExecutionEnabled) {
@@ -178,6 +182,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		this.stop = stop;
 		this.temperature = temperature;
 		this.topP = topP;
+		this.reasoningSplit = reasoningSplit;
 		this.maskSensitiveInfo = maskSensitiveInfo;
 		this.tools = tools;
 		this.toolChoice = toolChoice;
@@ -292,6 +297,14 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		this.topP = topP;
 	}
 
+	public Boolean getReasoningSplit() {
+		return this.reasoningSplit;
+	}
+
+	public void setReasoningSplit(Boolean reasoningSplit) {
+		this.reasoningSplit = reasoningSplit;
+	}
+
 	public Boolean getMaskSensitiveInfo() {
 		return this.maskSensitiveInfo;
 	}
@@ -376,9 +389,9 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.frequencyPenalty, this.maxTokens, this.n, this.presencePenalty,
-				this.responseFormat, this.seed, this.stop, this.temperature, this.topP, this.maskSensitiveInfo,
-				this.tools, this.toolChoice, this.toolCallbacks, this.toolNames, this.toolContext,
-				this.internalToolExecutionEnabled);
+				this.responseFormat, this.seed, this.stop, this.temperature, this.topP, this.reasoningSplit,
+				this.maskSensitiveInfo, this.tools, this.toolChoice, this.toolCallbacks, this.toolNames,
+				this.toolContext, this.internalToolExecutionEnabled);
 	}
 
 	@Override
@@ -395,7 +408,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.presencePenalty, that.presencePenalty)
 				&& Objects.equals(this.responseFormat, that.responseFormat) && Objects.equals(this.seed, that.seed)
 				&& Objects.equals(this.stop, that.stop) && Objects.equals(this.temperature, that.temperature)
-				&& Objects.equals(this.topP, that.topP)
+				&& Objects.equals(this.topP, that.topP) && Objects.equals(this.reasoningSplit, that.reasoningSplit)
 				&& Objects.equals(this.maskSensitiveInfo, that.maskSensitiveInfo)
 				&& Objects.equals(this.tools, that.tools) && Objects.equals(this.toolChoice, that.toolChoice)
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
@@ -420,6 +433,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 			.temperature(this.temperature)
 			.topK(this.getTopK()) // unused in this model
 			.topP(this.topP)
+			.reasoningSplit(this.reasoningSplit)
 			// ToolCallingChatOptions
 			.toolCallbacks(this.getToolCallbacks())
 			.toolNames(this.getToolNames())
@@ -451,6 +465,8 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 
 		protected @Nullable Boolean maskSensitiveInfo;
 
+		protected @Nullable Boolean reasoningSplit;
+
 		protected @Nullable List<MiniMaxApi.FunctionTool> tools;
 
 		protected @Nullable String toolChoice;
@@ -479,6 +495,11 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 			return self();
 		}
 
+		public B reasoningSplit(@Nullable Boolean reasoningSplit) {
+			this.reasoningSplit = reasoningSplit;
+			return self();
+		}
+
 		public B tools(@Nullable List<MiniMaxApi.FunctionTool> tools) {
 			this.tools = tools;
 			return self();
@@ -504,6 +525,9 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 				if (that.maskSensitiveInfo != null) {
 					this.maskSensitiveInfo = that.maskSensitiveInfo;
 				}
+				if (that.reasoningSplit != null) {
+					this.reasoningSplit = that.reasoningSplit;
+				}
 				if (that.tools != null) {
 					this.tools = that.tools;
 				}
@@ -518,8 +542,8 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		public MiniMaxChatOptions build() {
 			return new MiniMaxChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.n,
 					this.presencePenalty, this.responseFormat, this.seed, this.stopSequences, this.temperature,
-					this.topP, this.maskSensitiveInfo, this.tools, this.toolChoice, this.toolCallbacks, this.toolNames,
-					this.toolContext, this.internalToolExecutionEnabled);
+					this.topP, this.reasoningSplit, this.maskSensitiveInfo, this.tools, this.toolChoice,
+					this.toolCallbacks, this.toolNames, this.toolContext, this.internalToolExecutionEnabled);
 		}
 
 	}

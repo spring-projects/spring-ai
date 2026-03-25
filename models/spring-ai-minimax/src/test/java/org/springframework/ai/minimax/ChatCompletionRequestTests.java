@@ -17,11 +17,14 @@
 package org.springframework.ai.minimax;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.api.MiniMaxApi;
+import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.ReasoningDetail;
 import org.springframework.ai.minimax.api.MockWeatherService;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
@@ -37,25 +40,29 @@ public class ChatCompletionRequestTests {
 	public void createRequestWithChatOptions() {
 
 		var client = new MiniMaxChatModel(new MiniMaxApi("TEST"),
-				MiniMaxChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build());
+				MiniMaxChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).reasoningSplit(false).build());
 
 		var request = client.createRequest(new Prompt("Test message content",
-				MiniMaxChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build()), false);
+				MiniMaxChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).reasoningSplit(true).build()),
+				false);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isFalse();
 
 		assertThat(request.model()).isEqualTo("DEFAULT_MODEL");
 		assertThat(request.temperature()).isEqualTo(66.6);
+		assertThat(request.reasoningSplit()).isTrue();
 
 		request = client.createRequest(new Prompt("Test message content",
-				MiniMaxChatOptions.builder().model("PROMPT_MODEL").temperature(99.9).build()), true);
+				MiniMaxChatOptions.builder().model("PROMPT_MODEL").temperature(99.9).reasoningSplit(false).build()),
+				true);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isTrue();
 
 		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
 		assertThat(request.temperature()).isEqualTo(99.9);
+		assertThat(request.reasoningSplit()).isFalse();
 	}
 
 	@Test
@@ -105,6 +112,27 @@ public class ChatCompletionRequestTests {
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isFalse();
 		assertThat(request.model()).isEqualTo("DEFAULT_MODEL");
+	}
+
+	@Test
+	public void assistantMetadataReasoningDetailsRoundTrip() {
+		var client = new MiniMaxChatModel(new MiniMaxApi("TEST"),
+				MiniMaxChatOptions.builder().model("DEFAULT_MODEL").build());
+
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("Previous assistant response")
+			.properties(Map.of("reasoningDetails",
+					List.of(new ReasoningDetail("reasoning.text", "reasoning-1", "MiniMax-response-v1", 0,
+							"thinking text"))))
+			.build();
+
+		var request = client.createRequest(
+				new Prompt(List.of(assistantMessage), MiniMaxChatOptions.builder().model("DEFAULT_MODEL").build()),
+				false);
+
+		assertThat(request.messages()).hasSize(1);
+		assertThat(request.messages().get(0).reasoningDetails()).containsExactly(
+				new ReasoningDetail("reasoning.text", "reasoning-1", "MiniMax-response-v1", 0, "thinking text"));
 	}
 
 }

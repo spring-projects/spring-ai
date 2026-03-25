@@ -112,6 +112,8 @@ The prefix `spring.ai.minimax` is used as the property prefix that lets you conn
 | spring.ai.minimax.api-key    | The API Key           |  -
 |====
 
+TIP: The compatibility default remains `https://api.minimax.chat`. For the current hosted MiniMax platform and newer model families, override it to `https://api.minimax.io`. China users can override it with `https://api.minimaxi.com`.
+
 ==== Configuration Properties
 
 [NOTE]
@@ -136,10 +138,11 @@ The prefix `spring.ai.minimax.chat` is the property prefix that lets you configu
 | spring.ai.model.chat | Enable MiniMax chat model.  | minimax
 | spring.ai.minimax.chat.base-url | Optional overrides the spring.ai.minimax.base-url to provide chat specific url |  https://api.minimax.chat
 | spring.ai.minimax.chat.api-key | Optional overrides the spring.ai.minimax.api-key to provide chat specific api-key |  -
-| spring.ai.minimax.chat.options.model | This is the MiniMax Chat model to use | `abab6.5g-chat` (the `abab5.5-chat`, `abab5.5s-chat`, `abab6.5-chat`, `abab6.5g-chat`, `abab6.5t-chat` and `abab6.5s-chat` point to the latest model versions)
+| spring.ai.minimax.chat.options.model | This is the MiniMax Chat model to use | `abab6.5g-chat` (supported values include `MiniMax-M2.7`, `abab5.5-chat`, `abab5.5s-chat`, `abab6.5-chat`, `abab6.5g-chat`, `abab6.5t-chat`, and `abab6.5s-chat`)
 | spring.ai.minimax.chat.options.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
 | spring.ai.minimax.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | -
 | spring.ai.minimax.chat.options.topP | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or temperature but not both. | 1.0
+| spring.ai.minimax.chat.options.reasoning-split | When enabled, MiniMax M2.7 returns interleaved reasoning in the `reasoning_details` field instead of mixing it into the visible response text. | -
 | spring.ai.minimax.chat.options.n | How many chat completion choices to generate for each input message. Note that you will be charged based on the number of generated tokens across all of the choices. Default value is 1 and cannot be greater than 5. Specifically, when the temperature is very small and close to 0, we can only return 1 result. If n is already set and>1 at this time, service will return an illegal input parameter (invalid_request_error) | 1
 | spring.ai.minimax.chat.options.presencePenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. |  0.0f
 | spring.ai.minimax.chat.options.frequencyPenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | 0.0f
@@ -177,6 +180,27 @@ ChatResponse response = chatModel.call(
 ----
 
 TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-minimax/src/main/java/org/springframework/ai/minimax/MiniMaxChatOptions.java[MiniMaxChatOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
+
+== MiniMax M2.7 Interleaved Thinking
+
+MiniMax M2.7 uses the same hosted `POST /v1/text/chatcompletion_v2` endpoint and the same OpenAI-style `tools` / `tool_choice` request format as the ABAB model family.
+
+When `reasoningSplit` is enabled, MiniMax returns interleaved thinking in `reasoning_details`. Spring AI preserves those reasoning details in `AssistantMessage` metadata under the `reasoningDetails` key and automatically sends them back to MiniMax on follow-up tool-calling turns.
+
+[source,java]
+----
+Prompt prompt = new Prompt("Check the weather in Madrid and explain your steps.",
+    MiniMaxChatOptions.builder()
+        .model(MiniMaxApi.ChatModel.MINIMAX_M2_7.getValue())
+        .reasoningSplit(true)
+        .build());
+
+ChatResponse response = chatModel.call(prompt);
+
+Object reasoningDetails = response.getResult().getOutput().getMetadata().get("reasoningDetails");
+----
+
+NOTE: Hosted MiniMax API responses expose tool calls as standard JSON `tool_calls`. Self-hosted MiniMax deployments that emit raw XML tool-call payloads are outside the scope of the Spring AI MiniMax integration.
 
 == Sample Controller
 
