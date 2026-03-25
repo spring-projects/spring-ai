@@ -32,7 +32,10 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  * @author Anders Swanson
  * @author Ilayaperumal Gopinathan
  * @author Alexnadros Pappas
+ * @deprecated will be moved to <a href="https://github.com/spring-ai-community">Spring AI
+ * Community</a> with new package and dependency coordinates
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class OCICohereChatOptions implements ChatOptions {
 

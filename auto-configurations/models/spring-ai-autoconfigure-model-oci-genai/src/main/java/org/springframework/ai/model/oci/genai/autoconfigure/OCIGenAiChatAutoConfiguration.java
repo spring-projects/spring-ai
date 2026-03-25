@@ -38,7 +38,10 @@ import org.springframework.context.annotation.Bean;
  * @author Anders Swanson
  * @author Ilayaperumal Gopinathan
  * @author Issam El-atif
+ * @deprecated will be moved to <a href="https://github.com/spring-ai-community">Spring AI
+ * Community</a> with new package and dependency coordinates
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 @AutoConfiguration(after = OCIGenAiInferenceClientAutoConfiguration.class)
 @ConditionalOnClass(OCICohereChatModel.class)
 @EnableConfigurationProperties(OCICohereChatModelProperties.class)

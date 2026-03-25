@@ -25,7 +25,10 @@ import com.oracle.bmc.generativeaiinference.model.ServingMode;
  * {@link com.oracle.bmc.generativeaiinference.model.ServingMode}
  *
  * @author Anders Swanson
+ * @deprecated will be moved to <a href="https://github.com/spring-ai-community">Spring AI
+ * Community</a> with new package and dependency coordinates
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 public final class ServingModeHelper {
 
 	private ServingModeHelper() {

@@ -27,7 +27,10 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  *
  * @author Anders Swanson
  * @author Ilayaperumal Gopinathan
+ * @deprecated will be moved to <a href="https://github.com/spring-ai-community">Spring AI
+ * Community</a> with new package and dependency coordinates
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class OCIEmbeddingOptions implements EmbeddingOptions {
 
