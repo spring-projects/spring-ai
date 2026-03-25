@@ -24,7 +24,10 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * Configuration properties for OCI Cohere chat model.
  *
  * @author Anders Swanson
+ * @deprecated will be moved to <a href="https://github.com/spring-ai-community">Spring AI
+ * Community</a> with new package and dependency coordinates
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 @ConfigurationProperties(OCICohereChatModelProperties.CONFIG_PREFIX)
 public class OCICohereChatModelProperties {
 

@@ -20,7 +20,10 @@ package org.springframework.ai.model.oci.genai.autoconfigure;
  * OCI serving mode.
  *
  * @author Anders Swanson
+ * @deprecated will be moved to <a href="https://github.com/spring-ai-community">Spring AI
+ * Community</a> with new package and dependency coordinates
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 public enum ServingMode {
 
 	ON_DEMAND("on-demand"), DEDICATED("dedicated");

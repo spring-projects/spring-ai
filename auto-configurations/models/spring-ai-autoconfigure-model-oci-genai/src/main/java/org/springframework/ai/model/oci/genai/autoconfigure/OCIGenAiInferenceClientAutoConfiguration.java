@@ -42,7 +42,10 @@ import org.springframework.util.StringUtils;
  *
  * @author Anders Swanson
  * @author Ilayaperumal Gopinathan
+ * @deprecated will be moved to <a href="https://github.com/spring-ai-community">Spring AI
+ * Community</a> with new package and dependency coordinates
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 @AutoConfiguration
 @ConditionalOnClass(GenerativeAiInferenceClient.class)
 @EnableConfigurationProperties(OCIConnectionProperties.class)
