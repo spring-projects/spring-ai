@@ -23,7 +23,10 @@ import org.springframework.ai.observation.conventions.AiProvider;
  *
  * @author Piotr Olaszewski
  * @since 1.0.0 M2
+ * @deprecated will be moved to <a href="https://github.com/spring-ai-community">Spring AI
+ * Community</a> with new package and dependency coordinates if a maintainer is found
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 public final class ZhiPuApiConstants {
 
 	public static final String DEFAULT_BASE_URL = "https://open.bigmodel.cn/api/paas";

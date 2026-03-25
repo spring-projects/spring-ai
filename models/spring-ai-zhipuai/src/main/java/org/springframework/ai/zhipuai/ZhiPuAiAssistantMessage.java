@@ -26,7 +26,10 @@ import org.springframework.ai.content.Media;
 /**
  * @author YunKui Lu
  * @author Sun Yuhan
+ * @deprecated will be moved to <a href="https://github.com/spring-ai-community">Spring AI
+ * Community</a> with new package and dependency coordinates if a maintainer is found
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 public class ZhiPuAiAssistantMessage extends AssistantMessage {
 
 	/**

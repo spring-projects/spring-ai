@@ -18,7 +18,10 @@ package org.springframework.ai.model.zhipuai.autoconfigure;
 
 /**
  * @author Geng Rong
+ * @deprecated will be moved to <a href="https://github.com/spring-ai-community">Spring AI
+ * Community</a> with new package and dependency coordinates if a maintainer is found
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 class ZhiPuAiParentProperties {
 
 	private String apiKey;
