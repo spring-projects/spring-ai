@@ -906,26 +906,16 @@ The `GoogleGenAiChatOptions.Builder` is fluent options builder.
 
 == Migration from Vertex AI Gemini
 
-If you're currently using the Vertex AI Gemini implementation (`spring-ai-vertex-ai-gemini`), you can migrate to Google GenAI with minimal changes:
+If you were previously using the Vertex AI Gemini implementation (`spring-ai-vertex-ai-gemini`), which has been removed, migrate to Google GenAI:
 
 === Key Differences
 
 1. **SDK**: Google GenAI uses the new `com.google.genai.Client` instead of `com.google.cloud.vertexai.VertexAI`
-2. **Authentication**: Supports both API key and Google Cloud credentials
+2. **Authentication**: Supports both API key and Google Cloud credentials (Vertex AI mode)
 3. **Package Names**: Classes are in `org.springframework.ai.google.genai` instead of `org.springframework.ai.vertexai.gemini`
 4. **Property Prefix**: Uses `spring.ai.google.genai` instead of `spring.ai.vertex.ai.gemini`
 
-=== When to Use Google GenAI vs Vertex AI Gemini
-
-**Use Google GenAI when:**
-- You want quick prototyping with API keys
-- You need the latest Gemini features from the Developer API
-- You want flexibility to switch between API key and Vertex AI modes
-
-**Use Vertex AI Gemini when:**
-- You have existing Vertex AI infrastructure
-- You need specific Vertex AI enterprise features
-- Your organization requires Google Cloud-only deployment
+Google GenAI supports both quick prototyping with API keys and production deployments using Vertex AI through Google Cloud credentials.
 
 == Low-level Java Client [[low-level-api]]
 

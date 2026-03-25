@@ -259,7 +259,7 @@ TokenCountBatchingStrategy strategy = new TokenCountBatchingStrategy(
 
 === Working with Auto-Truncation
 
-Some embedding models, such as Vertex AI text embedding, support an `auto_truncate` feature. When enabled, the model silently truncates text inputs that exceed the maximum size and continues processing; when disabled, it throws an explicit error for inputs that are too large.
+Some embedding models, such as Google GenAI text embedding, support an `auto_truncate` feature. When enabled, the model silently truncates text inputs that exceed the maximum size and continues processing; when disabled, it throws an explicit error for inputs that are too large.
 
 When using auto-truncation with the batching strategy, you must configure your batching strategy with a much higher input token count than the model's actual maximum. This prevents the batching strategy from raising exceptions for large documents, allowing the embedding model to handle truncation internally.
 
@@ -267,7 +267,7 @@ When using auto-truncation with the batching strategy, you must configure your b
 
 When enabling auto-truncation, set your batching strategy's maximum input token count much higher than the model's actual limit. This prevents the batching strategy from raising exceptions for large documents, allowing the embedding model to handle truncation internally.
 
-Here's an example configuration for using Vertex AI with auto-truncation and custom `BatchingStrategy` and then using them in the PgVectorStore:
+Here's an example configuration for using an embedding model with auto-truncation and custom `BatchingStrategy` and then using them in the PgVectorStore:
 
 [source,java]
 ----
@@ -275,22 +275,8 @@ Here's an example configuration for using Vertex AI with auto-truncation and cus
 public class AutoTruncationEmbeddingConfig {
 
     @Bean
-    public VertexAiTextEmbeddingModel vertexAiEmbeddingModel(
-            VertexAiEmbeddingConnectionDetails connectionDetails) {
-
-        VertexAiTextEmbeddingOptions options = VertexAiTextEmbeddingOptions.builder()
-                .model(VertexAiTextEmbeddingOptions.DEFAULT_MODEL_NAME)
-                .autoTruncate(true)  // Enable auto-truncation
-                .build();
-
-        return new VertexAiTextEmbeddingModel(connectionDetails, options);
-    }
-
-    @Bean
     public BatchingStrategy batchingStrategy() {
-        // Only use a high token limit if auto-truncation is enabled in your embedding model.
         // Set a much higher token count than the model actually supports
-        // (e.g., 132,900 when Vertex AI supports only up to 20,000)
         return new TokenCountBatchingStrategy(
                 EncodingType.CL100K_BASE,
                 132900,  // Artificially high limit

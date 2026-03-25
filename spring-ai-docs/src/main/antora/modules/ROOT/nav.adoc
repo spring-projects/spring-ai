@@ -19,10 +19,7 @@
 **** xref:api/chat/azure-openai-chat.adoc[Azure OpenAI]
 **** xref:api/chat/deepseek-chat.adoc[DeepSeek]
 **** xref:api/chat/dmr-chat.adoc[Docker Model Runner]
-**** Google
-***** xref:api/chat/google-genai-chat.adoc[Google GenAI]
-***** xref:api/chat/google-vertexai.adoc[Google VertexAI]
-****** xref:api/chat/vertexai-gemini-chat.adoc[VertexAI Gemini]
+**** xref:api/chat/google-genai-chat.adoc[Google GenAI]
 **** xref:api/chat/groq-chat.adoc[Groq]
 **** xref:api/chat/mistralai-chat.adoc[Mistral AI]
 **** xref:api/chat/minimax-chat.adoc[MiniMax]
@@ -53,9 +50,6 @@
 **** xref:api/embeddings/openai-embeddings.adoc[OpenAI]
 **** xref:api/embeddings/postgresml-embeddings.adoc[PostgresML]
 **** xref:api/embeddings/qianfan-embeddings.adoc[QianFan]
-**** VertexAI
-***** xref:api/embeddings/vertexai-embeddings-text.adoc[Text Embedding]
-***** xref:api/embeddings/vertexai-embeddings-multimodal.adoc[Multimodal Embedding]
 **** xref:api/embeddings/zhipuai-embeddings.adoc[ZhiPu AI]
 
 *** xref:api/imageclient.adoc[Image Models]

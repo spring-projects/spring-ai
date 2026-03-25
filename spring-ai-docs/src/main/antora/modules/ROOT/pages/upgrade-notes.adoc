@@ -1143,10 +1143,6 @@ Models::
     <artifactId>spring-ai-autoconfigure-model-anthropic</artifactId>
 </dependency>
 
-<dependency>
-    <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-autoconfigure-model-vertex-ai</artifactId>
-</dependency>
 ----
 
 Vector Stores::

@@ -293,7 +293,7 @@ The following models currently support native structured output:
 
 * **OpenAI**: GPT-4o and later models with JSON Schema support
 * **Anthropic**: Claude 3.5 Sonnet and later models
-* **Vertex AI Gemini**: Gemini 1.5 Pro and later models
+* **Google GenAI**: Gemini 1.5 Pro and later models
 * **Mistral AI**: Mistral Small and later models with JSON Schema support
 
 NOTE: Some AI models, such as OpenAI, don't support arrays of objects natively at the top level. In such cases, you can use the Spring AI default structured output conversion (without the native structured output advisor).
