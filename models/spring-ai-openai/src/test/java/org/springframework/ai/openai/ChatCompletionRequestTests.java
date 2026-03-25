@@ -21,6 +21,9 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -224,6 +227,59 @@ class ChatCompletionRequestTests {
 		// Verify extraBody from runtime options is present
 		assertThat(request.extraBody()).isNotNull();
 		assertThat(request.extraBody()).containsEntry("enable_thinking", true);
+	}
+
+	@Test
+	void assistantMessageWithToolCallsAndEmptyContentShouldSerializeAsNull() {
+		var client = OpenAiChatModel.builder()
+			.openAiApi(OpenAiApi.builder().apiKey("TEST").build())
+			.defaultOptions(OpenAiChatOptions.builder().model("gpt-4").build())
+			.build();
+
+		List<Message> instructions = List.of(new UserMessage("What time is it?"),
+				AssistantMessage.builder()
+					.content("")
+					.toolCalls(List.of(new AssistantMessage.ToolCall("call-1", "function", "getCurrentTime", "{}")))
+					.build());
+
+		var request = client.createRequest(client.buildRequestPrompt(new Prompt(instructions)), false);
+
+		assertThat(request.messages()).hasSize(2);
+		assertThat(request.messages().get(1).role()).isEqualTo(OpenAiApi.ChatCompletionMessage.Role.ASSISTANT);
+		assertThat(request.messages().get(1).toolCalls()).hasSize(1);
+		assertThat(request.messages().get(1).rawContent()).isNull();
+	}
+
+	@Test
+	void assistantMessageWithToolCallsAndTextShouldPreserveContent() {
+		var client = OpenAiChatModel.builder()
+			.openAiApi(OpenAiApi.builder().apiKey("TEST").build())
+			.defaultOptions(OpenAiChatOptions.builder().model("gpt-4").build())
+			.build();
+
+		List<Message> instructions = List.of(new UserMessage("What time is it?"),
+				AssistantMessage.builder()
+					.content("Calling tool")
+					.toolCalls(List.of(new AssistantMessage.ToolCall("call-1", "function", "getCurrentTime", "{}")))
+					.build());
+
+		var request = client.createRequest(client.buildRequestPrompt(new Prompt(instructions)), false);
+
+		assertThat(request.messages().get(1).rawContent()).isEqualTo("Calling tool");
+	}
+
+	@Test
+	void assistantMessageWithoutToolCallsShouldKeepEmptyContent() {
+		var client = OpenAiChatModel.builder()
+			.openAiApi(OpenAiApi.builder().apiKey("TEST").build())
+			.defaultOptions(OpenAiChatOptions.builder().model("gpt-4").build())
+			.build();
+
+		List<Message> instructions = List.of(new UserMessage("Hello"), AssistantMessage.builder().content("").build());
+
+		var request = client.createRequest(client.buildRequestPrompt(new Prompt(instructions)), false);
+
+		assertThat(request.messages().get(1).rawContent()).isEqualTo("");
 	}
 
 	static class TestToolCallback implements ToolCallback {

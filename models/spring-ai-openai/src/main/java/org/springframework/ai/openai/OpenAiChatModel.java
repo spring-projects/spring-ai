@@ -617,6 +617,10 @@ public class OpenAiChatModel implements ChatModel {
 						return new ToolCall(toolCall.id(), toolCall.type(), function);
 					}).toList();
 				}
+				String assistantContent = assistantMessage.getText();
+				if (!CollectionUtils.isEmpty(toolCalls) && !StringUtils.hasText(assistantContent)) {
+					assistantContent = null;
+				}
 				AudioOutput audioOutput = null;
 				if (!CollectionUtils.isEmpty(assistantMessage.getMedia())) {
 					Assert.isTrue(assistantMessage.getMedia().size() == 1,
@@ -624,8 +628,8 @@ public class OpenAiChatModel implements ChatModel {
 					audioOutput = new AudioOutput(assistantMessage.getMedia().get(0).getId(), null, null, null);
 
 				}
-				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
-						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null, audioOutput, null, null));
+				return List.of(new ChatCompletionMessage(assistantContent, ChatCompletionMessage.Role.ASSISTANT, null,
+						null, toolCalls, null, audioOutput, null, null));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
