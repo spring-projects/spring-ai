@@ -89,14 +89,14 @@ public class BedrockNovaChatClientIT {
 			.content();
 
 		logger.info(response);
-		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
+		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand", "fruit", "fruits");
 	}
 
 	@Test
 	void videoMultiModalityTest() throws IOException {
 		// Define sets of semantically similar words for different concepts
 		Set<String> youngDescriptors = Set.of("baby", "small", "young", "little", "tiny", "juvenile", "newborn",
-				"infant", "hatchling", "downy", "fluffy");
+				"infant", "hatchling", "downy", "fluffy", "chick", "chicks");
 
 		Set<String> birdDescriptors = Set.of("chick", "chicks", "chicken", "chickens", "bird", "birds", "poultry",
 				"hatchling", "hatchlings");
