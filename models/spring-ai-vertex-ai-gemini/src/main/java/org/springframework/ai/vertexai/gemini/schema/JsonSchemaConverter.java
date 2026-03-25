@@ -33,7 +33,10 @@ import org.springframework.util.Assert;
 
 /**
  * Utility class for converting JSON Schema to OpenAPI schema format.
+ *
+ * @deprecated use Google GenAI instead
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 public final class JsonSchemaConverter {
 
 	private JsonSchemaConverter() {

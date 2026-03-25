@@ -22,7 +22,9 @@ import org.springframework.ai.observation.conventions.AiProvider;
  * Constants for Vertex AI Gemini.
  *
  * @author Soby Chacko
+ * @deprecated use Google GenAI instead
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 public final class VertexAiGeminiConstants {
 
 	public static final String PROVIDER_NAME = AiProvider.VERTEX_AI.value();

@@ -54,7 +54,9 @@ import org.springframework.util.StringUtils;
  * @author Ilayaperumal Gopinathan
  * @author Yanming Zhou
  * @since 1.0.0
+ * @deprecated use Google GenAI instead
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 @AutoConfiguration(after = { SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class })
 @ConditionalOnClass({ VertexAI.class, VertexAiGeminiChatModel.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.VERTEX_AI,

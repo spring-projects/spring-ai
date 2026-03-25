@@ -34,7 +34,9 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
  * @since 1.0.0
+ * @deprecated use Google GenAI instead
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 public abstract class VertexAiEmbeddingUtils {
 
 	public static Value valueOf(boolean n) {

@@ -26,7 +26,9 @@ import org.springframework.core.io.Resource;
  *
  * @author Christian Tzolov
  * @since 0.8.0
+ * @deprecated use Google GenAI instead
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 @ConfigurationProperties(VertexAiGeminiConnectionProperties.CONFIG_PREFIX)
 public class VertexAiGeminiConnectionProperties {
 

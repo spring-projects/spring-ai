@@ -49,7 +49,9 @@ import org.springframework.util.MimeTypeUtils;
  *
  * @author Christian Tzolov
  * @since 0.8.1
+ * @deprecated use Google GenAI instead
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 public abstract class MimeTypeDetector {
 
 	/**

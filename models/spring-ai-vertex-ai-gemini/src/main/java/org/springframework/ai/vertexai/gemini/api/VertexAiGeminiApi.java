@@ -18,6 +18,10 @@ package org.springframework.ai.vertexai.gemini.api;
 
 import java.util.List;
 
+/**
+ * @deprecated use Google GenAI instead
+ */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 public class VertexAiGeminiApi {
 
 	public record LogProbs(Double avgLogprobs, List<TopContent> topCandidates,

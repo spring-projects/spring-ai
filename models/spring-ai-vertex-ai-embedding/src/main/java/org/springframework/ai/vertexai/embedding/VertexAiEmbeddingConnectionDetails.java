@@ -32,7 +32,9 @@ import org.springframework.util.StringUtils;
  * @author Mark Pollack
  * @author Ilayaperumal Gopinathan
  * @since 1.0.0
+ * @deprecated use Google GenAI instead
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 public class VertexAiEmbeddingConnectionDetails {
 
 	public static final String DEFAULT_ENDPOINT = "us-central1-aiplatform.googleapis.com:443";

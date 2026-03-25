@@ -24,7 +24,9 @@ import org.springframework.core.io.Resource;
  *
  * @author Christian Tzolov
  * @since 1.0.0
+ * @deprecated use Google GenAI instead
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 @ConfigurationProperties(VertexAiEmbeddingConnectionProperties.CONFIG_PREFIX)
 public class VertexAiEmbeddingConnectionProperties {
 

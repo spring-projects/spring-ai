@@ -27,7 +27,9 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * @author Christian Tzolov
  * @author Hyunsang Han
  * @since 0.8.0
+ * @deprecated use Google GenAI instead
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 @ConfigurationProperties(VertexAiGeminiChatProperties.CONFIG_PREFIX)
 public class VertexAiGeminiChatProperties {
 
