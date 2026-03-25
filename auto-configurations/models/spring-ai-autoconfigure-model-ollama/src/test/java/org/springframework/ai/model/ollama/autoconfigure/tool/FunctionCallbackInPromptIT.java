@@ -73,7 +73,7 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 			var promptOptions = OllamaOptions.builder()
 				.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
 					.description(
-							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
+							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state, represented by its geographical coordinates.")
 					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();
@@ -98,7 +98,7 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 			var promptOptions = OllamaOptions.builder()
 				.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
 					.description(
-							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
+							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state, represented by its geographical coordinates.")
 					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();

@@ -156,7 +156,7 @@ public class OllamaFunctionCallbackIT extends BaseOllamaIT {
 
 			return FunctionToolCallback.builder("WeatherInfo", new MockWeatherService())
 				.description(
-						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
+						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state, represented by its geographical coordinates.")
 				.inputType(MockWeatherService.Request.class)
 				.build();
 		}
