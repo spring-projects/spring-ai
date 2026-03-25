@@ -72,7 +72,7 @@ public class FunctionCallWithFunctionBeanIT {
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getText()).contains("30.5", "10.5", "15.5");
+			assertThat(response.getResult().getOutput().getText()).contains("30.789", "10.456", "15.123");
 		});
 	}
 
@@ -103,7 +103,7 @@ public class FunctionCallWithFunctionBeanIT {
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getText()).contains("30.5", "10.5", "15.5");
+			assertThat(response.getResult().getOutput().getText()).contains("30.789", "10.456", "15.123");
 		});
 	}
 

@@ -74,14 +74,14 @@ public class FunctionCallWithPromptFunctionIT {
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getText()).contains("30.5", "10.5", "15.5");
+				assertThat(response.getResult().getOutput().getText()).contains("30.789", "10.456", "15.123");
 
 				// Verify that no function call is made.
 				response = chatModel.call(new Prompt(List.of(userMessage), GoogleGenAiChatOptions.builder().build()));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getText()).doesNotContain("30.5", "10.5", "15.5");
+				assertThat(response.getResult().getOutput().getText()).doesNotContain("30.789", "10.456", "15.123");
 
 			});
 	}
@@ -119,14 +119,14 @@ public class FunctionCallWithPromptFunctionIT {
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getText()).contains("30.5", "10.5", "15.5");
+				assertThat(response.getResult().getOutput().getText()).contains("30.789", "10.456", "15.123");
 
 				// Verify that no function call is made.
 				response = chatModel.call(new Prompt(List.of(userMessage), GoogleGenAiChatOptions.builder().build()));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getText()).doesNotContain("30.5", "10.5", "15.5");
+				assertThat(response.getResult().getOutput().getText()).doesNotContain("30.789", "10.456", "15.123");
 
 			});
 	}

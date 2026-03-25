@@ -34,7 +34,7 @@ public class GoogleGenAiTextEmbeddingProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.google.genai.embedding.text";
 
-	public static final String DEFAULT_MODEL = GoogleGenAiTextEmbeddingModelName.TEXT_EMBEDDING_004.getName();
+	public static final String DEFAULT_MODEL = GoogleGenAiTextEmbeddingModelName.GEMINI_EMBEDDING_001.getName();
 
 	/**
 	 * Google GenAI Text Embedding API options.
