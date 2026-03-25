@@ -294,4 +294,87 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 		}
 	}
 
+	@Test
+	public void testIncludeServerSideToolInvocationsGetterSetter() {
+		GoogleGenAiChatOptions options = new GoogleGenAiChatOptions();
+
+		assertThat(options.getIncludeServerSideToolInvocations()).isFalse();
+
+		options.setIncludeServerSideToolInvocations(true);
+		assertThat(options.getIncludeServerSideToolInvocations()).isTrue();
+
+		options.setIncludeServerSideToolInvocations(false);
+		assertThat(options.getIncludeServerSideToolInvocations()).isFalse();
+	}
+
+	@Test
+	public void testIncludeServerSideToolInvocationsWithBuilder() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.includeServerSideToolInvocations(true)
+			.build();
+
+		assertThat(options.getModel()).isEqualTo("test-model");
+		assertThat(options.getIncludeServerSideToolInvocations()).isTrue();
+	}
+
+	@Test
+	public void testFromOptionsWithIncludeServerSideToolInvocations() {
+		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.includeServerSideToolInvocations(true)
+			.build();
+
+		GoogleGenAiChatOptions copy = GoogleGenAiChatOptions.fromOptions(original);
+
+		assertThat(copy.getIncludeServerSideToolInvocations()).isTrue();
+		assertThat(copy).isNotSameAs(original);
+	}
+
+	@Test
+	public void testCopyWithIncludeServerSideToolInvocations() {
+		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.includeServerSideToolInvocations(true)
+			.build();
+
+		GoogleGenAiChatOptions copy = original.copy();
+
+		assertThat(copy.getIncludeServerSideToolInvocations()).isTrue();
+		assertThat(copy).isNotSameAs(original);
+	}
+
+	@Test
+	public void testEqualsAndHashCodeWithIncludeServerSideToolInvocations() {
+		GoogleGenAiChatOptions options1 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.includeServerSideToolInvocations(true)
+			.build();
+
+		GoogleGenAiChatOptions options2 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.includeServerSideToolInvocations(true)
+			.build();
+
+		GoogleGenAiChatOptions options3 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.includeServerSideToolInvocations(false)
+			.build();
+
+		assertThat(options1).isEqualTo(options2);
+		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
+		assertThat(options1).isNotEqualTo(options3);
+	}
+
+	@Test
+	public void testToStringWithIncludeServerSideToolInvocations() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.includeServerSideToolInvocations(true)
+			.build();
+
+		String toString = options.toString();
+		assertThat(toString).contains("includeServerSideToolInvocations=true");
+	}
+
 }

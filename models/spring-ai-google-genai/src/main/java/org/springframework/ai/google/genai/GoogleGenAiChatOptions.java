@@ -205,6 +205,15 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	@JsonIgnore
 	private Boolean googleSearchRetrieval = false;
 
+	/**
+	 * Optional. When true, the API response will include server-side tool calls and
+	 * responses (e.g., Google Search invocations) within Content message parts.
+	 * This allows clients to observe the server's tool invocations without executing them.
+	 * Only supported with MLDev (Google AI) API, not Vertex AI.
+	 */
+	@JsonIgnore
+	private Boolean includeServerSideToolInvocations = false;
+
 	@JsonIgnore
 	private List<GoogleGenAiSafetySetting> safetySettings = new ArrayList<>();
 
@@ -223,7 +232,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			String responseMimeType, String responseSchema, Integer thinkingBudget, Boolean includeThoughts,
 			GoogleGenAiThinkingLevel thinkingLevel, Boolean includeExtendedUsageMetadata, String cachedContentName,
 			Boolean useCachedContent, Integer autoCacheThreshold, Duration autoCacheTtl, Boolean googleSearchRetrieval,
-			List<GoogleGenAiSafetySetting> safetySettings, Map<String, String> labels) {
+			Boolean includeServerSideToolInvocations, List<GoogleGenAiSafetySetting> safetySettings,
+			Map<String, String> labels) {
 		this.model = model;
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxOutputTokens = maxOutputTokens;
@@ -248,6 +258,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		this.autoCacheThreshold = autoCacheThreshold;
 		this.autoCacheTtl = autoCacheTtl;
 		this.googleSearchRetrieval = Boolean.TRUE.equals(googleSearchRetrieval);
+		this.includeServerSideToolInvocations = Boolean.TRUE.equals(includeServerSideToolInvocations);
 		this.safetySettings = safetySettings;
 		this.labels = labels;
 	}
@@ -473,6 +484,14 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		this.googleSearchRetrieval = googleSearchRetrieval;
 	}
 
+	public Boolean getIncludeServerSideToolInvocations() {
+		return this.includeServerSideToolInvocations;
+	}
+
+	public void setIncludeServerSideToolInvocations(Boolean includeServerSideToolInvocations) {
+		this.includeServerSideToolInvocations = includeServerSideToolInvocations;
+	}
+
 	public List<GoogleGenAiSafetySetting> getSafetySettings() {
 		return this.safetySettings;
 	}
@@ -522,6 +541,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			return false;
 		}
 		return Objects.equals(this.googleSearchRetrieval, that.googleSearchRetrieval)
+				&& Objects.equals(this.includeServerSideToolInvocations, that.includeServerSideToolInvocations)
 				&& Objects.equals(this.stopSequences, that.stopSequences)
 				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP)
 				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.candidateCount, that.candidateCount)
@@ -545,8 +565,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
 				this.frequencyPenalty, this.presencePenalty, this.thinkingBudget, this.includeThoughts,
 				this.thinkingLevel, this.maxOutputTokens, this.model, this.responseMimeType, this.responseSchema,
-				this.toolCallbacks, this.toolNames, this.googleSearchRetrieval, this.safetySettings,
-				this.internalToolExecutionEnabled, this.toolContext, this.labels);
+				this.toolCallbacks, this.toolNames, this.googleSearchRetrieval, this.includeServerSideToolInvocations,
+				this.safetySettings, this.internalToolExecutionEnabled, this.toolContext, this.labels);
 	}
 
 	@Override
@@ -558,8 +578,9 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 				+ ", candidateCount=" + this.candidateCount + ", maxOutputTokens=" + this.maxOutputTokens + ", model='"
 				+ this.model + '\'' + ", responseMimeType='" + this.responseMimeType + '\'' + ", toolCallbacks="
 				+ this.toolCallbacks + ", toolNames=" + this.toolNames + ", googleSearchRetrieval="
-				+ this.googleSearchRetrieval + ", safetySettings=" + this.safetySettings + ", labels=" + this.labels
-				+ '}';
+				+ this.googleSearchRetrieval + ", includeServerSideToolInvocations="
+				+ this.includeServerSideToolInvocations + ", safetySettings=" + this.safetySettings + ", labels="
+				+ this.labels + '}';
 	}
 
 	@Override
@@ -598,6 +619,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			.autoCacheThreshold(this.autoCacheThreshold)
 			.autoCacheTtl(this.autoCacheTtl)
 			.googleSearchRetrieval(this.googleSearchRetrieval)
+			.includeServerSideToolInvocations(this.includeServerSideToolInvocations)
 			.safetySettings(this.safetySettings)
 			.labels(this.labels);
 	}
@@ -642,6 +664,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		protected @Nullable Duration autoCacheTtl;
 
 		protected @Nullable Boolean googleSearchRetrieval;
+
+		protected @Nullable Boolean includeServerSideToolInvocations;
 
 		protected List<GoogleGenAiSafetySetting> safetySettings = new ArrayList<>();
 
@@ -688,6 +712,11 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 
 		public B googleSearchRetrieval(@Nullable Boolean googleSearch) {
 			this.googleSearchRetrieval = googleSearch;
+			return self();
+		}
+
+		public B includeServerSideToolInvocations(@Nullable Boolean includeServerSideToolInvocations) {
+			this.includeServerSideToolInvocations = includeServerSideToolInvocations;
 			return self();
 		}
 
@@ -782,6 +811,9 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 				if (that.googleSearchRetrieval != null) {
 					this.googleSearchRetrieval = that.googleSearchRetrieval;
 				}
+				if (that.includeServerSideToolInvocations != null) {
+					this.includeServerSideToolInvocations = that.includeServerSideToolInvocations;
+				}
 				if (that.safetySettings != null) {
 					this.safetySettings = that.safetySettings;
 				}
@@ -799,8 +831,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 					this.toolCallbacks, this.toolNames, this.toolContext, this.candidateCount, this.responseMimeType,
 					this.responseSchema, this.thinkingBudget, this.includeThoughts, this.thinkingLevel,
 					this.includeExtendedUsageMetadata, this.cachedContentName, this.useCachedContent,
-					this.autoCacheThreshold, this.autoCacheTtl, this.googleSearchRetrieval, this.safetySettings,
-					this.labels);
+					this.autoCacheThreshold, this.autoCacheTtl, this.googleSearchRetrieval,
+					this.includeServerSideToolInvocations, this.safetySettings, this.labels);
 		}
 
 	}

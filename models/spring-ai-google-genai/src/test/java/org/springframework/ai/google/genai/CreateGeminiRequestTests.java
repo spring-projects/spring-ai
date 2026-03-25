@@ -704,4 +704,73 @@ public class CreateGeminiRequestTests {
 			.hasMessageContaining("not supported");
 	}
 
+	@Test
+	public void createRequestWithIncludeServerSideToolInvocationsEnabled() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.defaultOptions(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build())
+			.build();
+
+		GeminiRequest request = client.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content",
+				GoogleGenAiChatOptions.builder()
+					.googleSearchRetrieval(true)
+					.includeServerSideToolInvocations(true)
+					.build())));
+
+		assertThat(request.config().toolConfig()).isPresent();
+		assertThat(request.config().toolConfig().get().includeServerSideToolInvocations()).isPresent();
+		assertThat(request.config().toolConfig().get().includeServerSideToolInvocations().get()).isTrue();
+		assertThat(request.config().tools()).isPresent();
+	}
+
+	@Test
+	public void createRequestWithIncludeServerSideToolInvocationsDisabled() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.defaultOptions(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build())
+			.build();
+
+		GeminiRequest request = client.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content",
+				GoogleGenAiChatOptions.builder()
+					.googleSearchRetrieval(true)
+					.includeServerSideToolInvocations(false)
+					.build())));
+
+		assertThat(request.config().toolConfig()).isNotPresent();
+	}
+
+	@Test
+	public void createRequestWithIncludeServerSideToolInvocationsDefault() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.defaultOptions(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").googleSearchRetrieval(true).build())
+			.build();
+
+		GeminiRequest request = client
+			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+
+		// Default is false, so no ToolConfig should be set
+		assertThat(request.config().toolConfig()).isNotPresent();
+	}
+
+	@Test
+	public void createRequestWithIncludeServerSideToolInvocationsRuntimeOverride() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model("DEFAULT_MODEL")
+				.includeServerSideToolInvocations(false)
+				.build())
+			.build();
+
+		GeminiRequest request = client.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content",
+				GoogleGenAiChatOptions.builder()
+					.googleSearchRetrieval(true)
+					.includeServerSideToolInvocations(true)
+					.build())));
+
+		assertThat(request.config().toolConfig()).isPresent();
+		assertThat(request.config().toolConfig().get().includeServerSideToolInvocations().get()).isTrue();
+	}
+
 }
