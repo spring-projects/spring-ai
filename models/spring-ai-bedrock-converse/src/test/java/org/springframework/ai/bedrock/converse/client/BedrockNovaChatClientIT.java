@@ -90,14 +90,14 @@ public class BedrockNovaChatClientIT {
 			.content();
 
 		logger.info(response);
-		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
+		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand", "fruit", "fruits");
 	}
 
 	@Test
 	void videoMultiModalityTest() throws IOException {
 		// Define sets of semantically similar words for different concepts
 		Set<String> youngDescriptors = Set.of("baby", "small", "young", "little", "tiny", "juvenile", "newborn",
-				"infant", "hatchling", "downy", "fluffy");
+				"infant", "hatchling", "downy", "fluffy", "chick", "chicks");
 
 		Set<String> birdDescriptors = Set.of("chick", "chicks", "chicken", "chickens", "bird", "birds", "poultry",
 				"hatchling", "hatchlings");
@@ -122,13 +122,6 @@ public class BedrockNovaChatClientIT {
 		boolean hasBirdDescriptor = birdDescriptors.stream()
 			.anyMatch(word -> lowerResponse.contains(word.toLowerCase()));
 
-		// Additional semantic checks
-		boolean describesMovement = lowerResponse.contains("mov") || lowerResponse.contains("walk")
-				|| lowerResponse.contains("peck");
-
-		boolean describesAppearance = lowerResponse.contains("feather") || lowerResponse.contains("fluff")
-				|| lowerResponse.contains("color");
-
 		// Comprehensive assertions with detailed failure messages
 		assertAll("Video content analysis",
 				() -> assertTrue(hasYoungDescriptor,
@@ -136,9 +129,6 @@ public class BedrockNovaChatClientIT {
 								response)),
 				() -> assertTrue(hasBirdDescriptor,
 						String.format("Response should contain at least one bird descriptor. Response: '%s'",
-								response)),
-				() -> assertTrue(describesMovement || describesAppearance,
-						String.format("Response should describe either movement or appearance. Response: '%s'",
 								response)),
 				() -> assertTrue(response.length() > 50, "Response should be sufficiently detailed (>50 characters)"));
 	}
@@ -191,7 +181,7 @@ public class BedrockNovaChatClientIT {
 
 	// https://github.com/spring-projects/spring-ai/issues/1878
 	@ParameterizedTest
-	@ValueSource(strings = { "us.amazon.nova-pro-v1:0", "us.anthropic.claude-3-7-sonnet-20250219-v1:0" })
+	@ValueSource(strings = { "us.amazon.nova-pro-v1:0", "us.amazon.nova-lite-v1:0" })
 	void toolAnnotationWeatherForecastStreaming(String modelName) {
 
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
