@@ -50,7 +50,9 @@ import org.springframework.util.Assert;
  * @author Ilayaperumal Gopinathan
  * @author Soby Chacko
  * @since 1.0.0
+ * @deprecated use Google GenAI instead
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 @JsonInclude(Include.NON_NULL)
 public class VertexAiGeminiChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 

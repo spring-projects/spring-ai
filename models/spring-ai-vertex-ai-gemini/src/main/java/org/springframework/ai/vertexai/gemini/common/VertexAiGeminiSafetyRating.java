@@ -24,7 +24,9 @@ package org.springframework.ai.vertexai.gemini.common;
  * @author Mark Pollack
  * @since 1.1.1
  * @see VertexAiGeminiSafetySetting
+ * @deprecated use Google GenAI instead
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 public record VertexAiGeminiSafetyRating(HarmCategory category, HarmProbability probability, boolean blocked,
 		float probabilityScore, HarmSeverity severity, float severityScore) {
 

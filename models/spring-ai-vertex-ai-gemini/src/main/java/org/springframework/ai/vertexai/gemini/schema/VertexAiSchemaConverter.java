@@ -23,7 +23,9 @@ import com.google.protobuf.util.JsonFormat;
  * Utility class for converting OpenAPI schemas to Vertex AI Schema objects.
  *
  * @since 1.1.0
+ * @deprecated use Google GenAI instead
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 public final class VertexAiSchemaConverter {
 
 	private VertexAiSchemaConverter() {

@@ -16,6 +16,10 @@
 
 package org.springframework.ai.vertexai.gemini.common;
 
+/**
+ * @deprecated use Google GenAI instead
+ */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 public final class VertexAiGeminiSafetySetting {
 
 	public static Builder builder() {

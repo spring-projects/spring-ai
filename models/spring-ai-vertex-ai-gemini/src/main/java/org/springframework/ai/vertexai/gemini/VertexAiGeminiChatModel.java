@@ -143,7 +143,9 @@ import org.springframework.util.StringUtils;
  * @see VertexAiGeminiChatOptions
  * @see ToolCallingManager
  * @see ChatModel
+ * @deprecated use Google GenAI instead
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
