@@ -51,7 +51,10 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Geng Rong
  * @author Ilayaperumal Gopinathan
  * @author Yanming Zhou
+ * @deprecated will be moved to <a href="https://github.com/spring-ai-community">Spring AI
+ * Community</a> with new package and dependency coordinates if a maintainer is found
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
 		ToolCallingAutoConfiguration.class })
 @ConditionalOnClass(ZhiPuAiApi.class)

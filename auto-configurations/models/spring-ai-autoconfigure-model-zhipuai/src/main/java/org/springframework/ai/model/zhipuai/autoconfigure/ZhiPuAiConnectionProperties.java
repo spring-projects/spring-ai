@@ -18,6 +18,11 @@ package org.springframework.ai.model.zhipuai.autoconfigure;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+/**
+ * @deprecated will be moved to <a href="https://github.com/spring-ai-community">Spring AI
+ * Community</a> with new package and dependency coordinates if a maintainer is found
+ */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 @ConfigurationProperties(ZhiPuAiConnectionProperties.CONFIG_PREFIX)
 public class ZhiPuAiConnectionProperties extends ZhiPuAiParentProperties {
 

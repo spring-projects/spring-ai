@@ -55,7 +55,10 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Thomas Vitale
  * @author YunKui Lu
  * @since 1.0.0
+ * @deprecated will be moved to <a href="https://github.com/spring-ai-community">Spring AI
+ * Community</a> with new package and dependency coordinates if a maintainer is found
  */
+@Deprecated(since = "2.0.0-M4", forRemoval = true)
 public class ZhiPuAiApi {
 
 	/**
