@@ -81,8 +81,7 @@ class BedrockProxyChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "anthropic.claude-3-haiku-20240307-v1:0", "anthropic.claude-3-sonnet-20240229-v1:0",
-			"anthropic.claude-3-5-sonnet-20240620-v1:0" })
+	@ValueSource(strings = { "amazon.nova-lite-v1:0", "amazon.nova-pro-v1:0" })
 	void roleTest(String modelName) {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
@@ -135,9 +134,12 @@ class BedrockProxyChatModelIT {
 		assertThat(streamingTokenUsage.getCompletionTokens()).isGreaterThan(0);
 		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
 
+		// Prompt tokens must match exactly (same input = same tokenization).
+		// Completion tokens can legitimately differ between two independent model calls
+		// even at temperature=0, so only a structural check is appropriate here.
 		assertThat(streamingTokenUsage.getPromptTokens()).isEqualTo(referenceTokenUsage.getPromptTokens());
-		assertThat(streamingTokenUsage.getCompletionTokens()).isEqualTo(referenceTokenUsage.getCompletionTokens());
-		assertThat(streamingTokenUsage.getTotalTokens()).isEqualTo(referenceTokenUsage.getTotalTokens());
+		assertThat(streamingTokenUsage.getTotalTokens())
+			.isEqualTo(streamingTokenUsage.getPromptTokens() + streamingTokenUsage.getCompletionTokens());
 
 	}
 
@@ -313,7 +315,7 @@ class BedrockProxyChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = BedrockChatOptions.builder()
-			.model("anthropic.claude-3-5-sonnet-20240620-v1:0")
+			.model("amazon.nova-pro-v1:0")
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -335,19 +337,23 @@ class BedrockProxyChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{displayName} - {0} ")
-	@ValueSource(ints = { 50, 60 })
+	@ValueSource(ints = { 150, 200 })
 	void streamFunctionCallTestWithMaxTokens(int maxTokens) {
 
+		// Single city keeps the tool call small (~80 tokens) so it always fits within
+		// maxTokens. The "at least 500 words" instruction forces a final answer of
+		// 700+ tokens, guaranteeing truncation at 150 or 200 tokens -> max_tokens.
 		UserMessage userMessage = new UserMessage(
-				// "What's the weather like in San Francisco? Return the result in
-				// Celsius.");
-				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+				"What's the weather like in San Francisco? Based on the temperature, write a very long "
+						+ "and detailed creative weather report of at least 500 words describing the conditions "
+						+ "in Celsius, what people might experience outdoors, clothing recommendations, activity "
+						+ "suggestions, and a poetic description of the atmosphere.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = BedrockChatOptions.builder()
 			.maxTokens(maxTokens)
-			.model("us.anthropic.claude-3-5-sonnet-20240620-v1:0")
+			.model("us.amazon.nova-pro-v1:0")
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -356,8 +362,13 @@ class BedrockProxyChatModelIT {
 			.build();
 
 		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
-		ChatResponse lastResponse = response.blockLast();
-		String finishReason = lastResponse.getResult().getMetadata().getFinishReason();
+		String finishReason = response.collectList()
+			.block()
+			.stream()
+			.filter(cr -> cr.getResult() != null)
+			.reduce((first, second) -> second)
+			.map(cr -> cr.getResult().getMetadata().getFinishReason())
+			.orElse(null);
 
 		logger.info("Finish reason: {}", finishReason);
 		assertThat(finishReason).isEqualTo("max_tokens");
@@ -365,7 +376,7 @@ class BedrockProxyChatModelIT {
 
 	@Test
 	void validateCallResponseMetadata() {
-		String model = "anthropic.claude-3-5-sonnet-20240620-v1:0";
+		String model = "amazon.nova-pro-v1:0";
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.options(BedrockChatOptions.builder().model(model).build())
@@ -380,7 +391,7 @@ class BedrockProxyChatModelIT {
 
 	@Test
 	void validateStreamCallResponseMetadata() {
-		String model = "anthropic.claude-3-5-sonnet-20240620-v1:0";
+		String model = "amazon.nova-pro-v1:0";
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.options(BedrockChatOptions.builder().model(model).build())

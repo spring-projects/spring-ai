@@ -203,16 +203,21 @@ public final class ConverseApiUtils {
 					.withTrace(metadataEvent.trace())
 					.build();
 
-				// TODO
-				Document modelResponseFields = lastAggregation.metadataAggregation().additionalModelResponseFields();
-				ConverseStreamMetrics metrics = metadataEvent.metrics();
-
 				DefaultUsage usage = new DefaultUsage(metadataEvent.usage().inputTokens(),
 						metadataEvent.usage().outputTokens(), metadataEvent.usage().totalTokens());
 
 				var chatResponseMetaData = ChatResponseMetadata.builder().usage(usage).build();
 
-				return new Aggregation(newMeta, new ChatResponse(List.of(), chatResponseMetaData));
+				// Emit a final generation carrying the finishReason from the
+				// MessageStopEvent (stored in MetadataAggregation.stopReason).
+				// Without this, finishReason is never attached to any emitted
+				// ChatResponse
+				// because MessageStopEvent only updates MetadataAggregation but emits
+				// EMPTY_CHAT_RESPONSE (which is filtered out).
+				var finalGeneration = new Generation(new AssistantMessage("", Map.of()),
+						ChatGenerationMetadata.builder().finishReason(newMeta.stopReason()).build());
+
+				return new Aggregation(newMeta, new ChatResponse(List.of(finalGeneration), chatResponseMetaData));
 			}
 			else {
 				return new Aggregation();
@@ -260,7 +265,14 @@ public final class ConverseApiUtils {
 	public static ConverseStreamOutput mergeToolUseEvents(ConverseStreamOutput previousEvent,
 			ConverseStreamOutput event) {
 
-		ToolUseAggregationEvent toolUseEventAggregator = (ToolUseAggregationEvent) previousEvent;
+		// Guard against non-ToolUseAggregationEvent previousEvent. This can occur when
+		// a model emits interleaved text and tool-use content blocks in the same turn:
+		// a text ContentBlockDelta falls through to `return event`, making it the
+		// accumulated value for the next reduce step. Starting fresh discards the
+		// out-of-place text delta (acceptable — text before tool use in the same turn
+		// is handled as its own single-element window when isInsideTool is false).
+		ToolUseAggregationEvent toolUseEventAggregator = (previousEvent instanceof ToolUseAggregationEvent tae) ? tae
+				: new ToolUseAggregationEvent();
 
 		if (event.sdkEventType() == EventType.CONTENT_BLOCK_START) {
 
@@ -285,7 +297,13 @@ public final class ConverseApiUtils {
 			return toolUseEventAggregator;
 		}
 		else if (event.sdkEventType() == EventType.MESSAGE_STOP) {
-			return toolUseEventAggregator;
+			// If inside a tool use window, absorb the stop event into the aggregator.
+			// Otherwise (plain text response), return the event so the scanWith handler
+			// can set MetadataAggregation.stopReason for downstream finishReason
+			// propagation.
+			if (!toolUseEventAggregator.isEmpty()) {
+				return toolUseEventAggregator;
+			}
 		}
 		else if (event.sdkEventType() == EventType.METADATA) {
 			ConverseStreamMetadataEvent metadataEvent = (ConverseStreamMetadataEvent) event;
