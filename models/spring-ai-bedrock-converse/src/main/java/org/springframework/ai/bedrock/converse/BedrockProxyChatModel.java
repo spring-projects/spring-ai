@@ -753,33 +753,48 @@ public class BedrockProxyChatModel implements ChatModel {
 			totalTokens += perviousChatResponse.getMetadata().getUsage().getTotalTokens();
 
 			// Merge cache metrics from previous response if available
-			if (perviousChatResponse.getMetadata().getUsage().getNativeUsage() instanceof TokenUsage) {
-				TokenUsage previousTokenUsage = (TokenUsage) perviousChatResponse.getMetadata()
-					.getUsage()
-					.getNativeUsage();
-				if (cacheReadInputTokens == null) {
-					cacheReadInputTokens = previousTokenUsage.cacheReadInputTokens();
+			Object previousNativeUsage = perviousChatResponse.getMetadata().getUsage().getNativeUsage();
+			Integer previousCacheReadInputTokens = null;
+			Integer previousCacheWriteInputTokens = null;
+
+			if (previousNativeUsage instanceof TokenUsage previousTokenUsage) {
+				previousCacheReadInputTokens = previousTokenUsage.cacheReadInputTokens();
+				previousCacheWriteInputTokens = previousTokenUsage.cacheWriteInputTokens();
+			}
+			else if (previousNativeUsage instanceof Map<?, ?> previousNativeUsageMap) {
+				Object cacheRead = previousNativeUsageMap.get("cacheReadInputTokens");
+				Object cacheWrite = previousNativeUsageMap.get("cacheWriteInputTokens");
+				if (cacheRead instanceof Number cacheReadNumber) {
+					previousCacheReadInputTokens = cacheReadNumber.intValue();
 				}
-				else if (previousTokenUsage.cacheReadInputTokens() != null) {
-					cacheReadInputTokens += previousTokenUsage.cacheReadInputTokens();
+				if (cacheWrite instanceof Number cacheWriteNumber) {
+					previousCacheWriteInputTokens = cacheWriteNumber.intValue();
 				}
-				if (cacheWriteInputTokens == null) {
-					cacheWriteInputTokens = previousTokenUsage.cacheWriteInputTokens();
-				}
-				else if (previousTokenUsage.cacheWriteInputTokens() != null) {
-					cacheWriteInputTokens += previousTokenUsage.cacheWriteInputTokens();
-				}
+			}
+
+			if (previousCacheReadInputTokens != null) {
+				cacheReadInputTokens = (cacheReadInputTokens == null) ? previousCacheReadInputTokens
+						: cacheReadInputTokens + previousCacheReadInputTokens;
+			}
+			if (previousCacheWriteInputTokens != null) {
+				cacheWriteInputTokens = (cacheWriteInputTokens == null) ? previousCacheWriteInputTokens
+						: cacheWriteInputTokens + previousCacheWriteInputTokens;
 			}
 		}
 
-		// Create native TokenUsage with cache metrics
-		TokenUsage nativeTokenUsage = TokenUsage.builder()
-			.inputTokens(promptTokens)
-			.outputTokens(generationTokens)
-			.totalTokens(totalTokens)
-			.cacheReadInputTokens(cacheReadInputTokens)
-			.cacheWriteInputTokens(cacheWriteInputTokens)
-			.build();
+		// Use a JSON-safe structure for nativeUsage to keep ChatResponse serializable
+		// (for
+		// example when returned from a Spring MVC endpoint).
+		Map<String, Object> nativeTokenUsage = new HashMap<>();
+		nativeTokenUsage.put("inputTokens", promptTokens);
+		nativeTokenUsage.put("outputTokens", generationTokens);
+		nativeTokenUsage.put("totalTokens", totalTokens);
+		if (cacheReadInputTokens != null) {
+			nativeTokenUsage.put("cacheReadInputTokens", cacheReadInputTokens);
+		}
+		if (cacheWriteInputTokens != null) {
+			nativeTokenUsage.put("cacheWriteInputTokens", cacheWriteInputTokens);
+		}
 
 		DefaultUsage usage = new DefaultUsage(promptTokens, generationTokens, totalTokens, nativeTokenUsage);
 
@@ -793,11 +808,11 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		// Add cache metrics to metadata if available (for backward compatibility)
 		Map<String, Object> additionalMetadata = new HashMap<>();
-		if (response.usage().cacheReadInputTokens() != null) {
-			additionalMetadata.put("cacheReadInputTokens", response.usage().cacheReadInputTokens());
+		if (cacheReadInputTokens != null) {
+			additionalMetadata.put("cacheReadInputTokens", cacheReadInputTokens);
 		}
-		if (response.usage().cacheWriteInputTokens() != null) {
-			additionalMetadata.put("cacheWriteInputTokens", response.usage().cacheWriteInputTokens());
+		if (cacheWriteInputTokens != null) {
+			additionalMetadata.put("cacheWriteInputTokens", cacheWriteInputTokens);
 		}
 		if (!additionalMetadata.isEmpty()) {
 			metadataBuilder.metadata(additionalMetadata);
