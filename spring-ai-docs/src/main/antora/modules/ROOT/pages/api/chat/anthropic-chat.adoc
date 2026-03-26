@@ -60,6 +60,13 @@ Use the `spring.ai.anthropic.*` properties to configure the Anthropic connection
 | `spring.ai.anthropic.chat.options.temperature` | Sampling temperature | -
 | `spring.ai.anthropic.chat.options.top-p` | Top-p sampling | -
 | `spring.ai.anthropic.chat.options.top-k` | Top-k sampling | -
+| `spring.ai.anthropic.chat.options.web-search-tool.max-uses` | Maximum number of web searches per request | -
+| `spring.ai.anthropic.chat.options.web-search-tool.allowed-domains` | Comma-separated list of domains to restrict search results to | -
+| `spring.ai.anthropic.chat.options.web-search-tool.blocked-domains` | Comma-separated list of domains to exclude from search results | -
+| `spring.ai.anthropic.chat.options.web-search-tool.user-location.city` | City for localizing search results | -
+| `spring.ai.anthropic.chat.options.web-search-tool.user-location.country` | ISO 3166-1 alpha-2 country code | -
+| `spring.ai.anthropic.chat.options.web-search-tool.user-location.region` | Region or state | -
+| `spring.ai.anthropic.chat.options.web-search-tool.user-location.timezone` | IANA timezone identifier | -
 |====
 
 == Manual Configuration
@@ -1398,6 +1405,123 @@ try {
 } catch (IOException e) {
     log.error("Failed to download file: {}", e.getMessage());
 }
+----
+
+== Web Search
+
+Anthropic's https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/web-search[Web Search] tool allows Claude to search the web during a conversation and use the results to generate cited responses.
+
+[NOTE]
+====
+* Web search is a built-in server-side tool — no external tool callbacks are needed
+* Web search results automatically include citations with URLs
+* You can combine web search with other tools (function calling, code execution, skills) in the same request
+====
+
+=== Basic Usage
+
+Enable web search by adding an `AnthropicWebSearchTool` to your chat options:
+
+[source,java]
+----
+var webSearch = AnthropicWebSearchTool.builder().build();
+
+ChatResponse response = chatModel.call(
+    new Prompt("What is the latest released version of Spring AI?",
+        AnthropicChatOptions.builder()
+            .webSearchTool(webSearch)
+            .build()));
+
+String answer = response.getResult().getOutput().getText();
+----
+
+=== Configuration Options
+
+[cols="3,5,1", stripes=even]
+|====
+| Option | Description | Default
+
+| maxUses | Maximum number of web searches Claude can perform per request | -
+| allowedDomains | Restrict search results to these domains only | -
+| blockedDomains | Exclude these domains from search results | -
+| userLocation | Approximate user location for localizing results (city, country, region, timezone) | -
+|====
+
+=== Domain Filtering
+
+Restrict or exclude specific domains from search results:
+
+[source,java]
+----
+var webSearch = AnthropicWebSearchTool.builder()
+    .allowedDomains(List.of("docs.spring.io", "github.com"))
+    .blockedDomains(List.of("example.com"))
+    .maxUses(5)
+    .build();
+----
+
+=== User Location
+
+Provide approximate location to localize search results:
+
+[source,java]
+----
+var webSearch = AnthropicWebSearchTool.builder()
+    .userLocation("San Francisco", "US", "California", "America/Los_Angeles")
+    .build();
+----
+
+=== Accessing Web Search Results
+
+Web search results and citations are available in the response metadata:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt("What happened in tech news today?",
+        AnthropicChatOptions.builder()
+            .webSearchTool(AnthropicWebSearchTool.builder().build())
+            .build()));
+
+// Get web search results
+@SuppressWarnings("unchecked")
+List<AnthropicWebSearchResult> results =
+    (List<AnthropicWebSearchResult>) response.getMetadata().get("web-search-results");
+
+if (results != null) {
+    for (AnthropicWebSearchResult result : results) {
+        System.out.println("Title: " + result.title());
+        System.out.println("URL: " + result.url());
+        System.out.println("Page age: " + result.pageAge());
+    }
+}
+
+// Get web search citations
+@SuppressWarnings("unchecked")
+List<Citation> citations =
+    (List<Citation>) response.getMetadata().get("citations");
+
+if (citations != null) {
+    for (Citation citation : citations) {
+        if (citation.getType() == Citation.LocationType.WEB_SEARCH_RESULT_LOCATION) {
+            System.out.println("Source: " + citation.getUrl());
+            System.out.println("Title: " + citation.getDocumentTitle());
+            System.out.println("Cited text: " + citation.getCitedText());
+        }
+    }
+}
+----
+
+=== Spring Boot Configuration
+
+Configure web search via `application.properties` or `application.yml`:
+
+[source,properties]
+----
+spring.ai.anthropic.chat.options.web-search-tool.max-uses=5
+spring.ai.anthropic.chat.options.web-search-tool.allowed-domains=docs.spring.io,github.com
+spring.ai.anthropic.chat.options.web-search-tool.user-location.city=San Francisco
+spring.ai.anthropic.chat.options.web-search-tool.user-location.country=US
 ----
 
 == Observability

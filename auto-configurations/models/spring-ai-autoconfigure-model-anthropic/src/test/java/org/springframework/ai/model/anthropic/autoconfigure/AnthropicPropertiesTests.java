@@ -104,6 +104,35 @@ class AnthropicPropertiesTests {
 	}
 
 	@Test
+	void webSearchToolProperties() {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.anthropic.api-key=API_KEY",
+					"spring.ai.anthropic.chat.options.web-search-tool.max-uses=5",
+					"spring.ai.anthropic.chat.options.web-search-tool.allowed-domains=docs.spring.io,github.com",
+					"spring.ai.anthropic.chat.options.web-search-tool.blocked-domains=example.com",
+					"spring.ai.anthropic.chat.options.web-search-tool.user-location.city=San Francisco",
+					"spring.ai.anthropic.chat.options.web-search-tool.user-location.country=US",
+					"spring.ai.anthropic.chat.options.web-search-tool.user-location.region=California",
+					"spring.ai.anthropic.chat.options.web-search-tool.user-location.timezone=America/Los_Angeles")
+			.withConfiguration(
+					AutoConfigurations.of(AnthropicChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(AnthropicChatProperties.class);
+				var webSearch = chatProperties.getOptions().getWebSearchTool();
+
+				assertThat(webSearch).isNotNull();
+				assertThat(webSearch.getMaxUses()).isEqualTo(5);
+				assertThat(webSearch.getAllowedDomains()).containsExactly("docs.spring.io", "github.com");
+				assertThat(webSearch.getBlockedDomains()).containsExactly("example.com");
+				assertThat(webSearch.getUserLocation()).isNotNull();
+				assertThat(webSearch.getUserLocation().city()).isEqualTo("San Francisco");
+				assertThat(webSearch.getUserLocation().country()).isEqualTo("US");
+				assertThat(webSearch.getUserLocation().region()).isEqualTo("California");
+				assertThat(webSearch.getUserLocation().timezone()).isEqualTo("America/Los_Angeles");
+			});
+	}
+
+	@Test
 	void chatCompletionDisabled() {
 		// Enabled by default
 		new ApplicationContextRunner().withPropertyValues("spring.ai.anthropic.api-key=API_KEY")

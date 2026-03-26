@@ -35,6 +35,7 @@ import com.anthropic.models.messages.CitationCharLocation;
 import com.anthropic.models.messages.CitationContentBlockLocation;
 import com.anthropic.models.messages.CitationPageLocation;
 import com.anthropic.models.messages.CitationsDelta;
+import com.anthropic.models.messages.CitationsWebSearchResultLocation;
 import com.anthropic.models.messages.CodeExecutionTool20260120;
 import com.anthropic.models.messages.ContentBlock;
 import com.anthropic.models.messages.ContentBlockParam;
@@ -57,6 +58,10 @@ import com.anthropic.models.messages.ToolUseBlock;
 import com.anthropic.models.messages.ToolUseBlockParam;
 import com.anthropic.models.messages.UrlImageSource;
 import com.anthropic.models.messages.UrlPdfSource;
+import com.anthropic.models.messages.UserLocation;
+import com.anthropic.models.messages.WebSearchResultBlock;
+import com.anthropic.models.messages.WebSearchTool20260209;
+import com.anthropic.models.messages.WebSearchToolResultBlock;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
@@ -402,6 +407,16 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				AssistantMessage assistantMessage = AssistantMessage.builder().properties(redactedProperties).build();
 				return new ChatResponse(List.of(new Generation(assistantMessage)));
 			}
+			else if (contentBlock.isWebSearchToolResult()) {
+				// Accumulate web search results for final response metadata
+				WebSearchToolResultBlock wsBlock = contentBlock.asWebSearchToolResult();
+				if (wsBlock.content().isResultBlocks()) {
+					for (WebSearchResultBlock r : wsBlock.content().asResultBlocks()) {
+						streamingState.addWebSearchResult(
+								new AnthropicWebSearchResult(r.title(), r.url(), r.pageAge().orElse(null)));
+					}
+				}
+			}
 			return null;
 		}
 
@@ -502,6 +517,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				metadataBuilder.keyValue("citations", citations).keyValue("citationCount", citations.size());
 			}
 
+			List<AnthropicWebSearchResult> webSearchResults = streamingState.getWebSearchResults();
+			if (!webSearchResults.isEmpty()) {
+				metadataBuilder.keyValue("web-search-results", webSearchResults);
+			}
+
 			return new ChatResponse(List.of(generation), metadataBuilder.build());
 		});
 
@@ -542,7 +562,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				}
 
 				List<Citation> citations = new ArrayList<>();
-				List<Generation> generations = buildGenerations(message, citations);
+				List<AnthropicWebSearchResult> webSearchResults = new ArrayList<>();
+				List<Generation> generations = buildGenerations(message, citations, webSearchResults);
 
 				// Current usage
 				com.anthropic.models.messages.Usage sdkUsage = message.usage();
@@ -551,7 +572,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 						? UsageCalculator.getCumulativeUsage(currentChatResponseUsage, previousChatResponse)
 						: currentChatResponseUsage;
 
-				ChatResponse chatResponse = new ChatResponse(generations, from(message, accumulatedUsage, citations));
+				ChatResponse chatResponse = new ChatResponse(generations,
+						from(message, accumulatedUsage, citations, webSearchResults));
 
 				observationContext.setResponse(chatResponse);
 
@@ -633,6 +655,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				}
 				if (originalAnthropicOptions.getSkillContainer() != null) {
 					requestOptions.setSkillContainer(originalAnthropicOptions.getSkillContainer());
+				}
+				if (originalAnthropicOptions.getWebSearchTool() != null) {
+					requestOptions.setWebSearchTool(originalAnthropicOptions.getWebSearchTool());
 				}
 			}
 		}
@@ -854,7 +879,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			builder.outputConfig(requestOptions.getOutputConfig());
 		}
 
-		// Add tool definitions if any are configured
+		// Build combined tool list (user-defined tools + built-in tools)
+		List<ToolUnion> allTools = new ArrayList<>();
+
+		// Add user-defined tool definitions
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
 			List<Tool> tools = toolDefinitions.stream().map(this::toAnthropicTool).toList();
@@ -874,7 +902,16 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				tools = modifiedTools;
 			}
 
-			builder.tools(tools.stream().map(ToolUnion::ofTool).toList());
+			tools.stream().map(ToolUnion::ofTool).forEach(allTools::add);
+		}
+
+		// Add built-in web search tool if configured
+		if (requestOptions.getWebSearchTool() != null) {
+			allTools.add(ToolUnion.ofWebSearchTool20260209(toSdkWebSearchTool(requestOptions.getWebSearchTool())));
+		}
+
+		if (!allTools.isEmpty()) {
+			builder.tools(allTools);
 
 			// Set tool choice if specified, applying disableParallelToolUse if set
 			if (requestOptions.getToolChoice() != null) {
@@ -959,9 +996,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * thinking content, and citations from the response content blocks.
 	 * @param message the Anthropic message response
 	 * @param citationAccumulator collects citations found in text blocks
+	 * @param webSearchAccumulator collects web search results found in response
 	 * @return list of generations with text, tool calls, and/or thinking content
 	 */
-	private List<Generation> buildGenerations(Message message, List<Citation> citationAccumulator) {
+	private List<Generation> buildGenerations(Message message, List<Citation> citationAccumulator,
+			List<AnthropicWebSearchResult> webSearchAccumulator) {
 		List<Generation> generations = new ArrayList<>();
 
 		String finishReason = message.stopReason().map(r -> r.toString()).orElse("");
@@ -1013,6 +1052,15 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				generations.add(new Generation(AssistantMessage.builder().properties(redactedProperties).build(),
 						generationMetadata));
 			}
+			else if (block.isWebSearchToolResult()) {
+				WebSearchToolResultBlock wsBlock = block.asWebSearchToolResult();
+				if (wsBlock.content().isResultBlocks()) {
+					for (WebSearchResultBlock r : wsBlock.content().asResultBlocks()) {
+						webSearchAccumulator
+							.add(new AnthropicWebSearchResult(r.title(), r.url(), r.pageAge().orElse(null)));
+					}
+				}
+			}
 			else if (block.isContainerUpload() || block.isServerToolUse() || block.isBashCodeExecutionToolResult()
 					|| block.isTextEditorCodeExecutionToolResult() || block.isCodeExecutionToolResult()) {
 				logger.warn("Unsupported content block type: {}", block);
@@ -1036,7 +1084,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @param usage the usage information
 	 * @return the chat response metadata
 	 */
-	private ChatResponseMetadata from(Message message, Usage usage, List<Citation> citations) {
+	private ChatResponseMetadata from(Message message, Usage usage, List<Citation> citations,
+			List<AnthropicWebSearchResult> webSearchResults) {
 		Assert.notNull(message, "Anthropic Message must not be null");
 		ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder()
 			.id(message.id())
@@ -1045,6 +1094,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			.keyValue("anthropic-response", message);
 		if (!citations.isEmpty()) {
 			metadataBuilder.keyValue("citations", citations).keyValue("citationCount", citations.size());
+		}
+		if (!webSearchResults.isEmpty()) {
+			metadataBuilder.keyValue("web-search-results", webSearchResults);
 		}
 		return metadataBuilder.build();
 	}
@@ -1074,6 +1126,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		else if (textCitation.isContentBlockLocation()) {
 			return fromContentBlockLocation(textCitation.asContentBlockLocation());
 		}
+		else if (textCitation.isWebSearchResultLocation()) {
+			return fromWebSearchResultLocation(textCitation.asWebSearchResultLocation());
+		}
 		return null;
 	}
 
@@ -1086,6 +1141,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 		else if (citation.isContentBlockLocation()) {
 			return fromContentBlockLocation(citation.asContentBlockLocation());
+		}
+		else if (citation.isWebSearchResultLocation()) {
+			return fromWebSearchResultLocation(citation.asWebSearchResultLocation());
 		}
 		return null;
 	}
@@ -1103,6 +1161,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	private Citation fromContentBlockLocation(CitationContentBlockLocation loc) {
 		return Citation.ofContentBlockLocation(loc.citedText(), (int) loc.documentIndex(),
 				loc.documentTitle().orElse(null), (int) loc.startBlockIndex(), (int) loc.endBlockIndex());
+	}
+
+	private Citation fromWebSearchResultLocation(CitationsWebSearchResultLocation loc) {
+		return Citation.ofWebSearchResultLocation(loc.citedText(), loc.url(), loc.title().orElse(null));
 	}
 
 	/**
@@ -1255,6 +1317,45 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		catch (Exception e) {
 			throw new RuntimeException("Failed to parse tool input schema: " + toolDefinition.inputSchema(), e);
 		}
+	}
+
+	/**
+	 * Converts a Spring AI {@link AnthropicWebSearchTool} to the Anthropic SDK's
+	 * {@link WebSearchTool20260209}.
+	 * @param webSearchTool the web search configuration
+	 * @return the SDK web search tool
+	 */
+	private WebSearchTool20260209 toSdkWebSearchTool(AnthropicWebSearchTool webSearchTool) {
+		WebSearchTool20260209.Builder sdkBuilder = WebSearchTool20260209.builder();
+
+		if (webSearchTool.getAllowedDomains() != null) {
+			sdkBuilder.allowedDomains(webSearchTool.getAllowedDomains());
+		}
+		if (webSearchTool.getBlockedDomains() != null) {
+			sdkBuilder.blockedDomains(webSearchTool.getBlockedDomains());
+		}
+		if (webSearchTool.getMaxUses() != null) {
+			sdkBuilder.maxUses(webSearchTool.getMaxUses());
+		}
+		if (webSearchTool.getUserLocation() != null) {
+			AnthropicWebSearchTool.UserLocation loc = webSearchTool.getUserLocation();
+			UserLocation.Builder locBuilder = UserLocation.builder();
+			if (loc.city() != null) {
+				locBuilder.city(loc.city());
+			}
+			if (loc.country() != null) {
+				locBuilder.country(loc.country());
+			}
+			if (loc.region() != null) {
+				locBuilder.region(loc.region());
+			}
+			if (loc.timezone() != null) {
+				locBuilder.timezone(loc.timezone());
+			}
+			sdkBuilder.userLocation(locBuilder.build());
+		}
+
+		return sdkBuilder.build();
 	}
 
 	/**
@@ -1422,6 +1523,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		private final List<Citation> accumulatedCitations = new ArrayList<>();
 
+		private final List<AnthropicWebSearchResult> accumulatedWebSearchResults = new ArrayList<>();
+
 		void setMessageInfo(String id, String modelName, long tokens) {
 			this.messageId.set(id);
 			this.model.set(modelName);
@@ -1495,6 +1598,14 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		List<Citation> getCitations() {
 			return new ArrayList<>(this.accumulatedCitations);
+		}
+
+		void addWebSearchResult(AnthropicWebSearchResult result) {
+			this.accumulatedWebSearchResults.add(result);
+		}
+
+		List<AnthropicWebSearchResult> getWebSearchResults() {
+			return new ArrayList<>(this.accumulatedWebSearchResults);
 		}
 
 	}
