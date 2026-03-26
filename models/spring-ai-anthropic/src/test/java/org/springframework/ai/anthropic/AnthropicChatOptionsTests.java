@@ -568,4 +568,51 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		assertThat(merged2.getInferenceGeo()).isEqualTo("us");
 	}
 
+	@Test
+	void testWebSearchToolBuilder() {
+		AnthropicWebSearchTool webSearch = AnthropicWebSearchTool.builder()
+			.allowedDomains(List.of("docs.spring.io"))
+			.blockedDomains(List.of("example.com"))
+			.maxUses(5)
+			.userLocation("San Francisco", "US", "California", "America/Los_Angeles")
+			.build();
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder().webSearchTool(webSearch).build();
+
+		assertThat(options.getWebSearchTool()).isNotNull();
+		assertThat(options.getWebSearchTool().getAllowedDomains()).containsExactly("docs.spring.io");
+		assertThat(options.getWebSearchTool().getBlockedDomains()).containsExactly("example.com");
+		assertThat(options.getWebSearchTool().getMaxUses()).isEqualTo(5);
+		assertThat(options.getWebSearchTool().getUserLocation()).isNotNull();
+		assertThat(options.getWebSearchTool().getUserLocation().city()).isEqualTo("San Francisco");
+		assertThat(options.getWebSearchTool().getUserLocation().country()).isEqualTo("US");
+	}
+
+	@Test
+	void testWebSearchToolPreservedInMutate() {
+		AnthropicWebSearchTool webSearch = AnthropicWebSearchTool.builder().maxUses(3).build();
+		AnthropicChatOptions original = AnthropicChatOptions.builder().webSearchTool(webSearch).build();
+		AnthropicChatOptions copied = original.mutate().build();
+
+		assertThat(copied.getWebSearchTool()).isNotNull();
+		assertThat(copied.getWebSearchTool().getMaxUses()).isEqualTo(3);
+	}
+
+	@Test
+	void testWebSearchToolCombineWith() {
+		AnthropicWebSearchTool base = AnthropicWebSearchTool.builder().maxUses(3).build();
+		AnthropicWebSearchTool override = AnthropicWebSearchTool.builder().maxUses(10).build();
+
+		AnthropicChatOptions baseOpts = AnthropicChatOptions.builder().webSearchTool(base).build();
+		AnthropicChatOptions overrideOpts = AnthropicChatOptions.builder().webSearchTool(override).build();
+
+		AnthropicChatOptions merged = baseOpts.mutate().combineWith(overrideOpts.mutate()).build();
+		assertThat(merged.getWebSearchTool().getMaxUses()).isEqualTo(10);
+
+		// Null doesn't override
+		AnthropicChatOptions noOverride = AnthropicChatOptions.builder().build();
+		AnthropicChatOptions merged2 = baseOpts.mutate().combineWith(noOverride.mutate()).build();
+		assertThat(merged2.getWebSearchTool().getMaxUses()).isEqualTo(3);
+	}
+
 }

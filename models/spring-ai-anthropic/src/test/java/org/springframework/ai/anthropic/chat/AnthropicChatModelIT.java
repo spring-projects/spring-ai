@@ -41,6 +41,8 @@ import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.AnthropicCitationDocument;
 import org.springframework.ai.anthropic.AnthropicTestConfiguration;
+import org.springframework.ai.anthropic.AnthropicWebSearchResult;
+import org.springframework.ai.anthropic.AnthropicWebSearchTool;
 import org.springframework.ai.anthropic.Citation;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -871,6 +873,38 @@ class AnthropicChatModelIT {
 		assertThat(text).isNotEmpty();
 		logger.info("Structured output with effort response: {}", text);
 		assertThat(text).contains("answer");
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void webSearchTest() {
+		var webSearch = AnthropicWebSearchTool.builder().maxUses(3).build();
+
+		var options = AnthropicChatOptions.builder().model(Model.CLAUDE_SONNET_4_6).webSearchTool(webSearch).build();
+
+		ChatResponse response = this.chatModel
+			.call(new Prompt("What is the latest released version of Spring AI?", options));
+
+		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+		logger.info("Web search response: {}", response.getResult().getOutput().getText());
+
+		// Verify web search results are surfaced in metadata
+		List<AnthropicWebSearchResult> results = (List<AnthropicWebSearchResult>) response.getMetadata()
+			.get("web-search-results");
+		assertThat(results).isNotNull().isNotEmpty();
+		assertThat(results.get(0).url()).isNotEmpty();
+		assertThat(results.get(0).title()).isNotEmpty();
+
+		// Verify web search citations if present
+		List<Citation> citations = (List<Citation>) response.getMetadata().get("citations");
+		if (citations != null && !citations.isEmpty()) {
+			logger.info("Web search citations received: {}", citations.size());
+			citations.stream()
+				.filter(c -> c.getType() == Citation.LocationType.WEB_SEARCH_RESULT_LOCATION)
+				.forEach(c -> logger.info("Web search citation: url={}, title={}", c.getUrl(), c.getDocumentTitle()));
+			assertThat(citations).anyMatch(c -> c.getType() == Citation.LocationType.WEB_SEARCH_RESULT_LOCATION
+					&& c.getUrl() != null && !c.getUrl().isEmpty());
+		}
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {

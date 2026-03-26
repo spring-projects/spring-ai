@@ -193,6 +193,13 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	 */
 	private @Nullable String inferenceGeo;
 
+	/**
+	 * Configuration for Anthropic's built-in web search tool. When set, Claude can search
+	 * the web during the conversation.
+	 */
+	@JsonIgnore
+	private @Nullable AnthropicWebSearchTool webSearchTool;
+
 	private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
 
 	/**
@@ -398,6 +405,14 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		this.inferenceGeo = inferenceGeo;
 	}
 
+	public @Nullable AnthropicWebSearchTool getWebSearchTool() {
+		return this.webSearchTool;
+	}
+
+	public void setWebSearchTool(@Nullable AnthropicWebSearchTool webSearchTool) {
+		this.webSearchTool = webSearchTool;
+	}
+
 	@Override
 	@JsonIgnore
 	public @Nullable String getOutputSchema() {
@@ -537,7 +552,8 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 			.outputConfig(this.outputConfig)
 			.httpHeaders(this.getHttpHeaders())
 			.skillContainer(this.getSkillContainer())
-			.inferenceGeo(this.inferenceGeo);
+			.inferenceGeo(this.inferenceGeo)
+			.webSearchTool(this.webSearchTool);
 	}
 
 	@Override
@@ -564,7 +580,8 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 				&& Objects.equals(this.outputConfig, that.outputConfig)
 				&& Objects.equals(this.httpHeaders, that.httpHeaders)
 				&& Objects.equals(this.skillContainer, that.skillContainer)
-				&& Objects.equals(this.inferenceGeo, that.inferenceGeo);
+				&& Objects.equals(this.inferenceGeo, that.inferenceGeo)
+				&& Objects.equals(this.webSearchTool, that.webSearchTool);
 	}
 
 	@Override
@@ -572,7 +589,8 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		return Objects.hash(this.getModel(), this.maxTokens, this.metadata, this.stopSequences, this.temperature,
 				this.topP, this.topK, this.toolChoice, this.thinking, this.disableParallelToolUse, this.toolCallbacks,
 				this.toolNames, this.internalToolExecutionEnabled, this.toolContext, this.citationDocuments,
-				this.cacheOptions, this.outputConfig, this.httpHeaders, this.skillContainer, this.inferenceGeo);
+				this.cacheOptions, this.outputConfig, this.httpHeaders, this.skillContainer, this.inferenceGeo,
+				this.webSearchTool);
 	}
 
 	@Override
@@ -585,7 +603,8 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 				+ ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled + ", toolContext="
 				+ this.toolContext + ", citationDocuments=" + this.citationDocuments + ", cacheOptions="
 				+ this.cacheOptions + ", outputConfig=" + this.outputConfig + ", httpHeaders=" + this.httpHeaders
-				+ ", skillContainer=" + this.skillContainer + ", inferenceGeo=" + this.inferenceGeo + '}';
+				+ ", skillContainer=" + this.skillContainer + ", inferenceGeo=" + this.inferenceGeo + ", webSearchTool="
+				+ this.webSearchTool + '}';
 	}
 
 	/**
@@ -633,6 +652,8 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		private @Nullable AnthropicSkillContainer skillContainer;
 
 		private @Nullable String inferenceGeo;
+
+		private @Nullable AnthropicWebSearchTool webSearchTool;
 
 		@Override
 		public B outputSchema(@Nullable String outputSchema) {
@@ -803,6 +824,16 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 			return self();
 		}
 
+		/**
+		 * Enables Anthropic's built-in web search tool with the given configuration.
+		 * @param webSearchTool the web search configuration
+		 * @return this builder
+		 */
+		public B webSearchTool(@Nullable AnthropicWebSearchTool webSearchTool) {
+			this.webSearchTool = webSearchTool;
+			return self();
+		}
+
 		public B skill(String skillIdOrName) {
 			Assert.hasText(skillIdOrName, "Skill ID or name cannot be empty");
 			AnthropicSkill prebuilt = AnthropicSkill.fromId(skillIdOrName);
@@ -922,6 +953,9 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 				if (options.inferenceGeo != null) {
 					this.inferenceGeo = options.inferenceGeo;
 				}
+				if (options.webSearchTool != null) {
+					this.webSearchTool = options.webSearchTool;
+				}
 			}
 			return self();
 		}
@@ -960,6 +994,7 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 			options.httpHeaders = this.httpHeaders;
 			options.skillContainer = this.skillContainer;
 			options.inferenceGeo = this.inferenceGeo;
+			options.webSearchTool = this.webSearchTool;
 			options.validateCitationConsistency();
 			return options;
 		}
