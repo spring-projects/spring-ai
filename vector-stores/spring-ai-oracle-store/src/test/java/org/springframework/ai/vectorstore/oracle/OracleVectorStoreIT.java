@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 import javax.sql.DataSource;
 
 import oracle.jdbc.pool.OracleDataSource;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -68,7 +67,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 @Testcontainers
-@Disabled("Oracle image is 2GB")
 public class OracleVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
@@ -237,7 +235,7 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 					.query("The World")
 					.topK(5)
 					.similarityThresholdAll()
-					.filterExpression("\"foo bar 1\" == 'bar.foo'")
+					.filterExpression("'\"foo bar 1\"' == 'bar.foo'")
 					.build());
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
