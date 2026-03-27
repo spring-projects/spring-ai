@@ -52,6 +52,7 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
 import org.springframework.ai.vertexai.gemini.api.VertexAiGeminiApi;
+import org.springframework.ai.vertexai.gemini.common.GroundingMetadata;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetyRating;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
 import org.springframework.ai.vertexai.gemini.schema.JsonSchemaConverter;
@@ -121,6 +122,13 @@ class VertexAiGeminiChatModelIT {
 			.build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew", "Bob");
+
+		Map<String, Object> metadata = response.getResult().getOutput().getMetadata();
+		assertThat(metadata).containsKey("groundingMetadata");
+		GroundingMetadata grounding = (GroundingMetadata) metadata
+			.get("groundingMetadata");
+		assertThat(grounding.webSearchQueries()).isNotEmpty();
+		assertThat(grounding.groundingChunks()).isNotEmpty();
 	}
 
 	@Test

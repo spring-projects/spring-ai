@@ -16,6 +16,7 @@
 
 package org.springframework.ai.vertexai.gemini;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -35,6 +36,7 @@ import com.google.cloud.vertexai.api.GenerateContentResponse;
 import com.google.cloud.vertexai.api.GenerationConfig;
 import com.google.cloud.vertexai.api.Part;
 import com.google.cloud.vertexai.api.SafetySetting;
+import com.google.cloud.vertexai.api.CitationMetadata;
 import com.google.cloud.vertexai.api.Tool;
 import com.google.cloud.vertexai.api.Tool.GoogleSearch;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
@@ -85,7 +87,9 @@ import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.vertexai.gemini.api.VertexAiGeminiApi;
+import org.springframework.ai.vertexai.gemini.common.Citation;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiConstants;
+import org.springframework.ai.vertexai.gemini.common.GroundingMetadata;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetyRating;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
 import org.springframework.ai.vertexai.gemini.schema.VertexAiSchemaConverter;
@@ -608,6 +612,19 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		Map<String, Object> messageMetadata = Map.of("candidateIndex", candidateIndex, "finishReason",
 				candidateFinishReason, "logprobs", logprobs, "safetyRatings", safetyRatings);
 
+		if (candidate.hasCitationMetadata()) {
+			List<Citation> citations = toGeminiCitations(candidate.getCitationMetadata());
+			if (!citations.isEmpty()) {
+				messageMetadata.put("citations", citations);
+			}
+		}
+
+		if (candidate.hasGroundingMetadata()) {
+			GroundingMetadata groundingMetadata = toGeminiGroundingMetadata(
+					candidate.getGroundingMetadata());
+			messageMetadata.put("groundingMetadata", groundingMetadata);
+		}
+
 		ChatGenerationMetadata chatGenerationMetadata = ChatGenerationMetadata.builder()
 			.finishReason(candidateFinishReason.name())
 			.build();
@@ -678,6 +695,77 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 			case HARM_SEVERITY_HIGH -> VertexAiGeminiSafetyRating.HarmSeverity.HARM_SEVERITY_HIGH;
 			default -> VertexAiGeminiSafetyRating.HarmSeverity.HARM_SEVERITY_UNSPECIFIED;
 		};
+	}
+
+	private List<Citation> toGeminiCitations(CitationMetadata citationMetadata) {
+		return citationMetadata.getCitationsList().stream().map(citation -> {
+			LocalDate publicationDate = null;
+			if (citation.hasPublicationDate()) {
+				com.google.type.Date date = citation.getPublicationDate();
+				publicationDate = LocalDate.of(date.getYear(), date.getMonth(), date.getDay());
+			}
+			return new Citation(citation.getStartIndex(), citation.getEndIndex(), citation.getUri(),
+					citation.getTitle(), citation.getLicense(), publicationDate);
+		}).toList();
+	}
+
+	private GroundingMetadata toGeminiGroundingMetadata(com.google.cloud.vertexai.api.GroundingMetadata groundingMetadata) {
+		List<String> webSearchQueries = groundingMetadata.getWebSearchQueriesList()
+			.stream()
+			.map(Object::toString)
+			.toList();
+
+		GroundingMetadata.SearchEntryPoint searchEntryPoint = null;
+		if (groundingMetadata.hasSearchEntryPoint()) {
+			searchEntryPoint = new GroundingMetadata.SearchEntryPoint(
+					groundingMetadata.getSearchEntryPoint().getRenderedContent());
+		}
+
+		List<GroundingMetadata.GroundingChunk> groundingChunks = groundingMetadata
+			.getGroundingChunksList()
+			.stream()
+			.map(this::toGeminiGroundingChunk)
+			.toList();
+
+		List<GroundingMetadata.GroundingSupport> groundingSupports = groundingMetadata
+			.getGroundingSupportsList()
+			.stream()
+			.map(this::toGeminiGroundingSupport)
+			.toList();
+
+		return new GroundingMetadata(webSearchQueries, searchEntryPoint, groundingChunks, groundingSupports);
+	}
+
+	private GroundingMetadata.GroundingChunk toGeminiGroundingChunk(
+			com.google.cloud.vertexai.api.GroundingChunk chunk) {
+		GroundingMetadata.GroundingChunk.WebSource webSource = null;
+		if (chunk.hasWeb()) {
+			webSource = new GroundingMetadata.GroundingChunk.WebSource(chunk.getWeb().getUri(),
+					chunk.getWeb().getTitle());
+		}
+
+		GroundingMetadata.GroundingChunk.RetrievedContext retrievedContext = null;
+		if (chunk.hasRetrievedContext()) {
+			retrievedContext = new GroundingMetadata.GroundingChunk.RetrievedContext(
+					chunk.getRetrievedContext().getUri(), chunk.getRetrievedContext().getTitle(),
+					chunk.getRetrievedContext().getText());
+		}
+
+		return new GroundingMetadata.GroundingChunk(webSource, retrievedContext);
+	}
+
+	private GroundingMetadata.GroundingSupport toGeminiGroundingSupport(
+			com.google.cloud.vertexai.api.GroundingSupport support) {
+		GroundingMetadata.GroundingSupport.Segment segment = null;
+		if (support.hasSegment()) {
+			com.google.cloud.vertexai.api.Segment protoSegment = support.getSegment();
+			segment = new GroundingMetadata.GroundingSupport.Segment(protoSegment.getPartIndex(),
+					protoSegment.getStartIndex(), protoSegment.getEndIndex(), protoSegment.getText());
+		}
+
+		return new GroundingMetadata.GroundingSupport(segment,
+				support.getGroundingChunkIndicesList().stream().map(Integer::valueOf).toList(),
+				support.getConfidenceScoresList().stream().map(Float::valueOf).toList());
 	}
 
 	private VertexAiGeminiChatOptions vertexAiGeminiChatOptions(Prompt prompt) {
