@@ -163,7 +163,6 @@ public class ImageGeneration implements ModelResult<Image> {
 * xref:api/image/azure-openai-image.adoc[Azure OpenAI Image Generation]
 * xref:api/image/qianfan-image.adoc[QianFan Image Generation]
 * xref:api/image/stabilityai-image.adoc[StabilityAI Image Generation]
-* xref:api/image/zhipuai-image.adoc[ZhiPuAI Image Generation]
 
 == API Docs
 

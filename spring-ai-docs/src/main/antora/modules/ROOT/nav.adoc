@@ -33,7 +33,6 @@
 **** xref:api/chat/openai-sdk-chat.adoc[OpenAI SDK (Official)]
 **** xref:api/chat/openai-chat.adoc[OpenAI]
 **** xref:api/chat/qianfan-chat.adoc[QianFan]
-**** xref:api/chat/zhipuai-chat.adoc[ZhiPu AI]
 
 *** xref:api/embeddings.adoc[Embedding Models]
 **** xref:api/bedrock.adoc[Amazon Bedrock]
@@ -53,14 +52,12 @@
 **** VertexAI
 ***** xref:api/embeddings/vertexai-embeddings-text.adoc[Text Embedding]
 ***** xref:api/embeddings/vertexai-embeddings-multimodal.adoc[Multimodal Embedding]
-**** xref:api/embeddings/zhipuai-embeddings.adoc[ZhiPu AI]
 
 *** xref:api/imageclient.adoc[Image Models]
 **** xref:api/image/azure-openai-image.adoc[Azure OpenAI]
 **** xref:api/image/openai-sdk-image.adoc[OpenAI SDK (Official)]
 **** xref:api/image/openai-image.adoc[OpenAI]
 **** xref:api/image/stabilityai-image.adoc[Stability]
-**** xref:api/image/zhipuai-image.adoc[ZhiPuAI]
 **** xref:api/image/qianfan-image.adoc[QianFan]
 
 *** xref:api/audio[Audio Models]
