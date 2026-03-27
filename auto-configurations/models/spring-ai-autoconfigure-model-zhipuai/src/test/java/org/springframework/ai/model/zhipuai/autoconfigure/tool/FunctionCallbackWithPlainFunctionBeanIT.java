@@ -47,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Geng Rong
  * @author Issam El-atif
  */
-@EnabledIfEnvironmentVariable(named = "ZHIPU_AI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "ZHIPU_AI_API_KEY", matches = ".+")
 class FunctionCallbackWithPlainFunctionBeanIT {
 
 	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackWithPlainFunctionBeanIT.class);

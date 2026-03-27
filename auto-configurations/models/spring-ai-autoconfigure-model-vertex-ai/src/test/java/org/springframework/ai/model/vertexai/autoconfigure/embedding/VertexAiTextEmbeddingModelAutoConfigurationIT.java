@@ -40,8 +40,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Ilayaperumal Gopinathan
  * @author Issam El-atif
  */
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".+")
 public class VertexAiTextEmbeddingModelAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(

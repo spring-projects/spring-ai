@@ -36,7 +36,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 public class FunctionCallWithPromptFunctionIT {
 
 	private final Logger logger = LoggerFactory.getLogger(FunctionCallWithPromptFunctionIT.class);

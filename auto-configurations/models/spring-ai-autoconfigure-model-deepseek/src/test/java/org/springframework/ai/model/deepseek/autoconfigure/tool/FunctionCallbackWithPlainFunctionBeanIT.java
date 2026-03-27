@@ -48,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Hyunsang Han
  * @author Issam El-atif
  */
-@EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".+")
 // @Disabled("the deepseek-chat model's Function Calling capability is unstable see:
 // https://api-docs.deepseek.com/guides/function_calling")
 class FunctionCallbackWithPlainFunctionBeanIT {

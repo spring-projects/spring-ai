@@ -43,7 +43,7 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ
  * @author Thomas Vitale
  */
 @SpringBootTest(classes = TestApplication.class)
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class VectorStoreDocumentRetrieverIT {
 
 	// @formatter:off

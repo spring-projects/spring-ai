@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * @author Dan Dobrin
  */
-@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
 class GoogleGenAiThinkingLevelIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiThinkingLevelIT.class);

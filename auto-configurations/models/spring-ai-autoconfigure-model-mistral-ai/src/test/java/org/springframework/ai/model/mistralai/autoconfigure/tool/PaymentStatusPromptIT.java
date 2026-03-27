@@ -38,7 +38,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 public class PaymentStatusPromptIT {
 
 	// Assuming we have the following payment data.

@@ -57,8 +57,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  */
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".+")
 public class VertexAiGeminiPaymentTransactionIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(VertexAiGeminiPaymentTransactionIT.class);

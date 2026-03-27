@@ -38,7 +38,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 public class AnthropicChatAutoConfigurationIT {
 
 	private static final Log logger = LogFactory.getLog(AnthropicChatAutoConfigurationIT.class);

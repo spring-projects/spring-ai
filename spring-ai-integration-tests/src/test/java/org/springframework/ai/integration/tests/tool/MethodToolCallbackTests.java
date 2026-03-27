@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  */
 @SpringBootTest(classes = TestApplication.class)
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class MethodToolCallbackTests {
 

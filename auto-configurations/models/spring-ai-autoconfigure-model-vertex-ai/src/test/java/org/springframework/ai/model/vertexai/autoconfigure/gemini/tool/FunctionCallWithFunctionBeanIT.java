@@ -39,8 +39,8 @@ import org.springframework.context.annotation.Description;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".+")
 class FunctionCallWithFunctionBeanIT {
 
 	private final Logger logger = LoggerFactory.getLogger(FunctionCallWithFunctionBeanIT.class);

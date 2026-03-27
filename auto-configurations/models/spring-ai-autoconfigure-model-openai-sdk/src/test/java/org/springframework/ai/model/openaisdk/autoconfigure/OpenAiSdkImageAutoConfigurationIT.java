@@ -29,7 +29,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiSdkImageAutoConfigurationIT {
 
 	private static final Log logger = LogFactory.getLog(OpenAiSdkImageAutoConfigurationIT.class);
