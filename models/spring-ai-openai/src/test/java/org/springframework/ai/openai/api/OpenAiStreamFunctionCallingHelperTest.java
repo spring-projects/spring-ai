@@ -314,6 +314,47 @@ public class OpenAiStreamFunctionCallingHelperTest {
 	}
 
 	@Test
+	public void merge_sameIdToolCallChunks_shouldMergeProperly() {
+		// Simulate Qwen streaming pattern: same ID across chunks, name only in first
+		// chunk
+		var func1 = new OpenAiApi.ChatCompletionMessage.ChatCompletionFunction("init_work_status", "");
+		var toolCall1 = new OpenAiApi.ChatCompletionMessage.ToolCall(0, "call_xxx", "function", func1);
+		var delta1 = new OpenAiApi.ChatCompletionMessage(null, OpenAiApi.ChatCompletionMessage.Role.ASSISTANT, null,
+				null, List.of(toolCall1), null, null, null, null);
+		var choice1 = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, 0, delta1, null);
+		var chunk1 = new OpenAiApi.ChatCompletionChunk("chatcmpl-1", List.of(choice1), 1L, "qwen", null, null, null,
+				null);
+
+		// Chunk 2: same ID, empty name, partial arguments
+		var func2 = new OpenAiApi.ChatCompletionMessage.ChatCompletionFunction("", "{\"firstStep");
+		var toolCall2 = new OpenAiApi.ChatCompletionMessage.ToolCall(0, "call_xxx", "function", func2);
+		var delta2 = new OpenAiApi.ChatCompletionMessage(null, null, null, null, List.of(toolCall2), null, null, null,
+				null);
+		var choice2 = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, 0, delta2, null);
+		var chunk2 = new OpenAiApi.ChatCompletionChunk("chatcmpl-1", List.of(choice2), 1L, "qwen", null, null, null,
+				null);
+
+		// Chunk 3: empty ID, continuation
+		var func3 = new OpenAiApi.ChatCompletionMessage.ChatCompletionFunction("", "\": \"value\"}");
+		var toolCall3 = new OpenAiApi.ChatCompletionMessage.ToolCall(0, "", "function", func3);
+		var delta3 = new OpenAiApi.ChatCompletionMessage(null, null, null, null, List.of(toolCall3), null, null, null,
+				null);
+		var choice3 = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, 0, delta3, null);
+		var chunk3 = new OpenAiApi.ChatCompletionChunk("chatcmpl-1", List.of(choice3), 1L, "qwen", null, null, null,
+				null);
+
+		// Simulate reduce: merge all chunks
+		var initial = new OpenAiApi.ChatCompletionChunk(null, null, null, null, null, null, null, null);
+		var result = this.helper.merge(this.helper.merge(this.helper.merge(initial, chunk1), chunk2), chunk3);
+
+		// Should have exactly 1 tool call with correct name and combined arguments
+		var mergedDelta = result.choices().get(0).delta();
+		assertThat(mergedDelta.toolCalls()).hasSize(1);
+		assertThat(mergedDelta.toolCalls().get(0).function().name()).isEqualTo("init_work_status");
+		assertThat(mergedDelta.toolCalls().get(0).function().arguments()).isEqualTo("{\"firstStep\": \"value\"}");
+	}
+
+	@Test
 	public void edgeCases_emptyStringFields() {
 		var chunk = new OpenAiApi.ChatCompletionChunk("", Collections.emptyList(), 0L, "", "", "", "", null);
 

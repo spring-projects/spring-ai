@@ -99,14 +99,15 @@ public class DeepSeekStreamFunctionCallingHelper {
 				throw new IllegalStateException("Currently only one tool call is supported per message!");
 			}
 			var currentToolCall = current.toolCalls().iterator().next();
-			if (StringUtils.hasText(currentToolCall.id())) {
+			if (!StringUtils.hasText(currentToolCall.id())
+					|| (lastPreviousTooCall != null && currentToolCall.id().equals(lastPreviousTooCall.id()))) {
+				toolCalls.add(merge(lastPreviousTooCall, currentToolCall));
+			}
+			else {
 				if (lastPreviousTooCall != null) {
 					toolCalls.add(lastPreviousTooCall);
 				}
 				toolCalls.add(currentToolCall);
-			}
-			else {
-				toolCalls.add(merge(lastPreviousTooCall, currentToolCall));
 			}
 		}
 		else {
