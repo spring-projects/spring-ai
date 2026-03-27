@@ -38,9 +38,7 @@ import org.springframework.context.annotation.Bean;
  * @author Mark Pollack
  * @author Ilayaperumal Gopinathan
  * @since 1.0.0
- * @deprecated use Google GenAI instead
  */
-@Deprecated(since = "2.0.0-M4", forRemoval = true)
 @AutoConfiguration
 @ConditionalOnClass({ VertexAI.class, VertexAiMultimodalEmbeddingModel.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.MULTI_MODAL_EMBEDDING_MODEL,

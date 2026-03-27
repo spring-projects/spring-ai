@@ -61,9 +61,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Mark Pollack
  * @since 1.0.0
- * @deprecated use Google GenAI instead
  */
-@Deprecated(since = "2.0.0-M4", forRemoval = true)
 public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(VertexAiMultimodalEmbeddingModel.class);
