@@ -46,7 +46,7 @@ import org.springframework.core.io.Resource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiAutoConfigurationIT {
 
 	private static final Log logger = LogFactory.getLog(OpenAiAutoConfigurationIT.class);

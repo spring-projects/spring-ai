@@ -41,7 +41,7 @@ import org.springframework.context.annotation.Description;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 class PaymentStatusBeanIT {
 
 	// Assuming we have the following data

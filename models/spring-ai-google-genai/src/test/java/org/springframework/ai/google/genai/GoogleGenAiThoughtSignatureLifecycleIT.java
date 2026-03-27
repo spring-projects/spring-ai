@@ -77,7 +77,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @since 1.1.0
  */
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
 class GoogleGenAiThoughtSignatureLifecycleIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiThoughtSignatureLifecycleIT.class);

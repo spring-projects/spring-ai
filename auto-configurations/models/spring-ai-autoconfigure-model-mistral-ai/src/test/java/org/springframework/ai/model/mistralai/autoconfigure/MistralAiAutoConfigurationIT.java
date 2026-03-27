@@ -42,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Issam El-atif
  * @since 0.8.1
  */
-@EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 public class MistralAiAutoConfigurationIT {
 
 	private static final Log logger = LogFactory.getLog(MistralAiAutoConfigurationIT.class);

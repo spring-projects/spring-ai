@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 // @Disabled("the deepseek-chat model's Function Calling capability is unstable see:
 // https://api-docs.deepseek.com/guides/function_calling")
-@EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".+")
 public class FunctionCallbackInPromptIT {
 
 	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackInPromptIT.class);

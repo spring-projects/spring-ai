@@ -42,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Geng Rong
  * @author Issam El-atif
  */
-@EnabledIfEnvironmentVariable(named = "MINIMAX_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "MINIMAX_API_KEY", matches = ".+")
 public class FunctionCallbackInPromptIT {
 
 	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackInPromptIT.class);

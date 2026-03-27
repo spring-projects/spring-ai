@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Issam El-atif
  * @since 1.0.0
  */
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class AzureOpenAiDirectOpenAiAutoConfigurationIT {
 
 	private static String CHAT_MODEL_NAME = "gpt-4o";

@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Alexandros Pappas
  * @author Issam El-atif
  */
-@EnabledIfEnvironmentVariable(named = "ELEVEN_LABS_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "ELEVEN_LABS_API_KEY", matches = ".+")
 public class ElevenLabsAutoConfigurationIT {
 
 	private static final org.apache.commons.logging.Log logger = org.apache.commons.logging.LogFactory

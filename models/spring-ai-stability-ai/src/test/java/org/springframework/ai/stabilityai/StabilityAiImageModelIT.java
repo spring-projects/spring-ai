@@ -36,7 +36,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = StabilityAiImageTestConfiguration.class)
-@EnabledIfEnvironmentVariable(named = "STABILITYAI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "STABILITYAI_API_KEY", matches = ".+")
 public class StabilityAiImageModelIT {
 
 	@Autowired

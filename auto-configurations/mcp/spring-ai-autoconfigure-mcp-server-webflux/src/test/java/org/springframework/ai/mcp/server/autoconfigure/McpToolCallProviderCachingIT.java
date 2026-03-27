@@ -64,7 +64,7 @@ import static org.awaitility.Awaitility.await;
 /**
  * @author Christian Tzolov
  */
-@EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 public class McpToolCallProviderCachingIT {
 
 	private final ApplicationContextRunner serverContextRunner = new ApplicationContextRunner()

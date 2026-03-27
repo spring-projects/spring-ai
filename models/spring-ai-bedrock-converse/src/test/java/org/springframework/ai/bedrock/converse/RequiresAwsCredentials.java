@@ -25,9 +25,9 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 @Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
-@EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "AWS_SESSION_TOKEN", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "AWS_SESSION_TOKEN", matches = ".+")
 public @interface RequiresAwsCredentials {
 
 	// You can add custom properties here if needed

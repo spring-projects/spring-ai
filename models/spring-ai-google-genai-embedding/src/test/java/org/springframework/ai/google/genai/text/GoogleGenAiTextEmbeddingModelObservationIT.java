@@ -49,8 +49,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Dan Dobrin
  */
 @SpringBootTest(classes = GoogleGenAiTextEmbeddingModelObservationIT.Config.class)
-@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".+")
 public class GoogleGenAiTextEmbeddingModelObservationIT {
 
 	@Autowired

@@ -44,8 +44,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Dan Dobrin
  */
 @SpringBootTest(classes = GoogleGenAiTextEmbeddingModelIT.Config.class)
-@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".+")
 class GoogleGenAiTextEmbeddingModelIT {
 
 	// https://console.cloud.google.com/vertex-ai/publishers/google/model-garden/textembedding-gecko?project=gen-lang-client-0587361272
