@@ -411,6 +411,12 @@ public class ZhiPuAiApi {
 	public enum ChatCompletionFinishReason {
 
 		/**
+		 * Handles empty, NULL and unknown values.
+		 */
+		@JsonProperty("")
+		UNKNOWN,
+
+		/**
 		 * The model hit a natural stop point or a provided stop sequence.
 		 */
 		@JsonProperty("stop")
@@ -434,7 +440,19 @@ public class ZhiPuAiApi {
 		 * Only for compatibility with Mistral AI API.
 		 */
 		@JsonProperty("tool_call")
-		TOOL_CALL
+		TOOL_CALL,
+
+		/**
+		 * The model encountered a network error during generation.
+		 */
+		@JsonProperty("network_error")
+		NETWORK_ERROR,
+
+		/**
+		 * The content was filtered due to sensitivity.
+		 */
+		@JsonProperty("sensitive")
+		SENSITIVE
 
 	}
 
