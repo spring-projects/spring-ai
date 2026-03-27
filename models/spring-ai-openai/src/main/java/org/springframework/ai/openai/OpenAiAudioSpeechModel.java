@@ -28,6 +28,7 @@ import org.springframework.ai.audio.tts.TextToSpeechOptions;
 import org.springframework.ai.audio.tts.TextToSpeechPrompt;
 import org.springframework.ai.audio.tts.TextToSpeechResponse;
 import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.AudioResponseFormat;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioSpeechResponseMetadata;
@@ -36,7 +37,6 @@ import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 /**
  * OpenAI audio speech client implementation for backed by {@link OpenAiAudioApi}.
@@ -164,14 +164,16 @@ public class OpenAiAudioSpeechModel implements TextToSpeechModel {
 	}
 
 	private OpenAiAudioApi.SpeechRequest createRequest(TextToSpeechPrompt prompt) {
-		OpenAiAudioSpeechOptions runtimeOptions = (prompt
-			.getOptions() instanceof OpenAiAudioSpeechOptions openAiAudioSpeechOptions) ? openAiAudioSpeechOptions
-					: null;
-		OpenAiAudioSpeechOptions options = (runtimeOptions != null) ? this.merge(runtimeOptions, this.defaultOptions)
-				: this.defaultOptions;
+		OpenAiAudioSpeechOptions runtimeOptions = null;
+		if (prompt.getOptions() != null) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), TextToSpeechOptions.class,
+					OpenAiAudioSpeechOptions.class);
+		}
 
-		String input = StringUtils.hasText(options.getInput()) ? options.getInput()
-				: prompt.getInstructions().getText();
+		OpenAiAudioSpeechOptions options = runtimeOptions == null ? this.defaultOptions
+				: ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions, OpenAiAudioSpeechOptions.class);
+
+		String input = ModelOptionsUtils.mergeOption(options.getInput(), prompt.getInstructions().getText());
 
 		OpenAiAudioApi.SpeechRequest.Builder requestBuilder = OpenAiAudioApi.SpeechRequest.builder()
 			.model(options.getModel())
@@ -186,19 +188,6 @@ public class OpenAiAudioSpeechModel implements TextToSpeechModel {
 	@Override
 	public TextToSpeechOptions getDefaultOptions() {
 		return this.defaultOptions;
-	}
-
-	private OpenAiAudioSpeechOptions merge(OpenAiAudioSpeechOptions source, OpenAiAudioSpeechOptions target) {
-		OpenAiAudioSpeechOptions.Builder mergedBuilder = OpenAiAudioSpeechOptions.builder();
-
-		mergedBuilder.model(source.getModel() != null ? source.getModel() : target.getModel());
-		mergedBuilder.input(source.getInput() != null ? source.getInput() : target.getInput());
-		mergedBuilder.voice(source.getVoice() != null ? source.getVoice() : target.getVoice());
-		mergedBuilder.responseFormat(
-				source.getResponseFormat() != null ? source.getResponseFormat() : target.getResponseFormat());
-		mergedBuilder.speed(source.getSpeed() != null ? source.getSpeed() : target.getSpeed());
-
-		return mergedBuilder.build();
 	}
 
 }
