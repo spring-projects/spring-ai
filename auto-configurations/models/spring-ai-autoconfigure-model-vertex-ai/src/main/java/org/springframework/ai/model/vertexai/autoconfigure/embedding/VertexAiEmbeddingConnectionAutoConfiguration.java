@@ -35,9 +35,7 @@ import org.springframework.util.StringUtils;
  * @author Ilayaperumal Gopinathan
  * @author Nguyen Tran
  * @since 1.0.0
- * @deprecated use Google GenAI instead
  */
-@Deprecated(since = "2.0.0-M4", forRemoval = true)
 @AutoConfiguration
 @ConditionalOnClass(PredictionServiceSettings.class)
 @EnableConfigurationProperties(VertexAiEmbeddingConnectionProperties.class)

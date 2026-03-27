@@ -29,9 +29,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
  * @since 1.0.0
- * @deprecated use Google GenAI instead
  */
-@Deprecated(since = "2.0.0-M4", forRemoval = true)
 @JsonInclude(Include.NON_NULL)
 public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 
