@@ -41,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Issam El-atif
  * @since 1.1.0
  */
-@EnabledIfEnvironmentVariable(named = MistralAiOcrAutoConfigurationIT.ENV_VAR_NAME, matches = ".*")
+@EnabledIfEnvironmentVariable(named = MistralAiOcrAutoConfigurationIT.ENV_VAR_NAME, matches = ".+")
 class MistralAiOcrAutoConfigurationIT {
 
 	static final String ENV_VAR_NAME = "MISTRAL_AI_API_KEY";

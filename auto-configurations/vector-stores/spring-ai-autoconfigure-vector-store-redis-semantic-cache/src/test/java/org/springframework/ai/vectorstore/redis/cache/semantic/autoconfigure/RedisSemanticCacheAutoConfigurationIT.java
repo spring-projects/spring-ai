@@ -47,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration tests for {@link RedisSemanticCacheAutoConfiguration}.
  */
 @Testcontainers
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class RedisSemanticCacheAutoConfigurationIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(RedisSemanticCacheAutoConfigurationIT.class);

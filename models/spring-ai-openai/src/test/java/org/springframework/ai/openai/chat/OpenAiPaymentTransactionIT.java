@@ -64,7 +64,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  */
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiPaymentTransactionIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiPaymentTransactionIT.class);

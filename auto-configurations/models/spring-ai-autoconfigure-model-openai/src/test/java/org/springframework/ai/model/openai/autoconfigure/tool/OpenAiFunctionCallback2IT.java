@@ -36,7 +36,7 @@ import org.springframework.context.annotation.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiFunctionCallback2IT {
 
 	private final Logger logger = LoggerFactory.getLogger(OpenAiFunctionCallback2IT.class);

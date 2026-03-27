@@ -81,7 +81,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Daniel Garnier-Moiroux
  */
-@EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 public class StreamableMcpAnnotationsWithLLMIT {
 
 	private final ApplicationContextRunner serverContextRunner = new ApplicationContextRunner()

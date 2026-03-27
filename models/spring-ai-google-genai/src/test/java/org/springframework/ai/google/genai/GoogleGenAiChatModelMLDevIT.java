@@ -47,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Dan Dobrin
  */
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
 class GoogleGenAiChatModelMLDevIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiChatModelMLDevIT.class);

@@ -61,8 +61,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
  * @author Soby Chacko
  */
 @Testcontainers
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".+")
 public class PgVectorStoreAutoTruncationIT {
 
 	private static final int ARTIFICIAL_TOKEN_LIMIT = 132_900;

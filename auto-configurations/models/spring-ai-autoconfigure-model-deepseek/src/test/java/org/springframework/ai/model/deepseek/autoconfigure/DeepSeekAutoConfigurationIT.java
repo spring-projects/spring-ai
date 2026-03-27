@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Hyunsang Han
  * @author Issam El-atif
  */
-@EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".+")
 public class DeepSeekAutoConfigurationIT {
 
 	private static final Log logger = LogFactory.getLog(DeepSeekAutoConfigurationIT.class);
