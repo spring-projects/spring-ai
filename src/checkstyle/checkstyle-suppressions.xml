@@ -27,7 +27,6 @@
 
 	<suppress files=".*BeanOutputConverterTest\.java$" checks="RegexpSinglelineJava"/>
 	<suppress  files="BaseOllamaIT.java" checks="HideUtilityClassConstructor"/>
-	<suppress  files="BaseOCIGenAITest.java" checks="HideUtilityClassConstructor"/>
 	<suppress  files="OpenAiApiBuilderTests.java" checks="RegexpSinglelineJava"/>
 	<suppress  files="AnthropicApiBuilderTests.java" checks="RegexpSinglelineJava"/>
 	<suppress  files="OpenAiChatModelResponseFormatIT.java" checks="RegexpSinglelineJava"/>
@@ -78,7 +77,6 @@
 	<suppress files="models[\\/]spring-ai-google-genai-embedding" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-minimax" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-mistral-ai" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-oci-genai" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-openai" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-openai-sdk" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-transformers" id="bannedNullabilityImports" />
