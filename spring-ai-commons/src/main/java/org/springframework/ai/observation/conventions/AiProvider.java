@@ -98,12 +98,7 @@ public enum AiProvider {
 	/**
 	 * AI system provided by Vertex AI.
 	 */
-	VERTEX_AI("vertex_ai"),
-
-	/**
-	 * AI system provided by Zhipuai.
-	 */
-	ZHIPUAI("zhipuai");
+	VERTEX_AI("vertex_ai");
 
 	private final String value;
 

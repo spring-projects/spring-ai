@@ -120,7 +120,6 @@
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-transformers</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-vertex-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-google-genai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-zhipuai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-deepseek</module>
 
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common</module>
@@ -196,7 +195,6 @@
 		<module>models/spring-ai-vertex-ai-gemini</module>
 		<module>models/spring-ai-google-genai</module>
 		<module>models/spring-ai-google-genai-embedding</module>
-		<module>models/spring-ai-zhipuai</module>
 		<module>models/spring-ai-deepseek</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-anthropic</module>
@@ -216,7 +214,6 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-transformers</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-embedding</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-gemini</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-zhipuai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-deepseek</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory</module>
@@ -880,7 +877,6 @@
 								<exclude>org.springframework.ai.transformers/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.vertexai.embedding/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.vertexai.gemini/**/*IT.java</exclude>
-								<exclude>org.springframework.ai.zhipuai/**/*IT.java</exclude>
 
 								<!-- Vector Stores -->
 								<exclude>org.springframework.ai.vectorstore**/CosmosDB**IT.java</exclude>
@@ -936,9 +932,6 @@
 								 <exclude>org.springframework.ai.autoconfigure.vectorstore/**/**IT.java</exclude>
 
 								 <exclude>org.springframework.ai.autoconfigure.vertexai/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.zhipuai/**/**IT.java</exclude>
-
-								 <exclude>org.springframework.ai.autoconfigure.zhipuai/**/**IT.java</exclude>
 
 								 <!-- Test Containers -->
 								 <exclude>org.springframework.ai.testcontainers/**/**IT.java</exclude>

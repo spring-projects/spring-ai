@@ -54,8 +54,6 @@ public final class SpringAIModels {
 
 	public static final String GOOGLE_GEN_AI = "google-genai";
 
-	public static final String ZHIPUAI = "zhipuai";
-
 	public static final String DEEPSEEK = "deepseek";
 
 	public static final String ELEVEN_LABS = "elevenlabs";
