@@ -113,7 +113,6 @@
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai-sdk</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-minimax</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-mistral-ai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-oci-genai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-ollama</module>
 
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-postgresml-embedding</module>
@@ -187,7 +186,6 @@
 		<module>models/spring-ai-elevenlabs</module>
 		<module>models/spring-ai-minimax</module>
 		<module>models/spring-ai-mistral-ai</module>
-		<module>models/spring-ai-oci-genai</module>
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
 		<module>models/spring-ai-openai-sdk</module>
@@ -210,7 +208,6 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-elevenlabs</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-minimax</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-mistral-ai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-oci-genai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-ollama</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-openai-sdk</module>
@@ -302,7 +299,6 @@
 
 		<djl.version>0.32.0</djl.version>
 		<onnxruntime.version>1.19.2</onnxruntime.version>
-		<oci-sdk-version>3.63.1</oci-sdk-version>
 		<com.google.cloud.version>26.72.0</com.google.cloud.version>
 		<com.google.genai.version>1.44.0</com.google.genai.version>
 		<ibm.sdk.version>9.20.0</ibm.sdk.version>
@@ -877,7 +873,6 @@
 								<exclude>org.springframework.ai.elevenlabs/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.minimax/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.mistralai/**/*IT.java</exclude>
-								<exclude>org.springframework.ai.oci/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.ollama/**/*IT.java</exclude>								<!-- <exclude>org.springframework.ai.openai/**/*IT.java</exclude> -->
 								<exclude>org.springframework.ai.openaisdk/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.postgresml/**/*IT.java</exclude>
@@ -929,7 +924,6 @@
 
 								 <exclude>org.springframework.ai.autoconfigure.minimax/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.mistralai/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.oci/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.ollama/**/**IT.java</exclude>
 								 <!-- <exclude>org.springframework.ai.autoconfigure.openai/**/**IT.java</exclude> -->
 								 <exclude>org.springframework.ai.autoconfigure.postgresml/**/**IT.java</exclude>

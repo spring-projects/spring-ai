@@ -299,12 +299,6 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-oci-genai</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-ollama</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -698,12 +692,6 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-autoconfigure-model-oci-genai</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-model-ollama</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -1080,12 +1068,6 @@
 				<version>${project.version}</version>
 			</dependency>
 
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-starter-model-oci-genai</artifactId>
-				<version>${project.version}</version>
-			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
