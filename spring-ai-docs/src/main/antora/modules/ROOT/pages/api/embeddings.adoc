@@ -182,4 +182,3 @@ Internally the various `EmbeddingModel` implementations use different low-level 
 * xref:api/embeddings/bedrock-titan-embedding.adoc[Spring AI Bedrock Titan Embeddings]
 * xref:api/embeddings/vertexai-embeddings-text.adoc[Spring AI VertexAI Embeddings]
 * xref:api/embeddings/mistralai-embeddings.adoc[Spring AI Mistral AI Embeddings]
-* xref:api/embeddings/oci-genai-embeddings.adoc[Spring AI Oracle Cloud Infrastructure GenAI Embeddings]

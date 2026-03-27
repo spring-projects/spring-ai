@@ -30,8 +30,6 @@
 **** xref:api/chat/nvidia-chat.adoc[NVIDIA]
 **** xref:api/chat/ollama-chat.adoc[Ollama]
 **** xref:api/chat/perplexity-chat.adoc[Perplexity AI]
-**** OCI Generative AI
-***** xref:api/chat/oci-genai/cohere-chat.adoc[Cohere]
 **** xref:api/chat/openai-sdk-chat.adoc[OpenAI SDK (Official)]
 **** xref:api/chat/openai-chat.adoc[OpenAI]
 **** xref:api/chat/qianfan-chat.adoc[QianFan]
@@ -46,7 +44,6 @@
 ***** xref:api/embeddings/google-genai-embeddings-text.adoc[Google GenAI Text Embedding]
 **** xref:api/embeddings/mistralai-embeddings.adoc[Mistral AI]
 **** xref:api/embeddings/minimax-embeddings.adoc[MiniMax]
-**** xref:api/embeddings/oci-genai-embeddings.adoc[OCI GenAI]
 **** xref:api/embeddings/ollama-embeddings.adoc[Ollama]
 **** xref:api/embeddings/onnx.adoc[(ONNX) Transformers]
 **** xref:api/embeddings/openai-sdk-embeddings.adoc[OpenAI SDK (Official)]
