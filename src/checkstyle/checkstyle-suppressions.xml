@@ -82,7 +82,6 @@
 	<suppress files="models[\\/]spring-ai-transformers" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-vertex-ai-embedding" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-vertex-ai-gemini" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-zhipuai" id="bannedNullabilityImports" />
 	
 	<suppress files="spring-ai-integration-tests" id="bannedNullabilityImports" />
 	<suppress files="spring-ai-spring-boot-docker-compose" id="bannedNullabilityImports" />
