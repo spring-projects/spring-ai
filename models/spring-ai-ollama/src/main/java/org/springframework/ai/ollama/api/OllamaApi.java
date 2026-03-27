@@ -303,10 +303,12 @@ public final class OllamaApi {
 		/**
 		 * The relevant tool call.
 		 *
+		 * @param id The id of the tool call.
 		 * @param function The function definition.
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record ToolCall(
+			@JsonProperty("id") String id,
 			@JsonProperty("function") ToolCallFunction function) {
 		}
 
