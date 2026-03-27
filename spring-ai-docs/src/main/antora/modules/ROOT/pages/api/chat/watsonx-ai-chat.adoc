@@ -1,0 +1,5 @@
+= IBM watsonx.ai Chat
+
+This functionality has been moved to the Spring AI Community repository.
+
+Please visit https://github.com/spring-ai-community/spring-ai-watsonx-ai for the latest version.
