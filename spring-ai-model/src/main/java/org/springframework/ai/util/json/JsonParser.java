@@ -176,9 +176,6 @@ public final class JsonParser {
 			try {
 				result = JsonParser.fromJson(jsonString, javaType);
 			}
-			catch (JacksonException e) {
-				// ignore: value is not valid JSON, fall through to serialization fallback
-			}
 			catch (IllegalStateException e) {
 				// ignore: fromJson wraps JacksonException in IllegalStateException,
 				// which happens for types like LocalDate/LocalTime where the raw string
