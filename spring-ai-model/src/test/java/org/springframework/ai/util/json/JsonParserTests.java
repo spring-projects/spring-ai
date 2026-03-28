@@ -17,6 +17,8 @@
 package org.springframework.ai.util.json;
 
 import java.lang.reflect.Type;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 import org.junit.jupiter.api.Test;
 import tools.jackson.core.type.TypeReference;
@@ -269,6 +271,20 @@ class JsonParserTests {
 		var value = JsonParser.toTypedObject("1.5E12", Long.class);
 		assertThat(value).isInstanceOf(Long.class);
 		assertThat(value).isEqualTo(1_500_000_000_000L);
+	}
+
+	@Test
+	void fromStringToLocalDate() {
+		var value = JsonParser.toTypedObject("2025-04-15", LocalDate.class);
+		assertThat(value).isOfAnyClassIn(LocalDate.class);
+		assertThat(value).isEqualTo(LocalDate.of(2025, 4, 15));
+	}
+
+	@Test
+	void fromStringToLocalTime() {
+		var value = JsonParser.toTypedObject("08:00", LocalTime.class);
+		assertThat(value).isOfAnyClassIn(LocalTime.class);
+		assertThat(value).isEqualTo(LocalTime.of(8, 0));
 	}
 
 	@Test
