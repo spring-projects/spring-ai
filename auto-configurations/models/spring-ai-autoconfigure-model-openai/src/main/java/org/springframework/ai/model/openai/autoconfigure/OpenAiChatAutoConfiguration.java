@@ -26,6 +26,7 @@ import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicat
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.ObjectProvider;
@@ -87,7 +88,18 @@ public class OpenAiChatAutoConfiguration {
 			ToolCallingManager toolCallingManager, ObjectProvider<RetryTemplate> retryTemplate,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
-			ObjectProvider<ToolExecutionEligibilityPredicate> openAiToolExecutionEligibilityPredicate) {
+			ObjectProvider<ToolExecutionEligibilityPredicate> openAiToolExecutionEligibilityPredicate,
+			ObjectProvider<OpenAiChatOptions> userOptionsProvider) {
+
+		OpenAiChatOptions defaultOptions = chatProperties.getOptions();
+		OpenAiChatOptions userOptions = userOptionsProvider.getIfAvailable();
+
+		if (defaultOptions.getModel().startsWith("text-search-")) {
+			defaultOptions.setTemperature(null);
+		}
+		else if (userOptions != null && userOptions.getTemperature() != null) {
+			defaultOptions.setTemperature(userOptions.getTemperature());
+		}
 
 		var chatModel = OpenAiChatModel.builder()
 			.openAiApi(openAiApi)
