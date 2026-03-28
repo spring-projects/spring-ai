@@ -47,6 +47,7 @@
 		<module>memory/repository/spring-ai-model-chat-memory-repository-mongodb</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-neo4j</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-redis</module>
+		<module>memory/repository/spring-ai-model-chat-memory-repository-bedrock-agentcore</module>
 
 
 
@@ -98,6 +99,7 @@
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-jdbc</module>
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-mongodb</module>
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-neo4j</module>
+		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-bedrock-agentcore</module>
 		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-redis</module>
 
 		<module>auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation</module>
@@ -229,6 +231,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-mongodb</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-neo4j</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-redis</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-bedrock-agentcore</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server</module>
@@ -296,9 +299,10 @@
 		<jtokkit.version>1.1.0</jtokkit.version>
 		<kotlin.version>2.2.21</kotlin.version>
 
-		<!-- NOTE: keep bedrockruntime and awssdk versions aligned -->
+		<!-- NOTE: keep bedrockruntime, awssdk, and bedrockagentcore versions aligned -->
 		<bedrockruntime.version>2.41.22</bedrockruntime.version>
 		<awssdk.version>2.41.22</awssdk.version>
+		<bedrockagentcore.version>2.41.22</bedrockagentcore.version>
 
 		<djl.version>0.32.0</djl.version>
 		<onnxruntime.version>1.19.2</onnxruntime.version>
