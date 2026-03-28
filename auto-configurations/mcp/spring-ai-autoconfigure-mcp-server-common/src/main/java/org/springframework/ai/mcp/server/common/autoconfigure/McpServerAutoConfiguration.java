@@ -215,12 +215,22 @@ public class McpServerAutoConfiguration {
 		return serverBuilder.build();
 	}
 
+	/**
+	 * Registers a {@link McpSyncServerCustomizer} for servlet-based (WebMVC) deployments
+	 * that applies the configured {@code immediateExecution} setting.
+	 * <p>
+	 * By default, {@code immediateExecution} is {@code true} to preserve backwards
+	 * compatibility. Set {@code spring.ai.mcp.server.immediate-execution=false} when
+	 * your MCP tools issue server-initiated requests to the client (MCP Sampling or
+	 * Elicitation), to avoid exhausting the servlet container's thread pool while
+	 * handlers block waiting for the client's response.
+	 */
 	@Bean
 	@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	McpSyncServerCustomizer servletMcpSyncServerCustomizer() {
-		return serverBuilder -> serverBuilder.immediateExecution(true);
+	McpSyncServerCustomizer servletMcpSyncServerCustomizer(McpServerProperties serverProperties) {
+		return serverBuilder -> serverBuilder.immediateExecution(serverProperties.isImmediateExecution());
 	}
 
 	@Bean

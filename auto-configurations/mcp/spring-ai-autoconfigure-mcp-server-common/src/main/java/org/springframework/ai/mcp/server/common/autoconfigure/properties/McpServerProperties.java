@@ -100,6 +100,27 @@ public class McpServerProperties {
 	private ServerProtocol protocol = ServerProtocol.SSE;
 
 	/**
+	 * Whether to execute tool/handler requests on the servlet container thread
+	 * (immediate execution) or dispatch them to a separate thread pool.
+	 * <p>
+	 * When {@code true} (default), the request handler runs synchronously on the
+	 * incoming HTTP request thread. This is the standard behaviour for Spring WebMVC
+	 * servlet applications that do not use MCP Sampling or Elicitation.
+	 * <p>
+	 * When {@code false}, the request handler is dispatched to a bounded elastic
+	 * scheduler thread before execution. This is required when using MCP Sampling
+	 * ({@code sampling/createMessage}) or Elicitation, because those features block
+	 * the handler thread while waiting for the client's response. Running on the
+	 * servlet container thread would exhaust its thread pool under load, as each
+	 * in-flight sampling request holds a Tomcat worker thread for the full duration
+	 * of the LLM call.
+	 * <p>
+	 * Set to {@code false} when your MCP tools issue server-initiated requests to
+	 * the client (sampling, elicitation).
+	 */
+	private boolean immediateExecution = true;
+
+	/**
 	 * Sets the duration to wait for server responses before timing out requests. This
 	 * timeout applies to all requests made through the client, including tool calls,
 	 * resource access, and prompt operations.
@@ -209,6 +230,14 @@ public class McpServerProperties {
 	public void setProtocol(ServerProtocol serverMode) {
 		Assert.notNull(serverMode, "Server mode must not be null");
 		this.protocol = serverMode;
+	}
+
+	public boolean isImmediateExecution() {
+		return this.immediateExecution;
+	}
+
+	public void setImmediateExecution(boolean immediateExecution) {
+		this.immediateExecution = immediateExecution;
 	}
 
 	public static class Capabilities {
