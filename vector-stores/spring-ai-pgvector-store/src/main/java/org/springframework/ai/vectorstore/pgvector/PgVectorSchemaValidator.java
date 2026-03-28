@@ -50,14 +50,28 @@ class PgVectorSchemaValidator {
 			return false;
 		}
 
-		// Check if the table or schema has Only alphanumeric characters and underscores
-		// and should be less than 64 characters
-		if (!name.matches("^[a-zA-Z0-9_]{1,64}$")) {
+		// Check basic constraints: non-empty and reasonable length
+		if (name.trim().isEmpty() || name.length() > 64) {
 			return false;
 		}
 
 		// Check to ensure the table or schema name is not purely numeric
 		if (name.matches("^[0-9]+$")) {
+			return false;
+		}
+
+		// Reject names with potentially dangerous characters that could indicate SQL
+		// injection
+		// These would be problematic even when quoted
+		if (name.contains(";") || // Statement separator
+				name.contains("--") || // SQL comment
+				name.contains("/*") || // Block comment start
+				name.contains("*/") || // Block comment end
+				name.contains("\0") || // Null byte
+				name.contains("\n") || // Newline
+				name.contains("\r") || // Carriage return
+				name.toLowerCase().matches(".*\\b(drop|alter|create|insert|update|delete|select)\\b.*")) { // SQL
+																											// keywords
 			return false;
 		}
 
@@ -81,11 +95,11 @@ class PgVectorSchemaValidator {
 
 		if (!isValidNameForDatabaseObject(schemaName)) {
 			throw new IllegalArgumentException(
-					"Schema name should only contain alphanumeric characters and underscores");
+					"Schema name must be non-empty, not exceed 64 characters, and not contain dangerous characters");
 		}
 		if (!isValidNameForDatabaseObject(tableName)) {
 			throw new IllegalArgumentException(
-					"Table name should only contain alphanumeric characters and underscores");
+					"Table name must be non-empty, not exceed 64 characters, and not contain dangerous characters");
 		}
 
 		if (!isTableExists(schemaName, tableName)) {
@@ -139,13 +153,14 @@ class PgVectorSchemaValidator {
 						+ "   CREATE EXTENSION IF NOT EXISTS vector;\n" + "   CREATE EXTENSION IF NOT EXISTS hstore;\n"
 						+ "   CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";\n"
 						+ "2. Verify that the table exists with the appropriate structure. If it does not exist, create it using a SQL command similar to the following, replacing 'embedding_dimensions' with the appropriate size based on your vector embeddings:\n"
-						+ String.format("   CREATE TABLE IF NOT EXISTS %s (\n"
+						+ String.format("   CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" (\n"
 								+ "       id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,\n" + "       content text,\n"
 								+ "       metadata json,\n"
 								+ "       embedding vector(embedding_dimensions)  // Replace 'embedding_dimensions' with your specific value\n"
-								+ "   );\n", schemaName + "." + tableName)
+								+ "   );\n", schemaName, tableName)
 						+ "3. Create an appropriate index for the vector embedding to optimize performance. Adjust the index type and options based on your usage. Example SQL for creating an index:\n"
-						+ String.format("   CREATE INDEX ON %s USING HNSW (embedding vector_cosine_ops);\n", tableName)
+						+ String.format("   CREATE INDEX ON \"%s\".\"%s\" USING HNSW (embedding vector_cosine_ops);\n",
+								schemaName, tableName)
 						+ "\nPlease adjust these commands based on your specific configuration and the capabilities of your vector database system.");
 			throw new IllegalStateException(e);
 
