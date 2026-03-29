@@ -191,7 +191,7 @@ The prefix `spring.ai.openai-sdk.image` is the property prefix for configuring t
 |====
 | Property | Description | Default
 
-| spring.ai.openai-sdk.image.options.model        | The model to use for image generation. Available models: `dall-e-2`, `dall-e-3`. See the https://platform.openai.com/docs/models[models] page for more information. | `dall-e-3`
+| spring.ai.openai-sdk.image.options.model        | The model to use for image generation. Available models: `dall-e-2`, `dall-e-3`, `gpt-image-1`. See the https://platform.openai.com/docs/models[models] page for more information. | `dall-e-3`
 | spring.ai.openai-sdk.image.options.n            | The number of images to generate. Must be between 1 and 10. For `dall-e-3`, only n=1 is supported.  | -
 | spring.ai.openai-sdk.image.options.quality      | The quality of the image that will be generated. `hd` creates images with finer details and greater consistency across the image. This parameter is only supported for `dall-e-3`. Available values: `standard`, `hd`. | -
 | spring.ai.openai-sdk.image.options.response-format | The format in which the generated images are returned. Must be one of `url` or `b64_json`. | -
@@ -200,6 +200,8 @@ The prefix `spring.ai.openai-sdk.image` is the property prefix for configuring t
 | spring.ai.openai-sdk.image.options.height       | The height of the generated images. Must be one of 256, 512, or 1024 for `dall-e-2`. | -
 | spring.ai.openai-sdk.image.options.style        | The style of the generated images. Must be one of `vivid` or `natural`. Vivid causes the model to lean towards generating hyper-real and dramatic images. Natural causes the model to produce more natural, less hyper-real looking images. This parameter is only supported for `dall-e-3`. | -
 | spring.ai.openai-sdk.image.options.user         | A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. | -
+| spring.ai.openai-sdk.image.options.output-format | The output format of the generated images. Must be one of `png`, `jpeg`, or `webp`. This parameter is supported for `gpt-image-1`. | -
+| spring.ai.openai-sdk.image.options.output-compression | The compression level (0-100) for lossy formats like `jpeg` and `webp`. Lower values mean higher compression. This parameter is supported for `gpt-image-1`. | -
 |====
 
 TIP: All properties prefixed with `spring.ai.openai-sdk.image.options` can be overridden at runtime by adding request-specific <<image-options>> to the `ImagePrompt` call.
@@ -228,6 +230,32 @@ ImageResponse response = imageModel.call(
             .style("vivid")
         .build()));
 ----
+
+=== Using GPT Image 1 with Output Format Options
+
+The `gpt-image-1` model supports additional options for controlling the output format and compression level. This is useful when you need to generate images in specific formats like JPEG with controlled file sizes:
+
+[source,java]
+----
+ImageResponse response = imageModel.call(
+    new ImagePrompt("A photorealistic landscape of mountains at sunset",
+        OpenAiSdkImageOptions.builder()
+            .model("gpt-image-1")
+            .N(1)
+            .width(1024)
+            .height(1024)
+            .outputFormat("jpeg")
+            .outputCompression(75)
+        .build()));
+----
+
+The `outputFormat` option accepts:
+
+* `png` - Lossless format, larger file size (default)
+* `jpeg` - Lossy format, smaller file size with configurable compression
+* `webp` - Modern format with good compression and quality balance
+
+The `outputCompression` option (0-100) controls the compression level for lossy formats (`jpeg` and `webp`). Lower values result in higher compression (smaller files, lower quality), while higher values preserve more quality (larger files).
 
 TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai-sdk/src/main/java/org/springframework/ai/openaisdk/OpenAiSdkImageOptions.java[OpenAiSdkImageOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/image/ImageOptions.java[ImageOptions] instance, created with the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/image/ImageOptionsBuilder.java[ImageOptionsBuilder#builder()].
 
