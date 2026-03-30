@@ -43,4 +43,9 @@ public class OpenAiSdkTestConfiguration {
 		return OpenAiSdkChatModel.builder().build();
 	}
 
+	@Bean
+	public OpenAiSdkAudioTranscriptionModel openAiSdkAudioTranscriptionModel() {
+		return OpenAiSdkAudioTranscriptionModel.builder().build();
+	}
+
 }
