@@ -226,7 +226,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client-webflux</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webflux</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webmvc</module>
-		
+
 		<module>spring-ai-integration-tests</module>
 
 		<module>mcp/common</module>
@@ -539,23 +539,21 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>${maven-javadoc-plugin.version}</version>
-				<configuration>
-					<overview>
-						${maven.multiModuleProjectDirectory}/spring-ai-docs/src/main/javadoc/overview.html</overview>
-					<detectJavaApiLink>false</detectJavaApiLink>
-					<detectOfflineLinks>false</detectOfflineLinks>
-					<failOnError>false</failOnError>
-					<doclint>none</doclint>
-				</configuration>
-				<executions>
-					<execution>
-						<id>package-javadocs</id>
-						<phase>package</phase>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
+			<configuration>
+				<overview>
+					${maven.multiModuleProjectDirectory}/spring-ai-docs/src/main/javadoc/overview.html</overview>
+				<detectJavaApiLink>false</detectJavaApiLink>
+				<doclint>none</doclint>
+			</configuration>
+			<executions>
+				<execution>
+					<id>package-javadocs</id>
+					<phase>package</phase>
+					<goals>
+						<goal>jar</goal>
+					</goals>
+				</execution>
+			</executions>
 			</plugin>
 
 		</plugins>
