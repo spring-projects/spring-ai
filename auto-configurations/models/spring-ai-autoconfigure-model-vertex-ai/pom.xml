@@ -34,14 +34,6 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- Vertex AI Gemini -->
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-vertex-ai-gemini</artifactId>
-			<version>${project.parent.version}</version>
-			<optional>true</optional>
-		</dependency>
-
 		<!-- Spring AI auto configurations -->
 
 		<dependency>

@@ -192,7 +192,6 @@
 		<module>models/spring-ai-stability-ai</module>
 		<module>models/spring-ai-transformers</module>
 		<module>models/spring-ai-vertex-ai-embedding</module>
-		<module>models/spring-ai-vertex-ai-gemini</module>
 		<module>models/spring-ai-google-genai</module>
 		<module>models/spring-ai-google-genai-embedding</module>
 		<module>models/spring-ai-deepseek</module>
@@ -213,7 +212,6 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-stability-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-transformers</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-embedding</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-gemini</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-deepseek</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory</module>
