@@ -142,7 +142,7 @@ To update the year on license headers using the [license-maven-plugin](https://o
 
 To check javadocs using the [javadoc:javadoc](https://maven.apache.org/plugins/maven-javadoc-plugin/)
 ```shell
-./mvnw javadoc:javadoc -Pjavadoc
+./mvnw javadoc:javadoc
 ```
 
 #### Source Code Style
