@@ -286,23 +286,12 @@ GoogleGenAiTextEmbeddingOptions options = GoogleGenAiTextEmbeddingOptions.builde
 
 If you're currently using the Vertex AI Text Embeddings implementation (`spring-ai-vertex-ai-embedding`), you can migrate to Google GenAI with minimal changes:
 
-=== Key Differences
+Key Differences:
 
 1. **SDK**: Google GenAI uses the new `com.google.genai.Client` instead of Vertex AI SDK
-2. **Authentication**: Supports both API key and Google Cloud credentials
+2. **Authentication**: Supports both API key and Google Cloud credentials (Vertex AI mode)
 3. **Package Names**: Classes are in `org.springframework.ai.google.genai.text` instead of `org.springframework.ai.vertexai.embedding`
 4. **Property Prefix**: Uses `spring.ai.google.genai.embedding` instead of `spring.ai.vertex.ai.embedding`
 5. **Connection Details**: Uses `GoogleGenAiEmbeddingConnectionDetails` instead of `VertexAiEmbeddingConnectionDetails`
 
-=== When to Use Google GenAI vs Vertex AI Text Embeddings
-
-**Use Google GenAI Embeddings when:**
-- You want quick prototyping with API keys
-- You need the latest embedding features from the Developer API
-- You want flexibility to switch between API key and Vertex AI modes
-- You're already using Google GenAI for chat
-
-**Use Vertex AI Text Embeddings when:**
-- You have existing Vertex AI infrastructure
-- You need multimodal embeddings (currently only available in Vertex AI)
-- Your organization requires Google Cloud-only deployment
+Google GenAI supports both quick prototyping with API keys and production deployments using Vertex AI through Google Cloud credentials.

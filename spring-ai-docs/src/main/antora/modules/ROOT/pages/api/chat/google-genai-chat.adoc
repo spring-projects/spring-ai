@@ -4,7 +4,7 @@ The https://ai.google.dev/gemini-api/docs[Google GenAI API] allows developers to
 The Google GenAI API supports multimodal prompts as input and outputs text or code.
 A multimodal model is capable of processing information from multiple modalities, including images, videos, and text. For example, you can send the model a photo of a plate of cookies and ask it to give you a recipe for those cookies.
 
-Gemini is a family of generative AI models developed by Google DeepMind that is designed for multimodal use cases. The Gemini API gives you access to link:https://ai.google.dev/gemini-api/docs/models#gemini-2.0-flash[Gemini 2.0 Flash], link:https://ai.google.dev/gemini-api/docs/models#gemini-2.0-flash-lite[Gemini 2.0 Flash-Lite], all link:https://ai.google.dev/gemini-api/docs/models[Gemini Pro] models, up to and including the most recent link:https://ai.google.dev/gemini-api/docs/models#gemini-3-pro[Gemini 3 Pro].
+Gemini is a family of generative AI models developed by Google DeepMind that is designed for multimodal use cases. The Gemini API gives you access to link:https://ai.google.dev/gemini-api/docs/models[various models] like Gemini Flash-Lite, Gemini Flash or Gemini Pro.
 
 This implementation provides two authentication modes:
 
@@ -906,26 +906,16 @@ The `GoogleGenAiChatOptions.Builder` is fluent options builder.
 
 == Migration from Vertex AI Gemini
 
-If you're currently using the Vertex AI Gemini implementation (`spring-ai-vertex-ai-gemini`), you can migrate to Google GenAI with minimal changes:
+If you were previously using the Vertex AI Gemini implementation (`spring-ai-vertex-ai-gemini`), which has been removed, migrate to Google GenAI:
 
-=== Key Differences
+Key Differences:
 
 1. **SDK**: Google GenAI uses the new `com.google.genai.Client` instead of `com.google.cloud.vertexai.VertexAI`
-2. **Authentication**: Supports both API key and Google Cloud credentials
+2. **Authentication**: Supports both API key and Google Cloud credentials (Vertex AI mode)
 3. **Package Names**: Classes are in `org.springframework.ai.google.genai` instead of `org.springframework.ai.vertexai.gemini`
 4. **Property Prefix**: Uses `spring.ai.google.genai` instead of `spring.ai.vertex.ai.gemini`
 
-=== When to Use Google GenAI vs Vertex AI Gemini
-
-**Use Google GenAI when:**
-- You want quick prototyping with API keys
-- You need the latest Gemini features from the Developer API
-- You want flexibility to switch between API key and Vertex AI modes
-
-**Use Vertex AI Gemini when:**
-- You have existing Vertex AI infrastructure
-- You need specific Vertex AI enterprise features
-- Your organization requires Google Cloud-only deployment
+Google GenAI supports both quick prototyping with API keys and production deployments using Vertex AI through Google Cloud credentials.
 
 == Low-level Java Client [[low-level-api]]
 
