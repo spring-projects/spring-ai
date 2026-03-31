@@ -75,6 +75,20 @@ class OpenAiApiIT {
 	}
 
 	@Test
+	void chatCompletionWithUnknownExtraBodyThrowsException() {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
+		ChatCompletionRequest requestWithExtra = new ChatCompletionRequest(List.of(chatCompletionMessage),
+				"gpt-3.5-turbo", null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+				null, null, false, null, 0.8, null, null, null, null, null, null, null, null, null, null,
+				java.util.Map.of("an_unknown_extra_body_parameter", "some_value"));
+
+		assertThatThrownBy(() -> this.openAiApi.chatCompletionEntity(requestWithExtra))
+			.isInstanceOf(RuntimeException.class)
+			.hasMessageContaining("400")
+			.hasMessageContaining("Unrecognized request argument supplied: an_unknown_extra_body_parameter");
+	}
+
+	@Test
 	void validateReasoningTokens() {
 		ChatCompletionMessage userMessage = new ChatCompletionMessage(
 				"Are there an infinite number of prime numbers such that n mod 4 == 3? Think through the steps and respond.",
