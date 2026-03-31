@@ -808,7 +808,13 @@ public class OpenAiApi {
 		 * Only for compatibility with Mistral AI API.
 		 */
 		@JsonProperty("tool_call")
-		TOOL_CALL
+		TOOL_CALL,
+		/**
+		 * End of Sequence indicates sequence of text has finished in open-ended
+		 * generation task
+		 */
+		@JsonProperty("eos_token")
+		EOS_TOKEN,
 
 	}
 
