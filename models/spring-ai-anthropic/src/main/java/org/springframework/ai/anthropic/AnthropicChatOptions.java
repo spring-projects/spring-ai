@@ -425,6 +425,10 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		});
 		JsonOutputFormat.Schema.Builder schemaBuilder = JsonOutputFormat.Schema.builder();
 		for (Map.Entry<String, Object> entry : schemaMap.entrySet()) {
+			// Strip JSON Schema meta-fields not supported by the Anthropic API
+			if ("$schema".equals(entry.getKey()) || "$defs".equals(entry.getKey())) {
+				continue;
+			}
 			schemaBuilder.putAdditionalProperty(entry.getKey(), JsonValue.from(entry.getValue()));
 		}
 		JsonOutputFormat jsonOutputFormat = JsonOutputFormat.builder().schema(schemaBuilder.build()).build();
@@ -638,6 +642,11 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 						});
 				JsonOutputFormat.Schema.Builder schemaBuilder = JsonOutputFormat.Schema.builder();
 				for (Map.Entry<String, Object> entry : schemaMap.entrySet()) {
+					// Strip JSON Schema meta-fields not supported by the Anthropic
+					// API
+					if ("$schema".equals(entry.getKey()) || "$defs".equals(entry.getKey())) {
+						continue;
+					}
 					schemaBuilder.putAdditionalProperty(entry.getKey(), JsonValue.from(entry.getValue()));
 				}
 				JsonOutputFormat jsonOutputFormat = JsonOutputFormat.builder().schema(schemaBuilder.build()).build();
