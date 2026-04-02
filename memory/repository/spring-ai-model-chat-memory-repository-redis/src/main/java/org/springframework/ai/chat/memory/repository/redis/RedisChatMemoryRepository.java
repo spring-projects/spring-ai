@@ -501,7 +501,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 
 				// Basic fields for all messages - using schema field objects
 				schemaFields.add(new TextField("$.content").as("content"));
-				schemaFields.add(new TextField("$.type").as("type"));
+				schemaFields.add(new TagField("$.type").as("type"));
 				schemaFields.add(new TagField("$.conversation_id").as("conversation_id"));
 				schemaFields.add(new NumericField("$.timestamp").as("timestamp"));
 
@@ -742,8 +742,8 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		Assert.notNull(messageType, "Message type must not be null");
 		Assert.isTrue(limit > 0, "Limit must be greater than 0");
 
-		// Use QueryBuilders to create a text field query
-		QueryNode queryNode = QueryBuilders.intersect("type", Values.value(messageType.toString()));
+		// Use QueryBuilders to create a tag field query
+		QueryNode queryNode = QueryBuilders.intersect("type", Values.tags(messageType.toString()));
 		Query query = new Query(queryNode.toString()).setSortBy("timestamp", true).limit(0, limit);
 
 		if (logger.isDebugEnabled()) {
