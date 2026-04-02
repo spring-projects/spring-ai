@@ -16,11 +16,14 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -32,6 +35,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
@@ -709,6 +713,54 @@ public class ToolCallAdvisorTests {
 	}
 
 	@Test
+	void testAdviseCallPreservesContextAcrossToolCallIterations() {
+		ToolCallAdvisor advisor = ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest(true);
+
+		// Track how many times the context-setting advisor actually processes
+		AtomicInteger processingCount = new AtomicInteger(0);
+
+		ContextSettingAdvisor contextAdvisor = new ContextSettingAdvisor(processingCount);
+
+		// Terminal advisor that propagates request context to response
+		// (mimicking real ChatModelCallAdvisor behavior)
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			callCount[0]++;
+			ChatClientResponse mockResponse = callCount[0] == 1 ? createMockResponse(true) : createMockResponse(false);
+			return ChatClientResponse.builder()
+				.chatResponse(mockResponse.chatResponse())
+				.context(req.context())
+				.build();
+		});
+
+		// Chain: ToolCallAdvisor -> ContextSettingAdvisor -> TerminalAdvisor
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, contextAdvisor, terminalAdvisor))
+			.build();
+
+		// Mock tool execution result
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		advisor.adviseCall(request, realChain);
+
+		// The terminal advisor was called twice (two iterations of the tool call loop)
+		assertThat(callCount[0]).isEqualTo(2);
+
+		// The context-setting advisor should have processed only once,
+		// because on the second iteration the context key from the first iteration
+		// is preserved, causing it to skip processing.
+		assertThat(processingCount.get()).isEqualTo(1);
+	}
+
+	@Test
 	void testExtendedAdvisorWithCustomHooks() {
 		int[] hookCallCounts = { 0, 0, 0 }; // initializeLoop, beforeCall, afterCall
 
@@ -970,6 +1022,54 @@ public class ToolCallAdvisorTests {
 		@Override
 		public Flux<ChatClientResponse> adviseStream(ChatClientRequest req, StreamAdvisorChain chain) {
 			return this.responseFunction.apply(req, chain);
+		}
+
+	}
+
+	/**
+	 * A BaseAdvisor that sets a context key on first processing and skips if the key
+	 * already exists. Used to verify that context is preserved across tool call loop
+	 * iterations.
+	 */
+	private static class ContextSettingAdvisor implements BaseAdvisor {
+
+		private static final String CONTEXT_KEY = "test_context";
+
+		private final AtomicInteger processingCount;
+
+		ContextSettingAdvisor(AtomicInteger processingCount) {
+			this.processingCount = processingCount;
+		}
+
+		@Override
+		public ChatClientRequest before(ChatClientRequest chatClientRequest, @Nullable AdvisorChain advisorChain) {
+			Map<String, @Nullable Object> context = new HashMap<>(chatClientRequest.context());
+
+			// Skip processing if context key already exists (like RAG's DOCUMENT_CONTEXT
+			// check)
+			if (context.containsKey(CONTEXT_KEY)) {
+				return chatClientRequest;
+			}
+
+			this.processingCount.incrementAndGet();
+			context.put(CONTEXT_KEY, "injected-value");
+
+			return chatClientRequest.mutate().context(context).build();
+		}
+
+		@Override
+		public ChatClientResponse after(ChatClientResponse chatClientResponse, @Nullable AdvisorChain advisorChain) {
+			return chatClientResponse;
+		}
+
+		@Override
+		public String getName() {
+			return "context-setting";
+		}
+
+		@Override
+		public int getOrder() {
+			return 0;
 		}
 
 	}

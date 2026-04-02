@@ -16,9 +16,12 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -125,6 +128,8 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 
 		ChatClientResponse chatClientResponse = null;
 
+		Map<String, @Nullable Object> context = new HashMap<>(chatClientRequest.context());
+
 		boolean isToolCall = false;
 
 		do {
@@ -132,7 +137,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 			// Before Call
 			var processedChatClientRequest = ChatClientRequest.builder()
 				.prompt(new Prompt(instructions, optionsCopy))
-				.context(chatClientRequest.context())
+				.context(context)
 				.build();
 
 			// Next Call
@@ -173,6 +178,10 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 
 				instructions = this.doGetNextInstructionsForToolCall(processedChatClientRequest, chatClientResponse,
 						toolExecutionResult);
+
+				// Preserve context from advisors for the next iteration
+				context = new HashMap<>(chatClientResponse.context());
+
 			}
 
 		}
