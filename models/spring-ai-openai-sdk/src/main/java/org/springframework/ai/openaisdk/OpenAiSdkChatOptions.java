@@ -591,7 +591,7 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 	}
 
 	@JsonAnySetter
-	public void setExtraBodyProperty(String key, Object value) {
+	public void addExtraBodyProperty(String key, Object value) {
 		if (this.extraBody == null) {
 			this.extraBody = new HashMap<>();
 		}

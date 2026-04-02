@@ -45,7 +45,10 @@ class OpenAiSdkExtraBodyTests {
 			.build();
 
 		Prompt prompt = new Prompt("Test prompt", options);
-		OpenAiSdkChatModel chatModel = OpenAiSdkChatModel.builder().build();
+		OpenAiSdkChatModel chatModel = OpenAiSdkChatModel.builder()
+			.openAiClient(org.mockito.Mockito.mock(com.openai.client.OpenAIClient.class))
+			.openAiClientAsync(org.mockito.Mockito.mock(com.openai.client.OpenAIClientAsync.class))
+			.build();
 
 		// Act
 		ChatCompletionCreateParams createParams = chatModel.createRequest(prompt, false);
@@ -66,7 +69,10 @@ class OpenAiSdkExtraBodyTests {
 		OpenAiSdkChatOptions optionsNull = OpenAiSdkChatOptions.builder().model("test-model").build();
 
 		Prompt promptNull = new Prompt("Test prompt", optionsNull);
-		OpenAiSdkChatModel chatModel = OpenAiSdkChatModel.builder().build();
+		OpenAiSdkChatModel chatModel = OpenAiSdkChatModel.builder()
+			.openAiClient(org.mockito.Mockito.mock(com.openai.client.OpenAIClient.class))
+			.openAiClientAsync(org.mockito.Mockito.mock(com.openai.client.OpenAIClientAsync.class))
+			.build();
 
 		ChatCompletionCreateParams createParamsNull = chatModel.createRequest(promptNull, false);
 		assertThat(createParamsNull._additionalBodyProperties()).isEmpty();
