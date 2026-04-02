@@ -632,7 +632,7 @@ The `Consumer<AdvisorSpec>` lets you specify a lambda to add advisors, such as `
 
 You can override these defaults at runtime using the corresponding methods without the `default` prefix.
 
-* `options(ChatOptions chatOptions)`
+* `options(ChatOptions.Builder optionsCustomizer)`
 
 * `function(String name, String description,
 java.util.function.Function<I, O> function)`
@@ -644,6 +644,8 @@ java.util.function.Function<I, O> function)`
 * `advisors(Advisor... advisor)`
 
 * `advisors(Consumer<AdvisorSpec> advisorSpecConsumer)`
+
+image::chat-client-options-merging.png[align="center"]
 
 == Advisors
 
