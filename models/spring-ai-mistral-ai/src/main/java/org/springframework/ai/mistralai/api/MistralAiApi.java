@@ -259,6 +259,7 @@ public class MistralAiApi {
 		CODESTRAL("codestral-latest"),
 		DEVSTRAL_MEDIUM("devstral-medium-latest"),
 		MISTRAL_LARGE("mistral-large-latest"),
+		@Deprecated(forRemoval = true) // Retirement planed the 31st of May 2026
 		PIXTRAL_LARGE("pixtral-large-latest"),
 		// Free Models
 		MINISTRAL_3B("ministral-3b-latest"),
@@ -267,7 +268,6 @@ public class MistralAiApi {
 		MAGISTRAL_SMALL("magistral-small-latest"),
 		DEVSTRAL_SMALL("devstral-small-latest"),
 		MISTRAL_SMALL("mistral-small-latest"),
-		PIXTRAL_12B("pixtral-12b-latest"),
 		// Free Models - Research
 		OPEN_MISTRAL_NEMO("open-mistral-nemo"),
 

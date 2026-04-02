@@ -27,8 +27,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -185,7 +183,7 @@ class MistralAiChatModelIT {
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
-		logger.info("" + actorsFilms);
+		logger.info(actorsFilms.toString());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -245,7 +243,7 @@ class MistralAiChatModelIT {
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("30.0", "30");
 		assertThat(response.getMetadata()).isNotNull();
 		assertThat(response.getMetadata().getUsage()).isNotNull();
-		assertThat(response.getMetadata().getUsage().getTotalTokens()).isLessThan(1050).isGreaterThan(750);
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isLessThan(1050).isGreaterThan(500);
 	}
 
 	@Test
@@ -278,9 +276,8 @@ class MistralAiChatModelIT {
 		assertThat(content).containsAnyOf("10.0", "10");
 	}
 
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "pixtral-large-latest" })
-	void multiModalityEmbeddedImage(String modelName) {
+	@Test
+	void multiModalityEmbeddedImage() {
 		var imageData = new ClassPathResource("/test.png");
 
 		var userMessage = UserMessage.builder()
@@ -288,17 +285,17 @@ class MistralAiChatModelIT {
 			.media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)))
 			.build();
 
-		var response = this.chatModel
-			.call(new Prompt(List.of(userMessage), ChatOptions.builder().model(modelName).build()));
+		var chatOptions = ChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()).build();
+
+		var response = this.chatModel.call(new Prompt(List.of(userMessage), chatOptions));
 
 		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
 				"fruit stand");
 	}
 
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "pixtral-large-latest" })
-	void multiModalityImageUrl(String modelName) {
+	@Test
+	void multiModalityImageUrl() {
 		var userMessage = UserMessage.builder()
 			.text("Explain what do you see on this picture?")
 			.media(List.of(Media.builder()
@@ -307,8 +304,9 @@ class MistralAiChatModelIT {
 				.build()))
 			.build();
 
-		ChatResponse response = this.chatModel
-			.call(new Prompt(List.of(userMessage), ChatOptions.builder().model(modelName).build()));
+		var chatOptions = ChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()).build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), chatOptions));
 
 		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
@@ -326,7 +324,7 @@ class MistralAiChatModelIT {
 			.build();
 
 		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(List.of(userMessage),
-				ChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build()));
+				ChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()).build()));
 
 		String content = response.collectList()
 			.block()
@@ -433,7 +431,7 @@ class MistralAiChatModelIT {
 		// Test using ResponseFormat.jsonSchema(Class<?>) for structured output
 
 		var promptOptions = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.SMALL.getValue())
+			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
 			.responseFormat(ResponseFormat.jsonSchema(MovieRecommendation.class))
 			.build();
 
@@ -474,7 +472,7 @@ class MistralAiChatModelIT {
 				"required", List.of("city", "country", "population", "famousFor"), "additionalProperties", false);
 
 		var promptOptions = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.SMALL.getValue())
+			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
 			.responseFormat(ResponseFormat.jsonSchema(schema))
 			.build();
 

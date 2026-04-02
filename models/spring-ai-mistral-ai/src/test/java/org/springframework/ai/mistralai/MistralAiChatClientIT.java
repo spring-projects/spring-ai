@@ -30,6 +30,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
@@ -53,7 +54,7 @@ class MistralAiChatClientIT {
 	private static final Logger logger = LoggerFactory.getLogger(MistralAiChatClientIT.class);
 
 	@Autowired
-	MistralAiChatModel chatModel;
+	private ChatModel chatModel;
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemTextResource;
@@ -70,7 +71,8 @@ class MistralAiChatClientIT {
 				.chatResponse();
 		// @formatter:on
 
-		logger.info("" + response);
+		assertThat(response).isNotNull();
+		logger.info(response.toString());
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
@@ -87,6 +89,8 @@ class MistralAiChatClientIT {
 				.call()
 				.chatResponse();
 		// @formatter:on
+		assertThat(response).isNotNull();
+		assertThat(response.getResult()).isNotNull();
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard");
 
 		// @formatter:off
@@ -97,7 +101,10 @@ class MistralAiChatClientIT {
 				.chatResponse();
 		// @formatter:on
 
-		logger.info("" + response);
+		assertThat(response).isNotNull();
+		logger.info(response.toString());
+		assertThat(response.getResult()).isNotNull();
+		assertThat(response.getResult().getOutput().getText()).isNotNull();
 		assertThat(response.getResult().getOutput().getText().toLowerCase()).containsAnyOf("blackbeard",
 				"bartholomew roberts");
 	}
@@ -112,6 +119,7 @@ class MistralAiChatClientIT {
 				.entity(new ParameterizedTypeReference<>() { });
 		// @formatter:on
 
+		assertThat(collection).isNotNull();
 		logger.info(collection.toString());
 		assertThat(collection).hasSize(5);
 	}
@@ -127,7 +135,8 @@ class MistralAiChatClientIT {
 				});
 		// @formatter:on
 
-		logger.info("" + actorsFilms);
+		assertThat(actorsFilms).isNotNull();
+		logger.info(actorsFilms.toString());
 		assertThat(actorsFilms).hasSize(2);
 	}
 
@@ -160,6 +169,7 @@ class MistralAiChatClientIT {
 				});
 		// @formatter:on
 
+		assertThat(result).isNotNull();
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 	}
 
@@ -173,7 +183,8 @@ class MistralAiChatClientIT {
 				.entity(ActorsFilms.class);
 		// @formatter:on
 
-		logger.info("" + actorsFilms);
+		assertThat(actorsFilms).isNotNull();
+		logger.info(actorsFilms.toString());
 		assertThat(actorsFilms.actor()).isNotBlank();
 	}
 
@@ -187,7 +198,8 @@ class MistralAiChatClientIT {
 				.entity(ActorsFilms.class);
 		// @formatter:on
 
-		logger.info("" + actorsFilms);
+		assertThat(actorsFilms).isNotNull();
+		logger.info(actorsFilms.toString());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -209,14 +221,15 @@ class MistralAiChatClientIT {
 				.content();
 
 		String generationTextFromStream = chatResponse.collectList()
-				.block()
+				.blockOptional()
 				.stream()
+				.flatMap(List::stream)
 				.collect(Collectors.joining());
 		// @formatter:on
 
 		ActorsFilms actorsFilms = outputConverter.convert(generationTextFromStream);
 
-		logger.info("" + actorsFilms);
+		logger.info(actorsFilms.toString());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -278,9 +291,14 @@ class MistralAiChatClientIT {
 					.build())
 				.stream()
 				.content();
+
+		String content = response.collectList()
+				.blockOptional()
+				.stream()
+				.flatMap(List::stream)
+				.collect(Collectors.joining());
 		// @formatter:on
 
-		String content = response.collectList().block().stream().collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
 		assertThat(content).containsAnyOf("30.0", "30");
@@ -290,9 +308,7 @@ class MistralAiChatClientIT {
 
 	@Test
 	void validateCallResponseMetadata() {
-		// String model = MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getName();
-		String model = MistralAiApi.ChatModel.PIXTRAL_12B.getName();
-		// String model = MistralAiApi.ChatModel.PIXTRAL_LARGE.getName();
+		String model = MistralAiApi.ChatModel.MINISTRAL_14B.getName();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.options(MistralAiChatOptions.builder().model(model).build())
@@ -301,6 +317,7 @@ class MistralAiChatClientIT {
 				.chatResponse();
 		// @formatter:on
 
+		assertThat(response).isNotNull();
 		logger.info(response.toString());
 		assertThat(response.getMetadata().getId()).isNotEmpty();
 		assertThat(response.getMetadata().getModel()).containsIgnoringCase(model);
