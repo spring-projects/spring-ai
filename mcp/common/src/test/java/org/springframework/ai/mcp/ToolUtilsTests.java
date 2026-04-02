@@ -348,7 +348,8 @@ class ToolUtilsTests {
 
 		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
 
-		CallToolResult result = toolSpecification.call().apply(mock(McpSyncServerExchange.class), Map.of());
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpSyncServerExchange.class), new McpSchema.CallToolRequest("proxy-test", Map.of()));
 		assertThat(result.content()).hasSize(1);
 		assertThat(result.content().get(0)).isInstanceOf(TextContent.class);
 		TextContent content = (TextContent) result.content().get(0);
@@ -363,7 +364,8 @@ class ToolUtilsTests {
 
 		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
 
-		CallToolResult result = toolSpecification.call().apply(mock(McpSyncServerExchange.class), Map.of());
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpSyncServerExchange.class), new McpSchema.CallToolRequest("proxy-test", Map.of()));
 		assertThat(result.content()).hasSize(2);
 		assertThat(((TextContent) result.content().get(0)).text()).isEqualTo("First");
 		assertThat(((TextContent) result.content().get(1)).text()).isEqualTo("Second");
@@ -376,7 +378,8 @@ class ToolUtilsTests {
 
 		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
 
-		CallToolResult result = toolSpecification.call().apply(mock(McpSyncServerExchange.class), Map.of());
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpSyncServerExchange.class), new McpSchema.CallToolRequest("proxy-test", Map.of()));
 		assertThat(result.content()).hasSize(1);
 		assertThat(result.content().get(0)).isInstanceOf(McpSchema.ImageContent.class);
 		McpSchema.ImageContent imageContent = (McpSchema.ImageContent) result.content().get(0);
@@ -391,7 +394,8 @@ class ToolUtilsTests {
 
 		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
 
-		CallToolResult result = toolSpecification.call().apply(mock(McpSyncServerExchange.class), Map.of());
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpSyncServerExchange.class), new McpSchema.CallToolRequest("test", Map.of()));
 		assertThat(result.content()).hasSize(1);
 		TextContent content = (TextContent) result.content().get(0);
 		assertThat(content.text()).isEqualTo("plain text result");

@@ -25,8 +25,6 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.common.util.StringUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -41,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import tools.jackson.databind.JsonNode;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -75,8 +74,6 @@ import org.springframework.util.MimeType;
 public final class McpToolUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(McpToolUtils.class);
-
-	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	/**
 	 * The name of tool context key used to store the MCP exchange object.
@@ -294,13 +291,13 @@ public final class McpToolUtils {
 	 */
 	static List<McpSchema.Content> parseContentList(String callResult) {
 		try {
-			JsonNode jsonNode = OBJECT_MAPPER.readTree(callResult);
+			JsonNode jsonNode = ModelOptionsUtils.JSON_MAPPER.readTree(callResult);
 			if (jsonNode.isArray() && !jsonNode.isEmpty()) {
 				List<McpSchema.Content> contents = new ArrayList<>();
 				for (JsonNode node : jsonNode) {
 					if (node.isObject() && node.has("data") && node.has("mimeType")) {
-						String mimeType = node.get("mimeType").asText();
-						String data = node.get("data").asText();
+						String mimeType = node.get("mimeType").textValue();
+						String data = node.get("data").textValue();
 						if (mimeType.startsWith("audio")) {
 							contents.add(new McpSchema.AudioContent(null, data, mimeType));
 						}
@@ -309,7 +306,7 @@ public final class McpToolUtils {
 						}
 					}
 					else if (node.isObject() && node.has("text")) {
-						contents.add(new McpSchema.TextContent(node.get("text").asText()));
+						contents.add(new McpSchema.TextContent(node.get("text").textValue()));
 					}
 					else if (node.isObject() && node.has("resource")) {
 						// EmbeddedResource contains a sealed ResourceContents type that
@@ -319,11 +316,11 @@ public final class McpToolUtils {
 					}
 					else if (node.isObject() && node.has("uri")) {
 						contents.add(McpSchema.ResourceLink.builder()
-							.uri(node.get("uri").asText())
-							.name(node.has("name") ? node.get("name").asText() : null)
-							.title(node.has("title") ? node.get("title").asText() : null)
-							.description(node.has("description") ? node.get("description").asText() : null)
-							.mimeType(node.has("mimeType") ? node.get("mimeType").asText() : null)
+							.uri(node.get("uri").textValue())
+							.name(node.has("name") ? node.get("name").textValue() : null)
+							.title(node.has("title") ? node.get("title").textValue() : null)
+							.description(node.has("description") ? node.get("description").textValue() : null)
+							.mimeType(node.has("mimeType") ? node.get("mimeType").textValue() : null)
 							.size(node.has("size") ? node.get("size").asLong() : null)
 							.build());
 					}
