@@ -26,7 +26,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openai.azure.AzureOpenAIServiceVersion;
 import com.openai.credential.Credential;
 import com.openai.models.ChatModel;
@@ -49,6 +53,7 @@ import org.springframework.util.Assert;
  *
  * @author Julien Dubois
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  */
 public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 		implements ToolCallingChatOptions, StructuredOutputChatOptions {
@@ -105,6 +110,16 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 
 	private @Nullable String serviceTier;
 
+	/**
+	 * Extra parameters that are not part of the standard OpenAI API. These parameters are
+	 * passed as additional body properties to support OpenAI-compatible providers like
+	 * vLLM, Ollama, Groq, etc. that support custom parameters such as top_k,
+	 * repetition_penalty, etc.
+	 */
+	@JsonInclude(JsonInclude.Include.NON_EMPTY)
+	@JsonProperty(value = "extra_body", access = JsonProperty.Access.WRITE_ONLY)
+	private @Nullable Map<String, Object> extraBody;
+
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 	private Set<String> toolNames = new HashSet<>();
@@ -131,7 +146,7 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 			@Nullable StreamOptions streamOptions, @Nullable Integer seed, @Nullable Object toolChoice,
 			@Nullable String user, @Nullable Boolean parallelToolCalls, @Nullable Boolean store,
 			@Nullable Map<String, String> metadata, @Nullable String reasoningEffort, @Nullable String verbosity,
-			@Nullable String serviceTier) {
+			@Nullable String serviceTier, @Nullable Map<String, Object> extraBody) {
 		// AbstractOpenAiSdkOptions
 		this.setBaseUrl(baseUrl);
 		this.setApiKey(apiKey);
@@ -177,6 +192,7 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 		this.reasoningEffort = reasoningEffort;
 		this.verbosity = verbosity;
 		this.serviceTier = serviceTier;
+		this.extraBody = extraBody;
 	}
 
 	/**
@@ -565,6 +581,23 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 		this.serviceTier = serviceTier;
 	}
 
+	@JsonAnyGetter
+	public @Nullable Map<String, Object> getExtraBody() {
+		return this.extraBody;
+	}
+
+	public void setExtraBody(@Nullable Map<String, Object> extraBody) {
+		this.extraBody = extraBody;
+	}
+
+	@JsonAnySetter
+	public void setExtraBodyProperty(String key, Object value) {
+		if (this.extraBody == null) {
+			this.extraBody = new HashMap<>();
+		}
+		this.extraBody.put(key, value);
+	}
+
 	@Override
 	public List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
@@ -693,7 +726,8 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 			.metadata(this.metadata != null ? new HashMap<>(this.metadata) : null)
 			.reasoningEffort(this.reasoningEffort)
 			.verbosity(this.verbosity)
-			.serviceTier(this.serviceTier);
+			.serviceTier(this.serviceTier)
+			.extraBody(this.extraBody != null ? new HashMap<>(this.extraBody) : null);
 	}
 
 	@Override
@@ -721,6 +755,7 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 				&& Objects.equals(this.reasoningEffort, options.reasoningEffort)
 				&& Objects.equals(this.verbosity, options.verbosity)
 				&& Objects.equals(this.serviceTier, options.serviceTier)
+				&& Objects.equals(this.extraBody, options.extraBody)
 				&& Objects.equals(this.toolCallbacks, options.toolCallbacks)
 				&& Objects.equals(this.toolNames, options.toolNames)
 				&& Objects.equals(this.internalToolExecutionEnabled, options.internalToolExecutionEnabled)
@@ -733,8 +768,8 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 				this.maxTokens, this.maxCompletionTokens, this.n, this.outputModalities, this.outputAudio,
 				this.presencePenalty, this.responseFormat, this.streamOptions, this.seed, this.stop, this.temperature,
 				this.topP, this.toolChoice, this.user, this.parallelToolCalls, this.store, this.metadata,
-				this.reasoningEffort, this.verbosity, this.serviceTier, this.toolCallbacks, this.toolNames,
-				this.internalToolExecutionEnabled, this.toolContext);
+				this.reasoningEffort, this.verbosity, this.serviceTier, this.extraBody, this.toolCallbacks,
+				this.toolNames, this.internalToolExecutionEnabled, this.toolContext);
 	}
 
 	@Override
@@ -749,9 +784,9 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 				+ this.toolChoice + ", user='" + this.user + '\'' + ", parallelToolCalls=" + this.parallelToolCalls
 				+ ", store=" + this.store + ", metadata=" + this.metadata + ", reasoningEffort='" + this.reasoningEffort
 				+ '\'' + ", verbosity='" + this.verbosity + '\'' + ", serviceTier='" + this.serviceTier + '\''
-				+ ", toolCallbacks=" + this.toolCallbacks + ", toolNames=" + this.toolNames
-				+ ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled + ", toolContext="
-				+ this.toolContext + '}';
+				+ ", extraBody=" + this.extraBody + ", toolCallbacks=" + this.toolCallbacks + ", toolNames="
+				+ this.toolNames + ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled
+				+ ", toolContext=" + this.toolContext + '}';
 	}
 
 	public record AudioParameters(@Nullable Voice voice, @Nullable AudioResponseFormat format) {
@@ -915,6 +950,8 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 		protected @Nullable String verbosity;
 
 		protected @Nullable String serviceTier;
+
+		protected @Nullable Map<String, Object> extraBody;
 
 		public B baseUrl(@Nullable String baseUrl) {
 			this.baseUrl = baseUrl;
@@ -1111,6 +1148,11 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 			return self();
 		}
 
+		public B extraBody(@Nullable Map<String, Object> extraBody) {
+			this.extraBody = extraBody;
+			return self();
+		}
+
 		@Override
 		public B outputSchema(@Nullable String outputSchema) {
 			if (outputSchema != null) {
@@ -1204,6 +1246,12 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 				if (that.serviceTier != null) {
 					this.serviceTier = that.serviceTier;
 				}
+				if (that.extraBody != null) {
+					if (this.extraBody == null) {
+						this.extraBody = new HashMap<>();
+					}
+					this.extraBody.putAll(that.extraBody);
+				}
 				if (that.isMicrosoftFoundry != null) {
 					this.isMicrosoftFoundry = that.isMicrosoftFoundry;
 				}
@@ -1236,7 +1284,7 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 					this.topLogprobs, this.maxCompletionTokens, this.n, this.outputModalities, this.outputAudio,
 					this.responseFormat, this.streamOptions, this.seed, this.toolChoice, this.user,
 					this.parallelToolCalls, this.store, this.metadata, this.reasoningEffort, this.verbosity,
-					this.serviceTier);
+					this.serviceTier, this.extraBody);
 		}
 
 	}

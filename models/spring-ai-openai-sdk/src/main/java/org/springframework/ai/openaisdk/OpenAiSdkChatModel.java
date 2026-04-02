@@ -108,6 +108,7 @@ import org.springframework.util.StringUtils;
  * @author Julien Dubois
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Ilayaperumal Gopinathan
  */
 public class OpenAiSdkChatModel implements ChatModel {
 
@@ -1114,6 +1115,17 @@ public class OpenAiSdkChatModel implements ChatModel {
 					throw new IllegalArgumentException("Failed to parse toolChoice JSON: " + json, e);
 				}
 			}
+		}
+
+		// Add extraBody parameters as additional body properties for OpenAI-compatible
+		// providers
+		if (requestOptions.getExtraBody() != null && !requestOptions.getExtraBody().isEmpty()) {
+			Map<String, com.openai.core.JsonValue> extraParams = requestOptions.getExtraBody()
+				.entrySet()
+				.stream()
+				.collect(java.util.stream.Collectors.toMap(Map.Entry::getKey,
+						entry -> com.openai.core.JsonValue.from(entry.getValue())));
+			builder.additionalBodyProperties(extraParams);
 		}
 
 		return builder.build();
