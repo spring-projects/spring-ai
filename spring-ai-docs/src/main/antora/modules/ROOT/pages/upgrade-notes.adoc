@@ -1,6 +1,63 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-2-0-0-M5]]
+== Upgrading to 2.0.0-M5
+
+=== ChatOptions Handling
+Users can interact with ChatModels in two ways:
+
+ * either directly by calling xref:api/chatmodel.adoc[ ChatModel.call(Prompt) / ChatModel.stream(Prompt)`],
+ * or by using the xref:api/chatclient.adoc[ChatClient] API.
+
+Starting with Spring AI 2.0.0.M5, when using the `ChatModel` approach, options set in the prompt need to be of the concrete type used by the concrete model (_e.g._ `AnthropicChatOptions` when using `AnthropicChatModel`) and need to be either "full" (_i.e._ all relevant fields set) or `null` (in which case the default options set in the model will be used).
+
+The ability to "merge" options has been moved to `ChatClient` (using a `ChatOptions.Builder` or more specific type) and happens prior to the first advisor being called.
+
+Code that previously used a "half constructed" instance of `ChatOptions` now needs to an instance of `Builder` built in a similar way:
+[source,java]
+----
+// Old
+ChatClient client = ...;
+ChatOptions opts = AnthropicChatOptions.builder()
+    .maxTokens(100)
+    .temperature(0.7)
+    .disableParallelToolUse(true)
+    .build();
+String response = client.prompt("Tell me a joke")
+    .options(opts)
+    .call().content();
+
+// New
+ChatClient client = ...;
+var customizer =  AnthropicChatOptions.builder()
+    .maxTokens(100)
+    .temperature(0.7)
+    .disableParallelToolUse(true);
+String response = client.prompt("Tell me a joke")
+    .options(customizer)
+    .call().content();
+----
+
+
+[TIP]
+--
+To easily merge a "delta" of options represented by a `ChatOptions.Builder` with the model's default options at the `ChatModel.call()` level, simply use the following construct:
+[source, java]
+----
+ChatModel model = ...;
+var customizer =  AnthropicChatOptions.builder()
+    .maxTokens(100)
+    .temperature(0.7)
+    .disableParallelToolUse(true);
+Prompt prompt = Prompt.builder().message("Tell me a joke")
+    .options(model.getDefaultOptions().mutate().combineWith(customize).build())
+    .build();
+var response = model.call(prompt);
+----
+--
+
+
 [[upgrading-to-2-0-0-M3]]
 == Upgrading to 2.0.0-M3
 
