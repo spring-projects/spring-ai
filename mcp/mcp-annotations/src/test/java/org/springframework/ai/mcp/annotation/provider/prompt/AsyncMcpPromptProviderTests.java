@@ -562,4 +562,56 @@ public class AsyncMcpPromptProviderTests {
 		}).verifyComplete();
 	}
 
+	@Test
+	void testGetPromptSpecificationsWithSpecialParameters() {
+		class SpecialParamsPrompt {
+
+			@McpPrompt(name = "special-params-prompt", description = "Prompt with special parameters")
+			public Mono<GetPromptResult> specialParamsPrompt(
+					@McpArg(name = "name", description = "User's name", required = true) String name,
+					org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext asyncContext,
+					GetPromptRequest request,
+					@org.springframework.ai.mcp.annotation.McpProgressToken String progressToken,
+					org.springframework.ai.mcp.annotation.McpMeta meta) {
+
+				String content = String.format("name=%s,asyncContext=%s,request=%s,progressToken=%s,meta=%s", name,
+						asyncContext != null ? "bound" : "null", request != null ? "bound" : "null",
+						progressToken != null ? "bound" : "null", meta != null ? "bound" : "null");
+
+				return Mono.just(new GetPromptResult("Special params prompt result",
+						List.of(new PromptMessage(Role.ASSISTANT, new TextContent(content)))));
+			}
+
+		}
+
+		SpecialParamsPrompt promptObject = new SpecialParamsPrompt();
+		AsyncMcpPromptProvider provider = new AsyncMcpPromptProvider(List.of(promptObject));
+
+		List<AsyncPromptSpecification> promptSpecs = provider.getPromptSpecifications();
+
+		assertThat(promptSpecs).hasSize(1);
+		assertThat(promptSpecs.get(0).prompt().name()).isEqualTo("special-params-prompt");
+
+		// The schema should only contain the 'name' argument
+		assertThat(promptSpecs.get(0).prompt().arguments()).hasSize(1);
+		assertThat(promptSpecs.get(0).prompt().arguments().get(0).name()).isEqualTo("name");
+
+		// Test that the handler works with special parameters
+		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
+		Map<String, Object> args = new HashMap<>();
+		args.put("name", "John");
+		GetPromptRequest request = new GetPromptRequest("special-params-prompt", args);
+		Mono<GetPromptResult> result = promptSpecs.get(0).promptHandler().apply(exchange, request);
+
+		StepVerifier.create(result).assertNext(promptResult -> {
+			assertThat(promptResult.description()).isEqualTo("Special params prompt result");
+			assertThat(promptResult.messages()).hasSize(1);
+			PromptMessage message = promptResult.messages().get(0);
+			assertThat(message.role()).isEqualTo(Role.ASSISTANT);
+
+			String expectedContent = "name=John,asyncContext=bound,request=bound,progressToken=null,meta=bound";
+			assertThat(((TextContent) message.content()).text()).isEqualTo(expectedContent);
+		}).verifyComplete();
+	}
+
 }
