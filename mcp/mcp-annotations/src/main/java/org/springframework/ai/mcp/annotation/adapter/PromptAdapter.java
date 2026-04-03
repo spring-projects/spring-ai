@@ -22,12 +22,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.server.McpAsyncServerExchange;
+import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.util.Assert;
 
 import org.springframework.ai.mcp.annotation.McpArg;
+import org.springframework.ai.mcp.annotation.McpMeta;
+import org.springframework.ai.mcp.annotation.McpProgressToken;
 import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.common.MetaUtils;
+import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
+import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 
 /**
  * Utility class for adapting between McpPrompt annotations and McpSchema.Prompt objects.
@@ -85,8 +92,14 @@ public final class PromptAdapter {
 		for (Parameter parameter : parameters) {
 			// Skip special parameter types
 			if (McpAsyncServerExchange.class.isAssignableFrom(parameter.getType())
+					|| McpSyncServerExchange.class.isAssignableFrom(parameter.getType())
+					|| McpTransportContext.class.isAssignableFrom(parameter.getType())
+					|| McpSyncRequestContext.class.isAssignableFrom(parameter.getType())
+					|| McpAsyncRequestContext.class.isAssignableFrom(parameter.getType())
 					|| McpSchema.GetPromptRequest.class.isAssignableFrom(parameter.getType())
-					|| java.util.Map.class.isAssignableFrom(parameter.getType())) {
+					|| java.util.Map.class.isAssignableFrom(parameter.getType())
+					|| McpMeta.class.isAssignableFrom(parameter.getType())
+					|| parameter.isAnnotationPresent(McpProgressToken.class)) {
 				continue;
 			}
 
@@ -104,14 +117,6 @@ public final class PromptAdapter {
 		}
 
 		return arguments;
-	}
-
-	/**
-	 * Helper interface to avoid direct dependency on McpAsyncServerExchange in this
-	 * package.
-	 */
-	private interface McpAsyncServerExchange {
-
 	}
 
 }
