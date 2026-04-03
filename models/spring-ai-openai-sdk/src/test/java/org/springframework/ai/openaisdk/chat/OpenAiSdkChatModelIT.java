@@ -88,6 +88,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Integration tests for {@link OpenAiSdkChatModel}.
  *
  * @author Julien Dubois
+ * @author Ilayaperumal Gopinathan
  */
 @SpringBootTest(classes = OpenAiSdkTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -680,6 +681,17 @@ public class OpenAiSdkChatModelIT {
 
 		assertThat(newResponse).isNotNull();
 		assertThat(newResponse.getResult().getOutput().getText()).contains("6").contains("8");
+	}
+
+	@Test
+	void testOpenAiApiRejectsUnknownParameter() {
+		OpenAiSdkChatOptions options = OpenAiSdkChatOptions.builder()
+			.extraBody(Map.of("extra_body", Map.of("num_ctx", 4096, "num_predict", 10, "top_k", 40)))
+			.build();
+
+		Prompt prompt = new Prompt("Test prompt", options);
+		assertThatThrownBy(() -> this.chatModel.call(prompt)).hasMessageContaining("extra_body")
+			.hasMessageContaining("Unknown parameter");
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {

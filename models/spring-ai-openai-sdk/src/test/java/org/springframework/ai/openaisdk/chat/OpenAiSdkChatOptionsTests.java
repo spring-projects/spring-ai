@@ -62,6 +62,7 @@ public class OpenAiSdkChatOptionsTests extends AbstractChatOptionsTests<OpenAiSd
 		Map<String, String> metadata = Map.of("key1", "value1");
 		Map<String, Object> toolContext = Map.of("keyA", "valueA");
 		Map<String, String> customHeaders = Map.of("header1", "value1");
+		Map<String, Object> extraBody = Map.of("top_k", 50, "repetition_penalty", 1.2);
 
 		OpenAiSdkChatOptions options = OpenAiSdkChatOptions.builder()
 			.model("test-model")
@@ -89,6 +90,7 @@ public class OpenAiSdkChatOptionsTests extends AbstractChatOptionsTests<OpenAiSd
 			.internalToolExecutionEnabled(false)
 			.customHeaders(customHeaders)
 			.toolContext(toolContext)
+			.extraBody(extraBody)
 			.build();
 
 		assertThat(options.getModel()).isEqualTo("test-model");
@@ -117,6 +119,7 @@ public class OpenAiSdkChatOptionsTests extends AbstractChatOptionsTests<OpenAiSd
 		assertThat(options.getInternalToolExecutionEnabled()).isFalse();
 		assertThat(options.getCustomHeaders()).isEqualTo(customHeaders);
 		assertThat(options.getToolContext()).isEqualTo(toolContext);
+		assertThat(options.getExtraBody()).isEqualTo(extraBody);
 	}
 
 	@Test
@@ -270,18 +273,21 @@ public class OpenAiSdkChatOptionsTests extends AbstractChatOptionsTests<OpenAiSd
 			.model("test-model")
 			.temperature(0.7)
 			.maxTokens(100)
+			.extraBody(Map.of("key1", "value1"))
 			.build();
 
 		OpenAiSdkChatOptions options2 = OpenAiSdkChatOptions.builder()
 			.model("test-model")
 			.temperature(0.7)
 			.maxTokens(100)
+			.extraBody(Map.of("key1", "value1"))
 			.build();
 
 		OpenAiSdkChatOptions options3 = OpenAiSdkChatOptions.builder()
 			.model("different-model")
 			.temperature(0.7)
 			.maxTokens(100)
+			.extraBody(Map.of("key1", "value2"))
 			.build();
 
 		// Test equals
@@ -300,6 +306,7 @@ public class OpenAiSdkChatOptionsTests extends AbstractChatOptionsTests<OpenAiSd
 			.logitBias(null)
 			.stop(null)
 			.metadata(null)
+			.extraBody(null)
 			.build();
 
 		assertThat(options.getModel()).isNull();
@@ -307,6 +314,7 @@ public class OpenAiSdkChatOptionsTests extends AbstractChatOptionsTests<OpenAiSd
 		assertThat(options.getLogitBias()).isNull();
 		assertThat(options.getStop()).isNull();
 		assertThat(options.getMetadata()).isNull();
+		assertThat(options.getExtraBody()).isNull();
 	}
 
 	@Test
