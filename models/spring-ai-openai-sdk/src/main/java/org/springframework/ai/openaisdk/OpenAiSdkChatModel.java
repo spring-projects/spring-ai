@@ -1115,12 +1115,23 @@ public class OpenAiSdkChatModel implements ChatModel {
 				builder.toolChoice(toolChoiceOption);
 			}
 			else if (requestOptions.getToolChoice() instanceof String json) {
-				try {
-					var node = ModelOptionsUtils.OBJECT_MAPPER.readTree(json);
-					builder.toolChoice(parseToolChoice(node));
+				if (json.equals("auto")) {
+					builder.toolChoice(ChatCompletionToolChoiceOption.ofAuto(ChatCompletionToolChoiceOption.Auto.AUTO));
 				}
-				catch (Exception e) {
-					throw new IllegalArgumentException("Failed to parse toolChoice JSON: " + json, e);
+				else if (json.equals("none")) {
+					throw new UnsupportedOperationException("SDK version does not support typed 'none' toolChoice");
+				}
+				else if (json.equals("required")) {
+					throw new UnsupportedOperationException("SDK version does not support typed 'required' toolChoice");
+				}
+				else {
+					try {
+						var node = ModelOptionsUtils.OBJECT_MAPPER.readTree(json);
+						builder.toolChoice(parseToolChoice(node));
+					}
+					catch (Exception e) {
+						throw new IllegalArgumentException("Failed to parse toolChoice JSON: " + json, e);
+					}
 				}
 			}
 		}
