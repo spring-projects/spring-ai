@@ -63,6 +63,8 @@ import org.springframework.util.CollectionUtils;
  */
 public class ChromaVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
+	private static final int DEFAULT_PURGE_BATCH_SIZE = 1000;
+
 	private final ChromaApi chromaApi;
 
 	private final String tenantName;
@@ -173,6 +175,44 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		Assert.notNull(idList, "Document id list must not be null");
 		this.chromaApi.deleteEmbeddings(this.tenantName, this.databaseName, this.requireCollectionId(),
 				new DeleteEmbeddingsRequest(idList));
+	}
+
+	/**
+	 * Deletes all embeddings from the current collection while keeping the collection
+	 * itself intact. Embeddings are deleted in batches by repeatedly fetching the first
+	 * page of ids until the collection is empty.
+	 * <p>
+	 * Note: This method does not support concurrency control. Concurrent writes or
+	 * deletions may result in incomplete deletions or duplicate deletion attempts.
+	 * @return the number of embeddings requested for deletion
+	 * @since 2.0.0-SNAPSHOT
+	 */
+	public int purgeEmbeddings() {
+		int deleteCount = 0;
+		String collectionId = this.requireCollectionId();
+		try {
+			while (true) {
+				var response = this.chromaApi.getEmbeddings(this.tenantName, this.databaseName, collectionId,
+						new ChromaApi.GetEmbeddingsRequest(List.of(), Map.of(), DEFAULT_PURGE_BATCH_SIZE, 0,
+								List.of()));
+
+				if (response == null || CollectionUtils.isEmpty(response.ids())) {
+					return deleteCount;
+				}
+				List<String> ids = response.ids();
+				this.chromaApi.deleteEmbeddings(this.tenantName, this.databaseName, collectionId,
+						new DeleteEmbeddingsRequest(ids));
+				deleteCount += ids.size();
+
+				if (ids.size() < DEFAULT_PURGE_BATCH_SIZE) {
+					return deleteCount;
+				}
+			}
+		}
+		catch (Exception e) {
+			logger.error("Purge failed: {}", e.getMessage());
+			throw new IllegalStateException("Failed to purge chroma collection", e);
+		}
 	}
 
 	@Override
