@@ -30,8 +30,8 @@ import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvi
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.integration.tests.TestApplication;
-import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openaisdk.OpenAiSdkChatModel;
+import org.springframework.ai.openaisdk.OpenAiSdkChatOptions;
 import org.springframework.ai.reader.markdown.MarkdownDocumentReader;
 import org.springframework.ai.reader.markdown.config.MarkdownDocumentReaderConfig;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
@@ -53,7 +53,7 @@ public class QuestionAnswerAdvisorStreamIT {
 	private List<Document> knowledgeBaseDocuments;
 
 	@Autowired
-	OpenAiChatModel openAiChatModel;
+	OpenAiSdkChatModel openAiChatModel;
 
 	@Autowired
 	PgVectorStore pgVectorStore;
@@ -86,7 +86,7 @@ public class QuestionAnswerAdvisorStreamIT {
 			.build()
 			.prompt(question)
 			.advisors(qaAdvisor)
-			.options(OpenAiChatOptions.builder().streamUsage(true).build())
+			.options(OpenAiSdkChatOptions.builder().streamUsage(true))
 			.stream()
 			.content();
 

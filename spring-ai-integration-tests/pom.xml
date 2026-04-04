@@ -80,7 +80,7 @@
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-starter-model-openai</artifactId>
+			<artifactId>spring-ai-starter-model-openai-sdk</artifactId>
 			<version>${project.parent.version}</version>
 			<scope>test</scope>
 		</dependency>

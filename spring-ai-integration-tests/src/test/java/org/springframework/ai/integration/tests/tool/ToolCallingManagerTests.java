@@ -37,7 +37,7 @@ import org.springframework.ai.integration.tests.tool.domain.BookService;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
-import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openaisdk.OpenAiSdkChatModel;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,7 +59,7 @@ public class ToolCallingManagerTests {
 	private final ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
 
 	@Autowired
-	OpenAiChatModel openAiChatModel;
+	OpenAiSdkChatModel openAiChatModel;
 
 	@Test
 	void explicitToolCallingExecutionWithNewOptions() {
