@@ -30,7 +30,7 @@ import org.springframework.ai.integration.tests.TestApplication;
 import org.springframework.ai.integration.tests.tool.domain.Author;
 import org.springframework.ai.integration.tests.tool.domain.Book;
 import org.springframework.ai.integration.tests.tool.domain.BookService;
-import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openaisdk.OpenAiSdkChatModel;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -58,7 +58,7 @@ public class FunctionToolCallbackTests {
 	private static final Logger logger = LoggerFactory.getLogger(FunctionToolCallbackTests.class);
 
 	@Autowired
-	OpenAiChatModel openAiChatModel;
+	OpenAiSdkChatModel openAiChatModel;
 
 	@Test
 	void chatVoidInputFromBean() {

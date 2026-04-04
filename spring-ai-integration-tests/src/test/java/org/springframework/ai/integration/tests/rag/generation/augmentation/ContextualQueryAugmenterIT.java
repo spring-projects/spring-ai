@@ -23,7 +23,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.integration.tests.TestApplication;
-import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openaisdk.OpenAiSdkChatModel;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter;
 import org.springframework.ai.rag.generation.augmentation.QueryAugmenter;
@@ -42,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ContextualQueryAugmenterIT {
 
 	@Autowired
-	OpenAiChatModel openAiChatModel;
+	OpenAiSdkChatModel openAiChatModel;
 
 	@Test
 	void whenContextIsProvided() {
