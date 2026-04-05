@@ -339,6 +339,8 @@ public class BedrockProxyChatModel implements ChatModel {
 						: this.defaultOptions.getCacheOptions())
 				.outputSchema(runtimeOptions.getOutputSchema() != null ? runtimeOptions.getOutputSchema()
 						: this.defaultOptions.getOutputSchema())
+				.toolChoice(runtimeOptions.getToolChoice() != null ? runtimeOptions.getToolChoice()
+						: this.defaultOptions.getToolChoice())
 				.build();
 		}
 
@@ -527,7 +529,14 @@ public class BedrockProxyChatModel implements ChatModel {
 				}
 			}
 
-			toolConfiguration = ToolConfiguration.builder().tools(bedrockTools).build();
+			ToolConfiguration.Builder toolConfigBuilder = ToolConfiguration.builder().tools(bedrockTools);
+
+			// Add toolChoice if specified in options
+			if (updatedRuntimeOptions.getToolChoice() != null) {
+				toolConfigBuilder.toolChoice(updatedRuntimeOptions.getToolChoice());
+			}
+
+			toolConfiguration = toolConfigBuilder.build();
 		}
 
 		InferenceConfiguration inferenceConfiguration = InferenceConfiguration.builder()

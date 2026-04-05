@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.services.bedrockruntime.model.ToolChoice;
 
 import org.springframework.ai.bedrock.converse.BedrockChatOptions.Builder;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
@@ -143,6 +144,58 @@ class BedrockChatOptionsTests extends AbstractChatOptionsTests<BedrockChatOption
 		options.setOutputSchema("{\"type\":\"array\"}");
 
 		assertThat(options.getOutputSchema()).isEqualTo("{\"type\":\"array\"}");
+	}
+
+	@Test
+	void testToolChoiceBuilder() {
+		ToolChoice toolChoice = ToolChoice.builder().auto(builder -> builder.build()).build();
+		BedrockChatOptions options = BedrockChatOptions.builder().toolChoice(toolChoice).build();
+
+		assertThat(options.getToolChoice()).isEqualTo(toolChoice);
+	}
+
+	@Test
+	void testToolChoiceDefaultIsNull() {
+		BedrockChatOptions options = new BedrockChatOptions();
+		assertThat(options.getToolChoice()).isNull();
+	}
+
+	@Test
+	void testToolChoiceSetter() {
+		ToolChoice toolChoice = ToolChoice.builder().any(builder -> builder.build()).build();
+		BedrockChatOptions options = new BedrockChatOptions();
+		options.setToolChoice(toolChoice);
+
+		assertThat(options.getToolChoice()).isEqualTo(toolChoice);
+	}
+
+	@Test
+	void testToolChoiceCopied() {
+		ToolChoice toolChoice = ToolChoice.builder().auto(builder -> builder.build()).build();
+		BedrockChatOptions original = BedrockChatOptions.builder().model("test-model").toolChoice(toolChoice).build();
+
+		BedrockChatOptions copied = original.copy();
+
+		assertThat(copied).isNotSameAs(original).isEqualTo(original);
+		assertThat(copied.getToolChoice()).isEqualTo(toolChoice);
+	}
+
+	@Test
+	void testToolChoiceIncludedInEquality() {
+		ToolChoice toolChoice = ToolChoice.builder().auto(builder -> builder.build()).build();
+		BedrockChatOptions with = BedrockChatOptions.builder().model("m").toolChoice(toolChoice).build();
+		BedrockChatOptions without = BedrockChatOptions.builder().model("m").build();
+
+		assertThat(with).isNotEqualTo(without);
+	}
+
+	@Test
+	void testToolChoiceIncludedInHashCode() {
+		ToolChoice toolChoice = ToolChoice.builder().auto(builder -> builder.build()).build();
+		BedrockChatOptions with = BedrockChatOptions.builder().toolChoice(toolChoice).build();
+		BedrockChatOptions without = BedrockChatOptions.builder().build();
+
+		assertThat(with.hashCode()).isNotEqualTo(without.hashCode());
 	}
 
 }

@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
+import software.amazon.awssdk.services.bedrockruntime.model.ToolChoice;
 
 import org.springframework.ai.bedrock.converse.api.BedrockCacheOptions;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -90,6 +91,8 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	@JsonIgnore
 	private String outputSchema;
 
+	private ToolChoice toolChoice;
+
 	// TODO: left here for ModelOptionUtils.merge*()
 	public BedrockChatOptions() {
 	}
@@ -98,7 +101,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 			Map<String, String> requestParameters, List<String> stopSequences, Double temperature, Integer topK,
 			Double topP, Boolean internalToolExecutionEnabled, @Nullable List<ToolCallback> toolCallbacks,
 			@Nullable Set<String> toolNames, @Nullable Map<String, Object> toolContext,
-			BedrockCacheOptions cacheOptions, String outputSchema) {
+			BedrockCacheOptions cacheOptions, String outputSchema, ToolChoice toolChoice) {
 		this.model = model;
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
@@ -114,6 +117,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		this.toolContext = toolContext == null ? new HashMap<>() : new HashMap<>(toolContext);
 		this.cacheOptions = cacheOptions;
 		this.outputSchema = outputSchema;
+		this.toolChoice = toolChoice;
 	}
 
 	public static Builder builder() {
@@ -266,6 +270,16 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		this.cacheOptions = cacheOptions;
 	}
 
+	@JsonIgnore
+	public ToolChoice getToolChoice() {
+		return this.toolChoice;
+	}
+
+	@JsonIgnore
+	public void setToolChoice(ToolChoice toolChoice) {
+		this.toolChoice = toolChoice;
+	}
+
 	@Override
 	public @Nullable String getOutputSchema() {
 		return this.outputSchema;
@@ -301,7 +315,8 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 			// Bedrock Specific
 			.requestParameters(this.requestParameters)
 			.cacheOptions(this.cacheOptions)
-			.outputSchema(this.outputSchema);
+			.outputSchema(this.outputSchema)
+			.toolChoice(this.toolChoice);
 	}
 
 	@Override
@@ -322,14 +337,16 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.cacheOptions, that.cacheOptions)
-				&& Objects.equals(this.outputSchema, that.outputSchema);
+				&& Objects.equals(this.outputSchema, that.outputSchema)
+				&& Objects.equals(this.toolChoice, that.toolChoice);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 				this.requestParameters, this.stopSequences, this.temperature, this.topK, this.topP, this.toolCallbacks,
-				this.toolNames, this.toolContext, this.internalToolExecutionEnabled, this.cacheOptions);
+				this.toolNames, this.toolContext, this.internalToolExecutionEnabled, this.cacheOptions,
+				this.toolChoice);
 	}
 
 	// public Builder class exposed to users. Avoids having to deal with noisy generic
@@ -346,6 +363,8 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		protected @Nullable BedrockCacheOptions cacheOptions;
 
 		private @Nullable String outputSchema;
+
+		private @Nullable ToolChoice toolChoice;
 
 		public B requestParameters(Map<String, String> requestParameters) {
 			this.requestParameters = requestParameters;
@@ -376,12 +395,17 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 			return self();
 		}
 
+		public B toolChoice(@Nullable ToolChoice toolChoice) {
+			this.toolChoice = toolChoice;
+			return self();
+		}
+
 		@Override
 		public BedrockChatOptions build() {
 			return new BedrockChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 					this.requestParameters, this.stopSequences, this.temperature, this.topK, this.topP,
 					this.internalToolExecutionEnabled, this.toolCallbacks, this.toolNames, this.toolContext,
-					this.cacheOptions, this.outputSchema);
+					this.cacheOptions, this.outputSchema, this.toolChoice);
 		}
 
 	}
