@@ -42,11 +42,12 @@ import org.springframework.context.annotation.Bean;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration tests for observation instrumentation in {@link OpenAiEmbeddingModel}.
+ * Integration tests for observation instrumentation in
+ * {@link VertexAiTextEmbeddingModel}.
  *
  * @author Christian Tzolov
  */
-@SpringBootTest(classes = VertexAiTextEmbeddingModelObservationIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".+")
 public class VertexAiTextEmbeddingModelObservationIT {
