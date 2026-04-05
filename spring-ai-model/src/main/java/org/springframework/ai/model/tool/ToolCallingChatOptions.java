@@ -97,16 +97,13 @@ public interface ToolCallingChatOptions extends ChatOptions {
 
 	static boolean isInternalToolExecutionEnabled(ChatOptions chatOptions) {
 		Assert.notNull(chatOptions, "chatOptions cannot be null");
-		boolean internalToolExecutionEnabled;
-		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions
-				&& toolCallingChatOptions.getInternalToolExecutionEnabled() != null) {
-			internalToolExecutionEnabled = Boolean.TRUE
-				.equals(toolCallingChatOptions.getInternalToolExecutionEnabled());
+		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions) {
+			Boolean toolExecutionEnabled = toolCallingChatOptions.getInternalToolExecutionEnabled();
+			if (toolExecutionEnabled != null) {
+				return toolExecutionEnabled;
+			}
 		}
-		else {
-			internalToolExecutionEnabled = DEFAULT_TOOL_EXECUTION_ENABLED;
-		}
-		return internalToolExecutionEnabled;
+		return DEFAULT_TOOL_EXECUTION_ENABLED;
 	}
 
 	static Set<String> mergeToolNames(Set<String> runtimeToolNames, Set<String> defaultToolNames) {
@@ -141,10 +138,9 @@ public interface ToolCallingChatOptions extends ChatOptions {
 
 	static void validateToolCallbacks(List<ToolCallback> toolCallbacks) {
 		List<String> duplicateToolNames = ToolUtils.getDuplicateToolNames(toolCallbacks);
-		if (!duplicateToolNames.isEmpty()) {
-			throw new IllegalStateException("Multiple tools with the same name (%s) found in ToolCallingChatOptions"
-				.formatted(String.join(", ", duplicateToolNames)));
-		}
+		Assert.state(duplicateToolNames.isEmpty(),
+				() -> "Multiple tools with the same name (%s) found in ToolCallingChatOptions"
+					.formatted(String.join(", ", duplicateToolNames)));
 	}
 
 	/**
