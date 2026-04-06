@@ -61,6 +61,8 @@ public class OpenAiChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = "spring.ai.openai", name = { "api-key", "chat.api-key" },
+			matchIfMissing = false)
 	public OpenAiApi openAiApi(OpenAiConnectionProperties commonProperties, OpenAiChatProperties chatProperties,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
