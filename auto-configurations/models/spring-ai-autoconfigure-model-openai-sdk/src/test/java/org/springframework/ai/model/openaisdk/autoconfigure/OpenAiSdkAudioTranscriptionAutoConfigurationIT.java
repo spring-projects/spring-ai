@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  * @since 2.0.0
  */
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiSdkAudioTranscriptionAutoConfigurationIT {
 
 	private static final Log logger = LogFactory.getLog(OpenAiSdkAudioTranscriptionAutoConfigurationIT.class);
