@@ -141,7 +141,8 @@ public class SyncStatelessMcpToolProvider extends AbstractMcpToolProvider {
 									: ReturnMode.TEXT);
 
 					BiFunction<McpTransportContext, CallToolRequest, CallToolResult> methodCallback = new SyncStatelessMcpToolMethodCallback(
-							returnMode, mcpToolMethod, toolObject, this.doGetToolCallException());
+							returnMode, mcpToolMethod, toolObject, this.doGetToolCallException(),
+							this.doGetToolCallExceptionHandler());
 
 					var toolSpec = SyncToolSpecification.builder().tool(tool).callHandler(methodCallback).build();
 

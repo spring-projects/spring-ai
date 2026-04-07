@@ -43,6 +43,11 @@ public abstract class AbstractSyncMcpToolMethodCallback<T, RC extends McpRequest
 		super(returnMode, toolMethod, toolObject, toolCallExceptionClass);
 	}
 
+	protected AbstractSyncMcpToolMethodCallback(ReturnMode returnMode, Method toolMethod, Object toolObject,
+			Class<? extends Throwable> toolCallExceptionClass, McpToolCallExceptionHandler toolCallExceptionHandler) {
+		super(returnMode, toolMethod, toolObject, toolCallExceptionClass, toolCallExceptionHandler);
+	}
+
 	/**
 	 * Processes the result of the method invocation and converts it to a CallToolResult.
 	 * This is a synchronous wrapper around the parent class's reactive result processing.
@@ -60,11 +65,7 @@ public abstract class AbstractSyncMcpToolMethodCallback<T, RC extends McpRequest
 	 * @return A CallToolResult representing the error
 	 */
 	protected CallToolResult createSyncErrorResult(Exception e) {
-		Throwable rootCause = findCauseUsingPlainJava(e);
-		return CallToolResult.builder()
-			.isError(true)
-			.addTextContent(e.getMessage() + System.lineSeparator() + rootCause.getMessage())
-			.build();
+		return this.toolCallExceptionHandler.process(this.mcpToolName, e);
 	}
 
 	/**

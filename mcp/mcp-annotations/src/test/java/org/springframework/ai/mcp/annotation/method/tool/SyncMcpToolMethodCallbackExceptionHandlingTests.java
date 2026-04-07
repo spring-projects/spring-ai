@@ -97,10 +97,10 @@ public class SyncMcpToolMethodCallbackExceptionHandlingTests {
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 		CallToolRequest request = new CallToolRequest("runtime-exception-tool", Map.of("input", "test"));
 
-		// The RuntimeException from callMethod should NOT be caught (not an
-		// IllegalArgumentException)
+		// The RuntimeException from the tool method should NOT be caught (not an
+		// IllegalArgumentException) and propagates with its original message
 		assertThatThrownBy(() -> callback.apply(exchange, request)).isInstanceOf(RuntimeException.class)
-			.hasMessageContaining("Error invoking method");
+			.hasMessageContaining("Runtime error: test");
 	}
 
 	@Test
@@ -138,9 +138,10 @@ public class SyncMcpToolMethodCallbackExceptionHandlingTests {
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 		CallToolRequest request = new CallToolRequest("checked-exception-tool", Map.of("input", "test"));
 
-		// The RuntimeException wrapper should NOT be caught
+		// The checked exception wrapped in RuntimeException should NOT be caught and
+		// propagates with the original cause accessible
 		assertThatThrownBy(() -> callback.apply(exchange, request)).isInstanceOf(RuntimeException.class)
-			.hasMessageContaining("Error invoking method")
+			.hasMessageContaining("Business error: test")
 			.hasCauseInstanceOf(BusinessException.class);
 	}
 
@@ -271,6 +272,55 @@ public class SyncMcpToolMethodCallbackExceptionHandlingTests {
 		CallToolResult result = callback.apply(exchange, request);
 		assertThat(result).isNotNull();
 		assertThat(result.isError()).isTrue();
+	}
+
+	@Test
+	public void testCustomExceptionHandler_ReplacesDefaultFormatting() throws Exception {
+		ExceptionTestToolProvider provider = new ExceptionTestToolProvider();
+		Method method = ExceptionTestToolProvider.class.getMethod("runtimeExceptionTool", String.class);
+
+		McpToolCallExceptionHandler customHandler = (toolName, ex) -> CallToolResult.builder()
+			.isError(true)
+			.addTextContent("CUSTOM[" + toolName + "]: " + ex.getMessage())
+			.build();
+
+		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider,
+				Exception.class, customHandler);
+
+		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+		CallToolRequest request = new CallToolRequest("runtime-exception-tool", Map.of("input", "test"));
+
+		CallToolResult result = callback.apply(exchange, request);
+
+		assertThat(result.isError()).isTrue();
+		assertThat(((TextContent) result.content().get(0)).text())
+			.isEqualTo("CUSTOM[runtime-exception-tool]: Runtime error: test");
+	}
+
+	@Test
+	public void testCustomExceptionHandler_ReceivesAnnotationToolName() throws Exception {
+		// Verify that the handler receives the @McpTool annotation name, not the Java
+		// method name
+		ExceptionTestToolProvider provider = new ExceptionTestToolProvider();
+		Method method = ExceptionTestToolProvider.class.getMethod("runtimeExceptionTool", String.class);
+
+		String[] capturedToolName = new String[1];
+		McpToolCallExceptionHandler capturingHandler = (toolName, ex) -> {
+			capturedToolName[0] = toolName;
+			return CallToolResult.builder().isError(true).addTextContent(ex.getMessage()).build();
+		};
+
+		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider,
+				Exception.class, capturingHandler);
+
+		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+		CallToolRequest request = new CallToolRequest("runtime-exception-tool", Map.of("input", "test"));
+
+		callback.apply(exchange, request);
+
+		// "runtimeExceptionTool" is the Java method name; "runtime-exception-tool" is the
+		// @McpTool annotation name — the handler must receive the latter
+		assertThat(capturedToolName[0]).isEqualTo("runtime-exception-tool");
 	}
 
 	// Custom exception classes for testing
