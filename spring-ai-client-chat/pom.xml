@@ -44,11 +44,9 @@
 			<version>${project.version}</version>
 		</dependency>
 
-		<!-- TODO Require merging https://github.com/modelcontextprotocol/java-sdk/pull/742 -->
 		<dependency>
-			<groupId>io.modelcontextprotocol.sdk</groupId>
-			<artifactId>mcp-json-jackson3</artifactId>
-			<version>${mcp.sdk.version}</version>
+			<groupId>com.networknt</groupId>
+			<artifactId>json-schema-validator</artifactId>
 		</dependency>
 
 		<dependency>
