@@ -59,7 +59,7 @@ public class OpenAiSdkAudioTranscriptionOptions extends AbstractOpenAiSdkOptions
 	private @Nullable String model;
 
 	@JsonProperty("response_format")
-	private @Nullable AudioResponseFormat responseFormat;
+	private AudioResponseFormat responseFormat = DEFAULT_RESPONSE_FORMAT;
 
 	@JsonProperty("prompt")
 	private @Nullable String prompt;
@@ -86,11 +86,11 @@ public class OpenAiSdkAudioTranscriptionOptions extends AbstractOpenAiSdkOptions
 		this.model = model;
 	}
 
-	public @Nullable AudioResponseFormat getResponseFormat() {
+	public AudioResponseFormat getResponseFormat() {
 		return this.responseFormat;
 	}
 
-	public void setResponseFormat(@Nullable AudioResponseFormat responseFormat) {
+	public void setResponseFormat(AudioResponseFormat responseFormat) {
 		this.responseFormat = responseFormat;
 	}
 
@@ -266,7 +266,7 @@ public class OpenAiSdkAudioTranscriptionOptions extends AbstractOpenAiSdkOptions
 			return this;
 		}
 
-		public Builder responseFormat(@Nullable AudioResponseFormat responseFormat) {
+		public Builder responseFormat(AudioResponseFormat responseFormat) {
 			this.options.setResponseFormat(responseFormat);
 			return this;
 		}
