@@ -22,8 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openai.azure.AzureOpenAIServiceVersion;
 import com.openai.credential.Credential;
 import com.openai.models.audio.AudioModel;
@@ -42,7 +40,6 @@ import org.springframework.ai.audio.transcription.AudioTranscriptionOptions;
  * @author Piotr Olaszewski
  * @since 2.0.0
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class OpenAiSdkAudioTranscriptionOptions extends AbstractOpenAiSdkOptions implements AudioTranscriptionOptions {
 
 	/**
@@ -55,22 +52,16 @@ public class OpenAiSdkAudioTranscriptionOptions extends AbstractOpenAiSdkOptions
 	 */
 	public static final AudioResponseFormat DEFAULT_RESPONSE_FORMAT = AudioResponseFormat.TEXT;
 
-	@JsonProperty("model")
 	private @Nullable String model;
 
-	@JsonProperty("response_format")
 	private AudioResponseFormat responseFormat = DEFAULT_RESPONSE_FORMAT;
 
-	@JsonProperty("prompt")
 	private @Nullable String prompt;
 
-	@JsonProperty("language")
 	private @Nullable String language;
 
-	@JsonProperty("temperature")
 	private @Nullable Float temperature;
 
-	@JsonProperty("timestamp_granularities")
 	private @Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities;
 
 	public static Builder builder() {
