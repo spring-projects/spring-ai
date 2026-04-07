@@ -16,15 +16,48 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import java.net.URI;
+import java.util.Locale;
+
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.client.BufferingClientHttpRequestFactory;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClient;
 
 public final class OpenAIAutoConfigurationUtil {
 
 	private OpenAIAutoConfigurationUtil() {
 		// Avoids instantiation
+	}
+
+	public static RestClient.Builder prepareRestClientBuilderForOpenAi(@NonNull RestClient.Builder restClientBuilder,
+			String baseUrl) {
+		if (!isAzureOpenAiEndpoint(baseUrl)) {
+			return restClientBuilder;
+		}
+		return restClientBuilder.clone()
+			.requestFactory(new BufferingClientHttpRequestFactory(new SimpleClientHttpRequestFactory()));
+	}
+
+	public static boolean isAzureOpenAiEndpoint(String baseUrl) {
+		if (!StringUtils.hasText(baseUrl)) {
+			return false;
+		}
+		try {
+			URI uri = URI.create(baseUrl.trim());
+			String host = uri.getHost();
+			if (host == null) {
+				return false;
+			}
+			String lower = host.toLowerCase(Locale.ROOT);
+			return lower.endsWith("openai.azure.com");
+		}
+		catch (IllegalArgumentException ex) {
+			return false;
+		}
 	}
 
 	public static @NonNull ResolvedConnectionProperties resolveConnectionProperties(
