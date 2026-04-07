@@ -48,6 +48,11 @@ public final class SyncMcpToolMethodCallback
 		super(returnMode, toolMethod, toolObject, toolCallExceptionClass);
 	}
 
+	public SyncMcpToolMethodCallback(ReturnMode returnMode, java.lang.reflect.Method toolMethod, Object toolObject,
+			Class<? extends Throwable> toolCallExceptionClass, McpToolCallExceptionHandler toolCallExceptionHandler) {
+		super(returnMode, toolMethod, toolObject, toolCallExceptionClass, toolCallExceptionHandler);
+	}
+
 	@Override
 	protected boolean isExchangeOrContextType(Class<?> paramType) {
 		return McpSyncServerExchange.class.isAssignableFrom(paramType)

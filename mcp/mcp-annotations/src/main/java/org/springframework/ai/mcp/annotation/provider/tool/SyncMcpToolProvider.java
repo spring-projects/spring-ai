@@ -137,7 +137,8 @@ public class SyncMcpToolProvider extends AbstractMcpToolProvider {
 									: ReturnMode.TEXT);
 
 					BiFunction<McpSyncServerExchange, CallToolRequest, CallToolResult> methodCallback = new SyncMcpToolMethodCallback(
-							returnMode, mcpToolMethod, toolObject, this.doGetToolCallException());
+							returnMode, mcpToolMethod, toolObject, this.doGetToolCallException(),
+							this.doGetToolCallExceptionHandler());
 
 					var toolSpec = SyncToolSpecification.builder().tool(tool).callHandler(methodCallback).build();
 

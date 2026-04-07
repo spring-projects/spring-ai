@@ -1026,4 +1026,34 @@ public class AsyncMcpToolProviderTests {
 		assertThat(toolSpec.tool().outputSchema()).isNotNull();
 	}
 
+	@Test
+	void testSetExceptionHandler_customHandlerIsInvoked() {
+		class FailingTool {
+
+			@McpTool(name = "failing-tool", description = "Tool that always fails")
+			public Mono<String> failingTool(String input) {
+				return Mono.error(new RuntimeException("tool failure: " + input));
+			}
+
+		}
+
+		AsyncMcpToolProvider provider = new AsyncMcpToolProvider(List.of(new FailingTool()));
+		provider.setExceptionHandler((toolName, ex) -> CallToolResult.builder()
+			.isError(true)
+			.addTextContent("CUSTOM[" + toolName + "]: " + ex.getMessage())
+			.build());
+
+		Mono<CallToolResult> result = provider.getToolSpecifications()
+			.get(0)
+			.callHandler()
+			.apply(mock(McpAsyncServerExchange.class), new CallToolRequest("failing-tool", Map.of("input", "test")));
+
+		StepVerifier.create(result).assertNext(callToolResult -> {
+			assertThat(callToolResult.isError()).isTrue();
+			assertThat(callToolResult.content().get(0)).isInstanceOf(TextContent.class);
+			assertThat(((TextContent) callToolResult.content().get(0)).text())
+				.isEqualTo("CUSTOM[failing-tool]: tool failure: test");
+		}).verifyComplete();
+	}
+
 }

@@ -25,6 +25,7 @@ import org.springframework.ai.mcp.annotation.McpComplete;
 import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.method.tool.McpToolCallExceptionHandler;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanFactoryInitializationAotProcessor;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanPostProcessor;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractMcpAnnotatedBeans;
@@ -53,6 +54,12 @@ public class McpServerAnnotationScannerAutoConfiguration {
 
 	private static final Set<Class<? extends Annotation>> SERVER_MCP_ANNOTATIONS = Set.of(McpTool.class,
 			McpResource.class, McpPrompt.class, McpComplete.class);
+
+	@Bean
+	@ConditionalOnMissingBean
+	public McpToolCallExceptionHandler mcpToolCallExceptionHandler() {
+		return McpToolCallExceptionHandler.defaultHandler();
+	}
 
 	@Bean
 	@ConditionalOnMissingBean

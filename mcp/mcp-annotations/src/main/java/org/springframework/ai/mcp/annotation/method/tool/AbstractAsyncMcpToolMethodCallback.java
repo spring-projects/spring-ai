@@ -44,10 +44,18 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 
 	protected final Class<? extends Throwable> toolCallExceptionClass;
 
+	protected final McpToolCallExceptionHandler toolCallExceptionHandler;
+
 	protected AbstractAsyncMcpToolMethodCallback(ReturnMode returnMode, Method toolMethod, Object toolObject,
 			Class<? extends Throwable> toolCallExceptionClass) {
+		this(returnMode, toolMethod, toolObject, toolCallExceptionClass, McpToolCallExceptionHandler.defaultHandler());
+	}
+
+	protected AbstractAsyncMcpToolMethodCallback(ReturnMode returnMode, Method toolMethod, Object toolObject,
+			Class<? extends Throwable> toolCallExceptionClass, McpToolCallExceptionHandler toolCallExceptionHandler) {
 		super(returnMode, toolMethod, toolObject);
 		this.toolCallExceptionClass = toolCallExceptionClass;
+		this.toolCallExceptionHandler = toolCallExceptionHandler;
 	}
 
 	/**
@@ -73,11 +81,7 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 			}
 
 			// Handle other Mono types - map the emitted value to CallToolResult
-			return monoResult.map(this::mapValueToCallToolResult)
-				.onErrorResume(e -> Mono.just(CallToolResult.builder()
-					.isError(true)
-					.addTextContent("Error invoking method: %s".formatted(e.getMessage()))
-					.build()));
+			return monoResult.map(this::mapValueToCallToolResult).onErrorResume(this::handleReactiveError);
 		}
 
 		// Handle Flux by taking the first element
@@ -96,12 +100,7 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 			}
 
 			// Handle other Flux types by taking the first element and mapping
-			return fluxResult.next()
-				.map(this::mapValueToCallToolResult)
-				.onErrorResume(e -> Mono.just(CallToolResult.builder()
-					.isError(true)
-					.addTextContent("Error invoking method: %s".formatted(e.getMessage()))
-					.build()));
+			return fluxResult.next().map(this::mapValueToCallToolResult).onErrorResume(this::handleReactiveError);
 		}
 
 		// Handle other Publisher types
@@ -121,11 +120,7 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 			}
 
 			// Handle other Publisher types by mapping the emitted value
-			return monoFromPublisher.map(this::mapValueToCallToolResult)
-				.onErrorResume(e -> Mono.just(CallToolResult.builder()
-					.isError(true)
-					.addTextContent("Error invoking method: %s".formatted(e.getMessage()))
-					.build()));
+			return monoFromPublisher.map(this::mapValueToCallToolResult).onErrorResume(this::handleReactiveError);
 		}
 
 		// This should not happen in async context, but handle as fallback
@@ -149,11 +144,18 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 	 * @return A Mono<CallToolResult> representing the error
 	 */
 	protected Mono<CallToolResult> createAsyncErrorResult(Exception e) {
-		Throwable rootCause = findCauseUsingPlainJava(e);
-		return Mono.just(CallToolResult.builder()
-			.isError(true)
-			.addTextContent(e.getMessage() + System.lineSeparator() + rootCause.getMessage())
-			.build());
+		return handleReactiveError(e);
+	}
+
+	/**
+	 * Adapts a reactive-pipeline {@link Throwable} into a {@link CallToolResult} error by
+	 * delegating to the configured {@link McpToolCallExceptionHandler}.
+	 * @param t the throwable emitted by the reactive pipeline
+	 * @return a {@code Mono<CallToolResult>} representing the error
+	 */
+	private Mono<CallToolResult> handleReactiveError(Throwable t) {
+		Exception ex = (t instanceof Exception e) ? e : new RuntimeException(t);
+		return Mono.just(this.toolCallExceptionHandler.process(this.mcpToolName, ex));
 	}
 
 	/**

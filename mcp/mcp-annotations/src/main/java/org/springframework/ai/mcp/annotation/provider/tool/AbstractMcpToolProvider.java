@@ -24,6 +24,7 @@ import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.util.Assert;
 
 import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.method.tool.McpToolCallExceptionHandler;
 
 /**
  * @author Christian Tzolov
@@ -36,6 +37,8 @@ public abstract class AbstractMcpToolProvider {
 	protected final List<Object> toolObjects;
 
 	protected McpJsonMapper jsonMapper = McpJsonDefaults.getMapper();
+
+	private McpToolCallExceptionHandler toolCallExceptionHandler = McpToolCallExceptionHandler.defaultHandler();
 
 	public AbstractMcpToolProvider(List<Object> toolObjects) {
 		Assert.notNull(toolObjects, "toolObjects cannot be null");
@@ -52,6 +55,15 @@ public abstract class AbstractMcpToolProvider {
 
 	protected Class<? extends Throwable> doGetToolCallException() {
 		return Exception.class;
+	}
+
+	protected McpToolCallExceptionHandler doGetToolCallExceptionHandler() {
+		return this.toolCallExceptionHandler;
+	}
+
+	public void setExceptionHandler(McpToolCallExceptionHandler exceptionHandler) {
+		Assert.notNull(exceptionHandler, "exceptionHandler cannot be null");
+		this.toolCallExceptionHandler = exceptionHandler;
 	}
 
 	public void setJsonMapper(McpJsonMapper jsonMapper) {

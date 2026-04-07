@@ -49,6 +49,12 @@ public final class AsyncStatelessMcpToolMethodCallback
 		super(returnMode, toolMethod, toolObject, toolCallExceptionClass);
 	}
 
+	public AsyncStatelessMcpToolMethodCallback(ReturnMode returnMode, java.lang.reflect.Method toolMethod,
+			Object toolObject, Class<? extends Throwable> toolCallExceptionClass,
+			McpToolCallExceptionHandler toolCallExceptionHandler) {
+		super(returnMode, toolMethod, toolObject, toolCallExceptionClass, toolCallExceptionHandler);
+	}
+
 	@Override
 	protected boolean isExchangeOrContextType(Class<?> paramType) {
 		return McpTransportContext.class.isAssignableFrom(paramType)
