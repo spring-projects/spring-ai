@@ -21,8 +21,6 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openai.azure.AzureOpenAIServiceVersion;
 import com.openai.credential.Credential;
 import org.jspecify.annotations.Nullable;
@@ -36,7 +34,6 @@ import org.springframework.ai.moderation.ModerationOptions;
  * @author Ahmed Yousri
  * @since 2.0.0
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class OpenAiSdkModerationOptions extends AbstractOpenAiSdkOptions implements ModerationOptions {
 
 	/**
@@ -44,7 +41,6 @@ public class OpenAiSdkModerationOptions extends AbstractOpenAiSdkOptions impleme
 	 */
 	public static final String DEFAULT_MODERATION_MODEL = "omni-moderation-latest";
 
-	@JsonProperty("model")
 	private @Nullable String model;
 
 	public static Builder builder() {
