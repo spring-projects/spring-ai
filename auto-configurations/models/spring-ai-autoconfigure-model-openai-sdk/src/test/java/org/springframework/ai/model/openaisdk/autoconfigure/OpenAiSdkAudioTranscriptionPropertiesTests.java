@@ -37,6 +37,27 @@ class OpenAiSdkAudioTranscriptionPropertiesTests {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner();
 
 	@Test
+	void transcriptionOptionsTest() {
+		new ApplicationContextRunner().withPropertyValues("spring.ai.openai-sdk.api-key=API_KEY",
+				"spring.ai.openai-sdk.base-url=http://TEST.BASE.URL", "spring.ai.model.audio.transcription=openai-sdk",
+				"spring.ai.openai-sdk.audio.transcription.options.model=whisper-1",
+				"spring.ai.openai-sdk.audio.transcription.options.language=en",
+				"spring.ai.openai-sdk.audio.transcription.options.temperature=0.5")
+			.withConfiguration(AutoConfigurations.of(OpenAiSdkAudioTranscriptionAutoConfiguration.class))
+			.run(context -> {
+				var connectionProperties = context.getBean(OpenAiSdkConnectionProperties.class);
+				var transcriptionProperties = context.getBean(OpenAiSdkAudioTranscriptionProperties.class);
+
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
+				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
+
+				assertThat(transcriptionProperties.getOptions().getModel()).isEqualTo("whisper-1");
+				assertThat(transcriptionProperties.getOptions().getLanguage()).isEqualTo("en");
+				assertThat(transcriptionProperties.getOptions().getTemperature()).isEqualTo(0.5f);
+			});
+	}
+
+	@Test
 	void transcriptionPropertiesBindCorrectly() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.model.audio.transcription=openai-sdk",
@@ -60,6 +81,26 @@ class OpenAiSdkAudioTranscriptionPropertiesTests {
 					"spring.ai.openai-sdk.api-key=test-key")
 			.withConfiguration(AutoConfigurations.of(OpenAiSdkAudioTranscriptionAutoConfiguration.class))
 			.run(context -> assertThat(context).hasSingleBean(OpenAiSdkAudioTranscriptionModel.class));
+	}
+
+	@Test
+	void transcriptionActivation() {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.openai-sdk.api-key=API_KEY",
+					"spring.ai.openai-sdk.base-url=http://TEST.BASE.URL", "spring.ai.model.audio.transcription=none")
+			.withConfiguration(AutoConfigurations.of(OpenAiSdkAudioTranscriptionAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(OpenAiSdkAudioTranscriptionProperties.class)).isEmpty();
+				assertThat(context.getBeansOfType(OpenAiSdkAudioTranscriptionModel.class)).isEmpty();
+			});
+
+		new ApplicationContextRunner().withPropertyValues("spring.ai.openai-sdk.api-key=API_KEY",
+				"spring.ai.openai-sdk.base-url=http://TEST.BASE.URL", "spring.ai.model.audio.transcription=openai-sdk")
+			.withConfiguration(AutoConfigurations.of(OpenAiSdkAudioTranscriptionAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(OpenAiSdkAudioTranscriptionProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiSdkAudioTranscriptionModel.class)).isNotEmpty();
+			});
 	}
 
 }
