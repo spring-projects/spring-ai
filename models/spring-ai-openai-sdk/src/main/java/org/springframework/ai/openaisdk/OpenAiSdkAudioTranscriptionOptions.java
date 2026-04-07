@@ -180,31 +180,64 @@ public class OpenAiSdkAudioTranscriptionOptions extends AbstractOpenAiSdkOptions
 
 	public static final class Builder {
 
-		private final OpenAiSdkAudioTranscriptionOptions options;
+		private @Nullable String model;
+
+		private @Nullable AudioResponseFormat responseFormat;
+
+		private @Nullable String prompt;
+
+		private @Nullable String language;
+
+		private @Nullable Float temperature;
+
+		private @Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities;
+
+		private @Nullable String baseUrl;
+
+		private @Nullable String apiKey;
+
+		private @Nullable Credential credential;
+
+		private @Nullable String deploymentName;
+
+		private @Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion;
+
+		private @Nullable String organizationId;
+
+		private boolean microsoftFoundry;
+
+		private boolean gitHubModels;
+
+		private @Nullable Duration timeout;
+
+		private @Nullable Integer maxRetries;
+
+		private @Nullable Proxy proxy;
+
+		private @Nullable Map<String, String> customHeaders;
 
 		private Builder() {
-			this.options = new OpenAiSdkAudioTranscriptionOptions();
 		}
 
 		public Builder from(OpenAiSdkAudioTranscriptionOptions fromOptions) {
-			this.options.setBaseUrl(fromOptions.getBaseUrl());
-			this.options.setApiKey(fromOptions.getApiKey());
-			this.options.setCredential(fromOptions.getCredential());
-			this.options.setModel(fromOptions.getModel());
-			this.options.setDeploymentName(fromOptions.getDeploymentName());
-			this.options.setMicrosoftFoundryServiceVersion(fromOptions.getMicrosoftFoundryServiceVersion());
-			this.options.setOrganizationId(fromOptions.getOrganizationId());
-			this.options.setMicrosoftFoundry(fromOptions.isMicrosoftFoundry());
-			this.options.setGitHubModels(fromOptions.isGitHubModels());
-			this.options.setTimeout(fromOptions.getTimeout());
-			this.options.setMaxRetries(fromOptions.getMaxRetries());
-			this.options.setProxy(fromOptions.getProxy());
-			this.options.setCustomHeaders(fromOptions.getCustomHeaders());
-			this.options.setResponseFormat(fromOptions.getResponseFormat());
-			this.options.setPrompt(fromOptions.getPrompt());
-			this.options.setLanguage(fromOptions.getLanguage());
-			this.options.setTemperature(fromOptions.getTemperature());
-			this.options.setTimestampGranularities(fromOptions.getTimestampGranularities());
+			this.baseUrl = fromOptions.getBaseUrl();
+			this.apiKey = fromOptions.getApiKey();
+			this.credential = fromOptions.getCredential();
+			this.model = fromOptions.getModel();
+			this.deploymentName = fromOptions.getDeploymentName();
+			this.microsoftFoundryServiceVersion = fromOptions.getMicrosoftFoundryServiceVersion();
+			this.organizationId = fromOptions.getOrganizationId();
+			this.microsoftFoundry = fromOptions.isMicrosoftFoundry();
+			this.gitHubModels = fromOptions.isGitHubModels();
+			this.timeout = fromOptions.getTimeout();
+			this.maxRetries = fromOptions.getMaxRetries();
+			this.proxy = fromOptions.getProxy();
+			this.customHeaders = fromOptions.getCustomHeaders();
+			this.responseFormat = fromOptions.getResponseFormat();
+			this.prompt = fromOptions.getPrompt();
+			this.language = fromOptions.getLanguage();
+			this.temperature = fromOptions.getTemperature();
+			this.timestampGranularities = fromOptions.getTimestampGranularities();
 			return this;
 		}
 
@@ -213,148 +246,177 @@ public class OpenAiSdkAudioTranscriptionOptions extends AbstractOpenAiSdkOptions
 				return this;
 			}
 			if (from.getModel() != null) {
-				this.options.setModel(from.getModel());
+				this.model = from.getModel();
 			}
 			if (from instanceof OpenAiSdkAudioTranscriptionOptions castFrom) {
 				if (castFrom.getBaseUrl() != null) {
-					this.options.setBaseUrl(castFrom.getBaseUrl());
+					this.baseUrl = castFrom.getBaseUrl();
 				}
 				if (castFrom.getApiKey() != null) {
-					this.options.setApiKey(castFrom.getApiKey());
+					this.apiKey = castFrom.getApiKey();
 				}
 				if (castFrom.getCredential() != null) {
-					this.options.setCredential(castFrom.getCredential());
+					this.credential = castFrom.getCredential();
 				}
 				if (castFrom.getDeploymentName() != null) {
-					this.options.setDeploymentName(castFrom.getDeploymentName());
+					this.deploymentName = castFrom.getDeploymentName();
 				}
 				if (castFrom.getMicrosoftFoundryServiceVersion() != null) {
-					this.options.setMicrosoftFoundryServiceVersion(castFrom.getMicrosoftFoundryServiceVersion());
+					this.microsoftFoundryServiceVersion = castFrom.getMicrosoftFoundryServiceVersion();
 				}
 				if (castFrom.getOrganizationId() != null) {
-					this.options.setOrganizationId(castFrom.getOrganizationId());
+					this.organizationId = castFrom.getOrganizationId();
 				}
-				this.options.setMicrosoftFoundry(castFrom.isMicrosoftFoundry());
-				this.options.setGitHubModels(castFrom.isGitHubModels());
-				this.options.setTimeout(castFrom.getTimeout());
-				this.options.setMaxRetries(castFrom.getMaxRetries());
+				this.microsoftFoundry = castFrom.isMicrosoftFoundry();
+				this.gitHubModels = castFrom.isGitHubModels();
+				this.timeout = castFrom.getTimeout();
+				this.maxRetries = castFrom.getMaxRetries();
 				if (castFrom.getProxy() != null) {
-					this.options.setProxy(castFrom.getProxy());
+					this.proxy = castFrom.getProxy();
 				}
-				this.options.setCustomHeaders(castFrom.getCustomHeaders());
+				if (castFrom.getCustomHeaders() != null) {
+					this.customHeaders = castFrom.getCustomHeaders();
+				}
 				if (castFrom.getResponseFormat() != null) {
-					this.options.setResponseFormat(castFrom.getResponseFormat());
+					this.responseFormat = castFrom.getResponseFormat();
 				}
 				if (castFrom.getPrompt() != null) {
-					this.options.setPrompt(castFrom.getPrompt());
+					this.prompt = castFrom.getPrompt();
 				}
 				if (castFrom.getLanguage() != null) {
-					this.options.setLanguage(castFrom.getLanguage());
+					this.language = castFrom.getLanguage();
 				}
 				if (castFrom.getTemperature() != null) {
-					this.options.setTemperature(castFrom.getTemperature());
+					this.temperature = castFrom.getTemperature();
 				}
 				if (castFrom.getTimestampGranularities() != null) {
-					this.options.setTimestampGranularities(castFrom.getTimestampGranularities());
+					this.timestampGranularities = castFrom.getTimestampGranularities();
 				}
 			}
 			return this;
 		}
 
 		public Builder model(@Nullable String model) {
-			this.options.setModel(model);
+			this.model = model;
 			return this;
 		}
 
 		public Builder responseFormat(AudioResponseFormat responseFormat) {
-			this.options.setResponseFormat(responseFormat);
+			this.responseFormat = responseFormat;
 			return this;
 		}
 
 		public Builder prompt(@Nullable String prompt) {
-			this.options.setPrompt(prompt);
+			this.prompt = prompt;
 			return this;
 		}
 
 		public Builder language(@Nullable String language) {
-			this.options.setLanguage(language);
+			this.language = language;
 			return this;
 		}
 
 		public Builder temperature(@Nullable Float temperature) {
-			this.options.setTemperature(temperature);
+			this.temperature = temperature;
 			return this;
 		}
 
 		public Builder timestampGranularities(
 				@Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities) {
-			this.options.setTimestampGranularities(timestampGranularities);
+			this.timestampGranularities = timestampGranularities;
 			return this;
 		}
 
 		public Builder baseUrl(@Nullable String baseUrl) {
-			this.options.setBaseUrl(baseUrl);
+			this.baseUrl = baseUrl;
 			return this;
 		}
 
 		public Builder apiKey(@Nullable String apiKey) {
-			this.options.setApiKey(apiKey);
+			this.apiKey = apiKey;
 			return this;
 		}
 
 		public Builder credential(@Nullable Credential credential) {
-			this.options.setCredential(credential);
+			this.credential = credential;
 			return this;
 		}
 
 		public Builder deploymentName(@Nullable String deploymentName) {
-			this.options.setDeploymentName(deploymentName);
+			this.deploymentName = deploymentName;
 			return this;
 		}
 
 		public Builder microsoftFoundryServiceVersion(
 				@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion) {
-			this.options.setMicrosoftFoundryServiceVersion(microsoftFoundryServiceVersion);
+			this.microsoftFoundryServiceVersion = microsoftFoundryServiceVersion;
 			return this;
 		}
 
 		public Builder organizationId(@Nullable String organizationId) {
-			this.options.setOrganizationId(organizationId);
+			this.organizationId = organizationId;
 			return this;
 		}
 
 		public Builder microsoftFoundry(boolean microsoftFoundry) {
-			this.options.setMicrosoftFoundry(microsoftFoundry);
+			this.microsoftFoundry = microsoftFoundry;
 			return this;
 		}
 
 		public Builder gitHubModels(boolean gitHubModels) {
-			this.options.setGitHubModels(gitHubModels);
+			this.gitHubModels = gitHubModels;
 			return this;
 		}
 
 		public Builder timeout(Duration timeout) {
-			this.options.setTimeout(timeout);
+			this.timeout = timeout;
 			return this;
 		}
 
 		public Builder maxRetries(int maxRetries) {
-			this.options.setMaxRetries(maxRetries);
+			this.maxRetries = maxRetries;
 			return this;
 		}
 
 		public Builder proxy(@Nullable Proxy proxy) {
-			this.options.setProxy(proxy);
+			this.proxy = proxy;
 			return this;
 		}
 
 		public Builder customHeaders(Map<String, String> customHeaders) {
-			this.options.setCustomHeaders(customHeaders);
+			this.customHeaders = customHeaders;
 			return this;
 		}
 
 		public OpenAiSdkAudioTranscriptionOptions build() {
-			return this.options;
+			OpenAiSdkAudioTranscriptionOptions options = new OpenAiSdkAudioTranscriptionOptions();
+			options.setBaseUrl(this.baseUrl);
+			options.setApiKey(this.apiKey);
+			options.setCredential(this.credential);
+			options.setModel(this.model);
+			options.setDeploymentName(this.deploymentName);
+			options.setMicrosoftFoundryServiceVersion(this.microsoftFoundryServiceVersion);
+			options.setOrganizationId(this.organizationId);
+			options.setMicrosoftFoundry(this.microsoftFoundry);
+			options.setGitHubModels(this.gitHubModels);
+			if (this.timeout != null) {
+				options.setTimeout(this.timeout);
+			}
+			if (this.maxRetries != null) {
+				options.setMaxRetries(this.maxRetries);
+			}
+			options.setProxy(this.proxy);
+			if (this.customHeaders != null) {
+				options.setCustomHeaders(this.customHeaders);
+			}
+			if (this.responseFormat != null) {
+				options.setResponseFormat(this.responseFormat);
+			}
+			options.setPrompt(this.prompt);
+			options.setLanguage(this.language);
+			options.setTemperature(this.temperature);
+			options.setTimestampGranularities(this.timestampGranularities);
+			return options;
 		}
 
 	}
