@@ -50,6 +50,7 @@ import reactor.core.publisher.Mono;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -104,8 +105,9 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 		this.disallowDelete = disallowDelete;
 		this.securityValidator = securityValidator;
 		this.routerFunction = RouterFunctions.route()
-			.GET(this.mcpEndpoint, this::handleGet)
-			.POST(this.mcpEndpoint, this::handlePost)
+			.GET(this.mcpEndpoint, RequestPredicates.accept(MediaType.TEXT_EVENT_STREAM), this::handleGet)
+			.POST(this.mcpEndpoint, RequestPredicates.accept(MediaType.TEXT_EVENT_STREAM, MediaType.APPLICATION_JSON),
+					this::handlePost)
 			.DELETE(this.mcpEndpoint, this::handleDelete)
 			.build();
 
@@ -216,11 +218,6 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 		McpTransportContext transportContext = this.contextExtractor.extract(request);
 
 		return Mono.defer(() -> {
-			List<MediaType> acceptHeaders = request.headers().asHttpHeaders().getAccept();
-			if (!acceptHeaders.contains(MediaType.TEXT_EVENT_STREAM)) {
-				return ServerResponse.badRequest().build();
-			}
-
 			if (request.headers().header(HttpHeaders.MCP_SESSION_ID).isEmpty()) {
 				return ServerResponse.badRequest().build(); // TODO: say we need a session
 															// id
@@ -278,12 +275,6 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 		}
 
 		McpTransportContext transportContext = this.contextExtractor.extract(request);
-
-		List<MediaType> acceptHeaders = request.headers().asHttpHeaders().getAccept();
-		if (!(acceptHeaders.contains(MediaType.APPLICATION_JSON)
-				&& acceptHeaders.contains(MediaType.TEXT_EVENT_STREAM))) {
-			return ServerResponse.badRequest().build();
-		}
 
 		return request.bodyToMono(String.class).<ServerResponse>flatMap(body -> {
 			try {

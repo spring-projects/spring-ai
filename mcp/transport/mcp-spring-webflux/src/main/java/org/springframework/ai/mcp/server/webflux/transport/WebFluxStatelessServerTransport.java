@@ -39,6 +39,7 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -83,8 +84,8 @@ public final class WebFluxStatelessServerTransport implements McpStatelessServer
 		this.contextExtractor = contextExtractor;
 		this.securityValidator = securityValidator;
 		this.routerFunction = RouterFunctions.route()
-			.GET(this.mcpEndpoint, this::handleGet)
-			.POST(this.mcpEndpoint, this::handlePost)
+			.POST(this.mcpEndpoint, RequestPredicates.accept(MediaType.TEXT_EVENT_STREAM, MediaType.APPLICATION_JSON),
+					this::handlePost)
 			.build();
 	}
 
@@ -114,10 +115,6 @@ public final class WebFluxStatelessServerTransport implements McpStatelessServer
 		return this.routerFunction;
 	}
 
-	private Mono<ServerResponse> handleGet(ServerRequest request) {
-		return ServerResponse.status(HttpStatus.METHOD_NOT_ALLOWED).build();
-	}
-
 	private Mono<ServerResponse> handlePost(ServerRequest request) {
 		if (this.isClosing) {
 			return ServerResponse.status(HttpStatus.SERVICE_UNAVAILABLE).bodyValue("Server is shutting down");
@@ -133,12 +130,6 @@ public final class WebFluxStatelessServerTransport implements McpStatelessServer
 		}
 
 		McpTransportContext transportContext = this.contextExtractor.extract(request);
-
-		List<MediaType> acceptHeaders = request.headers().asHttpHeaders().getAccept();
-		if (!(acceptHeaders.contains(MediaType.APPLICATION_JSON)
-				&& acceptHeaders.contains(MediaType.TEXT_EVENT_STREAM))) {
-			return ServerResponse.badRequest().build();
-		}
 
 		return request.bodyToMono(String.class).<ServerResponse>flatMap(body -> {
 			try {
