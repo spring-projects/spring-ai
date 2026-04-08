@@ -50,7 +50,7 @@ Use the dedicated starter and the correct `spring.ai.mcp.server.protocol` proper
 
 Depending on the server and transport types, MCP Servers can support various capabilities, such as:
 
-* **Tools** - Allows servers to expose tools that can be invoked by language models
+* **Tools** - Allows servers to expose tools that can be invoked by language models. Note that all available tools in the application context are published as MCP tools, including tools obtained from MCP clients.
 * **Resources** - Provides a standardized way for servers to expose resources to clients
 * **Prompts** - Provides a standardized way for servers to expose prompt templates to clients
 * **Utility/Completions** - Provides a standardized way for servers to offer argument autocompletion suggestions for prompts and resource URIs
