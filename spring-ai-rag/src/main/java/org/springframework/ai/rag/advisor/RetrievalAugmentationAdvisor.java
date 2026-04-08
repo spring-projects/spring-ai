@@ -107,6 +107,11 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 	public ChatClientRequest before(ChatClientRequest chatClientRequest, @Nullable AdvisorChain advisorChain) {
 		Map<String, Object> context = new HashMap<>(chatClientRequest.context());
 
+		// Skip RAG processing if document context has already been injected
+		if (context.containsKey(DOCUMENT_CONTEXT)) {
+			return chatClientRequest;
+		}
+
 		// 0. Create a query from the user text, parameters, and conversation history.
 		String text = chatClientRequest.prompt().getUserMessage().getText();
 		Query originalQuery = Query.builder()
