@@ -44,6 +44,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.servlet.function.RequestPredicates;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.RouterFunctions;
 import org.springframework.web.servlet.function.ServerRequest;
@@ -175,8 +177,8 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 		this.contextExtractor = contextExtractor;
 		this.securityValidator = securityValidator;
 		this.routerFunction = RouterFunctions.route()
-			.GET(this.sseEndpoint, this::handleSseConnection)
-			.POST(this.messageEndpoint, this::handleMessage)
+			.GET(this.sseEndpoint, RequestPredicates.accept(MediaType.TEXT_EVENT_STREAM), this::handleSseConnection)
+			.POST(this.messageEndpoint, RequestPredicates.accept(MediaType.APPLICATION_JSON), this::handleMessage)
 			.build();
 
 		if (keepAliveInterval != null) {
