@@ -74,12 +74,12 @@ class FunctionCallbackInPromptIT extends BaseOllamaIT {
 
 			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			var promptOptions = OllamaChatOptions.builder()
-				.toolCallbacks(List.of(FunctionToolCallback.builder(TOOL_NAME, new MockWeatherService())
-					.description(TOOL_DESCRIPTION)
-					.inputType(MockWeatherService.Request.class)
-					.build()))
-				.build();
+			var promptOptions = mergeOptions(chatModel,
+					OllamaChatOptions.builder()
+						.toolCallbacks(List.of(FunctionToolCallback.builder(TOOL_NAME, new MockWeatherService())
+							.description(TOOL_DESCRIPTION)
+							.inputType(MockWeatherService.Request.class)
+							.build())));
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 
@@ -99,12 +99,12 @@ class FunctionCallbackInPromptIT extends BaseOllamaIT {
 
 			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			var promptOptions = OllamaChatOptions.builder()
-				.toolCallbacks(List.of(FunctionToolCallback.builder(TOOL_NAME, new MockWeatherService())
-					.description(TOOL_DESCRIPTION)
-					.inputType(MockWeatherService.Request.class)
-					.build()))
-				.build();
+			var promptOptions = mergeOptions(chatModel,
+					OllamaChatOptions.builder()
+						.toolCallbacks(List.of(FunctionToolCallback.builder(TOOL_NAME, new MockWeatherService())
+							.description(TOOL_DESCRIPTION)
+							.inputType(MockWeatherService.Request.class)
+							.build())));
 
 			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage), promptOptions));
 

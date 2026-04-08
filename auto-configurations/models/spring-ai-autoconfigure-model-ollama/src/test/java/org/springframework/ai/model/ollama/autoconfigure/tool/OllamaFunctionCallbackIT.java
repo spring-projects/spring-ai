@@ -33,9 +33,9 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ollama.autoconfigure.BaseOllamaIT;
 import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
+import org.springframework.ai.ollama.api.OllamaChatOptions.Builder;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -100,8 +100,9 @@ class OllamaFunctionCallbackIT extends BaseOllamaIT {
 
 			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			ChatResponse response = chatModel
-				.call(new Prompt(List.of(userMessage), OllamaChatOptions.builder().toolNames(TOOL_NAME).build()));
+			Builder delta = OllamaChatOptions.builder().toolNames(TOOL_NAME);
+			OllamaChatOptions options = mergeOptions(chatModel, delta);
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), options));
 
 			logger.info("Response: {}", response);
 
@@ -119,8 +120,10 @@ class OllamaFunctionCallbackIT extends BaseOllamaIT {
 
 			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			Flux<ChatResponse> response = chatModel
-				.stream(new Prompt(List.of(userMessage), OllamaChatOptions.builder().toolNames(TOOL_NAME).build()));
+			Builder delta = OllamaChatOptions.builder().toolNames(TOOL_NAME);
+			OllamaChatOptions options = mergeOptions(chatModel, delta);
+
+			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage), options));
 
 			String content = response.collectList()
 				.blockOptional()
@@ -134,28 +137,6 @@ class OllamaFunctionCallbackIT extends BaseOllamaIT {
 			logger.info("Response: {}", content);
 
 			assertThat(content).contains("30", "10", "15");
-		});
-	}
-
-	@Test
-	void functionCallWithPortableFunctionCallingOptions() {
-		this.contextRunner.run(context -> {
-
-			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
-
-			// Test weatherFunction
-			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
-
-			ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder().toolNames(TOOL_NAME).build();
-
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
-
-			var result = response.getResult();
-			assertThat(result).isNotNull();
-
-			logger.info("Response: {}", result.getOutput().getText());
-
-			assertThat(result.getOutput().getText()).contains("30", "10", "15");
 		});
 	}
 

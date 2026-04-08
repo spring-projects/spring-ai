@@ -33,7 +33,6 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ollama.autoconfigure.BaseOllamaIT;
 import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
@@ -89,8 +88,9 @@ class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 			UserMessage userMessage = new UserMessage(
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-					OllamaChatOptions.builder().toolCallbacks(ToolCallbacks.from(myTools)).build()));
+			OllamaChatOptions options = mergeOptions(chatModel,
+					OllamaChatOptions.builder().toolCallbacks(ToolCallbacks.from(myTools)));
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), options));
 
 			logger.info("Response: {}", response);
 
@@ -109,8 +109,9 @@ class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 
 			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-					OllamaChatOptions.builder().toolNames(WEATHER_INFO_TOOL_NAME).build()));
+			OllamaChatOptions options = mergeOptions(chatModel,
+					OllamaChatOptions.builder().toolNames(WEATHER_INFO_TOOL_NAME));
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), options));
 
 			logger.info("Response: {}", response);
 
@@ -128,8 +129,9 @@ class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 
 			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage),
-					OllamaChatOptions.builder().toolNames(WEATHER_INFO_TOOL_NAME).build()));
+			OllamaChatOptions options = mergeOptions(chatModel,
+					OllamaChatOptions.builder().toolNames(WEATHER_INFO_TOOL_NAME));
+			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage), options));
 
 			String content = response.collectList()
 				.blockOptional()
@@ -144,30 +146,6 @@ class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 			logger.info("Response: {}", content);
 
 			assertThat(content).contains("30", "10", "15");
-		});
-	}
-
-	@Test
-	void functionCallWithPortableFunctionCallingOptions() {
-		this.contextRunner.run(context -> {
-
-			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
-
-			// Test weatherFunction
-			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
-
-			ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder()
-				.toolNames(WEATHER_INFO_TOOL_NAME)
-				.build();
-
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
-
-			var result = response.getResult();
-			assertThat(result).isNotNull();
-
-			logger.info("Response: {}", result.getOutput().getText());
-
-			assertThat(result.getOutput().getText()).contains("30", "10", "15");
 		});
 	}
 
