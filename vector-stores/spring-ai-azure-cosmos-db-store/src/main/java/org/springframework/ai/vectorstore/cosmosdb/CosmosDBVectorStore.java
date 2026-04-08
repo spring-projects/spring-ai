@@ -78,6 +78,7 @@ import org.springframework.util.Assert;
  * @author Theo van Kraay
  * @author Soby Chacko
  * @author Thomas Vitale
+ * @author Yaklede
  * @since 1.0.0
  */
 public class CosmosDBVectorStore extends AbstractObservationVectorStore implements AutoCloseable {
@@ -330,7 +331,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 								+ "' not found in metadata for document with id: " + id);
 					}
 
-					partitionKeyValue = metadataNode.get(metadataKey).asText();
+					partitionKeyValue = metadataNode.get(metadataKey).asString();
 				}
 				else {
 					throw new IllegalArgumentException("Unsupported partition key path: " + this.partitionKeyPath);
@@ -415,31 +416,38 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 				documents = new ArrayList<>();
 			}
 
-			// Collect metadata fields from the documents
-			Map<String, Object> docFields = new HashMap<>();
-			for (var doc : documents) {
-				JsonNode metadata = doc.get("metadata");
-				metadata.propertyNames().forEach(property -> {
-					JsonNode value = metadata.get(property);
-					Object parsedValue = value.isTextual() ? value.asText() : value.isNumber() ? value.numberValue()
-							: value.isBoolean() ? value.booleanValue() : value.toString();
-					docFields.put(property, parsedValue);
-				});
-			}
-
-			// Convert JsonNode to Document
-			return documents.stream()
-				.map(doc -> Document.builder()
-					.id(doc.get("id").asText())
-					.text(doc.get("content").asText())
-					.metadata(docFields)
-					.build())
-				.collect(Collectors.toList());
+			return mapSimilaritySearchDocuments(documents);
 		}
 		catch (Exception e) {
 			logger.error("Error during similarity search: {}", e.getMessage());
 			return List.of();
 		}
+	}
+
+	static List<Document> mapSimilaritySearchDocuments(List<JsonNode> documents) {
+		return documents.stream().map(CosmosDBVectorStore::mapSimilaritySearchDocument).collect(Collectors.toList());
+	}
+
+	private static Document mapSimilaritySearchDocument(JsonNode doc) {
+		return Document.builder()
+			.id(doc.get("id").asString())
+			.text(doc.get("content").asString())
+			.metadata(extractMetadata(doc.get("metadata")))
+			.build();
+	}
+
+	private static Map<String, Object> extractMetadata(@Nullable JsonNode metadataNode) {
+		Map<String, Object> metadata = new HashMap<>();
+		if (metadataNode == null) {
+			return metadata;
+		}
+
+		metadataNode.propertyNames().forEach(property -> {
+			JsonNode value = metadataNode.get(property);
+			metadata.put(property, value.isString() ? value.stringValue() : value.isNumber() ? value.numberValue()
+					: value.isBoolean() ? value.booleanValue() : value.toString());
+		});
+		return metadata;
 	}
 
 	@Override
