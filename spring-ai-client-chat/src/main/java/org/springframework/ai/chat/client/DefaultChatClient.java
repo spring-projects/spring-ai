@@ -427,10 +427,10 @@ public class DefaultChatClient implements ChatClient {
 
 			this.request.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), outputConverter.getFormat());
 
-			if (Boolean.TRUE.equals(this.request.context().get(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey()))
-					&& outputConverter instanceof BeanOutputConverter beanOutputConverter) {
+			if (Boolean.TRUE
+				.equals(this.request.context().get(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey()))) {
 				this.request.context()
-					.put(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey(), beanOutputConverter.getJsonSchema());
+					.put(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey(), outputConverter.getJsonSchema());
 			}
 
 			var chatResponse = doGetObservableChatClientResponse(this.request).chatResponse();
@@ -469,12 +469,12 @@ public class DefaultChatClient implements ChatClient {
 				this.request.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), outputConverter.getFormat());
 			}
 
-			if (Boolean.TRUE.equals(this.request.context().get(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey()))
-					&& outputConverter instanceof BeanOutputConverter beanOutputConverter) {
+			if (Boolean.TRUE
+				.equals(this.request.context().get(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey()))) {
 				// Used for native structured output support, e.g. AI model API should
 				// provide structured output support.
 				this.request.context()
-					.put(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey(), beanOutputConverter.getJsonSchema());
+					.put(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey(), outputConverter.getJsonSchema());
 
 			}
 
