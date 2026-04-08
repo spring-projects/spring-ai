@@ -28,7 +28,7 @@ import org.springframework.ai.integration.tests.TestApplication;
 import org.springframework.ai.integration.tests.tool.domain.Author;
 import org.springframework.ai.integration.tests.tool.domain.Book;
 import org.springframework.ai.integration.tests.tool.domain.BookService;
-import org.springframework.ai.openaisdk.OpenAiSdkChatModel;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.method.MethodToolCallback;
@@ -49,7 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class MethodToolCallbackTests {
 
 	@Autowired
-	OpenAiSdkChatModel openAiChatModel;
+	OpenAiChatModel openAiChatModel;
 
 	Tools tools = new Tools(new BookService());
 

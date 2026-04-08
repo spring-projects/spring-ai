@@ -16,48 +16,65 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
-import org.springframework.http.HttpHeaders;
-import org.springframework.lang.NonNull;
-import org.springframework.util.Assert;
+import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.util.StringUtils;
 
-public final class OpenAIAutoConfigurationUtil {
+public final class OpenAiAutoConfigurationUtil {
 
-	private OpenAIAutoConfigurationUtil() {
+	private OpenAiAutoConfigurationUtil() {
 		// Avoids instantiation
 	}
 
-	public static @NonNull ResolvedConnectionProperties resolveConnectionProperties(
-			OpenAiParentProperties commonProperties, OpenAiParentProperties modelProperties, String modelType) {
+	public static ResolvedConnectionProperties resolveConnectionProperties(AbstractOpenAiOptions commonProperties,
+			AbstractOpenAiOptions modelProperties) {
 
-		String baseUrl = StringUtils.hasText(modelProperties.getBaseUrl()) ? modelProperties.getBaseUrl()
-				: commonProperties.getBaseUrl();
-		String apiKey = StringUtils.hasText(modelProperties.getApiKey()) ? modelProperties.getApiKey()
-				: commonProperties.getApiKey();
-		String projectId = StringUtils.hasText(modelProperties.getProjectId()) ? modelProperties.getProjectId()
-				: commonProperties.getProjectId();
+		var resolved = new ResolvedConnectionProperties();
+
+		resolved.setBaseUrl(StringUtils.hasText(modelProperties.getBaseUrl()) ? modelProperties.getBaseUrl()
+				: commonProperties.getBaseUrl());
+
+		resolved.setApiKey(StringUtils.hasText(modelProperties.getApiKey()) ? modelProperties.getApiKey()
+				: commonProperties.getApiKey());
+
 		String organizationId = StringUtils.hasText(modelProperties.getOrganizationId())
 				? modelProperties.getOrganizationId() : commonProperties.getOrganizationId();
+		resolved.setOrganizationId(organizationId);
 
-		HttpHeaders connectionHeaders = new HttpHeaders();
-		if (StringUtils.hasText(projectId)) {
-			connectionHeaders.add("OpenAI-Project", projectId);
-		}
-		if (StringUtils.hasText(organizationId)) {
-			connectionHeaders.add("OpenAI-Organization", organizationId);
-		}
+		resolved.setCredential(modelProperties.getCredential() != null ? modelProperties.getCredential()
+				: commonProperties.getCredential());
 
-		Assert.hasText(baseUrl,
-				"OpenAI base URL must be set.  Use the connection property: spring.ai.openai.base-url or spring.ai.openai."
-						+ modelType + ".base-url property.");
-		Assert.hasText(apiKey,
-				"OpenAI API key must be set. Use the connection property: spring.ai.openai.api-key or spring.ai.openai."
-						+ modelType + ".api-key property.");
+		resolved.setTimeout(!modelProperties.getTimeout().equals(AbstractOpenAiOptions.DEFAULT_TIMEOUT)
+				? modelProperties.getTimeout() : commonProperties.getTimeout());
 
-		return new ResolvedConnectionProperties(baseUrl, apiKey, connectionHeaders);
+		resolved.setModel(StringUtils.hasText(modelProperties.getModel()) ? modelProperties.getModel()
+				: commonProperties.getModel());
+
+		resolved.setMicrosoftDeploymentName(StringUtils.hasText(modelProperties.getMicrosoftDeploymentName())
+				? modelProperties.getMicrosoftDeploymentName() : commonProperties.getMicrosoftDeploymentName());
+
+		resolved.setMicrosoftFoundryServiceVersion(modelProperties.getMicrosoftFoundryServiceVersion() != null
+				? modelProperties.getMicrosoftFoundryServiceVersion()
+				: commonProperties.getMicrosoftFoundryServiceVersion());
+
+		// For boolean properties, use modelProperties value, defaulting to
+		// commonProperties if needed
+		resolved.setMicrosoftFoundry(modelProperties.isMicrosoftFoundry() || commonProperties.isMicrosoftFoundry());
+
+		resolved.setGitHubModels(modelProperties.isGitHubModels() || commonProperties.isGitHubModels());
+
+		resolved.setMaxRetries(modelProperties.getMaxRetries() != AbstractOpenAiOptions.DEFAULT_MAX_RETRIES
+				? modelProperties.getMaxRetries() : commonProperties.getMaxRetries());
+
+		resolved
+			.setProxy(modelProperties.getProxy() != null ? modelProperties.getProxy() : commonProperties.getProxy());
+
+		resolved.setCustomHeaders(!modelProperties.getCustomHeaders().isEmpty() ? modelProperties.getCustomHeaders()
+				: commonProperties.getCustomHeaders());
+
+		return resolved;
 	}
 
-	public record ResolvedConnectionProperties(String baseUrl, String apiKey, HttpHeaders headers) {
+	public static class ResolvedConnectionProperties extends AbstractOpenAiOptions {
 
 	}
 

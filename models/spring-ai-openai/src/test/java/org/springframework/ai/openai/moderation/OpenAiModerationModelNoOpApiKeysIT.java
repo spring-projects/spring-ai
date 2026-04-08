@@ -19,11 +19,8 @@ package org.springframework.ai.openai.moderation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.moderation.ModerationPrompt;
 import org.springframework.ai.openai.OpenAiModerationModel;
-import org.springframework.ai.openai.api.OpenAiModerationApi;
-import org.springframework.ai.retry.NonTransientAiException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,8 +35,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiModerationModelNoOpApiKeysIT {
 
-	private static final String TEST_MODERATION_PATH = "/v1/moderations";
-
 	@Autowired
 	private OpenAiModerationModel moderationModel;
 
@@ -49,20 +44,17 @@ public class OpenAiModerationModelNoOpApiKeysIT {
 			ModerationPrompt prompt = new ModerationPrompt("I want to kill them..");
 
 			this.moderationModel.call(prompt);
-		}).isInstanceOf(NonTransientAiException.class);
+		}).isInstanceOf(RuntimeException.class);
 	}
 
 	@SpringBootConfiguration
 	static class Config {
 
 		@Bean
-		public OpenAiModerationApi moderationGenerationApi() {
-			return OpenAiModerationApi.builder().apiKey(new NoopApiKey()).moderationPath(TEST_MODERATION_PATH).build();
-		}
-
-		@Bean
-		public OpenAiModerationModel openAiModerationClient(OpenAiModerationApi openAiModerationApi) {
-			return new OpenAiModerationModel(openAiModerationApi);
+		public OpenAiModerationModel openAiModerationClient() {
+			return OpenAiModerationModel.builder()
+				.options(org.springframework.ai.openai.OpenAiModerationOptions.builder().apiKey("noop").build())
+				.build();
 		}
 
 	}

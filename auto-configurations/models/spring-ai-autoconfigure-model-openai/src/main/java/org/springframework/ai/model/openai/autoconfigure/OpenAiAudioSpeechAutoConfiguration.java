@@ -16,67 +16,58 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
-import org.springframework.ai.model.SimpleApiKey;
+import com.openai.client.OpenAIClient;
+
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
+import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.OpenAiAudioApi;
-import org.springframework.ai.retry.RetryUtils;
-import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.retry.RetryTemplate;
-import org.springframework.web.client.ResponseErrorHandler;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.reactive.function.client.WebClient;
-
-import static org.springframework.ai.model.openai.autoconfigure.OpenAIAutoConfigurationUtil.resolveConnectionProperties;
 
 /**
- * {@link AutoConfiguration Auto-configuration} for OpenAI.
+ * Audio Speech {@link AutoConfiguration Auto-configuration} for OpenAI SDK.
  *
- * @author Christian Tzolov
- * @author Stefan Vassilev
  * @author Thomas Vitale
- * @author Ilayaperumal Gopinathan
- * @author Issam El-atif
+ * @author Stefan Vassilev
+ * @author Christian Tzolov
  * @author Yanming Zhou
+ * @author Issam El-atif
+ * @author Ilayaperumal Gopinathan
  */
 @AutoConfiguration
-@ConditionalOnClass(OpenAiApi.class)
+@EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiAudioSpeechProperties.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.AUDIO_SPEECH_MODEL, havingValue = SpringAIModels.OPENAI,
 		matchIfMissing = true)
-@EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiAudioSpeechProperties.class })
 public class OpenAiAudioSpeechAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiAudioSpeechModel openAiAudioSpeechModel(OpenAiConnectionProperties commonProperties,
-			OpenAiAudioSpeechProperties speechProperties, ObjectProvider<RetryTemplate> retryTemplate,
-			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
-			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
+	public OpenAiAudioSpeechModel openAiSdkAudioSpeechModel(OpenAiConnectionProperties commonProperties,
+			OpenAiAudioSpeechProperties speechProperties) {
 
-		OpenAIAutoConfigurationUtil.ResolvedConnectionProperties resolved = resolveConnectionProperties(
-				commonProperties, speechProperties, "speech");
+		OpenAiAutoConfigurationUtil.ResolvedConnectionProperties resolvedConnectionProperties = OpenAiAutoConfigurationUtil
+			.resolveConnectionProperties(commonProperties, speechProperties);
 
-		var openAiAudioApi = OpenAiAudioApi.builder()
-			.baseUrl(resolved.baseUrl())
-			.apiKey(new SimpleApiKey(resolved.apiKey()))
-			.speechPath(speechProperties.getSpeechPath())
-			.headers(resolved.headers())
-			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
-			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
-			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
+		OpenAIClient openAIClient = this.openAiClient(resolvedConnectionProperties);
+
+		return OpenAiAudioSpeechModel.builder()
+			.openAiClient(openAIClient)
+			.defaultOptions(speechProperties.getOptions())
 			.build();
+	}
 
-		return new OpenAiAudioSpeechModel(openAiAudioApi, speechProperties.getOptions(),
-				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE));
+	private OpenAIClient openAiClient(AbstractOpenAiOptions resolved) {
+
+		return OpenAiSetup.setupSyncClient(resolved.getBaseUrl(), resolved.getApiKey(), resolved.getCredential(),
+				resolved.getMicrosoftDeploymentName(), resolved.getMicrosoftFoundryServiceVersion(),
+				resolved.getOrganizationId(), resolved.isMicrosoftFoundry(), resolved.isGitHubModels(),
+				resolved.getModel(), resolved.getTimeout(), resolved.getMaxRetries(), resolved.getProxy(),
+				resolved.getCustomHeaders());
 	}
 
 }

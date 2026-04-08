@@ -23,7 +23,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.integration.tests.TestApplication;
-import org.springframework.ai.openaisdk.OpenAiSdkChatModel;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.preretrieval.query.transformation.CompressionQueryTransformer;
 import org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer;
@@ -42,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class CompressionQueryTransformerIT {
 
 	@Autowired
-	OpenAiSdkChatModel openAiChatModel;
+	OpenAiChatModel openAiChatModel;
 
 	@Test
 	void whenTransformerWithDefaults() {

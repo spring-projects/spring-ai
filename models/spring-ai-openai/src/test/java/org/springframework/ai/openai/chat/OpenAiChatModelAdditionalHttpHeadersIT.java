@@ -23,11 +23,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.retry.NonTransientAiException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,13 +46,12 @@ public class OpenAiChatModelAdditionalHttpHeadersIT {
 	@Test
 	void additionalApiKeyHeader() {
 
-		assertThatThrownBy(() -> this.openAiChatModel.call("Tell me a joke"))
-			.isInstanceOf(NonTransientAiException.class);
+		assertThatThrownBy(() -> this.openAiChatModel.call("Tell me a joke")).isInstanceOf(RuntimeException.class);
 
 		// Use the additional headers to override the Api Key.
 		// Mind that you have to prefix the Api Key with the "Bearer " prefix.
 		OpenAiChatOptions options = OpenAiChatOptions.builder()
-			.httpHeaders(Map.of("Authorization", "Bearer " + System.getenv("OPENAI_API_KEY")))
+			.customHeaders(Map.of("Authorization", "Bearer " + System.getenv("OPENAI_API_KEY")))
 			.build();
 
 		ChatResponse response = this.openAiChatModel.call(new Prompt("Tell me a joke", options));
@@ -67,13 +63,10 @@ public class OpenAiChatModelAdditionalHttpHeadersIT {
 	static class Config {
 
 		@Bean
-		public OpenAiApi chatCompletionApi() {
-			return OpenAiApi.builder().apiKey(new SimpleApiKey("Invalid API Key")).build();
-		}
-
-		@Bean
-		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
-			return OpenAiChatModel.builder().openAiApi(openAiApi).build();
+		public OpenAiChatModel openAiClient() {
+			return OpenAiChatModel.builder()
+				.options(org.springframework.ai.openai.OpenAiChatOptions.builder().apiKey("Invalid API Key").build())
+				.build();
 		}
 
 	}

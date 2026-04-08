@@ -17,18 +17,39 @@
 package org.springframework.ai.openai.metadata;
 
 import java.util.Objects;
+import java.util.Optional;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.image.ImageGenerationMetadata;
 
+/**
+ * Represents the metadata for image generation using the OpenAI Java SDK.
+ *
+ * @author Julien Dubois
+ */
 public class OpenAiImageGenerationMetadata implements ImageGenerationMetadata {
 
-	private String revisedPrompt;
+	private final @Nullable String revisedPrompt;
 
-	public OpenAiImageGenerationMetadata(String revisedPrompt) {
-		this.revisedPrompt = revisedPrompt;
+	/**
+	 * Creates a new OpenAiImageGenerationMetadata.
+	 * @param revisedPrompt the revised prompt used for generation
+	 */
+	public OpenAiImageGenerationMetadata(Optional<String> revisedPrompt) {
+		if (revisedPrompt.isPresent()) {
+			this.revisedPrompt = revisedPrompt.get();
+		}
+		else {
+			this.revisedPrompt = null;
+		}
 	}
 
-	public String getRevisedPrompt() {
+	/**
+	 * Gets the revised prompt that was used for image generation.
+	 * @return the revised prompt, or null if not available
+	 */
+	public @Nullable String getRevisedPrompt() {
 		return this.revisedPrompt;
 	}
 

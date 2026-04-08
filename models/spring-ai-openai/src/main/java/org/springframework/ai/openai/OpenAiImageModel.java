@@ -17,15 +17,18 @@
 package org.springframework.ai.openai;
 
 import java.util.List;
+import java.util.Objects;
 
+import com.openai.client.OpenAIClient;
+import com.openai.models.images.ImageGenerateParams;
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageGeneration;
 import org.springframework.ai.image.ImageModel;
-import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.ImageResponseMetadata;
@@ -33,176 +36,179 @@ import org.springframework.ai.image.observation.DefaultImageModelObservationConv
 import org.springframework.ai.image.observation.ImageModelObservationContext;
 import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.image.observation.ImageModelObservationDocumentation;
-import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.openai.api.OpenAiImageApi;
-import org.springframework.ai.openai.api.common.OpenAiApiConstants;
+import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
-import org.springframework.ai.retry.RetryUtils;
-import org.springframework.core.retry.RetryTemplate;
-import org.springframework.http.ResponseEntity;
+import org.springframework.ai.openai.metadata.OpenAiImageResponseMetadata;
+import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.util.Assert;
 
 /**
- * OpenAiImageModel is a class that implements the ImageModel interface. It provides a
- * client for calling the OpenAI image generation API.
+ * Image Model implementation using the OpenAI Java SDK.
  *
- * @author Mark Pollack
- * @author Christian Tzolov
- * @author Hyunjoon Choi
+ * @author Julien Dubois
  * @author Thomas Vitale
- * @since 0.8.0
+ * @author Hyunjoon Choi
+ * @author Christian Tzolov
+ * @author Mark Pollack
  */
 public class OpenAiImageModel implements ImageModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiImageModel.class);
+	private static final String DEFAULT_MODEL_NAME = OpenAiImageOptions.DEFAULT_IMAGE_MODEL;
 
 	private static final ImageModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultImageModelObservationConvention();
 
-	/**
-	 * The default options used for the image completion requests.
-	 */
-	private final OpenAiImageOptions defaultOptions;
+	private final Logger logger = LoggerFactory.getLogger(OpenAiImageModel.class);
 
-	/**
-	 * The retry template used to retry the OpenAI Image API calls.
-	 */
-	private final RetryTemplate retryTemplate;
+	private final OpenAIClient openAiClient;
 
-	/**
-	 * Low-level access to the OpenAI Image API.
-	 */
-	private final OpenAiImageApi openAiImageApi;
+	private final OpenAiImageOptions options;
 
-	/**
-	 * Observation registry used for instrumentation.
-	 */
 	private final ObservationRegistry observationRegistry;
 
-	/**
-	 * Conventions to use for generating observations.
-	 */
 	private ImageModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	/**
-	 * Creates an instance of the OpenAiImageModel.
-	 * @param openAiImageApi The OpenAiImageApi instance to be used for interacting with
-	 * the OpenAI Image API.
-	 * @throws IllegalArgumentException if openAiImageApi is null
+	 * Creates a new OpenAiImageModel with default options.
 	 */
-	public OpenAiImageModel(OpenAiImageApi openAiImageApi) {
-		this(openAiImageApi, OpenAiImageOptions.builder().build(), RetryUtils.DEFAULT_RETRY_TEMPLATE);
+	public OpenAiImageModel() {
+		this(null, null, null);
 	}
 
 	/**
-	 * Initializes a new instance of the OpenAiImageModel.
-	 * @param openAiImageApi The OpenAiImageApi instance to be used for interacting with
-	 * the OpenAI Image API.
-	 * @param options The OpenAiImageOptions to configure the image model.
-	 * @param retryTemplate The retry template.
+	 * Creates a new OpenAiImageModel with the given options.
+	 * @param options the image options
 	 */
-	public OpenAiImageModel(OpenAiImageApi openAiImageApi, OpenAiImageOptions options, RetryTemplate retryTemplate) {
-		this(openAiImageApi, options, retryTemplate, ObservationRegistry.NOOP);
+	public OpenAiImageModel(@Nullable OpenAiImageOptions options) {
+		this(null, options, null);
 	}
 
 	/**
-	 * Initializes a new instance of the OpenAiImageModel.
-	 * @param openAiImageApi The OpenAiImageApi instance to be used for interacting with
-	 * the OpenAI Image API.
-	 * @param options The OpenAiImageOptions to configure the image model.
-	 * @param retryTemplate The retry template.
-	 * @param observationRegistry The ObservationRegistry used for instrumentation.
+	 * Creates a new OpenAiImageModel with the given observation registry.
+	 * @param observationRegistry the observation registry
 	 */
-	public OpenAiImageModel(OpenAiImageApi openAiImageApi, OpenAiImageOptions options, RetryTemplate retryTemplate,
-			ObservationRegistry observationRegistry) {
-		Assert.notNull(openAiImageApi, "OpenAiImageApi must not be null");
-		Assert.notNull(options, "options must not be null");
-		Assert.notNull(retryTemplate, "retryTemplate must not be null");
-		Assert.notNull(observationRegistry, "observationRegistry must not be null");
-		this.openAiImageApi = openAiImageApi;
-		this.defaultOptions = options;
-		this.retryTemplate = retryTemplate;
-		this.observationRegistry = observationRegistry;
+	public OpenAiImageModel(@Nullable ObservationRegistry observationRegistry) {
+		this(null, null, observationRegistry);
+	}
+
+	/**
+	 * Creates a new OpenAiImageModel with the given options and observation registry.
+	 * @param options the image options
+	 * @param observationRegistry the observation registry
+	 */
+	public OpenAiImageModel(@Nullable OpenAiImageOptions options, @Nullable ObservationRegistry observationRegistry) {
+		this(null, options, observationRegistry);
+	}
+
+	/**
+	 * Creates a new OpenAiImageModel with the given OpenAI client.
+	 * @param openAIClient the OpenAI client
+	 */
+	public OpenAiImageModel(@Nullable OpenAIClient openAIClient) {
+		this(openAIClient, null, null);
+	}
+
+	/**
+	 * Creates a new OpenAiImageModel with the given OpenAI client and options.
+	 * @param openAIClient the OpenAI client
+	 * @param options the image options
+	 */
+	public OpenAiImageModel(@Nullable OpenAIClient openAIClient, @Nullable OpenAiImageOptions options) {
+		this(openAIClient, options, null);
+	}
+
+	/**
+	 * Creates a new OpenAiImageModel with the given OpenAI client and observation
+	 * registry.
+	 * @param openAIClient the OpenAI client
+	 * @param observationRegistry the observation registry
+	 */
+	public OpenAiImageModel(@Nullable OpenAIClient openAIClient, @Nullable ObservationRegistry observationRegistry) {
+		this(openAIClient, null, observationRegistry);
+	}
+
+	/**
+	 * Creates a new OpenAiImageModel with all configuration options.
+	 * @param openAiClient the OpenAI client
+	 * @param options the image options
+	 * @param observationRegistry the observation registry
+	 */
+	public OpenAiImageModel(@Nullable OpenAIClient openAiClient, @Nullable OpenAiImageOptions options,
+			@Nullable ObservationRegistry observationRegistry) {
+
+		if (options == null) {
+			this.options = OpenAiImageOptions.builder().model(DEFAULT_MODEL_NAME).build();
+		}
+		else {
+			this.options = options;
+		}
+		this.openAiClient = Objects.requireNonNullElseGet(openAiClient,
+				() -> OpenAiSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
+						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
+						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
+						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
+						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
+						this.options.getCustomHeaders()));
+		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
+	}
+
+	/**
+	 * Gets the image options for this model.
+	 * @return the image options
+	 */
+	public OpenAiImageOptions getOptions() {
+		return this.options;
 	}
 
 	@Override
 	public ImageResponse call(ImagePrompt imagePrompt) {
-		// Before moving any further, build the final request ImagePrompt,
-		// merging runtime and default options.
-		ImagePrompt requestImagePrompt = buildRequestImagePrompt(imagePrompt);
+		OpenAiImageOptions options = OpenAiImageOptions.builder()
+			.from(this.options)
+			.merge(imagePrompt.getOptions())
+			.build();
 
-		OpenAiImageApi.OpenAiImageRequest imageRequest = createRequest(requestImagePrompt);
+		ImageGenerateParams imageGenerateParams = options.toOpenAiImageGenerateParams(imagePrompt);
+
+		if (logger.isTraceEnabled()) {
+			logger.trace("OpenAiImageOptions call {} with the following options : {} ", options.getModel(),
+					imageGenerateParams);
+		}
 
 		var observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(imagePrompt)
-			.provider(OpenAiApiConstants.PROVIDER_NAME)
+			.provider(AiProvider.OPENAI_SDK.value())
 			.build();
 
-		return ImageModelObservationDocumentation.IMAGE_MODEL_OPERATION
-			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-					this.observationRegistry)
-			.observe(() -> {
-				ResponseEntity<OpenAiImageApi.OpenAiImageResponse> imageResponseEntity = RetryUtils
-					.execute(this.retryTemplate, () -> this.openAiImageApi.createImage(imageRequest));
+		return Objects.requireNonNull(
+				ImageModelObservationDocumentation.IMAGE_MODEL_OPERATION
+					.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+							this.observationRegistry)
+					.observe(() -> {
+						var images = this.openAiClient.images().generate(imageGenerateParams);
 
-				ImageResponse imageResponse = convertResponse(imageResponseEntity, imageRequest);
+						if (images.data().isEmpty() && images.data().get().isEmpty()) {
+							throw new IllegalArgumentException("Image generation failed: no image returned");
+						}
 
-				observationContext.setResponse(imageResponse);
-
-				return imageResponse;
-			});
-	}
-
-	private OpenAiImageApi.OpenAiImageRequest createRequest(ImagePrompt imagePrompt) {
-		String instructions = imagePrompt.getInstructions().get(0).getText();
-		OpenAiImageOptions imageOptions = (OpenAiImageOptions) imagePrompt.getOptions();
-
-		OpenAiImageApi.OpenAiImageRequest imageRequest = new OpenAiImageApi.OpenAiImageRequest(instructions,
-				OpenAiImageApi.DEFAULT_IMAGE_MODEL);
-
-		return ModelOptionsUtils.merge(imageOptions, imageRequest, OpenAiImageApi.OpenAiImageRequest.class);
-	}
-
-	private ImageResponse convertResponse(ResponseEntity<OpenAiImageApi.OpenAiImageResponse> imageResponseEntity,
-			OpenAiImageApi.OpenAiImageRequest openAiImageRequest) {
-		OpenAiImageApi.OpenAiImageResponse imageApiResponse = imageResponseEntity.getBody();
-		if (imageApiResponse == null) {
-			logger.warn("No image response returned for request: {}", openAiImageRequest);
-			return new ImageResponse(List.of());
-		}
-
-		List<ImageGeneration> imageGenerationList = imageApiResponse.data()
-			.stream()
-			.map(entry -> new ImageGeneration(new Image(entry.url(), entry.b64Json()),
-					new OpenAiImageGenerationMetadata(entry.revisedPrompt())))
-			.toList();
-
-		ImageResponseMetadata openAiImageResponseMetadata = new ImageResponseMetadata(imageApiResponse.created());
-		return new ImageResponse(imageGenerationList, openAiImageResponseMetadata);
-	}
-
-	private ImagePrompt buildRequestImagePrompt(ImagePrompt imagePrompt) {
-		// Process runtime options
-		OpenAiImageOptions runtimeOptions = null;
-		if (imagePrompt.getOptions() != null) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(imagePrompt.getOptions(), ImageOptions.class,
-					OpenAiImageOptions.class);
-		}
-
-		OpenAiImageOptions requestOptions = runtimeOptions == null ? this.defaultOptions : OpenAiImageOptions.builder()
-			// Handle portable image options
-			.model(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), this.defaultOptions.getModel()))
-			.N(ModelOptionsUtils.mergeOption(runtimeOptions.getN(), this.defaultOptions.getN()))
-			.responseFormat(ModelOptionsUtils.mergeOption(runtimeOptions.getResponseFormat(),
-					this.defaultOptions.getResponseFormat()))
-			.width(ModelOptionsUtils.mergeOption(runtimeOptions.getWidth(), this.defaultOptions.getWidth()))
-			.height(ModelOptionsUtils.mergeOption(runtimeOptions.getHeight(), this.defaultOptions.getHeight()))
-			.style(ModelOptionsUtils.mergeOption(runtimeOptions.getStyle(), this.defaultOptions.getStyle()))
-			// Handle OpenAI specific image options
-			.quality(ModelOptionsUtils.mergeOption(runtimeOptions.getQuality(), this.defaultOptions.getQuality()))
-			.user(ModelOptionsUtils.mergeOption(runtimeOptions.getUser(), this.defaultOptions.getUser()))
-			.build();
-
-		return new ImagePrompt(imagePrompt.getInstructions(), requestOptions);
+						List<ImageGeneration> imageGenerations = images.data().get().stream().map(nativeImage -> {
+							Image image;
+							if (nativeImage.url().isPresent()) {
+								image = new Image(nativeImage.url().get(), null);
+							}
+							else if (nativeImage.b64Json().isPresent()) {
+								image = new Image(null, nativeImage.b64Json().get());
+							}
+							else {
+								throw new IllegalArgumentException(
+										"Image generation failed: image entry missing url and b64_json");
+							}
+							var metadata = new OpenAiImageGenerationMetadata(nativeImage.revisedPrompt());
+							return new ImageGeneration(image, metadata);
+						}).toList();
+						ImageResponseMetadata openAiImageResponseMetadata = OpenAiImageResponseMetadata.from(images);
+						ImageResponse imageResponse = new ImageResponse(imageGenerations, openAiImageResponseMetadata);
+						observationContext.setResponse(imageResponse);
+						return imageResponse;
+					}));
 	}
 
 	/**

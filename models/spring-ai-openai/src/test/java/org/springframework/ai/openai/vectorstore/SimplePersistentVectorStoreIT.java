@@ -72,7 +72,7 @@ public class SimplePersistentVectorStoreIT {
 
 	}
 
-	public static class ProductMetadataGenerator implements JsonMetadataGenerator {
+	public class ProductMetadataGenerator implements JsonMetadataGenerator {
 
 		@Override
 		public Map<String, Object> generate(Map<String, Object> jsonMap) {
