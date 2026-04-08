@@ -44,9 +44,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Demonstrates how to use function calling suing Mistral AI Java API:
  * {@link MistralAiApi}.
- *
+ * <p>
  * It is based on the <a href="https://docs.mistral.ai/guides/function-calling/">Mistral
  * AI Function Calling</a> guide.
+ * </p>
  *
  * @author Christian Tzolov
  * @author Jason Smith
@@ -54,14 +55,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 // @Disabled("See https://github.com/spring-projects/spring-ai/issues/1853")
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
-public class PaymentStatusFunctionCallingIT {
+class PaymentStatusFunctionCallingIT {
 
 	// Assuming we have the following data
-	public static final Map<String, StatusDate> DATA = Map.of("T1001", new StatusDate("Paid", "2021-10-05"), "T1002",
+	private static final Map<String, StatusDate> DATA = Map.of("T1001", new StatusDate("Paid", "2021-10-05"), "T1002",
 			new StatusDate("Unpaid", "2021-10-06"), "T1003", new StatusDate("Paid", "2021-10-07"), "T1004",
 			new StatusDate("Paid", "2021-10-05"), "T1005", new StatusDate("Pending", "2021-10-08"));
 
-	static Map<String, Function<Transaction, ?>> functions = Map.of("retrieve_payment_status",
+	private static final Map<String, Function<Transaction, ?>> FUNCTIONS = Map.of("retrieve_payment_status",
 			new RetrievePaymentStatus(), "retrieve_payment_date", new RetrievePaymentDate());
 
 	private final Logger logger = LoggerFactory.getLogger(PaymentStatusFunctionCallingIT.class);
@@ -72,7 +73,7 @@ public class PaymentStatusFunctionCallingIT {
 
 	@Test
 	@SuppressWarnings("null")
-	public void toolFunctionCall() {
+	void toolFunctionCall() {
 
 		var transactionJsonSchema = """
 				{
@@ -122,7 +123,7 @@ public class PaymentStatusFunctionCallingIT {
 			// Map the function, JSON arguments into a Transaction object.
 			Transaction transaction = jsonToObject(toolCall.function().arguments(), Transaction.class);
 			// Call the target function with the transaction object.
-			var result = functions.get(functionName).apply(transaction);
+			var result = FUNCTIONS.get(functionName).apply(transaction);
 
 			// Extend conversation with function response.
 			// The functionName is used to identify the function response!
@@ -132,11 +133,10 @@ public class PaymentStatusFunctionCallingIT {
 		response = mistralApi
 			.chatCompletionEntity(new ChatCompletionRequest(messages, MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()));
 
-		var responseContent = response.getBody().choices().get(0).message().content();
-		logger.info("Final response: " + responseContent);
+		var responseContent = response.getBody().choices().get(0).message().extractContent();
+		logger.info("Final response: {}", responseContent);
 
-		assertThat(responseContent).containsIgnoringCase("T1001");
-		assertThat(responseContent).containsIgnoringCase("Paid");
+		assertThat(responseContent).containsIgnoringCase("T1001").containsIgnoringCase("Paid");
 	}
 
 	record StatusDate(String status, String date) {
