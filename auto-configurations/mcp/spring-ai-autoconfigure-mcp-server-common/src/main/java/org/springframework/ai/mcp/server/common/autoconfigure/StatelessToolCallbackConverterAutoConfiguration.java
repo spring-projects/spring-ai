@@ -16,7 +16,6 @@
 
 package org.springframework.ai.mcp.server.common.autoconfigure;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,7 +32,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 
 /**
@@ -53,9 +51,8 @@ public class StatelessToolCallbackConverterAutoConfiguration {
 			ObjectProvider<List<ToolCallback>> toolCalls, List<ToolCallback> toolCallbackList,
 			ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
 			ObjectProvider<ToolCallbackProvider> tcbProviders, McpServerProperties serverProperties) {
-
-		List<ToolCallback> tools = this.aggregateToolCallbacks(toolCalls, toolCallbackList, tcbProviderList,
-				tcbProviders);
+		List<ToolCallback> tools = ToolCallbackUtils.aggregateToolCallbacks(toolCalls, toolCallbackList,
+				tcbProviderList, tcbProviders, serverProperties.isExposeMcpClientTools());
 
 		return this.toSyncToolSpecifications(tools, serverProperties);
 	}
@@ -85,9 +82,8 @@ public class StatelessToolCallbackConverterAutoConfiguration {
 			ObjectProvider<List<ToolCallback>> toolCalls, List<ToolCallback> toolCallbackList,
 			ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
 			ObjectProvider<ToolCallbackProvider> tcbProviders, McpServerProperties serverProperties) {
-
-		List<ToolCallback> tools = this.aggregateToolCallbacks(toolCalls, toolCallbackList, tcbProviderList,
-				tcbProviders);
+		List<ToolCallback> tools = ToolCallbackUtils.aggregateToolCallbacks(toolCalls, toolCallbackList,
+				tcbProviderList, tcbProviders, serverProperties.isExposeMcpClientTools());
 
 		return this.toAsyncToolSpecification(tools, serverProperties);
 	}
@@ -108,35 +104,6 @@ public class StatelessToolCallbackConverterAutoConfiguration {
 				return McpToolUtils.toStatelessAsyncToolSpecification(tool, mimeType);
 			})
 			.toList();
-	}
-
-	private List<ToolCallback> aggregateToolCallbacks(ObjectProvider<List<ToolCallback>> toolCalls,
-			List<ToolCallback> toolCallbackList, ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
-			ObjectProvider<ToolCallbackProvider> tcbProviders) {
-
-		// Merge ToolCallbackProviders from both ObjectProviders.
-		List<ToolCallbackProvider> totalToolCallbackProviders = new ArrayList<>(
-				tcbProviderList.stream().flatMap(List::stream).toList());
-		totalToolCallbackProviders.addAll(tcbProviders.stream().toList());
-
-		// De-duplicate ToolCallbackProviders
-		totalToolCallbackProviders = totalToolCallbackProviders.stream().distinct().toList();
-
-		List<ToolCallback> tools = new ArrayList<>(toolCalls.stream().flatMap(List::stream).toList());
-
-		if (!CollectionUtils.isEmpty(toolCallbackList)) {
-			tools.addAll(toolCallbackList);
-		}
-
-		List<ToolCallback> providerToolCallbacks = totalToolCallbackProviders.stream()
-			.map(pr -> List.of(pr.getToolCallbacks()))
-			.flatMap(List::stream)
-			.filter(fc -> fc instanceof ToolCallback)
-			.map(fc -> (ToolCallback) fc)
-			.toList();
-
-		tools.addAll(providerToolCallbacks);
-		return tools;
 	}
 
 	public static class ToolCallbackConverterCondition extends AllNestedConditions {

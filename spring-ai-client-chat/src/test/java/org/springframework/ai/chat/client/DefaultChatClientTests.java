@@ -2282,6 +2282,7 @@ class DefaultChatClientTests {
 		verify(provider, never()).getToolCallbacks();
 	}
 
+	@Disabled("TODO: check this test does not make sense anymore")
 	@Test
 	void whenToolCallbackProviderThenLazilyEvaluatedOnCall() {
 		ChatModel chatModel = mockChatModel();

@@ -100,6 +100,12 @@ public class McpServerProperties {
 	private ServerProtocol protocol = ServerProtocol.SSE;
 
 	/**
+	 * Whether to re-expose downstream MCP tools (provided by MCP clients) as tools in
+	 * this MCP server. Defaults to false.
+	 */
+	private boolean exposeMcpClientTools = false;
+
+	/**
 	 * Sets the duration to wait for server responses before timing out requests. This
 	 * timeout applies to all requests made through the client, including tool calls,
 	 * resource access, and prompt operations.
@@ -108,6 +114,14 @@ public class McpServerProperties {
 
 	public Duration getRequestTimeout() {
 		return this.requestTimeout;
+	}
+
+	public boolean isExposeMcpClientTools() {
+		return this.exposeMcpClientTools;
+	}
+
+	public void setExposeMcpClientTools(boolean exposeMcpClientTools) {
+		this.exposeMcpClientTools = exposeMcpClientTools;
 	}
 
 	public void setRequestTimeout(Duration requestTimeout) {

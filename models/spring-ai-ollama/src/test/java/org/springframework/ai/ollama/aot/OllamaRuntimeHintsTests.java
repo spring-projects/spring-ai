@@ -22,7 +22,6 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.ollama.api.OllamaApi;
-import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeReference;
@@ -51,7 +50,6 @@ class OllamaRuntimeHintsTests {
 		assertThat(registeredTypes.contains(TypeReference.of(OllamaApi.ChatRequest.class))).isTrue();
 		assertThat(registeredTypes.contains(TypeReference.of(OllamaApi.ChatRequest.Tool.class))).isTrue();
 		assertThat(registeredTypes.contains(TypeReference.of(OllamaApi.Message.class))).isTrue();
-		assertThat(registeredTypes.contains(TypeReference.of(OllamaChatOptions.class))).isTrue();
 		assertThat(registeredTypes.contains(TypeReference.of(OllamaEmbeddingOptions.class))).isTrue();
 	}
 
@@ -103,7 +101,6 @@ class OllamaRuntimeHintsTests {
 		// Verify that the main classes we already know exist are registered
 		assertThat(registeredTypes.contains(TypeReference.of(OllamaApi.ChatRequest.class))).isTrue();
 		assertThat(registeredTypes.contains(TypeReference.of(OllamaApi.Message.class))).isTrue();
-		assertThat(registeredTypes.contains(TypeReference.of(OllamaChatOptions.class))).isTrue();
 	}
 
 	@Test
@@ -191,7 +188,6 @@ class OllamaRuntimeHintsTests {
 
 		assertThat(registeredTypes.size()).isGreaterThan(0);
 		assertThat(registeredTypes.contains(TypeReference.of(OllamaApi.ChatRequest.class))).isTrue();
-		assertThat(registeredTypes.contains(TypeReference.of(OllamaChatOptions.class))).isTrue();
 	}
 
 	@Test

@@ -514,32 +514,30 @@ public class MiniMaxChatModel implements ChatModel {
 
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
 		MiniMaxChatOptions requestOptions = (MiniMaxChatOptions) prompt.getOptions();
-		request = ModelOptionsUtils.merge(requestOptions, request, ChatCompletionRequest.class);
+
+		request = new ChatCompletionRequest(request.messages(),
+				ModelOptionsUtils.mergeOption(requestOptions.getModel(), request.model()),
+				ModelOptionsUtils.mergeOption(requestOptions.getFrequencyPenalty(), request.frequencyPenalty()),
+				ModelOptionsUtils.mergeOption(requestOptions.getMaxTokens(), request.maxTokens()),
+				ModelOptionsUtils.mergeOption(requestOptions.getN(), request.n()),
+				ModelOptionsUtils.mergeOption(requestOptions.getPresencePenalty(), request.presencePenalty()),
+				ModelOptionsUtils.mergeOption(requestOptions.getResponseFormat(), request.responseFormat()),
+				ModelOptionsUtils.mergeOption(requestOptions.getSeed(), request.seed()),
+				ModelOptionsUtils.mergeOption(requestOptions.getStop(), request.stop()), request.stream(),
+				ModelOptionsUtils.mergeOption(requestOptions.getTemperature(), request.temperature()),
+				ModelOptionsUtils.mergeOption(requestOptions.getTopP(), request.topP()),
+				ModelOptionsUtils.mergeOption(requestOptions.getMaskSensitiveInfo(), request.maskSensitiveInfo()),
+				ModelOptionsUtils.mergeOption(requestOptions.getTools(), request.tools()),
+				ModelOptionsUtils.mergeOption(requestOptions.getToolChoice(), request.toolChoice()));
 
 		// Add the tool definitions to the request's tools parameter.
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
-			request = ModelOptionsUtils.merge(
-					MiniMaxChatOptions.builder().tools(this.getFunctionTools(toolDefinitions)).build(), request,
-					ChatCompletionRequest.class);
+			request = new ChatCompletionRequest(request.messages(), request.model(), request.frequencyPenalty(),
+					request.maxTokens(), request.n(), request.presencePenalty(), request.responseFormat(),
+					request.seed(), request.stop(), request.stream(), request.temperature(), request.topP(),
+					request.maskSensitiveInfo(), this.getFunctionTools(toolDefinitions), request.toolChoice());
 		}
-
-		if (prompt.getOptions() != null) {
-			MiniMaxChatOptions updatedRuntimeOptions;
-
-			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions,
-						ToolCallingChatOptions.class, MiniMaxChatOptions.class);
-			}
-			else {
-				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						MiniMaxChatOptions.class);
-			}
-
-			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
-		}
-
-		request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
 
 		return request;
 	}

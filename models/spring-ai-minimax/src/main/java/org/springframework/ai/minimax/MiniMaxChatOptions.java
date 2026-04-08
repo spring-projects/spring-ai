@@ -25,10 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -50,73 +46,72 @@ import org.springframework.util.Assert;
  * @author Alexandros Pappas
  * @since 1.0.0 M1
  */
-@JsonInclude(Include.NON_NULL)
 public class MiniMaxChatOptions implements ToolCallingChatOptions {
 
 	// @formatter:off
 	/**
 	 * ID of the model to use.
 	 */
-	private @JsonProperty("model") String model;
+	private String model;
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
 	 * frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
 	 */
-	private @JsonProperty("frequency_penalty") Double frequencyPenalty;
+	private Double frequencyPenalty;
 	/**
 	 * The maximum number of tokens to generate in the chat completion. The total length of input
 	 * tokens and generated tokens is limited by the model's context length.
 	 */
-	private @JsonProperty("max_tokens") Integer maxTokens;
+	private Integer maxTokens;
 	/**
 	 * How many chat completion choices to generate for each input message. Note that you will be charged based
 	 * on the number of generated tokens across all of the choices. Keep n as 1 to minimize costs.
 	 */
-	private @JsonProperty("n") Integer n;
+	private Integer n;
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
 	 * appear in the text so far, increasing the model's likelihood to talk about new topics.
 	 */
-	private @JsonProperty("presence_penalty") Double presencePenalty;
+	private Double presencePenalty;
 	/**
 	 * An object specifying the format that the model must output. Setting to { "type":
 	 * "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 	 */
-	private @JsonProperty("response_format") MiniMaxApi.ChatCompletionRequest.ResponseFormat responseFormat;
+	private MiniMaxApi.ChatCompletionRequest.ResponseFormat responseFormat;
 	/**
 	 * This feature is in Beta. If specified, our system will make a best effort to sample
 	 * deterministically, such that repeated requests with the same seed and parameters should return the same result.
 	 * Determinism is not guaranteed, and you should refer to the system_fingerprint response parameter to monitor
 	 * changes in the backend.
 	 */
-	private @JsonProperty("seed") Integer seed;
+	private Integer seed;
 	/**
 	 * Up to 4 sequences where the API will stop generating further tokens.
 	 */
-	private @JsonProperty("stop") List<String> stop;
+	private List<String> stop;
 	/**
 	 * What sampling temperature to use, between 0 and 1. Higher values like 0.8 will make the output
 	 * more random, while lower values like 0.2 will make it more focused and deterministic. We generally recommend
 	 * altering this or top_p but not both.
 	 */
-	private @JsonProperty("temperature") Double temperature;
+	private Double temperature;
 	/**
 	 * An alternative to sampling with temperature, called nucleus sampling, where the model considers the
 	 * results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10%
 	 * probability mass are considered. We generally recommend altering this or temperature but not both.
 	 */
-	private @JsonProperty("top_p") Double topP;
+	private Double topP;
 	/**
 	 * Mask the text information in the output that is easy to involve privacy issues,
 	 * including but not limited to email, domain name, link, ID number, home address, etc.
 	 * The default is true, which means enabling masking.
 	 */
-	private @JsonProperty("mask_sensitive_info") Boolean maskSensitiveInfo;
+	private Boolean maskSensitiveInfo;
 	/**
 	 * A list of tools the model may call. Currently, only functions are supported as a tool. Use this to
 	 * provide a list of functions the model may generate JSON inputs for.
 	 */
-	private @JsonProperty("tools") List<MiniMaxApi.FunctionTool> tools;
+	private List<MiniMaxApi.FunctionTool> tools;
 	/**
 	 * Controls which (if any) function is called by the model. none means the model will not call a
 	 * function and instead generates a message. auto means the model can pick between generating a message or calling a
@@ -124,7 +119,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	 * the model to call that function. none is the default when no functions are present. auto is the default if
 	 * functions are present. Use the {@link MiniMaxApi.ChatCompletionRequest.ToolChoiceBuilder} to create a tool choice object.
 	 */
-	private @JsonProperty("tool_choice") String toolChoice;
+	private String toolChoice;
 
 	/**
 	 * MiniMax Tool Function Callbacks to register with the ChatModel.
@@ -132,7 +127,6 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	 * For Default Options the functionCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
 	 * from the registry to be used by the ChatModel chat completion requests.
 	 */
-	@JsonIgnore
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 	/**
@@ -144,16 +138,13 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
 	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
 	 */
-	@JsonIgnore
 	private Set<String> toolNames = new HashSet<>();
 
-	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
 
 	/**
 	 * Whether to enable the tool execution lifecycle internally in ChatModel.
 	 */
-	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
 
 	// @formatter:on
@@ -256,12 +247,10 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@JsonIgnore
 	public List<String> getStopSequences() {
 		return getStop();
 	}
 
-	@JsonIgnore
 	public void setStopSequences(List<String> stopSequences) {
 		setStop(stopSequences);
 	}
@@ -317,19 +306,16 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@JsonIgnore
 	public Integer getTopK() {
 		return null;
 	}
 
 	@Override
-	@JsonIgnore
 	public List<ToolCallback> getToolCallbacks() {
 		return Collections.unmodifiableList(this.toolCallbacks);
 	}
 
 	@Override
-	@JsonIgnore
 	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
@@ -337,13 +323,11 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@JsonIgnore
 	public Set<String> getToolNames() {
 		return Collections.unmodifiableSet(this.toolNames);
 	}
 
 	@Override
-	@JsonIgnore
 	public void setToolNames(Set<String> toolNames) {
 		Assert.notNull(toolNames, "toolNames cannot be null");
 		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
@@ -352,13 +336,11 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@JsonIgnore
 	public @Nullable Boolean getInternalToolExecutionEnabled() {
 		return this.internalToolExecutionEnabled;
 	}
 
 	@Override
-	@JsonIgnore
 	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}

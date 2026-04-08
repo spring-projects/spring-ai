@@ -68,7 +68,7 @@ class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.")
 
 			val response = chatModel
-					.call(Prompt(listOf(userMessage), OllamaChatOptions.builder().toolNames("weatherInfo").build()))
+					.call(Prompt(listOf(userMessage), OllamaChatOptions.builder().model(MODEL_NAME).toolNames("weatherInfo").build()))
 
 			logger.info("Response: $response")
 
@@ -86,7 +86,8 @@ class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 			val userMessage = UserMessage(
 				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.")
 
-			val functionOptions = ToolCallingChatOptions.builder()
+			val functionOptions = OllamaChatOptions.builder()
+				.model(MODEL_NAME)
 				.toolNames("weatherInfo")
 				.build()
 
