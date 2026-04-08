@@ -16,34 +16,28 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
+/**
+ * OpenAI SDK Chat autoconfiguration properties.
+ *
+ * @author Christian Tzolov
+ */
 @ConfigurationProperties(OpenAiChatProperties.CONFIG_PREFIX)
-public class OpenAiChatProperties extends OpenAiParentProperties {
+public class OpenAiChatProperties extends AbstractOpenAiOptions {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.chat";
 
-	public static final String DEFAULT_CHAT_MODEL = "gpt-5-mini";
-
-	public static final String DEFAULT_COMPLETIONS_PATH = "/v1/chat/completions";
-
-	private String completionsPath = DEFAULT_COMPLETIONS_PATH;
+	public static final String DEFAULT_CHAT_MODEL = OpenAiChatOptions.DEFAULT_CHAT_MODEL;
 
 	@NestedConfigurationProperty
 	private final OpenAiChatOptions options = OpenAiChatOptions.builder().model(DEFAULT_CHAT_MODEL).build();
 
 	public OpenAiChatOptions getOptions() {
 		return this.options;
-	}
-
-	public String getCompletionsPath() {
-		return this.completionsPath;
-	}
-
-	public void setCompletionsPath(String completionsPath) {
-		this.completionsPath = completionsPath;
 	}
 
 }

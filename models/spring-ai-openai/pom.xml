@@ -47,31 +47,22 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-retry</artifactId>
-			<version>${project.parent.version}</version>
+			<groupId>com.openai</groupId>
+			<artifactId>openai-java</artifactId>
+			<version>${openai-sdk.version}</version>
 		</dependency>
 
 		<dependency>
-			<groupId>com.github.victools</groupId>
-			<artifactId>jsonschema-generator</artifactId>
-			<version>${jsonschema.version}</version>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-identity</artifactId>
+			<version>${azure-identity.version}</version>
+			<optional>true</optional>
 		</dependency>
 
-		<dependency>
-			<groupId>com.github.victools</groupId>
-			<artifactId>jsonschema-module-jackson</artifactId>
-			<version>${jsonschema.version}</version>
-		</dependency>
-
+		<!-- Spring Framework -->
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-context-support</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-webflux</artifactId>
 		</dependency>
 
 		<dependency>
@@ -82,7 +73,7 @@
 		<!-- test dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-restclient-test</artifactId>
+			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 
@@ -106,11 +97,11 @@
 			<scope>test</scope>
 		</dependency>
 
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers-ollama</artifactId>
-            <scope>test</scope>
-        </dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers-ollama</artifactId>
+			<scope>test</scope>
+		</dependency>
 
 		<dependency>
 			<groupId>io.rest-assured</groupId>
@@ -122,6 +113,12 @@
 			<groupId>net.javacrumbs.json-unit</groupId>
 			<artifactId>json-unit-assertj</artifactId>
 			<version>${json-unit-assertj.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-observation-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 

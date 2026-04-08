@@ -5,6 +5,11 @@
 Spring AI supports OpenAI's Moderation model, which allows you to detect potentially harmful or sensitive content in text.
 Follow this https://platform.openai.com/docs/guides/moderation[guide] to for more information on OpenAI's moderation model.
 
+[NOTE]
+====
+Starting from version `2.0.0-M5`, Spring AI uses the official `openai-java` SDK under the hood for all OpenAI models. The transition is expected to be seamless and there are no breaking changes for existing users of the OpenAI API properties and builders. If you find any issues, please report them to us at https://github.com/spring-projects/spring-ai/issues[Spring AI GitHub Issues].
+====
+
 == Prerequisites
 
 . Create an OpenAI account and obtain an API key. You can sign up at the https://platform.openai.com/signup[OpenAI signup page] and generate an API key on the https://platform.openai.com/account/api-keys[API Keys page].

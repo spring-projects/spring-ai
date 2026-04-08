@@ -16,37 +16,32 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions;
-import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
+/**
+ * Configuration properties for OpenAI SDK audio transcription.
+ *
+ * @author Michael Lavelle
+ * @author Christian Tzolov
+ * @author Piotr Olaszewski
+ * @author Ilayaperumal Gopinathan
+ */
 @ConfigurationProperties(OpenAiAudioTranscriptionProperties.CONFIG_PREFIX)
-public class OpenAiAudioTranscriptionProperties extends OpenAiParentProperties {
+public class OpenAiAudioTranscriptionProperties extends AbstractOpenAiOptions {
 
+	/**
+	 * Configuration prefix for OpenAI SDK audio transcription.
+	 */
 	public static final String CONFIG_PREFIX = "spring.ai.openai.audio.transcription";
-
-	public static final String DEFAULT_TRANSCRIPTION_MODEL = OpenAiAudioApi.TranscriptionModels.WHISPER_1.getValue();
-
-	public static final String DEFAULT_TRANSCRIPTION_PATH = "/v1/audio/transcriptions";
-
-	private static final OpenAiAudioApi.TranscriptResponseFormat DEFAULT_RESPONSE_FORMAT = OpenAiAudioApi.TranscriptResponseFormat.TEXT;
-
-	private String transcriptionPath = DEFAULT_TRANSCRIPTION_PATH;
 
 	@NestedConfigurationProperty
 	private final OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
-		.model(DEFAULT_TRANSCRIPTION_MODEL)
-		.responseFormat(DEFAULT_RESPONSE_FORMAT)
+		.model(OpenAiAudioTranscriptionOptions.DEFAULT_TRANSCRIPTION_MODEL)
+		.responseFormat(OpenAiAudioTranscriptionOptions.DEFAULT_RESPONSE_FORMAT)
 		.build();
-
-	public String getTranscriptionPath() {
-		return this.transcriptionPath;
-	}
-
-	public void setTranscriptionPath(String transcriptionPath) {
-		this.transcriptionPath = transcriptionPath;
-	}
 
 	public OpenAiAudioTranscriptionOptions getOptions() {
 		return this.options;
