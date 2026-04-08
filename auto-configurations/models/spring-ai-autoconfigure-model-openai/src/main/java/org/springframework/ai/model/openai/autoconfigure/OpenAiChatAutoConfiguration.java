@@ -40,6 +40,7 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import static org.springframework.ai.model.openai.autoconfigure.OpenAIAutoConfigurationUtil.prepareRestClientBuilderForOpenAi;
 import static org.springframework.ai.model.openai.autoconfigure.OpenAIAutoConfigurationUtil.resolveConnectionProperties;
 
 /**
@@ -75,7 +76,8 @@ public class OpenAiChatAutoConfiguration {
 			.headers(resolved.headers())
 			.completionsPath(chatProperties.getCompletionsPath())
 			.embeddingsPath(OpenAiEmbeddingProperties.DEFAULT_EMBEDDINGS_PATH)
-			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
+			.restClientBuilder(prepareRestClientBuilderForOpenAi(
+					restClientBuilderProvider.getIfAvailable(RestClient::builder), resolved.baseUrl()))
 			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
 			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
 			.build();
