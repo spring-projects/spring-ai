@@ -409,15 +409,25 @@ public class MistralAiChatModel implements ChatModel {
 
 		var request = new MistralAiApi.ChatCompletionRequest(chatCompletionMessages, stream);
 
-		MistralAiChatOptions requestOptions = (MistralAiChatOptions) Objects.requireNonNull(prompt.getOptions());
-		request = ModelOptionsUtils.merge(requestOptions, request, MistralAiApi.ChatCompletionRequest.class);
+		MistralAiChatOptions options = (MistralAiChatOptions) Objects.requireNonNull(prompt.getOptions());
+		request = new ChatCompletionRequest(ModelOptionsUtils.mergeOption(options.getModel(), request.model()),
+				request.messages(), ModelOptionsUtils.mergeOption(options.getTools(), request.tools()),
+				ModelOptionsUtils.mergeOption(options.getToolChoice(), request.toolChoice()),
+				ModelOptionsUtils.mergeOption(options.getTemperature(), request.temperature()),
+				ModelOptionsUtils.mergeOption(options.getTopP(), request.topP()),
+				ModelOptionsUtils.mergeOption(options.getMaxTokens(), request.maxTokens()), request.stream(),
+				ModelOptionsUtils.mergeOption(options.getSafePrompt(), request.safePrompt()),
+				ModelOptionsUtils.mergeOption(options.getStop(), request.stop()),
+				ModelOptionsUtils.mergeOption(options.getRandomSeed(), request.randomSeed()),
+				ModelOptionsUtils.mergeOption(options.getResponseFormat(), request.responseFormat()));
 
 		// Add the tool definitions to the request's tools parameter.
-		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
+		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(options);
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
-			request = ModelOptionsUtils.merge(
-					MistralAiChatOptions.builder().tools(this.getFunctionTools(toolDefinitions)).build(), request,
-					ChatCompletionRequest.class);
+			request = new ChatCompletionRequest(request.model(), request.messages(),
+					this.getFunctionTools(toolDefinitions), request.toolChoice(), request.temperature(), request.topP(),
+					request.maxTokens(), request.stream(), request.safePrompt(), request.stop(), request.randomSeed(),
+					request.responseFormat());
 		}
 
 		return request;

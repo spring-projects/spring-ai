@@ -50,6 +50,10 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 
 	@Test
 	void testBasicOptions() {
+		var b1 = OllamaChatOptions.builder().model("model").mainGPU(12);
+
+		var b = OllamaChatOptions.builder().mainGPU(12).model("model");
+
 		var options = OllamaChatOptions.builder().temperature(3.14).topK(30).stop(List.of("a", "b", "c")).build();
 
 		var optionsMap = options.toMap();

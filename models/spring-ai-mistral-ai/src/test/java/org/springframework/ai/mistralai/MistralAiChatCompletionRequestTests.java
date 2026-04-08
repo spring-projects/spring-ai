@@ -18,7 +18,6 @@ package org.springframework.ai.mistralai;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -199,17 +198,17 @@ class MistralAiChatCompletionRequestTests {
 		assertThat(chatCompletionMessage.role()).isEqualTo(ChatCompletionMessage.Role.USER);
 		var rawContent = chatCompletionMessage.rawContent();
 		assertThat(rawContent).isNotNull();
-		var maps = (List<Map<String, Object>>) rawContent;
+		var maps = (List<ChatCompletionMessage.MediaContent>) rawContent;
 		assertThat(maps).hasSize(2);
 		// @formatter:off
 		var textMap = maps.get(0);
-		assertThat(textMap).hasSize(2)
-				.containsEntry("type", "text")
-				.containsEntry("text", TEXT_CONTENT);
+		assertThat(textMap)
+				.hasFieldOrPropertyWithValue("type", "text")
+				.hasFieldOrPropertyWithValue("text", TEXT_CONTENT);
 		var imageUrlMap = maps.get(1);
-		assertThat(imageUrlMap).hasSize(2)
-				.containsEntry("type", "image_url")
-				.containsEntry("image_url", Map.of("url", IMAGE_URL));
+		assertThat(imageUrlMap)
+				.hasFieldOrPropertyWithValue("type", "image_url")
+				.hasFieldOrPropertyWithValue("imageUrl", new ChatCompletionMessage.MediaContent.ImageUrl(IMAGE_URL));
 		// @formatter:on
 	}
 

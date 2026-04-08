@@ -25,10 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -53,7 +49,6 @@ import org.springframework.util.Assert;
  * @author Dan Dobrin
  * @since 1.0.0
  */
-@JsonInclude(Include.NON_NULL)
 public class GoogleGenAiChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
 	// https://cloud.google.com/vertex-ai/docs/reference/rest/v1/GenerationConfig
@@ -61,67 +56,67 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	/**
 	 * Optional. Stop sequences.
 	 */
-	private @JsonProperty("stopSequences") List<String> stopSequences;
+	private List<String> stopSequences;
 
 	// @formatter:off
 
 	/**
 	 * Optional. Controls the randomness of predictions.
 	 */
-	private @JsonProperty("temperature") Double temperature;
+	private Double temperature;
 
 	/**
 	 * Optional. If specified, nucleus sampling will be used.
 	 */
-	private @JsonProperty("topP") Double topP;
+	private Double topP;
 
 	/**
 	 * Optional. If specified, top k sampling will be used.
 	 */
-	private @JsonProperty("topK") Integer topK;
+	private Integer topK;
 
 	/**
 	 * Optional. The maximum number of tokens to generate.
 	 */
-	private @JsonProperty("candidateCount") Integer candidateCount;
+	private Integer candidateCount;
 
 	/**
 	 * Optional. The maximum number of tokens to generate.
 	 */
-	private @JsonProperty("maxOutputTokens") Integer maxOutputTokens;
+	private Integer maxOutputTokens;
 
 	/**
 	 * Gemini model name.
 	 */
-	private @JsonProperty("modelName") String model;
+	private String model;
 
 	/**
 	 * Optional. Output response mimetype of the generated candidate text.
 	 * - text/plain: (default) Text output.
 	 * - application/json: JSON response in the candidates.
 	 */
-	private @JsonProperty("responseMimeType") String responseMimeType;
+	private String responseMimeType;
 
 	/**
 	 * Optional. Gemini response schema.
 	 */
-	private @JsonProperty("responseSchema") String responseSchema;
+	private String responseSchema;
 
 	/**
 	 * Optional. Frequency penalties.
 	 */
-	private @JsonProperty("frequencyPenalty") Double frequencyPenalty;
+	private Double frequencyPenalty;
 
 	/**
 	 * Optional. Positive penalties.
 	 */
-	private @JsonProperty("presencePenalty") Double presencePenalty;
+	private Double presencePenalty;
 
 	/**
 	 * Optional. Thinking budget for the thinking process.
 	 * This is part of the thinkingConfig in GenerationConfig.
 	 */
-	private @JsonProperty("thinkingBudget") Integer thinkingBudget;
+	private Integer thinkingBudget;
 
 	/**
 	 * Optional. Whether to include thoughts in the response.
@@ -134,75 +129,69 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	 * <p>Note: Enabling thoughts increases token usage and API costs.
 	 * This is part of the thinkingConfig in GenerationConfig.
 	 */
-	private @JsonProperty("includeThoughts") Boolean includeThoughts;
+	private Boolean includeThoughts;
 
 	/**
 	 * Optional. The level of thinking tokens the model should generate.
 	 * LOW = minimal thinking, HIGH = extensive thinking.
 	 * This is part of the thinkingConfig in GenerationConfig.
 	 */
-	private @JsonProperty("thinkingLevel") GoogleGenAiThinkingLevel thinkingLevel;
+	private GoogleGenAiThinkingLevel thinkingLevel;
 
 	/**
 	 * Optional. Whether to include extended usage metadata in responses.
 	 * When true, includes thinking tokens, cached content, tool-use tokens, and modality details.
 	 * Defaults to true for full metadata access.
 	 */
-	private @JsonProperty("includeExtendedUsageMetadata") Boolean includeExtendedUsageMetadata;
+	private Boolean includeExtendedUsageMetadata;
 
 	/**
 	 * Optional. The name of cached content to use for this request.
 	 * When set, the cached content will be used as context for the request.
 	 */
-	private @JsonProperty("cachedContentName") String cachedContentName;
+	private String cachedContentName;
 
 	/**
 	 * Optional. Whether to use cached content if available.
 	 * When true and cachedContentName is set, the system will use the cached content.
 	 */
-	private @JsonProperty("useCachedContent") Boolean useCachedContent;
+	private Boolean useCachedContent;
 
 	/**
 	 * Optional. Automatically cache prompts that exceed this token threshold.
 	 * When set, prompts larger than this value will be automatically cached for reuse.
 	 * Set to null to disable auto-caching.
 	 */
-	private @JsonProperty("autoCacheThreshold") Integer autoCacheThreshold;
+	private Integer autoCacheThreshold;
 
 	/**
 	 * Optional. Time-to-live for auto-cached content.
 	 * Used when auto-caching is enabled. Defaults to 1 hour if not specified.
 	 */
-	@JsonIgnore
 	private Duration autoCacheTtl;
 
 	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
 	 * completion requests.
 	 */
-	@JsonIgnore
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 	/**
      * Collection of tool names to be resolved at runtime and used for tool calling in the
 	 * chat completion requests.
 	 */
-	@JsonIgnore
 	private Set<String> toolNames = new HashSet<>();
 
 	/**
 	 * Whether to enable the tool execution lifecycle internally in ChatModel.
 	 */
-	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
 
-	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
 
 	/**
 	 * Use Google search Grounding feature
 	 */
-	@JsonIgnore
 	private Boolean googleSearchRetrieval = false;
 
 	/**
@@ -211,13 +200,10 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	 * This allows clients to observe the server's tool invocations without executing them.
 	 * Only supported with MLDev (Google AI) API, not Vertex AI.
 	 */
-	@JsonIgnore
 	private Boolean includeServerSideToolInvocations = false;
 
-	@JsonIgnore
 	private List<GoogleGenAiSafetySetting> safetySettings = new ArrayList<>();
 
-	@JsonIgnore
 	private Map<String, String> labels = new HashMap<>();
 	// @formatter:on
 
@@ -316,12 +302,10 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	}
 
 	@Override
-	@JsonIgnore
 	public Integer getMaxTokens() {
 		return getMaxOutputTokens();
 	}
 
-	@JsonIgnore
 	public void setMaxTokens(Integer maxTokens) {
 		setMaxOutputTokens(maxTokens);
 	}
@@ -526,7 +510,6 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	}
 
 	@Override
-	@JsonIgnore
 	public void setOutputSchema(String jsonSchemaText) {
 		this.setResponseSchema(jsonSchemaText);
 		this.setResponseMimeType("application/json");

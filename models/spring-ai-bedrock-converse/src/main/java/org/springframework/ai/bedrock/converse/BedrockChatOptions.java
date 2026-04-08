@@ -24,9 +24,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.bedrock.converse.api.BedrockCacheOptions;
@@ -42,52 +39,36 @@ import org.springframework.util.Assert;
  *
  * @author Sun Yuhan
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
-	@JsonProperty("model")
 	private String model;
 
-	@JsonProperty("frequencyPenalty")
 	private Double frequencyPenalty;
 
-	@JsonProperty("maxTokens")
 	private Integer maxTokens;
 
-	@JsonProperty("presencePenalty")
 	private Double presencePenalty;
 
-	@JsonIgnore
 	private Map<String, String> requestParameters = new HashMap<>();
 
-	@JsonProperty("stopSequences")
 	private List<String> stopSequences;
 
-	@JsonProperty("temperature")
 	private Double temperature;
 
-	@JsonProperty("topK")
 	private Integer topK;
 
-	@JsonProperty("topP")
 	private Double topP;
 
-	@JsonIgnore
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
-	@JsonIgnore
 	private Set<String> toolNames = new HashSet<>();
 
-	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
 
-	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
 
-	@JsonIgnore
 	private BedrockCacheOptions cacheOptions;
 
-	@JsonIgnore
 	private String outputSchema;
 
 	// TODO: left here for ModelOptionUtils.merge*()
@@ -205,13 +186,11 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	}
 
 	@Override
-	@JsonIgnore
 	public List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
 	}
 
 	@Override
-	@JsonIgnore
 	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
@@ -219,13 +198,11 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	}
 
 	@Override
-	@JsonIgnore
 	public Set<String> getToolNames() {
 		return Set.copyOf(this.toolNames);
 	}
 
 	@Override
-	@JsonIgnore
 	public void setToolNames(Set<String> toolNames) {
 		Assert.notNull(toolNames, "toolNames cannot be null");
 		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
@@ -234,13 +211,11 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	}
 
 	@Override
-	@JsonIgnore
 	public Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
 
 	@Override
-	@JsonIgnore
 	public void setToolContext(Map<String, Object> toolContext) {
 		this.toolContext = toolContext;
 	}
@@ -251,17 +226,14 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	}
 
 	@Override
-	@JsonIgnore
 	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
-	@JsonIgnore
 	public BedrockCacheOptions getCacheOptions() {
 		return this.cacheOptions;
 	}
 
-	@JsonIgnore
 	public void setCacheOptions(BedrockCacheOptions cacheOptions) {
 		this.cacheOptions = cacheOptions;
 	}
