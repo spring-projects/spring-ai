@@ -16,10 +16,14 @@
 
 package org.springframework.ai.image;
 
+import org.springframework.ai.image.observation.DefaultImageModelObservationConvention;
+import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.model.Model;
 
 @FunctionalInterface
 public interface ImageModel extends Model<ImagePrompt, ImageResponse> {
+
+	ImageModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultImageModelObservationConvention();
 
 	ImageResponse call(ImagePrompt request);
 
