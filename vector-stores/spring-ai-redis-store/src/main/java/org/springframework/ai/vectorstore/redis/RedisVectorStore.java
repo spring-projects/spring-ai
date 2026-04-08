@@ -236,6 +236,7 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Soby Chacko
  * @author Jihoon Kim
+ * @author dingqianwen
  * @see VectorStore
  * @see EmbeddingModel
  * @since 1.0.0
@@ -404,43 +405,58 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	@Override
-	protected void doDelete(Filter.Expression filterExpression) {
-		Assert.notNull(filterExpression, "Filter expression must not be null");
+    protected void doDelete(Filter.Expression filterExpression) {
+        Assert.notNull(filterExpression, "Filter expression must not be null");
 
-		try {
-			String filterStr = this.filterExpressionConverter.convertExpression(filterExpression);
+        try {
+            String filterStr = this.filterExpressionConverter.convertExpression(filterExpression);
+            int batchSize = 1000;
+            int totalDeleted = 0;
 
-			List<String> matchingIds = new ArrayList<>();
-			SearchResult searchResult = this.jedis.ftSearch(this.indexName, filterStr);
+            while (true) {
+                Query query = new Query(filterStr)
+                        .limit(0, batchSize)
+                        // Performance optimization, only document ID is returned, other fields are not returned
+                        .returnFields("");
 
-			for (redis.clients.jedis.search.Document doc : searchResult.getDocuments()) {
-				String docId = doc.getId();
-				matchingIds.add(docId.replace(key(""), "")); // Remove the key prefix to
-																// get original ID
-			}
+                SearchResult searchResult = this.jedis.ftSearch(this.indexName, query);
+                List<redis.clients.jedis.search.Document> documents = searchResult.getDocuments();
 
-			if (!matchingIds.isEmpty()) {
-				try (Pipeline pipeline = this.jedis.pipelined()) {
-					for (String id : matchingIds) {
-						pipeline.jsonDel(key(id));
-					}
-					List<Object> responses = pipeline.syncAndReturnAll();
-					Optional<Object> errResponse = responses.stream().filter(Predicate.not(RESPONSE_DEL_OK)).findAny();
+                if (documents == null || documents.isEmpty()) {
+                    break;
+                }
 
-					if (errResponse.isPresent()) {
-						logger.error("Could not delete document: {}", errResponse.get());
-						throw new IllegalStateException("Failed to delete some documents");
-					}
-				}
+                List<String> matchingIds = new ArrayList<>();
+                for (redis.clients.jedis.search.Document doc : documents) {
+                    String docId = doc.getId();
+                    matchingIds.add(docId.replace(key(""), "")); // Remove the key prefix to
+                    // get original ID
+                }
 
-				logger.debug("Deleted {} documents matching filter expression", matchingIds.size());
-			}
-		}
-		catch (Exception e) {
-			logger.error("Failed to delete documents by filter", e);
-			throw new IllegalStateException("Failed to delete documents by filter", e);
-		}
-	}
+                try (Pipeline pipeline = this.jedis.pipelined()) {
+                    for (String id : matchingIds) {
+                        pipeline.jsonDel(key(id));
+                    }
+                    List<Object> responses = pipeline.syncAndReturnAll();
+                    Optional<Object> errResponse = responses.stream().filter(Predicate.not(RESPONSE_DEL_OK)).findAny();
+
+                    if (errResponse.isPresent()) {
+                        logger.error("Could not delete document: {}", errResponse.get());
+                        throw new IllegalStateException("Failed to delete some documents");
+                    }
+                }
+
+                totalDeleted += matchingIds.size();
+            }
+
+            if (totalDeleted > 0) {
+                logger.debug("Deleted {} documents matching filter expression", totalDeleted);
+            }
+        } catch (Exception e) {
+            logger.error("Failed to delete documents by filter", e);
+            throw new IllegalStateException("Failed to delete documents by filter", e);
+        }
+    }
 
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
