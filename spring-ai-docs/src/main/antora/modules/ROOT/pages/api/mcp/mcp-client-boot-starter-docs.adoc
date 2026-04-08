@@ -499,7 +499,7 @@ Clients can control logging verbosity by setting minimum log levels
 
 ==== Client Customization Example
 
-You can implement `McpCustomizer<McpClient.SyncSpec>` for synchronous clients or `McpCustomizer<McpClient.AsyncSpec>` for asynchronous clients, depending on your application's needs.
+You can implement `McpClientCustomizer<McpClient.SyncSpec>` for synchronous clients or `McpClientCustomizer<McpClient.AsyncSpec>` for asynchronous clients, depending on your application's needs.
 
 [tabs]
 ======
@@ -567,7 +567,7 @@ Async::
 [source,java]
 ----
 @Component
-public class CustomMcpAsyncClientCustomizer implements McpCustomizer<McpClient.AsyncSpec> {
+public class CustomMcpAsyncClientCustomizer implements McpClientCustomizer<McpClient.AsyncSpec> {
     @Override
     public void customize(String serverConfigurationName, McpClient.AsyncSpec spec) {
         // Customize the async client configuration
