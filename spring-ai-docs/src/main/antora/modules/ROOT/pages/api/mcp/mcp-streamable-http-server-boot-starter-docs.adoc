@@ -68,6 +68,7 @@ All common properties are prefixed with `spring.ai.mcp.server`:
 |`resource-change-notification` |Enable resource change notifications |`true`
 |`prompt-change-notification` |Enable prompt change notifications |`true`
 |`tool-change-notification` |Enable tool change notifications |`true`
+|`expose-mcp-client-tools` |Whether to re-expose downstream MCP tools (provided by MCP clients) as tools in this MCP server |`false`
 |`tool-response-mime-type` |Response MIME type per tool name |`-`
 |`request-timeout` |Request timeout duration |`20 seconds`
 |===

@@ -72,6 +72,7 @@ All Common properties are prefixed with `spring.ai.mcp.server`:
 |`capabilities.tool` |Enable/disable tool capabilities |`true`
 |`capabilities.prompt` |Enable/disable prompt capabilities |`true`
 |`capabilities.completion` |Enable/disable completion capabilities |`true`
+|`expose-mcp-client-tools` |Whether to re-expose downstream MCP tools (provided by MCP clients) as tools in this MCP server |`false`
 |`tool-response-mime-type` |Response MIME type per tool name |`-`
 |`request-timeout` |Request timeout duration |`20 seconds`
 |===
