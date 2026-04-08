@@ -382,16 +382,13 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 						}
 						return this.extractError(response, sessionRepresentation);
 					}
-				}))
-				.flatMap(jsonRpcMessage -> this.handler.get().apply(Mono.just(jsonRpcMessage)))
-				.onErrorResume(t -> {
+				})).flatMap(jsonRpcMessage -> this.handler.get().apply(Mono.just(jsonRpcMessage))).onErrorResume(t -> {
 					this.handleException(t);
 					sink.error(t);
 					if (requestId != null) {
 						// Emit synthetic error so pending response is resolved
 						// immediately instead of hanging until read timeout.
-						logger.warn("Body-level error for request {}, emitting synthetic error response", requestId,
-								t);
+						logger.warn("Body-level error for request {}, emitting synthetic error response", requestId, t);
 						McpSchema.JSONRPCResponse errorResponse = new McpSchema.JSONRPCResponse(
 								McpSchema.JSONRPC_VERSION, requestId, null,
 								new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INTERNAL_ERROR,
@@ -399,15 +396,12 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 						return this.handler.get().apply(Mono.just(errorResponse));
 					}
 					return Flux.empty();
-				})
-				.doFinally(s -> {
+				}).doFinally(s -> {
 					@Nullable Disposable ref = disposableRef.getAndSet(null);
 					if (ref != null) {
 						transportSession.removeConnection(ref);
 					}
-				})
-				.contextWrite(sink.contextView())
-				.subscribe();
+				}).contextWrite(sink.contextView()).subscribe();
 			disposableRef.set(connection);
 			transportSession.addConnection(connection);
 		});
