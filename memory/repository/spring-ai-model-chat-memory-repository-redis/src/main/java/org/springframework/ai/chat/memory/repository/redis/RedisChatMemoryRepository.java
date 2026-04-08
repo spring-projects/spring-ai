@@ -50,6 +50,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * Stores chat messages as JSON documents and uses the Redis Query Engine for querying.
  *
  * @author Brian Sam-Bodden
+ * @author Jake Son
  */
 public final class RedisChatMemoryRepository implements ChatMemoryRepository, AdvancedRedisChatMemoryRepository {
 
@@ -503,7 +504,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 				schemaFields.add(new TextField("$.content").as("content"));
 				schemaFields.add(new TextField("$.type").as("type"));
 				schemaFields.add(new TagField("$.conversation_id").as("conversation_id"));
-				schemaFields.add(new NumericField("$.timestamp").as("timestamp"));
+				schemaFields.add(new NumericField("$.timestamp").as("timestamp").sortable());
 
 				// Add metadata fields based on user-provided schema or default to text
 				if (config.getMetadataFields() != null && !config.getMetadataFields().isEmpty()) {
