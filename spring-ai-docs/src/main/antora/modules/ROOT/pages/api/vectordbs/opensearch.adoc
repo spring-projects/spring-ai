@@ -6,6 +6,11 @@ link:https://opensearch.org[OpenSearch] is an open-source search and analytics e
 
 The link:https://opensearch.org/docs/latest/search-plugins/knn/index/[OpenSearch k-NN] functionality allows users to query vector embeddings from large datasets. An embedding is a numerical representation of a data object, such as text, image, audio, or document. Embeddings can be stored in the index and queried using various similarity functions.
 
+[NOTE]
+====
+Usage of cosine similarity function with similarity threshold is not currently not supported for Opensearch 2.19 and higher versions. Please see the https://github.com/spring-projects/spring-ai/issues/4765[Github issue].
+====
+
 == Prerequisites
 
 * A running OpenSearch instance. The following options are available:
@@ -238,7 +243,6 @@ vectorStore.similaritySearch(SearchRequest.builder()
         b.in("author", "john", "jill"),
         b.eq("article_type", "blog")).build()).build());
 ----
-
 NOTE: Those (portable) filter expressions get automatically converted into the proprietary OpenSearch link:https://opensearch.org/docs/latest/query-dsl/full-text/query-string/[Query string query].
 
 For example, this portable filter expression:
@@ -254,6 +258,11 @@ is converted into the proprietary OpenSearch filter format:
 ----
 (metadata.author:john OR jill) AND metadata.article_type:blog
 ----
+
+[WARNING]
+====
+Currently `similarityThreshold()` in combination with cosine similarity function do not work correctly with Opensearch 2.19 and higher. Please use another similarity function like `l1`. For further details please see the https://github.com/spring-projects/spring-ai/issues/4765[Github issue].
+====
 
 == Accessing the Native Client
 
