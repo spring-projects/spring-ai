@@ -33,7 +33,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
-import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.ai.vectorstore.redis.cache.semantic.DefaultSemanticCache;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
@@ -126,7 +126,7 @@ class RedisSemanticCacheAutoConfigurationIT {
 		public EmbeddingModel embeddingModel() {
 			// Get API key from environment variable
 			String apiKey = System.getenv("OPENAI_API_KEY");
-			return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(apiKey).build());
+			return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder().apiKey(apiKey).build());
 		}
 
 	}

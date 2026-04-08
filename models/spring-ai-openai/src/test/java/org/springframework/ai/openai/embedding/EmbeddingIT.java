@@ -29,7 +29,6 @@ import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -68,7 +67,7 @@ class EmbeddingIT extends AbstractIT {
 		assertThat(this.embeddingModel).isNotNull();
 		List<float[]> embeddings = this.embeddingModel.embed(
 				List.of(new Document("Hello world"), new Document("Hello Spring"), new Document("Hello Spring AI!")),
-				OpenAiEmbeddingOptions.builder().model(OpenAiApi.DEFAULT_EMBEDDING_MODEL).build(),
+				OpenAiEmbeddingOptions.builder().model("text-embedding-ada-002").build(),
 				new TokenCountBatchingStrategy());
 		assertThat(embeddings.size()).isEqualTo(3);
 		embeddings.forEach(embedding -> assertThat(embedding.length).isEqualTo(this.embeddingModel.dimensions()));
@@ -80,7 +79,7 @@ class EmbeddingIT extends AbstractIT {
 		String contentAsString = this.resource.getContentAsString(StandardCharsets.UTF_8);
 		assertThatThrownBy(
 				() -> this.embeddingModel.embed(List.of(new Document("Hello World"), new Document(contentAsString)),
-						OpenAiEmbeddingOptions.builder().model(OpenAiApi.DEFAULT_EMBEDDING_MODEL).build(),
+						OpenAiEmbeddingOptions.builder().model("text-embedding-ada-002").build(),
 						new TokenCountBatchingStrategy()))
 			.isInstanceOf(IllegalArgumentException.class);
 	}

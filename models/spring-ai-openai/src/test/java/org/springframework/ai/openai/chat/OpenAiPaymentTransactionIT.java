@@ -36,9 +36,6 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
-import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
@@ -64,7 +61,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  */
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 public class OpenAiPaymentTransactionIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiPaymentTransactionIT.class);
@@ -85,7 +82,7 @@ public class OpenAiPaymentTransactionIT {
 					What is the status of my payment transactions 001, 002 and 003?
 					""")
 			.call()
-			.entity(new ParameterizedTypeReference<>() {
+			.entity(new ParameterizedTypeReference<List<TransactionStatusResponse>>() {
 
 			});
 
@@ -182,18 +179,14 @@ public class OpenAiPaymentTransactionIT {
 		}
 
 		@Bean
-		public OpenAiApi chatCompletionApi() {
-			return OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build();
-		}
-
-		@Bean
-		public OpenAiChatModel openAiClient(OpenAiApi openAiApi, ToolCallingManager toolCallingManager) {
+		public OpenAiChatModel openAiClient(ToolCallingManager toolCallingManager) {
 			return OpenAiChatModel.builder()
-				.openAiApi(openAiApi)
+				.options(OpenAiChatOptions.builder()
+					.apiKey(System.getenv("OPENAI_API_KEY"))
+					.model("gpt-4o-mini")
+					.temperature(0.1)
+					.build())
 				.toolCallingManager(toolCallingManager)
-				.defaultOptions(
-						OpenAiChatOptions.builder().model(ChatModel.GPT_4_O_MINI.getName()).temperature(0.1).build())
-				.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 				.build();
 		}
 

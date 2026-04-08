@@ -28,7 +28,6 @@
 **** xref:api/chat/nvidia-chat.adoc[NVIDIA]
 **** xref:api/chat/ollama-chat.adoc[Ollama]
 **** xref:api/chat/perplexity-chat.adoc[Perplexity AI]
-**** xref:api/chat/openai-sdk-chat.adoc[OpenAI SDK (Official)]
 **** xref:api/chat/openai-chat.adoc[OpenAI]
 **** xref:api/chat/qianfan-chat.adoc[QianFan]
 
@@ -43,7 +42,6 @@
 **** xref:api/embeddings/minimax-embeddings.adoc[MiniMax]
 **** xref:api/embeddings/ollama-embeddings.adoc[Ollama]
 **** xref:api/embeddings/onnx.adoc[(ONNX) Transformers]
-**** xref:api/embeddings/openai-sdk-embeddings.adoc[OpenAI SDK (Official)]
 **** xref:api/embeddings/openai-embeddings.adoc[OpenAI]
 **** xref:api/embeddings/postgresml-embeddings.adoc[PostgresML]
 **** xref:api/embeddings/qianfan-embeddings.adoc[QianFan]
@@ -53,7 +51,6 @@
 
 *** xref:api/imageclient.adoc[Image Models]
 **** xref:api/image/azure-openai-image.adoc[Azure OpenAI]
-**** xref:api/image/openai-sdk-image.adoc[OpenAI SDK (Official)]
 **** xref:api/image/openai-image.adoc[OpenAI]
 **** xref:api/image/stabilityai-image.adoc[Stability]
 **** xref:api/image/qianfan-image.adoc[QianFan]

@@ -33,7 +33,7 @@ import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.evaluation.EvaluationRequest;
 import org.springframework.ai.evaluation.EvaluationResponse;
 import org.springframework.ai.integration.tests.TestApplication;
-import org.springframework.ai.openaisdk.OpenAiSdkChatModel;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.reader.markdown.MarkdownDocumentReader;
 import org.springframework.ai.reader.markdown.config.MarkdownDocumentReaderConfig;
 import org.springframework.ai.template.st.StTemplateRenderer;
@@ -57,7 +57,7 @@ public class QuestionAnswerAdvisorIT {
 	private List<Document> knowledgeBaseDocuments;
 
 	@Autowired
-	OpenAiSdkChatModel openAiChatModel;
+	OpenAiChatModel openAiChatModel;
 
 	@Autowired
 	PgVectorStore pgVectorStore;
