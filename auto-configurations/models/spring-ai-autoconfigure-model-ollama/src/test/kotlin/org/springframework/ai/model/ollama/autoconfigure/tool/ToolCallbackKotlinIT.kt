@@ -26,6 +26,7 @@ import org.springframework.ai.model.ollama.autoconfigure.BaseOllamaIT
 import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration
 import org.springframework.ai.model.tool.ToolCallingChatOptions
 import org.springframework.ai.ollama.OllamaChatModel
+import org.springframework.ai.ollama.api.OllamaChatOptions
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -67,7 +68,7 @@ class ToolCallbackKotlinIT : BaseOllamaIT() {
 				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations."
 			)
 
-			val functionOptions = ToolCallingChatOptions.builder().toolNames("weatherInfo").build()
+			val functionOptions = OllamaChatOptions.builder().model(MODEL_NAME).toolNames("weatherInfo").build()
 
 			val response = chatModel
 				.call(Prompt(listOf(userMessage), functionOptions))
@@ -89,7 +90,7 @@ class ToolCallbackKotlinIT : BaseOllamaIT() {
 				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations."
 			)
 
-			val functionOptions = ToolCallingChatOptions.builder().toolNames("weatherInfo").build()
+			val functionOptions = OllamaChatOptions.builder().model(MODEL_NAME).toolNames("weatherInfo").build()
 
 			val response = chatModel.call(Prompt(listOf(userMessage), functionOptions));
 			val output = response.getResult()!!.output.text
