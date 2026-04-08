@@ -93,4 +93,59 @@
         </plugins>
     </build>
 
+    <profiles>
+        <profile>
+            <id>pdf</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.asciidoctor</groupId>
+                        <artifactId>asciidoctor-maven-plugin</artifactId>
+                        <version>3.0.0</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.asciidoctor</groupId>
+                                <artifactId>asciidoctorj-pdf</artifactId>
+                                <version>2.3.19</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>generate-pdf-doc</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>process-asciidoc</goal>
+                                </goals>
+                                <configuration>
+                                    <sourceDirectory>${project.basedir}/src/main/asciidoc</sourceDirectory>
+                                    <sourceDocumentName>spring-ai-reference.adoc</sourceDocumentName>
+                                    <outputDirectory>${project.build.directory}/pdf</outputDirectory>
+                                    <backend>pdf</backend>
+                                    <attributes>
+                                        <pdf-stylesdir>${project.basedir}/src/main/asciidoc/themes</pdf-stylesdir>
+                                        <pdf-style>spring</pdf-style>
+                                        <doctype>book</doctype>
+                                        <toc/>
+                                        <toclevels>3</toclevels>
+                                        <sectnums/>
+                                        <icons>font</icons>
+                                        <imagesdir>${project.basedir}/src/main/antora/modules/ROOT/images</imagesdir>
+                                        <!-- Suppress unresolved Antora-style xref warnings -->
+                                        <xrefstyle>short</xrefstyle>
+                                        <!-- Project version for title page -->
+                                        <revnumber>${project.version}</revnumber>
+                                        <revdate>${maven.build.timestamp}</revdate>
+                                        <!-- Antora-specific attributes (no-op in standalone mode) -->
+                                        <page-pagination/>
+                                        <hide-uri-scheme>@</hide-uri-scheme>
+                                    </attributes>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 </project>
