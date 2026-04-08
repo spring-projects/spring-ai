@@ -81,6 +81,8 @@ public class MiniMaxStreamFunctionCallingHelper {
 		role = (role != null ? role : Role.ASSISTANT); // default to ASSISTANT (if null
 		String name = (current.name() != null ? current.name() : previous.name());
 		String toolCallId = (current.toolCallId() != null ? current.toolCallId() : previous.toolCallId());
+		List<ChatCompletionMessage.ReasoningDetail> reasoningDetails = current.reasoningDetails() != null
+				? current.reasoningDetails() : previous.reasoningDetails();
 
 		List<ToolCall> toolCalls = new ArrayList<>();
 		ToolCall lastPreviousTooCall = null;
@@ -111,7 +113,7 @@ public class MiniMaxStreamFunctionCallingHelper {
 				toolCalls.add(lastPreviousTooCall);
 			}
 		}
-		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls);
+		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, reasoningDetails);
 	}
 
 	private ToolCall merge(ToolCall previous, ToolCall current) {

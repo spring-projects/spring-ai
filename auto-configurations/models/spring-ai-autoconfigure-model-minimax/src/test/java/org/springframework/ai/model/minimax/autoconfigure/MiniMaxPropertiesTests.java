@@ -42,6 +42,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class MiniMaxPropertiesTests {
 
 	@Test
+	public void defaultConnectionProperties() {
+
+		new ApplicationContextRunner().withPropertyValues("spring.ai.minimax.api-key=abc123")
+			.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxChatAutoConfiguration.class))
+			.run(context -> {
+				var connectionProperties = context.getBean(MiniMaxConnectionProperties.class);
+
+				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("https://api.minimax.chat");
+			});
+	}
+
+	@Test
 	public void chatProperties() {
 
 		new ApplicationContextRunner().withPropertyValues(
@@ -170,6 +183,7 @@ public class MiniMaxPropertiesTests {
 				"spring.ai.minimax.chat.options.stop=boza,koza",
 				"spring.ai.minimax.chat.options.temperature=0.55",
 				"spring.ai.minimax.chat.options.topP=0.56",
+				"spring.ai.minimax.chat.options.reasoning-split=true",
 
 				// "spring.ai.minimax.chat.options.toolChoice.functionName=toolChoiceFunctionName",
 				"spring.ai.minimax.chat.options.toolChoice=" + ModelOptionsUtils.toJsonString(MiniMaxApi.ChatCompletionRequest.ToolChoiceBuilder.function("toolChoiceFunctionName")),
@@ -223,6 +237,7 @@ public class MiniMaxPropertiesTests {
 				assertThat(chatProperties.getOptions().getStop()).contains("boza", "koza");
 				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
 				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56);
+				assertThat(chatProperties.getOptions().getReasoningSplit()).isTrue();
 
 				JSONAssert.assertEquals("{\"type\":\"function\",\"function\":{\"name\":\"toolChoiceFunctionName\"}}",
 						chatProperties.getOptions().getToolChoice(), JSONCompareMode.LENIENT);

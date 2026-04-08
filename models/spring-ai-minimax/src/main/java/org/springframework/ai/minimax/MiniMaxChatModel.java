@@ -17,6 +17,7 @@
 package org.springframework.ai.minimax;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import tools.jackson.core.type.TypeReference;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
@@ -55,6 +57,7 @@ import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionChunk;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionFinishReason;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.ChatCompletionFunction;
+import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.ReasoningDetail;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.Role;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionRequest;
@@ -88,6 +91,8 @@ import org.springframework.util.CollectionUtils;
 public class MiniMaxChatModel implements ChatModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(MiniMaxChatModel.class);
+
+	private static final String REASONING_DETAILS_METADATA = "reasoningDetails";
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
@@ -236,6 +241,28 @@ public class MiniMaxChatModel implements ChatModel {
 		return new Generation(assistantMessage, generationMetadata);
 	}
 
+	private static Map<String, Object> createAssistantMetadata(String id, String role,
+			ChatCompletionFinishReason finishReason, ChatCompletionMessage message) {
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("id", id != null ? id : "");
+		metadata.put("role", role != null ? role : "");
+		metadata.put("finishReason", finishReason != null ? finishReason.name() : "");
+		if (message != null && !CollectionUtils.isEmpty(message.reasoningDetails())) {
+			metadata.put(REASONING_DETAILS_METADATA, message.reasoningDetails());
+		}
+		return metadata;
+	}
+
+	private static List<ReasoningDetail> getReasoningDetails(AssistantMessage assistantMessage) {
+		Object reasoningDetails = assistantMessage.getMetadata().get(REASONING_DETAILS_METADATA);
+		if (reasoningDetails == null) {
+			return null;
+		}
+		String json = ModelOptionsUtils.toJsonString(reasoningDetails);
+		return ModelOptionsUtils.JSON_MAPPER.readValue(json, new TypeReference<List<ReasoningDetail>>() {
+		});
+	}
+
 	@Override
 	public ChatResponse call(Prompt prompt) {
 		Prompt requestPrompt = buildRequestPrompt(prompt);
@@ -280,10 +307,9 @@ public class MiniMaxChatModel implements ChatModel {
 							// so the last message is the assistant message
 							message = choice.messages().get(choice.messages().size() - 1);
 						}
-						Map<String, Object> metadata = Map.of(
-								"id", chatCompletion.id(),
-								"role", message != null && message.role() != null ? message.role().name() : "",
-								"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
+						Map<String, Object> metadata = createAssistantMetadata(chatCompletion.id(),
+								message != null && message.role() != null ? message.role().name() : "",
+								choice.finishReason(), message);
 						// @formatter:on
 					return buildGeneration(message, choice.finishReason(), metadata);
 				}).toList();
@@ -357,10 +383,8 @@ public class MiniMaxChatModel implements ChatModel {
 								if (choice.message().role() != null) {
 									roleMap.putIfAbsent(id, choice.message().role().name());
 								}
-								Map<String, Object> metadata = Map.of(
-										"id", chatCompletion2.id(),
-										"role", roleMap.getOrDefault(id, ""),
-										"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
+								Map<String, Object> metadata = createAssistantMetadata(chatCompletion2.id(),
+										roleMap.getOrDefault(id, ""), choice.finishReason(), choice.message());
 								return buildGeneration(choice, metadata);
 							}).toList();
 							return new ChatResponse(generations, from(chatCompletion2));
@@ -492,8 +516,9 @@ public class MiniMaxChatModel implements ChatModel {
 						return new ToolCall(toolCall.id(), toolCall.type(), function);
 					}).toList();
 				}
+				List<ReasoningDetail> reasoningDetails = getReasoningDetails(assistantMessage);
 				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
-						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls));
+						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, reasoningDetails));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
