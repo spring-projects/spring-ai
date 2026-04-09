@@ -502,7 +502,7 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 	}
 
 	private Tuple2<Optional<String>, Iterable<McpSchema.JSONRPCMessage>> parse(ServerSentEvent<String> event) {
-		if (MESSAGE_EVENT_TYPE.equals(event.event())) {
+		if (isMessageEvent(event.event())) {
 			try {
 				// We don't support batching ATM and probably won't since the next version
 				// considers removing it.
@@ -519,6 +519,11 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 			logger.debug("Received SSE event with type: {}", event);
 			return Tuples.of(Optional.empty(), List.of());
 		}
+	}
+
+	private static boolean isMessageEvent(@Nullable String eventType) {
+		// Per SSE semantics, missing/blank event type defaults to "message".
+		return eventType == null || eventType.isEmpty() || MESSAGE_EVENT_TYPE.equals(eventType);
 	}
 
 	/**
