@@ -147,16 +147,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
-		// Process runtime options
-		OllamaEmbeddingOptions runtimeOptions = null;
-		if (embeddingRequest.getOptions() != null) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
-					OllamaEmbeddingOptions.class);
-		}
-
-		// Define request options by merging runtime options and default options
-		OllamaEmbeddingOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
-				OllamaEmbeddingOptions.class);
+		OllamaEmbeddingOptions requestOptions = mergeOptions(embeddingRequest.getOptions());
 
 		// Validate request options
 		if (!StringUtils.hasText(requestOptions.getModel())) {
@@ -164,6 +155,34 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 		}
 
 		return new EmbeddingRequest(embeddingRequest.getInstructions(), requestOptions);
+	}
+
+	private OllamaEmbeddingOptions mergeOptions(@Nullable EmbeddingOptions requestOptions) {
+		OllamaEmbeddingOptions options = this.defaultOptions;
+
+		if (requestOptions == null) {
+			return options;
+		}
+
+		OllamaEmbeddingOptions.Builder builder = OllamaEmbeddingOptions.builder()
+			.model(ModelOptionsUtils.mergeOption(requestOptions.getModel(), options.getModel()))
+			.dimensions(ModelOptionsUtils.mergeOption(requestOptions.getDimensions(), options.getDimensions()));
+
+		if (requestOptions instanceof OllamaEmbeddingOptions ro) {
+			builder.keepAlive(ModelOptionsUtils.mergeOption(ro.getKeepAlive(), options.getKeepAlive()))
+				.truncate(ModelOptionsUtils.mergeOption(ro.getTruncate(), options.getTruncate()))
+				.useNUMA(ModelOptionsUtils.mergeOption(ro.getUseNUMA(), options.getUseNUMA()))
+				.numBatch(ModelOptionsUtils.mergeOption(ro.getNumBatch(), options.getNumBatch()))
+				.numGPU(ModelOptionsUtils.mergeOption(ro.getNumGPU(), options.getNumGPU()))
+				.mainGPU(ModelOptionsUtils.mergeOption(ro.getMainGPU(), options.getMainGPU()))
+				.lowVRAM(ModelOptionsUtils.mergeOption(ro.getLowVRAM(), options.getLowVRAM()))
+				.vocabOnly(ModelOptionsUtils.mergeOption(ro.getVocabOnly(), options.getVocabOnly()))
+				.useMMap(ModelOptionsUtils.mergeOption(ro.getUseMMap(), options.getUseMMap()))
+				.useMLock(ModelOptionsUtils.mergeOption(ro.getUseMLock(), options.getUseMLock()))
+				.numThread(ModelOptionsUtils.mergeOption(ro.getNumThread(), options.getNumThread()));
+		}
+
+		return builder.build();
 	}
 
 	/**
