@@ -74,19 +74,14 @@ public class MistralAiModerationModel implements ModerationModel {
 
 			var instructions = moderationPrompt.getInstructions().getText();
 
-			var moderationRequest = new MistralAiModerationRequest(instructions);
+			ModerationOptions requestOptions = moderationPrompt.getOptions();
+			String model = this.defaultOptions.getModel();
 
-			if (this.defaultOptions != null) {
-				moderationRequest = ModelOptionsUtils.merge(this.defaultOptions, moderationRequest,
-						MistralAiModerationRequest.class);
+			if (requestOptions != null) {
+				model = ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.defaultOptions.getModel());
 			}
-			else {
-				// moderationPrompt.getOptions() never null but model can be empty,
-				// cause
-				// by ModerationPrompt constructor
-				moderationRequest = ModelOptionsUtils.merge(toMistralAiModerationOptions(moderationPrompt.getOptions()),
-						moderationRequest, MistralAiModerationRequest.class);
-			}
+
+			var moderationRequest = new MistralAiModerationRequest(instructions, model);
 
 			var moderationResponseEntity = this.mistralAiModerationApi.moderate(moderationRequest);
 
@@ -151,14 +146,6 @@ public class MistralAiModerationModel implements ModerationModel {
 			.build();
 
 		return new ModerationResponse(new Generation(moderation));
-	}
-
-	private MistralAiModerationOptions toMistralAiModerationOptions(ModerationOptions runtimeModerationOptions) {
-		var mistralAiModerationOptionsBuilder = MistralAiModerationOptions.builder();
-		if (runtimeModerationOptions != null && runtimeModerationOptions.getModel() != null) {
-			mistralAiModerationOptionsBuilder.model(runtimeModerationOptions.getModel());
-		}
-		return mistralAiModerationOptionsBuilder.build();
 	}
 
 	public static Builder builder() {
