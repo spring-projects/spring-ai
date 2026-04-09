@@ -39,6 +39,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.DocumentEmbeddingModel;
 import org.springframework.ai.embedding.DocumentEmbeddingRequest;
 import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.embedding.EmbeddingResultMetadata;
@@ -97,13 +98,30 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 
 		EmbeddingResponse finalResponse = new EmbeddingResponse(List.of());
 
-		// merge the runtime and default vertex ai options.
+		EmbeddingOptions requestOptions = request.getOptions();
 		VertexAiMultimodalEmbeddingOptions mergedOptions = this.defaultOptions;
 
-		if (request.getOptions() != null) {
-			var defaultOptionsCopy = VertexAiMultimodalEmbeddingOptions.builder().from(this.defaultOptions).build();
-			mergedOptions = ModelOptionsUtils.merge(request.getOptions(), defaultOptionsCopy,
-					VertexAiMultimodalEmbeddingOptions.class);
+		if (requestOptions != null) {
+			VertexAiMultimodalEmbeddingOptions.Builder builder = VertexAiMultimodalEmbeddingOptions.builder()
+				.model(ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.defaultOptions.getModel()))
+				.dimensions(ModelOptionsUtils.mergeOption(requestOptions.getDimensions(),
+						this.defaultOptions.getDimensions()));
+
+			if (requestOptions instanceof VertexAiMultimodalEmbeddingOptions vertexOptions) {
+				builder
+					.videoStartOffsetSec(ModelOptionsUtils.mergeOption(vertexOptions.getVideoStartOffsetSec(),
+							this.defaultOptions.getVideoStartOffsetSec()))
+					.videoEndOffsetSec(ModelOptionsUtils.mergeOption(vertexOptions.getVideoEndOffsetSec(),
+							this.defaultOptions.getVideoEndOffsetSec()))
+					.videoIntervalSec(ModelOptionsUtils.mergeOption(vertexOptions.getVideoIntervalSec(),
+							this.defaultOptions.getVideoIntervalSec()));
+			}
+			else {
+				builder.videoStartOffsetSec(this.defaultOptions.getVideoStartOffsetSec())
+					.videoEndOffsetSec(this.defaultOptions.getVideoEndOffsetSec())
+					.videoIntervalSec(this.defaultOptions.getVideoIntervalSec());
+			}
+			mergedOptions = builder.build();
 		}
 
 		// Create the Vertex AI Prediction Service client.

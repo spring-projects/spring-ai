@@ -145,18 +145,24 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	private EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
-		// Process runtime options
-		MistralAiEmbeddingOptions runtimeOptions = null;
-		if (embeddingRequest.getOptions() != null) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
-					MistralAiEmbeddingOptions.class);
+		EmbeddingOptions requestOptions = embeddingRequest.getOptions();
+		MistralAiEmbeddingOptions mergedOptions = this.defaultOptions;
+
+		if (requestOptions != null) {
+			MistralAiEmbeddingOptions.Builder builder = MistralAiEmbeddingOptions.builder()
+				.withModel(ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.defaultOptions.getModel()));
+
+			if (requestOptions instanceof MistralAiEmbeddingOptions mistralOptions) {
+				builder.withEncodingFormat(ModelOptionsUtils.mergeOption(mistralOptions.getEncodingFormat(),
+						this.defaultOptions.getEncodingFormat()));
+			}
+			else {
+				builder.withEncodingFormat(this.defaultOptions.getEncodingFormat());
+			}
+			mergedOptions = builder.build();
 		}
 
-		// Define request options by merging runtime options and default options
-		MistralAiEmbeddingOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
-				MistralAiEmbeddingOptions.class);
-
-		return new EmbeddingRequest(embeddingRequest.getInstructions(), requestOptions);
+		return new EmbeddingRequest(embeddingRequest.getInstructions(), mergedOptions);
 	}
 
 	private DefaultUsage getDefaultUsage(MistralAiApi.Usage usage) {

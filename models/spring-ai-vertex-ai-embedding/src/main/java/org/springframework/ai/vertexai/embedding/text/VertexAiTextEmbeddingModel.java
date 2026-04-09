@@ -167,23 +167,37 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
-		// Process runtime options
-		VertexAiTextEmbeddingOptions runtimeOptions = null;
-		if (embeddingRequest.getOptions() != null) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
-					VertexAiTextEmbeddingOptions.class);
+		EmbeddingOptions requestOptions = embeddingRequest.getOptions();
+		VertexAiTextEmbeddingOptions options = this.defaultOptions;
+
+		if (requestOptions != null) {
+			VertexAiTextEmbeddingOptions.Builder builder = VertexAiTextEmbeddingOptions.builder()
+				.model(ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.defaultOptions.getModel()))
+				.dimensions(ModelOptionsUtils.mergeOption(requestOptions.getDimensions(),
+						this.defaultOptions.getDimensions()));
+
+			if (requestOptions instanceof VertexAiTextEmbeddingOptions vertexOptions) {
+				builder
+					.taskType(ModelOptionsUtils.mergeOption(vertexOptions.getTaskType(),
+							this.defaultOptions.getTaskType()))
+					.title(ModelOptionsUtils.mergeOption(vertexOptions.getTitle(), this.defaultOptions.getTitle()))
+					.autoTruncate(ModelOptionsUtils.mergeOption(vertexOptions.getAutoTruncate(),
+							this.defaultOptions.getAutoTruncate()));
+			}
+			else {
+				builder.taskType(this.defaultOptions.getTaskType())
+					.title(this.defaultOptions.getTitle())
+					.autoTruncate(this.defaultOptions.getAutoTruncate());
+			}
+			options = builder.build();
 		}
 
-		// Define request options by merging runtime options and default options
-		VertexAiTextEmbeddingOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
-				VertexAiTextEmbeddingOptions.class);
-
 		// Validate request options
-		if (!StringUtils.hasText(requestOptions.getModel())) {
+		if (!StringUtils.hasText(options.getModel())) {
 			throw new IllegalArgumentException("model cannot be null or empty");
 		}
 
-		return new EmbeddingRequest(embeddingRequest.getInstructions(), requestOptions);
+		return new EmbeddingRequest(embeddingRequest.getInstructions(), options);
 	}
 
 	protected PredictRequest.Builder getPredictRequestBuilder(EmbeddingRequest request, EndpointName endpointName,

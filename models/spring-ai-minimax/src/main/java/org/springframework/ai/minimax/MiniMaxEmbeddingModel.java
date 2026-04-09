@@ -28,7 +28,6 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
-import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
@@ -197,23 +196,21 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
-		// Process runtime options
-		MiniMaxEmbeddingOptions runtimeOptions = null;
+		MiniMaxEmbeddingOptions options = this.defaultOptions;
+
 		if (embeddingRequest.getOptions() != null) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
-					MiniMaxEmbeddingOptions.class);
+			options = MiniMaxEmbeddingOptions.builder()
+				.model(ModelOptionsUtils.mergeOption(embeddingRequest.getOptions().getModel(),
+						this.defaultOptions.getModel()))
+				.build();
 		}
 
-		// Define request options by merging runtime options and default options
-		MiniMaxEmbeddingOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
-				MiniMaxEmbeddingOptions.class);
-
 		// Validate request options
-		if (!StringUtils.hasText(requestOptions.getModel())) {
+		if (!StringUtils.hasText(options.getModel())) {
 			throw new IllegalArgumentException("model cannot be null or empty");
 		}
 
-		return new EmbeddingRequest(embeddingRequest.getInstructions(), requestOptions);
+		return new EmbeddingRequest(embeddingRequest.getInstructions(), options);
 	}
 
 	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
