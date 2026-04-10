@@ -33,6 +33,7 @@ import org.springframework.ai.mcp.annotation.method.elicitation.SyncElicitationS
 import org.springframework.ai.mcp.annotation.method.logging.SyncLoggingSpecification;
 import org.springframework.ai.mcp.annotation.method.progress.SyncProgressSpecification;
 import org.springframework.ai.mcp.annotation.method.sampling.SyncSamplingSpecification;
+import org.springframework.ai.mcp.annotation.method.tool.McpToolCallExceptionHandler;
 import org.springframework.ai.mcp.annotation.provider.changed.prompt.SyncMcpPromptListChangedProvider;
 import org.springframework.ai.mcp.annotation.provider.changed.resource.SyncMcpResourceListChangedProvider;
 import org.springframework.ai.mcp.annotation.provider.changed.tool.SyncMcpToolListChangedProvider;
@@ -66,9 +67,23 @@ public final class SyncMcpAnnotationProviders {
 		return new SpringAiSyncToolProvider(toolObjects).getToolSpecifications();
 	}
 
+	public static List<SyncToolSpecification> toolSpecifications(List<Object> toolObjects,
+			McpToolCallExceptionHandler exceptionHandler) {
+		SpringAiSyncToolProvider provider = new SpringAiSyncToolProvider(toolObjects);
+		provider.setExceptionHandler(exceptionHandler);
+		return provider.getToolSpecifications();
+	}
+
 	public static List<McpStatelessServerFeatures.SyncToolSpecification> statelessToolSpecifications(
 			List<Object> toolObjects) {
 		return new SpringAiSyncStatelessToolProvider(toolObjects).getToolSpecifications();
+	}
+
+	public static List<McpStatelessServerFeatures.SyncToolSpecification> statelessToolSpecifications(
+			List<Object> toolObjects, McpToolCallExceptionHandler exceptionHandler) {
+		SpringAiSyncStatelessToolProvider provider = new SpringAiSyncStatelessToolProvider(toolObjects);
+		provider.setExceptionHandler(exceptionHandler);
+		return provider.getToolSpecifications();
 	}
 
 	// COMPLETE

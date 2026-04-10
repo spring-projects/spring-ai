@@ -133,7 +133,31 @@ public class AsyncMcpToolMethodCallbackTests {
 			assertThat(result.isError()).isTrue();
 			assertThat(result.content()).hasSize(1);
 			assertThat(result.content().get(0)).isInstanceOf(TextContent.class);
-			assertThat(((TextContent) result.content().get(0)).text()).contains("Error invoking method");
+			assertThat(((TextContent) result.content().get(0)).text())
+				.contains("Error invoking tool 'exception-mono-tool'");
+		}).verifyComplete();
+	}
+
+	@Test
+	public void testCustomExceptionHandler_IsInvokedOnReactiveError() throws Exception {
+		TestAsyncToolProvider provider = new TestAsyncToolProvider();
+		Method method = TestAsyncToolProvider.class.getMethod("exceptionMonoTool", String.class);
+
+		McpToolCallExceptionHandler customHandler = (toolName, ex) -> CallToolResult.builder()
+			.isError(true)
+			.addTextContent("CUSTOM[" + toolName + "]: " + ex.getMessage())
+			.build();
+
+		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider,
+				Exception.class, customHandler);
+
+		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
+		CallToolRequest request = new CallToolRequest("exception-mono-tool", Map.of("input", "test"));
+
+		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
+			assertThat(result.isError()).isTrue();
+			assertThat(((TextContent) result.content().get(0)).text())
+				.isEqualTo("CUSTOM[exception-mono-tool]: Tool execution failed: test");
 		}).verifyComplete();
 	}
 

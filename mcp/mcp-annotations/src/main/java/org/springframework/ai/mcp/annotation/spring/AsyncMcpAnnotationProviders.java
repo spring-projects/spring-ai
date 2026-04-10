@@ -33,6 +33,7 @@ import org.springframework.ai.mcp.annotation.method.elicitation.AsyncElicitation
 import org.springframework.ai.mcp.annotation.method.logging.AsyncLoggingSpecification;
 import org.springframework.ai.mcp.annotation.method.progress.AsyncProgressSpecification;
 import org.springframework.ai.mcp.annotation.method.sampling.AsyncSamplingSpecification;
+import org.springframework.ai.mcp.annotation.method.tool.McpToolCallExceptionHandler;
 import org.springframework.ai.mcp.annotation.provider.changed.prompt.AsyncMcpPromptListChangedProvider;
 import org.springframework.ai.mcp.annotation.provider.changed.resource.AsyncMcpResourceListChangedProvider;
 import org.springframework.ai.mcp.annotation.provider.changed.tool.AsyncMcpToolListChangedProvider;
@@ -86,9 +87,23 @@ public final class AsyncMcpAnnotationProviders {
 		return new SpringAiAsyncMcpToolProvider(toolObjects).getToolSpecifications();
 	}
 
+	public static List<AsyncToolSpecification> toolSpecifications(List<Object> toolObjects,
+			McpToolCallExceptionHandler exceptionHandler) {
+		SpringAiAsyncMcpToolProvider provider = new SpringAiAsyncMcpToolProvider(toolObjects);
+		provider.setExceptionHandler(exceptionHandler);
+		return provider.getToolSpecifications();
+	}
+
 	public static List<McpStatelessServerFeatures.AsyncToolSpecification> statelessToolSpecifications(
 			List<Object> toolObjects) {
 		return new SpringAiAsyncStatelessMcpToolProvider(toolObjects).getToolSpecifications();
+	}
+
+	public static List<McpStatelessServerFeatures.AsyncToolSpecification> statelessToolSpecifications(
+			List<Object> toolObjects, McpToolCallExceptionHandler exceptionHandler) {
+		SpringAiAsyncStatelessMcpToolProvider provider = new SpringAiAsyncStatelessMcpToolProvider(toolObjects);
+		provider.setExceptionHandler(exceptionHandler);
+		return provider.getToolSpecifications();
 	}
 
 	// COMPLETE
