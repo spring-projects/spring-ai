@@ -14,3 +14,4 @@
 # limitations under the License.
 #
 org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreAutoConfiguration
+org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreHealthAutoConfiguration
