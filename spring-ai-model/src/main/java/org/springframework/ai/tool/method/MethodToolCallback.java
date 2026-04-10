@@ -19,6 +19,7 @@ package org.springframework.ai.tool.method;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -31,6 +32,7 @@ import tools.jackson.core.type.TypeReference;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
@@ -144,8 +146,31 @@ public final class MethodToolCallback implements ToolCallback {
 				return toolContext;
 			}
 			Object rawArgument = toolInputArguments.get(parameter.getName());
+			if (rawArgument == null && isRequired(parameter)) {
+				// A required parameter is missing from the tool input. Previously,
+				// null was silently passed to the method, which often produced a
+				// valid-looking empty response and led the model to retry the same
+				// call indefinitely. Surfacing this as a ToolExecutionException
+				// causes the standard error processor to send a clear "missing
+				// required parameter" message back to the model so it can correct
+				// its arguments or abandon the call.
+				logger.warn("Required parameter '{}' is missing for tool '{}'. Surfacing as a tool error response.",
+						parameter.getName(), this.toolDefinition.name());
+				throw new ToolExecutionException(this.getToolDefinition(),
+						new IllegalArgumentException("Missing required parameter '" + parameter.getName()
+								+ "' for tool '" + this.toolDefinition.name()
+								+ "'. The tool was not invoked. Retry the tool call with the required argument, "
+								+ "or choose a different approach."));
+			}
 			return buildTypedArgument(rawArgument, parameter.getParameterizedType());
 		}).toArray();
+	}
+
+	private static boolean isRequired(Parameter parameter) {
+		// Default is required = true, both when the annotation is absent and when
+		// it is present without explicitly setting required = false.
+		ToolParam toolParam = parameter.getAnnotation(ToolParam.class);
+		return toolParam == null || toolParam.required();
 	}
 
 	private @Nullable Object buildTypedArgument(@Nullable Object value, Type type) {

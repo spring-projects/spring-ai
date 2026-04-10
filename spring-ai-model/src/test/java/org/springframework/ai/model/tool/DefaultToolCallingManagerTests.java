@@ -377,13 +377,18 @@ class DefaultToolCallingManagerTests {
 					.toolContext("key", "value")
 					.build());
 
+		// toolA takes a required String "toolInput" — supply it explicitly so the
+		// call succeeds. toolB takes only a ToolContext, which the framework
+		// injects, so an empty JSON object is the right value for toolB.
 		ChatResponse chatResponse = ChatResponse.builder()
-			.generations(List.of(new Generation(AssistantMessage.builder()
-				.content("")
-				.properties(Map.of())
-				.toolCalls(List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"),
-						new AssistantMessage.ToolCall("toolB", "function", "toolB", "{}")))
-				.build())))
+			.generations(
+					List.of(new Generation(AssistantMessage.builder()
+						.content("")
+						.properties(Map.of())
+						.toolCalls(List.of(
+								new AssistantMessage.ToolCall("toolA", "function", "toolA", "{\"toolInput\": \"hi\"}"),
+								new AssistantMessage.ToolCall("toolB", "function", "toolB", "{}")))
+						.build())))
 			.build();
 
 		ToolResponseMessage expectedToolResponse = ToolResponseMessage.builder()
