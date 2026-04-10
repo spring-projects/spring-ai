@@ -51,7 +51,8 @@ import org.springframework.context.annotation.Import;
  * @author Pawel Potaczala
  */
 @AutoConfiguration
-@EnableConfigurationProperties({ BedrockConverseProxyChatProperties.class, BedrockAwsConnectionConfiguration.class })
+@EnableConfigurationProperties({ BedrockConverseProxyChatProperties.class, BedrockAwsConnectionConfiguration.class,
+		BedrockPromptCacheProperties.class })
 @ConditionalOnClass({ BedrockProxyChatModel.class, BedrockRuntimeClient.class, BedrockRuntimeAsyncClient.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.BEDROCK_CONVERSE,
 		matchIfMissing = true)
@@ -63,12 +64,14 @@ public class BedrockConverseProxyChatAutoConfiguration {
 	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
 	public BedrockProxyChatModel bedrockProxyChatModel(AwsCredentialsProvider credentialsProvider,
 			AwsRegionProvider regionProvider, BedrockAwsConnectionProperties connectionProperties,
-			BedrockConverseProxyChatProperties chatProperties, ToolCallingManager toolCallingManager,
-			ObjectProvider<ObservationRegistry> observationRegistry,
+			BedrockConverseProxyChatProperties chatProperties, BedrockPromptCacheProperties promptCacheProperties,
+			ToolCallingManager toolCallingManager, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
 			ObjectProvider<BedrockRuntimeClient> bedrockRuntimeClient,
 			ObjectProvider<BedrockRuntimeAsyncClient> bedrockRuntimeAsyncClient,
 			ObjectProvider<ToolExecutionEligibilityPredicate> bedrockToolExecutionEligibilityPredicate) {
+
+		promptCacheProperties.applyTo(chatProperties.getOptions());
 
 		var chatModel = BedrockProxyChatModel.builder()
 			.credentialsProvider(credentialsProvider)

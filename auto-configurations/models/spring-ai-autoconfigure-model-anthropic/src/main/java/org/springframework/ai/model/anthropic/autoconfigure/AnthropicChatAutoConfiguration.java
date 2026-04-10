@@ -42,7 +42,8 @@ import org.springframework.context.annotation.Bean;
  * @since 2.0.0
  */
 @AutoConfiguration
-@EnableConfigurationProperties({ AnthropicConnectionProperties.class, AnthropicChatProperties.class })
+@EnableConfigurationProperties({ AnthropicConnectionProperties.class, AnthropicChatProperties.class,
+		AnthropicPromptCacheProperties.class })
 @ConditionalOnClass(AnthropicClient.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.ANTHROPIC,
 		matchIfMissing = true)
@@ -51,12 +52,13 @@ public class AnthropicChatAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public AnthropicChatModel anthropicChatModel(AnthropicConnectionProperties connectionProperties,
-			AnthropicChatProperties chatProperties, ToolCallingManager toolCallingManager,
-			ObjectProvider<ObservationRegistry> observationRegistry,
+			AnthropicChatProperties chatProperties, AnthropicPromptCacheProperties promptCacheProperties,
+			ToolCallingManager toolCallingManager, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
 			ObjectProvider<ToolExecutionEligibilityPredicate> anthropicToolExecutionEligibilityPredicate) {
 
 		AnthropicChatOptions options = chatProperties.getOptions();
+		promptCacheProperties.applyTo(options);
 		if (connectionProperties.getApiKey() != null) {
 			options.setApiKey(connectionProperties.getApiKey());
 		}

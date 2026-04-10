@@ -18,8 +18,10 @@ package org.springframework.ai.anthropic.chat;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.anthropic.models.messages.Model;
 import com.anthropic.models.messages.Usage;
@@ -28,9 +30,6 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.anthropic.AnthropicCacheOptions;
-import org.springframework.ai.anthropic.AnthropicCacheStrategy;
-import org.springframework.ai.anthropic.AnthropicCacheTtl;
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.AnthropicTestConfiguration;
@@ -40,6 +39,7 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptCacheStrategy;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -92,7 +92,7 @@ class AnthropicPromptCachingIT {
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_20250514.asString())
-			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_ONLY).build())
+			.promptCacheStrategy(PromptCacheStrategy.SYSTEM_ONLY)
 			.maxTokens(150)
 			.temperature(0.3)
 			.build();
@@ -126,7 +126,7 @@ class AnthropicPromptCachingIT {
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_20250514.asString())
-			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS).build())
+			.promptCacheStrategy(PromptCacheStrategy.SYSTEM_AND_TOOLS)
 			.maxTokens(200)
 			.temperature(0.3)
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", weatherService)
@@ -168,10 +168,8 @@ class AnthropicPromptCachingIT {
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_20250514.asString())
-			.cacheOptions(AnthropicCacheOptions.builder()
-				.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
-				.messageTypeMinContentLength(MessageType.USER, 0)
-				.build())
+			.promptCacheStrategy(PromptCacheStrategy.CONVERSATION_HISTORY)
+			.promptCacheMessageTypeMinContentLengths(Map.of(MessageType.USER, 0))
 			.maxTokens(200)
 			.temperature(0.3)
 			.build();
@@ -215,10 +213,8 @@ class AnthropicPromptCachingIT {
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_20250514.asString())
-			.cacheOptions(AnthropicCacheOptions.builder()
-				.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
-				.messageTypeMinContentLength(MessageType.SYSTEM, systemPrompt.length() + 1)
-				.build())
+			.promptCacheStrategy(PromptCacheStrategy.SYSTEM_ONLY)
+			.promptCacheMessageTypeMinContentLengths(Map.of(MessageType.SYSTEM, systemPrompt.length() + 1))
 			.maxTokens(60)
 			.temperature(0.2)
 			.build();
@@ -240,10 +236,8 @@ class AnthropicPromptCachingIT {
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_20250514.asString())
-			.cacheOptions(AnthropicCacheOptions.builder()
-				.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
-				.messageTypeTtl(MessageType.SYSTEM, AnthropicCacheTtl.ONE_HOUR)
-				.build())
+			.promptCacheStrategy(PromptCacheStrategy.SYSTEM_ONLY)
+			.promptCacheMessageTypeTtl(Map.of(MessageType.SYSTEM, Duration.ofHours(1)))
 			.maxTokens(100)
 			.temperature(0.3)
 			.build();
@@ -270,7 +264,7 @@ class AnthropicPromptCachingIT {
 	@Test
 	void shouldNotCacheWithNoneStrategy() {
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.NONE).build())
+			.promptCacheStrategy(PromptCacheStrategy.NONE)
 			.maxTokens(50)
 			.temperature(0.3)
 			.build();
@@ -293,10 +287,8 @@ class AnthropicPromptCachingIT {
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_20250514.asString())
-			.cacheOptions(AnthropicCacheOptions.builder()
-				.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
-				.messageTypeMinContentLength(MessageType.USER, 0)
-				.build())
+			.promptCacheStrategy(PromptCacheStrategy.CONVERSATION_HISTORY)
+			.promptCacheMessageTypeMinContentLengths(Map.of(MessageType.USER, 0))
 			.maxTokens(200)
 			.temperature(0.3)
 			.build();
@@ -372,10 +364,8 @@ class AnthropicPromptCachingIT {
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_20250514.asString())
-			.cacheOptions(AnthropicCacheOptions.builder()
-				.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
-				.multiBlockSystemCaching(true)
-				.build())
+			.promptCacheStrategy(PromptCacheStrategy.SYSTEM_ONLY)
+			.promptCacheMultiBlockSystemCaching(true)
 			.maxTokens(150)
 			.temperature(0.3)
 			.build();

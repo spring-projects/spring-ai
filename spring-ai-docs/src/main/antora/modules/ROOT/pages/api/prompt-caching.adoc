@@ -1,0 +1,138 @@
+[[PromptCaching]]
+
+= Prompt Caching
+
+Prompt caching reduces costs and latency by allowing providers to reuse previously processed prompt content across API calls. Instead of re-processing the same system instructions, tool definitions, or conversation history on every request, cached content is served at a reduced token cost.
+
+== Provider Support
+
+Prompt caching works differently across providers. Understanding these categories helps you choose the right approach:
+
+=== Explicit Cache Control
+
+These providers give you direct control over what gets cached through the `PromptCacheChatOptions` API described on this page. You place cache breakpoints, configure TTL, and receive cache metrics back.
+
+* **Anthropic** — up to 4 cache breakpoints, configurable TTL (5 minutes or 1 hour), per-message-type settings. See xref:api/chat/anthropic-chat.adoc#_prompt_caching[Anthropic Prompt Caching].
+* **AWS Bedrock** (Claude models) — up to 4 cache breakpoints, fixed 5-minute TTL. See xref:api/chat/bedrock-converse.adoc#_prompt_caching[Bedrock Prompt Caching].
+
+=== Automatic Prefix Caching
+
+These providers cache matching prompt prefixes automatically. No configuration is needed — caching happens transparently when consecutive requests share the same prefix. The `PromptCacheChatOptions` API has no effect on these providers.
+
+* **OpenAI** — automatic caching for prompts over 1024 tokens, up to 50% input cost savings.
+* **DeepSeek** — automatic disk-based context caching enabled by default, up to 90% input cost savings on cache hits.
+* **Ollama** — automatic prompt caching enabled by default for identical prefixes.
+
+TIP: Even though these providers cache automatically, structuring your prompts with stable content first (system instructions, tool definitions) and variable content last (user messages) maximizes cache hit rates.
+
+=== External Lifecycle
+
+These providers manage cached content as separate resources outside the request flow.
+
+* **Google Gemini** — uses `GoogleGenAiCachedContentService` to pre-create and manage cached content. The `PromptCacheChatOptions` API has no effect.
+
+=== No Caching Support
+
+* **Mistral** (API) — no user-facing prompt caching API at this time.
+
+[IMPORTANT]
+====
+Setting prompt cache options on a provider that does not support explicit cache control will not cause an error — the options are silently ignored. Only providers whose options class implements `PromptCacheChatOptions` (currently Anthropic and Bedrock) act on these settings.
+====
+
+== Configuration
+
+=== Application Properties
+
+The simplest way to enable prompt caching — no Java code required:
+
+[source,properties]
+----
+spring.ai.prompt-cache.strategy=system-and-tools
+spring.ai.prompt-cache.ttl=5m
+spring.ai.prompt-cache.min-content-length=1024
+----
+
+With these properties set, caching is active for all requests through any supported provider. Switch providers by changing the starter dependency — no code changes needed:
+
+[source,java]
+----
+// No provider-specific types — works with any provider that supports explicit caching
+String response = chatClient.prompt()
+    .system("You are an expert assistant with deep domain knowledge...")
+    .user("What is microservices architecture?")
+    .call()
+    .content();
+----
+
+=== Java API
+
+For per-request control, set cache options directly on any provider options that implement `PromptCacheChatOptions`:
+
+[source,java]
+----
+var options = AnthropicChatOptions.builder()  // or BedrockChatOptions.builder()
+    .promptCacheStrategy(PromptCacheStrategy.SYSTEM_AND_TOOLS)
+    .promptCacheTtl(Duration.ofMinutes(5))
+    .promptCacheMinContentLength(1024)
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt(messages, options));
+----
+
+Per-request options override application property defaults.
+
+== Strategies
+
+[cols="2,5", stripes=even]
+|====
+| Strategy | Description
+
+| `NONE` | No caching (default).
+| `SYSTEM_ONLY` | Cache system message content. Uses 1 cache breakpoint.
+| `TOOLS_ONLY` | Cache tool definitions only. Uses 1 cache breakpoint.
+| `SYSTEM_AND_TOOLS` | Cache both system messages and tool definitions. Uses 2 cache breakpoints.
+| `CONVERSATION_HISTORY` | Cache system messages, tool definitions, and conversation messages up to the last user message. Uses up to 4 cache breakpoints.
+|====
+
+== Advanced Options
+
+For fine-grained control, `PromptCacheChatOptions` supports per-message-type configuration:
+
+[source,java]
+----
+var options = AnthropicChatOptions.builder()
+    .promptCacheStrategy(PromptCacheStrategy.CONVERSATION_HISTORY)
+    .promptCacheMessageTypeTtl(Map.of(
+        MessageType.SYSTEM, Duration.ofHours(1),
+        MessageType.USER, Duration.ofMinutes(5)))
+    .promptCacheMessageTypeMinContentLengths(Map.of(
+        MessageType.SYSTEM, 1024))
+    .promptCacheMultiBlockSystemCaching(true)
+    .promptCacheContentLengthFunction(text -> myTokenizer.countTokens(text))
+    .build();
+----
+
+[cols="3,5", stripes=even]
+|====
+| Option | Description
+
+| `promptCacheStrategy` | The caching strategy (see above).
+| `promptCacheTtl` | Global cache TTL. Providers map to their nearest supported value.
+| `promptCacheMinContentLength` | Global minimum content length for cache eligibility.
+| `promptCacheMessageTypeTtl` | Per-message-type TTL overrides using `MessageType` keys and `Duration` values.
+| `promptCacheMessageTypeMinContentLengths` | Per-message-type minimum content length overrides.
+| `promptCacheContentLengthFunction` | Custom function to compute content length (e.g., token-based instead of character-based).
+| `promptCacheMultiBlockSystemCaching` | When `true`, each system message becomes a separate cacheable block, allowing static portions to be cached independently of dynamic portions. Supported by Anthropic.
+|====
+
+NOTE: Not all providers support every option. Unsupported options are silently ignored. See the provider-specific documentation for details on which options each provider supports.
+
+== Provider Detection
+
+The framework uses the `PromptCacheChatOptions` interface to detect whether a provider supports explicit prompt caching. Only provider options classes that implement this interface act on these settings. Currently:
+
+* `AnthropicChatOptions implements PromptCacheChatOptions`
+* `BedrockChatOptions implements PromptCacheChatOptions`
+
+Other providers' options classes (e.g., `OpenAiChatOptions`) do not implement this interface, so the Java API prevents accidentally setting cache options on unsupported providers at compile time.

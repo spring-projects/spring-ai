@@ -101,6 +101,8 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptCacheChatOptions;
+import org.springframework.ai.chat.prompt.PromptCacheStrategy;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
@@ -237,6 +239,7 @@ public class BedrockProxyChatModel implements ChatModel {
 		return this.internalCall(requestPrompt, null);
 	}
 
+	@SuppressWarnings("deprecation")
 	private ChatResponse internalCall(Prompt prompt, ChatResponse perviousChatResponse) {
 
 		ConverseRequest converseRequest = this.createRequest(prompt);
@@ -291,17 +294,71 @@ public class BedrockProxyChatModel implements ChatModel {
 		runtimeOptions = runtimeOptions == null ? this.defaultOptions : runtimeOptions;
 		ToolCallingChatOptions.validateToolCallbacks(runtimeOptions.getToolCallbacks());
 
+		// Resolve cache options via the portable PromptCacheChatOptions API.
+		// During the deprecation period, fall back to the deprecated native
+		// BedrockCacheOptions if the user has not migrated yet.
+		if (prompt.getOptions() instanceof PromptCacheChatOptions promptCacheChatOptions
+				&& promptCacheChatOptions.getPromptCacheStrategy() != null
+				&& promptCacheChatOptions.getPromptCacheStrategy() != PromptCacheStrategy.NONE) {
+			runtimeOptions.setPromptCacheStrategy(promptCacheChatOptions.getPromptCacheStrategy());
+			if (promptCacheChatOptions.getPromptCacheTtl() != null) {
+				runtimeOptions.setPromptCacheTtl(promptCacheChatOptions.getPromptCacheTtl());
+			}
+			if (promptCacheChatOptions.getPromptCacheMinContentLength() != null) {
+				runtimeOptions.setPromptCacheMinContentLength(promptCacheChatOptions.getPromptCacheMinContentLength());
+			}
+		}
+		else if (prompt.getOptions() instanceof BedrockChatOptions originalBedrockOptions
+				&& originalBedrockOptions.getCacheOptions() != null
+				&& originalBedrockOptions.getCacheOptions().getStrategy() != BedrockCacheStrategy.NONE) {
+			applyBedrockCacheOptionsToPromptCache(originalBedrockOptions.getCacheOptions(), runtimeOptions);
+		}
+
+		// Warn about unsupported cache options on Bedrock
+		if (runtimeOptions.getPromptCacheMultiBlockSystemCaching() != null) {
+			logger.warn("The promptCacheMultiBlockSystemCaching option is not supported by Bedrock. Ignoring.");
+		}
+		if (runtimeOptions.getPromptCacheContentLengthFunction() != null) {
+			logger.warn("The promptCacheContentLengthFunction option is not supported by Bedrock. Ignoring.");
+		}
+		if (runtimeOptions.getPromptCacheMessageTypeTtl() != null) {
+			logger.warn("The promptCacheMessageTypeTtl option is not supported by Bedrock. Ignoring.");
+		}
+		if (runtimeOptions.getPromptCacheMessageTypeMinContentLengths() != null) {
+			logger.warn("The promptCacheMessageTypeMinContentLengths option is not supported by Bedrock. Ignoring.");
+		}
+		if (runtimeOptions.getPromptCacheTtl() != null) {
+			logger.warn("Bedrock uses a fixed 5-minute cache TTL. The promptCacheTtl option will be ignored.");
+		}
+
 		return prompt.mutate().chatOptions(runtimeOptions).build();
+	}
+
+	/**
+	 * Applies deprecated {@link BedrockCacheOptions} to the portable prompt cache fields
+	 * on {@link BedrockChatOptions} for backward compatibility during the deprecation
+	 * period.
+	 */
+	@SuppressWarnings("deprecation")
+	private void applyBedrockCacheOptionsToPromptCache(BedrockCacheOptions nativeOptions,
+			BedrockChatOptions targetOptions) {
+		PromptCacheStrategy strategy = switch (nativeOptions.getStrategy()) {
+			case NONE -> PromptCacheStrategy.NONE;
+			case SYSTEM_ONLY -> PromptCacheStrategy.SYSTEM_ONLY;
+			case TOOLS_ONLY -> PromptCacheStrategy.TOOLS_ONLY;
+			case SYSTEM_AND_TOOLS -> PromptCacheStrategy.SYSTEM_AND_TOOLS;
+			case CONVERSATION_HISTORY -> PromptCacheStrategy.CONVERSATION_HISTORY;
+		};
+		targetOptions.setPromptCacheStrategy(strategy);
 	}
 
 	ConverseRequest createRequest(Prompt prompt) {
 
 		BedrockChatOptions updatedRuntimeOptions = prompt.getOptions().copy();
 
-		// Get cache options to determine strategy
-		BedrockCacheOptions cacheOptions = updatedRuntimeOptions.getCacheOptions();
-		boolean shouldCacheConversationHistory = cacheOptions != null
-				&& cacheOptions.getStrategy() == BedrockCacheStrategy.CONVERSATION_HISTORY;
+		// Get cache strategy
+		PromptCacheStrategy cacheStrategy = updatedRuntimeOptions.getPromptCacheStrategy();
+		boolean shouldCacheConversationHistory = cacheStrategy == PromptCacheStrategy.CONVERSATION_HISTORY;
 
 		// Get all non-system messages
 		List<org.springframework.ai.chat.messages.Message> allNonSystemMessages = prompt.getInstructions()
@@ -399,12 +456,11 @@ public class BedrockProxyChatModel implements ChatModel {
 		}
 
 		// Determine if system message caching should be applied
-		boolean shouldCacheSystem = cacheOptions != null
-				&& (cacheOptions.getStrategy() == BedrockCacheStrategy.SYSTEM_ONLY
-						|| cacheOptions.getStrategy() == BedrockCacheStrategy.SYSTEM_AND_TOOLS);
+		boolean shouldCacheSystem = cacheStrategy == PromptCacheStrategy.SYSTEM_ONLY
+				|| cacheStrategy == PromptCacheStrategy.SYSTEM_AND_TOOLS;
 
-		if (logger.isDebugEnabled() && cacheOptions != null) {
-			logger.debug("Cache strategy: {}, shouldCacheSystem: {}", cacheOptions.getStrategy(), shouldCacheSystem);
+		if (logger.isDebugEnabled() && cacheStrategy != null) {
+			logger.debug("Cache strategy: {}, shouldCacheSystem: {}", cacheStrategy, shouldCacheSystem);
 		}
 
 		// Build system messages with optional caching on last message
@@ -439,9 +495,8 @@ public class BedrockProxyChatModel implements ChatModel {
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(updatedRuntimeOptions);
 
 		// Determine if tool caching should be applied
-		boolean shouldCacheTools = cacheOptions != null
-				&& (cacheOptions.getStrategy() == BedrockCacheStrategy.TOOLS_ONLY
-						|| cacheOptions.getStrategy() == BedrockCacheStrategy.SYSTEM_AND_TOOLS);
+		boolean shouldCacheTools = cacheStrategy == PromptCacheStrategy.TOOLS_ONLY
+				|| cacheStrategy == PromptCacheStrategy.SYSTEM_AND_TOOLS;
 
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
 			List<Tool> bedrockTools = new ArrayList<>();

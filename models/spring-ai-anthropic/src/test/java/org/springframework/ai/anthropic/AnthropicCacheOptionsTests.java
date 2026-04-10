@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Soby Chacko
  */
+@SuppressWarnings("deprecation")
 class AnthropicCacheOptionsTests {
 
 	@Test
