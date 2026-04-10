@@ -21,12 +21,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -58,7 +61,6 @@ import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.support.ToolCallbacks;
@@ -78,6 +80,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Alexandros Pappas
  * @author Thomas Vitale
+ * @author Nicolas Krier
  * @since 0.8.1
  */
 @SpringBootTest(classes = MistralAiTestConfiguration.class)
@@ -150,6 +153,30 @@ class MistralAiChatModelIT {
 		Map<String, Object> result = outputConverter.convert(generation.getOutput().getText());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
+	}
+
+	@EnumSource(value = MistralAiApi.ChatModel.class,
+			names = { "MAGISTRAL_MEDIUM", "MAGISTRAL_SMALL", "MISTRAL_SMALL" })
+	@ParameterizedTest
+	void thinkingCall(MistralAiApi.ChatModel chatModel) {
+		var promptMode = Set.of(MistralAiApi.ChatModel.MAGISTRAL_MEDIUM, MistralAiApi.ChatModel.MAGISTRAL_SMALL)
+			.contains(chatModel) ? MistralAiApi.ChatCompletionRequest.PromptMode.REASONING : null;
+		var reasoningEffort = MistralAiApi.ChatModel.MISTRAL_SMALL == chatModel
+				? MistralAiApi.ChatCompletionRequest.ReasoningEffort.HIGH : null;
+		var chatOptions = MistralAiChatOptions.builder()
+			.model(chatModel.getValue())
+			.promptMode(promptMode)
+			.reasoningEffort(reasoningEffort)
+			.build();
+		var systemMessage = new SystemMessage("You are a helpful assistant providing accurate short answers.");
+		var userMessage = new UserMessage(
+				"What is the first planet of the solar system based on the mass in descending order?");
+		var prompt = Prompt.builder().messages(systemMessage, userMessage).chatOptions(chatOptions).build();
+
+		var generation = this.chatModel.call(prompt).getResult();
+		assertThat(generation).isNotNull();
+		var outputText = generation.getOutput().getText();
+		assertThat(outputText).contains("Jupiter");
 	}
 
 	@Test
@@ -274,7 +301,7 @@ class MistralAiChatModelIT {
 			.media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)))
 			.build();
 
-		var chatOptions = ChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build();
+		var chatOptions = MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage), chatOptions));
 
@@ -293,7 +320,7 @@ class MistralAiChatModelIT {
 				.build()))
 			.build();
 
-		var chatOptions = ChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build();
+		var chatOptions = MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), chatOptions));
 
@@ -312,8 +339,9 @@ class MistralAiChatModelIT {
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(List.of(userMessage),
-				ChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build()));
+		var chatOptions = MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build();
+
+		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(List.of(userMessage), chatOptions));
 
 		String content = response.collectList()
 			.blockOptional()
@@ -381,7 +409,8 @@ class MistralAiChatModelIT {
 		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
 		String conversationId = UUID.randomUUID().toString();
 
-		ChatOptions chatOptions = ToolCallingChatOptions.builder()
+		ChatOptions chatOptions = MistralAiChatOptions.builder()
+			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
 			.toolCallbacks(ToolCallbacks.from(new MathTools()))
 			.internalToolExecutionEnabled(false)
 			.build();
