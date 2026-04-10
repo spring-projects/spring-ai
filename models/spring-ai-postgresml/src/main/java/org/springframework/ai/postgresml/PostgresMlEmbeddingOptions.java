@@ -18,10 +18,6 @@ package org.springframework.ai.postgresml;
 
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.document.MetadataMode;
@@ -36,30 +32,29 @@ import org.springframework.ai.postgresml.PostgresMlEmbeddingModel.VectorType;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  */
-@JsonInclude(Include.NON_NULL)
 public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 
 	// @formatter:off
 	/**
 	 * The Huggingface transformer model to use for the embedding.
 	 */
-	private @JsonProperty("transformer") String transformer = PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL;
+	private String transformer = PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL;
 
 	/**
 	 * PostgresML vector type to use for the embedding.
 	 * Two options are supported: PG_ARRAY and PG_VECTOR.
 	 */
-	private @JsonProperty("vectorType") VectorType vectorType = VectorType.PG_ARRAY;
+	private VectorType vectorType = VectorType.PG_ARRAY;
 
 	/**
 	 * Additional transformer specific options.
 	 */
-	private @JsonProperty("kwargs") Map<String, Object> kwargs = Map.of();
+	private Map<String, Object> kwargs = Map.of();
 
 	/**
 	 * The Document metadata aggregation mode.
 	 */
-	private @JsonProperty("metadataMode") MetadataMode metadataMode = MetadataMode.EMBED;
+	private MetadataMode metadataMode = MetadataMode.EMBED;
 	// @formatter:on
 
 	public static Builder builder() {
@@ -99,13 +94,11 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	@Override
-	@JsonIgnore
 	public @Nullable String getModel() {
 		return null;
 	}
 
 	@Override
-	@JsonIgnore
 	public @Nullable Integer getDimensions() {
 		return null;
 	}

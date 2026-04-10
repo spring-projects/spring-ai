@@ -21,13 +21,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.embedding.EmbeddingOptions;
-import org.springframework.ai.model.ModelOptionsUtils;
 
 /**
  * Helper class for creating strongly-typed Ollama options.
@@ -41,7 +37,6 @@ import org.springframework.ai.model.ModelOptionsUtils;
  * Valid Parameters and Values</a>
  * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama Types</a>
  */
-@JsonInclude(Include.NON_NULL)
 public class OllamaEmbeddingOptions implements EmbeddingOptions {
 
 	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "keep_alive", "truncate", "dimensions");
@@ -60,7 +55,6 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	 * Used to allow overriding the model name with prompt options.
 	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">parameters</a>.
 	 */
-	@JsonProperty("model")
 	private @Nullable String model;
 
 	/**
@@ -68,7 +62,6 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	 * setting are parsed by <a href="https://pkg.go.dev/time#ParseDuration">ParseDuration in Go</a>.
 	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">advanced parameters</a>.
 	 */
-	@JsonProperty("keep_alive")
 	private @Nullable String keepAlive;
 
 
@@ -76,7 +69,6 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	 * The dimensions of the embedding output. This allows you to specify the size of the embedding vector
 	 * that should be returned by the model. Not all models support this parameter.
 	 */
-	@JsonProperty("dimensions")
 	private @Nullable Integer dimensions;
 
 
@@ -84,7 +76,6 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	 * Truncates the end of each input to fit within context length. Returns error if false and context length is exceeded.
 	 * Defaults to true.
 	 */
-	@JsonProperty("truncate")
 	private @Nullable Boolean truncate;
 
 	// @formatter:off
@@ -92,13 +83,11 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	/**
 	 * Whether to use NUMA. (Default: false)
 	 */
-	@JsonProperty("numa")
 	private @Nullable Boolean useNUMA;
 
 	/**
 	 * Prompt processing maximum batch size. (Default: 512)
 	 */
-	@JsonProperty("num_batch")
 	private @Nullable Integer numBatch;
 
 	/**
@@ -106,7 +95,6 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	 * to enable metal support, 0 to disable.
 	 * (Default: -1, which indicates that numGPU should be set dynamically)
 	 */
-	@JsonProperty("num_gpu")
 	private @Nullable Integer numGPU;
 
 	/**
@@ -116,19 +104,16 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	 * more VRAM to store a scratch buffer for temporary results.
 	 * By default, GPU 0 is used.
 	 */
-	@JsonProperty("main_gpu")
 	private @Nullable Integer mainGPU;
 
 	/**
 	 * (Default: false)
 	 */
-	@JsonProperty("low_vram")
 	private @Nullable Boolean lowVRAM;
 
 	/**
 	 * Load only the vocabulary, not the weights.
 	 */
-	@JsonProperty("vocab_only")
 	private @Nullable Boolean vocabOnly;
 
 	/**
@@ -140,7 +125,6 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	 * the model from loading at all.
 	 * (Default: null)
 	 */
-	@JsonProperty("use_mmap")
 	private @Nullable Boolean useMMap;
 
 	/**
@@ -149,7 +133,6 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	 * by requiring more RAM to run and potentially slowing down load times as the model loads into RAM.
 	 * (Default: false)
 	 */
-	@JsonProperty("use_mlock")
 	private @Nullable Boolean useMLock;
 
 	/**
@@ -158,7 +141,6 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	 * Using the correct number of threads can greatly improve performance.
 	 * By default, Ollama will detect this value for optimal performance.
 	 */
-	@JsonProperty("num_thread")
 	private @Nullable Integer numThread;
 
 
@@ -308,7 +290,47 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	 * @return The {@link Map} of key/value pairs.
 	 */
 	public Map<String, Object> toMap() {
-		return ModelOptionsUtils.objectToMap(this);
+		Map<String, Object> map = new java.util.HashMap<>();
+		if (this.model != null) {
+			map.put("model", this.model);
+		}
+		if (this.keepAlive != null) {
+			map.put("keep_alive", this.keepAlive);
+		}
+		if (this.dimensions != null) {
+			map.put("dimensions", this.dimensions);
+		}
+		if (this.truncate != null) {
+			map.put("truncate", this.truncate);
+		}
+		if (this.useNUMA != null) {
+			map.put("numa", this.useNUMA);
+		}
+		if (this.numBatch != null) {
+			map.put("num_batch", this.numBatch);
+		}
+		if (this.numGPU != null) {
+			map.put("num_gpu", this.numGPU);
+		}
+		if (this.mainGPU != null) {
+			map.put("main_gpu", this.mainGPU);
+		}
+		if (this.lowVRAM != null) {
+			map.put("low_vram", this.lowVRAM);
+		}
+		if (this.vocabOnly != null) {
+			map.put("vocab_only", this.vocabOnly);
+		}
+		if (this.useMMap != null) {
+			map.put("use_mmap", this.useMMap);
+		}
+		if (this.useMLock != null) {
+			map.put("use_mlock", this.useMLock);
+		}
+		if (this.numThread != null) {
+			map.put("num_thread", this.numThread);
+		}
+		return map;
 	}
 
 	public OllamaEmbeddingOptions copy() {
