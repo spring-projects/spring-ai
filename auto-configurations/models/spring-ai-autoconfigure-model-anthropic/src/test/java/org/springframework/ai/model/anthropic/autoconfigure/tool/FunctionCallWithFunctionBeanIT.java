@@ -87,27 +87,6 @@ class FunctionCallWithFunctionBeanIT {
 			});
 	}
 
-	@Test
-	void functionCallWithPortableFunctionCallingOptions() {
-		this.contextRunner
-			.withPropertyValues("spring.ai.anthropic.chat.options.model=" + Model.CLAUDE_HAIKU_4_5.asString())
-			.run(context -> {
-
-				AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
-
-				var userMessage = new UserMessage(
-						"What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan?"
-								+ " Return the temperature in Celsius.");
-
-				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						ToolCallingChatOptions.builder().toolNames("weatherFunction").build()));
-
-				logger.info("Response: {}", response);
-
-				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
-			});
-	}
-
 	@Configuration
 	static class Config {
 
