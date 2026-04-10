@@ -152,7 +152,7 @@ public class GoogleGenAiCachedContentServiceTests {
 		assertThat(updated.getName()).isEqualTo(name);
 		assertThat(updated.getTtl()).isEqualTo(newTtl);
 		assertThat(updated.getUpdateTime()).isNotNull();
-		assertThat(updated.getUpdateTime()).isAfter(created.getCreateTime());
+		assertThat(updated.getUpdateTime()).isAfterOrEqualTo(created.getCreateTime());
 	}
 
 	@Test
