@@ -16,11 +16,6 @@
 
 package org.springframework.ai.minimax;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.springframework.ai.embedding.EmbeddingOptions;
 
 /**
@@ -30,14 +25,13 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  * @author Thomas Vitale
  * @since 1.0.0 M1
  */
-@JsonInclude(Include.NON_NULL)
 public class MiniMaxEmbeddingOptions implements EmbeddingOptions {
 
 	// @formatter:off
 	/**
 	 * ID of the model to use.
 	 */
-	private @JsonProperty("model") String model;
+	private String model;
 	// @formatter:on
 
 	public static Builder builder() {
@@ -54,7 +48,6 @@ public class MiniMaxEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	@Override
-	@JsonIgnore
 	public Integer getDimensions() {
 		return null;
 	}

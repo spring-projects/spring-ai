@@ -226,23 +226,37 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
-		// Process runtime options
-		GoogleGenAiTextEmbeddingOptions runtimeOptions = null;
-		if (embeddingRequest.getOptions() != null) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
-					GoogleGenAiTextEmbeddingOptions.class);
+		EmbeddingOptions requestOptions = embeddingRequest.getOptions();
+		GoogleGenAiTextEmbeddingOptions mergedOptions = this.defaultOptions;
+
+		if (requestOptions != null) {
+			GoogleGenAiTextEmbeddingOptions.Builder builder = GoogleGenAiTextEmbeddingOptions.builder()
+				.model(ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.defaultOptions.getModel()))
+				.dimensions(ModelOptionsUtils.mergeOption(requestOptions.getDimensions(),
+						this.defaultOptions.getDimensions()));
+
+			if (requestOptions instanceof GoogleGenAiTextEmbeddingOptions googleOptions) {
+				builder
+					.taskType(ModelOptionsUtils.mergeOption(googleOptions.getTaskType(),
+							this.defaultOptions.getTaskType()))
+					.title(ModelOptionsUtils.mergeOption(googleOptions.getTitle(), this.defaultOptions.getTitle()))
+					.autoTruncate(ModelOptionsUtils.mergeOption(googleOptions.getAutoTruncate(),
+							this.defaultOptions.getAutoTruncate()));
+			}
+			else {
+				builder.taskType(this.defaultOptions.getTaskType())
+					.title(this.defaultOptions.getTitle())
+					.autoTruncate(this.defaultOptions.getAutoTruncate());
+			}
+			mergedOptions = builder.build();
 		}
 
-		// Define request options by merging runtime options and default options
-		GoogleGenAiTextEmbeddingOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
-				GoogleGenAiTextEmbeddingOptions.class);
-
 		// Validate request options
-		if (!StringUtils.hasText(requestOptions.getModel())) {
+		if (!StringUtils.hasText(mergedOptions.getModel())) {
 			throw new IllegalArgumentException("model cannot be null or empty");
 		}
 
-		return new EmbeddingRequest(embeddingRequest.getInstructions(), requestOptions);
+		return new EmbeddingRequest(embeddingRequest.getInstructions(), mergedOptions);
 	}
 
 	private EmbeddingResponseMetadata generateResponseMetadata(String model, Integer totalTokens) {

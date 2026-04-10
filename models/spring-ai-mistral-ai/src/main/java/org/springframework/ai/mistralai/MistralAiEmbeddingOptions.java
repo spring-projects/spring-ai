@@ -16,10 +16,6 @@
 
 package org.springframework.ai.mistralai;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.embedding.EmbeddingOptions;
@@ -32,20 +28,19 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  * @author Jason Smith
  * @since 0.8.1
  */
-@JsonInclude(Include.NON_NULL)
 public class MistralAiEmbeddingOptions implements EmbeddingOptions {
 
 	/**
 	 * ID of the model to use.
 	 */
 	@SuppressWarnings("NullAway.Init")
-	private @JsonProperty("model") String model;
+	private String model;
 
 	/**
 	 * The format to return the embeddings in. Can be either float or base64.
 	 */
 	@SuppressWarnings("NullAway.Init")
-	private @JsonProperty("encoding_format") String encodingFormat;
+	private String encodingFormat;
 
 	public static Builder builder() {
 		return new Builder();
@@ -69,7 +64,6 @@ public class MistralAiEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	@Override
-	@JsonIgnore
 	public @Nullable Integer getDimensions() {
 		return null;
 	}
