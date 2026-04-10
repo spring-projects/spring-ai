@@ -185,17 +185,6 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			String toolName = toolCall.name();
 			String toolInputArguments = toolCall.arguments();
 
-			// Handle the possible null parameter situation in streaming mode.
-			final String finalToolInputArguments;
-			if (!StringUtils.hasText(toolInputArguments)) {
-				logger.warn("Tool call arguments are null or empty for tool: {}. Using empty JSON object as default.",
-						toolName);
-				finalToolInputArguments = "{}";
-			}
-			else {
-				finalToolInputArguments = toolInputArguments;
-			}
-
 			ToolCallback toolCallback = toolCallbacks.stream()
 				.filter(tool -> toolName.equals(tool.getToolDefinition().name()))
 				.findFirst()
@@ -212,6 +201,31 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			else {
 				returnDirect = returnDirect && toolCallback.getToolMetadata().returnDirect();
 			}
+
+			// Null or empty tool call arguments typically indicate that streaming
+			// tool-call JSON aggregation failed upstream. Previously these cases
+			// were silently replaced with "{}", which caused tools with required
+			// parameters to be invoked with null values, producing empty-looking
+			// responses that drove the model to retry the same call indefinitely.
+			// Instead, surface a clear error to the model via the standard
+			// ToolExecutionExceptionProcessor so it can adjust its approach rather
+			// than silently loop.
+			if (!StringUtils.hasText(toolInputArguments)) {
+				logger.warn(
+						"Tool call arguments are null or empty for tool: {}. This typically indicates incomplete "
+								+ "tool call aggregation in streaming mode. Surfacing as a tool error response.",
+						toolName);
+				ToolExecutionException ex = new ToolExecutionException(toolCallback.getToolDefinition(),
+						new IllegalArgumentException("Tool call arguments were null or empty; the tool was not "
+								+ "invoked. This usually indicates a malformed or incomplete tool invocation "
+								+ "from the model (for example, truncated or unparseable streaming arguments)."));
+				String toolCallResult = this.toolExecutionExceptionProcessor.process(ex);
+				toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName,
+						toolCallResult != null ? toolCallResult : ""));
+				continue;
+			}
+
+			final String finalToolInputArguments = toolInputArguments;
 
 			ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
 				.toolDefinition(toolCallback.getToolDefinition())
