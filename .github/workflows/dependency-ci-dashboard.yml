@@ -16,7 +16,7 @@ jobs:
     if: ${{ github.repository == 'spring-projects/spring-ai' }}
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Load configuration
         id: config
