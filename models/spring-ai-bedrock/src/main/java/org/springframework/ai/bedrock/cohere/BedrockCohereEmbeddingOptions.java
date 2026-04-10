@@ -16,11 +16,6 @@
 
 package org.springframework.ai.bedrock.cohere;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest.InputType;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest.Truncate;
 import org.springframework.ai.embedding.EmbeddingOptions;
@@ -32,7 +27,6 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  */
-@JsonInclude(Include.NON_NULL)
 public class BedrockCohereEmbeddingOptions implements EmbeddingOptions {
 
 	// @formatter:off
@@ -42,14 +36,14 @@ public class BedrockCohereEmbeddingOptions implements EmbeddingOptions {
 	 * In this case, embed your corpus with the search_document type and embedded queries with
 	 * type search_query type.
 	 */
-	private @JsonProperty("input_type") InputType inputType;
+	private InputType inputType;
 
 	/**
 	 * Specifies how the API handles inputs longer than the maximum token length. If you specify LEFT or
 	 * RIGHT, the model discards the input until the remaining input is exactly the maximum input token length for the
 	 * model.
 	 */
-	private @JsonProperty("truncate") Truncate truncate;
+	private Truncate truncate;
 	// @formatter:on
 
 	public static Builder builder() {
@@ -73,13 +67,11 @@ public class BedrockCohereEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	@Override
-	@JsonIgnore
 	public String getModel() {
 		return null;
 	}
 
 	@Override
-	@JsonIgnore
 	public Integer getDimensions() {
 		return null;
 	}

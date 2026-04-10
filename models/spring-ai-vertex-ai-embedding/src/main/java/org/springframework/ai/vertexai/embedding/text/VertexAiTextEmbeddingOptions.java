@@ -16,10 +16,6 @@
 
 package org.springframework.ai.vertexai.embedding.text;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.util.StringUtils;
 
@@ -30,7 +26,6 @@ import org.springframework.util.StringUtils;
  * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
-@JsonInclude(Include.NON_NULL)
 public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 
 	public static final String DEFAULT_MODEL_NAME = VertexAiTextEmbeddingModelName.TEXT_EMBEDDING_004.getName();
@@ -39,7 +34,7 @@ public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 	 * The embedding model name to use. Supported models are: text-embedding-004,
 	 * text-multilingual-embedding-002 and multimodalembedding@001.
 	 */
-	private @JsonProperty("model") String model;
+	private String model;
 
 	// @formatter:off
 
@@ -47,25 +42,25 @@ public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 	 * The intended downstream application to help the model produce better quality embeddings.
 	 * Not all model versions support all task types.
 	 */
-	private @JsonProperty("task") TaskType taskType;
+	private TaskType taskType;
 
 	/**
 	 * The number of dimensions the resulting output embeddings should have.
 	 * Supported for model version 004 and later. You can use this parameter to reduce the
 	 * embedding size, for example, for storage optimization.
 	 */
-	private @JsonProperty("dimensions") Integer dimensions;
+	private Integer dimensions;
 
 	/**
 	 * Optional title, only valid with task_type=RETRIEVAL_DOCUMENT.
 	 */
-	private @JsonProperty("title") String title;
+	private String title;
 
 	/**
 	 * When set to true, input text will be truncated. When set to false, an error is returned
 	 * if the input text is longer than the maximum length supported by the model. Defaults to true.
 	 */
-	private @JsonProperty("autoTruncate") Boolean autoTruncate;
+	private Boolean autoTruncate;
 
 	public static Builder builder() {
 		return new Builder();
