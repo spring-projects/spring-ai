@@ -176,8 +176,10 @@ public final class JsonParser {
 			try {
 				result = JsonParser.fromJson(jsonString, javaType);
 			}
-			catch (JacksonException e) {
-				// ignore
+			catch (IllegalStateException e) {
+				// ignore: fromJson wraps JacksonException in IllegalStateException,
+				// which happens for types like LocalDate/LocalTime where the raw string
+				// (e.g. "08:00") is not valid JSON but can be deserialized after quoting
 			}
 		}
 
