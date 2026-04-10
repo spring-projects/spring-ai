@@ -386,4 +386,24 @@ public class OpenAiModelConfigurationTests {
 			});
 	}
 
+	@Test
+	void imageOnlyApiKeyDoesNotFailChatAutoConfiguration() {
+		// Regression test for https://github.com/spring-projects/spring-ai/issues/1818
+		// When only spring.ai.openai.image.api-key is set (no chat or common api-key),
+		// OpenAiChatAutoConfiguration must not throw an IllegalArgumentException.
+		// The OpenAiApi bean for chat should simply not be created.
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.openai.image.api-key=IMAGE_API_KEY",
+					"spring.ai.openai.base-url=TEST_BASE_URL")
+			.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class,
+					OpenAiImageAutoConfiguration.class, RestClientAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class,
+					WebClientAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(context.getBeansOfType(OpenAiChatModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(OpenAiImageModel.class)).isNotEmpty();
+			});
+	}
+
 }
