@@ -246,6 +246,94 @@ class SyncMcpToolCallbackTests {
 	}
 
 	@Test
+	void callShouldPreferStructuredContentWhenPresent() {
+		when(this.tool.name()).thenReturn("testTool");
+		CallToolResult callResult = mock(CallToolResult.class);
+		when(callResult.isError()).thenReturn(false);
+		when(callResult.structuredContent()).thenReturn(Map.of("result", 42, "status", "ok"));
+		when(callResult.content())
+			.thenReturn(List.of(new McpSchema.TextContent("{\"result\":42,\"status\":\"ok\"}")));
+		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
+
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName("testClient_testTool")
+			.build();
+
+		String response = callback.call("{\"param\":\"value\"}");
+
+		// Should return structuredContent, not content
+		assertThat(response).contains("\"result\"");
+		assertThat(response).contains("42");
+		assertThat(response).contains("\"status\"");
+		assertThat(response).contains("\"ok\"");
+	}
+
+	@Test
+	void callShouldFallBackToContentWhenStructuredContentIsNull() {
+		when(this.tool.name()).thenReturn("testTool");
+		CallToolResult callResult = mock(CallToolResult.class);
+		when(callResult.isError()).thenReturn(false);
+		when(callResult.structuredContent()).thenReturn(null);
+		when(callResult.content()).thenReturn(List.of(new McpSchema.TextContent("fallback content")));
+		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
+
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName("testClient_testTool")
+			.build();
+
+		String response = callback.call("{\"param\":\"value\"}");
+
+		assertThat(response).contains("fallback content");
+	}
+
+	@Test
+	void getToolMetadataShouldReturnMcpToolMetadata() {
+		when(this.tool.name()).thenReturn("testTool");
+		var annotations = McpSchema.ToolAnnotations.builder()
+			.readOnlyHint(true)
+			.destructiveHint(false)
+			.returnDirect(true)
+			.build();
+		when(this.tool.annotations()).thenReturn(annotations);
+
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName("testClient_testTool")
+			.build();
+
+		var metadata = callback.getToolMetadata();
+
+		assertThat(metadata).isInstanceOf(McpToolMetadata.class);
+		assertThat(metadata.returnDirect()).isTrue();
+
+		McpToolMetadata mcpMetadata = (McpToolMetadata) metadata;
+		assertThat(mcpMetadata.readOnlyHint()).isTrue();
+		assertThat(mcpMetadata.destructiveHint()).isFalse();
+	}
+
+	@Test
+	void getToolMetadataShouldHandleNullAnnotations() {
+		when(this.tool.name()).thenReturn("testTool");
+		when(this.tool.annotations()).thenReturn(null);
+
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName("testClient_testTool")
+			.build();
+
+		var metadata = callback.getToolMetadata();
+
+		assertThat(metadata).isInstanceOf(McpToolMetadata.class);
+		assertThat(metadata.returnDirect()).isFalse();
+	}
+
+	@Test
 	void builderShouldUseDefaultPrefixWhenNotSpecified() {
 		when(this.tool.name()).thenReturn("testTool");
 
