@@ -204,6 +204,20 @@ public class FilterExpressionTextParserTests {
 	}
 
 	@Test
+	public void testLargeIntegerFallsBackToLong() {
+		// Values exceeding Integer.MAX_VALUE (2147483647) should be parsed as Long
+		Expression exp1 = this.parser.parse("id == 9223372036854775807");
+		assertThat(exp1).isEqualTo(new Expression(EQ, new Key("id"), new Value(Long.MAX_VALUE)));
+
+		Expression exp2 = this.parser.parse("id == 2147483648");
+		assertThat(exp2).isEqualTo(new Expression(EQ, new Key("id"), new Value(2147483648L)));
+
+		// Values within Integer range should still parse as Integer
+		Expression exp3 = this.parser.parse("year == 2020");
+		assertThat(exp3).isEqualTo(new Expression(EQ, new Key("year"), new Value(2020)));
+	}
+
+	@Test
 	public void testIdentifiers() {
 		Expression exp = this.parser.parse("'country.1' == 'BG'");
 		assertThat(exp).isEqualTo(new Expression(EQ, new Key("country.1"), new Value("BG")));

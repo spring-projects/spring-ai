@@ -230,7 +230,13 @@ public class FilterExpressionTextParser {
 
 		@Override
 		public Filter.Operand visitIntegerConstant(FiltersParser.IntegerConstantContext ctx) {
-			return new Filter.Value(Integer.valueOf(ctx.getText()));
+			String text = ctx.getText();
+			try {
+				return new Filter.Value(Integer.parseInt(text));
+			}
+			catch (NumberFormatException e) {
+				return new Filter.Value(Long.parseLong(text));
+			}
 		}
 
 		@Override
