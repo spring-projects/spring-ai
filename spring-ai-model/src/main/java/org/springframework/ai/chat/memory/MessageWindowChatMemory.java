@@ -37,6 +37,7 @@ import org.springframework.util.Assert;
  *
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Sun Yuhan
  * @since 1.0.0
  */
 public final class MessageWindowChatMemory implements ChatMemory {
@@ -75,6 +76,11 @@ public final class MessageWindowChatMemory implements ChatMemory {
 	public void clear(String conversationId) {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 		this.chatMemoryRepository.deleteByConversationId(conversationId);
+	}
+
+	@Override
+	public List<String> getConversations() {
+		return this.chatMemoryRepository.findConversationIds();
 	}
 
 	private List<Message> process(List<Message> memoryMessages, List<Message> newMessages) {
