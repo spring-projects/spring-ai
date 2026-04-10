@@ -33,7 +33,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration;
 import org.springframework.ai.model.anthropic.autoconfigure.tool.MockWeatherService.Request;
 import org.springframework.ai.model.anthropic.autoconfigure.tool.MockWeatherService.Response;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
