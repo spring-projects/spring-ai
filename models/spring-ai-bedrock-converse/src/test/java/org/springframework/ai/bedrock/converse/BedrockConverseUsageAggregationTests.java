@@ -16,6 +16,8 @@
 
 package org.springframework.ai.bedrock.converse;
 
+import java.util.Map;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -191,11 +193,12 @@ public class BedrockConverseUsageAggregationTests {
 
 		// Verify cache metrics are available in native usage object
 		Object nativeUsage = result.getMetadata().getUsage().getNativeUsage();
-		assertThat(nativeUsage).isInstanceOf(TokenUsage.class);
+		assertThat(nativeUsage).isInstanceOf(Map.class);
 
-		TokenUsage tokenUsage = (TokenUsage) nativeUsage;
-		assertThat(tokenUsage.cacheReadInputTokens()).isEqualTo(80);
-		assertThat(tokenUsage.cacheWriteInputTokens()).isEqualTo(20);
+		@SuppressWarnings("unchecked")
+		Map<String, Object> tokenUsage = (Map<String, Object>) nativeUsage;
+		assertThat(tokenUsage.get("cacheReadInputTokens")).isEqualTo(80);
+		assertThat(tokenUsage.get("cacheWriteInputTokens")).isEqualTo(20);
 
 		// Verify cache metrics are also available in metadata (backward compatibility)
 		assertThat(result.getMetadata().<Integer>get("cacheReadInputTokens")).isEqualTo(80);
@@ -269,11 +272,12 @@ public class BedrockConverseUsageAggregationTests {
 
 		// Verify aggregated cache metrics in native usage object
 		Object nativeUsage = result.getMetadata().getUsage().getNativeUsage();
-		assertThat(nativeUsage).isInstanceOf(TokenUsage.class);
+		assertThat(nativeUsage).isInstanceOf(Map.class);
 
-		TokenUsage tokenUsage = (TokenUsage) nativeUsage;
-		assertThat(tokenUsage.cacheReadInputTokens()).isEqualTo(150 + 150); // Aggregated
-		assertThat(tokenUsage.cacheWriteInputTokens()).isEqualTo(0);
+		@SuppressWarnings("unchecked")
+		Map<String, Object> tokenUsage = (Map<String, Object>) nativeUsage;
+		assertThat(tokenUsage.get("cacheReadInputTokens")).isEqualTo(150 + 150); // Aggregated
+		assertThat(tokenUsage.get("cacheWriteInputTokens")).isEqualTo(0);
 	}
 
 	public record Request(String location, String unit) {

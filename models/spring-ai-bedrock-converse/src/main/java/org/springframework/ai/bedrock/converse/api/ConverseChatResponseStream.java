@@ -17,6 +17,7 @@
 package org.springframework.ai.bedrock.converse.api;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -95,6 +96,12 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 			this.generationTokens.set(accumulatedUsage.getCompletionTokens());
 			if (accumulatedUsage.getNativeUsage() instanceof TokenUsage tokenUsage) {
 				this.mergeNativeTokenUsage(tokenUsage);
+			}
+			else if (accumulatedUsage.getNativeUsage() instanceof Map<?, ?> mapNativeUsage) {
+				TokenUsage tokenUsage = tokenUsageFromMap(mapNativeUsage);
+				if (tokenUsage != null) {
+					this.mergeNativeTokenUsage(tokenUsage);
+				}
 			}
 		}
 	}
@@ -191,8 +198,52 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 	}
 
 	private Usage getCurrentUsage() {
+		TokenUsage tokenUsage = this.tokenUsageRef.get();
+		Object nativeUsage = (tokenUsage != null) ? tokenUsageToMap(tokenUsage) : null;
 		return new DefaultUsage(this.promptTokens.get(), this.generationTokens.get(), this.totalTokens.get(),
-				this.tokenUsageRef.get());
+				nativeUsage);
+	}
+
+	private static Map<String, Object> tokenUsageToMap(TokenUsage tokenUsage) {
+		Map<String, Object> nativeUsage = new HashMap<>();
+		nativeUsage.put("inputTokens", tokenUsage.inputTokens());
+		nativeUsage.put("outputTokens", tokenUsage.outputTokens());
+		nativeUsage.put("totalTokens", tokenUsage.totalTokens());
+		if (tokenUsage.cacheReadInputTokens() != null) {
+			nativeUsage.put("cacheReadInputTokens", tokenUsage.cacheReadInputTokens());
+		}
+		if (tokenUsage.cacheWriteInputTokens() != null) {
+			nativeUsage.put("cacheWriteInputTokens", tokenUsage.cacheWriteInputTokens());
+		}
+		return nativeUsage;
+	}
+
+	private static TokenUsage tokenUsageFromMap(Map<?, ?> nativeUsage) {
+		Integer inputTokens = numberToInt(nativeUsage.get("inputTokens"));
+		Integer outputTokens = numberToInt(nativeUsage.get("outputTokens"));
+		Integer totalTokens = numberToInt(nativeUsage.get("totalTokens"));
+		Integer cacheReadInputTokens = numberToInt(nativeUsage.get("cacheReadInputTokens"));
+		Integer cacheWriteInputTokens = numberToInt(nativeUsage.get("cacheWriteInputTokens"));
+
+		if (inputTokens == null && outputTokens == null && totalTokens == null && cacheReadInputTokens == null
+				&& cacheWriteInputTokens == null) {
+			return null;
+		}
+
+		return TokenUsage.builder()
+			.inputTokens(inputTokens)
+			.outputTokens(outputTokens)
+			.totalTokens(totalTokens)
+			.cacheReadInputTokens(cacheReadInputTokens)
+			.cacheWriteInputTokens(cacheWriteInputTokens)
+			.build();
+	}
+
+	private static Integer numberToInt(Object value) {
+		if (value instanceof Number number) {
+			return number.intValue();
+		}
+		return null;
 	}
 
 	/**
