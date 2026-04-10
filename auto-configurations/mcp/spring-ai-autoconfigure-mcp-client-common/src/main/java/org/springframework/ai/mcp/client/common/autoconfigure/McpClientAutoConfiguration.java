@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
-import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 
@@ -39,6 +38,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -132,32 +132,40 @@ public class McpClientAutoConfiguration {
 	}
 
 	/**
+	 * Creates the {@link McpConnectionBeanRegistrar} that registers individual MCP client
+	 * beans for each configured connection, enabling selective injection via
+	 * {@link org.springframework.ai.mcp.McpClient @McpClient}.
+	 * <p>
+	 * This bean must be static to ensure early registration as a
+	 * {@link org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor}.
+	 * @param environment the Spring environment for reading connection configuration
+	 * @return the MCP connection bean registrar
+	 */
+	@Bean
+	public static McpConnectionBeanRegistrar mcpConnectionBeanRegistrar(Environment environment) {
+		return new McpConnectionBeanRegistrar(environment);
+	}
+
+	/**
 	 * Creates a list of {@link McpSyncClient} instances based on the available
 	 * transports.
 	 *
 	 * <p>
-	 * Each client is configured with:
-	 * <ul>
-	 * <li>Client information (name and version) from common properties
-	 * <li>Request timeout settings
-	 * <li>Custom configurations through {@link McpSyncClientConfigurer}
-	 * </ul>
+	 * Each client is created using the {@link McpSyncClientFactory} to ensure consistent
+	 * configuration across all client creation paths.
 	 *
 	 * <p>
 	 * If initialization is enabled in properties, the clients are automatically
 	 * initialized.
-	 * @param mcpSyncClientConfigurer the configurer for customizing client creation
-	 * @param commonProperties common MCP client properties
+	 * @param mcpSyncClientFactory the factory for creating MCP sync clients
 	 * @param transportsProvider provider of named MCP transports
 	 * @return list of configured MCP sync clients
 	 */
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	public List<McpSyncClient> mcpSyncClients(McpSyncClientConfigurer mcpSyncClientConfigurer,
-			McpClientCommonProperties commonProperties,
-			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider,
-			ObjectProvider<ClientMcpSyncHandlersRegistry> clientMcpSyncHandlersRegistry) {
+	public List<McpSyncClient> mcpSyncClients(McpSyncClientFactory mcpSyncClientFactory,
+			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider) {
 
 		List<McpSyncClient> mcpSyncClients = new ArrayList<>();
 
@@ -165,38 +173,7 @@ public class McpClientAutoConfiguration {
 
 		if (!CollectionUtils.isEmpty(namedTransports)) {
 			for (NamedClientMcpTransport namedTransport : namedTransports) {
-
-				McpSchema.Implementation clientInfo = new McpSchema.Implementation(
-						this.connectedClientName(commonProperties.getName(), namedTransport.name()),
-						namedTransport.name(), commonProperties.getVersion());
-
-				McpClient.SyncSpec spec = McpClient.sync(namedTransport.transport())
-					.clientInfo(clientInfo)
-					.requestTimeout(commonProperties.getRequestTimeout());
-
-				clientMcpSyncHandlersRegistry.ifAvailable(registry -> spec
-					.sampling(samplingRequest -> registry.handleSampling(namedTransport.name(), samplingRequest))
-					.elicitation(
-							elicitationRequest -> registry.handleElicitation(namedTransport.name(), elicitationRequest))
-					.loggingConsumer(loggingMessageNotification -> registry.handleLogging(namedTransport.name(),
-							loggingMessageNotification))
-					.progressConsumer(progressNotification -> registry.handleProgress(namedTransport.name(),
-							progressNotification))
-					.toolsChangeConsumer(newTools -> registry.handleToolListChanged(namedTransport.name(), newTools))
-					.promptsChangeConsumer(
-							newPrompts -> registry.handlePromptListChanged(namedTransport.name(), newPrompts))
-					.resourcesChangeConsumer(
-							newResources -> registry.handleResourceListChanged(namedTransport.name(), newResources))
-					.capabilities(registry.getCapabilities(namedTransport.name())));
-
-				McpClient.SyncSpec customizedSpec = mcpSyncClientConfigurer.configure(namedTransport.name(), spec);
-
-				var client = customizedSpec.build();
-
-				if (commonProperties.isInitialized()) {
-					client.initialize();
-				}
-
+				McpSyncClient client = mcpSyncClientFactory.createClient(namedTransport);
 				mcpSyncClients.add(client);
 			}
 		}
@@ -233,6 +210,26 @@ public class McpClientAutoConfiguration {
 		return new McpSyncClientConfigurer(customizerProvider.orderedStream().toList());
 	}
 
+	/**
+	 * Creates the {@link McpSyncClientFactory} for building MCP sync clients.
+	 *
+	 * <p>
+	 * This factory encapsulates the common client creation logic used by both the bulk
+	 * client list and individual named client beans.
+	 * @param commonProperties common MCP client properties
+	 * @param configurer the configurer for customizing clients
+	 * @param clientMcpSyncHandlersRegistry registry for client event handlers
+	 * @return the MCP sync client factory
+	 */
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
+			matchIfMissing = true)
+	McpSyncClientFactory mcpSyncClientFactory(McpClientCommonProperties commonProperties,
+			McpSyncClientConfigurer configurer, ClientMcpSyncHandlersRegistry clientMcpSyncHandlersRegistry) {
+		return new McpSyncClientFactory(commonProperties, configurer, clientMcpSyncHandlersRegistry);
+	}
+
 	// Async client configuration
 
 	@Bean
@@ -244,10 +241,8 @@ public class McpClientAutoConfiguration {
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public List<McpAsyncClient> mcpAsyncClients(McpAsyncClientConfigurer mcpAsyncClientConfigurer,
-			McpClientCommonProperties commonProperties,
-			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider,
-			ObjectProvider<ClientMcpAsyncHandlersRegistry> clientMcpAsyncHandlersRegistry) {
+	public List<McpAsyncClient> mcpAsyncClients(McpAsyncClientFactory mcpAsyncClientFactory,
+			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider) {
 
 		List<McpAsyncClient> mcpAsyncClients = new ArrayList<>();
 
@@ -255,36 +250,7 @@ public class McpClientAutoConfiguration {
 
 		if (!CollectionUtils.isEmpty(namedTransports)) {
 			for (NamedClientMcpTransport namedTransport : namedTransports) {
-
-				McpSchema.Implementation clientInfo = new McpSchema.Implementation(
-						this.connectedClientName(commonProperties.getName(), namedTransport.name()),
-						commonProperties.getVersion());
-				McpClient.AsyncSpec spec = McpClient.async(namedTransport.transport())
-					.clientInfo(clientInfo)
-					.requestTimeout(commonProperties.getRequestTimeout());
-				clientMcpAsyncHandlersRegistry.ifAvailable(registry -> spec
-					.sampling(samplingRequest -> registry.handleSampling(namedTransport.name(), samplingRequest))
-					.elicitation(
-							elicitationRequest -> registry.handleElicitation(namedTransport.name(), elicitationRequest))
-					.loggingConsumer(loggingMessageNotification -> registry.handleLogging(namedTransport.name(),
-							loggingMessageNotification))
-					.progressConsumer(progressNotification -> registry.handleProgress(namedTransport.name(),
-							progressNotification))
-					.toolsChangeConsumer(newTools -> registry.handleToolListChanged(namedTransport.name(), newTools))
-					.promptsChangeConsumer(
-							newPrompts -> registry.handlePromptListChanged(namedTransport.name(), newPrompts))
-					.resourcesChangeConsumer(
-							newResources -> registry.handleResourceListChanged(namedTransport.name(), newResources))
-					.capabilities(registry.getCapabilities(namedTransport.name())));
-
-				McpClient.AsyncSpec customizedSpec = mcpAsyncClientConfigurer.configure(namedTransport.name(), spec);
-
-				var client = customizedSpec.build();
-
-				if (commonProperties.isInitialized()) {
-					client.initialize().block();
-				}
-
+				McpAsyncClient client = mcpAsyncClientFactory.createClient(namedTransport);
 				mcpAsyncClients.add(client);
 			}
 		}
@@ -306,6 +272,25 @@ public class McpClientAutoConfiguration {
 	}
 
 	/**
+	 * Creates the {@link McpAsyncClientFactory} for building MCP async clients.
+	 *
+	 * <p>
+	 * This factory encapsulates the common client creation logic used by both the bulk
+	 * client list and individual named client beans.
+	 * @param commonProperties common MCP client properties
+	 * @param configurer the configurer for customizing clients
+	 * @param clientMcpAsyncHandlersRegistry registry for client event handlers
+	 * @return the MCP async client factory
+	 */
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	McpAsyncClientFactory mcpAsyncClientFactory(McpClientCommonProperties commonProperties,
+			McpAsyncClientConfigurer configurer, ClientMcpAsyncHandlersRegistry clientMcpAsyncHandlersRegistry) {
+		return new McpAsyncClientFactory(commonProperties, configurer, clientMcpAsyncHandlersRegistry);
+	}
+
+	/**
 	 * Record class that implements {@link AutoCloseable} to ensure proper cleanup of MCP
 	 * clients.
 	 *
@@ -319,9 +304,11 @@ public class McpClientAutoConfiguration {
 		public void close() {
 			this.clients.forEach(McpSyncClient::close);
 		}
+
 	}
 
 	public record CloseableMcpAsyncClients(List<McpAsyncClient> clients) implements AutoCloseable {
+
 		@Override
 		public void close() {
 			this.clients.forEach(McpAsyncClient::close);
