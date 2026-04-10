@@ -79,6 +79,27 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 	}
 
 	@Test
+	void toolCallIdIsPopulated() {
+		UserMessage userMessage = new UserMessage("What are the weather conditions in San Francisco?");
+
+		var promptOptions = OllamaChatOptions.builder()
+			.model(MODEL)
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description(
+						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.internalToolExecutionEnabled(false)
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), promptOptions));
+
+		AssistantMessage assistantMessage = response.getResult().getOutput();
+		assertThat(assistantMessage.getToolCalls()).isNotNull().hasSize(1);
+		assertThat(assistantMessage.getToolCalls().get(0).id()).isNotBlank();
+	}
+
+	@Test
 	void streamFunctionCallTest() {
 		UserMessage userMessage = new UserMessage(
 				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
