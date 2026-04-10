@@ -77,7 +77,7 @@ public class AcmeIT extends AbstractIT {
 		// Step 1 - load documents
 		JsonReader jsonReader = new JsonReader(this.bikesResource, "name", "price", "shortDescription", "description");
 
-		var textSplitter = TokenTextSplitter.builder().build();
+		var textSplitter = new TokenTextSplitter();
 
 		// Step 2 - Create embeddings and save to vector store
 

@@ -34,7 +34,7 @@ import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.evaluation.EvaluationRequest;
 import org.springframework.ai.evaluation.EvaluationResponse;
 import org.springframework.ai.integration.tests.TestApplication;
-import org.springframework.ai.openaisdk.OpenAiSdkChatModel;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.preretrieval.query.expansion.MultiQueryExpander;
 import org.springframework.ai.rag.preretrieval.query.transformation.CompressionQueryTransformer;
@@ -63,7 +63,7 @@ class RetrievalAugmentationAdvisorIT {
 	private List<Document> knowledgeBaseDocuments;
 
 	@Autowired
-	OpenAiSdkChatModel openAiChatModel;
+	OpenAiChatModel openAiChatModel;
 
 	@Autowired
 	PgVectorStore pgVectorStore;

@@ -4,6 +4,13 @@
 [[upgrading-to-2-0-0-M5]]
 == Upgrading to 2.0.0-M5
 
+=== OpenAI Java SDK Transition
+
+Starting from version `2.0.0-M5`, Spring AI uses the official `openai-java` SDK under the hood for all OpenAI models (Chat, Embeddings, Image, Audio Speech, Audio Transcription, and Moderation).
+
+The transition is seamless, and **no breaking changes are expected** for existing users of the `spring-ai-openai` module.
+All properties (with the `spring.ai.openai.*` prefix), builders, and options remain fully intact. The existing `extraBody` configuration parameter transparently maps to the underlying `additionalBodyProperties` in the `openai-java` SDK.
+
 === ChatOptions Handling
 Users can interact with ChatModels in two ways:
 
