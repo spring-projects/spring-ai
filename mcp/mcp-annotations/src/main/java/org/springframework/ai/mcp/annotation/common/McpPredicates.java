@@ -91,14 +91,31 @@ public final class McpPredicates {
 		return false;
 	}
 
+	private static String bidirectionalParamNames(Method method) {
+		StringBuilder sb = new StringBuilder();
+		for (Class<?> paramType : method.getParameterTypes()) {
+			if (McpSyncRequestContext.class.isAssignableFrom(paramType)
+					|| McpAsyncRequestContext.class.isAssignableFrom(paramType)
+					|| McpSyncServerExchange.class.isAssignableFrom(paramType)
+					|| McpAsyncServerExchange.class.isAssignableFrom(paramType)) {
+				if (!sb.isEmpty()) {
+					sb.append(", ");
+				}
+				sb.append(paramType.getSimpleName());
+			}
+		}
+		return sb.toString();
+	}
+
 	public static Predicate<Method> filterMethodWithBidirectionalParameters() {
 		return method -> {
 			if (!hasBidirectionalParameters(method)) {
 				return true;
 			}
-			logger.warn(
-					"Stateless servers doesn't support bidirectional parameters. Skipping method {} with bidirectional parameters",
-					method);
+			logger
+				.warn("Skipping MCP tool method '{}.{}' — stateless servers do not support bidirectional parameters ({}). "
+						+ "To use this tool, switch to a stateful server (McpServerTransportProvider with session support).",
+						method.getDeclaringClass().getSimpleName(), method.getName(), bidirectionalParamNames(method));
 			return false;
 		};
 	}
