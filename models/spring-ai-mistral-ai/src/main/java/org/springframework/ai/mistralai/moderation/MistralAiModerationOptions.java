@@ -16,16 +16,12 @@
 
 package org.springframework.ai.mistralai.moderation;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.springframework.ai.mistralai.api.MistralAiModerationApi;
 import org.springframework.ai.moderation.ModerationOptions;
 
 /**
  * @author Ricken Bazolo
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class MistralAiModerationOptions implements ModerationOptions {
 
 	private static final String DEFAULT_MODEL = MistralAiModerationApi.Model.MISTRAL_MODERATION.getValue();
@@ -33,7 +29,6 @@ public class MistralAiModerationOptions implements ModerationOptions {
 	/**
 	 * The model to use for moderation generation.
 	 */
-	@JsonProperty("model")
 	private String model = DEFAULT_MODEL;
 
 	public static Builder builder() {

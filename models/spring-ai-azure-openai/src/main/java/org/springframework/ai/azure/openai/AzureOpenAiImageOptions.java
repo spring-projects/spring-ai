@@ -18,9 +18,6 @@ package org.springframework.ai.azure.openai;
 
 import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.springframework.ai.image.ImageOptions;
 
 /**
@@ -31,7 +28,6 @@ import org.springframework.ai.image.ImageOptions;
  * @author Ilayaperumal Gopinathan
  * @since 1.0.0 M1
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class AzureOpenAiImageOptions implements ImageOptions {
 
 	public static final String DEFAULT_IMAGE_MODEL = ImageModel.GPT_IMAGE_1_MINI.getValue();
@@ -40,32 +36,27 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 	 * The number of images to generate. Must be between 1 and 10. For dall-e-3, only n=1
 	 * is supported.
 	 */
-	@JsonProperty("n")
 	private Integer n;
 
 	/**
 	 * The model dall-e-3 or dall-e-2 By default dall-e-3
 	 */
-	@JsonProperty("model")
 	private String model = ImageModel.GPT_IMAGE_1_MINI.value;
 
 	/**
 	 * The deployment name as defined in Azure Open AI Studio when creating a deployment
 	 * backed by an Azure OpenAI base model.
 	 */
-	@JsonProperty("deployment_name")
 	private String deploymentName;
 
 	/**
 	 * The width of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.
 	 */
-	@JsonProperty("size_width")
 	private Integer width;
 
 	/**
 	 * The height of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.
 	 */
-	@JsonProperty("size_height")
 	private Integer height;
 
 	/**
@@ -73,21 +64,18 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 	 * details and greater consistency across the image. This param is only supported for
 	 * dall-e-3. standard or hd
 	 */
-	@JsonProperty("quality")
 	private String quality;
 
 	/**
 	 * The format in which the generated images are returned. Must be one of url or
 	 * b64_json.
 	 */
-	@JsonProperty("response_format")
 	private String responseFormat;
 
 	/**
 	 * The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024 for
 	 * dall-e-2. Must be one of 1024x1024, 1792x1024, or 1024x1792 for dall-e-3 models.
 	 */
-	@JsonProperty("size")
 	private String size;
 
 	/**
@@ -96,14 +84,12 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 	 * the model to produce more natural, less hyper-real looking images. This param is
 	 * only supported for dall-e-3. natural or vivid
 	 */
-	@JsonProperty("style")
 	private String style;
 
 	/**
 	 * A unique identifier representing your end-user, which can help OpenAI to monitor
 	 * and detect abuse.
 	 */
-	@JsonProperty("user")
 	private String user;
 
 	public static Builder builder() {
