@@ -124,4 +124,24 @@
 <!--			<scope>compile</scope>-->
 <!--		</dependency>-->
 	</dependencies>
+	<build>
+	<plugins>
+	<plugin>
+		<groupId>org.apache.maven.plugins</groupId>
+		<artifactId>maven-compiler-plugin</artifactId>
+		<configuration>
+			<source>${maven.compiler.source}</source>
+			<target>${maven.compiler.target}</target>
+			<encoding>UTF-8</encoding>
+			<annotationProcessorPaths>
+				<annotationProcessorPath>
+					<groupId>org.infinispan.protostream</groupId>
+					<artifactId>protostream-processor</artifactId>
+					<version>${version.protostream}</version>
+				</annotationProcessorPath>
+			</annotationProcessorPaths>
+		</configuration>
+	</plugin>
+	</plugins>
+	</build>
 </project>
