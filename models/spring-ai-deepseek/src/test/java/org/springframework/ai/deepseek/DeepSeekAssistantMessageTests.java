@@ -121,7 +121,9 @@ class DeepSeekAssistantMessageTests {
 	@Test
 	public void testPrefixAssistantMessageFactoryMethod() {
 		String content = "Hello, world!";
-		DeepSeekAssistantMessage message = DeepSeekAssistantMessage.prefixAssistantMessage(content);
+		DeepSeekAssistantMessage message = DeepSeekAssistantMessage.dsBuilder()
+				.content(content)
+				.build();
 
 		assertThat(message.getText()).isEqualTo(content);
 		assertThat(message.getReasoningContent()).isNull();
@@ -131,7 +133,9 @@ class DeepSeekAssistantMessageTests {
 	public void testPrefixAssistantMessageFactoryMethodWithReasoning() {
 		String content = "Hello, world!";
 		String reasoningContent = "This is my reasoning";
-		DeepSeekAssistantMessage message = DeepSeekAssistantMessage.prefixAssistantMessage(content, reasoningContent);
+		DeepSeekAssistantMessage message = DeepSeekAssistantMessage.dsBuilder()
+				.content(content)
+				.reasoningContent(reasoningContent).build();
 
 		assertThat(message.getText()).isEqualTo(content);
 		assertThat(message.getReasoningContent()).isEqualTo(reasoningContent);
@@ -139,7 +143,7 @@ class DeepSeekAssistantMessageTests {
 
 	@Test
 	public void testSettersAndGetters() {
-		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage.Builder().build();
+		DeepSeekAssistantMessage message = DeepSeekAssistantMessage.dsBuilder().build();
 
 		String reasoningContent = "New reasoning content";
 		Boolean prefix = false;
@@ -168,10 +172,12 @@ class DeepSeekAssistantMessageTests {
 
 	@Test
 	public void testToString() {
-		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage.Builder().content("content")
-			.reasoningContent("reasoning")
-			.build();
-		message.setPrefix(true);
+		DeepSeekAssistantMessage message = DeepSeekAssistantMessage.dsBuilder()
+				.content("content")
+				.reasoningContent("reasoning")
+				.prefix(true)
+				.build();
+
 
 		assertThatNoException().isThrownBy(message::toString);
 		assertThat(message.toString()).contains("content", "reasoning", "true");
@@ -183,14 +189,15 @@ class DeepSeekAssistantMessageTests {
 		List<ToolCall> toolCalls = List.of(new ToolCall("1", "function", "testFunction", "{}"));
 		List<Media> media = List.of();
 
-		DeepSeekAssistantMessage.Builder builder = new DeepSeekAssistantMessage.Builder();
-		DeepSeekAssistantMessage message = builder.content("content")
-			.reasoningContent("reasoning")
-			.prefix(true)
-			.properties(properties)
-			.toolCalls(toolCalls)
-			.media(media)
-			.build();
+		DeepSeekAssistantMessage.Builder builder = DeepSeekAssistantMessage.dsBuilder();
+		DeepSeekAssistantMessage message = builder
+				.content("content")
+				.reasoningContent("reasoning")
+				.prefix(true)
+				.properties(properties)
+				.toolCalls(toolCalls)
+				.media(media)
+				.build();
 
 		assertThat(message.getText()).isEqualTo("content");
 		assertThat(message.getReasoningContent()).isEqualTo("reasoning");

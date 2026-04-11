@@ -103,39 +103,47 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 
 	}
 
-	public static final class Builder {
+	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>> {
 
-		private @Nullable String content;
+		protected @Nullable String content;
 
-		private Map<String, Object> properties = Map.of();
+		protected Map<String, Object> properties = Map.of();
 
-		private List<ToolCall> toolCalls = List.of();
+		protected List<ToolCall> toolCalls = List.of();
 
-		private List<Media> media = List.of();
+		protected List<Media> media = List.of();
 
-		private Builder() {
-		}
-
-		public Builder content(@Nullable String content) {
+		public B content(@Nullable String content) {
 			this.content = content;
-			return this;
+			return self();
 		}
 
-		public Builder properties(Map<String, Object> properties) {
+		public B properties(Map<String, Object> properties) {
 			this.properties = properties;
-			return this;
+			return self();
 		}
 
-		public Builder toolCalls(List<ToolCall> toolCalls) {
+		public B toolCalls(List<ToolCall> toolCalls) {
 			this.toolCalls = toolCalls;
-			return this;
+			return self();
 		}
 
-		public Builder media(List<Media> media) {
+		public B media(List<Media> media) {
 			this.media = media;
-			return this;
+			return self();
 		}
 
+		public abstract AssistantMessage build();
+
+		@SuppressWarnings("unchecked")
+		protected B self() {
+			return (B) this;
+		}
+	}
+
+	public static class Builder extends AbstractBuilder<Builder> {
+
+		@Override
 		public AssistantMessage build() {
 			return new AssistantMessage(this.content, this.properties, this.toolCalls, this.media);
 		}
