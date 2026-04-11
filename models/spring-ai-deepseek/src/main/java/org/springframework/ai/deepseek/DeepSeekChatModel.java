@@ -16,6 +16,7 @@
 
 package org.springframework.ai.deepseek;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -255,6 +256,8 @@ public class DeepSeekChatModel implements ChatModel {
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
 
+			StringBuilder reasoningContentBuilder = new StringBuilder();
+
 			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
 				.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
 					try {
@@ -285,7 +288,25 @@ public class DeepSeekChatModel implements ChatModel {
 						return new ChatResponse(List.of());
 					}
 
-				}));
+				}))
+				.doOnNext(response -> {
+					if (response.getResult() == null) {
+						return;
+					}
+					AssistantMessage output = response.getResult().getOutput();
+					if (output instanceof DeepSeekAssistantMessage deepSeekAssistantMessage) {
+						String reasoningContent = deepSeekAssistantMessage.getReasoningContent();
+						if (reasoningContent != null) {
+							reasoningContentBuilder.append(reasoningContent);
+						}
+					}
+					else {
+						Object reasoningContent = output.getMetadata().get("reasoningContent");
+						if (reasoningContent instanceof String content) {
+							reasoningContentBuilder.append(content);
+						}
+					}
+				});
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
@@ -296,23 +317,25 @@ public class DeepSeekChatModel implements ChatModel {
 					//  is currently only synchronous
 					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult toolExecutionResult;
+						ChatResponse responseForToolExecution = this.withReasoningContent(response,
+								reasoningContentBuilder.toString());
 						try {
 							ToolCallReactiveContextHolder.setContext(ctx);
-							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, responseForToolExecution);
 						}
 						finally {
 							ToolCallReactiveContextHolder.clearContext();
 						}
 						if (toolExecutionResult.returnDirect()) {
 							// Return tool execution result directly to the client.
-							return Flux.just(ChatResponse.builder().from(response)
+							return Flux.just(ChatResponse.builder().from(responseForToolExecution)
 									.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
 									.build());
 						}
 						else {
 							// Send the tool execution result back to the model.
 							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-									response);
+									responseForToolExecution);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
 				}
@@ -353,6 +376,36 @@ public class DeepSeekChatModel implements ChatModel {
 			.build();
 
 		return new Generation(assistantMessage, generationMetadataBuilder.build());
+	}
+
+	private ChatResponse withReasoningContent(ChatResponse response, String reasoningContent) {
+		if (response.getResult() == null) {
+			return response;
+		}
+		if (reasoningContent.isEmpty()) {
+			return response;
+		}
+		List<Generation> results = response.getResults();
+		if (results.isEmpty()) {
+			return response;
+		}
+		Generation first = results.get(0);
+		AssistantMessage output = first.getOutput();
+		if (!(output instanceof DeepSeekAssistantMessage deepSeekAssistantMessage)) {
+			return response;
+		}
+
+		DeepSeekAssistantMessage updated = new DeepSeekAssistantMessage.Builder().content(output.getText())
+			.reasoningContent(reasoningContent)
+			.prefix(deepSeekAssistantMessage.getPrefix())
+			.properties(output.getMetadata())
+			.toolCalls(output.getToolCalls())
+			.media(output.getMedia())
+			.build();
+
+		List<Generation> updatedResults = new ArrayList<>(results);
+		updatedResults.set(0, new Generation(updated, first.getMetadata()));
+		return ChatResponse.builder().from(response).generations(updatedResults).build();
 	}
 
 	private ChatResponseMetadata from(DeepSeekApi.ChatCompletion result, Usage usage) {
@@ -424,14 +477,17 @@ public class DeepSeekChatModel implements ChatModel {
 					}).toList();
 				}
 				Boolean isPrefixAssistantMessage = null;
-				if (message instanceof DeepSeekAssistantMessage
-						&& Boolean.TRUE.equals(((DeepSeekAssistantMessage) message).getPrefix())) {
-					isPrefixAssistantMessage = true;
+				String reasoningContent = null;
+				if (message instanceof DeepSeekAssistantMessage deepSeekAssistantMessage) {
+					if (Boolean.TRUE.equals(deepSeekAssistantMessage.getPrefix())) {
+						isPrefixAssistantMessage = true;
+					}
+					reasoningContent = deepSeekAssistantMessage.getReasoningContent();
 				}
 				String text = assistantMessage.getText();
 				Assert.state(text != null, "text must not be null");
 				return List.of(new ChatCompletionMessage(text, ChatCompletionMessage.Role.ASSISTANT, null, null,
-						toolCalls, isPrefixAssistantMessage, null));
+						toolCalls, isPrefixAssistantMessage, reasoningContent));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
