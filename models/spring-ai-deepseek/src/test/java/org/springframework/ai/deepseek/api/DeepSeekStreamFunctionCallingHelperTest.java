@@ -208,6 +208,41 @@ class DeepSeekStreamFunctionCallingHelperTest {
 	}
 
 	@Test
+	void mergeSameIdToolCallChunksShouldMergeProperly() {
+		// Simulate DeepSeek/Qwen streaming pattern: same ID across chunks, name only in
+		// first chunk
+		var func1 = new ChatCompletionFunction("todoList", "");
+		var toolCall1 = new ToolCall("868f7f42", "function", func1);
+		var delta1 = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, List.of(toolCall1));
+		var choice1 = new ChatCompletionChunk.ChunkChoice(null, 0, delta1, null);
+		var chunk1 = new ChatCompletionChunk("chatcmpl-1", List.of(choice1), 1L, "deepseek", null, null, null, null);
+
+		// Chunk 2: same ID, null name, partial arguments
+		var func2 = new ChatCompletionFunction(null, "{\"page");
+		var toolCall2 = new ToolCall("868f7f42", "function", func2);
+		var delta2 = new ChatCompletionMessage(null, null, null, null, List.of(toolCall2));
+		var choice2 = new ChatCompletionChunk.ChunkChoice(null, 0, delta2, null);
+		var chunk2 = new ChatCompletionChunk("chatcmpl-1", List.of(choice2), 1L, "deepseek", null, null, null, null);
+
+		// Chunk 3: same ID, null name, more arguments
+		var func3 = new ChatCompletionFunction(null, "No\":1}");
+		var toolCall3 = new ToolCall("868f7f42", "function", func3);
+		var delta3 = new ChatCompletionMessage(null, null, null, null, List.of(toolCall3));
+		var choice3 = new ChatCompletionChunk.ChunkChoice(null, 0, delta3, null);
+		var chunk3 = new ChatCompletionChunk("chatcmpl-1", List.of(choice3), 1L, "deepseek", null, null, null, null);
+
+		// Simulate reduce
+		var result = this.helper.merge(this.helper.merge(chunk1, chunk2), chunk3);
+
+		// Should have exactly 1 tool call with correct name and combined arguments
+		var mergedDelta = result.choices().get(0).delta();
+		assertThat(mergedDelta.toolCalls()).hasSize(1);
+		assertThat(mergedDelta.toolCalls().get(0).id()).isEqualTo("868f7f42");
+		assertThat(mergedDelta.toolCalls().get(0).function().name()).isEqualTo("todoList");
+		assertThat(mergedDelta.toolCalls().get(0).function().arguments()).isEqualTo("{\"pageNo\":1}");
+	}
+
+	@Test
 	void mergeWhenCurrentToolCallsIsEmptyListShouldNotThrowException() {
 		// Given
 		ToolCall toolCall = new ToolCall("call_1", "function", new ChatCompletionFunction("func1", "{}"));
