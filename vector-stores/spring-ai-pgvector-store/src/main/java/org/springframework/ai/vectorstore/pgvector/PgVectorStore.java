@@ -152,6 +152,7 @@ import org.springframework.util.StringUtils;
  * @author Jihoon Kim
  * @author YeongMin Song
  * @author Jonghoon Park
+ * @author Tim Sielemann
  * @since 1.0.0
  */
 public class PgVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -220,7 +221,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		Assert.notNull(builder.jdbcTemplate, "JdbcTemplate must not be null");
 
 		this.jsonMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
-		this.documentRowMapper = new DocumentRowMapper(this.jsonMapper);
 
 		String vectorTable = builder.vectorTableName;
 		this.vectorTableName = vectorTable.isEmpty() ? DEFAULT_TABLE_NAME : vectorTable.trim();
@@ -242,6 +242,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		this.initializeSchema = builder.initializeSchema;
 		this.schemaValidator = new PgVectorSchemaValidator(this.jdbcTemplate);
 		this.maxDocumentBatchSize = builder.maxDocumentBatchSize;
+		this.documentRowMapper = new DocumentRowMapper(this.jsonMapper, this.distanceType);
 	}
 
 	public PgDistanceType getDistanceType() {
@@ -363,13 +364,18 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		}
 
 		double distance = 1 - request.getSimilarityThreshold();
+		// The <#> operator returns the raw negative inner product. To stay index-friendly
+		// (no expression wrapping), we pass the raw threshold directly. The raw <#> range
+		// is [-1, 0] for normalized vectors, so we subtract 1 from the regular [0,1]
+		// distance threshold to get the equivalent raw threshold.
+		double threshold = (this.distanceType == PgDistanceType.NEGATIVE_INNER_PRODUCT) ? distance - 1 : distance;
 
 		PGvector queryEmbedding = getQueryEmbedding(request.getQuery());
 
 		return this.jdbcTemplate.query(
 				String.format(this.getDistanceType().similaritySearchSqlTemplate, getFullyQualifiedTableName(),
 						jsonPathFilter),
-				this.documentRowMapper, queryEmbedding, queryEmbedding, distance, request.getTopK());
+				this.documentRowMapper, queryEmbedding, queryEmbedding, threshold, request.getTopK());
 	}
 
 	public List<Double> embeddingDistance(String query) {
@@ -573,7 +579,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		// The Sentence transformers are NOT normalized:
 		// https://github.com/UKPLab/sentence-transformers/issues/233
 		NEGATIVE_INNER_PRODUCT("<#>", "vector_ip_ops",
-				"SELECT *, (1 + (embedding <#> ?)) AS distance FROM %s WHERE (1 + (embedding <#> ?)) < ? %s ORDER BY distance LIMIT ? "),
+				"SELECT *, embedding <#> ? AS distance FROM %s WHERE embedding <#> ? < ? %s ORDER BY distance LIMIT ? "),
 
 		COSINE_DISTANCE("<=>", "vector_cosine_ops",
 				"SELECT *, embedding <=> ? AS distance FROM %s WHERE embedding <=> ? < ? %s ORDER BY distance LIMIT ? ");
@@ -604,8 +610,11 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		private final JsonMapper jsonMapper;
 
-		DocumentRowMapper(JsonMapper jsonMapper) {
+		private final PgDistanceType distanceType;
+
+		DocumentRowMapper(JsonMapper jsonMapper, PgDistanceType distanceType) {
 			this.jsonMapper = jsonMapper;
+			this.distanceType = distanceType;
 		}
 
 		@Override
@@ -613,7 +622,9 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			String id = rs.getString(COLUMN_ID);
 			String content = rs.getString(COLUMN_CONTENT);
 			PGobject pgMetadata = rs.getObject(COLUMN_METADATA, PGobject.class);
-			Float distance = rs.getFloat(COLUMN_DISTANCE);
+			float rawDistance = rs.getFloat(COLUMN_DISTANCE);
+			float distance = (this.distanceType == PgDistanceType.NEGATIVE_INNER_PRODUCT) ? 1 + rawDistance
+					: rawDistance;
 
 			Map<String, Object> metadata = toMap(pgMetadata);
 			metadata.put(DocumentMetadata.DISTANCE.value(), distance);
