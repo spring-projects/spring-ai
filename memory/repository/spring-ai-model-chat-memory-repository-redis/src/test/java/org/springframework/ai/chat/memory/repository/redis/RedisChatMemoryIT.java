@@ -131,6 +131,25 @@ class RedisChatMemoryIT {
 	}
 
 	@Test
+	void shouldClearAllMessagesEvenWhenConversationExceedsConfiguredBatchSize() {
+		this.contextRunner.run(context -> {
+			String conversationId = "test-conversation-clear-limit";
+
+			// Add more messages than a single search batch can return
+			for (int i = 1; i <= 12; i++) {
+				chatMemory.add(conversationId, new UserMessage("Message " + i));
+			}
+
+			// Clear conversation
+			chatMemory.clear(conversationId);
+
+			// Verify all messages are cleared
+			List<Message> messages = chatMemory.get(conversationId, 100);
+			assertThat(messages).isEmpty();
+		});
+	}
+
+	@Test
 	void shouldHandleBatchMessageAddition() {
 		this.contextRunner.run(context -> {
 			String conversationId = "test-conversation";
