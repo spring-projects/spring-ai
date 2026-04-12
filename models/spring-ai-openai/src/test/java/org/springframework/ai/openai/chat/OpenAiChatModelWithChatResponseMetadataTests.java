@@ -124,6 +124,7 @@ public class OpenAiChatModelWithChatResponseMetadataTests {
 			assertThat(chatGenerationMetadata).isNotNull();
 			assertThat(chatGenerationMetadata.getFinishReason()).isEqualTo("STOP");
 			assertThat(chatGenerationMetadata.getContentFilters()).isEmpty();
+			assertThat(generation.getOutput().getMetadata().get("reasoningContent")).isEqualTo("");
 		});
 	}
 
@@ -144,7 +145,26 @@ public class OpenAiChatModelWithChatResponseMetadataTests {
 		assertThat(logprobs).isNotNull().isInstanceOf(OpenAiApi.LogProbs.class);
 	}
 
+	@Test
+	void aiResponseContainsReasoningContent() {
+
+		prepareMock(getJsonWithReasoningContent());
+
+		Prompt prompt = new Prompt("Reach for the sky.");
+
+		ChatResponse response = this.openAiChatClient.call(prompt);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResult()).isNotNull();
+		assertThat(response.getResult().getOutput().getMetadata().get("reasoningContent"))
+			.isEqualTo("Let me think step by step...");
+	}
+
 	private void prepareMock(boolean includeLogprobs) {
+		prepareMock(getJson(includeLogprobs));
+	}
+
+	private void prepareMock(String json) {
 
 		HttpHeaders httpHeaders = new HttpHeaders();
 		httpHeaders.set(OpenAiApiResponseHeaders.REQUESTS_LIMIT_HEADER.getName(), "4000");
@@ -157,7 +177,7 @@ public class OpenAiChatModelWithChatResponseMetadataTests {
 		this.server.expect(requestTo(StringContains.containsString("/v1/chat/completions")))
 			.andExpect(method(HttpMethod.POST))
 			.andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer " + TEST_API_KEY))
-			.andRespond(withSuccess(getJson(includeLogprobs), MediaType.APPLICATION_JSON).headers(httpHeaders));
+			.andRespond(withSuccess(json, MediaType.APPLICATION_JSON).headers(httpHeaders));
 
 	}
 
@@ -207,6 +227,31 @@ public class OpenAiChatModelWithChatResponseMetadataTests {
 		}
 
 		return String.format(getBaseJson(), "");
+	}
+
+	private String getJsonWithReasoningContent() {
+		return """
+				   {
+				      "id": "chatcmpl-456",
+				      "object": "chat.completion",
+				      "created": 1677652288,
+				      "model": "gpt-4o",
+				      "choices": [{
+				      "index": 0,
+				      "message": {
+				         "role": "assistant",
+				         "content": "I surrender!",
+				         "reasoning_content": "Let me think step by step..."
+				      },
+				      "finish_reason": "stop"
+				      }],
+				      "usage": {
+				      "prompt_tokens": 9,
+				      "completion_tokens": 12,
+				      "total_tokens": 21
+				      }
+				   }
+				""";
 	}
 
 	@SpringBootConfiguration
