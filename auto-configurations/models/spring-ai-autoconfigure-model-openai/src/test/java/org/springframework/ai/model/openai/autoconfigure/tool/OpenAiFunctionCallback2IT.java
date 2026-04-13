@@ -43,7 +43,8 @@ public class OpenAiFunctionCallback2IT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
 				"spring.ai.openai.chat.options.model=" + "gpt-4o-mini")
-		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class,
+				org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test
@@ -55,7 +56,7 @@ public class OpenAiFunctionCallback2IT {
 			// @formatter:off
 			ChatClient chatClient = ChatClient.builder(chatModel)
 				.defaultToolNames("WeatherInfo")
-				.defaultUser(u -> u.text("What's the weather like in {cities}?"))
+				.defaultUser(u -> u.text("What's the weather like in {cities}? Please use the provided tools to get the weather for all 3 cities."))
 				.build();
 
 			String content = chatClient.prompt()
@@ -78,7 +79,7 @@ public class OpenAiFunctionCallback2IT {
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
 				.toolNames("WeatherInfo")
-				.user("What's the weather like in San Francisco, Tokyo, and Paris?")
+				.user("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.")
 				.stream().content()
 				.collectList().block().stream().collect(Collectors.joining());
 			// @formatter:on

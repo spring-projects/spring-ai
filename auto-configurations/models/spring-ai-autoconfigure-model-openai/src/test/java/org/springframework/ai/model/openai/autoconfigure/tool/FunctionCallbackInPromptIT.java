@@ -46,7 +46,8 @@ public class FunctionCallbackInPromptIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class,
+				org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration.class));
 
 	@Test
 	void functionCallTest() {
@@ -58,7 +59,7 @@ public class FunctionCallbackInPromptIT {
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 				UserMessage userMessage = new UserMessage(
-						"What's the weather like in San Francisco, Tokyo, and Paris?");
+						"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.");
 
 				var promptOptions = OpenAiChatOptions.builder()
 					.toolCallbacks(
@@ -87,7 +88,7 @@ public class FunctionCallbackInPromptIT {
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 				UserMessage userMessage = new UserMessage(
-						"What's the weather like in San Francisco, Tokyo, and Paris?");
+						"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.");
 
 				var promptOptions = OpenAiChatOptions.builder()
 					.toolCallbacks(

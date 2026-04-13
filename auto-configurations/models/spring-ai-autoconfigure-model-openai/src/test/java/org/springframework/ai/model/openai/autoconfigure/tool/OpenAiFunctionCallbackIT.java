@@ -50,7 +50,8 @@ public class OpenAiFunctionCallbackIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
 				"spring.ai.openai.chat.options.model=" + "gpt-4o-mini")
-		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class,
+				org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test
@@ -59,7 +60,8 @@ public class OpenAiFunctionCallbackIT {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+			UserMessage userMessage = new UserMessage(
+					"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.");
 
 			ChatResponse response = chatModel
 				.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().toolNames("WeatherInfo").build()));
@@ -78,7 +80,7 @@ public class OpenAiFunctionCallbackIT {
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 			UserMessage userMessage = new UserMessage(
-					"What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'WeatherInfo'");
+					"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities. You can call the following functions 'WeatherInfo'");
 
 			Flux<ChatResponse> response = chatModel
 				.stream(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().toolNames("WeatherInfo").build()));
