@@ -47,6 +47,7 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.servlet.function.RequestPredicates;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.RouterFunctions;
 import org.springframework.web.servlet.function.ServerRequest;
@@ -151,8 +152,9 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		this.contextExtractor = contextExtractor;
 		this.securityValidator = securityValidator;
 		this.routerFunction = RouterFunctions.route()
-			.GET(this.mcpEndpoint, this::handleGet)
-			.POST(this.mcpEndpoint, this::handlePost)
+			.GET(this.mcpEndpoint, RequestPredicates.accept(MediaType.TEXT_EVENT_STREAM), this::handleGet)
+			.POST(this.mcpEndpoint, RequestPredicates.accept(MediaType.TEXT_EVENT_STREAM, MediaType.APPLICATION_JSON),
+					this::handlePost)
 			.DELETE(this.mcpEndpoint, this::handleDelete)
 			.build();
 
@@ -280,11 +282,6 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 			return ServerResponse.status(e.getStatusCode()).body(message);
 		}
 
-		List<MediaType> acceptHeaders = request.headers().asHttpHeaders().getAccept();
-		if (!acceptHeaders.contains(MediaType.TEXT_EVENT_STREAM)) {
-			return ServerResponse.badRequest().body("Invalid Accept header. Expected TEXT_EVENT_STREAM");
-		}
-
 		McpTransportContext transportContext = this.contextExtractor.extract(request);
 
 		if (request.headers().header(HttpHeaders.MCP_SESSION_ID).isEmpty()) {
@@ -367,15 +364,6 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		catch (ServerTransportSecurityException e) {
 			var message = e.getMessage() != null ? e.getMessage() : "";
 			return ServerResponse.status(e.getStatusCode()).body(message);
-		}
-
-		List<MediaType> acceptHeaders = request.headers().asHttpHeaders().getAccept();
-		if (!acceptHeaders.contains(MediaType.TEXT_EVENT_STREAM)
-				|| !acceptHeaders.contains(MediaType.APPLICATION_JSON)) {
-			return ServerResponse.badRequest()
-				.body(McpError.builder(McpSchema.ErrorCodes.METHOD_NOT_FOUND)
-					.message("Invalid Accept headers. Expected TEXT_EVENT_STREAM and APPLICATION_JSON")
-					.build());
 		}
 
 		McpTransportContext transportContext = this.contextExtractor.extract(request);
