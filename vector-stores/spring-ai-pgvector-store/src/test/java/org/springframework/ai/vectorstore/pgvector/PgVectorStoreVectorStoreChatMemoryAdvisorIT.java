@@ -61,8 +61,10 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				"OPENAI_API_KEY must be set for this test");
 
 		// Use a real OpenAI embedding model
-		EmbeddingModel embeddingModel = new OpenAiEmbeddingModel(
-				OpenAiEmbeddingOptions.builder().apiKey(apiKey).build());
+		EmbeddingModel embeddingModel = new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder()
+			.apiKey(apiKey)
+			.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
+			.build());
 
 		// Create PgVectorStore
 		JdbcTemplate jdbcTemplate = createJdbcTemplateWithConnectionToTestcontainer();
@@ -99,8 +101,10 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 		org.junit.jupiter.api.Assumptions.assumeTrue(apiKey != null && !apiKey.isBlank(),
 				"OPENAI_API_KEY must be set for this test");
 
-		EmbeddingModel embeddingModel = new OpenAiEmbeddingModel(
-				OpenAiEmbeddingOptions.builder().apiKey(apiKey).build());
+		EmbeddingModel embeddingModel = new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder()
+			.apiKey(apiKey)
+			.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
+			.build());
 		JdbcTemplate jdbcTemplate = createJdbcTemplateWithConnectionToTestcontainer();
 		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
 			.dimensions(1536)
@@ -141,8 +145,10 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 		org.junit.jupiter.api.Assumptions.assumeTrue(apiKey != null && !apiKey.isBlank(),
 				"OPENAI_API_KEY must be set for this test");
 
-		EmbeddingModel embeddingModel = new OpenAiEmbeddingModel(
-				OpenAiEmbeddingOptions.builder().apiKey(apiKey).build());
+		EmbeddingModel embeddingModel = new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder()
+			.apiKey(apiKey)
+			.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
+			.build());
 		JdbcTemplate jdbcTemplate = createJdbcTemplateWithConnectionToTestcontainer();
 		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
 			.dimensions(1536)
@@ -173,8 +179,10 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 		org.junit.jupiter.api.Assumptions.assumeTrue(apiKey != null && !apiKey.isBlank(),
 				"OPENAI_API_KEY must be set for this test");
 
-		EmbeddingModel embeddingModel = new OpenAiEmbeddingModel(
-				OpenAiEmbeddingOptions.builder().apiKey(apiKey).build());
+		EmbeddingModel embeddingModel = new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder()
+			.apiKey(apiKey)
+			.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
+			.build());
 		JdbcTemplate jdbcTemplate = createJdbcTemplateWithConnectionToTestcontainer();
 		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
 			.dimensions(1536)
@@ -206,8 +214,10 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 		org.junit.jupiter.api.Assumptions.assumeTrue(apiKey != null && !apiKey.isBlank(),
 				"OPENAI_API_KEY must be set for this test");
 
-		EmbeddingModel embeddingModel = new OpenAiEmbeddingModel(
-				OpenAiEmbeddingOptions.builder().apiKey(apiKey).build());
+		EmbeddingModel embeddingModel = new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder()
+			.apiKey(apiKey)
+			.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
+			.build());
 		JdbcTemplate jdbcTemplate = createJdbcTemplateWithConnectionToTestcontainer();
 		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
 			.dimensions(1536)
@@ -241,8 +251,10 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 		org.junit.jupiter.api.Assumptions.assumeTrue(apiKey != null && !apiKey.isBlank(),
 				"OPENAI_API_KEY must be set for this test");
 
-		EmbeddingModel embeddingModel = new OpenAiEmbeddingModel(
-				OpenAiEmbeddingOptions.builder().apiKey(apiKey).build());
+		EmbeddingModel embeddingModel = new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder()
+			.apiKey(apiKey)
+			.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
+			.build());
 		JdbcTemplate jdbcTemplate = createJdbcTemplateWithConnectionToTestcontainer();
 		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
 			.dimensions(1536)
@@ -273,8 +285,10 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 		org.junit.jupiter.api.Assumptions.assumeTrue(apiKey != null && !apiKey.isBlank(),
 				"OPENAI_API_KEY must be set for this test");
 
-		EmbeddingModel embeddingModel = new OpenAiEmbeddingModel(
-				OpenAiEmbeddingOptions.builder().apiKey(apiKey).build());
+		EmbeddingModel embeddingModel = new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder()
+			.apiKey(apiKey)
+			.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
+			.build());
 		JdbcTemplate jdbcTemplate = createJdbcTemplateWithConnectionToTestcontainer();
 		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
 			.dimensions(1536)
@@ -307,8 +321,10 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 		org.junit.jupiter.api.Assumptions.assumeTrue(apiKey != null && !apiKey.isBlank(),
 				"OPENAI_API_KEY must be set for this test");
 
-		EmbeddingModel embeddingModel = new OpenAiEmbeddingModel(
-				OpenAiEmbeddingOptions.builder().apiKey(apiKey).build());
+		EmbeddingModel embeddingModel = new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder()
+			.apiKey(apiKey)
+			.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
+			.build());
 		JdbcTemplate jdbcTemplate = createJdbcTemplateWithConnectionToTestcontainer();
 		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
 			.dimensions(1536)

@@ -380,8 +380,10 @@ public class MilvusVectorStoreIT extends BaseVectorStoreTests {
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(
-					OpenAiEmbeddingOptions.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
+			return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder()
+				.apiKey(System.getenv("OPENAI_API_KEY"))
+				.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
+				.build());
 			// return new OpenAiEmbeddingModel(new
 			// OpenAiApi(System.getenv("OPENAI_API_KEY")), MetadataMode.EMBED,
 			// OpenAiEmbeddingOptions.builder().withModel("text-embedding-ada-002").build());
