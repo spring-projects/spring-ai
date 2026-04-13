@@ -45,7 +45,7 @@ public class SimplePersistentVectorStoreIT {
 	@TempDir(cleanup = CleanupMode.ON_SUCCESS)
 	Path workingDir;
 
-	@Value("file:src/test/resources/data/acme/bikes.json")
+	@Value("classpath:/data/acme/bikes.json")
 	private Resource bikesJsonResource;
 
 	@Autowired

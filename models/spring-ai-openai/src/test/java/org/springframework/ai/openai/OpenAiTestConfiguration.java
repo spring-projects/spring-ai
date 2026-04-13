@@ -48,4 +48,14 @@ public class OpenAiTestConfiguration {
 		return OpenAiAudioTranscriptionModel.builder().build();
 	}
 
+	@Bean
+	public OpenAiAudioSpeechModel openAiAudioSpeechModel() {
+		return OpenAiAudioSpeechModel.builder().build();
+	}
+
+	@Bean
+	public OpenAiModerationModel openAiModerationModel() {
+		return OpenAiModerationModel.builder().build();
+	}
+
 }

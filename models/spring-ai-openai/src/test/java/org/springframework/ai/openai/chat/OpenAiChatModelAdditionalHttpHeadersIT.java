@@ -65,7 +65,10 @@ public class OpenAiChatModelAdditionalHttpHeadersIT {
 		@Bean
 		public OpenAiChatModel openAiClient() {
 			return OpenAiChatModel.builder()
-				.options(org.springframework.ai.openai.OpenAiChatOptions.builder().apiKey("Invalid API Key").build())
+				.options(org.springframework.ai.openai.OpenAiChatOptions.builder()
+					.apiKey("Invalid API Key")
+					.model(org.springframework.ai.openai.OpenAiChatOptions.DEFAULT_CHAT_MODEL)
+					.build())
 				.build();
 		}
 

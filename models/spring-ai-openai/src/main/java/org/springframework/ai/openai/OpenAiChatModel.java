@@ -944,6 +944,10 @@ public final class OpenAiChatModel implements ChatModel {
 			builder.serviceTier(ChatCompletionCreateParams.ServiceTier.of(requestOptions.getServiceTier()));
 		}
 
+		if (requestOptions.getCustomHeaders() != null && !requestOptions.getCustomHeaders().isEmpty()) {
+			requestOptions.getCustomHeaders().forEach(builder::putAdditionalHeader);
+		}
+
 		if (stream) {
 			if (requestOptions.getStreamOptions() != null) {
 				ChatCompletionStreamOptions.Builder streamOptionsBuilder = ChatCompletionStreamOptions.builder();

@@ -161,7 +161,10 @@ public class MetadataTransformerIT {
 						"You must provide an API key.  Put it in an environment variable under the name OPENAI_API_KEY");
 			}
 			return OpenAiChatModel.builder()
-				.options(org.springframework.ai.openai.OpenAiChatOptions.builder().apiKey(apiKey).build())
+				.options(org.springframework.ai.openai.OpenAiChatOptions.builder()
+					.apiKey(apiKey)
+					.model(org.springframework.ai.openai.OpenAiChatOptions.DEFAULT_CHAT_MODEL)
+					.build())
 				.build();
 		}
 

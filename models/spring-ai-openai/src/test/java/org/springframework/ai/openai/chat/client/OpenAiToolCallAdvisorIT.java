@@ -41,6 +41,7 @@ class OpenAiToolCallAdvisorIT extends AbstractToolCallAdvisorIT {
 		return OpenAiChatModel.builder()
 			.options(org.springframework.ai.openai.OpenAiChatOptions.builder()
 				.apiKey(System.getenv("OPENAI_API_KEY"))
+				.model(org.springframework.ai.openai.OpenAiChatOptions.DEFAULT_CHAT_MODEL)
 				.build())
 			.build();
 	}
