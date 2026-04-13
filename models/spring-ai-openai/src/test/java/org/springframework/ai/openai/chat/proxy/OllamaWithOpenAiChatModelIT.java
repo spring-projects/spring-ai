@@ -155,12 +155,7 @@ class OllamaWithOpenAiChatModelIT {
 			.template(template)
 			.variables(Map.of("subject", "ice cream flavors", "format", format))
 			.build();
-		Prompt prompt = new Prompt(promptTemplate.createMessage(),
-				OpenAiChatOptions.builder()
-					.responseFormat(OpenAiChatModel.ResponseFormat.builder()
-						.type(OpenAiChatModel.ResponseFormat.Type.JSON_OBJECT)
-						.build())
-					.build());
+		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		List<String> list = outputConverter.convert(generation.getOutput().getText());
