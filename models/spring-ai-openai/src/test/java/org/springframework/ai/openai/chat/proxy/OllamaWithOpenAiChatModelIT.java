@@ -188,7 +188,7 @@ class OllamaWithOpenAiChatModelIT {
 	@Test
 	void functionCallTest() {
 		UserMessage userMessage = new UserMessage(
-				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
+				"What's the weather like in San Francisco, Tokyo, and Paris? Return a list with the temperature in Celsius for each of the three locations.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
