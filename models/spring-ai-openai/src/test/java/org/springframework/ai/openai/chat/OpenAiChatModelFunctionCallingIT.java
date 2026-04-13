@@ -126,7 +126,8 @@ class OpenAiChatModelFunctionCallingIT {
 
 	void functionCallTest(OpenAiChatOptions promptOptions) {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -188,7 +189,8 @@ class OpenAiChatModelFunctionCallingIT {
 
 	void streamFunctionCallTest(OpenAiChatOptions promptOptions) {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
