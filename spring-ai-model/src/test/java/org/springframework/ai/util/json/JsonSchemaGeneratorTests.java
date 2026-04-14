@@ -705,25 +705,25 @@ class JsonSchemaGeneratorTests {
 	void generateSchemaForTypeWithJsonPropertyOrder() {
 		String schema = JsonSchemaGenerator.generateForType(OrderedPerson.class);
 		String expectedJsonSchema = """
-              {
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "type": "object",
-                  "properties": {
-                      "name": {
-                          "type": "string"
-                      },
-                      "email": {
-                          "type": "string"
-                      },
-                      "id": {
-                          "type": "integer",
-                          "format": "int32"
-                      }
-                  },
-                  "required": [ "name", "email", "id" ],
-                  "additionalProperties": false
-              }
-              """;
+				{
+				    "$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "name": {
+				            "type": "string"
+				        },
+				        "email": {
+				            "type": "string"
+				        },
+				        "id": {
+				            "type": "integer",
+				            "format": "int32"
+				        }
+				    },
+				    "required": [ "name", "email", "id" ],
+				    "additionalProperties": false
+				}
+				""";
 
 		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
 	}
@@ -846,17 +846,29 @@ class JsonSchemaGeneratorTests {
 
 		private String email;
 
-		public int getId() { return this.id; }
+		public int getId() {
+			return this.id;
+		}
 
-		public void setId(int id) { this.id = id; }
+		public void setId(int id) {
+			this.id = id;
+		}
 
-		public String getName() { return this.name; }
+		public String getName() {
+			return this.name;
+		}
 
-		public void setName(String name) { this.name = name; }
+		public void setName(String name) {
+			this.name = name;
+		}
 
-		public String getEmail() { return this.email; }
+		public String getEmail() {
+			return this.email;
+		}
 
-		public void setEmail(String email) { this.email = email; }
+		public void setEmail(String email) {
+			this.email = email;
+		}
 
 	}
 
