@@ -203,7 +203,9 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 			if (toolCallback == null) {
 				logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolName);
-				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
+				toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName,
+						"No ToolCallback found for tool name: " + toolName));
+				continue;
 			}
 
 			if (returnDirect == null) {
