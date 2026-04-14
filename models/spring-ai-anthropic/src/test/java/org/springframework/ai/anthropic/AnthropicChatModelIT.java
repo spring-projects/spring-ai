@@ -33,10 +33,12 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.tool.MockWeatherService;
+import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -81,10 +83,27 @@ class AnthropicChatModelIT {
 	private Resource systemResource;
 
 	private static void validateChatResponseMetadata(ChatResponse response, String model) {
-		assertThat(response.getMetadata().getId()).isNotEmpty();
-		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
-		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
-		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
+		ChatResponseMetadata metadata = response.getMetadata();
+
+		assertThat(metadata.getId()).isNotEmpty();
+		assertThat(metadata.getUsage().getPromptTokens()).isPositive();
+		assertThat(metadata.getUsage().getCompletionTokens()).isPositive();
+		assertThat(metadata.getUsage().getTotalTokens()).isPositive();
+
+		if (metadata.getRateLimit() instanceof AnthropicRateLimit rateLimit) {
+			assertThat(rateLimit.getRequestsLimit()).isPositive();
+			assertThat(rateLimit.getRequestsRemaining()).isPositive();
+			assertThat(rateLimit.getRequestsReset()).isNotNull();
+			assertThat(rateLimit.getTokensLimit()).isPositive();
+			assertThat(rateLimit.getTokensRemaining()).isPositive();
+			assertThat(rateLimit.getTokensReset()).isNotNull();
+			assertThat(rateLimit.getInputTokensLimit()).isPositive();
+			assertThat(rateLimit.getInputTokensRemaining()).isPositive();
+			assertThat(rateLimit.getInputTokensReset()).isNotNull();
+			assertThat(rateLimit.getOutputTokensLimit()).isPositive();
+			assertThat(rateLimit.getOutputTokensRemaining()).isPositive();
+			assertThat(rateLimit.getOutputTokensReset()).isNotNull();
+		}
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -393,7 +412,7 @@ class AnthropicChatModelIT {
 
 		logger.info(response.toString());
 		// Note, brittle test.
-		validateChatResponseMetadata(response, "claude-3-5-sonnet-latest");
+		validateChatResponseMetadata(response, model);
 	}
 
 	@Test
