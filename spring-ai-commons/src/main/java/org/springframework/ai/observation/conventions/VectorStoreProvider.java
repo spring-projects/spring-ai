@@ -116,7 +116,7 @@ public enum VectorStoreProvider {
 	PINECONE("pinecone"),
 
 	/**
-	 * Vector store provided by Qdrand.
+	 * Vector store provided by Qdrant.
 	 */
 	QDRANT("qdrant"),
 
