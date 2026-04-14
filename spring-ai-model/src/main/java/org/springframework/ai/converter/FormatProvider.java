@@ -17,8 +17,8 @@
 package org.springframework.ai.converter;
 
 /**
- * Implementations of this interface provide instructions for how the output of a
- * language generative should be formatted.
+ * Implementations of this interface provide instructions for how the output of a language
+ * generative should be formatted.
  *
  * @author Mark Pollack
  */
