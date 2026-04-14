@@ -68,7 +68,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 public class OracleVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
-	static OracleContainer oracle23aiContainer = new OracleContainer(OracleImage.DEFAULT_IMAGE)
+	static OracleContainer oracleContainer = new OracleContainer(OracleImage.DEFAULT_IMAGE)
 		.withCopyFileToContainer(MountableFile.forClasspathResource("/initialize.sql"),
 				"/container-entrypoint-initdb.d/initialize.sql")
 		.withStartupTimeout(Duration.ofMinutes(5))
@@ -82,12 +82,19 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestClient.class)
-		.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE",
+		.withPropertyValues("test.spring.ai.vectorstore.oracle.indexType=IVF",
+				"test.spring.ai.vectorstore.oracle.distanceType=COSINE",
 				"test.spring.ai.vectorstore.oracle.dimensions=384",
+				"test.spring.ai.vectorstore.oracle.hnswNeighbors=40",
+				"test.spring.ai.vectorstore.oracle.hnswEfConstruction=500",
+				"test.spring.ai.vectorstore.oracle.ivfNeighborPartitions=10",
+				"test.spring.ai.vectorstore.oracle.ivfSamplePerPartition=-1",
+				"test.spring.ai.vectorstore.oracle.ivfMinVectorsPerPartition=-1",
+				"test.spring.ai.vectorstore.oracle.initializeSchema=true",
 				// JdbcTemplate configuration
-				String.format("app.datasource.url=%s", oracle23aiContainer.getJdbcUrl()),
-				String.format("app.datasource.username=%s", oracle23aiContainer.getUsername()),
-				String.format("app.datasource.password=%s", oracle23aiContainer.getPassword()),
+				String.format("app.datasource.url=%s", oracleContainer.getJdbcUrl()),
+				String.format("app.datasource.username=%s", oracleContainer.getUsername()),
+				String.format("app.datasource.password=%s", oracleContainer.getPassword()),
 				"app.datasource.type=oracle.jdbc.pool.OracleDataSource");
 
 	public static String getText(final String uri) {
@@ -102,6 +109,14 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 	private static void dropTable(ApplicationContext context, String tableName) {
 		JdbcTemplate jdbcTemplate = context.getBean(JdbcTemplate.class);
 		jdbcTemplate.execute("DROP TABLE IF EXISTS " + tableName + " PURGE");
+	}
+
+	private static boolean isIndexPresent(ApplicationContext context, String tableName) {
+		JdbcTemplate jdbcTemplate = context.getBean(JdbcTemplate.class);
+		String indexName = ("VECTOR_INDEX_" + tableName).toUpperCase();
+		Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM USER_INDEXES WHERE INDEX_NAME = ?",
+				Integer.class, indexName);
+		return count != null && count > 0;
 	}
 
 	private static boolean isSortedBySimilarity(final List<Document> documents) {
@@ -127,7 +142,8 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 	@Override
 	protected void executeTest(Consumer<VectorStore> testFunction) {
 		this.contextRunner
-			.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE",
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.indexType=IVF",
+					"test.spring.ai.vectorstore.oracle.distanceType=COSINE",
 					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
 			.run(context -> {
 				VectorStore vectorStore = context.getBean(VectorStore.class);
@@ -135,10 +151,14 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 			});
 	}
 
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "COSINE", "DOT", "EUCLIDEAN", "EUCLIDEAN_SQUARED", "MANHATTAN" })
-	public void addAndSearch(String distanceType) {
-		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
+	@ParameterizedTest(name = "{0} / {1} : {displayName} ")
+	@CsvSource({ "NONE,COSINE", "NONE,DOT", "NONE,EUCLIDEAN", "NONE,EUCLIDEAN_SQUARED", "NONE,MANHATTAN", "IVF,COSINE",
+			"IVF,DOT", "IVF,EUCLIDEAN", "IVF,EUCLIDEAN_SQUARED", "IVF,MANHATTAN", "HNSW,COSINE", "HNSW,DOT",
+			"HNSW,EUCLIDEAN", "HNSW,EUCLIDEAN_SQUARED", "HNSW,MANHATTAN" })
+	public void addAndSearch(String indexType, String distanceType) {
+		this.contextRunner
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.indexType=" + indexType,
+					"test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
 			.withPropertyValues(
 					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
 			.run(context -> {
@@ -170,7 +190,9 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 	@CsvSource({ "COSINE,-1", "DOT,-1", "EUCLIDEAN,-1", "EUCLIDEAN_SQUARED,-1", "MANHATTAN,-1", "COSINE,75", "DOT,80",
 			"EUCLIDEAN,60", "EUCLIDEAN_SQUARED,30", "MANHATTAN,42" })
 	public void searchWithFilters(String distanceType, int searchAccuracy) {
-		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
+		this.contextRunner
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.indexType=IVF",
+					"test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
 			.withPropertyValues("test.spring.ai.vectorstore.oracle.searchAccuracy=" + searchAccuracy)
 			.run(context -> {
 
@@ -251,7 +273,9 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "COSINE", "DOT", "EUCLIDEAN", "EUCLIDEAN_SQUARED", "MANHATTAN" })
 	public void documentUpdate(String distanceType) {
-		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
+		this.contextRunner
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.indexType=IVF",
+					"test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
 			.withPropertyValues(
 					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
 			.run(context -> {
@@ -292,7 +316,9 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "COSINE", "DOT" })
 	public void searchWithThreshold(String distanceType) {
-		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
+		this.contextRunner
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.indexType=IVF",
+					"test.spring.ai.vectorstore.oracle.distanceType=" + distanceType)
 			.withPropertyValues(
 					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
 			.run(context -> {
@@ -330,7 +356,8 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 	@Test
 	void deleteWithComplexFilterExpression() {
 		this.contextRunner
-			.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE",
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.indexType=IVF",
+					"test.spring.ai.vectorstore.oracle.distanceType=COSINE",
 					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
 			.run(context -> {
 				VectorStore vectorStore = context.getBean(VectorStore.class);
@@ -369,12 +396,94 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 	@Test
 	void getNativeClientTest() {
 		this.contextRunner
-			.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE",
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.indexType=IVF",
+					"test.spring.ai.vectorstore.oracle.distanceType=COSINE",
 					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
 			.run(context -> {
 				OracleVectorStore vectorStore = context.getBean(OracleVectorStore.class);
 				Optional<JdbcTemplate> nativeClient = vectorStore.getNativeClient();
 				assertThat(nativeClient).isPresent();
+			});
+	}
+
+	@Test
+	void customIvfParametersAreApplied() {
+		this.contextRunner
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.indexType=IVF",
+					"test.spring.ai.vectorstore.oracle.distanceType=COSINE",
+					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY,
+					"test.spring.ai.vectorstore.oracle.initializeSchema=false",
+					"test.spring.ai.vectorstore.oracle.ivfNeighborPartitions=32",
+					"test.spring.ai.vectorstore.oracle.ivfSamplePerPartition=16",
+					"test.spring.ai.vectorstore.oracle.ivfMinVectorsPerPartition=8")
+			.run(context -> {
+				OracleVectorStore vectorStore = context.getBean(OracleVectorStore.class);
+				assertThat(vectorStore.getIndexType()).isEqualTo(OracleVectorStore.OracleVectorStoreIndexType.IVF);
+				assertThat(vectorStore.getIvfNeighborPartitions()).isEqualTo(32);
+				assertThat(vectorStore.getIvfSamplePerPartition()).isEqualTo(16);
+				assertThat(vectorStore.getIvfMinVectorsPerPartition()).isEqualTo(8);
+			});
+	}
+
+	@Test
+	void defaultIvfInitializationCreatesIndex() {
+		this.contextRunner
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.indexType=IVF",
+					"test.spring.ai.vectorstore.oracle.distanceType=COSINE",
+					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY,
+					"test.spring.ai.vectorstore.oracle.initializeSchema=true")
+			.run(context -> {
+				OracleVectorStore vectorStore = context.getBean(OracleVectorStore.class);
+				assertThat(isIndexPresent(context, vectorStore.getTableName())).isTrue();
+				dropTable(context, vectorStore.getTableName());
+			});
+	}
+
+	@Test
+	void hnswInitializationPath() {
+		this.contextRunner
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.indexType=HNSW",
+					"test.spring.ai.vectorstore.oracle.distanceType=COSINE",
+					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY,
+					"test.spring.ai.vectorstore.oracle.initializeSchema=true",
+					"test.spring.ai.vectorstore.oracle.hnswNeighbors=64",
+					"test.spring.ai.vectorstore.oracle.hnswEfConstruction=300")
+			.run(context -> {
+				assertThat(context.getStartupFailure()).isNull();
+				OracleVectorStore vectorStore = context.getBean(OracleVectorStore.class);
+				assertThat(vectorStore.getIndexType()).isEqualTo(OracleVectorStore.OracleVectorStoreIndexType.HNSW);
+				assertThat(vectorStore.getHnswNeighbors()).isEqualTo(64);
+				assertThat(vectorStore.getHnswEfConstruction()).isEqualTo(300);
+				assertThat(isIndexPresent(context, vectorStore.getTableName())).isTrue();
+				dropTable(context, vectorStore.getTableName());
+			});
+	}
+
+	@Test
+	void invalidIvfSamplePerPartitionFailsAtStartup() {
+		this.contextRunner
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.indexType=IVF",
+					"test.spring.ai.vectorstore.oracle.distanceType=COSINE",
+					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY,
+					"test.spring.ai.vectorstore.oracle.ivfSamplePerPartition=-2")
+			.run(context -> {
+				assertThat(context).hasFailed();
+				assertThat(context.getStartupFailure()).hasRootCauseInstanceOf(IllegalArgumentException.class)
+					.hasMessageContaining("IVF sample per partition must be greater than 0");
+			});
+	}
+
+	@Test
+	void invalidHnswNeighborsFailAtStartup() {
+		this.contextRunner
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.indexType=HNSW",
+					"test.spring.ai.vectorstore.oracle.distanceType=COSINE",
+					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY,
+					"test.spring.ai.vectorstore.oracle.hnswNeighbors=0")
+			.run(context -> {
+				assertThat(context).hasFailed();
+				assertThat(context.getStartupFailure()).hasRootCauseInstanceOf(IllegalArgumentException.class)
+					.hasMessageContaining("HNSW neighbors must be greater than 0");
 			});
 	}
 
@@ -385,18 +494,44 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 		@Value("${test.spring.ai.vectorstore.oracle.distanceType}")
 		OracleVectorStore.OracleVectorStoreDistanceType distanceType;
 
+		@Value("${test.spring.ai.vectorstore.oracle.indexType}")
+		OracleVectorStore.OracleVectorStoreIndexType indexType;
+
 		@Value("${test.spring.ai.vectorstore.oracle.searchAccuracy}")
 		int searchAccuracy;
+
+		@Value("${test.spring.ai.vectorstore.oracle.hnswNeighbors}")
+		int hnswNeighbors;
+
+		@Value("${test.spring.ai.vectorstore.oracle.hnswEfConstruction}")
+		int hnswEfConstruction;
+
+		@Value("${test.spring.ai.vectorstore.oracle.ivfNeighborPartitions}")
+		int ivfNeighborPartitions;
+
+		@Value("${test.spring.ai.vectorstore.oracle.ivfSamplePerPartition}")
+		int ivfSamplePerPartition;
+
+		@Value("${test.spring.ai.vectorstore.oracle.ivfMinVectorsPerPartition}")
+		int ivfMinVectorsPerPartition;
+
+		@Value("${test.spring.ai.vectorstore.oracle.initializeSchema}")
+		boolean initializeSchema;
 
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 			return OracleVectorStore.builder(jdbcTemplate, embeddingModel)
 				.tableName(OracleVectorStore.DEFAULT_TABLE_NAME)
-				.indexType(OracleVectorStore.OracleVectorStoreIndexType.IVF)
+				.indexType(this.indexType)
 				.distanceType(this.distanceType)
 				.dimensions(384)
 				.searchAccuracy(this.searchAccuracy)
-				.initializeSchema(true)
+				.hnswNeighbors(this.hnswNeighbors)
+				.hnswEfConstruction(this.hnswEfConstruction)
+				.ivfNeighborPartitions(this.ivfNeighborPartitions)
+				.ivfSamplePerPartition(this.ivfSamplePerPartition)
+				.ivfMinVectorsPerPartition(this.ivfMinVectorsPerPartition)
+				.initializeSchema(this.initializeSchema)
 				.removeExistingVectorStoreTable(true)
 				.forcedNormalization(true)
 				.build();
@@ -410,9 +545,9 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 		@Bean
 		public DataSourceProperties dataSourceProperties() {
 			DataSourceProperties properties = new DataSourceProperties();
-			properties.setUrl(oracle23aiContainer.getJdbcUrl());
-			properties.setUsername(oracle23aiContainer.getUsername());
-			properties.setPassword(oracle23aiContainer.getPassword());
+			properties.setUrl(oracleContainer.getJdbcUrl());
+			properties.setUsername(oracleContainer.getUsername());
+			properties.setPassword(oracleContainer.getPassword());
 			return properties;
 		}
 

@@ -1,8 +1,8 @@
-= Oracle Database 23ai - AI Vector Search
+= Oracle AI Database - AI Vector Search
 
-The link:https://docs.oracle.com/en/database/oracle/oracle-database/23/vecse/overview-ai-vector-search.html[AI Vector Search] capabilities of the Oracle Database 23ai (23.4+) are available as a Spring AI `VectorStore` to help you to store document embeddings and perform similarity searches. Of course, all other features are also available.
+The link:https://docs.oracle.com/en/database/oracle/oracle-database/26/vecse/overview-ai-vector-search.html[AI Vector Search] capabilities of Oracle AI Database are available as a Spring AI `VectorStore` to help you to store document embeddings and perform similarity searches. Of course, all other features are also available.
 
-TIP: The <<Run Oracle Database 23ai locally,Run Oracle Database 23ai locally>> appendix shows how to start a database with a lightweight Docker container.
+TIP: The <<Run Oracle AI Database locally,Run Oracle AI Database locally>> appendix shows how to start a database with a lightweight Docker container.
 
 == Auto-Configuration
 
@@ -34,6 +34,8 @@ dependencies {
 If you need this vector store to initialize the schema for you then you'll need to pass true for the `initializeSchema` boolean parameter in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
 
 NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
+
+NOTE: HNSW index creation requires an Oracle AI Database release that supports HNSW vector indexes. The local Testcontainers example below uses `gvenzl/oracle-free:23-slim`.
 
 The Vector Store, also requires an `EmbeddingModel` instance to calculate embeddings for the documents.
 You can pick one of the available xref:api/embeddings.adoc#available-implementations[EmbeddingModel Implementations].
@@ -109,7 +111,7 @@ You can use the following properties in your Spring Boot configuration to custom
 |===
 |Property| Description | Default value
 
-|`spring.ai.vectorstore.oracle.index-type`|  Nearest neighbor search index type. Options are `NONE` - exact nearest neighbor search, `IVF` - Inverted Flat File index. It has faster build times and uses less memory than HNSW, but has lower query performance (in terms of speed-recall tradeoff). `HNSW` - creates a multilayer graph. It has slower build times and uses more memory than IVF, but has better query performance (in terms of speed-recall tradeoff). | NONE
+|`spring.ai.vectorstore.oracle.index-type`|  Nearest neighbor search index type. Options are `NONE` - exact nearest neighbor search, `IVF` - Inverted Flat File index. It has faster build times and uses less memory than HNSW, but has lower query performance (in terms of speed-recall tradeoff). `HNSW` - creates a multilayer graph. It has slower build times and uses more memory than IVF, but has better query performance (in terms of speed-recall tradeoff). If Oracle rejects the configured index DDL at startup, initialization fails and the application must be reconfigured. | IVF
 |`spring.ai.vectorstore.oracle.distance-type`| Search distance type among `COSINE` (default), `DOT`, `EUCLIDEAN`, `EUCLIDEAN_SQUARED`, and `MANHATTAN`.
 
 NOTE: If vectors are normalized, you can use `DOT` or `COSINE` for best performance.| COSINE
@@ -122,6 +124,11 @@ NOTE: If vectors are normalized, you can use `DOT` or `COSINE` for best performa
 |`spring.ai.vectorstore.oracle.remove-existing-vector-store-table` | Drops the existing table on start up.  | false
 |`spring.ai.vectorstore.oracle.initialize-schema` | Whether to initialize the required schema. | false
 |`spring.ai.vectorstore.oracle.search-accuracy` | Denote the requested accuracy target in the presence of index. Disabled by default. You need to provide an integer in the range [1,100] to override the default index accuracy (95). Using lower accuracy provides approximate similarity search trading off speed versus accuracy. | -1 (`DEFAULT_SEARCH_ACCURACY`)
+|`spring.ai.vectorstore.oracle.hnsw-neighbors` | HNSW `NEIGHBORS` index build parameter. Used only when `index-type=HNSW`. | 40
+|`spring.ai.vectorstore.oracle.hnsw-ef-construction` | HNSW `EFCONSTRUCTION` index build parameter. Used only when `index-type=HNSW`. | 500
+|`spring.ai.vectorstore.oracle.ivf-neighbor-partitions` | IVF `NEIGHBOR PARTITIONS` index build parameter. Used only when `index-type=IVF`. | 10
+|`spring.ai.vectorstore.oracle.ivf-sample-per-partition` | Optional IVF `SAMPLE_PER_PARTITION` index build parameter. Omitted unless explicitly configured. | -1
+|`spring.ai.vectorstore.oracle.ivf-min-vectors-per-partition` | Optional IVF `MIN_VECTORS_PER_PARTITION` index build parameter. Omitted unless explicitly configured. | -1
 
 |===
 
@@ -192,19 +199,34 @@ To configure the `OracleVectorStore` in your application, you can use the follow
 public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
     return OracleVectorStore.builder(jdbcTemplate, embeddingModel)
         .tableName("my_vectors")
-        .indexType(OracleVectorStoreIndexType.IVF)
+        .indexType(OracleVectorStoreIndexType.HNSW)
         .distanceType(OracleVectorStoreDistanceType.COSINE)
         .dimensions(1536)
         .searchAccuracy(95)
+        .hnswNeighbors(64)
+        .hnswEfConstruction(300)
         .initializeSchema(true)
         .build();
 }
 ----
 
-== Run Oracle Database 23ai locally
+To customize IVF index creation instead, configure the IVF-specific builder settings:
+
+[source,java]
+----
+OracleVectorStore.builder(jdbcTemplate, embeddingModel)
+    .indexType(OracleVectorStoreIndexType.IVF)
+    .ivfNeighborPartitions(32)
+    .ivfSamplePerPartition(16)
+    .ivfMinVectorsPerPartition(8)
+    .initializeSchema(true)
+    .build();
+----
+
+== Run Oracle AI Database locally
 
 ----
-docker run --rm --name oracle23ai -p 1521:1521 -e APP_USER=mlops -e APP_USER_PASSWORD=mlops -e ORACLE_PASSWORD=mlops gvenzl/oracle-free:23-slim
+docker run --rm --name oracle-ai-db -p 1521:1521 -e APP_USER=mlops -e APP_USER_PASSWORD=mlops -e ORACLE_PASSWORD=mlops gvenzl/oracle-free:23-slim
 ----
 
 You can then connect to the database using:
@@ -215,15 +237,15 @@ sql mlops/mlops@localhost/freepdb1
 
 == Accessing the Native Client
 
-The Oracle Vector Store implementation provides access to the underlying native Oracle client (`OracleConnection`) through the `getNativeClient()` method:
+The Oracle Vector Store implementation provides access to the underlying JDBC client (`JdbcTemplate`) through the `getNativeClient()` method:
 
 [source,java]
 ----
 OracleVectorStore vectorStore = context.getBean(OracleVectorStore.class);
-Optional<OracleConnection> nativeClient = vectorStore.getNativeClient();
+Optional<JdbcTemplate> nativeClient = vectorStore.getNativeClient();
 
 if (nativeClient.isPresent()) {
-    OracleConnection connection = nativeClient.get();
+    JdbcTemplate jdbcTemplate = nativeClient.get();
     // Use the native client for Oracle-specific operations
 }
 ----
