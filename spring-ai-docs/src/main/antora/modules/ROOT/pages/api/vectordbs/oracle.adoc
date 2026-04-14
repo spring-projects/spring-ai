@@ -237,16 +237,14 @@ sql mlops/mlops@localhost/freepdb1
 
 == Accessing the Native Client
 
-The Oracle Vector Store implementation provides access to the underlying JDBC client (`JdbcTemplate`) through the `getNativeClient()` method:
+The Oracle Vector Store implementation provides access to the underlying native Oracle client (`OracleConnection`) through the `getNativeClient()` method:
 
 [source,java]
 ----
 OracleVectorStore vectorStore = context.getBean(OracleVectorStore.class);
-Optional<JdbcTemplate> nativeClient = vectorStore.getNativeClient();
-
+Optional<OracleConnection> nativeClient = vectorStore.getNativeClient();
 if (nativeClient.isPresent()) {
-    JdbcTemplate jdbcTemplate = nativeClient.get();
-    // Use the native client for Oracle-specific operations
+    OracleConnection connection = nativeClient.get();    // Use the native client for Oracle-specific operations
 }
 ----
 
