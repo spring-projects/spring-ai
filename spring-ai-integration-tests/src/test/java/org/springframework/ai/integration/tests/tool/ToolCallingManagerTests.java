@@ -121,7 +121,11 @@ public class ToolCallingManagerTests {
 				return this.openAiChatModel.stream(secondPrompt);
 			}
 			return Flux.just(response);
-		}).mapNotNull(it -> it.getResult().getOutput().getText()).collect(Collectors.joining()).block();
+		})
+			.mapNotNull(it -> (it.getResult() == null || it.getResult().getOutput() == null) ? null
+					: it.getResult().getOutput().getText())
+			.collect(Collectors.joining())
+			.block();
 
 		assertThat(joinedTextResponse).isNotNull();
 		assertThat(joinedTextResponse).isNotEmpty()
