@@ -679,19 +679,23 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				.orElse(List.of())
 				.stream()
 				.filter(part -> part.toolCall().isEmpty() && part.toolResponse().isEmpty())
+				.filter(part -> StringUtils.hasText(part.text().orElse("")))
 				.map(part -> {
 					var partMessageMetadata = new HashMap<>(messageMetadata);
 					partMessageMetadata.put("isThought", part.thought().orElse(false));
 					return AssistantMessage.builder()
-						.content(part.text().orElse(""))
+						.content(part.text().get())
 						.properties(partMessageMetadata)
 						.build();
 				})
 				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
 				.toList();
 
-			// If all parts were server-side tool invocations, return a single generation
-			// with empty text but with the server-side tool invocation metadata
+			// If all parts were server-side tool invocations or had no text content,
+			// return a single generation with the metadata (no empty text parts).
+			// Empty text AssistantMessages must not be added to chat history because
+			// the Google API rejects subsequent requests containing content with no parts.
+			// See: https://github.com/spring-projects/spring-ai/issues/4556
 			if (generations.isEmpty()) {
 				AssistantMessage assistantMessage = AssistantMessage.builder()
 					.content("")
@@ -956,6 +960,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				.role(toGeminiMessageType(message.getMessageType()).getValue())
 				.parts(messageToGeminiParts(message))
 				.build())
+			.filter(content -> content.parts().isPresent() && !content.parts().get().isEmpty())
 			.toList();
 
 		return contents;

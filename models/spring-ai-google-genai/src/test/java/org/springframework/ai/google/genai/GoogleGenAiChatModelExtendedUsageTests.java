@@ -441,4 +441,77 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 		assertThat(genAiUsage.getCachedContentTokenCount()).isNull();
 	}
 
+	@Test
+	void testResponseCandidateWithEmptyTextPartsProducesNoEmptyGenerations() {
+		// Regression test for https://github.com/spring-projects/spring-ai/issues/4556
+		// A candidate whose parts have no text (e.g. thought-signature-only parts) must not
+		// produce an AssistantMessage with empty content, because the Google API rejects
+		// subsequent requests that include Content with an empty parts list.
+
+		// Part with no text — simulates a thought-signature-only part returned by Gemini
+		Part emptyTextPart = Part.builder().build(); // no .text(...)
+
+		Content responseContent = Content.builder().parts(emptyTextPart).build();
+
+		GenerateContentResponseUsageMetadata usageMetadata = GenerateContentResponseUsageMetadata.builder()
+			.promptTokenCount(10)
+			.candidatesTokenCount(0)
+			.totalTokenCount(10)
+			.build();
+
+		Candidate candidate = Candidate.builder().content(responseContent).index(0).build();
+
+		GenerateContentResponse mockResponse = GenerateContentResponse.builder()
+			.candidates(List.of(candidate))
+			.usageMetadata(usageMetadata)
+			.modelVersion("gemini-2.0-flash")
+			.build();
+
+		this.chatModel.setMockGenerateContentResponse(mockResponse);
+
+		UserMessage userMessage = new UserMessage("Hello");
+		Prompt prompt = new Prompt(List.of(userMessage));
+		ChatResponse response = this.chatModel.call(prompt);
+
+		// The response must have exactly one generation (the empty-content fallback),
+		// and that generation must not contain null content.
+		assertThat(response.getResults()).isNotNull();
+		assertThat(response.getResults()).hasSize(1);
+		assertThat(response.getResults().get(0).getOutput().getText()).isNotNull();
+	}
+
+	@Test
+	void testToGeminiContentFiltersOutEmptyPartContent() {
+		// Regression test for https://github.com/spring-projects/spring-ai/issues/4556
+		// toGeminiContent must not include Content items whose parts list is empty,
+		// because the Google API rejects requests with empty-parts Content entries.
+
+		// Candidate with a real text part
+		Part textPart = Part.builder().text("Hello from Gemini").build();
+		Content responseContent = Content.builder().parts(textPart).build();
+
+		GenerateContentResponseUsageMetadata usageMetadata = GenerateContentResponseUsageMetadata.builder()
+			.promptTokenCount(5)
+			.candidatesTokenCount(4)
+			.totalTokenCount(9)
+			.build();
+
+		Candidate candidate = Candidate.builder().content(responseContent).index(0).build();
+
+		GenerateContentResponse mockResponse = GenerateContentResponse.builder()
+			.candidates(List.of(candidate))
+			.usageMetadata(usageMetadata)
+			.modelVersion("gemini-2.0-flash")
+			.build();
+
+		this.chatModel.setMockGenerateContentResponse(mockResponse);
+
+		UserMessage userMessage = new UserMessage("Hi");
+		Prompt prompt = new Prompt(List.of(userMessage));
+		ChatResponse response = this.chatModel.call(prompt);
+
+		assertThat(response.getResults()).hasSize(1);
+		assertThat(response.getResults().get(0).getOutput().getText()).isEqualTo("Hello from Gemini");
+	}
+
 }
