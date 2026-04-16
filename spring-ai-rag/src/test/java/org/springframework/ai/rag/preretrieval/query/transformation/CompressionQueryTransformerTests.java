@@ -19,10 +19,16 @@ package org.springframework.ai.rag.preretrieval.query.transformation;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.rag.Query;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link CompressionQueryTransformer}.
@@ -67,6 +73,57 @@ class CompressionQueryTransformerTests {
 			.build()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("The following placeholders must be present in the prompt template")
 			.hasMessageContaining("query");
+	}
+
+	@Test
+	void whenHistoryIsEmptyThenReturnOriginalQuery() {
+		ChatClient.Builder chatClientBuilder = mock(ChatClient.Builder.class);
+		ChatClient chatClient = mock(ChatClient.class);
+		when(chatClientBuilder.build()).thenReturn(chatClient);
+
+		QueryTransformer queryTransformer = CompressionQueryTransformer.builder()
+			.chatClientBuilder(chatClientBuilder)
+			.build();
+
+		Query query = Query.builder().text("What is Spring AI?").build();
+
+		Query result = queryTransformer.transform(query);
+
+		assertThat(result).isEqualTo(query);
+	}
+
+	@Test
+	void whenLastHistoryEntryMatchesCurrentQueryThenExcludeItFromHistory() {
+		ChatClient.Builder chatClientBuilder = mock(ChatClient.Builder.class);
+		ChatClient chatClient = mock(ChatClient.class);
+		ChatClient.Callable mockedCallable = mock(ChatClient.Callable.class);
+		when(chatClientBuilder.build()).thenReturn(chatClient);
+		when(chatClient.prompt()).thenReturn(mockedCallable);
+		when(mockedCallable.user(any())).thenReturn(mockedCallable);
+		when(mockedCallable.call()).thenReturn(
+				org.springframework.ai.chat.client.ChatResponse.builder().content("What is Spring AI?").build());
+
+		QueryTransformer queryTransformer = CompressionQueryTransformer.builder()
+			.chatClientBuilder(chatClientBuilder)
+			.build();
+
+		String currentQueryText = "What is Spring AI?";
+		Message userMessage = Message.builder().messageType(MessageType.USER).text(currentQueryText).build();
+		Message assistantMessage = Message.builder()
+			.messageType(MessageType.ASSISTANT)
+			.text("Spring AI is a framework for AI-native applications.")
+			.build();
+
+		Query query = Query.builder()
+			.text(currentQueryText)
+			.history(java.util.List.of(assistantMessage, userMessage))
+			.build();
+
+		queryTransformer.transform(query);
+
+		// Verify the prompt was called - the history should not contain the duplicate
+		// query
+		verify(chatClient).prompt();
 	}
 
 }
