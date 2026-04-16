@@ -77,11 +77,29 @@ public class CompressionQueryTransformer implements QueryTransformer {
 	public Query transform(Query query) {
 		Assert.notNull(query, "query cannot be null");
 
+		if (query.history().isEmpty()) {
+			logger.debug("No conversation history to compress. Returning the original query.");
+			return query;
+		}
+
 		logger.debug("Compressing conversation history and follow-up query into a standalone query");
+
+		// Exclude the last history entry if it's a duplicate of the current query
+		List<Message> history = query.history();
+		List<Message> effectiveHistory;
+		int lastIdx = history.size() - 1;
+		Message lastMessage = history.get(lastIdx);
+		String lastText = lastMessage.getText();
+		if (lastMessage.getMessageType() == MessageType.USER && lastText != null && lastText.equals(query.text())) {
+			effectiveHistory = history.subList(0, lastIdx);
+		}
+		else {
+			effectiveHistory = history;
+		}
 
 		var compressedQueryText = this.chatClient.prompt()
 			.user(user -> user.text(this.promptTemplate.getTemplate())
-				.param("history", formatConversationHistory(query.history()))
+				.param("history", formatConversationHistory(effectiveHistory))
 				.param("query", query.text()))
 			.call()
 			.content();
