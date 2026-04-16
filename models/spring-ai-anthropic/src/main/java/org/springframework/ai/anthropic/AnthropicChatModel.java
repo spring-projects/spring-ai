@@ -46,6 +46,7 @@ import org.springframework.ai.anthropic.api.AnthropicCacheOptions;
 import org.springframework.ai.anthropic.api.AnthropicCacheTtl;
 import org.springframework.ai.anthropic.api.CitationDocument;
 import org.springframework.ai.anthropic.api.utils.CacheEligibilityResolver;
+import org.springframework.ai.anthropic.metadata.support.AnthropicResponseHeaderExtractor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
@@ -55,6 +56,7 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -79,6 +81,7 @@ import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -97,6 +100,7 @@ import org.springframework.util.StringUtils;
  * @author Jonghoon Park
  * @author Soby Chacko
  * @author Austin Dase
+ * @author Jake Son
  * @since 1.0.0
  */
 public class AnthropicChatModel implements ChatModel {
@@ -204,7 +208,9 @@ public class AnthropicChatModel implements ChatModel {
 				Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
 						previousChatResponse);
 
-				ChatResponse chatResponse = toChatResponse(completionEntity.getBody(), accumulatedUsage);
+				RateLimit rateLimit = AnthropicResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
+
+				ChatResponse chatResponse = toChatResponse(completionEntity.getBody(), accumulatedUsage, rateLimit);
 				observationContext.setResponse(chatResponse);
 
 				return chatResponse;
@@ -266,7 +272,7 @@ public class AnthropicChatModel implements ChatModel {
 				AnthropicApi.Usage usage = chatCompletionResponse.usage();
 				Usage currentChatResponseUsage = usage != null ? this.getDefaultUsage(chatCompletionResponse.usage()) : new EmptyUsage();
 				Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
-				ChatResponse chatResponse = toChatResponse(chatCompletionResponse, accumulatedUsage);
+				ChatResponse chatResponse = toChatResponse(chatCompletionResponse, accumulatedUsage, null);
 
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)) {
 
@@ -314,7 +320,8 @@ public class AnthropicChatModel implements ChatModel {
 		});
 	}
 
-	private ChatResponse toChatResponse(ChatCompletionResponse chatCompletion, Usage usage) {
+	private ChatResponse toChatResponse(ChatCompletionResponse chatCompletion, Usage usage,
+			@Nullable RateLimit rateLimit) {
 
 		if (chatCompletion == null) {
 			logger.warn("Null chat completion returned");
@@ -383,6 +390,10 @@ public class AnthropicChatModel implements ChatModel {
 			.keyValue("stop-sequence", chatCompletion.stopSequence())
 			.keyValue("type", chatCompletion.type())
 			.keyValue("anthropic-response", chatCompletion);
+
+		if (rateLimit != null) {
+			metadataBuilder.rateLimit(rateLimit);
+		}
 
 		// Add citation metadata if citations were found
 		if (citationContext.hasCitations()) {
