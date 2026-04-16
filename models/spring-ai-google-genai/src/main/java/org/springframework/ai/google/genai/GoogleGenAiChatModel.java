@@ -646,15 +646,19 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			.finishReason(candidateFinishReason.toString())
 			.build();
 
-		boolean isFunctionCall = candidate.content().isPresent() && candidate.content().get().parts().isPresent()
-				&& candidate.content().get().parts().get().stream().anyMatch(part -> part.functionCall().isPresent());
+		// Collect text parts
+		String textContent = "";
+		if (candidate.content().isPresent() && candidate.content().get().parts().isPresent()) {
+			textContent = candidate.content().get().parts().get().stream()
+				.filter(part -> part.text().isPresent())
+				.map(part -> part.text().get())
+				.collect(Collectors.joining(" "));
+		}
 
-		if (isFunctionCall) {
-			List<AssistantMessage.ToolCall> assistantToolCalls = candidate.content()
-				.get()
-				.parts()
-				.orElse(List.of())
-				.stream()
+		// Collect function call parts
+		List<AssistantMessage.ToolCall> assistantToolCalls = List.of();
+		if (candidate.content().isPresent() && candidate.content().get().parts().isPresent()) {
+			assistantToolCalls = candidate.content().get().parts().get().stream()
 				.filter(part -> part.functionCall().isPresent())
 				.map(part -> {
 					FunctionCall functionCall = part.functionCall().get();
@@ -663,45 +667,26 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 					return new AssistantMessage.ToolCall("", "function", functionName, functionArguments);
 				})
 				.toList();
+		}
 
+		// Handle the case where all parts are server-side tool invocations (no text, no function calls)
+		if (textContent.isEmpty() && assistantToolCalls.isEmpty()) {
 			AssistantMessage assistantMessage = AssistantMessage.builder()
 				.content("")
 				.properties(messageMetadata)
-				.toolCalls(assistantToolCalls)
 				.build();
-
 			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
 		}
-		else {
-			List<Generation> generations = candidate.content()
-				.get()
-				.parts()
-				.orElse(List.of())
-				.stream()
-				.filter(part -> part.toolCall().isEmpty() && part.toolResponse().isEmpty())
-				.map(part -> {
-					var partMessageMetadata = new HashMap<>(messageMetadata);
-					partMessageMetadata.put("isThought", part.thought().orElse(false));
-					return AssistantMessage.builder()
-						.content(part.text().orElse(""))
-						.properties(partMessageMetadata)
-						.build();
-				})
-				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
-				.toList();
 
-			// If all parts were server-side tool invocations, return a single generation
-			// with empty text but with the server-side tool invocation metadata
-			if (generations.isEmpty()) {
-				AssistantMessage assistantMessage = AssistantMessage.builder()
-					.content("")
-					.properties(messageMetadata)
-					.build();
-				return List.of(new Generation(assistantMessage, chatGenerationMetadata));
-			}
+		// Build a SINGLE generation with BOTH text and tool calls (mixed modality)
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content(textContent)
+			.properties(messageMetadata)
+			.toolCalls(assistantToolCalls.isEmpty() ? null : assistantToolCalls)
+			.build();
 
-			return generations;
-		}
+
+		return List.of(new Generation(assistantMessage, chatGenerationMetadata));
 	}
 
 	private ChatResponseMetadata toChatResponseMetadata(Usage usage, String modelVersion) {
