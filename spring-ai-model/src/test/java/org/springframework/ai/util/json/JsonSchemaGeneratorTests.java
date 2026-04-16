@@ -26,6 +26,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
@@ -700,6 +701,33 @@ class JsonSchemaGeneratorTests {
 			.hasMessage("type cannot be null");
 	}
 
+	@Test
+	void generateSchemaForTypeWithJsonPropertyOrder() {
+		String schema = JsonSchemaGenerator.generateForType(OrderedPerson.class);
+		String expectedJsonSchema = """
+				{
+				    "$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "name": {
+				            "type": "string"
+				        },
+				        "email": {
+				            "type": "string"
+				        },
+				        "id": {
+				            "type": "integer",
+				            "format": "int32"
+				        }
+				    },
+				    "required": [ "name", "email", "id" ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
 	static class TestMethods {
 
 		public void simpleMethod(String name, int age) {
@@ -776,6 +804,41 @@ class JsonSchemaGeneratorTests {
 	}
 
 	static class Person {
+
+		private int id;
+
+		private String name;
+
+		private String email;
+
+		public int getId() {
+			return this.id;
+		}
+
+		public void setId(int id) {
+			this.id = id;
+		}
+
+		public String getName() {
+			return this.name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public String getEmail() {
+			return this.email;
+		}
+
+		public void setEmail(String email) {
+			this.email = email;
+		}
+
+	}
+
+	@JsonPropertyOrder({ "name", "email", "id" })
+	static class OrderedPerson {
 
 		private int id;
 
