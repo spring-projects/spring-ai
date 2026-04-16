@@ -58,12 +58,11 @@ import org.springframework.util.StringUtils;
 
 /**
  * <p>
- * Integration of Oracle database 23ai as a Vector Store.
+ * Integration of Oracle AI Database as a Vector Store.
  * </p>
  * <p>
- * With the release 23ai (23.4), the Oracle database provides numerous features useful for
- * artificial intelligence such as Vectors, Similarity search, Vector indexes, ONNX
- * models...
+ * Oracle AI Database provides numerous features useful for artificial intelligence such
+ * as Vectors, Similarity search, Vector indexes, ONNX models...
  * </p>
  * <p>
  * This Spring AI Vector store supports the following features:
@@ -72,7 +71,7 @@ import org.springframework.util.StringUtils;
  * <li>Distance type for similarity search (note that similarity threshold can be used
  * only with distance type COSINE and DOT when ingested vectors are normalized, see
  * forcedNormalization)</li>
- * <li>Vector indexes (use IVF as of 23.4)</li>
+ * <li>Vector indexes (IVF and, where supported by the connected database, HNSW)</li>
  * <li>Exact and Approximate similarity search</li>
  * <li>Filter expression as SQL/JSON Path expression evaluation</li>
  * </ul>
@@ -81,6 +80,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Soby Chacko
  * @author Thomas Vitale
+ * @author Anders Swanson
  */
 public class OracleVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -95,6 +95,16 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 	public static final int DEFAULT_DIMENSIONS = -1;
 
 	public static final int DEFAULT_SEARCH_ACCURACY = -1;
+
+	public static final int DEFAULT_HNSW_NEIGHBORS = 40;
+
+	public static final int DEFAULT_HNSW_EF_CONSTRUCTION = 500;
+
+	public static final int DEFAULT_IVF_NEIGHBOR_PARTITIONS = 10;
+
+	public static final int DEFAULT_IVF_SAMPLE_PER_PARTITION = -1;
+
+	public static final int DEFAULT_IVF_MIN_VECTORS_PER_PARTITION = -1;
 
 	private static final Logger logger = LoggerFactory.getLogger(OracleVectorStore.class);
 
@@ -137,6 +147,16 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 
 	private final int searchAccuracy;
 
+	private final int hnswNeighbors;
+
+	private final int hnswEfConstruction;
+
+	private final int ivfNeighborPartitions;
+
+	private final int ivfSamplePerPartition;
+
+	private final int ivfMinVectorsPerPartition;
+
 	private final OracleJsonFactory osonFactory = new OracleJsonFactory();
 
 	private final ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -157,6 +177,11 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		this.distanceType = builder.distanceType;
 		this.dimensions = builder.dimensions;
 		this.searchAccuracy = builder.searchAccuracy;
+		this.hnswNeighbors = builder.hnswNeighbors;
+		this.hnswEfConstruction = builder.hnswEfConstruction;
+		this.ivfNeighborPartitions = builder.ivfNeighborPartitions;
+		this.ivfSamplePerPartition = builder.ivfSamplePerPartition;
+		this.ivfMinVectorsPerPartition = builder.ivfMinVectorsPerPartition;
 		this.initializeSchema = builder.initializeSchema;
 		this.removeExistingVectorStoreTable = builder.removeExistingVectorStoreTable;
 		this.forcedNormalization = builder.forcedNormalization;
@@ -492,31 +517,110 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 
 			switch (this.indexType) {
 				case IVF:
-					this.jdbcTemplate.execute(String.format("""
-							create vector index if not exists vector_index_%s on %s (embedding)
-							organization neighbor partitions
-									distance %s
-									with target accuracy %d
-									parameters (type IVF, neighbor partitions 10)""", this.tableName, this.tableName,
-							this.distanceType.name(),
-							this.searchAccuracy == DEFAULT_SEARCH_ACCURACY ? 95 : this.searchAccuracy));
+					this.jdbcTemplate.execute(createIvfIndexSql());
 					break;
-
-				/*
-				 * TODO: Enable for 23.5 case HNSW:
-				 * this.jdbcTemplate.execute(String.format(""" create vector index if not
-				 * exists vector_index_%s on %s (embedding) organization inmemory neighbor
-				 * graph distance %s with target accuracy %d parameters (type HNSW,
-				 * neighbors 40, efconstruction 500)""", tableName, tableName,
-				 * distanceType.name(), searchAccuracy == DEFAULT_SEARCH_ACCURACY ? 95 :
-				 * searchAccuracy)); break;
-				 */
+				case HNSW:
+					this.jdbcTemplate.execute(createHnswIndexSql());
+					break;
+				case NONE:
+					break;
 			}
 		}
 	}
 
+	private String createIvfIndexSql() {
+		return String.format("""
+				create vector index if not exists vector_index_%s on %s (embedding)
+				organization neighbor partitions
+						distance %s
+						with target accuracy %d
+						parameters (%s)""", this.tableName, this.tableName, this.distanceType.name(),
+				getTargetAccuracy(), getIvfIndexParameters());
+	}
+
+	private String getIvfIndexParameters() {
+		List<String> parameters = new ArrayList<>();
+		parameters.add("type IVF");
+		parameters.add("neighbor partitions " + this.ivfNeighborPartitions);
+		if (this.ivfSamplePerPartition != DEFAULT_IVF_SAMPLE_PER_PARTITION) {
+			parameters.add("sample_per_partition " + this.ivfSamplePerPartition);
+		}
+		if (this.ivfMinVectorsPerPartition != DEFAULT_IVF_MIN_VECTORS_PER_PARTITION) {
+			parameters.add("min_vectors_per_partition " + this.ivfMinVectorsPerPartition);
+		}
+		return String.join(", ", parameters);
+	}
+
+	private String createHnswIndexSql() {
+		return String.format("""
+				create vector index if not exists vector_index_%s on %s (embedding)
+				organization inmemory neighbor graph
+						distance %s
+						with target accuracy %d
+						parameters (type HNSW, neighbors %d, efconstruction %d)""", this.tableName, this.tableName,
+				this.distanceType.name(), getTargetAccuracy(), this.hnswNeighbors, this.hnswEfConstruction);
+	}
+
+	private int getTargetAccuracy() {
+		return this.searchAccuracy == DEFAULT_SEARCH_ACCURACY ? 95 : this.searchAccuracy;
+	}
+
 	public String getTableName() {
 		return this.tableName;
+	}
+
+	/**
+	 * Returns the configured vector index type.
+	 * @return the configured index type
+	 * @since 2.0.0
+	 */
+	public OracleVectorStoreIndexType getIndexType() {
+		return this.indexType;
+	}
+
+	/**
+	 * Returns the configured HNSW neighbors value.
+	 * @return the configured HNSW neighbors value
+	 * @since 2.0.0
+	 */
+	public int getHnswNeighbors() {
+		return this.hnswNeighbors;
+	}
+
+	/**
+	 * Returns the configured HNSW efConstruction value.
+	 * @return the configured HNSW efConstruction value
+	 * @since 2.0.0
+	 */
+	public int getHnswEfConstruction() {
+		return this.hnswEfConstruction;
+	}
+
+	/**
+	 * Returns the configured IVF neighbor partitions value.
+	 * @return the configured IVF neighbor partitions value
+	 * @since 2.0.0
+	 */
+	public int getIvfNeighborPartitions() {
+		return this.ivfNeighborPartitions;
+	}
+
+	/**
+	 * Returns the configured IVF sample per partition value.
+	 * @return the configured IVF sample per partition value
+	 * @since 2.0.0
+	 */
+	public int getIvfSamplePerPartition() {
+		return this.ivfSamplePerPartition;
+	}
+
+	/**
+	 * Returns the configured IVF minimum vectors per partition value.
+	 * @return the configured IVF minimum vectors per partition value
+	 * @since 2.0.0
+	 */
+	public int getIvfMinVectorsPerPartition() {
+		return this.ivfMinVectorsPerPartition;
 	}
 
 	@Override
@@ -567,7 +671,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		 * </ul>
 		 *
 		 * @see <a href=
-		 * "https://docs.oracle.com/en/database/oracle/oracle-database/23/vecse/understand-hierarchical-navigable-small-world-indexes.html">Oracle
+		 * "https://docs.oracle.com/en/database/oracle/oracle-database/26/vecse/hierarchical-navigable-small-world-index-syntax-and-parameters.html">Oracle
 		 * Database documentation</a>
 		 */
 		HNSW,
@@ -581,7 +685,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		 * </p>
 		 *
 		 * * @see <a href=
-		 * "https://docs.oracle.com/en/database/oracle/oracle-database/23/vecse/understand-inverted-file-flat-vector-indexes.html">Oracle
+		 * "https://docs.oracle.com/en/database/oracle/oracle-database/26/vecse/understand-inverted-file-flat-vector-indexes.html">Oracle
 		 * Database documentation</a>
 		 */
 		IVF
@@ -686,6 +790,16 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 
 		private int searchAccuracy = DEFAULT_SEARCH_ACCURACY;
 
+		private int hnswNeighbors = DEFAULT_HNSW_NEIGHBORS;
+
+		private int hnswEfConstruction = DEFAULT_HNSW_EF_CONSTRUCTION;
+
+		private int ivfNeighborPartitions = DEFAULT_IVF_NEIGHBOR_PARTITIONS;
+
+		private int ivfSamplePerPartition = DEFAULT_IVF_SAMPLE_PER_PARTITION;
+
+		private int ivfMinVectorsPerPartition = DEFAULT_IVF_MIN_VECTORS_PER_PARTITION;
+
 		private boolean initializeSchema = false;
 
 		private boolean removeExistingVectorStoreTable = false;
@@ -766,6 +880,72 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 						"Search accuracy must be between 1 and 100");
 			}
 			this.searchAccuracy = searchAccuracy;
+			return this;
+		}
+
+		/**
+		 * Sets the NEIGHBORS parameter for HNSW indexes.
+		 * @param hnswNeighbors the maximum number of neighbors per node
+		 * @return the builder instance
+		 * @since 2.0.0
+		 */
+		public Builder hnswNeighbors(int hnswNeighbors) {
+			Assert.isTrue(hnswNeighbors > 0, "HNSW neighbors must be greater than 0");
+			this.hnswNeighbors = hnswNeighbors;
+			return this;
+		}
+
+		/**
+		 * Sets the EFCONSTRUCTION parameter for HNSW indexes.
+		 * @param hnswEfConstruction the size of the candidate list during construction
+		 * @return the builder instance
+		 * @since 2.0.0
+		 */
+		public Builder hnswEfConstruction(int hnswEfConstruction) {
+			Assert.isTrue(hnswEfConstruction > 0, "HNSW efConstruction must be greater than 0");
+			this.hnswEfConstruction = hnswEfConstruction;
+			return this;
+		}
+
+		/**
+		 * Sets the NEIGHBOR PARTITIONS parameter for IVF indexes.
+		 * @param ivfNeighborPartitions the number of IVF partitions
+		 * @return the builder instance
+		 * @since 2.0.0
+		 */
+		public Builder ivfNeighborPartitions(int ivfNeighborPartitions) {
+			Assert.isTrue(ivfNeighborPartitions > 0, "IVF neighbor partitions must be greater than 0");
+			this.ivfNeighborPartitions = ivfNeighborPartitions;
+			return this;
+		}
+
+		/**
+		 * Sets the SAMPLE_PER_PARTITION parameter for IVF indexes.
+		 * @param ivfSamplePerPartition the optional sample count per partition, or -1 to
+		 * omit it from DDL
+		 * @return the builder instance
+		 * @since 2.0.0
+		 */
+		public Builder ivfSamplePerPartition(int ivfSamplePerPartition) {
+			if (ivfSamplePerPartition != DEFAULT_IVF_SAMPLE_PER_PARTITION) {
+				Assert.isTrue(ivfSamplePerPartition > 0, "IVF sample per partition must be greater than 0");
+			}
+			this.ivfSamplePerPartition = ivfSamplePerPartition;
+			return this;
+		}
+
+		/**
+		 * Sets the MIN_VECTORS_PER_PARTITION parameter for IVF indexes.
+		 * @param ivfMinVectorsPerPartition the optional minimum vector count per
+		 * partition, or -1 to omit it from DDL
+		 * @return the builder instance
+		 * @since 2.0.0
+		 */
+		public Builder ivfMinVectorsPerPartition(int ivfMinVectorsPerPartition) {
+			if (ivfMinVectorsPerPartition != DEFAULT_IVF_MIN_VECTORS_PER_PARTITION) {
+				Assert.isTrue(ivfMinVectorsPerPartition > 0, "IVF min vectors per partition must be greater than 0");
+			}
+			this.ivfMinVectorsPerPartition = ivfMinVectorsPerPartition;
 			return this;
 		}
 

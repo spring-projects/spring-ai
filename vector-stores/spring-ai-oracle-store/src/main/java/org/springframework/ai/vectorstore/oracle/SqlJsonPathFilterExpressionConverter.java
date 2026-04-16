@@ -24,8 +24,9 @@ import org.springframework.util.Assert;
  * Converts a {@link Filter} into a JSON Path expression.
  *
  * @author Loïc Lefèvre
+ * @author Anders Swanson
  * @see <a href=
- * "https://docs.oracle.com/en/database/oracle/oracle-database/23/adjsn/json-path-expressions.html#GUID-8656CAB9-C293-4A99-BB62-F38F3CFC4C13">JSON
+ * "https://docs.oracle.com/en/database/oracle/oracle-database/26/adjsn/overview-sql-json-path-expressions.html">JSON
  * Path Documentation</a>
  */
 public class SqlJsonPathFilterExpressionConverter extends AbstractFilterExpressionConverter {
