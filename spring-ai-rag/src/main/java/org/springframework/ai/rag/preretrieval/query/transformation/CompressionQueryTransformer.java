@@ -77,6 +77,12 @@ public class CompressionQueryTransformer implements QueryTransformer {
 	public Query transform(Query query) {
 		Assert.notNull(query, "query cannot be null");
 
+
+		if (query.history().isEmpty()) {
+			logger.debug("Conversation history is empty. Returning the query unchanged.");
+			return query;
+		}
+
 		logger.debug("Compressing conversation history and follow-up query into a standalone query");
 
 		var compressedQueryText = this.chatClient.prompt()
