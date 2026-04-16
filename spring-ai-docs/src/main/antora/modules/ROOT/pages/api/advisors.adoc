@@ -385,6 +385,10 @@ Based on the article: [Re-Reading Improves Reasoning in LLMs](https://arxiv.org/
 +
 A simple advisor designed to prevent the model from generating harmful or inappropriate content.
 
+* `ModerationAdvisor`
++
+An advisor that uses a configured `ModerationModel` to evaluate the prompt content before model invocation, blocking flagged requests and allowing safe requests to continue through the advisor chain.
+
 
 === Streaming vs Non-Streaming
 
