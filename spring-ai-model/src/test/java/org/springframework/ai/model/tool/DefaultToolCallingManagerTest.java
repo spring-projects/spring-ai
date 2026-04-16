@@ -18,11 +18,13 @@ package org.springframework.ai.model.tool;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -41,9 +43,18 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
  */
 class DefaultToolCallingManagerTest {
 
+	/**
+	 * When streaming tool-call aggregation fails, {@code toolCall.arguments()} can arrive
+	 * as {@code null}. Previously, this was silently replaced with {@code "{}"} and the
+	 * tool was invoked with null parameters — producing empty-looking results that caused
+	 * the model to retry indefinitely (burning tokens in a tight loop). The fix should
+	 * short-circuit the tool call and return a clear error via the
+	 * {@link org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor} so
+	 * the model sees a tool response explaining what went wrong.
+	 */
 	@Test
-	void shouldHandleNullArgumentsInStreamMode() {
-		// Create a mock tool callback
+	void shouldReturnErrorResponseAndSkipToolWhenArgumentsAreNull() {
+		AtomicBoolean toolWasCalled = new AtomicBoolean(false);
 		ToolCallback mockToolCallback = new ToolCallback() {
 			@Override
 			public ToolDefinition getToolDefinition() {
@@ -61,17 +72,13 @@ class DefaultToolCallingManagerTest {
 
 			@Override
 			public String call(String toolInput) {
-				// Verify the input is not null or empty
-				assertThat(toolInput).isNotNull();
-				assertThat(toolInput).isNotEmpty();
+				toolWasCalled.set(true);
 				return "{\"result\": \"success\"}";
 			}
 		};
 
-		// Create a ToolCall with empty parameters
 		AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall("1", "function", "testTool", null);
 
-		// Create a ChatResponse
 		AssistantMessage assistantMessage = AssistantMessage.builder()
 			.content("")
 			.properties(Map.of())
@@ -80,27 +87,39 @@ class DefaultToolCallingManagerTest {
 		Generation generation = new Generation(assistantMessage);
 		ChatResponse chatResponse = new ChatResponse(List.of(generation));
 
-		// Create a Prompt with tool callbacks
 		Prompt prompt = new Prompt(List.of(new UserMessage("test")));
 
-		// Mock the tool callbacks resolution by creating a custom ToolCallbackResolver
 		DefaultToolCallingManager managerWithCallback = DefaultToolCallingManager.builder()
 			.observationRegistry(ObservationRegistry.NOOP)
-			.toolCallbackResolver(toolName -> {
-				if ("testTool".equals(toolName)) {
-					return mockToolCallback;
-				}
-				return null;
-			})
+			.toolCallbackResolver(toolName -> "testTool".equals(toolName) ? mockToolCallback : null)
 			.build();
 
-		// Verify that no exception is thrown
-		assertThatNoException().isThrownBy(() -> managerWithCallback.executeToolCalls(prompt, chatResponse));
+		ToolExecutionResult result = managerWithCallback.executeToolCalls(prompt, chatResponse);
+
+		// The tool callback must NOT have been invoked with null/fabricated arguments.
+		assertThat(toolWasCalled).isFalse();
+
+		// A single tool response should be produced with the error from the exception
+		// processor.
+		List<org.springframework.ai.chat.messages.Message> conversation = result.conversationHistory();
+		ToolResponseMessage lastMessage = (ToolResponseMessage) conversation.get(conversation.size() - 1);
+		assertThat(lastMessage.getResponses()).hasSize(1);
+		ToolResponseMessage.ToolResponse toolResponse = lastMessage.getResponses().get(0);
+		assertThat(toolResponse.id()).isEqualTo("1");
+		assertThat(toolResponse.name()).isEqualTo("testTool");
+		// Default processor returns a non-empty description of the error.
+		assertThat(toolResponse.responseData()).isNotEmpty();
+		assertThat(toolResponse.responseData()).containsIgnoringCase("null or empty");
 	}
 
+	/**
+	 * Same as {@link #shouldReturnErrorResponseAndSkipToolWhenArgumentsAreNull()} but for
+	 * the empty-string variant — another way streaming aggregation can leave the tool
+	 * arguments unusable.
+	 */
 	@Test
-	void shouldHandleEmptyArgumentsInStreamMode() {
-		// Create a mock tool callback
+	void shouldReturnErrorResponseAndSkipToolWhenArgumentsAreEmpty() {
+		AtomicBoolean toolWasCalled = new AtomicBoolean(false);
 		ToolCallback mockToolCallback = new ToolCallback() {
 			@Override
 			public ToolDefinition getToolDefinition() {
@@ -118,17 +137,13 @@ class DefaultToolCallingManagerTest {
 
 			@Override
 			public String call(String toolInput) {
-				// Verify the input is not null or empty
-				assertThat(toolInput).isNotNull();
-				assertThat(toolInput).isNotEmpty();
+				toolWasCalled.set(true);
 				return "{\"result\": \"success\"}";
 			}
 		};
 
-		// Create a ToolCall with empty parameters
 		AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall("1", "function", "testTool", "");
 
-		// Create a ChatResponse
 		AssistantMessage assistantMessage = AssistantMessage.builder()
 			.content("")
 			.properties(Map.of())
@@ -137,22 +152,121 @@ class DefaultToolCallingManagerTest {
 		Generation generation = new Generation(assistantMessage);
 		ChatResponse chatResponse = new ChatResponse(List.of(generation));
 
-		// Create a Prompt with tool callbacks
 		Prompt prompt = new Prompt(List.of(new UserMessage("test")));
 
-		// Mock the tool callbacks resolution by creating a custom ToolCallbackResolver
 		DefaultToolCallingManager managerWithCallback = DefaultToolCallingManager.builder()
 			.observationRegistry(ObservationRegistry.NOOP)
+			.toolCallbackResolver(toolName -> "testTool".equals(toolName) ? mockToolCallback : null)
+			.build();
+
+		ToolExecutionResult result = managerWithCallback.executeToolCalls(prompt, chatResponse);
+
+		assertThat(toolWasCalled).isFalse();
+
+		List<org.springframework.ai.chat.messages.Message> conversation = result.conversationHistory();
+		ToolResponseMessage lastMessage = (ToolResponseMessage) conversation.get(conversation.size() - 1);
+		assertThat(lastMessage.getResponses()).hasSize(1);
+		ToolResponseMessage.ToolResponse toolResponse = lastMessage.getResponses().get(0);
+		assertThat(toolResponse.name()).isEqualTo("testTool");
+		assertThat(toolResponse.responseData()).containsIgnoringCase("null or empty");
+	}
+
+	/**
+	 * When a response contains a mix of well-formed and malformed tool calls, the
+	 * well-formed ones must still execute successfully, and the malformed one must
+	 * produce an error response rather than poisoning the whole batch.
+	 */
+	@Test
+	void shouldExecuteValidToolsWhileReturningErrorForMalformedTool() {
+		AtomicBoolean validToolCalled = new AtomicBoolean(false);
+		ToolCallback validToolCallback = new ToolCallback() {
+			@Override
+			public ToolDefinition getToolDefinition() {
+				return DefaultToolDefinition.builder()
+					.name("validTool")
+					.description("A valid tool")
+					.inputSchema("{\"type\": \"object\", \"properties\": {\"x\": {\"type\": \"string\"}}}")
+					.build();
+			}
+
+			@Override
+			public ToolMetadata getToolMetadata() {
+				return ToolMetadata.builder().build();
+			}
+
+			@Override
+			public String call(String toolInput) {
+				validToolCalled.set(true);
+				return "{\"ok\": true}";
+			}
+		};
+
+		AtomicBoolean invalidToolCalled = new AtomicBoolean(false);
+		ToolCallback invalidToolCallback = new ToolCallback() {
+			@Override
+			public ToolDefinition getToolDefinition() {
+				return DefaultToolDefinition.builder()
+					.name("invalidTool")
+					.description("A tool that receives bad arguments")
+					.inputSchema("{}")
+					.build();
+			}
+
+			@Override
+			public ToolMetadata getToolMetadata() {
+				return ToolMetadata.builder().build();
+			}
+
+			@Override
+			public String call(String toolInput) {
+				invalidToolCalled.set(true);
+				return "{\"ok\": true}";
+			}
+		};
+
+		AssistantMessage.ToolCall validCall = new AssistantMessage.ToolCall("1", "function", "validTool",
+				"{\"x\": \"hello\"}");
+		AssistantMessage.ToolCall invalidCall = new AssistantMessage.ToolCall("2", "function", "invalidTool", null);
+
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("")
+			.properties(Map.of())
+			.toolCalls(List.of(validCall, invalidCall))
+			.build();
+		Generation generation = new Generation(assistantMessage);
+		ChatResponse chatResponse = new ChatResponse(List.of(generation));
+
+		Prompt prompt = new Prompt(List.of(new UserMessage("test mixed")));
+
+		DefaultToolCallingManager manager = DefaultToolCallingManager.builder()
+			.observationRegistry(ObservationRegistry.NOOP)
 			.toolCallbackResolver(toolName -> {
-				if ("testTool".equals(toolName)) {
-					return mockToolCallback;
+				if ("validTool".equals(toolName)) {
+					return validToolCallback;
+				}
+				if ("invalidTool".equals(toolName)) {
+					return invalidToolCallback;
 				}
 				return null;
 			})
 			.build();
 
-		// Verify that no exception is thrown
-		assertThatNoException().isThrownBy(() -> managerWithCallback.executeToolCalls(prompt, chatResponse));
+		ToolExecutionResult result = manager.executeToolCalls(prompt, chatResponse);
+
+		assertThat(validToolCalled).isTrue();
+		assertThat(invalidToolCalled).isFalse();
+
+		List<org.springframework.ai.chat.messages.Message> conversation = result.conversationHistory();
+		ToolResponseMessage lastMessage = (ToolResponseMessage) conversation.get(conversation.size() - 1);
+		assertThat(lastMessage.getResponses()).hasSize(2);
+
+		ToolResponseMessage.ToolResponse validResponse = lastMessage.getResponses().get(0);
+		assertThat(validResponse.name()).isEqualTo("validTool");
+		assertThat(validResponse.responseData()).contains("\"ok\"");
+
+		ToolResponseMessage.ToolResponse invalidResponse = lastMessage.getResponses().get(1);
+		assertThat(invalidResponse.name()).isEqualTo("invalidTool");
+		assertThat(invalidResponse.responseData()).containsIgnoringCase("null or empty");
 	}
 
 	@Test

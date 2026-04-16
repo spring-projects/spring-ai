@@ -108,11 +108,19 @@ public class SyncMcpToolCallback implements ToolCallback {
 	@Override
 	public String call(String toolCallInput, @Nullable ToolContext toolContext) {
 
-		// Handle the possible null parameter situation in streaming mode.
+		// Reject null/empty tool call input. This typically indicates a streaming tool
+		// call aggregation failure upstream. Previously, it was silently replaced with
+		// "{}" which let the MCP call proceed with no arguments, producing silent
+		// failures that caused the model to retry indefinitely. Throwing a
+		// ToolExecutionException ensures the standard error processor surfaces a clear
+		// message back to the model.
 		if (!StringUtils.hasText(toolCallInput)) {
-			logger.warn("Tool call arguments are null or empty for MCP tool: {}. Using empty JSON object as default.",
+			logger.warn("Tool call arguments are null or empty for MCP tool: {}. Surfacing as a tool error response.",
 					this.tool.name());
-			toolCallInput = "{}";
+			throw new ToolExecutionException(this.getToolDefinition(),
+					new IllegalArgumentException("Tool call arguments were null or empty; the MCP tool '"
+							+ this.tool.name() + "' was not invoked. This usually indicates a malformed or "
+							+ "incomplete tool invocation from the model."));
 		}
 
 		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(toolCallInput);
