@@ -656,6 +656,9 @@ public class MistralAiApi {
 			@JsonProperty("temperature") @Nullable Double temperature,
 			@JsonProperty("top_p") @Nullable Double topP,
 			@JsonProperty("max_tokens") @Nullable Integer maxTokens,
+			@JsonProperty("n") @Nullable Integer n,
+			@JsonProperty("presence_penalty") @Nullable Double presencePenalty,
+			@JsonProperty("frequency_penalty") @Nullable Double frequencyPenalty,
 			@JsonProperty("stream") @Nullable Boolean stream,
 			@JsonProperty("safe_prompt") @Nullable Boolean safePrompt,
 			@JsonProperty("stop") @Nullable List<String> stop,
@@ -671,7 +674,7 @@ public class MistralAiApi {
 		 * @param model ID of the model to use.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model) {
-			this(model, messages, null, null, 0.7, 1.0, null, false, false, null, null, null);
+			this(model, messages, null, null, 0.7, 1.0, null, null, null, null, false, false, null, null, null);
 		}
 
 		/**
@@ -686,7 +689,8 @@ public class MistralAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature,
 				boolean stream) {
-			this(model, messages, null, null, temperature, 1.0, null, stream, false, null, null, null);
+			this(model, messages, null, null, temperature, 1.0, null, null, null, null, stream, false, null, null,
+					null);
 		}
 
 		/**
@@ -699,7 +703,7 @@ public class MistralAiApi {
 		 *
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
-			this(model, messages, null, null, temperature, 1.0, null, false, false, null, null, null);
+			this(model, messages, null, null, temperature, 1.0, null, null, null, null, false, false, null, null, null);
 		}
 
 		/**
@@ -714,7 +718,7 @@ public class MistralAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, List<FunctionTool> tools,
 				ToolChoice toolChoice) {
-			this(model, messages, tools, toolChoice, null, 1.0, null, false, false, null, null, null);
+			this(model, messages, tools, toolChoice, null, 1.0, null, null, null, null, false, false, null, null, null);
 		}
 
 		/**
@@ -722,7 +726,7 @@ public class MistralAiApi {
 		 * stream.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
-			this(null, messages, null, null, 0.7, 1.0, null, stream, false, null, null, null);
+			this(null, messages, null, null, 0.7, 1.0, null, null, null, null, stream, false, null, null, null);
 		}
 
 		/**
