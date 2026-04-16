@@ -41,7 +41,8 @@ import org.springframework.context.annotation.Configuration;
  * @author Jonatan Ivanov
  * @since 1.0.0
  */
-@AutoConfiguration
+@AutoConfiguration(
+		afterName = "org.springframework.boot.micrometer.tracing.autoconfigure.MicrometerTracingAutoConfiguration")
 @ConditionalOnClass(ImageModel.class)
 @EnableConfigurationProperties(ImageObservationProperties.class)
 public class ImageObservationAutoConfiguration {
