@@ -18,6 +18,10 @@ package org.springframework.ai.vectorstore.pgvector;
 
 import java.util.Collections;
 
+import com.pgvector.PGbit;
+import com.pgvector.PGhalfvec;
+import com.pgvector.PGsparsevec;
+import com.pgvector.PGvector;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -25,10 +29,13 @@ import org.mockito.ArgumentCaptor;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgDistanceType;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgVectorType;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -102,6 +109,56 @@ public class PgVectorStoreTests {
 				}
 				assertThat(batches.get(9).getBatchSize()).as("Last batch should have size 989").isEqualTo(989);
 			});
+	}
+
+	@Test
+	void pgVectorTypeColumnDefinition() {
+		assertThat(PgVectorType.VECTOR.columnDefinition(1536)).isEqualTo("vector(1536)");
+		assertThat(PgVectorType.HALFVEC.columnDefinition(768)).isEqualTo("halfvec(768)");
+		assertThat(PgVectorType.BIT.columnDefinition(512)).isEqualTo("bit(512)");
+		assertThat(PgVectorType.SPARSEVEC.columnDefinition(16000)).isEqualTo("sparsevec(16000)");
+	}
+
+	@Test
+	void pgVectorTypeOpclass() {
+		assertThat(PgVectorType.VECTOR.opclass(PgDistanceType.COSINE_DISTANCE)).isEqualTo("vector_cosine_ops");
+		assertThat(PgVectorType.HALFVEC.opclass(PgDistanceType.EUCLIDEAN_DISTANCE)).isEqualTo("halfvec_l2_ops");
+		assertThat(PgVectorType.HALFVEC.opclass(PgDistanceType.L1_DISTANCE)).isEqualTo("halfvec_l1_ops");
+		assertThat(PgVectorType.SPARSEVEC.opclass(PgDistanceType.NEGATIVE_INNER_PRODUCT)).isEqualTo("sparsevec_ip_ops");
+		assertThat(PgVectorType.BIT.opclass(PgDistanceType.HAMMING_DISTANCE)).isEqualTo("bit_hamming_ops");
+		assertThat(PgVectorType.BIT.opclass(PgDistanceType.JACCARD_DISTANCE)).isEqualTo("bit_jaccard_ops");
+	}
+
+	@Test
+	void pgVectorTypeRejectsIncompatibleDistance() {
+		assertThatIllegalArgumentException().isThrownBy(() -> PgVectorType.BIT.opclass(PgDistanceType.COSINE_DISTANCE))
+			.withMessageContaining("BIT");
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> PgVectorType.VECTOR.opclass(PgDistanceType.HAMMING_DISTANCE))
+			.withMessageContaining("VECTOR");
+	}
+
+	@Test
+	void pgVectorTypeToPgObject() {
+		float[] embedding = { 1.0f, -2.0f, 0.5f };
+		assertThat(PgVectorType.VECTOR.toPgObject(embedding)).isInstanceOf(PGvector.class);
+		assertThat(PgVectorType.HALFVEC.toPgObject(embedding)).isInstanceOf(PGhalfvec.class);
+		assertThat(PgVectorType.SPARSEVEC.toPgObject(embedding)).isInstanceOf(PGsparsevec.class);
+
+		PGbit bit = (PGbit) PgVectorType.BIT.toPgObject(embedding);
+		assertThat(bit.toArray()).containsExactly(true, false, true);
+	}
+
+	@Test
+	void builderRejectsIncompatibleTypeAndDistance() {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> PgVectorStore.builder(jdbcTemplate, embeddingModel)
+				.vectorType(PgVectorType.BIT)
+				.distanceType(PgDistanceType.COSINE_DISTANCE)
+				.build())
+			.withMessageContaining("not supported");
 	}
 
 }
