@@ -25,6 +25,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.pgvector.PGbit;
+import com.pgvector.PGhalfvec;
+import com.pgvector.PGsparsevec;
 import com.pgvector.PGvector;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
@@ -68,7 +71,10 @@ import org.springframework.util.StringUtils;
  * </p>
  * <ul>
  * <li>Automatic schema initialization with configurable table and index creation</li>
- * <li>Support for different distance metrics: Cosine, Euclidean, and Inner Product</li>
+ * <li>Multiple pgvector column types: {@code vector} (default), {@code halfvec},
+ * {@code bit}, {@code sparsevec}</li>
+ * <li>Support for six distance metrics: cosine, Euclidean, inner product, L1, Hamming,
+ * Jaccard (the last two only for {@code bit})</li>
  * <li>Flexible indexing options: HNSW (default), IVFFlat, or exact search (no index)</li>
  * <li>Metadata filtering using JSON path expressions</li>
  * <li>Configurable similarity thresholds for search results</li>
@@ -115,23 +121,72 @@ import org.springframework.util.StringUtils;
  * }</pre>
  *
  * <p>
+ * Extended vector types (pgvector 0.7+):
+ * </p>
+ * <pre>{@code
+ * // halfvec: half the storage of vector at FP16 precision.
+ * // Recommended for normalized embeddings (OpenAI text-embedding-3-*, Cohere, etc.)
+ * // where the tiny precision loss is negligible.
+ * PgVectorStore halfvecStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+ *     .vectorType(PgVectorType.HALFVEC)
+ *     .dimensions(1536)
+ *     .distanceType(PgDistanceType.COSINE_DISTANCE)
+ *     .initializeSchema(true)
+ *     .build();
+ *
+ * // bit: binary-quantized embeddings. Only HAMMING_DISTANCE or JACCARD_DISTANCE.
+ * // Float embeddings are sign-bit quantized in Java (x > 0f -> 1) before bind.
+ * // If your embedding model needs a different quantization strategy, pre-quantize
+ * // in your own EmbeddingModel.
+ * PgVectorStore bitStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+ *     .vectorType(PgVectorType.BIT)
+ *     .dimensions(1536)
+ *     .distanceType(PgDistanceType.HAMMING_DISTANCE)
+ *     .initializeSchema(true)
+ *     .build();
+ *
+ * // sparsevec: stores only non-zero elements, up to 16,000 non-zeros.
+ * // Useful for high-dimensional sparse embeddings (e.g. SPLADE).
+ * PgVectorStore sparseStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+ *     .vectorType(PgVectorType.SPARSEVEC)
+ *     .dimensions(30000)
+ *     .distanceType(PgDistanceType.COSINE_DISTANCE)
+ *     .initializeSchema(true)
+ *     .build();
+ * }</pre>
+ *
+ * <p>
  * Database Requirements:
  * </p>
  * <ul>
  * <li>PostgreSQL with pgvector extension installed</li>
  * <li>Required extensions: vector, hstore, uuid-ossp</li>
- * <li>Table schema with id (uuid), content (text), metadata (json), and embedding
- * (vector) columns</li>
+ * <li>Table schema with id (uuid), content (text), metadata (json), and embedding column
+ * (type depends on {@link PgVectorType})</li>
+ * <li>pgvector 0.7+ for {@code halfvec} / {@code bit} / {@code sparsevec} and the
+ * {@code L1_DISTANCE} metric</li>
  * </ul>
  *
  * <p>
- * Distance Types:
+ * Vector Types (see {@link PgVectorType}):
+ * </p>
+ * <ul>
+ * <li>VECTOR: Default, 4 bytes per dimension, up to 16,000 dims</li>
+ * <li>HALFVEC: 2 bytes per dimension (FP16), same metric set as VECTOR</li>
+ * <li>BIT: 1 bit per dimension, only HAMMING/JACCARD distance</li>
+ * <li>SPARSEVEC: Stores non-zero elements only, same metric set as VECTOR</li>
+ * </ul>
+ *
+ * <p>
+ * Distance Types (see {@link PgDistanceType}):
  * </p>
  * <ul>
  * <li>COSINE_DISTANCE: Default, suitable for most use cases</li>
  * <li>EUCLIDEAN_DISTANCE: L2 distance between vectors</li>
  * <li>NEGATIVE_INNER_PRODUCT: Best performance for normalized vectors (e.g., OpenAI
  * embeddings)</li>
+ * <li>L1_DISTANCE: Taxicab distance (VECTOR/HALFVEC/SPARSEVEC only)</li>
+ * <li>HAMMING_DISTANCE / JACCARD_DISTANCE: Bit-vector metrics (BIT only)</li>
  * </ul>
  *
  * <p>
@@ -207,6 +262,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private final PgIndexType createIndexMethod;
 
+	private final PgVectorType vectorType;
+
 	private final PgVectorSchemaValidator schemaValidator;
 
 	private final int maxDocumentBatchSize;
@@ -240,8 +297,15 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		this.removeExistingVectorStoreTable = builder.removeExistingVectorStoreTable;
 		this.createIndexMethod = builder.indexType;
 		this.initializeSchema = builder.initializeSchema;
+		this.vectorType = builder.vectorType;
 		this.schemaValidator = new PgVectorSchemaValidator(this.jdbcTemplate);
 		this.maxDocumentBatchSize = builder.maxDocumentBatchSize;
+
+		if (!this.vectorType.supports(this.distanceType)) {
+			throw new IllegalArgumentException("Distance type " + this.distanceType
+					+ " is not supported by vector type " + this.vectorType
+					+ ". Valid combinations: vector/halfvec/sparsevec → COSINE/EUCLIDEAN/NEGATIVE_INNER_PRODUCT/L1; bit → HAMMING/JACCARD.");
+		}
 	}
 
 	public PgDistanceType getDistanceType() {
@@ -284,15 +348,15 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 				var content = document.getText();
 				var json = toJson(document.getMetadata());
 				var embedding = embeddings.get(documents.indexOf(document));
-				var pGvector = new PGvector(embedding);
+				var pgEmbedding = PgVectorStore.this.vectorType.toPgObject(embedding);
 
 				StatementCreatorUtils.setParameterValue(ps, 1, SqlTypeValue.TYPE_UNKNOWN, id);
 				StatementCreatorUtils.setParameterValue(ps, 2, SqlTypeValue.TYPE_UNKNOWN, content);
 				StatementCreatorUtils.setParameterValue(ps, 3, SqlTypeValue.TYPE_UNKNOWN, json);
-				StatementCreatorUtils.setParameterValue(ps, 4, SqlTypeValue.TYPE_UNKNOWN, pGvector);
+				StatementCreatorUtils.setParameterValue(ps, 4, SqlTypeValue.TYPE_UNKNOWN, pgEmbedding);
 				StatementCreatorUtils.setParameterValue(ps, 5, SqlTypeValue.TYPE_UNKNOWN, content);
 				StatementCreatorUtils.setParameterValue(ps, 6, SqlTypeValue.TYPE_UNKNOWN, json);
-				StatementCreatorUtils.setParameterValue(ps, 7, SqlTypeValue.TYPE_UNKNOWN, pGvector);
+				StatementCreatorUtils.setParameterValue(ps, 7, SqlTypeValue.TYPE_UNKNOWN, pgEmbedding);
 			}
 
 			@Override
@@ -364,7 +428,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		double distance = 1 - request.getSimilarityThreshold();
 
-		PGvector queryEmbedding = getQueryEmbedding(request.getQuery());
+		PGobject queryEmbedding = getQueryEmbedding(request.getQuery());
 
 		return this.jdbcTemplate.query(
 				String.format(this.getDistanceType().similaritySearchSqlTemplate, getFullyQualifiedTableName(),
@@ -385,9 +449,9 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 				}, getQueryEmbedding(query));
 	}
 
-	private PGvector getQueryEmbedding(String query) {
+	private PGobject getQueryEmbedding(String query) {
 		float[] embedding = this.embeddingModel.embed(query);
-		return new PGvector(embedding);
+		return this.vectorType.toPgObject(embedding);
 	}
 
 	private String comparisonOperator() {
@@ -434,15 +498,16 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 					id %s PRIMARY KEY,
 					content text,
 					metadata json,
-					embedding vector(%d)
+					embedding %s
 				)
-				""", this.getFullyQualifiedTableName(), this.getColumnTypeName(), this.embeddingDimensions()));
+				""", this.getFullyQualifiedTableName(), this.getColumnTypeName(),
+				this.vectorType.columnDefinition(this.embeddingDimensions())));
 
 		if (this.createIndexMethod != PgIndexType.NONE) {
 			this.jdbcTemplate.execute(String.format("""
 					CREATE INDEX IF NOT EXISTS %s ON %s USING %s (embedding %s)
 					""", this.getVectorIndexName(), this.getFullyQualifiedTableName(), this.createIndexMethod,
-					this.getDistanceType().index));
+					this.vectorType.opclass(this.distanceType)));
 		}
 	}
 
@@ -556,6 +621,99 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	/**
+	 * The pgvector column type used to store embeddings. Different types have different
+	 * trade-offs in storage size, precision and supported distance metrics:
+	 * <ul>
+	 * <li>{@link #VECTOR}: default 4-byte floats, any of
+	 * {@link PgDistanceType#COSINE_DISTANCE}, {@link PgDistanceType#EUCLIDEAN_DISTANCE},
+	 * {@link PgDistanceType#NEGATIVE_INNER_PRODUCT}, {@link PgDistanceType#L1_DISTANCE}.
+	 * Up to 16,000 dimensions.</li>
+	 * <li>{@link #HALFVEC}: half-precision 2-byte floats, same metrics as VECTOR. Up to
+	 * 16,000 dimensions. Halves storage at a small precision cost. Requires pgvector
+	 * 0.7+.</li>
+	 * <li>{@link #BIT}: binary (1 bit per element), only supports
+	 * {@link PgDistanceType#HAMMING_DISTANCE} and
+	 * {@link PgDistanceType#JACCARD_DISTANCE}. Up to 64,000 dimensions. The
+	 * {@code float[]} embedding is sign-bit quantized in Java ({@code x > 0f → 1}) before
+	 * being bound as a {@code PGbit}. This is intentionally non-configurable; callers
+	 * needing a different quantization strategy should pre-quantize in their
+	 * {@code EmbeddingModel}. Requires pgvector 0.7+.</li>
+	 * <li>{@link #SPARSEVEC}: sparse vectors that only store non-zero elements, same
+	 * metrics as VECTOR. Up to 16,000 non-zero elements. Requires pgvector 0.7+.</li>
+	 * </ul>
+	 */
+	public enum PgVectorType {
+
+		VECTOR("vector"), HALFVEC("halfvec"), BIT("bit"), SPARSEVEC("sparsevec");
+
+		private final String sqlType;
+
+		PgVectorType(String sqlType) {
+			this.sqlType = sqlType;
+		}
+
+		/**
+		 * @return DDL column type, e.g. {@code "halfvec(1536)"}.
+		 */
+		public String columnDefinition(int dimensions) {
+			return this.sqlType + "(" + dimensions + ")";
+		}
+
+		/**
+		 * @return the full opclass name to be used in CREATE INDEX, e.g.
+		 * {@code "halfvec_cosine_ops"}. Throws if the distance type is not supported by
+		 * this vector type.
+		 */
+		public String opclass(PgDistanceType distanceType) {
+			if (!supports(distanceType)) {
+				throw new IllegalArgumentException(
+						"Distance type " + distanceType + " is not supported by vector type " + this);
+			}
+			return this.sqlType + "_" + distanceType.opclassSuffix;
+		}
+
+		/**
+		 * @return whether the given distance type is compatible with this vector type.
+		 */
+		public boolean supports(PgDistanceType distanceType) {
+			return switch (this) {
+				case VECTOR, HALFVEC, SPARSEVEC ->
+					distanceType == PgDistanceType.COSINE_DISTANCE || distanceType == PgDistanceType.EUCLIDEAN_DISTANCE
+							|| distanceType == PgDistanceType.NEGATIVE_INNER_PRODUCT
+							|| distanceType == PgDistanceType.L1_DISTANCE;
+				case BIT ->
+					distanceType == PgDistanceType.HAMMING_DISTANCE || distanceType == PgDistanceType.JACCARD_DISTANCE;
+			};
+		}
+
+		/**
+		 * Convert a dense float embedding produced by the {@code EmbeddingModel} into the
+		 * appropriate {@link PGobject} for binding to a prepared statement. For
+		 * {@link #BIT} the embedding is collapsed into bits by a fixed sign-bit rule
+		 * ({@code x > 0f → 1}); this is the same semantic as pgvector's native
+		 * {@code binary_quantize()} function and is intentionally non-configurable to
+		 * keep the API surface small. Callers whose embedding model needs a different
+		 * quantization strategy should pre-quantize in their {@code EmbeddingModel} or
+		 * customize at the JDBC layer.
+		 */
+		public PGobject toPgObject(float[] embedding) {
+			return switch (this) {
+				case VECTOR -> new PGvector(embedding);
+				case HALFVEC -> new PGhalfvec(embedding);
+				case SPARSEVEC -> new PGsparsevec(embedding);
+				case BIT -> {
+					boolean[] bits = new boolean[embedding.length];
+					for (int i = 0; i < embedding.length; i++) {
+						bits[i] = embedding[i] > 0f;
+					}
+					yield new PGbit(bits);
+				}
+			};
+		}
+
+	}
+
+	/**
 	 * Defaults to CosineDistance. But if vectors are normalized to length 1 (like OpenAI
 	 * embeddings), use inner product (NegativeInnerProduct) for best performance.
 	 */
@@ -565,28 +723,55 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		// embeddings), use inner product for best performance.
 		// The Sentence transformers are NOT normalized:
 		// https://github.com/UKPLab/sentence-transformers/issues/233
-		EUCLIDEAN_DISTANCE("<->", "vector_l2_ops",
+		EUCLIDEAN_DISTANCE("<->", "vector_l2_ops", "l2_ops",
 				"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? %s ORDER BY distance LIMIT ? "),
 
 		// NOTE: works only if vectors are normalized to length 1 (like OpenAI
 		// embeddings), use inner product for best performance.
 		// The Sentence transformers are NOT normalized:
 		// https://github.com/UKPLab/sentence-transformers/issues/233
-		NEGATIVE_INNER_PRODUCT("<#>", "vector_ip_ops",
+		NEGATIVE_INNER_PRODUCT("<#>", "vector_ip_ops", "ip_ops",
 				"SELECT *, (1 + (embedding <#> ?)) AS distance FROM %s WHERE (1 + (embedding <#> ?)) < ? %s ORDER BY distance LIMIT ? "),
 
-		COSINE_DISTANCE("<=>", "vector_cosine_ops",
-				"SELECT *, embedding <=> ? AS distance FROM %s WHERE embedding <=> ? < ? %s ORDER BY distance LIMIT ? ");
+		COSINE_DISTANCE("<=>", "vector_cosine_ops", "cosine_ops",
+				"SELECT *, embedding <=> ? AS distance FROM %s WHERE embedding <=> ? < ? %s ORDER BY distance LIMIT ? "),
+
+		/**
+		 * Taxicab (L1) distance. Requires pgvector 0.7+. Supported by vector, halfvec and
+		 * sparsevec column types.
+		 */
+		L1_DISTANCE("<+>", "vector_l1_ops", "l1_ops",
+				"SELECT *, embedding <+> ? AS distance FROM %s WHERE embedding <+> ? < ? %s ORDER BY distance LIMIT ? "),
+
+		/**
+		 * Hamming distance between bit vectors. Only supported by the bit column type.
+		 */
+		HAMMING_DISTANCE("<~>", "bit_hamming_ops", "hamming_ops",
+				"SELECT *, embedding <~> ? AS distance FROM %s WHERE embedding <~> ? < ? %s ORDER BY distance LIMIT ? "),
+
+		/**
+		 * Jaccard distance between bit vectors. Only supported by the bit column type.
+		 */
+		JACCARD_DISTANCE("<%>", "bit_jaccard_ops", "jaccard_ops",
+				"SELECT *, embedding <%%> ? AS distance FROM %s WHERE embedding <%%> ? < ? %s ORDER BY distance LIMIT ? ");
 
 		public final String operator;
 
 		public final String index;
 
+		/**
+		 * Opclass suffix used to compose the full opclass name together with a
+		 * {@link PgVectorType} prefix (e.g. {@code "cosine_ops"} →
+		 * {@code "halfvec_cosine_ops"}).
+		 */
+		public final String opclassSuffix;
+
 		public final String similaritySearchSqlTemplate;
 
-		PgDistanceType(String operator, String index, String sqlTemplate) {
+		PgDistanceType(String operator, String index, String opclassSuffix, String sqlTemplate) {
 			this.operator = operator;
 			this.index = index;
+			this.opclassSuffix = opclassSuffix;
 			this.similaritySearchSqlTemplate = sqlTemplate;
 		}
 
@@ -657,6 +842,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		private boolean initializeSchema;
 
+		private PgVectorType vectorType = PgVectorType.VECTOR;
+
 		private int maxDocumentBatchSize = MAX_DOCUMENT_BATCH_SIZE;
 
 		private PgVectorStoreBuilder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
@@ -712,6 +899,20 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		public PgVectorStoreBuilder maxDocumentBatchSize(int maxDocumentBatchSize) {
 			this.maxDocumentBatchSize = maxDocumentBatchSize;
+			return this;
+		}
+
+		/**
+		 * Selects the pgvector column type. Defaults to {@link PgVectorType#VECTOR}. Pick
+		 * {@link PgVectorType#HALFVEC} for half the storage on dense float embeddings,
+		 * {@link PgVectorType#SPARSEVEC} for sparse embeddings, or
+		 * {@link PgVectorType#BIT} for binary-quantized embeddings (must be paired with
+		 * {@link PgDistanceType#HAMMING_DISTANCE} or
+		 * {@link PgDistanceType#JACCARD_DISTANCE}).
+		 */
+		public PgVectorStoreBuilder vectorType(PgVectorType vectorType) {
+			Assert.notNull(vectorType, "vectorType must not be null");
+			this.vectorType = vectorType;
 			return this;
 		}
 
