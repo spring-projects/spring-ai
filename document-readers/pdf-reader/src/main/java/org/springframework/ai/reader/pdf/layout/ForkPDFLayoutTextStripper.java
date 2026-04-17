@@ -41,8 +41,6 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 
 	private final static Logger logger = LoggerFactory.getLogger(ForkPDFLayoutTextStripper.class);
 
-	public static final boolean DEBUG = false;
-
 	public static final int OUTPUT_SPACE_CHARACTER_WIDTH_IN_PT = 4;
 
 	private double currentPageWidth;
@@ -136,6 +134,11 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 			}
 			else {
 				this.writeTextPositionList(textPositionList);
+				if (numberOfNewLines > 10_000) {
+					// Throw rather than allocate crazy number of line objects
+					throw new IllegalStateException("Unreasonable number of lines (%d) computed from content of pdf"
+						.formatted(numberOfNewLines));
+				}
 				this.createNewEmptyNewLines(numberOfNewLines);
 				textPositionList.add(textPosition);
 			}
@@ -170,9 +173,6 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 			double height = textPosition.getHeight();
 			int numberOfLines = (int) (Math.floor(textYPosition - previousTextYPosition) / height);
 			numberOfLines = Math.max(1, numberOfLines - 1); // exclude current new line
-			if (DEBUG) {
-				System.out.println(height + " " + numberOfLines);
-			}
 			return numberOfLines;
 		}
 		else {

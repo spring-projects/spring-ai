@@ -38,9 +38,6 @@ class Character {
 		this.isFirstCharacterOfAWord = isFirstCharacterOfAWord;
 		this.isCharacterAtTheBeginningOfNewLine = isCharacterAtTheBeginningOfNewLine;
 		this.isCharacterCloseToPreviousWord = isCharacterPartOfASentence;
-		if (ForkPDFLayoutTextStripper.DEBUG) {
-			System.out.println(this.toString());
-		}
 	}
 
 	public char getCharacterValue() {
