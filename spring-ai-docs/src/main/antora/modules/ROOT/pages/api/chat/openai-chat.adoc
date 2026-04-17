@@ -316,10 +316,12 @@ Below is a code example excerpted from link:https://github.com/spring-projects/s
 ----
 var imageResource = new ClassPathResource("/multimodal.test.png");
 
-var userMessage = new UserMessage("Explain what do you see on this picture?",
-        new Media(MimeTypeUtils.IMAGE_PNG, this.imageResource));
+var userMessage = UserMessage.builder()
+        .text("Explain what do you see on this picture?")
+        .media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageResource)))
+        .build();
 
-ChatResponse response = chatModel.call(new Prompt(this.userMessage,
+ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
         OpenAiChatOptions.builder().model(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
 ----
 
