@@ -125,7 +125,7 @@ class CosmosDBFilterExpressionConverter extends AbstractFilterExpressionConverte
 			case GT -> " > ";
 			case GTE -> " >= ";
 			case IN -> " IN ";
-			case NIN -> " !IN ";
+			case NIN -> " NOT IN ";
 			default -> throw new RuntimeException("Not supported expression type:" + exp.type());
 		};
 	}
