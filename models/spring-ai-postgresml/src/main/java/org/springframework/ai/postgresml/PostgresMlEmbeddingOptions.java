@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,7 @@ package org.springframework.ai.postgresml;
 
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingOptions;
@@ -35,30 +32,29 @@ import org.springframework.ai.postgresml.PostgresMlEmbeddingModel.VectorType;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  */
-@JsonInclude(Include.NON_NULL)
 public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 
 	// @formatter:off
 	/**
 	 * The Huggingface transformer model to use for the embedding.
 	 */
-	private @JsonProperty("transformer") String transformer = PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL;
+	private String transformer = PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL;
 
 	/**
 	 * PostgresML vector type to use for the embedding.
 	 * Two options are supported: PG_ARRAY and PG_VECTOR.
 	 */
-	private @JsonProperty("vectorType") VectorType vectorType = VectorType.PG_ARRAY;
+	private VectorType vectorType = VectorType.PG_ARRAY;
 
 	/**
 	 * Additional transformer specific options.
 	 */
-	private @JsonProperty("kwargs") Map<String, Object> kwargs = Map.of();
+	private Map<String, Object> kwargs = Map.of();
 
 	/**
 	 * The Document metadata aggregation mode.
 	 */
-	private @JsonProperty("metadataMode") MetadataMode metadataMode = MetadataMode.EMBED;
+	private MetadataMode metadataMode = MetadataMode.EMBED;
 	// @formatter:on
 
 	public static Builder builder() {
@@ -98,18 +94,16 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	@Override
-	@JsonIgnore
-	public String getModel() {
+	public @Nullable String getModel() {
 		return null;
 	}
 
 	@Override
-	@JsonIgnore
-	public Integer getDimensions() {
+	public @Nullable Integer getDimensions() {
 		return null;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		protected PostgresMlEmbeddingOptions options;
 

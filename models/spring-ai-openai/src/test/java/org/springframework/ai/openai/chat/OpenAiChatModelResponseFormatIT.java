@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,49 +18,46 @@ package org.springframework.ai.openai.chat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
-import org.springframework.ai.openai.api.ResponseFormat;
+import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Bean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * @author Christian Tzolov
- * @author Ilayaperumal Gopinathan
+ * Integration tests for the response format in {@link OpenAiChatModel}.
+ *
+ * @author Julien Dubois
  */
-@SpringBootTest(classes = OpenAiChatModelResponseFormatIT.Config.class)
+@SpringBootTest(classes = OpenAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiChatModelResponseFormatIT {
 
-	private static ObjectMapper MAPPER = new ObjectMapper().enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
+	private static final JsonMapper jsonMapper = JsonMapper.builder()
+		.enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+		.build();
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Autowired
-	private OpenAiChatModel openAiChatModel;
+	private OpenAiChatModel chatModel;
 
 	public static boolean isValidJson(String json) {
 		try {
-			MAPPER.readTree(json);
+			jsonMapper.readTree(json);
 		}
 		catch (JacksonException e) {
 			return false;
@@ -69,23 +66,16 @@ public class OpenAiChatModelResponseFormatIT {
 	}
 
 	@Test
-	void jsonObject() throws JsonMappingException, JsonProcessingException {
-
-		// 400 - ResponseError[error=Error[message='json' is not one of ['json_object',
-		// 'text'] -
-		// 'response_format.type', type=invalid_request_error, param=null, code=null]]
-
-		// 400 - ResponseError[error=Error[message='messages' must contain the word 'json'
-		// in some form, to use
-		// 'response_format' of type 'json_object'., type=invalid_request_error,
-		// param=messages, code=null]]
+	void jsonObject() {
 
 		Prompt prompt = new Prompt("List 8 planets. Use JSON response",
 				OpenAiChatOptions.builder()
-					.responseFormat(ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build())
+					.responseFormat(OpenAiChatModel.ResponseFormat.builder()
+						.type(OpenAiChatModel.ResponseFormat.Type.JSON_OBJECT)
+						.build())
 					.build());
 
-		ChatResponse response = this.openAiChatModel.call(prompt);
+		ChatResponse response = this.chatModel.call(prompt);
 
 		assertThat(response).isNotNull();
 
@@ -97,7 +87,7 @@ public class OpenAiChatModelResponseFormatIT {
 	}
 
 	@Test
-	void jsonSchema() throws JsonMappingException, JsonProcessingException {
+	void jsonSchema() {
 
 		var jsonSchema = """
 				{
@@ -124,11 +114,14 @@ public class OpenAiChatModelResponseFormatIT {
 
 		Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
 				OpenAiChatOptions.builder()
-					.model(ChatModel.GPT_4_O_MINI)
-					.responseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, jsonSchema))
+					.model(OpenAiChatOptions.DEFAULT_CHAT_MODEL)
+					.responseFormat(OpenAiChatModel.ResponseFormat.builder()
+						.type(OpenAiChatModel.ResponseFormat.Type.JSON_SCHEMA)
+						.jsonSchema(jsonSchema)
+						.build())
 					.build());
 
-		ChatResponse response = this.openAiChatModel.call(prompt);
+		ChatResponse response = this.chatModel.call(prompt);
 
 		assertThat(response).isNotNull();
 
@@ -140,7 +133,7 @@ public class OpenAiChatModelResponseFormatIT {
 	}
 
 	@Test
-	void jsonSchemaThroughIndividualSetters() throws JsonMappingException, JsonProcessingException {
+	void jsonSchemaThroughIndividualSetters() {
 
 		var jsonSchema = """
 				{
@@ -165,13 +158,13 @@ public class OpenAiChatModelResponseFormatIT {
 				}
 				""";
 
-		var responseFormat = new ResponseFormat();
-		responseFormat.setType(ResponseFormat.Type.JSON_SCHEMA);
-		responseFormat.setSchema(jsonSchema);
 		Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
-				OpenAiChatOptions.builder().model(ChatModel.GPT_4_O_MINI).responseFormat(responseFormat).build());
+				OpenAiChatOptions.builder()
+					.model(OpenAiChatOptions.DEFAULT_CHAT_MODEL)
+					.responseFormat(OpenAiChatModel.ResponseFormat.builder().jsonSchema(jsonSchema).build())
+					.build());
 
-		ChatResponse response = this.openAiChatModel.call(prompt);
+		ChatResponse response = this.chatModel.call(prompt);
 
 		assertThat(response).isNotNull();
 
@@ -183,7 +176,7 @@ public class OpenAiChatModelResponseFormatIT {
 	}
 
 	@Test
-	void jsonSchemaBeanConverter() throws JsonMappingException, JsonProcessingException {
+	void jsonSchemaBeanConverter() {
 
 		@JsonPropertyOrder({ "steps", "final_answer" })
 		record MathReasoning(@JsonProperty(required = true, value = "steps") Steps steps,
@@ -248,11 +241,11 @@ public class OpenAiChatModelResponseFormatIT {
 
 		Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
 				OpenAiChatOptions.builder()
-					.model(ChatModel.GPT_4_O_MINI)
-					.responseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, jsonSchema1))
+					.model(OpenAiChatOptions.DEFAULT_CHAT_MODEL)
+					.responseFormat(OpenAiChatModel.ResponseFormat.builder().jsonSchema(jsonSchema1).build())
 					.build());
 
-		ChatResponse response = this.openAiChatModel.call(prompt);
+		ChatResponse response = this.chatModel.call(prompt);
 
 		assertThat(response).isNotNull();
 
@@ -264,27 +257,12 @@ public class OpenAiChatModelResponseFormatIT {
 
 		// Check if the order is correct as specified in the schema. Steps should come
 		// first before final answer.
-		assertThat(content.startsWith("{\"steps\":{\"items\":["));
+		// assertThat(content.startsWith("{\"steps\":{\"items\":[")).isTrue();
 
 		MathReasoning mathReasoning = outputConverter.convert(content);
 
 		assertThat(mathReasoning).isNotNull();
 		logger.info(mathReasoning.toString());
-	}
-
-	@SpringBootConfiguration
-	static class Config {
-
-		@Bean
-		public OpenAiApi chatCompletionApi() {
-			return OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build();
-		}
-
-		@Bean
-		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
-			return OpenAiChatModel.builder().openAiApi(openAiApi).build();
-		}
-
 	}
 
 }

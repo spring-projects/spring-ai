@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.core.io.ClassPathResource;
@@ -60,6 +61,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Piotr Olaszewski
  * @author Soby Chacko
  * @author Manuel Andreo Garcia
+ * @author Issam El-atif
  * @since 0.8.0
  */
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
@@ -96,7 +98,9 @@ class AzureOpenAiAutoConfigurationIT {
 
 	@Test
 	void chatCompletion() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(
+					AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				AzureOpenAiChatModel chatModel = context.getBean(AzureOpenAiChatModel.class);
 				ChatResponse response = chatModel.call(new Prompt(List.of(this.userMessage, this.systemMessage)));
@@ -106,7 +110,9 @@ class AzureOpenAiAutoConfigurationIT {
 
 	@Test
 	void httpRequestContainsUserAgentAndCustomHeaders() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(
+					AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.withPropertyValues("spring.ai.azure.openai.custom-headers.foo=bar",
 					"spring.ai.azure.openai.custom-headers.fizz=buzz")
 			.run(context -> {
@@ -133,7 +139,9 @@ class AzureOpenAiAutoConfigurationIT {
 
 	@Test
 	void chatCompletionStreaming() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(
+					AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 
 				AzureOpenAiChatModel chatModel = context.getBean(AzureOpenAiChatModel.class);
@@ -193,7 +201,9 @@ class AzureOpenAiAutoConfigurationIT {
 	void chatActivation() {
 
 		// Disable the chat auto-configuration.
-		this.contextRunner.withConfiguration(AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(
+					AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.chat=none")
 			.run(context -> {
 				assertThat(context.getBeansOfType(AzureOpenAiChatProperties.class)).isEmpty();
@@ -201,14 +211,18 @@ class AzureOpenAiAutoConfigurationIT {
 			});
 
 		// The chat auto-configuration is enabled by default.
-		this.contextRunner.withConfiguration(AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(
+					AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(AzureOpenAiChatModel.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiChatProperties.class)).isNotEmpty();
 			});
 
 		// Explicitly enable the chat auto-configuration.
-		this.contextRunner.withConfiguration(AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(
+					AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.chat=azure-openai")
 			.run(context -> {
 				assertThat(context.getBeansOfType(AzureOpenAiChatModel.class)).isNotEmpty();
@@ -271,7 +285,9 @@ class AzureOpenAiAutoConfigurationIT {
 	void openAIClientBuilderCustomizer() {
 		AtomicBoolean firstCustomizationApplied = new AtomicBoolean(false);
 		AtomicBoolean secondCustomizationApplied = new AtomicBoolean(false);
-		this.contextRunner.withConfiguration(AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(
+					AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.withBean("first", AzureOpenAIClientBuilderCustomizer.class,
 					() -> clientBuilder -> firstCustomizationApplied.set(true))
 			.withBean("second", AzureOpenAIClientBuilderCustomizer.class,

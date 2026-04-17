@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,19 +25,20 @@ import java.util.Objects;
  * application.
  *
  * @author Christian Tzolov
+ * @author Eric Bottard
  * @since 1.0.0
  */
 public class ToolResponseMessage extends AbstractMessage {
 
 	protected final List<ToolResponse> responses;
 
-	public ToolResponseMessage(List<ToolResponse> responses) {
-		this(responses, Map.of());
-	}
-
-	public ToolResponseMessage(List<ToolResponse> responses, Map<String, Object> metadata) {
+	protected ToolResponseMessage(List<ToolResponse> responses, Map<String, Object> metadata) {
 		super(MessageType.TOOL, "", metadata);
 		this.responses = responses;
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	public List<ToolResponse> getResponses() {
@@ -70,6 +71,31 @@ public class ToolResponseMessage extends AbstractMessage {
 	}
 
 	public record ToolResponse(String id, String name, String responseData) {
+
+	}
+
+	public static final class Builder {
+
+		private List<ToolResponse> responses = List.of();
+
+		private Map<String, Object> metadata = Map.of();
+
+		private Builder() {
+		}
+
+		public Builder responses(List<ToolResponse> responses) {
+			this.responses = responses;
+			return this;
+		}
+
+		public Builder metadata(Map<String, Object> metadata) {
+			this.metadata = metadata;
+			return this;
+		}
+
+		public ToolResponseMessage build() {
+			return new ToolResponseMessage(this.responses, this.metadata);
+		}
 
 	}
 

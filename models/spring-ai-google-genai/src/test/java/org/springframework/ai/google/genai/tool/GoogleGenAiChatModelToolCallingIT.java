@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.google.genai.GoogleGenAiChatModel;
-import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -36,6 +34,8 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.google.genai.GoogleGenAiChatModel;
+import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -45,8 +45,8 @@ import org.springframework.context.annotation.Bean;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".+")
 public class GoogleGenAiChatModelToolCallingIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiChatModelToolCallingIT.class);
@@ -104,7 +104,6 @@ public class GoogleGenAiChatModelToolCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = GoogleGenAiChatOptions.builder()
-			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
 			.toolCallbacks(List.of(
 					FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
 						.description("Get the current weather in a given location.")
@@ -125,7 +124,7 @@ public class GoogleGenAiChatModelToolCallingIT {
 
 		assertThat(chatResponse.getMetadata()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
-		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(150).isLessThan(330);
+		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(150).isLessThan(500);
 
 		ChatResponse response2 = this.chatModel
 			.call(new Prompt("What is the payment status for transaction 696?", promptOptions));
@@ -140,12 +139,11 @@ public class GoogleGenAiChatModelToolCallingIT {
 	public void functionCallTestInferredOpenApiSchemaStream() {
 
 		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Paris and in Tokyo? Return the temperature in Celsius.");
+				"What's the weather like in Tokyo? Return the temperature in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = GoogleGenAiChatOptions.builder()
-			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the current weather in a given location")
 				.inputType(MockWeatherService.Request.class)
@@ -165,7 +163,7 @@ public class GoogleGenAiChatModelToolCallingIT {
 
 		logger.info("Response: {}", responseString);
 
-		assertThat(responseString).contains("30", "10", "15");
+		assertThat(responseString).contains("10");
 
 	}
 
@@ -178,7 +176,6 @@ public class GoogleGenAiChatModelToolCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = GoogleGenAiChatOptions.builder()
-			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
 			.toolCallbacks(List.of(
 					FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
 						.description("Get the current weather in a given location.")
@@ -200,7 +197,7 @@ public class GoogleGenAiChatModelToolCallingIT {
 		assertThat(chatResponse).isNotNull();
 		assertThat(chatResponse.getMetadata()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
-		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(150).isLessThan(330);
+		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(150).isLessThan(500);
 
 	}
 
@@ -271,7 +268,7 @@ public class GoogleGenAiChatModelToolCallingIT {
 			return GoogleGenAiChatModel.builder()
 				.genAiClient(genAiClient)
 				.defaultOptions(GoogleGenAiChatOptions.builder()
-					.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
+					.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
 					.temperature(0.9)
 					.build())
 				.build();

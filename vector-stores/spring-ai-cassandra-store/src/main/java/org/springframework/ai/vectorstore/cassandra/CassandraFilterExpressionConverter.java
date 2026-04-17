@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 /**
  * Converts {@link org.springframework.ai.vectorstore.filter.Filter.Expression} into CQL
@@ -90,12 +91,14 @@ class CassandraFilterExpressionConverter extends AbstractFilterExpressionConvert
 	}
 
 	private void doBinaryOperation(String operator, Filter.Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "right expression assumed to be non-null");
 		this.convertOperand(expression.left(), context);
 		context.append(operator);
 		this.convertOperand(expression.right(), context);
 	}
 
 	private void doField(Filter.Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "right expression assumed to be non-null");
 		doKey((Key) expression.left(), context);
 		doOperand(expression.type(), context);
 		ColumnMetadata column = getColumn(((Key) expression.left()).key()).get();
@@ -147,6 +150,23 @@ class CassandraFilterExpressionConverter extends AbstractFilterExpressionConvert
 			}
 		}
 		return column;
+	}
+
+	/**
+	 * Cassandra uses a custom value formatting approach via
+	 * {@link #doValue(ColumnMetadata, Object, StringBuilder)} that leverages the driver's
+	 * CodecRegistry. This method is not used in the normal flow and will throw an
+	 * exception if called.
+	 * @param value the value to convert
+	 * @param context the context to append the string representation to
+	 * @throws UnsupportedOperationException always, as this method should not be called
+	 */
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		throw new UnsupportedOperationException(
+				"Cassandra uses a custom doValue(ColumnMetadata, Object, StringBuilder) implementation "
+						+ "that leverages CodecRegistry.DEFAULT.codecFor(dataType).format(v). "
+						+ "This method should not be called.");
 	}
 
 }

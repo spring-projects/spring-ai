@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +18,17 @@ package org.springframework.ai.reader.pdf.layout;
 
 class Character {
 
-	private char characterValue;
+	private final char characterValue;
 
 	private int index;
 
-	private boolean isCharacterPartOfPreviousWord;
+	private final boolean isCharacterPartOfPreviousWord;
 
-	private boolean isFirstCharacterOfAWord;
+	private final boolean isFirstCharacterOfAWord;
 
-	private boolean isCharacterAtTheBeginningOfNewLine;
+	private final boolean isCharacterAtTheBeginningOfNewLine;
 
-	private boolean isCharacterCloseToPreviousWord;
+	private final boolean isCharacterCloseToPreviousWord;
 
 	Character(char characterValue, int index, boolean isCharacterPartOfPreviousWord, boolean isFirstCharacterOfAWord,
 			boolean isCharacterAtTheBeginningOfNewLine, boolean isCharacterPartOfASentence) {

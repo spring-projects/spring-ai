@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.sql.DataSource;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +41,6 @@ import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.lang.Nullable;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
@@ -66,16 +66,20 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 	private static final Logger logger = LoggerFactory.getLogger(JdbcChatMemoryRepository.class);
 
 	private JdbcChatMemoryRepository(JdbcTemplate jdbcTemplate, JdbcChatMemoryRepositoryDialect dialect,
-			PlatformTransactionManager txManager) {
+			@Nullable PlatformTransactionManager txManager) {
 		Assert.notNull(jdbcTemplate, "jdbcTemplate cannot be null");
 		Assert.notNull(dialect, "dialect cannot be null");
 		this.jdbcTemplate = jdbcTemplate;
 		this.dialect = dialect;
-		this.transactionTemplate = new TransactionTemplate(
-				txManager != null ? txManager : new DataSourceTransactionManager(jdbcTemplate.getDataSource()));
+		if (txManager == null) {
+			Assert.state(jdbcTemplate.getDataSource() != null, "jdbcTemplate dataSource cannot be null");
+			txManager = new DataSourceTransactionManager(jdbcTemplate.getDataSource());
+		}
+		this.transactionTemplate = new TransactionTemplate(txManager);
 	}
 
 	@Override
+	@SuppressWarnings("NullAway") // Assume query can't return null rows
 	public List<String> findConversationIds() {
 		return this.jdbcTemplate.queryForList(this.dialect.getSelectConversationIdsSql(), String.class);
 	}
@@ -111,10 +115,13 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 	}
 
 	private record AddBatchPreparedStatement(String conversationId, List<Message> messages,
-			AtomicLong instantSeq) implements BatchPreparedStatementSetter {
+			AtomicLong sequenceId) implements BatchPreparedStatementSetter {
 
 		private AddBatchPreparedStatement(String conversationId, List<Message> messages) {
-			this(conversationId, messages, new AtomicLong(Instant.now().toEpochMilli()));
+			// Use second-level granularity to ensure compatibility with all database
+			// timestamp precisions. The timestamp serves as a sequence number for
+			// message ordering, not as a precise temporal record.
+			this(conversationId, messages, new AtomicLong(Instant.now().getEpochSecond()));
 		}
 
 		@Override
@@ -124,7 +131,9 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 			ps.setString(1, this.conversationId);
 			ps.setString(2, message.getText());
 			ps.setString(3, message.getMessageType().name());
-			ps.setTimestamp(4, new Timestamp(this.instantSeq.getAndIncrement()));
+			// Convert seconds to milliseconds for Timestamp constructor.
+			// Each message gets a unique second value, ensuring proper ordering.
+			ps.setTimestamp(4, new Timestamp(this.sequenceId.getAndIncrement() * 1000L));
 		}
 
 		@Override
@@ -136,7 +145,6 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 	private static class MessageRowMapper implements RowMapper<Message> {
 
 		@Override
-		@Nullable
 		public Message mapRow(ResultSet rs, int i) throws SQLException {
 			var content = rs.getString(1);
 			var type = MessageType.valueOf(rs.getString(2));
@@ -148,7 +156,7 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 				// The content is always stored empty for ToolResponseMessages.
 				// If we want to capture the actual content, we need to extend
 				// AddBatchPreparedStatement to support it.
-				case TOOL -> new ToolResponseMessage(List.of());
+				case TOOL -> ToolResponseMessage.builder().responses(List.of()).build();
 			};
 		}
 
@@ -156,13 +164,13 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 	public static final class Builder {
 
-		private JdbcTemplate jdbcTemplate;
+		private @Nullable JdbcTemplate jdbcTemplate;
 
-		private JdbcChatMemoryRepositoryDialect dialect;
+		private @Nullable JdbcChatMemoryRepositoryDialect dialect;
 
-		private DataSource dataSource;
+		private @Nullable DataSource dataSource;
 
-		private PlatformTransactionManager platformTransactionManager;
+		private @Nullable PlatformTransactionManager platformTransactionManager;
 
 		private static final Logger logger = LoggerFactory.getLogger(Builder.class);
 
@@ -218,12 +226,7 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 		private JdbcChatMemoryRepositoryDialect resolveDialect(DataSource dataSource) {
 			if (this.dialect == null) {
-				try {
-					return JdbcChatMemoryRepositoryDialect.from(dataSource);
-				}
-				catch (Exception ex) {
-					throw new IllegalStateException("Could not detect dialect from datasource", ex);
-				}
+				return JdbcChatMemoryRepositoryDialect.from(dataSource);
 			}
 			else {
 				warnIfDialectMismatch(dataSource, this.dialect);
@@ -236,15 +239,10 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		 * from the DataSource.
 		 */
 		private void warnIfDialectMismatch(DataSource dataSource, JdbcChatMemoryRepositoryDialect explicitDialect) {
-			try {
-				JdbcChatMemoryRepositoryDialect detected = JdbcChatMemoryRepositoryDialect.from(dataSource);
-				if (!detected.getClass().equals(explicitDialect.getClass())) {
-					logger.warn("Explicitly set dialect {} will be used instead of detected dialect {} from datasource",
-							explicitDialect.getClass().getSimpleName(), detected.getClass().getSimpleName());
-				}
-			}
-			catch (Exception ex) {
-				logger.debug("Could not detect dialect from datasource", ex);
+			JdbcChatMemoryRepositoryDialect detected = JdbcChatMemoryRepositoryDialect.from(dataSource);
+			if (!detected.getClass().equals(explicitDialect.getClass())) {
+				logger.warn("Explicitly set dialect {} will be used instead of detected dialect {} from datasource",
+						explicitDialect.getClass().getSimpleName(), detected.getClass().getSimpleName());
 			}
 		}
 

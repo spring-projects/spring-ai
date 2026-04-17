@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import java.util.stream.Stream;
 import javax.sql.DataSource;
 
 import com.zaxxer.hikari.HikariDataSource;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,31 +44,31 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
-import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
-import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser.FilterExpressionParseException;
+import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.CollectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Diego Dupin
  * @author Soby Chacko
+ * @author Eddú Meléndez
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -87,11 +86,6 @@ public class MariaDBStoreIT extends BaseVectorStoreTests {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
 		.withPropertyValues("test.spring.ai.vectorstore.mariadb.distanceType=COSINE",
-
-				// JdbcTemplate configuration
-				String.format("app.datasource.url=jdbc:mariadb://%s:%d/%s?maxQuerySizeToLog=50000",
-						mariadbContainer.getHost(), mariadbContainer.getMappedPort(3306), schemaName),
-				"app.datasource.username=mariadb", "app.datasource.password=mariadbpwd",
 				"app.datasource.type=com.zaxxer.hikari.HikariDataSource");
 
 	List<Document> documents = List.of(
@@ -122,20 +116,20 @@ public class MariaDBStoreIT extends BaseVectorStoreTests {
 		);
 	}
 
-	private static boolean isSortedByDistance(List<Document> docs) {
+	private static boolean isSortedByScore(List<Document> docs) {
 
-		List<Float> distances = docs.stream().map(doc -> (Float) doc.getMetadata().get("distance")).toList();
+		List<Double> scores = docs.stream().map(Document::getScore).toList();
 
-		if (CollectionUtils.isEmpty(distances) || distances.size() == 1) {
+		if (CollectionUtils.isEmpty(scores) || scores.size() == 1) {
 			return true;
 		}
 
-		Iterator<Float> iter = distances.iterator();
-		Float current;
-		Float previous = iter.next();
+		Iterator<Double> iter = scores.iterator();
+		Double current;
+		Double previous = iter.next();
 		while (iter.hasNext()) {
 			current = iter.next();
-			if (previous > current) {
+			if (previous < current) {
 				return false;
 			}
 			previous = current;
@@ -166,10 +160,11 @@ public class MariaDBStoreIT extends BaseVectorStoreTests {
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
-				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
+				assertThat(resultDoc.getMetadata()).containsKeys("meta2");
+				assertThat(resultDoc.getScore()).isBetween(0.0, 1.0);
 
 				// Remove all documents from the store
-				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
+				vectorStore.delete(this.documents.stream().map(Document::getId).toList());
 
 				List<Document> results2 = vectorStore
 					.similaritySearch(SearchRequest.builder().query("Great Depression").topK(1).build());
@@ -281,14 +276,10 @@ public class MariaDBStoreIT extends BaseVectorStoreTests {
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-				try {
-					vectorStore
-						.similaritySearch(SearchRequest.from(searchRequest).filterExpression("country == NL").build());
-					Assert.fail("Invalid filter expression should have been cached!");
-				}
-				catch (FilterExpressionParseException e) {
-					assertThat(e.getMessage()).contains("Line: 1:17, Error: no viable alternative at input 'NL'");
-				}
+				assertThatExceptionOfType(FilterExpressionTextParser.FilterExpressionParseException.class)
+					.isThrownBy(() -> vectorStore
+						.similaritySearch(SearchRequest.from(searchRequest).filterExpression("country == NL").build()))
+					.withMessageContaining("Line: 1:17, Error: no viable alternative at input 'NL'");
 
 				// Remove all documents from the store
 				dropTable(context);
@@ -315,7 +306,8 @@ public class MariaDBStoreIT extends BaseVectorStoreTests {
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
 				assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
-				assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
+				assertThat(resultDoc.getMetadata()).containsKeys("meta1");
+				assertThat(resultDoc.getScore()).isBetween(0.0, 1.0);
 
 				Document sameIdDocument = new Document(document.getId(),
 						"The World is Big and Salvation Lurks Around the Corner",
@@ -329,7 +321,8 @@ public class MariaDBStoreIT extends BaseVectorStoreTests {
 				resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
 				assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
-				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
+				assertThat(resultDoc.getMetadata()).containsKeys("meta2");
+				assertThat(resultDoc.getScore()).isBetween(0.0, 1.0);
 
 				dropTable(context);
 			});
@@ -350,19 +343,14 @@ public class MariaDBStoreIT extends BaseVectorStoreTests {
 
 				assertThat(fullResult).hasSize(3);
 
-				assertThat(isSortedByDistance(fullResult)).isTrue();
+				assertThat(isSortedByScore(fullResult)).isTrue();
 
-				List<Float> distances = fullResult.stream()
-					.map(doc -> (Float) doc.getMetadata().get("distance"))
-					.toList();
+				List<Double> scores = fullResult.stream().map(Document::getScore).toList();
 
-				float threshold = (distances.get(0) + distances.get(1)) / 2;
+				double threshold = (scores.get(0) + scores.get(1)) / 2;
 
-				List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
-					.query("Time Shelter")
-					.topK(5)
-					.similarityThreshold(1 - threshold)
-					.build());
+				List<Document> results = vectorStore.similaritySearch(
+						SearchRequest.builder().query("Time Shelter").topK(5).similarityThreshold(threshold).build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -416,7 +404,7 @@ public class MariaDBStoreIT extends BaseVectorStoreTests {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
+	@EnableAutoConfiguration(exclude = DataSourceAutoConfiguration.class)
 	public static class TestApplication {
 
 		@Value("${test.spring.ai.vectorstore.mariadb.distanceType}")
@@ -438,10 +426,12 @@ public class MariaDBStoreIT extends BaseVectorStoreTests {
 		}
 
 		@Bean
-		@Primary
-		@ConfigurationProperties("app.datasource")
 		public DataSourceProperties dataSourceProperties() {
-			return new DataSourceProperties();
+			DataSourceProperties properties = new DataSourceProperties();
+			properties.setUrl(mariadbContainer.getJdbcUrl());
+			properties.setUsername(mariadbContainer.getUsername());
+			properties.setPassword(mariadbContainer.getPassword());
+			return properties;
 		}
 
 		@Bean
@@ -451,7 +441,10 @@ public class MariaDBStoreIT extends BaseVectorStoreTests {
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
+			return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder()
+				.apiKey(System.getenv("OPENAI_API_KEY"))
+				.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
+				.build());
 		}
 
 	}

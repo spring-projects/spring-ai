@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,16 @@
 
 package org.springframework.ai.vectorstore.opensearch;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
-import java.util.regex.Pattern;
 
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 /**
  * A FilterExpressionConverter implementation for OpenSearch AI search filter expressions.
@@ -36,21 +35,19 @@ import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpress
  */
 public class OpenSearchAiSearchFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
-	private static final Pattern DATE_FORMAT_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z");
-
-	private final SimpleDateFormat dateFormat;
+	private final DateTimeFormatter dateFormat;
 
 	public OpenSearchAiSearchFilterExpressionConverter() {
-		this.dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-		this.dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+		this.dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC);
 	}
 
 	@Override
 	protected void doExpression(Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "expression.right should not be null");
 		if (expression.type() == Filter.ExpressionType.IN || expression.type() == Filter.ExpressionType.NIN) {
 			context.append(getOperationSymbol(expression));
-			context.append("(");
 			this.convertOperand(expression.left(), context);
+			context.append("(");
 			this.convertOperand(expression.right(), context);
 			context.append(")");
 		}
@@ -105,35 +102,24 @@ public class OpenSearchAiSearchFilterExpressionConverter extends AbstractFilterE
 		if (filterValue.value() instanceof List list) {
 			int c = 0;
 			for (Object v : list) {
-				context.append(v);
+				this.doSingleValue(normalizeDateString(v), context);
 				if (c++ < list.size() - 1) {
 					this.doAddValueRangeSpitter(filterValue, context);
 				}
 			}
 		}
 		else {
-			this.doSingleValue(filterValue.value(), context);
+			this.doSingleValue(normalizeDateString(filterValue.value()), context);
 		}
 	}
 
 	@Override
 	protected void doSingleValue(Object value, StringBuilder context) {
 		if (value instanceof Date date) {
-			context.append(this.dateFormat.format(date));
+			context.append(this.dateFormat.format(date.toInstant()));
 		}
 		else if (value instanceof String text) {
-			if (DATE_FORMAT_PATTERN.matcher(text).matches()) {
-				try {
-					Date date = this.dateFormat.parse(text);
-					context.append(this.dateFormat.format(date));
-				}
-				catch (ParseException e) {
-					throw new IllegalArgumentException("Invalid date type:" + text, e);
-				}
-			}
-			else {
-				context.append(text);
-			}
+			emitLuceneString(text, context);
 		}
 		else {
 			context.append(value);

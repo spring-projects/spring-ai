@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,22 @@
 
 package org.springframework.ai.vectorstore.mariadb;
 
+import java.util.Date;
+
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 /**
- * Converts {@link Expression} into JSON metadata filter expression format.
- * (https://mariadb.com/kb/en/json-functions/)
+ * Converts {@link Expression} into MariaDB SQL WHERE clause format using JSON_VALUE
+ * functions for metadata filtering.
+ * <p>
+ * Generates SQL predicates that query JSON metadata fields using MariaDB's JSON
+ * functions. For more information on MariaDB JSON functions, see:
+ * <a href="https://mariadb.com/kb/en/json-functions/">MariaDB JSON Functions</a>
  *
  * @author Diego Dupin
  */
@@ -38,6 +45,7 @@ public class MariaDBFilterExpressionConverter extends AbstractFilterExpressionCo
 
 	@Override
 	protected void doExpression(Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "expected expression.right to be non null");
 		this.convertOperand(expression.left(), context);
 		context.append(getOperationSymbol(expression));
 		this.convertOperand(expression.right(), context);
@@ -45,12 +53,79 @@ public class MariaDBFilterExpressionConverter extends AbstractFilterExpressionCo
 
 	@Override
 	protected void doSingleValue(Object value, StringBuilder context) {
-		if (value instanceof String) {
-			context.append(String.format("\'%s\'", value));
+		if (value instanceof Date date) {
+			emitSqlString(ISO_DATE_FORMATTER.format(date.toInstant()), context);
+		}
+		else if (value instanceof String stringValue) {
+			emitSqlString(stringValue, context);
 		}
 		else {
 			context.append(value);
 		}
+	}
+
+	/**
+	 * Emit a SQL-formatted string value with single quote wrapping and escaping by
+	 * appending to the provided context. Used by MariaDB and MySQL for filter
+	 * expressions.
+	 * <p>
+	 * This method prevents SQL injection attacks by properly escaping all special
+	 * characters and control sequences according to MariaDB/MySQL string literal rules.
+	 * <p>
+	 * Escape sequences:
+	 * <ul>
+	 * <li>{@code '} → {@code ''} (SQL standard single quote doubling)</li>
+	 * <li>{@code \} → {@code \\} (backslash escaping)</li>
+	 * <li>{@code \b \f \n \r \t} → Escape sequences for control characters</li>
+	 * <li>Unicode control chars (U+0000 to U+001F) → {@code \\uXXXX} format</li>
+	 * </ul>
+	 * @param value the string value to format
+	 * @param context the context to append the SQL string literal to
+	 * @since 2.0.0
+	 */
+	protected static void emitSqlString(String value, StringBuilder context) {
+		context.append("'"); // Opening quote
+
+		for (int i = 0; i < value.length(); i++) {
+			char c = value.charAt(i);
+
+			switch (c) {
+				case '\'':
+					// SQL standard: single quote → doubled
+					context.append("''");
+					break;
+				case '\\':
+					// Backslash → escaped for MySQL/MariaDB
+					context.append("\\\\");
+					break;
+				case '\b':
+					context.append("\\b");
+					break;
+				case '\f':
+					context.append("\\f");
+					break;
+				case '\n':
+					context.append("\\n");
+					break;
+				case '\r':
+					context.append("\\r");
+					break;
+				case '\t':
+					context.append("\\t");
+					break;
+				default:
+					// Escape Unicode control characters (U+0000 to U+001F)
+					if (c < 0x20) {
+						context.append(String.format("\\u%04x", (int) c));
+					}
+					else {
+						context.append(c);
+					}
+					break;
+			}
+		}
+
+		context.append("'"); // Closing quote
 	}
 
 	private String getOperationSymbol(Expression exp) {

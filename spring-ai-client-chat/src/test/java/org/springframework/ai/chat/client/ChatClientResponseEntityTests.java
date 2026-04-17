@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,12 +33,15 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.core.ParameterizedTypeReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Christian Tzolov
@@ -55,6 +58,7 @@ public class ChatClientResponseEntityTests {
 
 	@Test
 	public void responseEntityTest() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
@@ -83,6 +87,7 @@ public class ChatClientResponseEntityTests {
 
 	@Test
 	public void parametrizedResponseEntityTest() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 
 		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("""
 				[
@@ -113,6 +118,7 @@ public class ChatClientResponseEntityTests {
 
 	@Test
 	public void customSoCResponseEntityTest() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 
 		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("""
 					{"name":"Max", "age":10},
@@ -136,8 +142,110 @@ public class ChatClientResponseEntityTests {
 		assertThat(userMessage.getText()).contains("Tell me about Max");
 	}
 
-	record MyBean(String name, int age) {
+	@Test
+	public void whenEmptyResponseContentThenHandleGracefully() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage(""))));
+		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
 
+		assertThatThrownBy(() -> ChatClient.builder(this.chatModel)
+			.build()
+			.prompt()
+			.user("test")
+			.call()
+			.responseEntity(MyBean.class)).isInstanceOf(RuntimeException.class);
+	}
+
+	@Test
+	public void whenInvalidJsonResponseThenThrows() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("invalid json content"))));
+		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
+
+		assertThatThrownBy(() -> ChatClient.builder(this.chatModel)
+			.build()
+			.prompt()
+			.user("test")
+			.call()
+			.responseEntity(MyBean.class)).isInstanceOf(RuntimeException.class);
+	}
+
+	@Test
+	public void whenParameterizedTypeWithMapThenParseCorrectly() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("""
+				{
+					"key1": "value1",
+					"key2": "value2",
+					"key3": "value3"
+				}
+				"""))));
+
+		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
+
+		ResponseEntity<ChatResponse, Map<String, String>> responseEntity = ChatClient.builder(this.chatModel)
+			.build()
+			.prompt()
+			.user("test")
+			.call()
+			.responseEntity(new ParameterizedTypeReference<Map<String, String>>() {
+			});
+
+		assertThat(responseEntity.getEntity()).containsEntry("key1", "value1");
+		assertThat(responseEntity.getEntity()).containsEntry("key2", "value2");
+		assertThat(responseEntity.getEntity()).containsEntry("key3", "value3");
+	}
+
+	@Test
+	public void whenEmptyArrayResponseThenReturnEmptyList() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("[]"))));
+		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
+
+		ResponseEntity<ChatResponse, List<MyBean>> responseEntity = ChatClient.builder(this.chatModel)
+			.build()
+			.prompt()
+			.user("test")
+			.call()
+			.responseEntity(new ParameterizedTypeReference<List<MyBean>>() {
+			});
+
+		assertThat(responseEntity.getEntity()).isEmpty();
+	}
+
+	@Test
+	public void whenBooleanPrimitiveResponseThenParseCorrectly() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("true"))));
+		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
+
+		ResponseEntity<ChatResponse, Boolean> responseEntity = ChatClient.builder(this.chatModel)
+			.build()
+			.prompt()
+			.user("Is this true?")
+			.call()
+			.responseEntity(Boolean.class);
+
+		assertThat(responseEntity.getEntity()).isTrue();
+	}
+
+	@Test
+	public void whenIntegerResponseThenParseCorrectly() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("1"))));
+		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
+
+		ResponseEntity<ChatResponse, Integer> responseEntity = ChatClient.builder(this.chatModel)
+			.build()
+			.prompt()
+			.user("What is the answer?")
+			.call()
+			.responseEntity(Integer.class);
+
+		assertThat(responseEntity.getEntity()).isEqualTo(1);
+	}
+
+	record MyBean(String name, int age) {
 	}
 
 }

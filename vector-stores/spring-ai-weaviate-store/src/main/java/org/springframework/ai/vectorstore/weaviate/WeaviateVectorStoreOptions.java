@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ public class WeaviateVectorStoreOptions {
 	private String metaFieldPrefix = "meta_";
 
 	public String getObjectClass() {
-		return objectClass;
+		return this.objectClass;
 	}
 
 	public void setObjectClass(String objectClass) {
@@ -42,7 +42,7 @@ public class WeaviateVectorStoreOptions {
 	}
 
 	public String getContentFieldName() {
-		return contentFieldName;
+		return this.contentFieldName;
 	}
 
 	public void setContentFieldName(String contentFieldName) {
@@ -51,7 +51,7 @@ public class WeaviateVectorStoreOptions {
 	}
 
 	public String getMetaFieldPrefix() {
-		return metaFieldPrefix;
+		return this.metaFieldPrefix;
 	}
 
 	public void setMetaFieldPrefix(String metaFieldPrefix) {

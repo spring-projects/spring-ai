@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,6 +84,30 @@ public class UsageTests {
 		Usage usage = mockUsage(10, 15);
 
 		assertThat(usage.getTotalTokens()).isEqualTo(25);
+		verifyUsage(usage);
+	}
+
+	@Test
+	void totalTokensHandlesZeroPromptTokens() {
+		Usage usage = mockUsage(0, 1);
+
+		assertThat(usage.getTotalTokens()).isEqualTo(1);
+		verifyUsage(usage);
+	}
+
+	@Test
+	void totalTokensHandlesZeroCompletionTokens() {
+		Usage usage = mockUsage(1, 0);
+
+		assertThat(usage.getTotalTokens()).isEqualTo(1);
+		verifyUsage(usage);
+	}
+
+	@Test
+	void totalTokensHandlesBothZeroTokens() {
+		Usage usage = mockUsage(0, 0);
+
+		assertThat(usage.getTotalTokens()).isZero();
 		verifyUsage(usage);
 	}
 

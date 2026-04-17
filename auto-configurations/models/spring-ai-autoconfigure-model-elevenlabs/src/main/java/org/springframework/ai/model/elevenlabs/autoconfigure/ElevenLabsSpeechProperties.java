@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,13 +37,8 @@ public class ElevenLabsSpeechProperties {
 
 	private static final ElevenLabsApi.OutputFormat DEFAULT_OUTPUT_FORMAT = ElevenLabsApi.OutputFormat.MP3_22050_32;
 
-	/**
-	 * Enable ElevenLabs speech model.
-	 */
-	private boolean enabled = true;
-
 	@NestedConfigurationProperty
-	private ElevenLabsTextToSpeechOptions options = ElevenLabsTextToSpeechOptions.builder()
+	private final ElevenLabsTextToSpeechOptions options = ElevenLabsTextToSpeechOptions.builder()
 		.modelId(DEFAULT_MODEL_ID)
 		.voiceId(DEFAULT_VOICE_ID)
 		.outputFormat(DEFAULT_OUTPUT_FORMAT.getValue())
@@ -51,18 +46,6 @@ public class ElevenLabsSpeechProperties {
 
 	public ElevenLabsTextToSpeechOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(ElevenLabsTextToSpeechOptions options) {
-		this.options = options;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

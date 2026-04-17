@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.SpringAIVectorStoreTypes;
 import org.springframework.ai.vectorstore.cosmosdb.CosmosDBVectorStore;
+import org.springframework.ai.vectorstore.cosmosdb.CosmosDBVectorStore.Builder;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -51,7 +52,7 @@ import org.springframework.context.annotation.Bean;
 		matchIfMissing = true)
 public class CosmosDBVectorStoreAutoConfiguration {
 
-	private final String agentSuffix = "SpringAI-CDBNoSQL-VectorStore";
+	private static final String agentSuffix = "SpringAI-CDBNoSQL-VectorStore";
 
 	@Bean
 	public CosmosAsyncClient cosmosClient(CosmosDBVectorStoreProperties properties) {
@@ -64,7 +65,7 @@ public class CosmosDBVectorStoreAutoConfiguration {
 		}
 
 		CosmosClientBuilder builder = new CosmosClientBuilder().endpoint(properties.getEndpoint())
-			.userAgentSuffix(this.agentSuffix);
+			.userAgentSuffix(agentSuffix);
 
 		if (properties.getKey() == null || properties.getKey().isEmpty()) {
 			builder.credential(new DefaultAzureCredentialBuilder().build());
@@ -78,7 +79,7 @@ public class CosmosDBVectorStoreAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy batchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}
@@ -90,14 +91,20 @@ public class CosmosDBVectorStoreAutoConfiguration {
 			CosmosDBVectorStoreProperties properties, CosmosAsyncClient cosmosAsyncClient,
 			EmbeddingModel embeddingModel, BatchingStrategy batchingStrategy) {
 
-		return CosmosDBVectorStore.builder(cosmosAsyncClient, embeddingModel)
-			.databaseName(properties.getDatabaseName())
-			.containerName(properties.getContainerName())
+		Builder builder = CosmosDBVectorStore.builder(cosmosAsyncClient, embeddingModel)
 			.metadataFields(properties.getMetadataFieldList())
 			.vectorStoreThroughput(properties.getVectorStoreThroughput())
-			.vectorDimensions(properties.getVectorDimensions())
-			.partitionKeyPath(properties.getPartitionKeyPath())
-			.build();
+			.vectorDimensions(properties.getVectorDimensions());
+		if (properties.getDatabaseName() != null) {
+			builder.databaseName(properties.getDatabaseName());
+		}
+		if (properties.getContainerName() != null) {
+			builder.containerName(properties.getContainerName());
+		}
+		if (properties.getPartitionKeyPath() != null) {
+			builder.partitionKeyPath(properties.getPartitionKeyPath());
+		}
+		return builder.build();
 	}
 
 }

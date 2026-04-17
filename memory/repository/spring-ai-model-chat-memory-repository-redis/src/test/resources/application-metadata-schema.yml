@@ -1,0 +1,23 @@
+spring:
+  ai:
+    chat:
+      memory:
+        redis:
+          host: localhost
+          port: 6379
+          index-name: chat-memory-with-schema
+          # Define metadata fields with their types for proper indexing
+          # This is compatible with RedisVL schema format
+          metadata-fields:
+            - name: priority
+              type: tag      # For exact match searches (high, medium, low)
+            - name: category
+              type: tag      # For exact match searches  
+            - name: score
+              type: numeric  # For numeric range queries
+            - name: confidence
+              type: numeric  # For numeric comparisons
+            - name: model
+              type: tag      # For exact match on model names
+            - name: description
+              type: text     # For full-text search

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.function.Consumer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpHeaders;
@@ -30,10 +31,11 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
 /**
- * MistralAI Moderation API.
+ * Mistral AI Moderation API.
  *
  * @author Ricken Bazolo
- * @see <a href= "https://docs.mistral.ai/capabilities/guardrailing/</a>
+ * @author Jason Smith
+ * @see <a href= "https://docs.mistral.ai/capabilities/guardrailing/">Moderation</a>
  */
 public class MistralAiModerationApi {
 
@@ -41,19 +43,16 @@ public class MistralAiModerationApi {
 
 	private final RestClient restClient;
 
-	public MistralAiModerationApi(String mistralAiApiKey) {
-		this(DEFAULT_BASE_URL, mistralAiApiKey, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
-
-	public MistralAiModerationApi(String baseUrl, String mistralAiApiKey, RestClient.Builder restClientBuilder,
+	public MistralAiModerationApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
-			headers.setBearerAuth(mistralAiApiKey);
+			headers.setBearerAuth(apiKey);
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
+		this.restClient = restClientBuilder.clone()
+			.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
@@ -71,6 +70,59 @@ public class MistralAiModerationApi {
 			.toEntity(MistralAiModerationResponse.class);
 	}
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static final class Builder {
+
+		private String baseUrl = DEFAULT_BASE_URL;
+
+		private @Nullable String apiKey;
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		public Builder baseUrl(String baseUrl) {
+			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder apiKey(String apiKey) {
+			Assert.hasText(apiKey, "apiKey cannot be null or empty");
+			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			Assert.notNull(restClientBuilder, "restClientBuilder cannot be null");
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+			Assert.notNull(responseErrorHandler, "responseErrorHandler cannot be null");
+			this.responseErrorHandler = responseErrorHandler;
+			return this;
+		}
+
+		public MistralAiModerationApi build() {
+			Assert.state(this.apiKey != null, "The API key must not be null");
+			return new MistralAiModerationApi(this.baseUrl, this.apiKey, this.restClientBuilder,
+					this.responseErrorHandler);
+		}
+
+	}
+
+	/**
+	 * List of well-known Mistral moderation models.
+	 *
+	 * @see <a href=
+	 * "https://docs.mistral.ai/getting-started/models/models_overview/">Mistral AI Models
+	 * Overview</a>
+	 */
 	public enum Model {
 
 		// @formatter:off
@@ -96,6 +148,7 @@ public class MistralAiModerationApi {
 		@JsonProperty("model") String model
 	) {
 
+		@SuppressWarnings("NullAway") // Not null per API documentation, likely a merge related issue
 		public MistralAiModerationRequest(String prompt) {
 			this(prompt, null);
 		}

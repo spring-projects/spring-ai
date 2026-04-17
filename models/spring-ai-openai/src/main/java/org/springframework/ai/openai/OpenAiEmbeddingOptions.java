@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,85 +16,180 @@
 
 package org.springframework.ai.openai;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
+
+import com.openai.models.embeddings.EmbeddingCreateParams;
+import com.openai.models.embeddings.EmbeddingModel;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.embedding.EmbeddingOptions;
 
 /**
- * OpenAI Embedding Options.
+ * Configuration information for the Embedding Model implementation using the OpenAI Java
+ * SDK.
  *
+ * @author Julien Dubois
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
- * @since 0.8.0
  */
-@JsonInclude(Include.NON_NULL)
-public class OpenAiEmbeddingOptions implements EmbeddingOptions {
+public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements EmbeddingOptions {
 
-	// @formatter:off
+	public static final String DEFAULT_EMBEDDING_MODEL = EmbeddingModel.TEXT_EMBEDDING_ADA_002.asString();
+
 	/**
-	 * ID of the model to use.
+	 * An identifier for the caller or end user of the operation. This may be used for
+	 * tracking or rate-limiting purposes.
 	 */
-	private @JsonProperty("model") String model;
-	/**
-	 * The format to return the embeddings in. Can be either float or base64.
+	private @Nullable String user;
+
+	/*
+	 * The number of dimensions the resulting output embeddings should have. Only
+	 * supported in `text-embedding-3` and later models.
 	 */
-	private @JsonProperty("encoding_format") String encodingFormat;
-	/**
-	 * The number of dimensions the resulting output embeddings should have. Only supported in text-embedding-3 and later models.
-	 */
-	private @JsonProperty("dimensions") Integer dimensions;
-	/**
-	 * A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
-	 */
-	private @JsonProperty("user") String user;
-	// @formatter:on
+	private @Nullable Integer dimensions;
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	@Override
-	public String getModel() {
-		return this.model;
-	}
-
-	public void setModel(String model) {
-		this.model = model;
-	}
-
-	public String getEncodingFormat() {
-		return this.encodingFormat;
-	}
-
-	public void setEncodingFormat(String encodingFormat) {
-		this.encodingFormat = encodingFormat;
-	}
-
-	@Override
-	public Integer getDimensions() {
-		return this.dimensions;
-	}
-
-	public void setDimensions(Integer dimensions) {
-		this.dimensions = dimensions;
-	}
-
-	public String getUser() {
+	public @Nullable String getUser() {
 		return this.user;
 	}
 
-	public void setUser(String user) {
+	public void setUser(@Nullable String user) {
 		this.user = user;
 	}
 
-	public static class Builder {
+	@Override
+	public @Nullable Integer getDimensions() {
+		return this.dimensions;
+	}
 
-		protected OpenAiEmbeddingOptions options;
+	public void setDimensions(@Nullable Integer dimensions) {
+		this.dimensions = dimensions;
+	}
 
-		public Builder() {
-			this.options = new OpenAiEmbeddingOptions();
+	@Override
+	public String toString() {
+		return "OpenAiEmbeddingOptions{" + "user='" + this.user + '\'' + ", model='" + this.getModel() + '\''
+				+ ", deploymentName='" + this.getDeploymentName() + '\'' + ", dimensions=" + this.dimensions + '}';
+	}
+
+	public EmbeddingCreateParams toOpenAiCreateParams(List<String> instructions) {
+
+		EmbeddingCreateParams.Builder builder = EmbeddingCreateParams.builder();
+
+		// Use deployment name if available (for Microsoft Foundry), otherwise use model
+		// name
+		if (this.getDeploymentName() != null) {
+			builder.model(this.getDeploymentName());
+		}
+		else if (this.getModel() != null) {
+			builder.model(this.getModel());
+		}
+
+		if (!instructions.isEmpty()) {
+			builder.input(EmbeddingCreateParams.Input.ofArrayOfStrings(instructions));
+		}
+		if (this.getUser() != null) {
+			builder.user(this.getUser());
+		}
+		if (this.getDimensions() != null) {
+			builder.dimensions(this.getDimensions());
+		}
+		return builder.build();
+	}
+
+	public static final class Builder {
+
+		private final OpenAiEmbeddingOptions options = new OpenAiEmbeddingOptions();
+
+		public Builder from(OpenAiEmbeddingOptions fromOptions) {
+			// Parent class fields
+			this.options.setBaseUrl(fromOptions.getBaseUrl());
+			this.options.setApiKey(fromOptions.getApiKey());
+			this.options.setCredential(fromOptions.getCredential());
+			this.options.setModel(fromOptions.getModel());
+			this.options.setDeploymentName(fromOptions.getDeploymentName());
+			this.options.setMicrosoftFoundryServiceVersion(fromOptions.getMicrosoftFoundryServiceVersion());
+			this.options.setOrganizationId(fromOptions.getOrganizationId());
+			this.options.setMicrosoftFoundry(fromOptions.isMicrosoftFoundry());
+			this.options.setGitHubModels(fromOptions.isGitHubModels());
+			this.options.setTimeout(fromOptions.getTimeout());
+			this.options.setMaxRetries(fromOptions.getMaxRetries());
+			this.options.setProxy(fromOptions.getProxy());
+			this.options.setCustomHeaders(fromOptions.getCustomHeaders());
+			// Child class fields
+			this.options.setUser(fromOptions.getUser());
+			this.options.setDimensions(fromOptions.getDimensions());
+			return this;
+		}
+
+		public Builder merge(@Nullable EmbeddingOptions from) {
+			if (from == null) {
+				return this;
+			}
+			if (from instanceof OpenAiEmbeddingOptions castFrom) {
+				// Parent class fields
+				if (castFrom.getBaseUrl() != null) {
+					this.options.setBaseUrl(castFrom.getBaseUrl());
+				}
+				if (castFrom.getApiKey() != null) {
+					this.options.setApiKey(castFrom.getApiKey());
+				}
+				if (castFrom.getCredential() != null) {
+					this.options.setCredential(castFrom.getCredential());
+				}
+				if (castFrom.getModel() != null) {
+					this.options.setModel(castFrom.getModel());
+				}
+				if (castFrom.getDeploymentName() != null) {
+					this.options.setDeploymentName(castFrom.getDeploymentName());
+				}
+				if (castFrom.getMicrosoftFoundryServiceVersion() != null) {
+					this.options.setMicrosoftFoundryServiceVersion(castFrom.getMicrosoftFoundryServiceVersion());
+				}
+				if (castFrom.getOrganizationId() != null) {
+					this.options.setOrganizationId(castFrom.getOrganizationId());
+				}
+				this.options.setMicrosoftFoundry(castFrom.isMicrosoftFoundry());
+				this.options.setGitHubModels(castFrom.isGitHubModels());
+				this.options.setTimeout(castFrom.getTimeout());
+				this.options.setMaxRetries(castFrom.getMaxRetries());
+				if (castFrom.getProxy() != null) {
+					this.options.setProxy(castFrom.getProxy());
+				}
+				this.options.setCustomHeaders(castFrom.getCustomHeaders());
+				// Child class fields
+				if (castFrom.getUser() != null) {
+					this.options.setUser(castFrom.getUser());
+				}
+				if (castFrom.getDimensions() != null) {
+					this.options.setDimensions(castFrom.getDimensions());
+				}
+			}
+			return this;
+		}
+
+		public Builder from(EmbeddingCreateParams openAiCreateParams) {
+
+			if (openAiCreateParams.user().isPresent()) {
+				this.options.setUser(openAiCreateParams.user().get());
+			}
+			if (openAiCreateParams.dimensions().isPresent()) {
+				this.options.setDimensions(Math.toIntExact(openAiCreateParams.dimensions().get()));
+			}
+			return this;
+		}
+
+		public Builder user(String user) {
+			this.options.setUser(user);
+			return this;
+		}
+
+		public Builder deploymentName(String deploymentName) {
+			this.options.setDeploymentName(deploymentName);
+			return this;
 		}
 
 		public Builder model(String model) {
@@ -102,18 +197,63 @@ public class OpenAiEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
-		public Builder encodingFormat(String encodingFormat) {
-			this.options.setEncodingFormat(encodingFormat);
+		public Builder baseUrl(String baseUrl) {
+			this.options.setBaseUrl(baseUrl);
+			return this;
+		}
+
+		public Builder apiKey(String apiKey) {
+			this.options.setApiKey(apiKey);
+			return this;
+		}
+
+		public Builder credential(com.openai.credential.Credential credential) {
+			this.options.setCredential(credential);
+			return this;
+		}
+
+		public Builder azureOpenAIServiceVersion(com.openai.azure.AzureOpenAIServiceVersion azureOpenAIServiceVersion) {
+			this.options.setMicrosoftFoundryServiceVersion(azureOpenAIServiceVersion);
+			return this;
+		}
+
+		public Builder organizationId(String organizationId) {
+			this.options.setOrganizationId(organizationId);
+			return this;
+		}
+
+		public Builder azure(boolean azure) {
+			this.options.setMicrosoftFoundry(azure);
+			return this;
+		}
+
+		public Builder gitHubModels(boolean gitHubModels) {
+			this.options.setGitHubModels(gitHubModels);
+			return this;
+		}
+
+		public Builder timeout(java.time.Duration timeout) {
+			this.options.setTimeout(timeout);
+			return this;
+		}
+
+		public Builder maxRetries(Integer maxRetries) {
+			this.options.setMaxRetries(maxRetries);
+			return this;
+		}
+
+		public Builder proxy(java.net.Proxy proxy) {
+			this.options.setProxy(proxy);
+			return this;
+		}
+
+		public Builder customHeaders(java.util.Map<String, String> customHeaders) {
+			this.options.setCustomHeaders(customHeaders);
 			return this;
 		}
 
 		public Builder dimensions(Integer dimensions) {
 			this.options.dimensions = dimensions;
-			return this;
-		}
-
-		public Builder user(String user) {
-			this.options.setUser(user);
 			return this;
 		}
 

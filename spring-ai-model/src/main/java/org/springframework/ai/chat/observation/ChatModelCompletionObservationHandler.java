@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,10 +46,6 @@ public class ChatModelCompletionObservationHandler implements ObservationHandler
 	private List<String> completion(ChatModelObservationContext context) {
 		if (context.getResponse() == null || context.getResponse().getResults() == null
 				|| CollectionUtils.isEmpty(context.getResponse().getResults())) {
-			return List.of();
-		}
-
-		if (!StringUtils.hasText(context.getResponse().getResult().getOutput().getText())) {
 			return List.of();
 		}
 

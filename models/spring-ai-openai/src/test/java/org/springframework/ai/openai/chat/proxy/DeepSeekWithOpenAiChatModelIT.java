@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,12 @@
 package org.springframework.ai.openai.chat.proxy;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -42,12 +38,8 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
-import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.tool.MockWeatherService;
-import org.springframework.ai.openai.chat.ActorsFilms;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -60,24 +52,20 @@ import org.springframework.core.io.Resource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * @author Alexandros Pappas
+ * Integration tests for OpenAI SDK Chat Model using DeepSeek as an OpenAI-compatible
+ * provider.
  *
- * The DeepSeek API uses an API format compatible with OpenAI, allowing developers to
- * easily integrate it into existing systems that use the OpenAI SDK5.
- *
- * For more information on DeepSeek behavior, refer to its API documentation:
- * <a href="https://api-docs.deepseek.com/">DeepSeek API</a>
+ * @author Ilayaperumal Gopinathan
  */
 @SpringBootTest(classes = DeepSeekWithOpenAiChatModelIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".+")
-@Disabled("Requires DeepSeek credits")
 class DeepSeekWithOpenAiChatModelIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(DeepSeekWithOpenAiChatModelIT.class);
 
 	private static final String DEEPSEEK_BASE_URL = "https://api.deepseek.com";
 
-	private static final String DEFAULT_DEEPSEEK_MODEL = "deepseek-chat";
+	private static final String DEEPSEEK_DEFAULT_MODEL = "deepseek-chat";
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
@@ -120,25 +108,6 @@ class DeepSeekWithOpenAiChatModelIT {
 	}
 
 	@Test
-	void streamingWithTokenUsage() {
-		var promptOptions = OpenAiChatOptions.builder().streamUsage(true).seed(1).build();
-
-		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
-
-		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
-		var referenceTokenUsage = this.chatModel.call(prompt).getMetadata().getUsage();
-
-		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
-		assertThat(streamingTokenUsage.getCompletionTokens()).isGreaterThan(0);
-		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
-
-		assertThat(streamingTokenUsage.getPromptTokens()).isEqualTo(referenceTokenUsage.getPromptTokens());
-		assertThat(streamingTokenUsage.getCompletionTokens()).isEqualTo(referenceTokenUsage.getCompletionTokens());
-		assertThat(streamingTokenUsage.getTotalTokens()).isEqualTo(referenceTokenUsage.getTotalTokens());
-
-	}
-
-	@Test
 	void listOutputConverter() {
 		DefaultConversionService conversionService = new DefaultConversionService();
 		ListOutputConverter outputConverter = new ListOutputConverter(conversionService);
@@ -157,56 +126,11 @@ class DeepSeekWithOpenAiChatModelIT {
 
 		List<String> list = outputConverter.convert(generation.getOutput().getText());
 		assertThat(list).hasSize(5);
-
-	}
-
-	@Test
-	void mapOutputConverter() {
-		MapOutputConverter outputConverter = new MapOutputConverter();
-
-		String format = outputConverter.getFormat();
-		String template = """
-				Provide me a List of {subject}
-				{format}
-				""";
-		PromptTemplate promptTemplate = PromptTemplate.builder()
-			.template(template)
-			.variables(Map.of("subject", "numbers from 1 to 9 under they key name 'numbers'", "format", format))
-			.build();
-		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = this.chatModel.call(prompt).getResult();
-
-		Map<String, Object> result = outputConverter.convert(generation.getOutput().getText());
-		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
-
-	}
-
-	@Test
-	void beanOutputConverter() {
-
-		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
-
-		String format = outputConverter.getFormat();
-		String template = """
-				Generate the filmography for a random actor.
-				{format}
-				""";
-		PromptTemplate promptTemplate = PromptTemplate.builder()
-			.template(template)
-			.variables(Map.of("format", format))
-			.build();
-		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = this.chatModel.call(prompt).getResult();
-
-		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getText());
-		assertThat(actorsFilms.getActor()).isNotEmpty();
 	}
 
 	@Test
 	void beanOutputConverterRecords() {
-
-		BeanOutputConverter<DeepSeekWithOpenAiChatModelIT.ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(
-				DeepSeekWithOpenAiChatModelIT.ActorsFilmsRecord.class);
+		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
 		String format = outputConverter.getFormat();
 		String template = """
@@ -220,50 +144,14 @@ class DeepSeekWithOpenAiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		DeepSeekWithOpenAiChatModelIT.ActorsFilmsRecord actorsFilms = outputConverter
-			.convert(generation.getOutput().getText());
-		logger.info("{}", actorsFilms);
+		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
+		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
 
 	@Test
-	void beanStreamOutputConverterRecords() {
-
-		BeanOutputConverter<DeepSeekWithOpenAiChatModelIT.ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(
-				DeepSeekWithOpenAiChatModelIT.ActorsFilmsRecord.class);
-
-		String format = outputConverter.getFormat();
-		String template = """
-				Generate the filmography of 5 movies for Tom Hanks.
-				{format}
-				""";
-		PromptTemplate promptTemplate = PromptTemplate.builder()
-			.template(template)
-			.variables(Map.of("format", format))
-			.build();
-		Prompt prompt = new Prompt(promptTemplate.createMessage());
-
-		String generationTextFromStream = this.chatModel.stream(prompt)
-			.collectList()
-			.block()
-			.stream()
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getText)
-			.collect(Collectors.joining());
-
-		DeepSeekWithOpenAiChatModelIT.ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
-		logger.info("{}", actorsFilms);
-		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
-		assertThat(actorsFilms.movies()).hasSize(5);
-	}
-
-	@Test
-	@Disabled("The current version of the deepseek-chat model's Function Calling capability is unstable, which may result in looped calls or empty responses.")
 	void functionCallTest() {
-
 		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
@@ -283,56 +171,69 @@ class DeepSeekWithOpenAiChatModelIT {
 	}
 
 	@Test
-	@Disabled("The current version of the deepseek-chat model's Function Calling capability is unstable, which may result in looped calls or empty responses.")
-	void streamFunctionCallTest() {
-
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
-
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = OpenAiChatOptions.builder()
-			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
-				.description("Get the weather in location")
-				.inputType(MockWeatherService.Request.class)
-				.build()))
-			.build();
-
-		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
-
-		String content = response.collectList()
-			.block()
-			.stream()
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getText)
-			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
-
-		assertThat(content).contains("30", "10", "15");
-	}
-
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "deepseek-chat", "deepseek-reasoner" })
-	void validateCallResponseMetadata(String model) {
-		// @formatter:off
-		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(OpenAiChatOptions.builder().model(model).build())
-				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
-				.call()
-				.chatResponse();
-		// @formatter:on
+	void validateCallResponseMetadata() {
+		ChatResponse response = ChatClient.create(this.chatModel)
+			.prompt()
+			.options(OpenAiChatOptions.builder().model(DEEPSEEK_DEFAULT_MODEL))
+			.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
+			.call()
+			.chatResponse();
 
 		logger.info(response.toString());
 		assertThat(response.getMetadata().getId()).isNotEmpty();
-		assertThat(response.getMetadata().getModel()).containsIgnoringCase(model);
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
 	}
 
+	@Test
+	void extraBodySupport() {
+		// Provide a parameter via extraBody that will predictably affect the response
+		// 'max_tokens' placed in extraBody should be flattened to the root and limit the
+		// response length.
+		Map<String, Object> extraBody = Map.of("max_tokens", 2);
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model(DEEPSEEK_DEFAULT_MODEL)
+			.extraBody(extraBody)
+			.build();
+
+		Prompt prompt = new Prompt("Tell me a short joke.", options);
+
+		ChatResponse response = this.chatModel.call(prompt);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+		// Because max_tokens is 2, the finish reason should be length or similar
+		// indicating truncation
+		assertThat(response.getResult().getMetadata().getFinishReason().toLowerCase()).contains("length");
+	}
+
 	record ActorsFilmsRecord(String actor, List<String> movies) {
+
+	}
+
+	public static class MockWeatherService
+			implements java.util.function.Function<MockWeatherService.Request, MockWeatherService.Response> {
+
+		@Override
+		public Response apply(Request request) {
+			double temperature = switch (request.location()) {
+				case "San Francisco", "San Francisco, CA" -> 30.0;
+				case "Tokyo", "Tokyo, Japan" -> 10.0;
+				case "Paris", "Paris, France" -> 15.0;
+				default -> 0.0;
+			};
+			return new Response(temperature, request.unit() != null ? request.unit() : "C");
+		}
+
+		public record Request(String location, String unit) {
+
+		}
+
+		public record Response(double temp, String unit) {
+
+		}
 
 	}
 
@@ -340,15 +241,13 @@ class DeepSeekWithOpenAiChatModelIT {
 	static class Config {
 
 		@Bean
-		public OpenAiApi chatCompletionApi() {
-			return OpenAiApi.builder().baseUrl(DEEPSEEK_BASE_URL).apiKey(System.getenv("DEEPSEEK_API_KEY")).build();
-		}
-
-		@Bean
-		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
+		public OpenAiChatModel openAiSdkChatModel() {
 			return OpenAiChatModel.builder()
-				.openAiApi(openAiApi)
-				.defaultOptions(OpenAiChatOptions.builder().model(DEFAULT_DEEPSEEK_MODEL).build())
+				.options(OpenAiChatOptions.builder()
+					.baseUrl(DEEPSEEK_BASE_URL)
+					.apiKey(System.getenv("DEEPSEEK_API_KEY"))
+					.model(DEEPSEEK_DEFAULT_MODEL)
+					.build())
 				.build();
 		}
 

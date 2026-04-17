@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ public enum VectorStoreObservationAttributes {
 	DB_VECTOR_DIMENSION_COUNT("db.vector.dimension_count"),
 
 	/**
-	 * The name field as of the vector (e.g. a field name).
+	 * The name field of the vector (e.g. a field name).
 	 */
 	DB_VECTOR_FIELD_NAME("db.vector.field_name"),
 

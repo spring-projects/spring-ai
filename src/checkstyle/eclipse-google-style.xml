@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<profiles version="13">
+    <profile kind="CodeFormatterProfile" name="GoogleStyle" version="13">
+        <setting id="org.eclipse.jdt.core.formatter.blank_lines_between_import_groups" value="1" />
+    </profile>
+</profiles>

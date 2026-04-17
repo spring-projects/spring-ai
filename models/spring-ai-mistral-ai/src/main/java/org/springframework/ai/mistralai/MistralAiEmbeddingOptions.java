@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,7 @@
 
 package org.springframework.ai.mistralai;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.embedding.EmbeddingOptions;
 
@@ -28,20 +25,22 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  *
  * @author Ricken Bazolo
  * @author Thomas Vitale
+ * @author Jason Smith
  * @since 0.8.1
  */
-@JsonInclude(Include.NON_NULL)
 public class MistralAiEmbeddingOptions implements EmbeddingOptions {
 
 	/**
 	 * ID of the model to use.
 	 */
-	private @JsonProperty("model") String model;
+	@SuppressWarnings("NullAway.Init")
+	private String model;
 
 	/**
 	 * The format to return the embeddings in. Can be either float or base64.
 	 */
-	private @JsonProperty("encoding_format") String encodingFormat;
+	@SuppressWarnings("NullAway.Init")
+	private String encodingFormat;
 
 	public static Builder builder() {
 		return new Builder();
@@ -65,12 +64,11 @@ public class MistralAiEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	@Override
-	@JsonIgnore
-	public Integer getDimensions() {
+	public @Nullable Integer getDimensions() {
 		return null;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		protected MistralAiEmbeddingOptions options;
 

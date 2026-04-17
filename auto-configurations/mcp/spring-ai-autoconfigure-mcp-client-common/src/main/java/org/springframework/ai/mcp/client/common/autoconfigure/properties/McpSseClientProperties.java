@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.springframework.ai.mcp.client.common.autoconfigure.properties;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -29,13 +31,27 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Each connection is configured with a URL endpoint for SSE communication.
  *
  * <p>
- * Example configuration: <pre>
+ * Example configurations: <pre>
+ * # Simple configuration with default SSE endpoint (/sse)
  * spring.ai.mcp.client.sse:
  *   connections:
  *     server1:
- *       url: http://localhost:8080/events
- *     server2:
- *       url: http://otherserver:8081/events
+ *       url: http://localhost:8080
+ *
+ * # Custom SSE endpoints - split complex URLs correctly
+ * spring.ai.mcp.client.sse:
+ *   connections:
+ *     mcp-hub:
+ *       url: http://localhost:3000
+ *       sse-endpoint: /mcp-hub/sse/cf9ec4527e3c4a2cbb149a85ea45ab01
+ *     custom-server:
+ *       url: http://api.example.com
+ *       sse-endpoint: /v1/mcp/events?token=abc123&format=json
+ *
+ * # How to split a full URL:
+ * # Full URL: http://localhost:3000/mcp-hub/sse/token123
+ * # Split as:  url: http://localhost:3000
+ * #           sse-endpoint: /mcp-hub/sse/token123
  * </pre>
  *
  * @author Christian Tzolov
@@ -69,7 +85,7 @@ public class McpSseClientProperties {
 	 * @param url the URL endpoint for SSE communication with the MCP server
 	 * @param sseEndpoint the SSE endpoint for the MCP server
 	 */
-	public record SseParameters(String url, String sseEndpoint) {
+	public record SseParameters(@Nullable String url, @Nullable String sseEndpoint) {
 	}
 
 }

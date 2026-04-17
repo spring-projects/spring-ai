@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,12 @@ import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 /**
- * Converts {@link Expression} into Milvus metadata filter expression format.
- * (https://milvus.io/docs/json_data_type.md)
+ * Converts {@link Expression} into Milvus metadata filter expression format. See Milvus
+ * JSON‑field & filtering docs:
+ * <a href="https://milvus.io/docs/json-field-overview.md">json-field-overview</a>
  *
  * @author Christian Tzolov
  */
@@ -32,6 +34,7 @@ public class MilvusFilterExpressionConverter extends AbstractFilterExpressionCon
 
 	@Override
 	protected void doExpression(Expression exp, StringBuilder context) {
+		Assert.state(exp.right() != null, "expected expression.right to be non null");
 		this.convertOperand(exp.left(), context);
 		context.append(getOperationSymbol(exp));
 		this.convertOperand(exp.right(), context);
@@ -62,6 +65,18 @@ public class MilvusFilterExpressionConverter extends AbstractFilterExpressionCon
 	protected void doKey(Key key, StringBuilder context) {
 		var identifier = (hasOuterQuotes(key.key())) ? removeOuterQuotes(key.key()) : key.key();
 		context.append("metadata[\"" + identifier + "\"]");
+	}
+
+	/**
+	 * Serialize values using JSON serialization for Milvus filter expressions. Delegates
+	 * to {@link #emitJsonValue(Object, StringBuilder)} for Jackson-based JSON
+	 * serialization.
+	 * @param value the value to serialize
+	 * @param context the context to append the JSON representation to
+	 */
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		emitJsonValue(value, context);
 	}
 
 }

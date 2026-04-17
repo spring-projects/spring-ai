@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,10 @@ package org.springframework.ai.chat.client.advisor.vectorstore;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
@@ -36,7 +38,6 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -48,6 +49,7 @@ import org.springframework.util.StringUtils;
  * @author Timo Salm
  * @author Ilayaperumal Gopinathan
  * @author Thomas Vitale
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 public class QuestionAnswerAdvisor implements BaseAdvisor {
@@ -82,11 +84,6 @@ public class QuestionAnswerAdvisor implements BaseAdvisor {
 
 	private final int order;
 
-	public QuestionAnswerAdvisor(VectorStore vectorStore) {
-		this(vectorStore, SearchRequest.builder().build(), DEFAULT_PROMPT_TEMPLATE, BaseAdvisor.DEFAULT_SCHEDULER,
-				DEFAULT_ORDER);
-	}
-
 	QuestionAnswerAdvisor(VectorStore vectorStore, SearchRequest searchRequest, @Nullable PromptTemplate promptTemplate,
 			@Nullable Scheduler scheduler, int order) {
 		Assert.notNull(vectorStore, "vectorStore cannot be null");
@@ -111,10 +108,15 @@ public class QuestionAnswerAdvisor implements BaseAdvisor {
 	@Override
 	public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
 		// 1. Search for similar documents in the vector store.
-		var searchRequestToUse = SearchRequest.from(this.searchRequest)
-			.query(chatClientRequest.prompt().getUserMessage().getText())
-			.filterExpression(doGetFilterExpression(chatClientRequest.context()))
-			.build();
+		var searchRequestBuilder = SearchRequest.from(this.searchRequest)
+			.query(Objects.requireNonNullElse(chatClientRequest.prompt().getUserMessage().getText(), ""));
+
+		var filterExpr = doGetFilterExpression(chatClientRequest.context());
+		if (filterExpr != null) {
+			searchRequestBuilder.filterExpression(filterExpr);
+		}
+
+		var searchRequestToUse = searchRequestBuilder.build();
 
 		List<Document> documents = this.vectorStore.similaritySearch(searchRequestToUse);
 
@@ -122,8 +124,9 @@ public class QuestionAnswerAdvisor implements BaseAdvisor {
 		Map<String, Object> context = new HashMap<>(chatClientRequest.context());
 		context.put(RETRIEVED_DOCUMENTS, documents);
 
-		String documentContext = documents == null ? ""
-				: documents.stream().map(Document::getText).collect(Collectors.joining(System.lineSeparator()));
+		String documentContext = documents.stream()
+			.map(Document::getText)
+			.collect(Collectors.joining(System.lineSeparator()));
 
 		// 3. Augment the user prompt with the document context.
 		UserMessage userMessage = chatClientRequest.prompt().getUserMessage();
@@ -139,27 +142,25 @@ public class QuestionAnswerAdvisor implements BaseAdvisor {
 
 	@Override
 	public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
-		ChatResponse.Builder chatResponseBuilder;
-		if (chatClientResponse.chatResponse() == null) {
-			chatResponseBuilder = ChatResponse.builder();
+		ChatResponse.Builder chatResponseBuilder = ChatResponse.builder();
+		if (chatClientResponse.chatResponse() != null) {
+			chatResponseBuilder.from(chatClientResponse.chatResponse());
 		}
-		else {
-			chatResponseBuilder = ChatResponse.builder().from(chatClientResponse.chatResponse());
+		if (chatClientResponse.context().get(RETRIEVED_DOCUMENTS) != null) {
+			chatResponseBuilder.metadata(RETRIEVED_DOCUMENTS, chatClientResponse.context().get(RETRIEVED_DOCUMENTS));
 		}
-		chatResponseBuilder.metadata(RETRIEVED_DOCUMENTS, chatClientResponse.context().get(RETRIEVED_DOCUMENTS));
 		return ChatClientResponse.builder()
 			.chatResponse(chatResponseBuilder.build())
 			.context(chatClientResponse.context())
 			.build();
 	}
 
-	@Nullable
-	protected Filter.Expression doGetFilterExpression(Map<String, Object> context) {
-		if (!context.containsKey(FILTER_EXPRESSION)
-				|| !StringUtils.hasText(context.get(FILTER_EXPRESSION).toString())) {
+	protected Filter.@Nullable Expression doGetFilterExpression(Map<String, @Nullable Object> context) {
+		Object ctxFilterExpr = context.get(FILTER_EXPRESSION);
+		if (ctxFilterExpr == null || !StringUtils.hasText(ctxFilterExpr.toString())) {
 			return this.searchRequest.getFilterExpression();
 		}
-		return new FilterExpressionTextParser().parse(context.get(FILTER_EXPRESSION).toString());
+		return new FilterExpressionTextParser().parse(ctxFilterExpr.toString());
 	}
 
 	@Override
@@ -173,9 +174,9 @@ public class QuestionAnswerAdvisor implements BaseAdvisor {
 
 		private SearchRequest searchRequest = SearchRequest.builder().build();
 
-		private PromptTemplate promptTemplate;
+		private @Nullable PromptTemplate promptTemplate;
 
-		private Scheduler scheduler;
+		private @Nullable Scheduler scheduler;
 
 		private int order = DEFAULT_ORDER;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.oracle;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -30,8 +31,6 @@ import java.util.stream.Collectors;
 import javax.sql.DataSource;
 
 import oracle.jdbc.pool.OracleDataSource;
-import org.junit.Assert;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -53,26 +52,28 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.CollectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 @Testcontainers
-@Disabled("Oracle image is 2GB")
 public class OracleVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
-	static OracleContainer oracle23aiContainer = new OracleContainer(OracleImage.DEFAULT_IMAGE).withCopyFileToContainer(
-			MountableFile.forClasspathResource("/initialize.sql"), "/container-entrypoint-initdb.d/initialize.sql");
+	static OracleContainer oracle23aiContainer = new OracleContainer(OracleImage.DEFAULT_IMAGE)
+		.withCopyFileToContainer(MountableFile.forClasspathResource("/initialize.sql"),
+				"/container-entrypoint-initdb.d/initialize.sql")
+		.withStartupTimeout(Duration.ofMinutes(5))
+		.withStartupAttempts(3)
+		.withSharedMemorySize(2L * 1024L * 1024L * 1024L); // 2GB shared memory
 
 	final List<Document> documents = List.of(
 			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
@@ -155,7 +156,7 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 				assertThat(resultDoc.getMetadata()).containsKeys("meta2", DocumentMetadata.DISTANCE.value());
 
 				// Remove all documents from the store
-				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
+				vectorStore.delete(this.documents.stream().map(Document::getId).toList());
 
 				List<Document> results2 = vectorStore
 					.similaritySearch(SearchRequest.builder().query("Great Depression").topK(1).build());
@@ -232,19 +233,15 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 					.query("The World")
 					.topK(5)
 					.similarityThresholdAll()
-					.filterExpression("\"foo bar 1\" == 'bar.foo'")
+					.filterExpression("'\"foo bar 1\"' == 'bar.foo'")
 					.build());
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-				try {
-					vectorStore
-						.similaritySearch(SearchRequest.from(searchRequest).filterExpression("country == NL").build());
-					Assert.fail("Invalid filter expression should have been cached!");
-				}
-				catch (FilterExpressionTextParser.FilterExpressionParseException e) {
-					assertThat(e.getMessage()).contains("Line: 1:17, Error: no viable alternative at input 'NL'");
-				}
+				assertThatExceptionOfType(FilterExpressionTextParser.FilterExpressionParseException.class)
+					.isThrownBy(() -> vectorStore
+						.similaritySearch(SearchRequest.from(searchRequest).filterExpression("country == NL").build()))
+					.withMessageContaining("Line: 1:17, Error: no viable alternative at input 'NL'");
 
 				// Remove all documents from the store
 				dropTable(context, ((OracleVectorStore) vectorStore).getTableName());
@@ -382,7 +379,7 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
+	@EnableAutoConfiguration(exclude = DataSourceAutoConfiguration.class)
 	public static class TestClient {
 
 		@Value("${test.spring.ai.vectorstore.oracle.distanceType}")
@@ -411,10 +408,12 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 		}
 
 		@Bean
-		@Primary
-		@ConfigurationProperties("app.datasource")
 		public DataSourceProperties dataSourceProperties() {
-			return new DataSourceProperties();
+			DataSourceProperties properties = new DataSourceProperties();
+			properties.setUrl(oracle23aiContainer.getJdbcUrl());
+			properties.setUsername(oracle23aiContainer.getUsername());
+			properties.setPassword(oracle23aiContainer.getPassword());
+			return properties;
 		}
 
 		@Bean

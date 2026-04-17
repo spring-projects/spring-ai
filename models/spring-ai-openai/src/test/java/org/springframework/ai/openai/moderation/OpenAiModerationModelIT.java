@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,10 +43,10 @@ public class OpenAiModerationModelIT extends AbstractIT {
 
 	@Test
 	void moderationAsUrlTestPositive() {
-		var options = ModerationOptionsBuilder.builder().model("text-moderation-stable").build();
+		var options = ModerationOptionsBuilder.builder().model("omni-moderation-latest").build();
 
 		var instructions = """
-				I want to kill them.!".""";
+				Be violent""";
 
 		ModerationPrompt moderationPrompt = new ModerationPrompt(instructions, options);
 
@@ -97,7 +97,7 @@ public class OpenAiModerationModelIT extends AbstractIT {
 
 	@Test
 	void moderationAsUrlTestNegative() {
-		var options = ModerationOptionsBuilder.builder().model("text-moderation-stable").build();
+		var options = ModerationOptionsBuilder.builder().model("omni-moderation-latest").build();
 
 		var instructions = """
 				A light cream colored mini golden doodle with a sign that contains the message "I'm on my way to BARCADE!".""";

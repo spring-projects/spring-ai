@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,10 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -76,13 +78,6 @@ class PromptTests {
 	@Test
 	void whenMessageArrayIsNullThenThrow() {
 		assertThatThrownBy(() -> new Prompt((Message[]) null)).isInstanceOf(NullPointerException.class);
-	}
-
-	@Test
-	void whenContentAndMessageAreBothDefinedThenThrow() {
-		assertThatThrownBy(() -> Prompt.builder().content("Something").messages(new UserMessage("Else")).build())
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("content and messages cannot be set at the same time");
 	}
 
 	@Test
@@ -259,6 +254,131 @@ class PromptTests {
 		assertThat(prompt.getUserMessage()).isNotNull();
 		assertThat(prompt.getUserMessage().getText()).isEqualTo("Hi");
 		assertThat(prompt.getSystemMessage().getText()).isEqualTo("Hello");
+	}
+
+	@Test
+	void shouldPreserveMessageOrder() {
+		SystemMessage system = new SystemMessage("You are helpful");
+		UserMessage user1 = new UserMessage("First question");
+		UserMessage user2 = new UserMessage("Second question");
+
+		Prompt prompt = Prompt.builder().messages(system, user1, user2).build();
+
+		assertThat(prompt.getInstructions()).hasSize(3);
+		assertThat(prompt.getInstructions().get(0)).isEqualTo(system);
+		assertThat(prompt.getInstructions().get(1)).isEqualTo(user1);
+		assertThat(prompt.getInstructions().get(2)).isEqualTo(user2);
+	}
+
+	@Test
+	void shouldHandleEmptyMessageList() {
+		Prompt prompt = Prompt.builder().messages(List.of()).build();
+
+		assertThat(prompt.getInstructions()).isEmpty();
+		assertThat(prompt.getUserMessage().getText()).isEmpty();
+		assertThat(prompt.getSystemMessage().getText()).isEmpty();
+	}
+
+	@Test
+	void shouldCreatePromptWithOptions() {
+		ChatOptions options = ChatOptions.builder().model("test-model").temperature(0.5).build();
+		Prompt prompt = new Prompt("Test content", options);
+
+		assertThat(prompt.getOptions()).isEqualTo(options);
+		assertThat(prompt.getUserMessage().getText()).isEqualTo("Test content");
+	}
+
+	@Test
+	void shouldHandleMixedMessageTypes() {
+		SystemMessage system = new SystemMessage("System message");
+		UserMessage user = new UserMessage("User message");
+
+		Prompt prompt = Prompt.builder().messages(user, system).build();
+
+		assertThat(prompt.getInstructions()).hasSize(2);
+		assertThat(prompt.getUserMessage().getText()).isEqualTo("User message");
+		assertThat(prompt.getSystemMessage().getText()).isEqualTo("System message");
+	}
+
+	@Test
+	void getLastUserOrToolResponseMessageWhenOnlyUserMessage() {
+		Prompt prompt = Prompt.builder().messages(new UserMessage("Hello")).build();
+
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isNotNull();
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isInstanceOf(UserMessage.class);
+		assertThat(prompt.getLastUserOrToolResponseMessage().getText()).isEqualTo("Hello");
+	}
+
+	@Test
+	void getLastUserOrToolResponseMessageWhenOnlyToolResponse() {
+		ToolResponseMessage toolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("toolId", "toolName", "result")))
+			.build();
+		Prompt prompt = Prompt.builder().messages(toolResponse).build();
+
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isNotNull();
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isInstanceOf(ToolResponseMessage.class);
+	}
+
+	@Test
+	void getLastUserOrToolResponseMessageWhenBothPresent() {
+		UserMessage userMsg = new UserMessage("User question");
+		ToolResponseMessage toolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("toolId", "toolName", "result")))
+			.build();
+
+		Prompt prompt = Prompt.builder().messages(userMsg, new AssistantMessage("AI response"), toolResponse).build();
+
+		// Should return the last one chronologically (toolResponse)
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isNotNull();
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isInstanceOf(ToolResponseMessage.class);
+	}
+
+	@Test
+	void getLastUserOrToolResponseMessageWhenMultipleUserMessages() {
+		Prompt prompt = Prompt.builder()
+			.messages(new UserMessage("First question"), new UserMessage("Second question"))
+			.build();
+
+		// Should return the last UserMessage
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isNotNull();
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isInstanceOf(UserMessage.class);
+		assertThat(prompt.getLastUserOrToolResponseMessage().getText()).isEqualTo("Second question");
+	}
+
+	@Test
+	void getLastUserOrToolResponseMessageWhenOnlySystemAndAssistant() {
+		Prompt prompt = Prompt.builder().messages(new SystemMessage("System"), new AssistantMessage("AI")).build();
+
+		// Should return empty UserMessage
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isNotNull();
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isInstanceOf(UserMessage.class);
+		assertThat(prompt.getLastUserOrToolResponseMessage().getText()).isEmpty();
+	}
+
+	@Test
+	void getLastUserOrToolResponseMessageWhenEmpty() {
+		Prompt prompt = Prompt.builder().messages(List.of()).build();
+
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isNotNull();
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isInstanceOf(UserMessage.class);
+		assertThat(prompt.getLastUserOrToolResponseMessage().getText()).isEmpty();
+	}
+
+	@Test
+	void getLastUserOrToolResponseMessageWithMixedOrdering() {
+		// Test with tool response before user message
+		UserMessage userMsg = new UserMessage("Latest user message");
+		ToolResponseMessage toolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("toolId", "toolName", "result")))
+			.build();
+
+		Prompt prompt = Prompt.builder().messages(toolResponse, new SystemMessage("System"), userMsg).build();
+
+		// Should return the last UserMessage
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isNotNull();
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isInstanceOf(UserMessage.class);
+		assertThat(prompt.getLastUserOrToolResponseMessage().getText()).isEqualTo("Latest user message");
 	}
 
 }

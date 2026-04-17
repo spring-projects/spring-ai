@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -41,9 +42,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Issam El-atif
  * @since 1.0.0
  */
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class AzureOpenAiDirectOpenAiAutoConfigurationIT {
 
 	private static String CHAT_MODEL_NAME = "gpt-4o";
@@ -61,7 +63,7 @@ public class AzureOpenAiDirectOpenAiAutoConfigurationIT {
 			// @formatter:on
 	)
 		.withConfiguration(AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class,
-				AzureOpenAiEmbeddingAutoConfiguration.class));
+				AzureOpenAiEmbeddingAutoConfiguration.class, ToolCallingAutoConfiguration.class));
 
 	private final Message systemMessage = new SystemPromptTemplate("""
 			You are a helpful AI assistant. Your name is {name}.

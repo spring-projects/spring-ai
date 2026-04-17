@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,26 +33,28 @@ public class TextToSpeechMessage {
 	}
 
 	public String getText() {
-		return text;
+		return this.text;
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof TextToSpeechMessage that))
+		}
+		if (!(o instanceof TextToSpeechMessage that)) {
 			return false;
-		return Objects.equals(text, that.text);
+		}
+		return Objects.equals(this.text, that.text);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(text);
+		return Objects.hash(this.text);
 	}
 
 	@Override
 	public String toString() {
-		return "TextToSpeechMessage{" + "text='" + text + '\'' + '}';
+		return "TextToSpeechMessage{" + "text='" + this.text + '\'' + '}';
 	}
 
 }

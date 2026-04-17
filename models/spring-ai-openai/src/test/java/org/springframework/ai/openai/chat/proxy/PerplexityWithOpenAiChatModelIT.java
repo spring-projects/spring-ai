@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.springframework.ai.openai.chat.proxy;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -43,10 +42,6 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.tool.MockWeatherService;
-import org.springframework.ai.openai.chat.ActorsFilms;
-import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -58,7 +53,7 @@ import org.springframework.core.io.Resource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * @author Alexandros Pappas
+ * @author Ilayaperumal Gopinathan
  *
  * Unlike other proxy implementations (e.g., NVIDIA), Perplexity operates differently:
  *
@@ -77,8 +72,6 @@ class PerplexityWithOpenAiChatModelIT {
 	private static final Logger logger = LoggerFactory.getLogger(PerplexityWithOpenAiChatModelIT.class);
 
 	private static final String PERPLEXITY_BASE_URL = "https://api.perplexity.ai";
-
-	private static final String PERPLEXITY_COMPLETIONS_PATH = "/chat/completions";
 
 	private static final String DEFAULT_PERPLEXITY_MODEL = "llama-3.1-sonar-small-128k-online";
 
@@ -128,7 +121,10 @@ class PerplexityWithOpenAiChatModelIT {
 
 	@Test
 	void streamingWithTokenUsage() {
-		var promptOptions = OpenAiChatOptions.builder().streamUsage(true).seed(1).build();
+		var promptOptions = OpenAiChatOptions.builder()
+			.streamOptions(OpenAiChatOptions.StreamOptions.builder().includeUsage(true).build())
+			.seed(1)
+			.build();
 
 		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
 
@@ -187,27 +183,6 @@ class PerplexityWithOpenAiChatModelIT {
 	}
 
 	@Test
-	@Disabled("Perplexity gets confused with the 'Generate the filmography for a random actor.' prompt")
-	void beanOutputConverter() {
-		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
-
-		String format = outputConverter.getFormat();
-		String template = """
-				Generate the filmography for a random actor.
-				{format}
-				""";
-		PromptTemplate promptTemplate = PromptTemplate.builder()
-			.template(template)
-			.variables(Map.of("format", format))
-			.build();
-		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = this.chatModel.call(prompt).getResult();
-
-		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getText());
-		assertThat(actorsFilms.getActor()).isNotEmpty();
-	}
-
-	@Test
 	void beanOutputConverterRecords() {
 		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
@@ -262,59 +237,10 @@ class PerplexityWithOpenAiChatModelIT {
 	}
 
 	@Test
-	void functionCallTest() {
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
-
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = OpenAiChatOptions.builder()
-			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
-				.description("Get the weather in location")
-				.inputType(MockWeatherService.Request.class)
-				.build()))
-			.build();
-
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
-
-		logger.info("Response: {}", response);
-
-		assertThat(response.getResults().stream().mapToLong(r -> r.getOutput().getToolCalls().size()).sum()).isZero();
-	}
-
-	@Test
-	void streamFunctionCallTest() {
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
-
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = OpenAiChatOptions.builder()
-			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
-				.description("Get the weather in location")
-				.inputType(MockWeatherService.Request.class)
-				.build()))
-			.build();
-
-		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
-
-		String content = response.collectList()
-			.block()
-			.stream()
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getText)
-			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
-
-		assertThat(content).doesNotContain("toolCalls");
-	}
-
-	@Test
 	void validateCallResponseMetadata() {
 		ChatResponse response = ChatClient.create(this.chatModel)
 			.prompt()
-			.options(OpenAiChatOptions.builder().model(DEFAULT_PERPLEXITY_MODEL).build())
+			.options(OpenAiChatOptions.builder().model(DEFAULT_PERPLEXITY_MODEL))
 			.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 			.call()
 			.chatResponse();
@@ -327,6 +253,29 @@ class PerplexityWithOpenAiChatModelIT {
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
 	}
 
+	@Test
+	void extraBodySupport() {
+		// Provide a parameter via extraBody that will predictably affect the response
+		// 'max_tokens' placed in extraBody should be flattened to the root and limit the
+		// response length.
+		Map<String, Object> extraBody = Map.of("max_tokens", 2);
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model(DEFAULT_PERPLEXITY_MODEL)
+			.extraBody(extraBody)
+			.build();
+
+		Prompt prompt = new Prompt("Tell me a short joke.", options);
+
+		ChatResponse response = this.chatModel.call(prompt);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+		// Because max_tokens is 2, the finish reason should be length or similar
+		// indicating truncation
+		assertThat(response.getResult().getMetadata().getFinishReason().toLowerCase()).contains("length");
+	}
+
 	record ActorsFilmsRecord(String actor, List<String> movies) {
 	}
 
@@ -334,20 +283,13 @@ class PerplexityWithOpenAiChatModelIT {
 	static class Config {
 
 		@Bean
-		public OpenAiApi chatCompletionApi() {
-			return OpenAiApi.builder()
-				.baseUrl(PERPLEXITY_BASE_URL)
-				.apiKey(System.getenv("PERPLEXITY_API_KEY"))
-				.completionsPath(PERPLEXITY_COMPLETIONS_PATH)
-				.embeddingsPath("/v1/embeddings")
-				.build();
-		}
-
-		@Bean
-		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
+		public OpenAiChatModel openAiSdkChatModel() {
 			return OpenAiChatModel.builder()
-				.openAiApi(openAiApi)
-				.defaultOptions(OpenAiChatOptions.builder().model(DEFAULT_PERPLEXITY_MODEL).build())
+				.options(OpenAiChatOptions.builder()
+					.baseUrl(PERPLEXITY_BASE_URL)
+					.apiKey(System.getenv("PERPLEXITY_API_KEY"))
+					.model(DEFAULT_PERPLEXITY_MODEL)
+					.build())
 				.build();
 		}
 

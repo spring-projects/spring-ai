@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,17 +31,19 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxEmbeddingModel;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Geng Rong
+ * @author Issam El-atif
  */
-@EnabledIfEnvironmentVariable(named = "MINIMAX_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "MINIMAX_API_KEY", matches = ".+")
 public class MiniMaxAutoConfigurationIT {
 
 	private static final Log logger = LogFactory.getLog(MiniMaxAutoConfigurationIT.class);
@@ -51,9 +53,9 @@ public class MiniMaxAutoConfigurationIT {
 
 	@Test
 	void generate() {
-		this.contextRunner
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, MiniMaxChatAutoConfiguration.class))
+		this.contextRunner.withConfiguration(
+				AutoConfigurations.of(MiniMaxChatAutoConfiguration.class, RestClientAutoConfiguration.class,
+						SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				MiniMaxChatModel chatModel = context.getBean(MiniMaxChatModel.class);
 				String response = chatModel.call("Hello");
@@ -64,9 +66,9 @@ public class MiniMaxAutoConfigurationIT {
 
 	@Test
 	void generateStreaming() {
-		this.contextRunner
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, MiniMaxChatAutoConfiguration.class))
+		this.contextRunner.withConfiguration(
+				AutoConfigurations.of(MiniMaxChatAutoConfiguration.class, RestClientAutoConfiguration.class,
+						SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				MiniMaxChatModel chatModel = context.getBean(MiniMaxChatModel.class);
 				Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
@@ -84,8 +86,8 @@ public class MiniMaxAutoConfigurationIT {
 	@Test
 	void embedding() {
 		this.contextRunner
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, MiniMaxEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class))
 			.run(context -> {
 				MiniMaxEmbeddingModel embeddingModel = context.getBean(MiniMaxEmbeddingModel.class);
 

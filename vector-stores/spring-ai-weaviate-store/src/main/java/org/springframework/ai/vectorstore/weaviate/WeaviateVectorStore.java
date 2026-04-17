@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.weaviate.client.WeaviateClient;
 import io.weaviate.client.base.Result;
 import io.weaviate.client.base.WeaviateErrorMessage;
@@ -45,11 +44,13 @@ import io.weaviate.client.v1.graphql.query.fields.Field;
 import io.weaviate.client.v1.graphql.query.fields.Fields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -135,12 +136,6 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	private final WeaviateFilterExpressionConverter filterExpressionConverter;
 
 	/**
-	 * Used to serialize/deserialize the document metadata when stored/retrieved from the
-	 * weaviate vector store.
-	 */
-	private final ObjectMapper objectMapper = new ObjectMapper();
-
-	/**
 	 * Protected constructor for creating a WeaviateVectorStore instance using the builder
 	 * pattern. This constructor initializes the vector store with the configured settings
 	 * from the builder and performs necessary validations.
@@ -201,7 +196,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			return;
 		}
 
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
 		List<WeaviateObject> weaviateObjects = documents.stream()
@@ -248,10 +243,10 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		Map<String, Object> fields = new HashMap<>();
 		fields.put(this.options.getContentFieldName(), document.getText());
 		try {
-			String metadataString = this.objectMapper.writeValueAsString(document.getMetadata());
+			String metadataString = JsonMapper.shared().writeValueAsString(document.getMetadata());
 			fields.put(METADATA_FIELD_NAME, metadataString);
 		}
-		catch (JsonProcessingException e) {
+		catch (JacksonException e) {
 			throw new RuntimeException("Failed to serialize the Document metadata: " + document.getText());
 		}
 
@@ -322,7 +317,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 				logger.debug("No documents found matching filter expression");
 			}
 		}
-		catch (Exception e) {
+		catch (JacksonException e) {
 			logger.error("Failed to delete documents by filter", e);
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
@@ -348,6 +343,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		String graphQLQuery = queryBuilder.build().buildQuery();
 
 		if (request.hasFilterExpression()) {
+			Assert.state(request.getFilterExpression() != null, "filter expression must not be null");
 			// replace the empty 'where:{}' placeholder with real filter.
 			String filter = this.filterExpressionConverter.convertExpression(request.getFilterExpression());
 			graphQLQuery = graphQLQuery.replace("where:{}", String.format("where:{%s}", filter));
@@ -399,21 +395,19 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		// Additional (System)
 		Map<String, ?> additional = (Map<String, ?>) item.get(ADDITIONAL_FIELD_NAME);
-		double certainty = (Double) additional.get(ADDITIONAL_CERTAINTY_FIELD_NAME);
-		String id = (String) additional.get(ADDITIONAL_ID_FIELD_NAME);
+		Assert.state(additional != null, "additional field should not be null");
+		double certainty = (Double) Objects.requireNonNull(additional.get(ADDITIONAL_CERTAINTY_FIELD_NAME),
+				"missing additional certainty field");
+		String id = (String) Objects.requireNonNull(additional.get(ADDITIONAL_ID_FIELD_NAME),
+				"missing additional id field");
 
 		// Metadata
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put(DocumentMetadata.DISTANCE.value(), 1 - certainty);
 
-		try {
-			String metadataJson = (String) item.get(METADATA_FIELD_NAME);
-			if (StringUtils.hasText(metadataJson)) {
-				metadata.putAll(this.objectMapper.readValue(metadataJson, Map.class));
-			}
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
+		String metadataJson = (String) item.get(METADATA_FIELD_NAME);
+		if (StringUtils.hasText(metadataJson)) {
+			metadata.putAll(JsonMapper.shared().readValue(metadataJson, Map.class));
 		}
 
 		// Content
@@ -544,22 +538,6 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			super(embeddingModel);
 			Assert.notNull(weaviateClient, "WeaviateClient must not be null");
 			this.weaviateClient = weaviateClient;
-		}
-
-		/**
-		 * Configures the Weaviate object class.
-		 * @param objectClass the object class to use
-		 * @return this builder instance
-		 * @throws IllegalArgumentException if objectClass is null or empty
-		 * @deprecated Use
-		 * {@link org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore.Builder#options(WeaviateVectorStoreOptions)}
-		 * instead.
-		 */
-		@Deprecated
-		public Builder objectClass(String objectClass) {
-			Assert.hasText(objectClass, "objectClass must not be empty");
-			this.options.setObjectClass(objectClass);
-			return this;
 		}
 
 		/**

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,12 @@
 package org.springframework.ai.vectorstore;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -39,8 +39,7 @@ public abstract class AbstractVectorStoreBuilder<T extends AbstractVectorStoreBu
 
 	protected ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
-	@Nullable
-	protected VectorStoreObservationConvention customObservationConvention;
+	protected @Nullable VectorStoreObservationConvention customObservationConvention;
 
 	protected BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
@@ -61,8 +60,7 @@ public abstract class AbstractVectorStoreBuilder<T extends AbstractVectorStoreBu
 		return this.observationRegistry;
 	}
 
-	@Nullable
-	public VectorStoreObservationConvention getCustomObservationConvention() {
+	public @Nullable VectorStoreObservationConvention getCustomObservationConvention() {
 		return this.customObservationConvention;
 	}
 

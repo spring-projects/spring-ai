@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,12 +22,12 @@ import java.util.Map;
 
 import io.modelcontextprotocol.client.transport.ServerParameters;
 import io.modelcontextprotocol.client.transport.StdioClientTransport;
-import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStdioClientProperties;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -52,7 +52,6 @@ import org.springframework.context.annotation.Bean;
  * @see McpStdioClientProperties
  */
 @AutoConfiguration
-@ConditionalOnClass({ McpSchema.class })
 @EnableConfigurationProperties({ McpStdioClientProperties.class, McpClientCommonProperties.class })
 @ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
@@ -76,7 +75,8 @@ public class StdioTransportAutoConfiguration {
 		List<NamedClientMcpTransport> stdioTransports = new ArrayList<>();
 
 		for (Map.Entry<String, ServerParameters> serverParameters : stdioProperties.toServerParameters().entrySet()) {
-			var transport = new StdioClientTransport(serverParameters.getValue());
+			var transport = new StdioClientTransport(serverParameters.getValue(),
+					new JacksonMcpJsonMapper(JsonMapper.shared()));
 			stdioTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
 
 		}

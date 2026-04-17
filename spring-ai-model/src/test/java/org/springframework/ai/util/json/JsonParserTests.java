@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package org.springframework.ai.util.json;
 
 import java.lang.reflect.Type;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.type.TypeReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -32,9 +32,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class JsonParserTests {
 
 	@Test
-	void shouldGetObjectMapper() {
-		var objectMapper = JsonParser.getObjectMapper();
-		assertThat(objectMapper).isNotNull();
+	void shouldGetJsonMapper() {
+		var jsonMapper = JsonParser.getJsonMapper();
+		assertThat(jsonMapper).isNotNull();
 	}
 
 	@Test
@@ -242,6 +242,22 @@ class JsonParserTests {
 	}
 
 	@Test
+	void fromStringToObject() {
+		String jsonString = """
+				{
+				    "name": "foo",
+				    "age": 7
+				}
+				""";
+		var value = JsonParser.toTypedObject(jsonString, TestSimpleObject.class);
+		assertThat(value).isOfAnyClassIn(TestSimpleObject.class);
+
+		TestSimpleObject testSimpleObject = (TestSimpleObject) value;
+		assertThat(testSimpleObject.name).isEqualTo("foo");
+		assertThat(testSimpleObject.age).isEqualTo(7);
+	}
+
+	@Test
 	void fromScientificNotationToInteger() {
 		var value = JsonParser.toTypedObject("1.5E7", Integer.class);
 		assertThat(value).isInstanceOf(Integer.class);
@@ -263,6 +279,14 @@ class JsonParserTests {
 	}
 
 	record TestRecord(String name, Integer age) {
+	}
+
+	static class TestSimpleObject {
+
+		public String name;
+
+		public int age;
+
 	}
 
 	enum TestEnum {

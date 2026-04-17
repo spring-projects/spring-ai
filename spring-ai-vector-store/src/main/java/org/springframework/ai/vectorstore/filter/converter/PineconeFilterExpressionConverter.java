@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore.filter.converter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
+import org.springframework.util.Assert;
 
 /**
  * Converts {@link Expression} into Pinecone metadata filter expression format.
@@ -30,7 +31,7 @@ public class PineconeFilterExpressionConverter extends AbstractFilterExpressionC
 
 	@Override
 	protected void doExpression(Expression exp, StringBuilder context) {
-
+		Assert.state(exp.right() != null, "Codepath expects exp.right to be non-null");
 		context.append("{");
 		if (exp.type() == ExpressionType.AND || exp.type() == ExpressionType.OR) {
 			context.append(getOperationSymbol(exp));
@@ -59,6 +60,11 @@ public class PineconeFilterExpressionConverter extends AbstractFilterExpressionC
 	protected void doKey(Key key, StringBuilder context) {
 		var identifier = (hasOuterQuotes(key.key())) ? removeOuterQuotes(key.key()) : key.key();
 		context.append("\"").append(identifier).append("\": ");
+	}
+
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		emitJsonValue(value, context);
 	}
 
 }

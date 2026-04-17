@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,6 +171,75 @@ public class ChatOptionsBuilderTests {
 		// Then
 		assertThatThrownBy(() -> options.getStopSequences().add("stop3"))
 			.isInstanceOf(UnsupportedOperationException.class);
+	}
+
+	@Test
+	void shouldHandleNullStopSequences() {
+		ChatOptions options = this.builder.model("test-model").stopSequences(null).build();
+
+		assertThat(options.getStopSequences()).isNull();
+	}
+
+	@Test
+	void shouldHandleEmptyStopSequences() {
+		ChatOptions options = this.builder.model("test-model").stopSequences(List.of()).build();
+
+		assertThat(options.getStopSequences()).isEmpty();
+	}
+
+	@Test
+	void shouldHandleFrequencyAndPresencePenalties() {
+		ChatOptions options = this.builder.model("test-model").frequencyPenalty(0.5).presencePenalty(0.3).build();
+
+		assertThat(options.getFrequencyPenalty()).isEqualTo(0.5);
+		assertThat(options.getPresencePenalty()).isEqualTo(0.3);
+	}
+
+	@Test
+	void shouldMaintainStopSequencesOrder() {
+		List<String> orderedSequences = List.of("first", "second", "third", "fourth");
+
+		ChatOptions options = this.builder.model("test-model").stopSequences(orderedSequences).build();
+
+		assertThat(options.getStopSequences()).containsExactly("first", "second", "third", "fourth");
+	}
+
+	@Test
+	void shouldCreateIndependentCopies() {
+		ChatOptions original = this.builder.model("test-model")
+			.stopSequences(new ArrayList<>(List.of("stop1")))
+			.build();
+
+		ChatOptions copy1 = original.copy();
+		ChatOptions copy2 = original.copy();
+
+		assertThat(copy1).isNotSameAs(copy2);
+		assertThat(copy1.getStopSequences()).isNotSameAs(copy2.getStopSequences());
+		assertThat(copy1).usingRecursiveComparison().isEqualTo(copy2);
+	}
+
+	@Test
+	void shouldHandleSpecialStringValues() {
+		ChatOptions options = this.builder.model("") // Empty string
+			.stopSequences(List.of("", "  ", "\n", "\t"))
+			.build();
+
+		assertThat(options.getModel()).isEmpty();
+		assertThat(options.getStopSequences()).containsExactly("", "  ", "\n", "\t");
+	}
+
+	@Test
+	void shouldPreserveCopyIntegrity() {
+		List<String> mutableList = new ArrayList<>(List.of("original"));
+		ChatOptions original = this.builder.model("test-model").stopSequences(mutableList).build();
+
+		// Modify the original list after building
+		mutableList.add("modified");
+
+		ChatOptions copy = original.copy();
+
+		assertThat(original.getStopSequences()).containsExactly("original");
+		assertThat(copy.getStopSequences()).containsExactly("original");
 	}
 
 }

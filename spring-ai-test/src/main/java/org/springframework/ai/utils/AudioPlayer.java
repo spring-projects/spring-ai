@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,9 +36,7 @@ public final class AudioPlayer {
 	}
 
 	public static void main(String[] args) throws Exception {
-
-		play(new BufferedInputStream(new FileInputStream(
-				"/Users/christiantzolov/Dev/projects/spring-ai/models/spring-ai-openai/output.wav")));
+		play(new BufferedInputStream(new FileInputStream(args[0])));
 	}
 
 	public static void play(byte[] data) {

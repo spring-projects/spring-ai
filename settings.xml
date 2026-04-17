@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright 2023-2024 the original author or authors.
+  ~ Copyright 2023-present the original author or authors.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -36,11 +36,12 @@
             <password>${env.ARTIFACTORY_PASSWORD}</password>
         </server>
 
-		<server>
-			<id>sonatype-new</id>
-			<username>${env.SONATYPE_USER}</username>
-			<password>${env.SONATYPE_PASSWORD}</password>
-		</server>
+      <server>
+        <id>central</id>
+        <username>${env.CENTRAL_TOKEN_USERNAME}</username>
+  			<password>${env.CENTRAL_TOKEN_PASSWORD}</password>
+      </server>
+
     </servers>
 
 </settings>

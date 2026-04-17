@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.typesense;
 
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 /**
  * Converts {@link Filter.Expression} into Typesense metadata filter expression format.
@@ -29,6 +30,7 @@ public class TypesenseFilterExpressionConverter extends AbstractFilterExpression
 
 	@Override
 	protected void doExpression(Filter.Expression exp, StringBuilder context) {
+		Assert.state(exp.right() != null, "expected non null right operand");
 		this.convertOperand(exp.left(), context);
 		context.append(getOperationSymbol(exp));
 		this.convertOperand(exp.right(), context);
@@ -60,6 +62,18 @@ public class TypesenseFilterExpressionConverter extends AbstractFilterExpression
 	@Override
 	protected void doKey(Filter.Key key, StringBuilder context) {
 		context.append("metadata." + key.key() + ":");
+	}
+
+	/**
+	 * Serialize values using JSON serialization for Typesense filter expressions.
+	 * Delegates to {@link #emitJsonValue(Object, StringBuilder)} for Jackson-based JSON
+	 * serialization.
+	 * @param value the value to serialize
+	 * @param context the context to append the JSON representation to
+	 */
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		emitJsonValue(value, context);
 	}
 
 }

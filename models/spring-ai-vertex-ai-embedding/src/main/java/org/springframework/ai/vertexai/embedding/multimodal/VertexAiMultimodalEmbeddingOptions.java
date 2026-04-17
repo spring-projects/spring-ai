@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,6 @@
  */
 
 package org.springframework.ai.vertexai.embedding.multimodal;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.util.StringUtils;
@@ -61,7 +57,6 @@ import org.springframework.util.StringUtils;
  * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
-@JsonInclude(Include.NON_NULL)
 public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 
 	public static final String DEFAULT_MODEL_NAME = VertexAiMultimodalEmbeddingModelName.MULTIMODAL_EMBEDDING_001
@@ -72,25 +67,25 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 	 * The embedding model name to use. Supported models are:
 	 * text-embedding-004, text-multilingual-embedding-002 and multimodalembedding@001.
 	 */
-	private @JsonProperty("model") String model;
+	private String model;
 
 	/**
 	 * The number of dimensions the resulting output embeddings should have.
 	 * Supported for model version 004 and later. You can use this parameter to reduce the
 	 * embedding size, for example, for storage optimization.
 	 */
-	private @JsonProperty("dimensions") Integer dimensions;
+	private Integer dimensions;
 
 	/**
 	 * The start offset of the video segment in seconds. If not specified, it's calculated with max(0, endOffsetSec - 120).
 	 */
-	private @JsonProperty("videoStartOffsetSec") Integer videoStartOffsetSec;
+	private Integer videoStartOffsetSec;
 
 	/**
 	 * The end offset of the video segment in seconds. If not specified, it's calculated with min(video length, startOffSec + 120).
 	 * If both startOffSec and endOffSec are specified, endOffsetSec is adjusted to min(startOffsetSec+120, endOffsetSec).
 	 */
-	private @JsonProperty("videoEndOffsetSec") Integer videoEndOffsetSec;
+	private Integer videoEndOffsetSec;
 
 	/**
 	 * The interval of the video the embedding will be generated. The minimum value for interval_sec is 4.
@@ -98,7 +93,7 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 	 * of the interval. However, if the interval is larger than min(video length, 120s), it impacts the quality of the
 	 * generated embeddings. Default value: 16.
 	 */
-	private @JsonProperty("videoIntervalSec") Integer videoIntervalSec;
+	private Integer videoIntervalSec;
 
 
 	// @formatter:on
@@ -148,7 +143,7 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 		this.videoIntervalSec = videoIntervalSec;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		protected VertexAiMultimodalEmbeddingOptions options;
 

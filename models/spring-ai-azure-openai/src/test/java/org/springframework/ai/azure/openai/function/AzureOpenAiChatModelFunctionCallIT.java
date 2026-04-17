@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -139,7 +139,8 @@ class AzureOpenAiChatModelFunctionCallIT {
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
-		assertThat(counter.get()).isGreaterThan(30).as("The response should be chunked in more than 30 messages");
+		assertThat(counter.get()).withFailMessage("The response should be chunked in more than 30 messages")
+			.isGreaterThan(30);
 
 		assertThat(content).contains("30", "10", "15");
 
@@ -163,12 +164,18 @@ class AzureOpenAiChatModelFunctionCallIT {
 			.streamOptions(streamOptions)
 			.build();
 
-		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
+		List<ChatResponse> responses = this.chatModel.stream(new Prompt(messages, promptOptions)).collectList().block();
 
-		ChatResponse chatResponse = response.last().block();
-		logger.info("Response: {}", chatResponse);
+		assertThat(responses).isNotEmpty();
 
-		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(600).isLessThan(800);
+		ChatResponse finalResponse = responses.get(responses.size() - 2);
+
+		logger.info("Final Response: {}", finalResponse);
+
+		assertThat(finalResponse.getMetadata()).isNotNull();
+		assertThat(finalResponse.getMetadata().getUsage()).isNotNull();
+
+		assertThat(finalResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(600).isLessThan(800);
 
 	}
 

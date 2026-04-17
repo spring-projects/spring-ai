@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,18 @@
 
 package org.springframework.ai.chat.prompt;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.template.NoOpTemplateRenderer;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -318,7 +320,7 @@ class SystemPromptTemplateTests {
 	private static class CustomTestRenderer implements TemplateRenderer {
 
 		@Override
-		public String apply(String template, Map<String, Object> model) {
+		public String apply(String template, Map<String, ? extends @Nullable Object> model) {
 			// Simple renderer that just appends a marker
 			// Note: This simple renderer ignores the model map for test purposes.
 			return template + " (Rendered by Custom)";

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,29 +29,28 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.Option;
 import com.github.victools.jsonschema.generator.OptionPreset;
 import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.generator.SchemaVersion;
-import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
+import com.github.victools.jsonschema.module.jackson.JacksonSchemaModule;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
+import org.jspecify.annotations.Nullable;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.core.KotlinDetector;
+import org.springframework.lang.Contract;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
@@ -65,47 +64,48 @@ import org.springframework.util.ObjectUtils;
  */
 public abstract class ModelOptionsUtils {
 
-	public static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
-		.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-		.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-		.addModules(JacksonUtils.instantiateAvailableModules())
-		.build()
-		.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
+	public static final JsonMapper JSON_MAPPER;
+
+	static {
+		// Configure coercion for empty strings to null for Enum types
+		// This fixes the issue where empty string finish_reason values cause
+		// deserialization failures
+		JSON_MAPPER = JsonMapper.builder()
+			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+			.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT)
+			.addModules(JacksonUtils.instantiateAvailableModules())
+			.build();
+	}
 
 	private static final List<String> BEAN_MERGE_FIELD_EXCISIONS = List.of("class");
 
 	private static final ConcurrentHashMap<Class<?>, List<String>> REQUEST_FIELD_NAMES_PER_CLASS = new ConcurrentHashMap<>();
 
-	private static final AtomicReference<SchemaGenerator> SCHEMA_GENERATOR_CACHE = new AtomicReference<>();
+	private static final AtomicReference<@Nullable SchemaGenerator> SCHEMA_GENERATOR_CACHE = new AtomicReference<>();
 
-	private static TypeReference<HashMap<String, Object>> MAP_TYPE_REF = new TypeReference<>() {
+	private static final TypeReference<HashMap<String, Object>> MAP_TYPE_REF = new TypeReference<>() {
 
 	};
 
 	/**
 	 * Converts the given JSON string to a Map of String and Object using the default
-	 * ObjectMapper.
+	 * JsonMapper.
 	 * @param json the JSON string to convert to a Map.
 	 * @return the converted Map.
 	 */
 	public static Map<String, Object> jsonToMap(String json) {
-		return jsonToMap(json, OBJECT_MAPPER);
+		return jsonToMap(json, JSON_MAPPER);
 	}
 
 	/**
 	 * Converts the given JSON string to a Map of String and Object using a custom
-	 * ObjectMapper.
+	 * JsonMapper.
 	 * @param json the JSON string to convert to a Map.
-	 * @param objectMapper the ObjectMapper to use for deserialization.
+	 * @param jsonMapper the JsonMapper to use for deserialization.
 	 * @return the converted Map.
 	 */
-	public static Map<String, Object> jsonToMap(String json, ObjectMapper objectMapper) {
-		try {
-			return objectMapper.readValue(json, MAP_TYPE_REF);
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+	public static Map<String, Object> jsonToMap(String json, JsonMapper jsonMapper) {
+		return jsonMapper.readValue(json, MAP_TYPE_REF);
 	}
 
 	/**
@@ -116,12 +116,7 @@ public abstract class ModelOptionsUtils {
 	 * @return Object instance of the given type.
 	 */
 	public static <T> T jsonToObject(String json, Class<T> type) {
-		try {
-			return OBJECT_MAPPER.readValue(json, type);
-		}
-		catch (Exception e) {
-			throw new RuntimeException("Failed to json: " + json, e);
-		}
+		return JSON_MAPPER.readValue(json, type);
 	}
 
 	/**
@@ -130,12 +125,7 @@ public abstract class ModelOptionsUtils {
 	 * @return the JSON string.
 	 */
 	public static String toJsonString(Object object) {
-		try {
-			return OBJECT_MAPPER.writeValueAsString(object);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		return JSON_MAPPER.writeValueAsString(object);
 	}
 
 	/**
@@ -144,12 +134,7 @@ public abstract class ModelOptionsUtils {
 	 * @return the JSON string.
 	 */
 	public static String toJsonStringPrettyPrinter(Object object) {
-		try {
-			return OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(object);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		return JSON_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(object);
 	}
 
 	/**
@@ -166,7 +151,8 @@ public abstract class ModelOptionsUtils {
 	 * @param acceptedFieldNames the list of field names accepted for the target object.
 	 * @return the merged object represented by the given class.
 	 */
-	public static <T> T merge(Object source, Object target, Class<T> clazz, List<String> acceptedFieldNames) {
+	public static <T> T merge(@Nullable Object source, Object target, Class<T> clazz,
+			@Nullable List<String> acceptedFieldNames) {
 
 		if (source == null) {
 			source = Map.of();
@@ -186,12 +172,12 @@ public abstract class ModelOptionsUtils {
 		targetMap.putAll(sourceMap.entrySet()
 			.stream()
 			.filter(e -> e.getValue() != null)
-			.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 
 		targetMap = targetMap.entrySet()
 			.stream()
 			.filter(e -> requestFieldNames.contains(e.getKey()))
-			.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 		return ModelOptionsUtils.mapToClass(targetMap, clazz);
 	}
@@ -208,7 +194,7 @@ public abstract class ModelOptionsUtils {
 	 * @param clazz the class to return.
 	 * @return the merged object represented by the given class.
 	 */
-	public static <T> T merge(Object source, Object target, Class<T> clazz) {
+	public static <T> T merge(@Nullable Object source, Object target, Class<T> clazz) {
 		return ModelOptionsUtils.merge(source, target, clazz, null);
 	}
 
@@ -217,23 +203,18 @@ public abstract class ModelOptionsUtils {
 	 * @param source the object to convert to a Map.
 	 * @return the converted Map.
 	 */
-	public static Map<String, Object> objectToMap(Object source) {
+	public static Map<String, Object> objectToMap(@Nullable Object source) {
 		if (source == null) {
 			return new HashMap<>();
 		}
-		try {
-			String json = OBJECT_MAPPER.writeValueAsString(source);
-			return OBJECT_MAPPER.readValue(json, new TypeReference<Map<String, Object>>() {
+		String json = JSON_MAPPER.writeValueAsString(source);
+		return JSON_MAPPER.readValue(json, new TypeReference<Map<String, @Nullable Object>>() {
 
-			})
-				.entrySet()
-				.stream()
-				.filter(e -> e.getValue() != null)
-				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		})
+			.entrySet()
+			.stream()
+			.filter(e -> e.getValue() != null)
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
 	/**
@@ -244,13 +225,8 @@ public abstract class ModelOptionsUtils {
 	 * @return the converted class.
 	 */
 	public static <T> T mapToClass(Map<String, Object> source, Class<T> clazz) {
-		try {
-			String json = OBJECT_MAPPER.writeValueAsString(source);
-			return OBJECT_MAPPER.readValue(json, clazz);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		String json = JSON_MAPPER.writeValueAsString(source);
+		return JSON_MAPPER.readValue(json, clazz);
 	}
 
 	/**
@@ -275,16 +251,16 @@ public abstract class ModelOptionsUtils {
 	 * sourceBean instance.
 	 * @param sourceBean the source bean to copy the values from.
 	 * @param sourceInterfaceClazz the source interface class. Only the fields with the
-	 * same name as the interface methods are copied. This allow the source object to be a
-	 * subclass of the source interface with additional, non-interface fields.
+	 * same name as the interface methods are copied. This allows the source object to be
+	 * a subclass of the source interface with additional, non-interface fields.
 	 * @param targetBeanClazz the target class, a subclass of the ChatOptions, to convert
 	 * into.
 	 * @param <T> the target class type.
 	 * @return a new instance of the targetBeanClazz with the values from the sourceBean
 	 * instance.
 	 */
-	public static <I, S extends I, T extends S> T copyToTarget(S sourceBean, Class<I> sourceInterfaceClazz,
-			Class<T> targetBeanClazz) {
+	public static <I, S extends I, T extends S> @Nullable T copyToTarget(@Nullable S sourceBean,
+			Class<I> sourceInterfaceClazz, Class<T> targetBeanClazz) {
 
 		Assert.notNull(sourceInterfaceClazz, "SourceOptionsClazz must not be null");
 		Assert.notNull(targetBeanClazz, "TargetOptionsClazz must not be null");
@@ -369,9 +345,21 @@ public abstract class ModelOptionsUtils {
 	 */
 	public static String getJsonSchema(Type inputType, boolean toUpperCaseTypeValues) {
 
+		ObjectNode node = getJsonSchema(inputType);
+
+		if (toUpperCaseTypeValues) { // Required for OpenAPI 3.0 (at least Vertex AI
+			// version of it).
+			toUpperCaseTypeValues(node);
+		}
+
+		return node.toPrettyString();
+	}
+
+	public static ObjectNode getJsonSchema(Type inputType) {
+
 		if (SCHEMA_GENERATOR_CACHE.get() == null) {
 
-			JacksonModule jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
+			JacksonSchemaModule jacksonModule = new JacksonSchemaModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
 			Swagger2Module swaggerModule = new Swagger2Module();
 
 			SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12,
@@ -390,18 +378,14 @@ public abstract class ModelOptionsUtils {
 			SCHEMA_GENERATOR_CACHE.compareAndSet(null, generator);
 		}
 
+		@SuppressWarnings("NullAway")
 		ObjectNode node = SCHEMA_GENERATOR_CACHE.get().generateSchema(inputType);
 
 		if ((inputType == Void.class) && !node.has("properties")) {
 			node.putObject("properties");
 		}
 
-		if (toUpperCaseTypeValues) { // Required for OpenAPI 3.0 (at least Vertex AI
-			// version of it).
-			toUpperCaseTypeValues(node);
-		}
-
-		return node.toPrettyString();
+		return node;
 	}
 
 	public static void toUpperCaseTypeValues(ObjectNode node) {
@@ -409,13 +393,13 @@ public abstract class ModelOptionsUtils {
 			return;
 		}
 		if (node.isObject()) {
-			node.fields().forEachRemaining(entry -> {
+			node.properties().forEach(entry -> {
 				JsonNode value = entry.getValue();
 				if (value.isObject()) {
 					toUpperCaseTypeValues((ObjectNode) value);
 				}
 				else if (value.isArray()) {
-					((ArrayNode) value).elements().forEachRemaining(element -> {
+					value.forEach(element -> {
 						if (element.isObject() || element.isArray()) {
 							toUpperCaseTypeValues((ObjectNode) element);
 						}
@@ -428,7 +412,7 @@ public abstract class ModelOptionsUtils {
 			});
 		}
 		else if (node.isArray()) {
-			node.elements().forEachRemaining(element -> {
+			node.forEach(element -> {
 				if (element.isObject() || element.isArray()) {
 					toUpperCaseTypeValues((ObjectNode) element);
 				}
@@ -439,7 +423,8 @@ public abstract class ModelOptionsUtils {
 	/**
 	 * Return the runtime value if not empty, or else the default value.
 	 */
-	public static <T> T mergeOption(T runtimeValue, T defaultValue) {
+	@Contract("_, !null -> !null")
+	public static <T> @Nullable T mergeOption(@Nullable T runtimeValue, @Nullable T defaultValue) {
 		return ObjectUtils.isEmpty(runtimeValue) ? defaultValue : runtimeValue;
 	}
 

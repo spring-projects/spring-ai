@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,11 +30,10 @@ import org.springframework.ai.vectorstore.cassandra.CassandraVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration;
-import org.springframework.boot.autoconfigure.cassandra.DriverConfigLoaderBuilderCustomizer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.cassandra.autoconfigure.DriverConfigLoaderBuilderCustomizer;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
@@ -46,7 +45,7 @@ import org.springframework.context.annotation.Bean;
  * @author Soby Chacko
  * @since 1.0.0
  */
-@AutoConfiguration(after = CassandraAutoConfiguration.class)
+@AutoConfiguration
 @ConditionalOnClass({ CassandraVectorStore.class, CqlSession.class })
 @EnableConfigurationProperties(CassandraVectorStoreProperties.class)
 @ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.CASSANDRA,
@@ -54,7 +53,7 @@ import org.springframework.context.annotation.Bean;
 public class CassandraVectorStoreAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy batchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}

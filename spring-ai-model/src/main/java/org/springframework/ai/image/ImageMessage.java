@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,13 @@ package org.springframework.ai.image;
 
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 public class ImageMessage {
 
-	private String text;
+	private final String text;
 
-	private Float weight;
+	private @Nullable Float weight;
 
 	public ImageMessage(String text) {
 		this.text = text;
@@ -37,7 +39,7 @@ public class ImageMessage {
 		return this.text;
 	}
 
-	public Float getWeight() {
+	public @Nullable Float getWeight() {
 		return this.weight;
 	}
 

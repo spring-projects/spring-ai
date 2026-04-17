@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,6 +96,49 @@ class DefaultToolCallingObservationConventionTests {
 				KeyValue.of(
 						ToolCallingObservationDocumentation.HighCardinalityKeyNames.TOOL_DEFINITION_SCHEMA.asString(),
 						"{}"));
+	}
+
+	@Test
+	void shouldHaveAllStandardLowCardinalityKeys() {
+		ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("tool").description("Tool").inputSchema("{}").build())
+			.toolCallArguments("args")
+			.build();
+
+		var lowCardinalityKeys = this.observationConvention.getLowCardinalityKeyValues(observationContext);
+
+		// Verify all expected low cardinality keys are present
+		assertThat(lowCardinalityKeys).extracting(KeyValue::getKey)
+			.contains(ToolCallingObservationDocumentation.LowCardinalityKeyNames.TOOL_DEFINITION_NAME.asString(),
+					ToolCallingObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
+					ToolCallingObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(),
+					ToolCallingObservationDocumentation.LowCardinalityKeyNames.SPRING_AI_KIND.asString());
+	}
+
+	@Test
+	void shouldHandleNullContext() {
+		assertThat(this.observationConvention.supportsContext(null)).isFalse();
+	}
+
+	@Test
+	void shouldBeConsistentAcrossMultipleCalls() {
+		ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder()
+				.name("consistentTool")
+				.description("Consistent description")
+				.inputSchema("{}")
+				.build())
+			.toolCallArguments("args")
+			.build();
+
+		// Call multiple times and verify consistency
+		String name1 = this.observationConvention.getContextualName(observationContext);
+		String name2 = this.observationConvention.getContextualName(observationContext);
+		var lowCard1 = this.observationConvention.getLowCardinalityKeyValues(observationContext);
+		var lowCard2 = this.observationConvention.getLowCardinalityKeyValues(observationContext);
+
+		assertThat(name1).isEqualTo(name2);
+		assertThat(lowCard1).isEqualTo(lowCard2);
 	}
 
 }

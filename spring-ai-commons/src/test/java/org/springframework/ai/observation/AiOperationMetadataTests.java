@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,28 @@ class AiOperationMetadataTests {
 		assertThatThrownBy(() -> AiOperationMetadata.builder().operationType("chat").provider("").build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("provider cannot be null or empty");
+	}
+
+	@Test
+	void whenOperationTypeIsBlankThenThrow() {
+		assertThatThrownBy(() -> AiOperationMetadata.builder().operationType("   ").provider("doofenshmirtz").build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("operationType cannot be null or empty");
+	}
+
+	@Test
+	void whenProviderIsBlankThenThrow() {
+		assertThatThrownBy(() -> AiOperationMetadata.builder().operationType("chat").provider("   ").build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("provider cannot be null or empty");
+	}
+
+	@Test
+	void whenBuiltWithValidValuesThenFieldsAreAccessible() {
+		var operationMetadata = AiOperationMetadata.builder().operationType("chat").provider("openai").build();
+
+		assertThat(operationMetadata.operationType()).isEqualTo("chat");
+		assertThat(operationMetadata.provider()).isEqualTo("openai");
 	}
 
 }

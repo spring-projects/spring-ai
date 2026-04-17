@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR
 
 /**
  * @author Julien Ruaux
+ * @author Brian Sam-Bodden
  */
 class RedisFilterExpressionConverterTests {
 
@@ -127,6 +128,88 @@ class RedisFilterExpressionConverterTests {
 		vectorExpr = converter(RedisVectorStore.MetadataField.tag("country 1 2 3"))
 			.convertExpression(new Expression(EQ, new Key("'country 1 2 3'"), new Value("BG")));
 		assertThat(vectorExpr).isEqualTo("@'country 1 2 3':{BG}");
+	}
+
+	@Test
+	void testSpecialCharactersInValues() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("description"))
+			.convertExpression(new Expression(EQ, new Key("description"), new Value("test@value{with}special|chars")));
+
+		assertThat(vectorExpr).isEqualTo("@description:{test@value\\{with\\}special\\|chars}");
+	}
+
+	@Test
+	void testTagValueWithInjectionPayload() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("category")).convertExpression(
+				new Expression(EQ, new Key("category"), new Value("science} | @access_level:{restricted")));
+
+		assertThat(vectorExpr).isEqualTo("@category:{science\\} \\| @access_level:\\{restricted}");
+		assertThat(vectorExpr).doesNotContain("} | @");
+	}
+
+	@Test
+	void testTagValueInListWithSpecialChars() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("category")).convertExpression(new Expression(
+				IN, new Key("category"), new Value(List.of("science} | @access_level:{restricted", "normal"))));
+
+		assertThat(vectorExpr).isEqualTo("@category:{science\\} \\| @access_level:\\{restricted | normal}");
+		assertThat(vectorExpr).doesNotContain("} | @");
+	}
+
+	@Test
+	void testTagValueWithPipe() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("status"))
+			.convertExpression(new Expression(EQ, new Key("status"), new Value("active|inactive")));
+
+		assertThat(vectorExpr).isEqualTo("@status:{active\\|inactive}");
+	}
+
+	@Test
+	void testTagValueWithHyphen() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("type"))
+			.convertExpression(new Expression(EQ, new Key("type"), new Value("non-fiction")));
+
+		assertThat(vectorExpr).isEqualTo("@type:{non\\-fiction}");
+	}
+
+	@Test
+	void testTextValueWithSpecialChars() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.text("description"))
+			.convertExpression(new Expression(EQ, new Key("description"), new Value("hello@world.com")));
+
+		assertThat(vectorExpr).isEqualTo("@description:(hello\\@world\\.com)");
+	}
+
+	@Test
+	void testEmptyStringValues() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("status"))
+			.convertExpression(new Expression(EQ, new Key("status"), new Value("")));
+
+		assertThat(vectorExpr).isEqualTo("@status:{}");
+	}
+
+	@Test
+	void testSingleItemInList() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("status"))
+			.convertExpression(new Expression(IN, new Key("status"), new Value(List.of("active"))));
+
+		assertThat(vectorExpr).isEqualTo("@status:{active}");
+	}
+
+	@Test
+	void testWhitespaceInFieldNames() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("value with spaces"))
+			.convertExpression(new Expression(EQ, new Key("\"value with spaces\""), new Value("test")));
+
+		assertThat(vectorExpr).isEqualTo("@\"value with spaces\":{test}");
+	}
+
+	@Test
+	void testNestedQuotedFieldNames() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("value \"with\" quotes"))
+			.convertExpression(new Expression(EQ, new Key("\"value \\\"with\\\" quotes\""), new Value("test")));
+
+		assertThat(vectorExpr).isEqualTo("@\"value \\\"with\\\" quotes\":{test}");
 	}
 
 }

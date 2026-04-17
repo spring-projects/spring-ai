@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,33 +16,29 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.ai.openai.OpenAiModerationOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
- * OpenAI Moderation autoconfiguration properties.
+ * OpenAI SDK Moderation autoconfiguration properties.
  *
  * @author Ahmed Yousri
- * @since 0.9.0
+ * @author Ilayaperumal Gopinathan
  */
 @ConfigurationProperties(OpenAiModerationProperties.CONFIG_PREFIX)
-public class OpenAiModerationProperties extends OpenAiParentProperties {
+public class OpenAiModerationProperties extends AbstractOpenAiOptions {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.moderation";
 
-	/**
-	 * Options for OpenAI Moderation API.
-	 */
 	@NestedConfigurationProperty
-	private OpenAiModerationOptions options = OpenAiModerationOptions.builder().build();
+	private final OpenAiModerationOptions options = OpenAiModerationOptions.builder()
+		.model(OpenAiModerationOptions.DEFAULT_MODERATION_MODEL)
+		.build();
 
 	public OpenAiModerationOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(OpenAiModerationOptions options) {
-		this.options = options;
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.ai.audio.tts;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Default implementation of the {@link TextToSpeechOptions} interface.
@@ -26,17 +27,18 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * @author Alexandros Pappas
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class DefaultTextToSpeechOptions implements TextToSpeechOptions {
+public final class DefaultTextToSpeechOptions implements TextToSpeechOptions {
 
-	private final String model;
+	private final @Nullable String model;
 
-	private final String voice;
+	private final @Nullable String voice;
 
-	private final String format;
+	private final @Nullable String format;
 
-	private final Double speed;
+	private final @Nullable Double speed;
 
-	private DefaultTextToSpeechOptions(String model, String voice, String format, Double speed) {
+	private DefaultTextToSpeechOptions(@Nullable String model, @Nullable String voice, @Nullable String format,
+			@Nullable Double speed) {
 		this.model = model;
 		this.voice = voice;
 		this.format = format;
@@ -48,44 +50,46 @@ public class DefaultTextToSpeechOptions implements TextToSpeechOptions {
 	}
 
 	@Override
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
 	@Override
-	public String getVoice() {
+	public @Nullable String getVoice() {
 		return this.voice;
 	}
 
 	@Override
-	public String getFormat() {
+	public @Nullable String getFormat() {
 		return this.format;
 	}
 
 	@Override
-	public Double getSpeed() {
+	public @Nullable Double getSpeed() {
 		return this.speed;
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof DefaultTextToSpeechOptions that))
+		}
+		if (!(o instanceof DefaultTextToSpeechOptions that)) {
 			return false;
-		return Objects.equals(model, that.model) && Objects.equals(voice, that.voice)
-				&& Objects.equals(format, that.format) && Objects.equals(speed, that.speed);
+		}
+		return Objects.equals(this.model, that.model) && Objects.equals(this.voice, that.voice)
+				&& Objects.equals(this.format, that.format) && Objects.equals(this.speed, that.speed);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(model, voice, format, speed);
+		return Objects.hash(this.model, this.voice, this.format, this.speed);
 	}
 
 	@Override
 	public String toString() {
-		return "DefaultTextToSpeechOptions{" + "model='" + model + '\'' + ", voice='" + voice + '\'' + ", format='"
-				+ format + '\'' + ", speed=" + speed + '}';
+		return "DefaultTextToSpeechOptions{" + "model='" + this.model + '\'' + ", voice='" + this.voice + '\''
+				+ ", format='" + this.format + '\'' + ", speed=" + this.speed + '}';
 	}
 
 	@Override
@@ -94,15 +98,15 @@ public class DefaultTextToSpeechOptions implements TextToSpeechOptions {
 		return new Builder(this).build();
 	}
 
-	public static class Builder implements TextToSpeechOptions.Builder {
+	public static final class Builder implements TextToSpeechOptions.Builder {
 
-		private String model;
+		private @Nullable String model;
 
-		private String voice;
+		private @Nullable String voice;
 
-		private String format;
+		private @Nullable String format;
 
-		private Double speed;
+		private @Nullable Double speed;
 
 		public Builder() {
 		}

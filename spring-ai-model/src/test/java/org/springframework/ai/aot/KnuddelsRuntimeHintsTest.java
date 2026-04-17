@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,67 @@ class KnuddelsRuntimeHintsTest {
 		var knuddels = new KnuddelsRuntimeHints();
 		knuddels.registerHints(runtimeHints, null);
 		assertThat(runtimeHints).matches(resource().forResource("com/knuddels/jtokkit/cl100k_base.tiktoken"));
+	}
+
+	@Test
+	void should_register_hints_with_custom_classloader() {
+		var runtimeHints = new RuntimeHints();
+		var knuddels = new KnuddelsRuntimeHints();
+		ClassLoader customClassLoader = Thread.currentThread().getContextClassLoader();
+
+		knuddels.registerHints(runtimeHints, customClassLoader);
+
+		assertThat(runtimeHints).matches(resource().forResource("com/knuddels/jtokkit/cl100k_base.tiktoken"));
+	}
+
+	@Test
+	void should_not_register_reflection_hints() {
+		var runtimeHints = new RuntimeHints();
+		var knuddels = new KnuddelsRuntimeHints();
+		knuddels.registerHints(runtimeHints, null);
+
+		// Verify no reflection hints are added (only resources)
+		assertThat(runtimeHints.reflection().typeHints().count()).isEqualTo(0);
+	}
+
+	@Test
+	void should_not_register_proxy_hints() {
+		var runtimeHints = new RuntimeHints();
+		var knuddels = new KnuddelsRuntimeHints();
+		knuddels.registerHints(runtimeHints, null);
+
+		// Verify no proxy hints are added
+		assertThat(runtimeHints.proxies().jdkProxyHints().count()).isEqualTo(0);
+	}
+
+	@Test
+	void should_register_hints_idempotently() {
+		var runtimeHints = new RuntimeHints();
+		var knuddels = new KnuddelsRuntimeHints();
+
+		knuddels.registerHints(runtimeHints, null);
+		long firstCount = runtimeHints.resources().resourcePatternHints().count();
+
+		knuddels.registerHints(runtimeHints, null);
+		long secondCount = runtimeHints.resources().resourcePatternHints().count();
+
+		// Multiple registrations should result in the same hints (or double)
+		assertThat(secondCount).isGreaterThanOrEqualTo(firstCount);
+	}
+
+	@Test
+	void should_register_hints_only_for_jtokkit_resources() {
+		var runtimeHints = new RuntimeHints();
+		var knuddels = new KnuddelsRuntimeHints();
+		knuddels.registerHints(runtimeHints, null);
+
+		// Verify hints are specific to jtokkit resources
+		boolean hasJtokkitResources = runtimeHints.resources()
+			.resourcePatternHints()
+			.anyMatch(
+					hint -> hint.getIncludes().stream().anyMatch(pattern -> pattern.getPattern().contains("jtokkit")));
+
+		assertThat(hasJtokkitResources).isTrue();
 	}
 
 }

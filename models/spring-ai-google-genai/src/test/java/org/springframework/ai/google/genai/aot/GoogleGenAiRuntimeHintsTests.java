@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,6 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
-import org.springframework.ai.google.genai.aot.GoogleGenAiRuntimeHints;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeReference;
 
@@ -52,7 +50,34 @@ class GoogleGenAiRuntimeHintsTests {
 			assertThat(registeredTypes.contains(jsonAnnotatedClass)).isTrue();
 		}
 
-		assertThat(registeredTypes.contains(TypeReference.of(GoogleGenAiChatOptions.class))).isTrue();
+	}
+
+	@Test
+	void registerHintsWithNullClassLoader() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		GoogleGenAiRuntimeHints googleGenAiRuntimeHints = new GoogleGenAiRuntimeHints();
+
+		googleGenAiRuntimeHints.registerHints(runtimeHints, null);
+
+		assertThat(runtimeHints.reflection().typeHints().count()).isGreaterThan(0);
+	}
+
+	@Test
+	void verifyNoProxyHintsAreRegistered() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		GoogleGenAiRuntimeHints googleGenAiRuntimeHints = new GoogleGenAiRuntimeHints();
+		googleGenAiRuntimeHints.registerHints(runtimeHints, null);
+
+		assertThat(runtimeHints.proxies().jdkProxyHints().count()).isEqualTo(0);
+	}
+
+	@Test
+	void verifyNoSerializationHintsAreRegistered() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		GoogleGenAiRuntimeHints googleGenAiRuntimeHints = new GoogleGenAiRuntimeHints();
+		googleGenAiRuntimeHints.registerHints(runtimeHints, null);
+
+		assertThat(runtimeHints.serialization().javaSerializationHints().count()).isEqualTo(0);
 	}
 
 }

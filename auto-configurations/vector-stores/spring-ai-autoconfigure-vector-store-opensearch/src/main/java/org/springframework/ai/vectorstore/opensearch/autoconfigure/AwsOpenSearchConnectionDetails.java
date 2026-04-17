@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,18 @@
 
 package org.springframework.ai.vectorstore.opensearch.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
 
 public interface AwsOpenSearchConnectionDetails extends ConnectionDetails {
 
-	String getRegion();
+	@Nullable String getRegion();
 
-	String getAccessKey();
+	@Nullable String getAccessKey();
 
-	String getSecretKey();
+	@Nullable String getSecretKey();
 
-	String getHost(String domainName);
+	@Nullable String getHost(@Nullable String domainName);
 
 }

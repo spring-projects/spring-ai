@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
@@ -56,21 +54,30 @@ public class ElevenLabsVoicesApi {
 	 * @param restClientBuilder A builder for the Spring RestClient.
 	 * @param responseErrorHandler A custom error handler for API responses.
 	 */
-	public ElevenLabsVoicesApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
-			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+	public ElevenLabsVoicesApi(String baseUrl, ApiKey apiKey, HttpHeaders headers, RestClient.Builder restClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
 		Consumer<HttpHeaders> jsonContentHeaders = h -> {
 			if (!(apiKey instanceof NoopApiKey)) {
 				h.set("xi-api-key", apiKey.getValue());
 			}
-			h.addAll(headers);
+			h.addAll(HttpHeaders.readOnlyHttpHeaders(headers));
 			h.setContentType(MediaType.APPLICATION_JSON);
 		};
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
+		this.restClient = restClientBuilder.clone()
+			.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 
+	}
+
+	/**
+	 * Create a new ElevenLabs Voices API client.
+	 * @param restClient Spring RestClient instance.
+	 */
+	public ElevenLabsVoicesApi(RestClient restClient) {
+		this.restClient = restClient;
 	}
 
 	public static Builder builder() {
@@ -393,13 +400,13 @@ public class ElevenLabsVoicesApi {
 	/**
 	 * Builder to construct {@link ElevenLabsVoicesApi} instance.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private String baseUrl = DEFAULT_BASE_URL;
 
 		private ApiKey apiKey;
 
-		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		private HttpHeaders headers = new HttpHeaders();
 
 		private RestClient.Builder restClientBuilder = RestClient.builder();
 
@@ -423,7 +430,7 @@ public class ElevenLabsVoicesApi {
 			return this;
 		}
 
-		public Builder headers(MultiValueMap<String, String> headers) {
+		public Builder headers(HttpHeaders headers) {
 			Assert.notNull(headers, "headers cannot be null");
 			this.headers = headers;
 			return this;

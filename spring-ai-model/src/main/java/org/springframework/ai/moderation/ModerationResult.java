@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.springframework.ai.moderation;
 
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Represents the result of a moderation process, indicating whether content was flagged,
  * the categories of moderation, and detailed scores for each category. This class is
@@ -30,9 +32,9 @@ public final class ModerationResult {
 
 	private boolean flagged;
 
-	private Categories categories;
+	private @Nullable Categories categories;
 
-	private CategoryScores categoryScores;
+	private @Nullable CategoryScores categoryScores;
 
 	private ModerationResult(Builder builder) {
 		this.flagged = builder.flagged;
@@ -52,7 +54,7 @@ public final class ModerationResult {
 		this.flagged = flagged;
 	}
 
-	public Categories getCategories() {
+	public @Nullable Categories getCategories() {
 		return this.categories;
 	}
 
@@ -60,7 +62,7 @@ public final class ModerationResult {
 		this.categories = categories;
 	}
 
-	public CategoryScores getCategoryScores() {
+	public @Nullable CategoryScores getCategoryScores() {
 		return this.categoryScores;
 	}
 
@@ -73,10 +75,9 @@ public final class ModerationResult {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof ModerationResult)) {
+		if (!(o instanceof ModerationResult that)) {
 			return false;
 		}
-		ModerationResult that = (ModerationResult) o;
 		return this.flagged == that.flagged && Objects.equals(this.categories, that.categories)
 				&& Objects.equals(this.categoryScores, that.categoryScores);
 	}
@@ -92,13 +93,13 @@ public final class ModerationResult {
 				+ this.categoryScores + '}';
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private boolean flagged;
 
-		private Categories categories;
+		private @Nullable Categories categories;
 
-		private CategoryScores categoryScores;
+		private @Nullable CategoryScores categoryScores;
 
 		public Builder flagged(boolean flagged) {
 			this.flagged = flagged;

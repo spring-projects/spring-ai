@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,35 +16,35 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions;
-import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
+/**
+ * Configuration properties for OpenAI SDK audio transcription.
+ *
+ * @author Michael Lavelle
+ * @author Christian Tzolov
+ * @author Piotr Olaszewski
+ * @author Ilayaperumal Gopinathan
+ */
 @ConfigurationProperties(OpenAiAudioTranscriptionProperties.CONFIG_PREFIX)
-public class OpenAiAudioTranscriptionProperties extends OpenAiParentProperties {
+public class OpenAiAudioTranscriptionProperties extends AbstractOpenAiOptions {
 
+	/**
+	 * Configuration prefix for OpenAI SDK audio transcription.
+	 */
 	public static final String CONFIG_PREFIX = "spring.ai.openai.audio.transcription";
 
-	public static final String DEFAULT_TRANSCRIPTION_MODEL = OpenAiAudioApi.WhisperModel.WHISPER_1.getValue();
-
-	private static final Double DEFAULT_TEMPERATURE = 0.7;
-
-	private static final OpenAiAudioApi.TranscriptResponseFormat DEFAULT_RESPONSE_FORMAT = OpenAiAudioApi.TranscriptResponseFormat.TEXT;
-
 	@NestedConfigurationProperty
-	private OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
-		.model(DEFAULT_TRANSCRIPTION_MODEL)
-		.temperature(DEFAULT_TEMPERATURE.floatValue())
-		.responseFormat(DEFAULT_RESPONSE_FORMAT)
+	private final OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
+		.model(OpenAiAudioTranscriptionOptions.DEFAULT_TRANSCRIPTION_MODEL)
+		.responseFormat(OpenAiAudioTranscriptionOptions.DEFAULT_RESPONSE_FORMAT)
 		.build();
 
 	public OpenAiAudioTranscriptionOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(OpenAiAudioTranscriptionOptions options) {
-		this.options = options;
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,9 +43,6 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.tool.MockWeatherService;
-import org.springframework.ai.openai.chat.ActorsFilms;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -58,8 +55,10 @@ import org.springframework.core.io.Resource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * @author Christian Tzolov
- * @since 1.0.0
+ * Integration tests for OpenAI SDK Chat Model using NVIDIA as an OpenAI-compatible
+ * provider.
+ *
+ * @author Ilayaperumal Gopinathan
  */
 @SpringBootTest(classes = NvidiaWithOpenAiChatModelIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "NVIDIA_API_KEY", matches = ".+")
@@ -114,7 +113,10 @@ class NvidiaWithOpenAiChatModelIT {
 
 	@Test
 	void streamingWithTokenUsage() {
-		var promptOptions = OpenAiChatOptions.builder().streamUsage(true).seed(1).build();
+		var promptOptions = OpenAiChatOptions.builder()
+			.streamOptions(OpenAiChatOptions.StreamOptions.builder().includeUsage(true).build())
+			.seed(1)
+			.build();
 
 		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
 
@@ -128,7 +130,6 @@ class NvidiaWithOpenAiChatModelIT {
 		assertThat(streamingTokenUsage.getPromptTokens()).isEqualTo(referenceTokenUsage.getPromptTokens());
 		assertThat(streamingTokenUsage.getCompletionTokens()).isEqualTo(referenceTokenUsage.getCompletionTokens());
 		assertThat(streamingTokenUsage.getTotalTokens()).isEqualTo(referenceTokenUsage.getTotalTokens());
-
 	}
 
 	@Test
@@ -150,7 +151,6 @@ class NvidiaWithOpenAiChatModelIT {
 
 		List<String> list = outputConverter.convert(generation.getOutput().getText());
 		assertThat(list).hasSize(5);
-
 	}
 
 	@Test
@@ -171,33 +171,10 @@ class NvidiaWithOpenAiChatModelIT {
 
 		Map<String, Object> result = outputConverter.convert(generation.getOutput().getText());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
-
-	}
-
-	@Test
-	void beanOutputConverter() {
-
-		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
-
-		String format = outputConverter.getFormat();
-		String template = """
-				Generate the filmography for a random actor.
-				{format}
-				""";
-		PromptTemplate promptTemplate = PromptTemplate.builder()
-			.template(template)
-			.variables(Map.of("format", format))
-			.build();
-		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = this.chatModel.call(prompt).getResult();
-
-		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getText());
-		assertThat(actorsFilms.getActor()).isNotEmpty();
 	}
 
 	@Test
 	void beanOutputConverterRecords() {
-
 		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
 		String format = outputConverter.getFormat();
@@ -220,7 +197,6 @@ class NvidiaWithOpenAiChatModelIT {
 
 	@Test
 	void beanStreamOutputConverterRecords() {
-
 		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
 		String format = outputConverter.getFormat();
@@ -253,7 +229,6 @@ class NvidiaWithOpenAiChatModelIT {
 
 	@Test
 	void functionCallTest() {
-
 		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
@@ -274,7 +249,6 @@ class NvidiaWithOpenAiChatModelIT {
 
 	@Test
 	void streamFunctionCallTest() {
-
 		UserMessage userMessage = new UserMessage(
 				"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
@@ -304,13 +278,12 @@ class NvidiaWithOpenAiChatModelIT {
 
 	@Test
 	void validateCallResponseMetadata() {
-		// @formatter:off
-		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(OpenAiChatOptions.builder().model(DEFAULT_NVIDIA_MODEL).build())
-				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
-				.call()
-				.chatResponse();
-		// @formatter:on
+		ChatResponse response = ChatClient.create(this.chatModel)
+			.prompt()
+			.options(OpenAiChatOptions.builder().model(DEFAULT_NVIDIA_MODEL))
+			.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
+			.call()
+			.chatResponse();
 
 		logger.info(response.toString());
 		assertThat(response.getMetadata().getId()).isNotEmpty();
@@ -320,7 +293,54 @@ class NvidiaWithOpenAiChatModelIT {
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
 	}
 
+	@Test
+	void extraBodySupport() {
+		// Provide a parameter via extraBody that will predictably affect the response
+		// 'max_tokens' placed in extraBody should be flattened to the root and limit the
+		// response length.
+		Map<String, Object> extraBody = Map.of("max_tokens", 2);
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model(DEFAULT_NVIDIA_MODEL)
+			.extraBody(extraBody)
+			.build();
+
+		Prompt prompt = new Prompt("Tell me a short joke.", options);
+
+		ChatResponse response = this.chatModel.call(prompt);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+		// Because max_tokens is 2, the finish reason should be length or similar
+		// indicating truncation
+		assertThat(response.getResult().getMetadata().getFinishReason().toLowerCase()).contains("length");
+	}
+
 	record ActorsFilmsRecord(String actor, List<String> movies) {
+
+	}
+
+	public static class MockWeatherService
+			implements java.util.function.Function<MockWeatherService.Request, MockWeatherService.Response> {
+
+		@Override
+		public Response apply(Request request) {
+			double temperature = switch (request.location()) {
+				case "San Francisco", "San Francisco, CA" -> 30.0;
+				case "Tokyo", "Tokyo, Japan" -> 10.0;
+				case "Paris", "Paris, France" -> 15.0;
+				default -> 0.0;
+			};
+			return new Response(temperature, request.unit() != null ? request.unit() : "C");
+		}
+
+		public record Request(String location, String unit) {
+
+		}
+
+		public record Response(double temp, String unit) {
+
+		}
 
 	}
 
@@ -328,15 +348,14 @@ class NvidiaWithOpenAiChatModelIT {
 	static class Config {
 
 		@Bean
-		public OpenAiApi chatCompletionApi() {
-			return OpenAiApi.builder().baseUrl(NVIDIA_BASE_URL).apiKey(System.getenv("NVIDIA_API_KEY")).build();
-		}
-
-		@Bean
-		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
+		public OpenAiChatModel openAiSdkChatModel() {
 			return OpenAiChatModel.builder()
-				.openAiApi(openAiApi)
-				.defaultOptions(OpenAiChatOptions.builder().maxTokens(2048).model(DEFAULT_NVIDIA_MODEL).build())
+				.options(OpenAiChatOptions.builder()
+					.baseUrl(NVIDIA_BASE_URL)
+					.apiKey(System.getenv("NVIDIA_API_KEY"))
+					.maxTokens(2048)
+					.model(DEFAULT_NVIDIA_MODEL)
+					.build())
 				.build();
 		}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ class OpenAiChatModelTypeReferenceBeanOutputConverterIT extends AbstractIT {
 	void typeRefOutputConverterRecords() {
 
 		BeanOutputConverter<List<ActorsFilmsRecord>> outputConverter = new BeanOutputConverter<>(
-				new ParameterizedTypeReference<>() {
+				new ParameterizedTypeReference<List<ActorsFilmsRecord>>() {
 
 				});
 
@@ -78,7 +78,7 @@ class OpenAiChatModelTypeReferenceBeanOutputConverterIT extends AbstractIT {
 	void typeRefStreamOutputConverterRecords() {
 
 		BeanOutputConverter<List<ActorsFilmsRecord>> outputConverter = new BeanOutputConverter<>(
-				new ParameterizedTypeReference<>() {
+				new ParameterizedTypeReference<List<ActorsFilmsRecord>>() {
 
 				});
 

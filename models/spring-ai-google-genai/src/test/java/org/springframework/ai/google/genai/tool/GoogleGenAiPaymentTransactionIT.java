@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,11 +28,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import org.springframework.ai.google.genai.GoogleGenAiChatModel;
+import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
@@ -40,7 +41,6 @@ import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
 import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
-import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -57,8 +57,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Dan Dobrin
  */
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".+")
 public class GoogleGenAiPaymentTransactionIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiPaymentTransactionIT.class);
@@ -77,7 +77,7 @@ public class GoogleGenAiPaymentTransactionIT {
 				.toolNames("paymentStatus")
 				.user("""
 				What is the status of my payment transactions 001, 002 and 003?
-				If requred invoke the function per transaction.
+				If required invoke the function per transaction.
 				""").call().content();
 		// @formatter:on
 		logger.info("" + content);
@@ -94,7 +94,7 @@ public class GoogleGenAiPaymentTransactionIT {
 			.toolNames("paymentStatus")
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
-					If requred invoke the function per transaction.
+					If required invoke the function per transaction.
 					""")
 			.stream()
 			.content();

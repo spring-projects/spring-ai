@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,14 +39,18 @@ public final class EmbeddingUtils {
 	}
 
 	public static float[] toPrimitive(List<Float> floats) {
-		return toPrimitive(floats.toArray(new Float[floats.size()]));
+		if (floats == null || floats.isEmpty()) {
+			return EMPTY_FLOAT_ARRAY;
+		}
+		final float[] result = new float[floats.size()];
+		for (int i = 0; i < result.length; i++) {
+			result[i] = floats.get(i);
+		}
+		return result;
 	}
 
 	public static float[] toPrimitive(final Float[] array) {
-		if (array == null) {
-			return null;
-		}
-		if (array.length == 0) {
+		if (array == null || array.length == 0) {
 			return EMPTY_FLOAT_ARRAY;
 		}
 		final float[] result = new float[array.length];
@@ -57,10 +61,7 @@ public final class EmbeddingUtils {
 	}
 
 	public static Float[] toFloatArray(final float[] array) {
-		if (array == null) {
-			return null;
-		}
-		if (array.length == 0) {
+		if (array == null || array.length == 0) {
 			return new Float[0];
 		}
 		final Float[] result = new Float[array.length];
@@ -71,7 +72,6 @@ public final class EmbeddingUtils {
 	}
 
 	public static List<Float> toList(float[] floats) {
-
 		List<Float> output = new ArrayList<>();
 		for (float value : floats) {
 			output.add(value);

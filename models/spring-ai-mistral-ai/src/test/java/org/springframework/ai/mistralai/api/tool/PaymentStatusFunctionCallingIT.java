@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,12 +22,11 @@ import java.util.Map;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion;
@@ -50,6 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * AI Function Calling</a> guide.
  *
  * @author Christian Tzolov
+ * @author Jason Smith
  * @since 0.8.1
  */
 // @Disabled("See https://github.com/spring-projects/spring-ai/issues/1853")
@@ -67,17 +67,12 @@ public class PaymentStatusFunctionCallingIT {
 	private final Logger logger = LoggerFactory.getLogger(PaymentStatusFunctionCallingIT.class);
 
 	private static <T> T jsonToObject(String json, Class<T> targetClass) {
-		try {
-			return new ObjectMapper().readValue(json, targetClass);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		return JsonMapper.shared().readValue(json, targetClass);
 	}
 
 	@Test
 	@SuppressWarnings("null")
-	public void toolFunctionCall() throws JsonProcessingException {
+	public void toolFunctionCall() {
 
 		var transactionJsonSchema = """
 				{
@@ -106,10 +101,11 @@ public class PaymentStatusFunctionCallingIT {
 		List<ChatCompletionMessage> messages = new ArrayList<>(
 				List.of(new ChatCompletionMessage("What's the status of my transaction with id T1001?", Role.USER)));
 
-		MistralAiApi mistralApi = new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY"));
+		MistralAiApi mistralApi = MistralAiApi.builder().apiKey(System.getenv("MISTRAL_AI_API_KEY")).build();
 
-		ResponseEntity<ChatCompletion> response = mistralApi.chatCompletionEntity(new ChatCompletionRequest(messages,
-				MistralAiApi.ChatModel.LARGE.getValue(), List.of(paymentStatusTool, paymentDateTool), ToolChoice.AUTO));
+		ResponseEntity<ChatCompletion> response = mistralApi
+			.chatCompletionEntity(new ChatCompletionRequest(messages, MistralAiApi.ChatModel.MISTRAL_LARGE.getValue(),
+					List.of(paymentStatusTool, paymentDateTool), ToolChoice.AUTO));
 
 		ChatCompletionMessage responseMessage = response.getBody().choices().get(0).message();
 
@@ -134,7 +130,7 @@ public class PaymentStatusFunctionCallingIT {
 		}
 
 		response = mistralApi
-			.chatCompletionEntity(new ChatCompletionRequest(messages, MistralAiApi.ChatModel.LARGE.getValue()));
+			.chatCompletionEntity(new ChatCompletionRequest(messages, MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()));
 
 		var responseContent = response.getBody().choices().get(0).message().content();
 		logger.info("Final response: " + responseContent);

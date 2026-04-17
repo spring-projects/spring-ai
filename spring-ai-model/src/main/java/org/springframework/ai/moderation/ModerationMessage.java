@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,10 +52,9 @@ public class ModerationMessage {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof ModerationMessage)) {
+		if (!(o instanceof ModerationMessage that)) {
 			return false;
 		}
-		ModerationMessage that = (ModerationMessage) o;
 		return Objects.equals(this.text, that.text);
 	}
 

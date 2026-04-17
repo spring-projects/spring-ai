@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,13 +35,18 @@ public class BedrockCohereEmbeddingProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.bedrock.cohere.embedding";
 
 	/**
+	 * whether Cohere functionality should be enabled.
+	 */
+	private boolean enabled;
+
+	/**
 	 * Bedrock Cohere Embedding generative name. Defaults to
 	 * 'cohere.embed-multilingual-v3'.
 	 */
 	private String model = CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V3.id();
 
 	@NestedConfigurationProperty
-	private BedrockCohereEmbeddingOptions options = BedrockCohereEmbeddingOptions.builder()
+	private final BedrockCohereEmbeddingOptions options = BedrockCohereEmbeddingOptions.builder()
 		.inputType(InputType.SEARCH_DOCUMENT)
 		.truncate(CohereEmbeddingRequest.Truncate.NONE)
 		.build();
@@ -58,8 +63,12 @@ public class BedrockCohereEmbeddingProperties {
 		return this.options;
 	}
 
-	public void setOptions(BedrockCohereEmbeddingOptions options) {
-		this.options = options;
+	public boolean isEnabled() {
+		return this.enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
 	}
 
 }

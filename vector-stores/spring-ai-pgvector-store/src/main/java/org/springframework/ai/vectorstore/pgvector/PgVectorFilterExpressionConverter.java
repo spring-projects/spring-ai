@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.ai.vectorstore.pgvector;
 
+import java.util.Date;
 import java.util.List;
 
 import org.springframework.ai.vectorstore.filter.Filter;
@@ -23,6 +24,7 @@ import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 /**
  * Converts {@link Expression} into PgVector metadata filter expression format.
@@ -35,6 +37,7 @@ public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionC
 
 	@Override
 	protected void doExpression(Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "expression should have a right operand");
 		if (expression.type() == Filter.ExpressionType.IN) {
 			handleIn(expression, context);
 		}
@@ -55,6 +58,7 @@ public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionC
 	}
 
 	private void convertToConditions(Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "expression should have a right operand");
 		Filter.Value right = (Filter.Value) expression.right();
 		Object value = right.value();
 		if (!(value instanceof List)) {
@@ -64,7 +68,7 @@ public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionC
 		for (int i = 0; i < values.size(); i++) {
 			this.convertOperand(expression.left(), context);
 			context.append(" == ");
-			this.doSingleValue(values.get(i), context);
+			this.doSingleValue(normalizeDateString(values.get(i)), context);
 			if (i < values.size() - 1) {
 				context.append(" || ");
 			}
@@ -78,26 +82,17 @@ public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionC
 	}
 
 	private String getOperationSymbol(Expression exp) {
-		switch (exp.type()) {
-			case AND:
-				return " && ";
-			case OR:
-				return " || ";
-			case EQ:
-				return " == ";
-			case NE:
-				return " != ";
-			case LT:
-				return " < ";
-			case LTE:
-				return " <= ";
-			case GT:
-				return " > ";
-			case GTE:
-				return " >= ";
-			default:
-				throw new RuntimeException("Not supported expression type: " + exp.type());
-		}
+		return switch (exp.type()) {
+			case AND -> " && ";
+			case OR -> " || ";
+			case EQ -> " == ";
+			case NE -> " != ";
+			case LT -> " < ";
+			case LTE -> " <= ";
+			case GT -> " > ";
+			case GTE -> " >= ";
+			default -> throw new RuntimeException("Not supported expression type: " + exp.type());
+		};
 	}
 
 	@Override
@@ -113,6 +108,23 @@ public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionC
 	@Override
 	protected void doEndGroup(Group group, StringBuilder context) {
 		context.append(")");
+	}
+
+	/**
+	 * Serialize values using JSON serialization for PostgreSQL JSONPath expressions.
+	 * Delegates to {@link #emitJsonValue(Object, StringBuilder)} for Jackson-based JSON
+	 * serialization.
+	 * @param value the value to serialize
+	 * @param context the context to append the JSON representation to
+	 */
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		if (value instanceof Date date) {
+			emitJsonValue(ISO_DATE_FORMATTER.format(date.toInstant()), context);
+		}
+		else {
+			emitJsonValue(value, context);
+		}
 	}
 
 }

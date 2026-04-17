@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,13 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.SpringAIVectorStoreTypes;
 import org.springframework.ai.vectorstore.neo4j.Neo4jVectorStore;
+import org.springframework.ai.vectorstore.neo4j.Neo4jVectorStore.Builder;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.neo4j.Neo4jAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
@@ -42,15 +42,15 @@ import org.springframework.context.annotation.Bean;
  * @author Christian Tzolov
  * @author Soby Chacko
  */
-@AutoConfiguration(after = Neo4jAutoConfiguration.class)
+@AutoConfiguration
 @ConditionalOnClass({ Neo4jVectorStore.class, EmbeddingModel.class, Driver.class })
-@EnableConfigurationProperties({ Neo4jVectorStoreProperties.class })
+@EnableConfigurationProperties(Neo4jVectorStoreProperties.class)
 @ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.NEO4J,
 		matchIfMissing = true)
 public class Neo4jVectorStoreAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy batchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}
@@ -62,12 +62,11 @@ public class Neo4jVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		return Neo4jVectorStore.builder(driver, embeddingModel)
+		Builder builder = Neo4jVectorStore.builder(driver, embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.customObservationConvention(customObservationConvention.getIfAvailable())
 			.batchingStrategy(batchingStrategy)
-			.databaseName(properties.getDatabaseName())
 			.embeddingDimension(properties.getEmbeddingDimension() != null ? properties.getEmbeddingDimension()
 					: embeddingModel.dimensions())
 			.distanceType(properties.getDistanceType())
@@ -76,8 +75,11 @@ public class Neo4jVectorStoreAutoConfiguration {
 			.indexName(properties.getIndexName())
 			.idProperty(properties.getIdProperty())
 			.constraintName(properties.getConstraintName())
-			.textProperty(properties.getTextProperty())
-			.build();
+			.textProperty(properties.getTextProperty());
+		if (properties.getDatabaseName() != null) {
+			builder.databaseName(properties.getDatabaseName());
+		}
+		return builder.build();
 	}
 
 }

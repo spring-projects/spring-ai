@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 
 import org.springframework.ai.observation.conventions.SpringAiKind;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -49,7 +48,6 @@ public class DefaultToolCallingObservationConvention implements ToolCallingObser
 	}
 
 	@Override
-	@Nullable
 	public String getContextualName(ToolCallingObservationContext context) {
 		Assert.notNull(context, "context cannot be null");
 		String toolName = context.getToolDefinition().name();

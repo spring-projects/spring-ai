@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ class ToolCallingObservationContextTests {
 	@Test
 	void whenToolDefinitionIsNullThenThrow() {
 		assertThatThrownBy(() -> ToolCallingObservationContext.builder().toolCallArguments("lizard").build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("toolDefinition cannot be null");
 	}
 
@@ -72,6 +72,52 @@ class ToolCallingObservationContextTests {
 			.toolCallArguments("lizard")
 			.toolMetadata(null)
 			.build()).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("toolMetadata cannot be null");
+	}
+
+	@Test
+	void whenToolArgumentsIsEmptyStringThenReturnEmptyString() {
+		var observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.toolCallArguments("")
+			.build();
+		assertThat(observationContext).isNotNull();
+		assertThat(observationContext.getToolCallArguments()).isEqualTo("");
+	}
+
+	@Test
+	void whenToolCallResultIsNullThenReturnNull() {
+		var observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.toolCallResult(null)
+			.build();
+		assertThat(observationContext).isNotNull();
+		assertThat(observationContext.getToolCallResult()).isNull();
+	}
+
+	@Test
+	void whenToolCallResultIsEmptyStringThenReturnEmptyString() {
+		var observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.toolCallResult("")
+			.build();
+		assertThat(observationContext).isNotNull();
+		assertThat(observationContext.getToolCallResult()).isEqualTo("");
+	}
+
+	@Test
+	void whenToolDefinitionIsSetThenGetReturnsIt() {
+		var toolDef = ToolDefinition.builder()
+			.name("testTool")
+			.description("Test description")
+			.inputSchema("{\"type\": \"object\"}")
+			.build();
+
+		var observationContext = ToolCallingObservationContext.builder().toolDefinition(toolDef).build();
+
+		assertThat(observationContext.getToolDefinition()).isEqualTo(toolDef);
+		assertThat(observationContext.getToolDefinition().name()).isEqualTo("testTool");
+		assertThat(observationContext.getToolDefinition().description()).isEqualTo("Test description");
+		assertThat(observationContext.getToolDefinition().inputSchema()).isEqualTo("{\"type\": \"object\"}");
 	}
 
 }

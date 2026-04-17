@@ -5,6 +5,11 @@
 Spring AI supports OpenAI's Moderation model, which allows you to detect potentially harmful or sensitive content in text.
 Follow this https://platform.openai.com/docs/guides/moderation[guide] to for more information on OpenAI's moderation model.
 
+[NOTE]
+====
+Starting from version `2.0.0-M5`, Spring AI uses the official `openai-java` SDK under the hood for all OpenAI models. The transition is expected to be seamless and there are no breaking changes for existing users of the OpenAI API properties and builders. If you find any issues, please report them to us at https://github.com/spring-projects/spring-ai/issues[Spring AI GitHub Issues].
+====
+
 == Prerequisites
 
 . Create an OpenAI account and obtain an API key. You can sign up at the https://platform.openai.com/signup[OpenAI signup page] and generate an API key on the https://platform.openai.com/account/api-keys[API Keys page].
@@ -79,7 +84,8 @@ The prefix spring.ai.openai.moderation is used as the property prefix for config
 | spring.ai.openai.moderation.api-key    | The API Key           |  -
 | spring.ai.openai.moderation.organization-id | Optionally you can specify which organization is used for an API request. |  -
 | spring.ai.openai.moderation.project-id      | Optionally, you can specify which project is used for an API request. |  -
-| spring.ai.openai.moderation.options.model  | ID of the model to use for moderation. | text-moderation-latest
+| spring.ai.openai.moderation.moderation-path | The API endpoint path for moderation requests. Useful for OpenAI-compatible APIs with different endpoint structures. | /v1/moderations
+| spring.ai.openai.moderation.options.model  | ID of the model to use for moderation. | omni-moderation-latest
 |====
 
 NOTE: You can override the common `spring.ai.openai.base-url`, `spring.ai.openai.api-key`, `spring.ai.openai.organization-id` and `spring.ai.openai.project-id` properties.
@@ -87,6 +93,22 @@ The `spring.ai.openai.moderation.base-url`, `spring.ai.openai.moderation.api-key
 This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
 
 TIP: All properties prefixed with `spring.ai.openai.moderation.options` can be overridden at runtime.
+
+=== Custom API Paths
+
+For OpenAI-compatible APIs (such as LocalAI, custom proxies, or other OpenAI-compatible services) that use different endpoint paths, you can configure the moderation path:
+
+[source,properties]
+----
+spring.ai.openai.moderation.moderation-path=/custom/path/to/moderations
+----
+
+This is particularly useful when:
+
+* Using API gateways or proxies that modify standard OpenAI paths
+* Working with OpenAI-compatible services that implement different URL structures
+* Testing against mock endpoints with custom paths
+* Deploying in environments with path-based routing requirements
 
 == Runtime Options
 The OpenAiModerationOptions class provides the options to use when making a moderation request.
@@ -97,7 +119,7 @@ For example:
 [source,java]
 ----
 OpenAiModerationOptions moderationOptions = OpenAiModerationOptions.builder()
-    .model("text-moderation-latest")
+    .model("omni-moderation-latest")
     .build();
 
 ModerationPrompt moderationPrompt = new ModerationPrompt("Text to be moderated", this.moderationOptions);
@@ -180,7 +202,7 @@ OpenAiModerationApi openAiModerationApi = new OpenAiModerationApi(System.getenv(
 OpenAiModerationModel openAiModerationModel = new OpenAiModerationModel(this.openAiModerationApi);
 
 OpenAiModerationOptions moderationOptions = OpenAiModerationOptions.builder()
-    .model("text-moderation-latest")
+    .model("omni-moderation-latest")
     .build();
 
 ModerationPrompt moderationPrompt = new ModerationPrompt("Text to be moderated", this.moderationOptions);

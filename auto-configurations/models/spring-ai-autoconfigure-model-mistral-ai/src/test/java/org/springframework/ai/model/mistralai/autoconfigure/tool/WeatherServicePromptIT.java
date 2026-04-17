@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,30 +38,38 @@ import org.springframework.ai.model.mistralai.autoconfigure.MistralAiChatAutoCon
 import org.springframework.ai.model.mistralai.autoconfigure.tool.WeatherServicePromptIT.MyWeatherService.Request;
 import org.springframework.ai.model.mistralai.autoconfigure.tool.WeatherServicePromptIT.MyWeatherService.Response;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
  * @author Alexandros Pappas
+ * @author Issam El-atif
  * @since 0.8.1
  */
-@EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 public class WeatherServicePromptIT {
 
 	private final Logger logger = LoggerFactory.getLogger(WeatherServicePromptIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(MistralAiChatAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(MistralAiChatAutoConfiguration.class,
+				RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+				ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class));
 
 	@Test
 	void promptFunctionCall() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.mistralai.chat.options.model=" + MistralAiApi.ChatModel.LARGE.getValue())
+			.withPropertyValues(
+					"spring.ai.mistralai.chat.options.model=" + MistralAiApi.ChatModel.MISTRAL_LARGE.getValue())
 			.run(context -> {
 
 				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
@@ -90,7 +98,8 @@ public class WeatherServicePromptIT {
 	@Test
 	void functionCallWithPortableFunctionCallingOptions() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.mistralai.chat.options.model=" + MistralAiApi.ChatModel.LARGE.getValue())
+			.withPropertyValues(
+					"spring.ai.mistralai.chat.options.model=" + MistralAiApi.ChatModel.MISTRAL_LARGE.getValue())
 			.run(context -> {
 
 				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);

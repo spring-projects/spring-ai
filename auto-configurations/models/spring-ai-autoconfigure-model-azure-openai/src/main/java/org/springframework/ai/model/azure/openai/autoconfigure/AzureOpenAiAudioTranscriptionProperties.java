@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,14 +31,10 @@ public class AzureOpenAiAudioTranscriptionProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.azure.openai.audio.transcription";
 
 	@NestedConfigurationProperty
-	private AzureOpenAiAudioTranscriptionOptions options = AzureOpenAiAudioTranscriptionOptions.builder().build();
+	private final AzureOpenAiAudioTranscriptionOptions options = AzureOpenAiAudioTranscriptionOptions.builder().build();
 
 	public AzureOpenAiAudioTranscriptionOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(AzureOpenAiAudioTranscriptionOptions options) {
-		this.options = options;
 	}
 
 }

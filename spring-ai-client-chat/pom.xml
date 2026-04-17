@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2023-2024 the original author or authors.
+  ~ Copyright 2023-present the original author or authors.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
 	<parent>
 		<groupId>org.springframework.ai</groupId>
 		<artifactId>spring-ai-parent</artifactId>
-		<version>1.1.0-SNAPSHOT</version>
+		<version>2.0.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>spring-ai-client-chat</artifactId>
 	<packaging>jar</packaging>
@@ -32,8 +32,8 @@
 
 	<scm>
 		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
+		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
+		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
 	</scm>
 
 	<dependencies>
@@ -45,8 +45,8 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.fasterxml.jackson.module</groupId>
-			<artifactId>jackson-module-jsonSchema</artifactId>
+			<groupId>com.networknt</groupId>
+			<artifactId>json-schema-validator</artifactId>
 		</dependency>
 
 		<dependency>
@@ -105,7 +105,13 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.fasterxml.jackson.module</groupId>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-observation-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>tools.jackson.module</groupId>
 			<artifactId>jackson-module-kotlin</artifactId>
 			<scope>test</scope>
 		</dependency>
@@ -114,6 +120,12 @@
 			<groupId>io.mockk</groupId>
 			<artifactId>mockk-jvm</artifactId>
 			<version>${mockk-jvm.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>net.javacrumbs.json-unit</groupId>
+			<artifactId>json-unit-assertj</artifactId>
+			<version>${json-unit-assertj.version}</version>
 			<scope>test</scope>
 		</dependency>
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,19 +25,18 @@ import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.PromptMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-
-import static org.springframework.ai.chat.messages.AssistantMessage.*;
 
 /**
  * Helper that for streaming chat responses, aggregate the chat response messages into a
@@ -58,6 +57,8 @@ public class MessageAggregator {
 
 		// Assistant Message
 		AtomicReference<StringBuilder> messageTextContentRef = new AtomicReference<>(new StringBuilder());
+		AtomicReference<StringBuilder> thoughtsRef = new AtomicReference<>(new StringBuilder());
+		AtomicReference<StringBuilder> outputWithoutThoughtsRef = new AtomicReference<>(new StringBuilder());
 		AtomicReference<Map<String, Object>> messageMetadataMapRef = new AtomicReference<>();
 		AtomicReference<List<ToolCall>> toolCallsRef = new AtomicReference<>(new ArrayList<>());
 
@@ -78,6 +79,8 @@ public class MessageAggregator {
 
 		return fluxChatResponse.doOnSubscribe(subscription -> {
 			messageTextContentRef.set(new StringBuilder());
+			thoughtsRef.set(new StringBuilder());
+			outputWithoutThoughtsRef.set(new StringBuilder());
 			messageMetadataMapRef.set(new HashMap<>());
 			toolCallsRef.set(new ArrayList<>());
 			metadataIdRef.set("");
@@ -97,6 +100,16 @@ public class MessageAggregator {
 				}
 				if (chatResponse.getResult().getOutput().getText() != null) {
 					messageTextContentRef.get().append(chatResponse.getResult().getOutput().getText());
+					var metadata = chatResponse.getResult().getOutput().getMetadata();
+					if (metadata != null && metadata.containsKey("isThought")) {
+						var isThought = Boolean.parseBoolean(metadata.get("isThought").toString());
+						if (isThought) {
+							thoughtsRef.get().append(chatResponse.getResult().getOutput().getText());
+						}
+						else {
+							outputWithoutThoughtsRef.get().append(chatResponse.getResult().getOutput().getText());
+						}
+					}
 				}
 				if (chatResponse.getResult().getOutput().getMetadata() != null) {
 					messageMetadataMapRef.get().putAll(chatResponse.getResult().getOutput().getMetadata());
@@ -153,22 +166,34 @@ public class MessageAggregator {
 				.build();
 
 			AssistantMessage finalAssistantMessage;
+			var messageMetadata = messageMetadataMapRef.get();
+			if (!thoughtsRef.get().isEmpty()) {
+				messageMetadata.put("thoughts", thoughtsRef.get().toString());
+				messageMetadata.put("outputWithoutThoughts", outputWithoutThoughtsRef.get().toString());
+			}
 			List<ToolCall> collectedToolCalls = toolCallsRef.get();
 
 			if (!CollectionUtils.isEmpty(collectedToolCalls)) {
 
-				finalAssistantMessage = new AssistantMessage(messageTextContentRef.get().toString(),
-						messageMetadataMapRef.get(), collectedToolCalls);
+				finalAssistantMessage = AssistantMessage.builder()
+					.content(messageTextContentRef.get().toString())
+					.properties(messageMetadata)
+					.toolCalls(collectedToolCalls)
+					.build();
 			}
 			else {
-				finalAssistantMessage = new AssistantMessage(messageTextContentRef.get().toString(),
-						messageMetadataMapRef.get());
+				finalAssistantMessage = AssistantMessage.builder()
+					.content(messageTextContentRef.get().toString())
+					.properties(messageMetadata)
+					.build();
 			}
 			onAggregationComplete.accept(new ChatResponse(List.of(new Generation(finalAssistantMessage,
 
 					generationMetadataRef.get())), chatResponseMetadata));
 
 			messageTextContentRef.set(new StringBuilder());
+			thoughtsRef.set(new StringBuilder());
+			outputWithoutThoughtsRef.set(new StringBuilder());
 			messageMetadataMapRef.set(new HashMap<>());
 			toolCallsRef.set(new ArrayList<>());
 			metadataIdRef.set("");

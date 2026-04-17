@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
-import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
@@ -40,7 +39,7 @@ import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.minimax.api.MiniMaxApiConstants;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -143,6 +142,12 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	@Override
+	public String getEmbeddingContent(Document document) {
+		Assert.notNull(document, "Document must not be null");
+		return document.getFormattedContent(this.metadataMode);
+	}
+
+	@Override
 	public float[] embed(Document document) {
 		Assert.notNull(document, "Document must not be null");
 		return this.embed(document.getFormattedContent(this.metadataMode));
@@ -165,8 +170,8 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				MiniMaxApi.EmbeddingList apiEmbeddingResponse = this.retryTemplate
-					.execute(ctx -> this.miniMaxApi.embeddings(apiRequest).getBody());
+				MiniMaxApi.EmbeddingList apiEmbeddingResponse = RetryUtils.execute(this.retryTemplate,
+						() -> this.miniMaxApi.embeddings(apiRequest).getBody());
 
 				if (apiEmbeddingResponse == null) {
 					logger.warn("No embeddings returned for request: {}", request);
@@ -191,23 +196,21 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
-		// Process runtime options
-		MiniMaxEmbeddingOptions runtimeOptions = null;
+		MiniMaxEmbeddingOptions options = this.defaultOptions;
+
 		if (embeddingRequest.getOptions() != null) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
-					MiniMaxEmbeddingOptions.class);
+			options = MiniMaxEmbeddingOptions.builder()
+				.model(ModelOptionsUtils.mergeOption(embeddingRequest.getOptions().getModel(),
+						this.defaultOptions.getModel()))
+				.build();
 		}
 
-		// Define request options by merging runtime options and default options
-		MiniMaxEmbeddingOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
-				MiniMaxEmbeddingOptions.class);
-
 		// Validate request options
-		if (!StringUtils.hasText(requestOptions.getModel())) {
+		if (!StringUtils.hasText(options.getModel())) {
 			throw new IllegalArgumentException("model cannot be null or empty");
 		}
 
-		return new EmbeddingRequest(embeddingRequest.getInstructions(), requestOptions);
+		return new EmbeddingRequest(embeddingRequest.getInstructions(), options);
 	}
 
 	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {

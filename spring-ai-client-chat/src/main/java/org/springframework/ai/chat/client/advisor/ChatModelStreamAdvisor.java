@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -73,7 +74,7 @@ public final class ChatModelStreamAdvisor implements StreamAdvisor {
 
 	public static final class Builder {
 
-		private ChatModel chatModel;
+		private @Nullable ChatModel chatModel;
 
 		private Builder() {
 		}
@@ -84,6 +85,7 @@ public final class ChatModelStreamAdvisor implements StreamAdvisor {
 		}
 
 		public ChatModelStreamAdvisor build() {
+			Assert.state(this.chatModel != null, "chatModel cannot be null");
 			return new ChatModelStreamAdvisor(this.chatModel);
 		}
 

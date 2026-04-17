@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import io.qdrant.client.ValueFactory;
 import io.qdrant.client.grpc.JsonWithInt.Struct;
 import io.qdrant.client.grpc.JsonWithInt.Value;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
 
@@ -40,14 +41,14 @@ final class QdrantValueFactory {
 	private QdrantValueFactory() {
 	}
 
-	public static Map<String, Value> toValueMap(Map<String, Object> inputMap) {
+	public static Map<String, Value> toValueMap(Map<String, ? extends @Nullable Object> inputMap) {
 		Assert.notNull(inputMap, "Input map must not be null");
 
 		return inputMap.entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> value(e.getValue())));
 	}
 
 	@SuppressWarnings("unchecked")
-	private static Value value(Object value) {
+	private static Value value(@Nullable Object value) {
 
 		if (value == null) {
 			return ValueFactory.nullValue();
@@ -63,30 +64,24 @@ final class QdrantValueFactory {
 		}
 
 		if (value instanceof Map) {
-			return value((Map<String, Object>) value);
+			return value((Map<String, @Nullable Object>) value);
 		}
 
 		if (value instanceof List) {
 			return value((List<Object>) value);
 		}
 
-		switch (value.getClass().getSimpleName()) {
-			case "String":
-				return ValueFactory.value((String) value);
-			case "Integer":
-				return ValueFactory.value((Integer) value);
-			case "Long":
+		return switch (value.getClass().getSimpleName()) {
+			case "String" -> ValueFactory.value((String) value);
+			case "Integer" -> ValueFactory.value((Integer) value);
+			case "Long" ->
 				// use String representation
-				return ValueFactory.value(String.valueOf(value));
-			case "Double":
-				return ValueFactory.value((Double) value);
-			case "Float":
-				return ValueFactory.value((Float) value);
-			case "Boolean":
-				return ValueFactory.value((Boolean) value);
-			default:
-				throw new IllegalArgumentException("Unsupported Qdrant value type: " + value.getClass());
-		}
+				ValueFactory.value(String.valueOf(value));
+			case "Double" -> ValueFactory.value((Double) value);
+			case "Float" -> ValueFactory.value((Float) value);
+			case "Boolean" -> ValueFactory.value((Boolean) value);
+			default -> throw new IllegalArgumentException("Unsupported Qdrant value type: " + value.getClass());
+		};
 	}
 
 	private static Value value(List<Object> elements) {
@@ -109,7 +104,7 @@ final class QdrantValueFactory {
 		return ValueFactory.list(values);
 	}
 
-	private static Value value(Map<String, Object> inputMap) {
+	private static Value value(Map<String, @Nullable Object> inputMap) {
 		Struct.Builder structBuilder = Struct.newBuilder();
 		Map<String, Value> map = toValueMap(inputMap);
 		structBuilder.putAllFields(map);

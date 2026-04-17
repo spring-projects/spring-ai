@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,9 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.autoconfigure.sql.init.SqlInitializationAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.JdbcTemplateAutoConfiguration;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -51,10 +52,8 @@ import static org.assertj.core.api.Assertions.fail;
 				"logging.level.org.springframework.boot.sql.init=DEBUG" })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @ImportAutoConfiguration({ org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration.class,
-		JdbcChatMemoryRepositoryAutoConfiguration.class,
-		org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration.class,
-		org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
-		SqlInitializationAutoConfiguration.class })
+		JdbcChatMemoryRepositoryAutoConfiguration.class, JdbcTemplateAutoConfiguration.class,
+		DataSourceAutoConfiguration.class })
 public class JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT {
 
 	@Autowired

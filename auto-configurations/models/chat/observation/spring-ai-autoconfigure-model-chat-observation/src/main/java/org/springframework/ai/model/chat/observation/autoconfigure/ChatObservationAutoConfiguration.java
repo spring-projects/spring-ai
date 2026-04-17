@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,10 +52,12 @@ import org.springframework.context.annotation.Configuration;
  * @author Jonatan Ivanov
  * @since 1.0.0
  */
+// afterName: CompositeMeterRegistryAutoConfiguration declares a MeterRegistry bean that
+// some beans here are conditional on
 @AutoConfiguration(
-		afterName = { "org.springframework.boot.actuate.autoconfigure.observation.ObservationAutoConfiguration" })
+		afterName = "org.springframework.boot.micrometer.metrics.autoconfigure.CompositeMeterRegistryAutoConfiguration")
 @ConditionalOnClass(ChatModel.class)
-@EnableConfigurationProperties({ ChatObservationProperties.class })
+@EnableConfigurationProperties(ChatObservationProperties.class)
 public class ChatObservationAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(ChatObservationAutoConfiguration.class);

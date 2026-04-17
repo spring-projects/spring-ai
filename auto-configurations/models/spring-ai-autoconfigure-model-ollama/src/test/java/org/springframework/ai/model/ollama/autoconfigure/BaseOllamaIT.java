@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,27 @@
 package org.springframework.ai.model.ollama.autoconfigure;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.ollama.OllamaContainer;
 
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
+import org.springframework.ai.ollama.api.OllamaChatOptions.Builder;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
+import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.util.Assert;
 
 @Testcontainers
@@ -98,9 +109,15 @@ public abstract class BaseOllamaIT {
 		return api;
 	}
 
+	/**
+	 * Merge options customizer {@code other} with the options coming from the model.
+	 */
+	protected static OllamaChatOptions mergeOptions(OllamaChatModel chatModel, Builder other) {
+		return (OllamaChatOptions) chatModel.getDefaultOptions().mutate().combineWith(other).build();
+	}
+
 	public String getBaseUrl() {
-		String baseUrl = SKIP_CONTAINER_CREATION ? OLLAMA_LOCAL_URL : ollamaContainer.getEndpoint();
-		return baseUrl;
+		return SKIP_CONTAINER_CREATION ? OLLAMA_LOCAL_URL : ollamaContainer.getEndpoint();
 	}
 
 	private static void ensureModelIsPresent(final OllamaApi ollamaApi, final String model) {
@@ -110,6 +127,16 @@ public abstract class BaseOllamaIT {
 			.build();
 		final var ollamaModelManager = new OllamaModelManager(ollamaApi, modelManagementOptions);
 		ollamaModelManager.pullModel(model, PullModelStrategy.WHEN_MISSING);
+	}
+
+	public static AutoConfigurations ollamaAutoConfig(Class<?>... additionalAutoConfigurations) {
+		List<Class<?>> autoConfigurations = new ArrayList<>(Arrays.asList(additionalAutoConfigurations));
+		autoConfigurations.add(OllamaApiAutoConfiguration.class);
+		autoConfigurations.add(RestClientAutoConfiguration.class);
+		autoConfigurations.add(WebClientAutoConfiguration.class);
+		autoConfigurations.add(SpringAiRetryAutoConfiguration.class);
+		autoConfigurations.add(ToolCallingAutoConfiguration.class);
+		return AutoConfigurations.of(autoConfigurations.toArray(new Class<?>[0]));
 	}
 
 }

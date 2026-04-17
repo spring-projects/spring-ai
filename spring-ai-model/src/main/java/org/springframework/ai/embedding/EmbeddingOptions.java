@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,9 @@
 
 package org.springframework.ai.embedding;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.model.ModelOptions;
-import org.springframework.lang.Nullable;
 
 /**
  * Options for embedding models.
@@ -27,10 +28,22 @@ import org.springframework.lang.Nullable;
  */
 public interface EmbeddingOptions extends ModelOptions {
 
-	@Nullable
-	String getModel();
+	@Nullable String getModel();
 
-	@Nullable
-	Integer getDimensions();
+	@Nullable Integer getDimensions();
+
+	static Builder builder() {
+		return new DefaultEmbeddingOptionsBuilder();
+	}
+
+	interface Builder {
+
+		Builder model(String model);
+
+		Builder dimensions(Integer dimensions);
+
+		EmbeddingOptions build();
+
+	}
 
 }

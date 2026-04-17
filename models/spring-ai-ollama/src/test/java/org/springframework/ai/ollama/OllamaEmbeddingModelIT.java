@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
@@ -52,15 +52,18 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 	void embeddings() {
 		assertThat(this.embeddingModel).isNotNull();
 		EmbeddingResponse embeddingResponse = this.embeddingModel.call(new EmbeddingRequest(
-				List.of("Hello World", "Something else"), OllamaOptions.builder().truncate(false).build()));
+				List.of("Hello World", "Something else"), OllamaEmbeddingOptions.builder().build()));
 		assertThat(embeddingResponse.getResults()).hasSize(2);
 		assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 		assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 		assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
 		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo(MODEL);
-		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(4);
-		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(4);
+		// Token count varies by Ollama version and tokenizer implementation
+		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isGreaterThan(0)
+			.isLessThanOrEqualTo(10);
+		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(0)
+			.isLessThanOrEqualTo(10);
 
 		assertThat(this.embeddingModel.dimensions()).isEqualTo(768);
 	}
@@ -73,9 +76,8 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 		var modelManager = new OllamaModelManager(this.ollamaApi);
 		assertThat(modelManager.isModelAvailable(ADDITIONAL_MODEL)).isTrue();
 
-		EmbeddingResponse embeddingResponse = this.embeddingModel
-			.call(new EmbeddingRequest(List.of("Hello World", "Something else"),
-					OllamaOptions.builder().model(model).truncate(false).build()));
+		EmbeddingResponse embeddingResponse = this.embeddingModel.call(new EmbeddingRequest(
+				List.of("Hello World", "Something else"), OllamaEmbeddingOptions.builder().model(model).build()));
 
 		assertThat(embeddingResponse.getResults()).hasSize(2);
 		assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
@@ -83,8 +85,11 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 		assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 		assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
 		assertThat(embeddingResponse.getMetadata().getModel()).contains(ADDITIONAL_MODEL);
-		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(4);
-		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(4);
+		// Token count varies by Ollama version and tokenizer implementation
+		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isGreaterThan(0)
+			.isLessThanOrEqualTo(20);
+		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(0)
+			.isLessThanOrEqualTo(20);
 
 		assertThat(this.embeddingModel.dimensions()).isEqualTo(768);
 
@@ -103,7 +108,7 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 		public OllamaEmbeddingModel ollamaEmbedding(OllamaApi ollamaApi) {
 			return OllamaEmbeddingModel.builder()
 				.ollamaApi(ollamaApi)
-				.defaultOptions(OllamaOptions.builder().model(MODEL).build())
+				.defaultOptions(OllamaEmbeddingOptions.builder().model(MODEL).build())
 				.modelManagementOptions(ModelManagementOptions.builder()
 					.pullModelStrategy(PullModelStrategy.WHEN_MISSING)
 					.additionalModels(List.of(ADDITIONAL_MODEL))

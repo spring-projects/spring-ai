@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
@@ -110,7 +111,8 @@ public final class CassandraChatMemoryRepository implements ChatMemoryRepository
 
 		List<Message> messages = new ArrayList<>();
 		for (Row r : this.conf.session.execute(builder.build())) {
-			for (UdtValue udt : r.getList(this.conf.messagesColumn, UdtValue.class)) {
+			for (UdtValue udt : Objects.requireNonNullElse(r.getList(this.conf.messagesColumn, UdtValue.class),
+					List.<UdtValue>of())) {
 				messages.add(getMessage(udt));
 			}
 		}
@@ -171,6 +173,7 @@ public final class CassandraChatMemoryRepository implements ChatMemoryRepository
 		for (var c : this.conf.schema.partitionKeys()) {
 			stmt = (null != stmt ? stmt : stmtStart).value(c.name(), QueryBuilder.bindMarker(c.name()));
 		}
+		Assert.notNull(stmt, "stmt shouldn't be null");
 		for (var c : this.conf.schema.clusteringKeys()) {
 			stmt = stmt.value(c.name(), QueryBuilder.bindMarker(c.name()));
 		}
@@ -205,22 +208,19 @@ public final class CassandraChatMemoryRepository implements ChatMemoryRepository
 	}
 
 	private Message getMessage(UdtValue udt) {
-		String content = udt.getString(this.conf.messageUdtContentColumn);
+		String content = Objects.requireNonNullElse(udt.getString(this.conf.messageUdtContentColumn), "");
 		Map<String, Object> props = Map.of(CONVERSATION_TS, udt.getInstant(this.conf.messageUdtTimestampColumn));
-		switch (MessageType.valueOf(udt.getString(this.conf.messageUdtTypeColumn))) {
-			case ASSISTANT:
-				return new AssistantMessage(content, props);
-			case USER:
-				return UserMessage.builder().text(content).metadata(props).build();
-			case SYSTEM:
-				return SystemMessage.builder().text(content).metadata(props).build();
-			case TOOL:
+		String type = udt.getString(this.conf.messageUdtTypeColumn);
+		Assert.state(type != null, "message type shouldn't be null");
+		return switch (MessageType.valueOf(type)) {
+			case ASSISTANT -> AssistantMessage.builder().content(content).properties(props).build();
+			case USER -> UserMessage.builder().text(content).metadata(props).build();
+			case SYSTEM -> SystemMessage.builder().text(content).metadata(props).build();
+			case TOOL ->
 				// todo – persist ToolResponse somehow
-				return new ToolResponseMessage(List.of(), props);
-			default:
-				throw new IllegalStateException(
-						String.format("unknown message type %s", udt.getString(this.conf.messageUdtTypeColumn)));
-		}
+				ToolResponseMessage.builder().responses(List.of()).metadata(props).build();
+			default -> throw new IllegalStateException(String.format("unknown message type %s", type));
+		};
 	}
 
 }

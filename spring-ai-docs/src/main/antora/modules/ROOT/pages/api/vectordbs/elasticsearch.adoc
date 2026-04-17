@@ -138,7 +138,7 @@ The Spring Boot properties starting with `spring.elasticsearch.*` are used to co
 | `spring.elasticsearch.connection-timeout` | Connection timeout used when communicating with Elasticsearch. | `1s`
 | `spring.elasticsearch.password` | Password for authentication with Elasticsearch. | -
 | `spring.elasticsearch.username` | Username for authentication with Elasticsearch.| -
-| `spring.elasticsearch.uris` | Comma-separated list of the Elasticsearch instances to use. | `http://localhost:9200`
+| `spring.elasticsearch.uris` | Comma-separated list of the Elasticsearch instances to use. | `+http://localhost:9200+`
 | `spring.elasticsearch.path-prefix` | Prefix added to the path of every request sent to Elasticsearch. | -
 | `spring.elasticsearch.restclient.sniffer.delay-after-failure` | Delay of a sniff execution scheduled after a failure.| `1m`
 | `spring.elasticsearch.restclient.sniffer.interval` | Interval between consecutive ordinary sniff executions. | `5m`

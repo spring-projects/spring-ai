@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,11 +36,11 @@ public class DocumentEmbeddingRequest implements ModelRequest<List<Document>> {
 	private final EmbeddingOptions options;
 
 	public DocumentEmbeddingRequest(Document... inputs) {
-		this(Arrays.asList(inputs), EmbeddingOptionsBuilder.builder().build());
+		this(Arrays.asList(inputs), EmbeddingOptions.builder().build());
 	}
 
 	public DocumentEmbeddingRequest(List<Document> inputs) {
-		this(inputs, EmbeddingOptionsBuilder.builder().build());
+		this(inputs, EmbeddingOptions.builder().build());
 	}
 
 	public DocumentEmbeddingRequest(List<Document> inputs, EmbeddingOptions options) {

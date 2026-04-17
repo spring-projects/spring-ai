@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,21 +21,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
-import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
+import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.mcp.client.common.autoconfigure.McpSseClientConnectionDetails;
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
+import org.springframework.ai.mcp.client.common.autoconfigure.PropertiesMcpSseClientConnectionDetails;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpSseClientProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpSseClientProperties.SseParameters;
+import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.log.LogAccessor;
 
 /**
  * Auto-configuration for Server-Sent Events (SSE) HTTP client transport in the Model
@@ -43,30 +46,35 @@ import org.springframework.context.annotation.Bean;
  *
  * <p>
  * This configuration class sets up the necessary beans for SSE-based HTTP client
- * transport when WebFlux is not available. It provides HTTP client-based SSE transport
- * implementation for MCP client communication.
- *
- * <p>
- * The configuration is activated after the WebFlux SSE transport auto-configuration to
- * ensure proper fallback behavior when WebFlux is not available.
+ * transport. It provides HTTP client-based SSE transport implementation for MCP client
+ * communication.
  *
  * <p>
  * Key features:
  * <ul>
  * <li>Creates HTTP client-based SSE transports for configured MCP server connections
- * <li>Configures ObjectMapper for JSON serialization/deserialization
+ * <li>Configures JsonMapper for JSON serialization/deserialization
  * <li>Supports multiple named server connections with different URLs
+ * <li>Applies {@link McpClientCustomizer<HttpClientSseClientTransport.Builder>} beans to
+ * each transport builder.
  * </ul>
  *
  * @see HttpClientSseClientTransport
  * @see McpSseClientProperties
  */
 @AutoConfiguration
-@ConditionalOnClass({ McpSchema.class, McpSyncClient.class })
 @EnableConfigurationProperties({ McpSseClientProperties.class, McpClientCommonProperties.class })
 @ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 public class SseHttpClientTransportAutoConfiguration {
+
+	private static final LogAccessor logger = new LogAccessor(SseHttpClientTransportAutoConfiguration.class);
+
+	@Bean
+	@ConditionalOnMissingBean(McpSseClientConnectionDetails.class)
+	PropertiesMcpSseClientConnectionDetails mcpSseClientConnectionDetails(McpSseClientProperties sseProperties) {
+		return new PropertiesMcpSseClientConnectionDetails(sseProperties);
+	}
 
 	/**
 	 * Creates a list of HTTP client-based SSE transports for MCP communication.
@@ -76,32 +84,54 @@ public class SseHttpClientTransportAutoConfiguration {
 	 * <ul>
 	 * <li>A new HttpClient instance
 	 * <li>Server URL from properties
-	 * <li>ObjectMapper for JSON processing
+	 * <li>JsonMapper for JSON processing
+	 * <li>A sync or async HTTP request customizer. Sync takes precedence.
 	 * </ul>
-	 * @param sseProperties the SSE client properties containing server configurations
-	 * @param objectMapperProvider the provider for ObjectMapper or a new instance if not
+	 * @param connectionDetails the SSE client connection details containing server
+	 * configurations
+	 * @param jsonMapperProvider the provider for JsonMapper or a new instance if not
 	 * available
+	 * @param transportCustomizers provider for
+	 * {@link McpClientCustomizer<HttpClientSseClientTransport.Builder>} beans
 	 * @return list of named MCP transports
 	 */
 	@Bean
-	public List<NamedClientMcpTransport> sseHttpClientTransports(McpSseClientProperties sseProperties,
-			ObjectProvider<ObjectMapper> objectMapperProvider) {
+	public List<NamedClientMcpTransport> sseHttpClientTransports(McpSseClientConnectionDetails connectionDetails,
+			ObjectProvider<JsonMapper> jsonMapperProvider,
+			ObjectProvider<McpClientCustomizer<HttpClientSseClientTransport.Builder>> transportCustomizers) {
 
-		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+		JsonMapper jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::new);
 
 		List<NamedClientMcpTransport> sseTransports = new ArrayList<>();
 
-		for (Map.Entry<String, SseParameters> serverParameters : sseProperties.getConnections().entrySet()) {
+		for (Map.Entry<String, SseParameters> serverParameters : connectionDetails.getConnections().entrySet()) {
+			String connectionName = serverParameters.getKey();
+			SseParameters params = serverParameters.getValue();
 
-			String baseUrl = serverParameters.getValue().url();
-			String sseEndpoint = serverParameters.getValue().sseEndpoint() != null
-					? serverParameters.getValue().sseEndpoint() : "/sse";
-			var transport = HttpClientSseClientTransport.builder(baseUrl)
-				.sseEndpoint(sseEndpoint)
-				.clientBuilder(HttpClient.newBuilder())
-				.objectMapper(objectMapper)
-				.build();
-			sseTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
+			String baseUrl = params.url();
+			String sseEndpoint = params.sseEndpoint() != null ? params.sseEndpoint() : "/sse";
+			if (baseUrl == null || baseUrl.trim().isEmpty()) {
+				throw new IllegalArgumentException("SSE connection '" + connectionName
+						+ "' requires a 'url' property. Example: url: http://localhost:3000");
+			}
+
+			try {
+				var transportBuilder = HttpClientSseClientTransport.builder(baseUrl)
+					.sseEndpoint(sseEndpoint)
+					.clientBuilder(HttpClient.newBuilder())
+					.jsonMapper(new JacksonMcpJsonMapper(jsonMapper));
+
+				for (McpClientCustomizer<HttpClientSseClientTransport.Builder> customizer : transportCustomizers) {
+					customizer.customize(connectionName, transportBuilder);
+				}
+
+				sseTransports.add(new NamedClientMcpTransport(connectionName, transportBuilder.build()));
+			}
+			catch (Exception e) {
+				throw new IllegalArgumentException("Failed to create SSE transport for connection '" + connectionName
+						+ "'. Check URL splitting: url='" + baseUrl + "', sse-endpoint='" + sseEndpoint
+						+ "'. Full URL should be split as: url=http://host:port, sse-endpoint=/path/to/endpoint", e);
+			}
 		}
 
 		return sseTransports;

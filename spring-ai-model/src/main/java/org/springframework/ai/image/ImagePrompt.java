@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.model.ModelRequest;
 
 public class ImagePrompt implements ModelRequest<List<ImageMessage>> {
 
 	private final List<ImageMessage> messages;
 
-	private ImageOptions imageModelOptions;
+	private @Nullable ImageOptions imageModelOptions;
 
 	public ImagePrompt(List<ImageMessage> messages) {
 		this.messages = messages;
@@ -55,7 +57,7 @@ public class ImagePrompt implements ModelRequest<List<ImageMessage>> {
 	}
 
 	@Override
-	public ImageOptions getOptions() {
+	public @Nullable ImageOptions getOptions() {
 		return this.imageModelOptions;
 	}
 

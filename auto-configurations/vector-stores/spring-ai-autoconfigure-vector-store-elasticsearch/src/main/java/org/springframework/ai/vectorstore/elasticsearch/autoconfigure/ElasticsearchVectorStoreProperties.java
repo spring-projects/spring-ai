@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.ai.vectorstore.elasticsearch.autoconfigure;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.vectorstore.elasticsearch.SimilarityFunction;
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
@@ -35,44 +37,44 @@ public class ElasticsearchVectorStoreProperties extends CommonVectorStorePropert
 	/**
 	 * The name of the index to store the vectors.
 	 */
-	private String indexName;
+	private @Nullable String indexName;
 
 	/**
 	 * The number of dimensions in the vector.
 	 */
-	private Integer dimensions;
+	private @Nullable Integer dimensions;
 
 	/**
 	 * The similarity function to use.
 	 */
-	private SimilarityFunction similarity;
+	private @Nullable SimilarityFunction similarity;
 
 	/**
 	 * The name of the vector field to search against
 	 */
 	private String embeddingFieldName = "embedding";
 
-	public String getIndexName() {
+	public @Nullable String getIndexName() {
 		return this.indexName;
 	}
 
-	public void setIndexName(String indexName) {
+	public void setIndexName(@Nullable String indexName) {
 		this.indexName = indexName;
 	}
 
-	public Integer getDimensions() {
+	public @Nullable Integer getDimensions() {
 		return this.dimensions;
 	}
 
-	public void setDimensions(Integer dimensions) {
+	public void setDimensions(@Nullable Integer dimensions) {
 		this.dimensions = dimensions;
 	}
 
-	public SimilarityFunction getSimilarity() {
+	public @Nullable SimilarityFunction getSimilarity() {
 		return this.similarity;
 	}
 
-	public void setSimilarity(SimilarityFunction similarity) {
+	public void setSimilarity(@Nullable SimilarityFunction similarity) {
 		this.similarity = similarity;
 	}
 

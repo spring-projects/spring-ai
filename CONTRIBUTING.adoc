@@ -32,7 +32,7 @@ For additional details, please refer to the blog post https://spring.io/blog/202
 
 1. Go to https://github.com/spring-projects/spring-ai[https://github.com/spring-projects/spring-ai]
 2. Hit the "fork" button and choose your own GitHub account as the target
-3. For more detail see https://help.github.com/fork-a-repo/[Fork A Repo].
+3. For more detail see https://help.github.com/articles/fork-a-repo/[Fork A Repo].
 
 == Setup your Local Development Environment
 
@@ -110,7 +110,7 @@ When issuing pull requests, please ensure that your commit history is linear.
 From the command line you can check this using:
 
 ----
-log --graph --pretty=oneline
+git log --graph --pretty=oneline
 ----
 
 As this may cause lots of typing, we recommend creating a global alias, e.g. `git logg` for this:
@@ -133,23 +133,22 @@ This command, will provide the following output, which in this case shows a nice
 If you see intersecting lines, that usually means that you forgot to rebase you branch.
 As mentioned earlier, **please rebase against main** before issuing a pull request.
 
-== Enabling Checkstyle
+== Run Formatting Checks and Make Sure the Build Passes
 
-Checkstyles are currently disabled in the project.
-However, we encourage all PR contributors to run checkstyles by enabling them before submitting a PR.
+Before opening a pull request, make sure that the following full build passes locally. As a side effect of that build, some files may get re-formatted to
+automatically adhere to the conventions used in the project (see below). Be sure to commit those reformats before opening a PR if that happens.
 
-You can enable them by doing the following:
-
-```shell
-./mvnw clean package -DskipTests -Ddisable.checks=false
-```
+[source,shell]
+----
+./mvnw package
+----
 
 === Source Code Style
 
 Spring AI source code checkstyle tries to follow the checkstyle guidelines used by the core Spring Framework project with some exceptions.
 The wiki pages
-[Code Style](https://github.com/spring-projects/spring-framework/wiki/Code-Style) and
-[IntelliJ IDEA Editor Settings](https://github.com/spring-projects/spring-framework/wiki/IntelliJ-IDEA-Editor-Settings)
+https://github.com/spring-projects/spring-framework/wiki/Code-Style[Code Style] and
+https://github.com/spring-projects/spring-framework/wiki/IntelliJ-IDEA-Editor-Settings[IntelliJ IDEA Editor Settings]
 define the source file coding standards we use along with some IDEA editor settings we customize.
 
 == Mind the whitespace
@@ -172,7 +171,7 @@ if necessary
 [source, java]
 ----
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -188,23 +187,6 @@ if necessary
  */
 
 package ...;
-----
-
-== Update license header to modified files as necessary
-
-Always check the date range in the Apache license header. For example, if you've modified a file in 2016 whose header
-still reads
-
-[source java]
-----
- * Copyright 2002-2011 the original author or authors.
-----
-
-then be sure to update it to 2016 appropriately
-
-[source java]
-----
- * Copyright 2002-2016 the original author or authors.
 ----
 
 == Use @since tags
@@ -257,6 +239,13 @@ or locally for the *spring-ai* repository only by omitting the '--global' flag:
 == Run all tests prior to submission
 
 Make sure that all tests pass prior to submitting your pull request.
+Again, CI will run the equivalent of the following command on your PR. Make
+sure that it passes locally before opening your PR:
+
+[source,shell]
+----
+./mvnw package
+----
 
 == Mention your pull request on the associated GitHub issue
 

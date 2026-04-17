@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.springframework.ai.moderation;
 
 import org.springframework.ai.model.ModelResult;
-import org.springframework.lang.Nullable;
 
 /**
  * The Generation class represents a response from a moderation process. It encapsulates
@@ -28,13 +27,12 @@ import org.springframework.lang.Nullable;
  */
 public class Generation implements ModelResult<Moderation> {
 
-	private ModerationGenerationMetadata moderationGenerationMetadata;
+	private static final ModerationGenerationMetadata NONE = new ModerationGenerationMetadata() {
+	};
 
-	private Moderation moderation;
+	private ModerationGenerationMetadata moderationGenerationMetadata = NONE;
 
-	public Generation() {
-
-	}
+	private final Moderation moderation;
 
 	public Generation(Moderation moderation) {
 		this.moderation = moderation;
@@ -45,7 +43,7 @@ public class Generation implements ModelResult<Moderation> {
 		this.moderationGenerationMetadata = moderationGenerationMetadata;
 	}
 
-	public Generation generationMetadata(@Nullable ModerationGenerationMetadata moderationGenerationMetadata) {
+	public Generation generationMetadata(ModerationGenerationMetadata moderationGenerationMetadata) {
 		this.moderationGenerationMetadata = moderationGenerationMetadata;
 		return this;
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,14 +37,12 @@ public class MiniMaxEmbeddingProperties extends MiniMaxParentProperties {
 	private MetadataMode metadataMode = MetadataMode.EMBED;
 
 	@NestedConfigurationProperty
-	private MiniMaxEmbeddingOptions options = MiniMaxEmbeddingOptions.builder().model(DEFAULT_EMBEDDING_MODEL).build();
+	private final MiniMaxEmbeddingOptions options = MiniMaxEmbeddingOptions.builder()
+		.model(DEFAULT_EMBEDDING_MODEL)
+		.build();
 
 	public MiniMaxEmbeddingOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(MiniMaxEmbeddingOptions options) {
-		this.options = options;
 	}
 
 	public MetadataMode getMetadataMode() {

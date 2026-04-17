@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,20 +27,13 @@ public class AzureOpenAiChatProperties {
 
 	public static final String DEFAULT_DEPLOYMENT_NAME = "gpt-4o";
 
-	private static final Double DEFAULT_TEMPERATURE = 0.7;
-
 	@NestedConfigurationProperty
-	private AzureOpenAiChatOptions options = AzureOpenAiChatOptions.builder()
+	private final AzureOpenAiChatOptions options = AzureOpenAiChatOptions.builder()
 		.deploymentName(DEFAULT_DEPLOYMENT_NAME)
-		.temperature(DEFAULT_TEMPERATURE)
 		.build();
 
 	public AzureOpenAiChatOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(AzureOpenAiChatOptions options) {
-		this.options = options;
 	}
 
 }

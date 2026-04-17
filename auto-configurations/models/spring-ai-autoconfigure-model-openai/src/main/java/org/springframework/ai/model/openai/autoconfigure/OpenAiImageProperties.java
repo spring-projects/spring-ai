@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,49 +16,35 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import com.openai.models.images.ImageModel;
+
+import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.ai.openai.OpenAiImageOptions;
-import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
- * OpenAI Image autoconfiguration properties.
+ * OpenAI SDK Image autoconfiguration properties.
  *
+ * @author Christian Tzolov
  * @author Thomas Vitale
  * @author lambochen
- * @since 0.8.0
  */
 @ConfigurationProperties(OpenAiImageProperties.CONFIG_PREFIX)
-public class OpenAiImageProperties extends OpenAiParentProperties {
+public class OpenAiImageProperties extends AbstractOpenAiOptions {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.image";
 
-	public static final String DEFAULT_IMAGES_PATH = "v1/images/generations";
-
-	private String imagesPath = DEFAULT_IMAGES_PATH;
-
-	public static final String DEFAULT_IMAGE_MODEL = OpenAiImageApi.ImageModel.DALL_E_3.getValue();
+	public static final String DEFAULT_IMAGE_MODEL = ImageModel.DALL_E_3.toString();
 
 	/**
-	 * Options for OpenAI Image API.
+	 * Options for OpenAI Sdk Image API.
 	 */
 	@NestedConfigurationProperty
-	private OpenAiImageOptions options = OpenAiImageOptions.builder().model(DEFAULT_IMAGE_MODEL).build();
+	private final OpenAiImageOptions options = OpenAiImageOptions.builder().model(DEFAULT_IMAGE_MODEL).build();
 
 	public OpenAiImageOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(OpenAiImageOptions options) {
-		this.options = options;
-	}
-
-	public String getImagesPath() {
-		return this.imagesPath;
-	}
-
-	public void setImagesPath(String imagesPath) {
-		this.imagesPath = imagesPath;
 	}
 
 }

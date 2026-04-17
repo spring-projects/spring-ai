@@ -1,7 +1,9 @@
+.checkstyle
 target
 .classpath
 .project
 .settings
+.env
 bin
 build.log
 integration-repo
@@ -23,7 +25,6 @@ build
 .gradle
 out
 *~
-
 /.gradletasknamecache
 **/*.flattened-pom.xml
 
@@ -40,11 +41,16 @@ package.json
 shell.log
 
 .profiler
-/spring-ai-spring-boot-autoconfigure/nbproject/
-/vector-stores/spring-ai-cassandra-store/nbproject/
+nbproject/
 
 CLAUDE.md
 **/.claude/settings.local.json
 .devcontainer
 
 qodana.yaml
+__pycache__/
+*.pyc
+tmp
+
+
+plans

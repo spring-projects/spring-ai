@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -56,8 +55,10 @@ public class OpenAiCompatibleChatModelIT {
 		Stream.Builder<ChatModel> builder = Stream.builder();
 
 		builder.add(OpenAiChatModel.builder()
-			.openAiApi(OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build())
-			.defaultOptions(forModelName("gpt-3.5-turbo"))
+			.options(org.springframework.ai.openai.OpenAiChatOptions.builder()
+				.apiKey(System.getenv("OPENAI_API_KEY"))
+				.model("gpt-3.5-turbo")
+				.build())
 			.build());
 
 		// (26.01.2025) Disable because the Groq API is down. TODO: Re-enable when the API
@@ -70,11 +71,11 @@ public class OpenAiCompatibleChatModelIT {
 
 		if (System.getenv("OPEN_ROUTER_API_KEY") != null) {
 			builder.add(OpenAiChatModel.builder()
-				.openAiApi(OpenAiApi.builder()
+				.options(org.springframework.ai.openai.OpenAiChatOptions.builder()
 					.baseUrl("https://openrouter.ai/api")
 					.apiKey(System.getenv("OPEN_ROUTER_API_KEY"))
+					.model("meta-llama/llama-3-8b-instruct")
 					.build())
-				.defaultOptions(forModelName("meta-llama/llama-3-8b-instruct"))
 				.build());
 		}
 

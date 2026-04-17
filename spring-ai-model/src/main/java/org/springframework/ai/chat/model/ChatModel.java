@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.ai.chat.model;
 
 import java.util.Arrays;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.Message;
@@ -28,13 +29,13 @@ import org.springframework.ai.model.Model;
 
 public interface ChatModel extends Model<Prompt, ChatResponse>, StreamingChatModel {
 
-	default String call(String message) {
+	default @Nullable String call(String message) {
 		Prompt prompt = new Prompt(new UserMessage(message));
 		Generation generation = call(prompt).getResult();
 		return (generation != null) ? generation.getOutput().getText() : "";
 	}
 
-	default String call(Message... messages) {
+	default @Nullable String call(Message... messages) {
 		Prompt prompt = new Prompt(Arrays.asList(messages));
 		Generation generation = call(prompt).getResult();
 		return (generation != null) ? generation.getOutput().getText() : "";

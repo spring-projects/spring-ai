@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,6 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 
 	public static final String DEFAULT_CHAT_MODEL = DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue();
 
-	private static final Double DEFAULT_TEMPERATURE = 1D;
-
 	public static final String DEFAULT_COMPLETIONS_PATH = "/chat/completions";
 
 	public static final String DEFAULT_BETA_PREFIX_PATH = "/beta";
@@ -49,17 +47,10 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 	private String betaPrefixPath = DEFAULT_BETA_PREFIX_PATH;
 
 	@NestedConfigurationProperty
-	private DeepSeekChatOptions options = DeepSeekChatOptions.builder()
-		.model(DEFAULT_CHAT_MODEL)
-		.temperature(DEFAULT_TEMPERATURE)
-		.build();
+	private final DeepSeekChatOptions options = DeepSeekChatOptions.builder().model(DEFAULT_CHAT_MODEL).build();
 
 	public DeepSeekChatOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(DeepSeekChatOptions options) {
-		this.options = options;
 	}
 
 	public boolean isEnabled() {

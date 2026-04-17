@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,17 +24,18 @@ import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 
+import org.springframework.ai.mcp.annotation.spring.ClientMcpAsyncHandlersRegistry;
+import org.springframework.ai.mcp.annotation.spring.ClientMcpSyncHandlersRegistry;
 import org.springframework.ai.mcp.client.common.autoconfigure.configurer.McpAsyncClientConfigurer;
 import org.springframework.ai.mcp.client.common.autoconfigure.configurer.McpSyncClientConfigurer;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
-import org.springframework.ai.mcp.customizer.McpAsyncClientCustomizer;
-import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;
+import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.CollectionUtils;
 
@@ -82,8 +83,8 @@ import org.springframework.util.CollectionUtils;
  * </ul>
  * <li>Customization Options:
  * <ul>
- * <li>Extensible through {@link McpSyncClientCustomizer} and
- * {@link McpAsyncClientCustomizer}
+ * <li>Extensible through {@link McpClientCustomizer<McpClient.SyncSpec>} and
+ * {@link McpClientCustomizer<McpClient.AsyncSpec>}
  * <li>Configurable timeouts and client information
  * <li>Support for custom transport implementations
  * </ul>
@@ -92,21 +93,10 @@ import org.springframework.util.CollectionUtils;
  * @see McpSyncClient
  * @see McpAsyncClient
  * @see McpClientCommonProperties
- * @see McpSyncClientCustomizer
- * @see McpAsyncClientCustomizer
+ * @see McpClientCustomizer
  * @see StdioTransportAutoConfiguration
- * @see SseHttpClientTransportAutoConfiguration
- * @see SseWebFluxTransportAutoConfiguration
  */
-@AutoConfiguration(afterName = {
-		"org.springframework.ai.mcp.client.common.autoconfigure.StdioTransportAutoConfiguration",
-		"org.springframework.ai.mcp.client.httpclient.autoconfigure.SseHttpClientTransportAutoConfiguration",
-		"org.springframework.ai.mcp.client.httpclient.autoconfigure.StreamableHttpHttpClientTransportAutoConfiguration",
-		"org.springframework.ai.mcp.client.webflux.autoconfigure.SseWebFluxTransportAutoConfiguration",
-		"org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration" })
-
-// @AutoConfiguration
-@ConditionalOnClass({ McpSchema.class })
+@AutoConfiguration
 @EnableConfigurationProperties(McpClientCommonProperties.class)
 @ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
@@ -122,6 +112,14 @@ public class McpClientAutoConfiguration {
 	 */
 	private String connectedClientName(String clientName, String serverConnectionName) {
 		return clientName + " - " + serverConnectionName;
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
+			matchIfMissing = true)
+	public McpSyncToolsChangeEventEmmiter mcpSyncToolChangeEventEmmiter(
+			ApplicationEventPublisher applicationEventPublisher) {
+		return new McpSyncToolsChangeEventEmmiter(applicationEventPublisher);
 	}
 
 	/**
@@ -149,7 +147,8 @@ public class McpClientAutoConfiguration {
 			matchIfMissing = true)
 	public List<McpSyncClient> mcpSyncClients(McpSyncClientConfigurer mcpSyncClientConfigurer,
 			McpClientCommonProperties commonProperties,
-			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider) {
+			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider,
+			ObjectProvider<ClientMcpSyncHandlersRegistry> clientMcpSyncHandlersRegistry) {
 
 		List<McpSyncClient> mcpSyncClients = new ArrayList<>();
 
@@ -160,15 +159,30 @@ public class McpClientAutoConfiguration {
 
 				McpSchema.Implementation clientInfo = new McpSchema.Implementation(
 						this.connectedClientName(commonProperties.getName(), namedTransport.name()),
-						commonProperties.getVersion());
+						namedTransport.name(), commonProperties.getVersion());
 
 				McpClient.SyncSpec spec = McpClient.sync(namedTransport.transport())
 					.clientInfo(clientInfo)
 					.requestTimeout(commonProperties.getRequestTimeout());
 
-				spec = mcpSyncClientConfigurer.configure(namedTransport.name(), spec);
+				clientMcpSyncHandlersRegistry.ifAvailable(registry -> spec
+					.sampling(samplingRequest -> registry.handleSampling(namedTransport.name(), samplingRequest))
+					.elicitation(
+							elicitationRequest -> registry.handleElicitation(namedTransport.name(), elicitationRequest))
+					.loggingConsumer(loggingMessageNotification -> registry.handleLogging(namedTransport.name(),
+							loggingMessageNotification))
+					.progressConsumer(progressNotification -> registry.handleProgress(namedTransport.name(),
+							progressNotification))
+					.toolsChangeConsumer(newTools -> registry.handleToolListChanged(namedTransport.name(), newTools))
+					.promptsChangeConsumer(
+							newPrompts -> registry.handlePromptListChanged(namedTransport.name(), newPrompts))
+					.resourcesChangeConsumer(
+							newResources -> registry.handleResourceListChanged(namedTransport.name(), newResources))
+					.capabilities(registry.getCapabilities(namedTransport.name())));
 
-				var client = spec.build();
+				McpClient.SyncSpec customizedSpec = mcpSyncClientConfigurer.configure(namedTransport.name(), spec);
+
+				var client = customizedSpec.build();
 
 				if (commonProperties.isInitialized()) {
 					client.initialize();
@@ -197,8 +211,9 @@ public class McpClientAutoConfiguration {
 	 * Creates the default {@link McpSyncClientConfigurer} if none is provided.
 	 *
 	 * <p>
-	 * This configurer aggregates all available {@link McpSyncClientCustomizer} instances
-	 * to allow for customization of MCP sync client creation.
+	 * This configurer aggregates all available
+	 * {@link McpClientCustomizer<McpClient.SyncSpec>} instances to allow for
+	 * customization of MCP sync client creation.
 	 * @param customizerProvider provider of MCP sync client customizers
 	 * @return the configured MCP sync client configurer
 	 */
@@ -206,7 +221,8 @@ public class McpClientAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	McpSyncClientConfigurer mcpSyncClientConfigurer(ObjectProvider<McpSyncClientCustomizer> customizerProvider) {
+	McpSyncClientConfigurer mcpSyncClientConfigurer(
+			ObjectProvider<McpClientCustomizer<McpClient.SyncSpec>> customizerProvider) {
 		return new McpSyncClientConfigurer(customizerProvider.orderedStream().toList());
 	}
 
@@ -214,9 +230,17 @@ public class McpClientAutoConfiguration {
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public McpAsyncToolsChangeEventEmmiter mcpAsyncToolChangeEventEmmiter(
+			ApplicationEventPublisher applicationEventPublisher) {
+		return new McpAsyncToolsChangeEventEmmiter(applicationEventPublisher);
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	public List<McpAsyncClient> mcpAsyncClients(McpAsyncClientConfigurer mcpAsyncClientConfigurer,
 			McpClientCommonProperties commonProperties,
-			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider) {
+			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider,
+			ObjectProvider<ClientMcpAsyncHandlersRegistry> clientMcpAsyncHandlersRegistry) {
 
 		List<McpAsyncClient> mcpAsyncClients = new ArrayList<>();
 
@@ -228,14 +252,27 @@ public class McpClientAutoConfiguration {
 				McpSchema.Implementation clientInfo = new McpSchema.Implementation(
 						this.connectedClientName(commonProperties.getName(), namedTransport.name()),
 						commonProperties.getVersion());
-
 				McpClient.AsyncSpec spec = McpClient.async(namedTransport.transport())
 					.clientInfo(clientInfo)
 					.requestTimeout(commonProperties.getRequestTimeout());
+				clientMcpAsyncHandlersRegistry.ifAvailable(registry -> spec
+					.sampling(samplingRequest -> registry.handleSampling(namedTransport.name(), samplingRequest))
+					.elicitation(
+							elicitationRequest -> registry.handleElicitation(namedTransport.name(), elicitationRequest))
+					.loggingConsumer(loggingMessageNotification -> registry.handleLogging(namedTransport.name(),
+							loggingMessageNotification))
+					.progressConsumer(progressNotification -> registry.handleProgress(namedTransport.name(),
+							progressNotification))
+					.toolsChangeConsumer(newTools -> registry.handleToolListChanged(namedTransport.name(), newTools))
+					.promptsChangeConsumer(
+							newPrompts -> registry.handlePromptListChanged(namedTransport.name(), newPrompts))
+					.resourcesChangeConsumer(
+							newResources -> registry.handleResourceListChanged(namedTransport.name(), newResources))
+					.capabilities(registry.getCapabilities(namedTransport.name())));
 
-				spec = mcpAsyncClientConfigurer.configure(namedTransport.name(), spec);
+				McpClient.AsyncSpec customizedSpec = mcpAsyncClientConfigurer.configure(namedTransport.name(), spec);
 
-				var client = spec.build();
+				var client = customizedSpec.build();
 
 				if (commonProperties.isInitialized()) {
 					client.initialize().block();
@@ -257,7 +294,8 @@ public class McpClientAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	McpAsyncClientConfigurer mcpAsyncClientConfigurer(ObjectProvider<McpAsyncClientCustomizer> customizerProvider) {
+	McpAsyncClientConfigurer mcpAsyncClientConfigurer(
+			ObjectProvider<McpClientCustomizer<McpClient.AsyncSpec>> customizerProvider) {
 		return new McpAsyncClientConfigurer(customizerProvider.orderedStream().toList());
 	}
 

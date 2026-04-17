@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,42 +19,34 @@ package org.springframework.ai.model.anthropic.autoconfigure;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit Tests for {@link AnthropicChatProperties}, {@link AnthropicConnectionProperties}.
+ * Unit Tests for {@link AnthropicChatProperties} and
+ * {@link AnthropicConnectionProperties}.
+ *
+ * @author Soby Chacko
  */
-public class AnthropicPropertiesTests {
+class AnthropicPropertiesTests {
 
 	@Test
-	public void connectionProperties() {
-
-		new ApplicationContextRunner().withPropertyValues(
-		// @formatter:off
-					"spring.ai.anthropic.base-url=TEST_BASE_URL",
-					"spring.ai.anthropic.completions-path=message-path",
-					"spring.ai.anthropic.api-key=abc123",
-					"spring.ai.anthropic.version=6666",
-					"spring.ai.anthropic.beta-version=7777",
+	void connectionProperties() {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.anthropic.base-url=TEST_BASE_URL", "spring.ai.anthropic.api-key=abc123",
 					"spring.ai.anthropic.chat.options.model=MODEL_XYZ",
 					"spring.ai.anthropic.chat.options.temperature=0.55")
-				// @formatter:on
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(AnthropicChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(AnthropicChatProperties.class);
 				var connectionProperties = context.getBean(AnthropicConnectionProperties.class);
 
 				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
-				assertThat(connectionProperties.getVersion()).isEqualTo("6666");
-				assertThat(connectionProperties.getBetaVersion()).isEqualTo("7777");
-				assertThat(connectionProperties.getCompletionsPath()).isEqualTo("message-path");
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
@@ -62,25 +54,40 @@ public class AnthropicPropertiesTests {
 	}
 
 	@Test
-	public void chatOptionsTest() {
+	void chatOverrideConnectionProperties() {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.anthropic.base-url=TEST_BASE_URL", "spring.ai.anthropic.api-key=abc123",
+					"spring.ai.anthropic.chat.base-url=TEST_BASE_URL_2", "spring.ai.anthropic.chat.api-key=456",
+					"spring.ai.anthropic.chat.options.model=MODEL_XYZ",
+					"spring.ai.anthropic.chat.options.temperature=0.55")
+			.withConfiguration(
+					AutoConfigurations.of(AnthropicChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(AnthropicChatProperties.class);
+				var connectionProperties = context.getBean(AnthropicConnectionProperties.class);
 
-		new ApplicationContextRunner().withPropertyValues(
-		// @formatter:off
-				"spring.ai.anthropic.api-key=API_KEY",
-				"spring.ai.anthropic.base-url=TEST_BASE_URL",
+				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 
-				"spring.ai.anthropic.chat.options.model=MODEL_XYZ",
-				"spring.ai.anthropic.chat.options.max-tokens=123",
-				"spring.ai.anthropic.chat.options.metadata.user-id=MyUserId",
-				"spring.ai.anthropic.chat.options.stop_sequences=boza,koza",
+				assertThat(chatProperties.getApiKey()).isEqualTo("456");
+				assertThat(chatProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL_2");
 
-				"spring.ai.anthropic.chat.options.temperature=0.55",
-				"spring.ai.anthropic.chat.options.top-p=0.56",
-				"spring.ai.anthropic.chat.options.top-k=100"
-				)
-			// @formatter:on
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
+				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
+			});
+	}
+
+	@Test
+	void chatOptionsTest() {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.anthropic.api-key=API_KEY", "spring.ai.anthropic.base-url=TEST_BASE_URL",
+					"spring.ai.anthropic.chat.options.model=MODEL_XYZ",
+					"spring.ai.anthropic.chat.options.max-tokens=123",
+					"spring.ai.anthropic.chat.options.stop-sequences=boza,koza",
+					"spring.ai.anthropic.chat.options.temperature=0.55", "spring.ai.anthropic.chat.options.top-p=0.56",
+					"spring.ai.anthropic.chat.options.top-k=100")
+			.withConfiguration(
+					AutoConfigurations.of(AnthropicChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(AnthropicChatProperties.class);
 				var connectionProperties = context.getBean(AnthropicConnectionProperties.class);
@@ -93,37 +100,62 @@ public class AnthropicPropertiesTests {
 				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
 				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56);
 				assertThat(chatProperties.getOptions().getTopK()).isEqualTo(100);
-
-				assertThat(chatProperties.getOptions().getMetadata().userId()).isEqualTo("MyUserId");
 			});
 	}
 
 	@Test
-	public void chatCompletionDisabled() {
+	void webSearchToolProperties() {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.anthropic.api-key=API_KEY",
+					"spring.ai.anthropic.chat.options.web-search-tool.max-uses=5",
+					"spring.ai.anthropic.chat.options.web-search-tool.allowed-domains=docs.spring.io,github.com",
+					"spring.ai.anthropic.chat.options.web-search-tool.blocked-domains=example.com",
+					"spring.ai.anthropic.chat.options.web-search-tool.user-location.city=San Francisco",
+					"spring.ai.anthropic.chat.options.web-search-tool.user-location.country=US",
+					"spring.ai.anthropic.chat.options.web-search-tool.user-location.region=California",
+					"spring.ai.anthropic.chat.options.web-search-tool.user-location.timezone=America/Los_Angeles")
+			.withConfiguration(
+					AutoConfigurations.of(AnthropicChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(AnthropicChatProperties.class);
+				var webSearch = chatProperties.getOptions().getWebSearchTool();
 
-		// It is enabled by default
+				assertThat(webSearch).isNotNull();
+				assertThat(webSearch.getMaxUses()).isEqualTo(5);
+				assertThat(webSearch.getAllowedDomains()).containsExactly("docs.spring.io", "github.com");
+				assertThat(webSearch.getBlockedDomains()).containsExactly("example.com");
+				assertThat(webSearch.getUserLocation()).isNotNull();
+				assertThat(webSearch.getUserLocation().city()).isEqualTo("San Francisco");
+				assertThat(webSearch.getUserLocation().country()).isEqualTo("US");
+				assertThat(webSearch.getUserLocation().region()).isEqualTo("California");
+				assertThat(webSearch.getUserLocation().timezone()).isEqualTo("America/Los_Angeles");
+			});
+	}
+
+	@Test
+	void chatCompletionDisabled() {
+		// Enabled by default
 		new ApplicationContextRunner().withPropertyValues("spring.ai.anthropic.api-key=API_KEY")
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(AnthropicChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(AnthropicChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(AnthropicChatModel.class)).isNotEmpty();
 			});
 
-		// Explicitly enable the chat auto-configuration.
+		// Explicitly enable
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.anthropic.api-key=API_KEY", "spring.ai.model.chat=anthropic")
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(AnthropicChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(AnthropicChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(AnthropicChatModel.class)).isNotEmpty();
 			});
 
-		// Explicitly disable the chat auto-configuration.
+		// Explicitly disable
 		new ApplicationContextRunner().withPropertyValues("spring.ai.model.chat=none")
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(AnthropicChatAutoConfiguration.class))
 			.run(context -> assertThat(context.getBeansOfType(AnthropicChatModel.class)).isEmpty());
 	}
 

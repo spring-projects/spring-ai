@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,36 +16,34 @@
 
 package org.springframework.ai.openai.image;
 
+import com.openai.models.images.ImageModel;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.observation.DefaultImageModelObservationConvention;
-import org.springframework.ai.model.SimpleApiKey;
+import org.springframework.ai.image.observation.ImageModelObservationDocumentation;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.OpenAiImageModel;
 import org.springframework.ai.openai.OpenAiImageOptions;
-import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.retry.support.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.image.observation.ImageModelObservationDocumentation.HighCardinalityKeyNames;
-import static org.springframework.ai.image.observation.ImageModelObservationDocumentation.LowCardinalityKeyNames;
 
 /**
  * Integration tests for observation instrumentation in {@link OpenAiImageModel}.
  *
- * @author Thomas Vitale
+ * @author Julien Dubois
  */
-@SpringBootTest(classes = OpenAiImageModelObservationIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiImageModelObservationIT {
 
@@ -53,37 +51,53 @@ public class OpenAiImageModelObservationIT {
 	TestObservationRegistry observationRegistry;
 
 	@Autowired
-	OpenAiImageModel imageModel;
+	private OpenAiImageModel imageModel;
+
+	@BeforeEach
+	void setUp() {
+		this.observationRegistry.clear();
+	}
 
 	@Test
-	void observationForImageOperation() {
+	void observationForImageOperation() throws InterruptedException {
 		var options = OpenAiImageOptions.builder()
-			.model(OpenAiImageApi.ImageModel.DALL_E_3.getValue())
+			.model(ImageModel.DALL_E_3.asString())
 			.height(1024)
 			.width(1024)
 			.responseFormat("url")
 			.style("natural")
 			.build();
 
-		var instructions = "Here comes the sun";
+		var instructions = """
+				A cup of coffee at a restaurant table in Paris, France.
+				""";
 
 		ImagePrompt imagePrompt = new ImagePrompt(instructions, options);
 
 		ImageResponse imageResponse = this.imageModel.call(imagePrompt);
 		assertThat(imageResponse.getResults()).hasSize(1);
 
+		Thread.sleep(200); // Wait for observation to be recorded
+
 		TestObservationRegistryAssert.assertThat(this.observationRegistry)
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultImageModelObservationConvention.DEFAULT_NAME)
 			.that()
-			.hasContextualNameEqualTo("image " + OpenAiImageApi.ImageModel.DALL_E_3.getValue())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
+			.hasContextualNameEqualTo("image " + ImageModel.DALL_E_3.asString())
+			.hasLowCardinalityKeyValue(
+					ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.IMAGE.value())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.OPENAI.value())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					OpenAiImageApi.ImageModel.DALL_E_3.getValue())
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_IMAGE_SIZE.asString(), "1024x1024")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_IMAGE_RESPONSE_FORMAT.asString(), "url")
+			.hasLowCardinalityKeyValue(ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(),
+					AiProvider.OPENAI_SDK.value())
+			.hasLowCardinalityKeyValue(
+					ImageModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL.asString(),
+					ImageModel.DALL_E_3.asString())
+			.hasHighCardinalityKeyValue(
+					ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_SIZE.asString(),
+					"1024x1024")
+			.hasHighCardinalityKeyValue(
+					ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_RESPONSE_FORMAT.asString(),
+					"url")
 			.hasBeenStarted()
 			.hasBeenStopped();
 	}
@@ -97,15 +111,10 @@ public class OpenAiImageModelObservationIT {
 		}
 
 		@Bean
-		public OpenAiImageApi openAiImageApi() {
-			return OpenAiImageApi.builder().apiKey(new SimpleApiKey(System.getenv("OPENAI_API_KEY"))).build();
-		}
-
-		@Bean
-		public OpenAiImageModel openAiImageModel(OpenAiImageApi openAiImageApi,
-				TestObservationRegistry observationRegistry) {
-			return new OpenAiImageModel(openAiImageApi, OpenAiImageOptions.builder().build(),
-					RetryTemplate.defaultInstance(), observationRegistry);
+		public OpenAiImageModel openAiImageModel(TestObservationRegistry observationRegistry) {
+			return new OpenAiImageModel(
+					OpenAiImageOptions.builder().model(OpenAiImageOptions.DEFAULT_IMAGE_MODEL).build(),
+					observationRegistry);
 		}
 
 	}

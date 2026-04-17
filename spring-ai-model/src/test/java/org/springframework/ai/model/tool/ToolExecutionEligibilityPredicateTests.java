@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model.tool;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -75,6 +76,32 @@ class ToolExecutionEligibilityPredicateTests {
 		assertThat(result).isTrue();
 	}
 
+	@Test
+	void whenChatResponseHasEmptyGenerations() {
+		ToolExecutionEligibilityPredicate predicate = new TestToolExecutionEligibilityPredicate();
+		ChatOptions promptOptions = ChatOptions.builder().build();
+		ChatResponse emptyResponse = new ChatResponse(Collections.emptyList());
+
+		boolean result = predicate.isToolExecutionRequired(promptOptions, emptyResponse);
+		assertThat(result).isTrue();
+	}
+
+	@Test
+	void whenChatOptionsHasModel() {
+		ModelCheckingPredicate predicate = new ModelCheckingPredicate();
+
+		ChatOptions optionsWithModel = ChatOptions.builder().model("gpt-4").build();
+
+		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("test"))));
+
+		boolean result = predicate.isToolExecutionRequired(optionsWithModel, chatResponse);
+		assertThat(result).isTrue();
+
+		ChatOptions optionsWithoutModel = ChatOptions.builder().build();
+		result = predicate.isToolExecutionRequired(optionsWithoutModel, chatResponse);
+		assertThat(result).isFalse();
+	}
+
 	/**
 	 * Test implementation of {@link ToolExecutionEligibilityPredicate} that always
 	 * returns true.
@@ -84,6 +111,15 @@ class ToolExecutionEligibilityPredicateTests {
 		@Override
 		public boolean test(ChatOptions promptOptions, ChatResponse chatResponse) {
 			return true;
+		}
+
+	}
+
+	private static class ModelCheckingPredicate implements ToolExecutionEligibilityPredicate {
+
+		@Override
+		public boolean test(ChatOptions promptOptions, ChatResponse chatResponse) {
+			return promptOptions.getModel() != null && !promptOptions.getModel().isEmpty();
 		}
 
 	}

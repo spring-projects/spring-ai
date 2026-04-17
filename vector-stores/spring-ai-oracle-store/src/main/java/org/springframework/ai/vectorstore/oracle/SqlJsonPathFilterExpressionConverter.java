@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.oracle;
 
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 /**
  * Converts a {@link Filter} into a JSON Path expression.
@@ -39,6 +40,7 @@ public class SqlJsonPathFilterExpressionConverter extends AbstractFilterExpressi
 
 	@Override
 	protected void doExpression(final Filter.Expression expression, final StringBuilder context) {
+		Assert.state(expression.right() != null, "expression should have a right operand");
 		if (expression.type() == Filter.ExpressionType.NIN) {
 			context.append("!( ");
 			this.convertOperand(expression.left(), context);
@@ -54,28 +56,18 @@ public class SqlJsonPathFilterExpressionConverter extends AbstractFilterExpressi
 	}
 
 	private String getOperationSymbol(final Filter.Expression exp) {
-		switch (exp.type()) {
-			case AND:
-				return " && ";
-			case OR:
-				return " || ";
-			case EQ:
-				return " == ";
-			case NE:
-				return " != ";
-			case LT:
-				return " < ";
-			case LTE:
-				return " <= ";
-			case GT:
-				return " > ";
-			case GTE:
-				return " >= ";
-			case IN:
-				return " in ";
-			default:
-				throw new RuntimeException("Not supported expression type: " + exp.type());
-		}
+		return switch (exp.type()) {
+			case AND -> " && ";
+			case OR -> " || ";
+			case EQ -> " == ";
+			case NE -> " != ";
+			case LT -> " < ";
+			case LTE -> " <= ";
+			case GT -> " > ";
+			case GTE -> " >= ";
+			case IN -> " in ";
+			default -> throw new RuntimeException("Not supported expression type: " + exp.type());
+		};
 	}
 
 	@Override
@@ -101,6 +93,18 @@ public class SqlJsonPathFilterExpressionConverter extends AbstractFilterExpressi
 	@Override
 	protected void doEndGroup(final Filter.Group group, final StringBuilder context) {
 		context.append(")");
+	}
+
+	/**
+	 * Serialize values using JSON serialization for Oracle JSONPath expressions.
+	 * Delegates to {@link #emitJsonValue(Object, StringBuilder)} for Jackson-based JSON
+	 * serialization.
+	 * @param value the value to serialize
+	 * @param context the context to append the JSON representation to
+	 */
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		emitJsonValue(value, context);
 	}
 
 }

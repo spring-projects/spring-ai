@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.ai.moderation;
+
+import org.jspecify.annotations.Nullable;
 
 /**
  * A builder class for creating instances of ModerationOptions. Use the builder() method
@@ -48,10 +50,10 @@ public final class ModerationOptionsBuilder {
 
 	private class ModerationModelOptionsImpl implements ModerationOptions {
 
-		private String model;
+		private @Nullable String model;
 
 		@Override
-		public String getModel() {
+		public @Nullable String getModel() {
 			return this.model;
 		}
 

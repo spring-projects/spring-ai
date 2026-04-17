@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,9 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -43,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Unit tests for {@link JsonSchemaGenerator}.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  */
 class JsonSchemaGeneratorTests {
 
@@ -62,8 +62,7 @@ class JsonSchemaGeneratorTests {
 				            "type": "string"
 				        },
 				        "age": {
-				            "type": "integer",
-				            "format": "int32"
+				            "type": "integer"
 				        }
 				    },
 				    "required": [
@@ -246,7 +245,7 @@ class JsonSchemaGeneratorTests {
 		String schema = JsonSchemaGenerator.generateForMethodInput(method,
 				JsonSchemaGenerator.SchemaOption.ALLOW_ADDITIONAL_PROPERTIES_BY_DEFAULT);
 
-		JsonNode jsonNode = JsonParser.getObjectMapper().readTree(schema);
+		JsonNode jsonNode = JsonParser.getJsonMapper().readTree(schema);
 		assertThat(jsonNode.has("additionalProperties")).isFalse();
 	}
 
@@ -265,8 +264,7 @@ class JsonSchemaGeneratorTests {
 				            "type": "STRING"
 				        },
 				        "age": {
-				            "type": "INTEGER",
-				            "format": "int32"
+				            "type": "INTEGER"
 				        }
 				    },
 				    "required": [
@@ -348,16 +346,13 @@ class JsonSchemaGeneratorTests {
 				    "type": "object",
 				    "properties": {
 				        "duration": {
-				            "type": "string",
-				            "format": "duration"
+				            "type": "string"
 				        },
 				        "localDateTime": {
-				            "type": "string",
-				            "format": "date-time"
+				            "type": "string"
 				        },
 				        "instant": {
-				            "type": "string",
-				            "format": "date-time"
+				            "type": "string"
 				        }
 				    },
 				    "required": [
@@ -387,8 +382,7 @@ class JsonSchemaGeneratorTests {
 				            "type": "string"
 				        },
 				        "expectedDelivery": {
-				            "type": "string",
-				            "format": "date-time"
+				            "type": "string"
 				        }
 				    },
 				    "required": [
@@ -432,11 +426,11 @@ class JsonSchemaGeneratorTests {
 	}
 
 	@Test
-	void generateSchemaForTypeWithAdditionalPropertiesAllowed() throws JsonProcessingException {
+	void generateSchemaForTypeWithAdditionalPropertiesAllowed() {
 		String schema = JsonSchemaGenerator.generateForType(Person.class,
 				JsonSchemaGenerator.SchemaOption.ALLOW_ADDITIONAL_PROPERTIES_BY_DEFAULT);
 
-		JsonNode jsonNode = JsonParser.getObjectMapper().readTree(schema);
+		JsonNode jsonNode = JsonParser.getJsonMapper().readTree(schema);
 		assertThat(jsonNode.has("additionalProperties")).isFalse();
 	}
 
@@ -675,6 +669,32 @@ class JsonSchemaGeneratorTests {
 	}
 
 	@Test
+	void generateSchemaForTypeWithJSpecifyNullableField() {
+		String schema = JsonSchemaGenerator.generateForType(JSpecifyNullablePerson.class);
+		String expectedJsonSchema = """
+						{
+						  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+						  "type" : "object",
+						  "properties" : {
+						    "email" : {
+						      "type" : "string"
+						    },
+						    "id" : {
+						      "type" : "integer",
+						      "format" : "int32"
+						    },
+						    "name" : {
+						      "type" : "string"
+						    }
+						  },
+						  "required" : [ "id", "name" ],
+						  "additionalProperties" : false
+						}
+				""";
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
 	void throwExceptionWhenTypeIsNull() {
 		assertThatThrownBy(() -> JsonSchemaGenerator.generateForType(null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("type cannot be null");
@@ -748,6 +768,10 @@ class JsonSchemaGeneratorTests {
 	}
 
 	record NullablePerson(int id, String name, @Nullable String email) {
+
+	}
+
+	record JSpecifyNullablePerson(int id, String name, @org.jspecify.annotations.Nullable String email) {
 
 	}
 

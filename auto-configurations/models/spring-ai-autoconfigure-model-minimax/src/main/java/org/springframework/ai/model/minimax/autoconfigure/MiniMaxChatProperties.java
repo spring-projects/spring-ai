@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,20 +33,11 @@ public class MiniMaxChatProperties extends MiniMaxParentProperties {
 
 	public static final String DEFAULT_CHAT_MODEL = MiniMaxApi.ChatModel.ABAB_5_5_Chat.value;
 
-	private static final Double DEFAULT_TEMPERATURE = 0.7;
-
 	@NestedConfigurationProperty
-	private MiniMaxChatOptions options = MiniMaxChatOptions.builder()
-		.model(DEFAULT_CHAT_MODEL)
-		.temperature(DEFAULT_TEMPERATURE)
-		.build();
+	private final MiniMaxChatOptions options = MiniMaxChatOptions.builder().model(DEFAULT_CHAT_MODEL).build();
 
 	public MiniMaxChatOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(MiniMaxChatOptions options) {
-		this.options = options;
 	}
 
 }

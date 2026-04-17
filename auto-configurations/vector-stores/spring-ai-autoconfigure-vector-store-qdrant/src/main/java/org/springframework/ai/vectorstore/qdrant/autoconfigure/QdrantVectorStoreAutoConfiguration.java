@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore.qdrant.autoconfigure;
 import io.micrometer.observation.ObservationRegistry;
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -70,7 +71,7 @@ public class QdrantVectorStoreAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy batchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}
@@ -83,9 +84,10 @@ public class QdrantVectorStoreAutoConfiguration {
 			BatchingStrategy batchingStrategy) {
 		return QdrantVectorStore.builder(qdrantClient, embeddingModel)
 			.collectionName(properties.getCollectionName())
+			.contentFieldName(properties.getContentFieldName())
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.customObservationConvention(customObservationConvention.getIfAvailable())
 			.batchingStrategy(batchingStrategy)
 			.build();
 	}
@@ -109,7 +111,7 @@ public class QdrantVectorStoreAutoConfiguration {
 		}
 
 		@Override
-		public String getApiKey() {
+		public @Nullable String getApiKey() {
 			return this.properties.getApiKey();
 		}
 

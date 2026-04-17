@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,11 +40,13 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Christian Tzolov
@@ -68,6 +70,7 @@ public class AdvisorsTests {
 
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Hello John")))));
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 
 		var chatClient = ChatClient.builder(this.chatModel)
 			.defaultSystem("Default system text.")
@@ -106,6 +109,7 @@ public class AdvisorsTests {
 		given(this.chatModel.stream(this.promptCaptor.capture()))
 			.willReturn(Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage("Hello")))),
 					new ChatResponse(List.of(new Generation(new AssistantMessage(" John"))))));
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 
 		var chatClient = ChatClient.builder(this.chatModel)
 			.defaultSystem("Default system text.")

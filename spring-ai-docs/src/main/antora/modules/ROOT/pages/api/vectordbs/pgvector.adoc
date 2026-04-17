@@ -10,7 +10,7 @@ First you need access to PostgreSQL instance with enabled `vector`, `hstore` and
 
 TIP: You can run a PGvector database as a Spring Boot dev service via xref:api/docker-compose.adoc[Docker Compose] or xref:api/testcontainers.adoc[Testcontainers]. In alternative, the <<Run Postgres & PGVector DB locally,setup local Postgres/PGVector>> appendix shows how to set up a DB locally with a Docker container.
 
-On startup, the `PgVectorStore` will attempt to install the required database extensions and create the required `vector_store` table with an index if not existing.
+On startup with the schema initialization feature explicitly enabled, the `PgVectorStore` will attempt to install the required database extensions and create the required `vector_store` table with an index if not existing.
 
 Optionally, you can do this manually like so:
 

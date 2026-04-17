@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,11 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
@@ -39,7 +41,6 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.MimeType;
 
@@ -62,25 +63,29 @@ public interface ChatClient {
 	}
 
 	static ChatClient create(ChatModel chatModel, ObservationRegistry observationRegistry) {
-		return create(chatModel, observationRegistry, null);
+		return create(chatModel, observationRegistry, null, null);
 	}
 
 	static ChatClient create(ChatModel chatModel, ObservationRegistry observationRegistry,
-			@Nullable ChatClientObservationConvention observationConvention) {
+			@Nullable ChatClientObservationConvention chatClientObservationConvention,
+			@Nullable AdvisorObservationConvention advisorObservationConvention) {
 		Assert.notNull(chatModel, "chatModel cannot be null");
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
-		return builder(chatModel, observationRegistry, observationConvention).build();
+		return builder(chatModel, observationRegistry, chatClientObservationConvention, advisorObservationConvention)
+			.build();
 	}
 
 	static Builder builder(ChatModel chatModel) {
-		return builder(chatModel, ObservationRegistry.NOOP, null);
+		return builder(chatModel, ObservationRegistry.NOOP, null, null);
 	}
 
 	static Builder builder(ChatModel chatModel, ObservationRegistry observationRegistry,
-			@Nullable ChatClientObservationConvention customObservationConvention) {
+			@Nullable ChatClientObservationConvention chatClientObservationConvention,
+			@Nullable AdvisorObservationConvention advisorObservationConvention) {
 		Assert.notNull(chatModel, "chatModel cannot be null");
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
-		return new DefaultChatClientBuilder(chatModel, observationRegistry, customObservationConvention);
+		return new DefaultChatClientBuilder(chatModel, observationRegistry, chatClientObservationConvention,
+				advisorObservationConvention);
 	}
 
 	ChatClientRequestSpec prompt();
@@ -114,6 +119,10 @@ public interface ChatClient {
 
 		PromptUserSpec media(MimeType mimeType, Resource resource);
 
+		PromptUserSpec metadata(Map<String, Object> metadata);
+
+		PromptUserSpec metadata(String k, Object v);
+
 	}
 
 	/**
@@ -131,6 +140,10 @@ public interface ChatClient {
 
 		PromptSystemSpec param(String k, Object v);
 
+		PromptSystemSpec metadata(Map<String, Object> metadata);
+
+		PromptSystemSpec metadata(String k, Object v);
+
 	}
 
 	interface AdvisorSpec {
@@ -147,22 +160,17 @@ public interface ChatClient {
 
 	interface CallResponseSpec {
 
-		@Nullable
-		<T> T entity(ParameterizedTypeReference<T> type);
+		<T> @Nullable T entity(ParameterizedTypeReference<T> type);
 
-		@Nullable
-		<T> T entity(StructuredOutputConverter<T> structuredOutputConverter);
+		<T> @Nullable T entity(StructuredOutputConverter<T> structuredOutputConverter);
 
-		@Nullable
-		<T> T entity(Class<T> type);
+		<T> @Nullable T entity(Class<T> type);
 
 		ChatClientResponse chatClientResponse();
 
-		@Nullable
-		ChatResponse chatResponse();
+		@Nullable ChatResponse chatResponse();
 
-		@Nullable
-		String content();
+		@Nullable String content();
 
 		<T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type);
 
@@ -175,24 +183,6 @@ public interface ChatClient {
 	interface StreamResponseSpec {
 
 		Flux<ChatClientResponse> chatClientResponse();
-
-		Flux<ChatResponse> chatResponse();
-
-		Flux<String> content();
-
-	}
-
-	interface CallPromptResponseSpec {
-
-		String content();
-
-		List<String> contents();
-
-		ChatResponse chatResponse();
-
-	}
-
-	interface StreamPromptResponseSpec {
 
 		Flux<ChatResponse> chatResponse();
 
@@ -218,7 +208,7 @@ public interface ChatClient {
 
 		ChatClientRequestSpec messages(List<Message> messages);
 
-		<T extends ChatOptions> ChatClientRequestSpec options(T options);
+		<B extends ChatOptions.Builder<?>> ChatClientRequestSpec options(B customizer);
 
 		ChatClientRequestSpec toolNames(String... toolNames);
 
@@ -261,13 +251,13 @@ public interface ChatClient {
 	 */
 	interface Builder {
 
-		Builder defaultAdvisors(Advisor... advisor);
+		Builder defaultAdvisors(Advisor... advisors);
 
 		Builder defaultAdvisors(Consumer<AdvisorSpec> advisorSpecConsumer);
 
 		Builder defaultAdvisors(List<Advisor> advisors);
 
-		Builder defaultOptions(ChatOptions chatOptions);
+		Builder defaultOptions(ChatOptions.Builder chatOptions);
 
 		Builder defaultUser(String text);
 

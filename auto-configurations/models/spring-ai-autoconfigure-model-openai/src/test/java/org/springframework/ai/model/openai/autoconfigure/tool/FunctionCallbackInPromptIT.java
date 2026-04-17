@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -47,19 +46,20 @@ public class FunctionCallbackInPromptIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class,
+				org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration.class));
 
 	@Test
 	void functionCallTest() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName(),
+			.withPropertyValues("spring.ai.openai.chat.options.model=" + "gpt-4o-mini",
 					"spring.ai.openai.chat.options.temperature=0.1")
 			.run(context -> {
 
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 				UserMessage userMessage = new UserMessage(
-						"What's the weather like in San Francisco, Tokyo, and Paris?");
+						"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.");
 
 				var promptOptions = OpenAiChatOptions.builder()
 					.toolCallbacks(
@@ -81,14 +81,14 @@ public class FunctionCallbackInPromptIT {
 	void streamingFunctionCallTest() {
 
 		this.contextRunner
-			.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName(),
+			.withPropertyValues("spring.ai.openai.chat.options.model=" + "gpt-4o-mini",
 					"spring.ai.openai.chat.options.temperature=0.5")
 			.run(context -> {
 
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 				UserMessage userMessage = new UserMessage(
-						"What's the weather like in San Francisco, Tokyo, and Paris?");
+						"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.");
 
 				var promptOptions = OpenAiChatOptions.builder()
 					.toolCallbacks(

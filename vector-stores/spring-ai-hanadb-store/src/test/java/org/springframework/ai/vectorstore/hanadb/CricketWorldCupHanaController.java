@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ public class CricketWorldCupHanaController {
 	public ResponseEntity<String> handleFileUpload(@RequestParam("pdf") MultipartFile file) throws IOException {
 		Resource pdf = file.getResource();
 		Supplier<List<Document>> reader = new PagePdfDocumentReader(pdf);
-		Function<List<Document>, List<Document>> splitter = new TokenTextSplitter();
+		Function<List<Document>, List<Document>> splitter = TokenTextSplitter.builder().build();
 		List<Document> documents = splitter.apply(reader.get());
 		logger.info("{} documents created from pdf file: {}", documents.size(), pdf.getFilename());
 		this.hanaCloudVectorStore.accept(documents);

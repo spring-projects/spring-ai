@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.pgvector;
 
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -29,8 +31,10 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.GT;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.GTE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.IN;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.LT;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.LTE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NIN;
@@ -117,6 +121,297 @@ public class PgVectorFilterExpressionConverterTests {
 		String vectorExpr = this.converter
 			.convertExpression(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
 		assertThat(vectorExpr).isEqualTo("$.\"country 1 2 3\" == \"BG\"");
+	}
+
+	@Test
+	public void testLT() {
+		// value < 100
+		String vectorExpr = this.converter.convertExpression(new Expression(LT, new Key("value"), new Value(100)));
+		assertThat(vectorExpr).isEqualTo("$.value < 100");
+	}
+
+	@Test
+	public void testGT() {
+		// score > 75
+		String vectorExpr = this.converter.convertExpression(new Expression(GT, new Key("score"), new Value(100)));
+		assertThat(vectorExpr).isEqualTo("$.score > 100");
+	}
+
+	@Test
+	public void testLTE() {
+		// amount <= 100.5
+		String vectorExpr = this.converter.convertExpression(new Expression(LTE, new Key("amount"), new Value(100.5)));
+		assertThat(vectorExpr).isEqualTo("$.amount <= 100.5");
+	}
+
+	@Test
+	public void testNIN() {
+		// category NOT IN ["typeA", "typeB"]
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(NIN, new Key("category"), new Value(List.of("typeA", "typeB"))));
+		assertThat(vectorExpr).isEqualTo("!($.category == \"typeA\" || $.category == \"typeB\")");
+	}
+
+	@Test
+	public void testSingleValueIN() {
+		// status IN ["active"] - single value in list
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(IN, new Key("status"), new Value(List.of("active"))));
+		assertThat(vectorExpr).isEqualTo("($.status == \"active\")");
+	}
+
+	@Test
+	public void testSingleValueNIN() {
+		// status NOT IN ["inactive"] - single value in list
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(NIN, new Key("status"), new Value(List.of("inactive"))));
+		assertThat(vectorExpr).isEqualTo("!($.status == \"inactive\")");
+	}
+
+	@Test
+	public void testNumericIN() {
+		// priority IN [1, 2, 3]
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(IN, new Key("priority"), new Value(List.of(1, 2, 3))));
+		assertThat(vectorExpr).isEqualTo("($.priority == 1 || $.priority == 2 || $.priority == 3)");
+	}
+
+	@Test
+	public void testNumericNIN() {
+		// level NOT IN [0, 10]
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(NIN, new Key("level"), new Value(List.of(0, 10))));
+		assertThat(vectorExpr).isEqualTo("!($.level == 0 || $.level == 10)");
+	}
+
+	@Test
+	public void testNestedGroups() {
+		// ((score >= 80 AND type == "A") OR (score >= 90 AND type == "B")) AND status ==
+		// "valid"
+		String vectorExpr = this.converter.convertExpression(new Expression(AND,
+				new Group(new Expression(OR,
+						new Group(new Expression(AND, new Expression(GTE, new Key("score"), new Value(80)),
+								new Expression(EQ, new Key("type"), new Value("A")))),
+						new Group(new Expression(AND, new Expression(GTE, new Key("score"), new Value(90)),
+								new Expression(EQ, new Key("type"), new Value("B")))))),
+				new Expression(EQ, new Key("status"), new Value("valid"))));
+		assertThat(vectorExpr).isEqualTo(
+				"(($.score >= 80 && $.type == \"A\") || ($.score >= 90 && $.type == \"B\")) && $.status == \"valid\"");
+	}
+
+	@Test
+	public void testBooleanFalse() {
+		// active == false
+		String vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("active"), new Value(false)));
+		assertThat(vectorExpr).isEqualTo("$.active == false");
+	}
+
+	@Test
+	public void testBooleanNE() {
+		// active != true
+		String vectorExpr = this.converter.convertExpression(new Expression(NE, new Key("active"), new Value(true)));
+		assertThat(vectorExpr).isEqualTo("$.active != true");
+	}
+
+	@Test
+	public void testKeyWithDots() {
+		// "config.setting" == "value1"
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("\"config.setting\""), new Value("value1")));
+		assertThat(vectorExpr).isEqualTo("$.\"config.setting\" == \"value1\"");
+	}
+
+	@Test
+	public void testEmptyString() {
+		// description == ""
+		String vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("description"), new Value("")));
+		assertThat(vectorExpr).isEqualTo("$.description == \"\"");
+	}
+
+	@Test
+	public void testNullValue() {
+		// metadata == null
+		String vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("metadata"), new Value(null)));
+		assertThat(vectorExpr).isEqualTo("$.metadata == null");
+	}
+
+	@Test
+	public void testComplexOrExpression() {
+		// state == "ready" OR state == "pending" OR state == "processing"
+		String vectorExpr = this.converter.convertExpression(new Expression(OR,
+				new Expression(OR, new Expression(EQ, new Key("state"), new Value("ready")),
+						new Expression(EQ, new Key("state"), new Value("pending"))),
+				new Expression(EQ, new Key("state"), new Value("processing"))));
+		assertThat(vectorExpr).isEqualTo("$.state == \"ready\" || $.state == \"pending\" || $.state == \"processing\"");
+	}
+
+	// Security Tests - JSONPath Injection Prevention
+
+	@Test
+	public void testInjectionWithDoubleQuoteEscape() {
+		// Attempt to inject: department == "" || $.department == "Finance"
+		// Malicious value: " || $.department == "Finance
+		String maliciousValue = "\" || $.department == \"Finance";
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("department"), new Value(maliciousValue)));
+
+		// Expected format with escaped quotes
+		String expected = "$.department == \"\\\" || $.department == \\\"Finance\"";
+
+		// Verify the quotes are escaped (backslash + quote)
+		assertThat(vectorExpr).isEqualTo(expected);
+		assertThat(vectorExpr).contains("\\\"");
+
+		// Critical: verify we don't have the vulnerable pattern: $.department == "" ||
+		// (two quotes together would allow injection to work)
+		assertThat(vectorExpr).doesNotContain("== \"\"");
+	}
+
+	@Test
+	public void testInjectionWithBackslashEscape() {
+		// Attempt to inject using backslash escape: value\"
+		String maliciousValue = "value\\\"";
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("field"), new Value(maliciousValue)));
+
+		// Should escape both backslash and quote
+		assertThat(vectorExpr).isEqualTo("$.field == \"value\\\\\\\"\"");
+		// Verify the backslashes are escaped
+		assertThat(vectorExpr).contains("\\\\");
+	}
+
+	@Test
+	public void testInjectionWithSingleQuote() {
+		// Attempt to inject using single quotes: value' || $.other == 'admin
+		String maliciousValue = "value' || $.other == 'admin";
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("field"), new Value(maliciousValue)));
+
+		// In JSON double-quoted strings, single quotes don't need escaping
+		// Jackson treats them as literal characters
+		assertThat(vectorExpr).isEqualTo("$.field == \"value' || $.other == 'admin\"");
+		// Single quotes are kept as-is (no escaping needed in JSON)
+		assertThat(vectorExpr).contains("value' || $.other == 'admin");
+	}
+
+	@Test
+	public void testInjectionWithControlCharacters() {
+		// Attempt to inject using newline: value\n|| $.field == "admin"
+		String maliciousValue = "value\n|| $.field == \"admin\"";
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("field"), new Value(maliciousValue)));
+
+		// Should escape newline and quotes
+		assertThat(vectorExpr).isEqualTo("$.field == \"value\\n|| $.field == \\\"admin\\\"\"");
+		// Verify newline is escaped
+		assertThat(vectorExpr).contains("\\n");
+	}
+
+	@Test
+	public void testInjectionWithMultipleEscapes() {
+		// Complex injection with multiple special characters
+		String maliciousValue = "test\"\\'\n\r\t";
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("field"), new Value(maliciousValue)));
+
+		// JSON escaping: double quotes and backslashes escaped, single quotes not escaped
+		assertThat(vectorExpr).isEqualTo("$.field == \"test\\\"\\\\'\\n\\r\\t\"");
+		// Verify escapes are present
+		assertThat(vectorExpr).contains("\\\""); // escaped double quote
+		assertThat(vectorExpr).contains("\\\\"); // escaped backslash
+		// Single quotes are NOT escaped in JSON double-quoted strings
+		assertThat(vectorExpr).contains("'");
+	}
+
+	@Test
+	public void testInjectionInListValues() {
+		// Attempt injection through IN clause
+		String maliciousValue1 = "HR\" || $.department == \"Finance";
+		String maliciousValue2 = "Engineering";
+		String vectorExpr = this.converter.convertExpression(
+				new Expression(IN, new Key("department"), new Value(List.of(maliciousValue1, maliciousValue2))));
+
+		// Should escape quotes in list values
+		assertThat(vectorExpr).contains("HR\\\" || $.department == \\\"Finance");
+		assertThat(vectorExpr).contains("Engineering");
+	}
+
+	@Test
+	public void testInjectionInComplexExpression() {
+		// Attempt injection in a complex AND/OR expression
+		String maliciousValue = "\" || $.role == \"admin\" || $.dept == \"";
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(AND, new Expression(EQ, new Key("department"), new Value(maliciousValue)),
+					new Expression(GTE, new Key("year"), new Value(2020))));
+
+		// Should not allow injection to break out of the expression
+		assertThat(vectorExpr).contains("\\\" || $.role == \\\"admin\\\" || $.dept == \\\"");
+		// Verify the AND operator is still present (not broken by injection)
+		assertThat(vectorExpr).contains("&&");
+	}
+
+	@Test
+	public void testNormalStringsNotAffected() {
+		// Verify normal strings work correctly after escaping fix
+		String normalValue = "HR Department";
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("department"), new Value(normalValue)));
+
+		assertThat(vectorExpr).isEqualTo("$.department == \"HR Department\"");
+	}
+
+	@Test
+	public void testUnicodeControlCharacters() {
+		// Test Unicode control characters are escaped
+		String valueWithControlChar = "test\u0000value"; // null character
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("field"), new Value(valueWithControlChar)));
+
+		// Should escape Unicode control character
+		assertThat(vectorExpr).contains("\\u0000");
+	}
+
+	@Test
+	public void testDateInINClause() {
+		// Test that date strings in IN clauses are properly normalized
+		String vectorExpr = this.converter.convertExpression(new Expression(IN, new Key("activationDate"),
+				new Value(List.of("2024-01-15T10:30:00Z", "2024-02-20T14:45:00Z"))));
+
+		// Verify dates are properly formatted in the JSONPath expression
+		// Note: Jackson serializes dates with milliseconds, so .000Z is expected
+		assertThat(vectorExpr).contains("$.activationDate == \"2024-01-15T10:30:00.000Z\"");
+		assertThat(vectorExpr).contains("$.activationDate == \"2024-02-20T14:45:00.000Z\"");
+		assertThat(vectorExpr).contains(" || "); // OR operator between conditions
+	}
+
+	@Test
+	public void testDateInNINClause() {
+		// Test that date strings in NIN clauses are properly normalized
+		String vectorExpr = this.converter.convertExpression(new Expression(NIN, new Key("activationDate"),
+				new Value(List.of("2024-01-15T10:30:00Z", "2024-02-20T14:45:00Z"))));
+
+		// Verify dates are properly formatted and wrapped in negation
+		assertThat(vectorExpr).startsWith("!(");
+		assertThat(vectorExpr).endsWith(")");
+		// Note: Jackson serializes dates with milliseconds
+		assertThat(vectorExpr).contains("$.activationDate == \"2024-01-15T10:30:00.000Z\"");
+		assertThat(vectorExpr).contains("$.activationDate == \"2024-02-20T14:45:00.000Z\"");
+	}
+
+	@Test
+	public void testDateObjectInINClause() {
+		// Test that Date objects in IN clauses are properly formatted
+		Date date1 = Date.from(Instant.parse("2024-01-15T10:30:00Z"));
+		Date date2 = Date.from(Instant.parse("2024-02-20T14:45:00Z"));
+
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(IN, new Key("activationDate"), new Value(List.of(date1, date2))));
+
+		// Verify Date objects are formatted in JSONPath
+		assertThat(vectorExpr).contains("$.activationDate");
+		// Jackson includes milliseconds in date serialization
+		assertThat(vectorExpr).contains("2024-01-15T10:30:00.000Z");
+		assertThat(vectorExpr).contains("2024-02-20T14:45:00.000Z");
 	}
 
 }

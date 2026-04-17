@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.bedrock.RequiresAwsCredentials;
 import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingModel.InputType;
@@ -55,7 +55,7 @@ class BedrockTitanEmbeddingModelIT {
 	void singleEmbedding() {
 		assertThat(this.embeddingModel).isNotNull();
 		EmbeddingResponse embeddingResponse = this.embeddingModel.call(new EmbeddingRequest(List.of("Hello World"),
-				BedrockTitanEmbeddingOptions.builder().withInputType(InputType.TEXT).build()));
+				BedrockTitanEmbeddingOptions.builder().inputType(InputType.TEXT).build()));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 		assertThat(this.embeddingModel.dimensions()).isEqualTo(1024);
@@ -69,7 +69,7 @@ class BedrockTitanEmbeddingModelIT {
 
 		EmbeddingResponse embeddingResponse = this.embeddingModel
 			.call(new EmbeddingRequest(List.of(Base64.getEncoder().encodeToString(image)),
-					BedrockTitanEmbeddingOptions.builder().withInputType(InputType.IMAGE).build()));
+					BedrockTitanEmbeddingOptions.builder().inputType(InputType.IMAGE).build()));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 		assertThat(this.embeddingModel.dimensions()).isEqualTo(1024);
@@ -86,7 +86,7 @@ class BedrockTitanEmbeddingModelIT {
 		@Bean
 		public TitanEmbeddingBedrockApi titanEmbeddingApi() {
 			return new TitanEmbeddingBedrockApi(TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id(),
-					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
+					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new JsonMapper(),
 					Duration.ofMinutes(2));
 		}
 

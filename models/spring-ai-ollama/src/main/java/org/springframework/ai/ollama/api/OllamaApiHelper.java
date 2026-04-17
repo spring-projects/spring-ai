@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,17 @@ package org.springframework.ai.ollama.api;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.ollama.api.OllamaApi.ChatResponse;
+import org.springframework.lang.Contract;
 import org.springframework.util.CollectionUtils;
 
 /**
  * @author Christian Tzolov
+ * @author Sun Yuhan
  * @since 1.0.0
  */
 public final class OllamaApiHelper {
@@ -37,7 +42,7 @@ public final class OllamaApiHelper {
 	 * @param ollamaChatResponse the Ollama chat response chunk to check
 	 * @return true if the chunk is a streaming tool call.
 	 */
-	public static boolean isStreamingToolCall(OllamaApi.ChatResponse ollamaChatResponse) {
+	public static boolean isStreamingToolCall(OllamaApi.@Nullable ChatResponse ollamaChatResponse) {
 
 		if (ollamaChatResponse == null || ollamaChatResponse.message() == null
 				|| ollamaChatResponse.message().toolCalls() == null) {
@@ -51,13 +56,14 @@ public final class OllamaApiHelper {
 	 * @param ollamaChatResponse the Ollama chat response chunk to check
 	 * @return true if the chunk is final
 	 */
-	public static boolean isStreamingDone(OllamaApi.ChatResponse ollamaChatResponse) {
+	public static boolean isStreamingDone(OllamaApi.@Nullable ChatResponse ollamaChatResponse) {
 
 		if (ollamaChatResponse == null) {
 			return false;
 		}
 
-		return ollamaChatResponse.done() && ollamaChatResponse.doneReason().equals("stop");
+		return Boolean.TRUE.equals(ollamaChatResponse.done())
+				&& Objects.requireNonNull(ollamaChatResponse.doneReason()).equals("stop");
 	}
 
 	public static ChatResponse merge(ChatResponse previous, ChatResponse current) {
@@ -81,19 +87,29 @@ public final class OllamaApiHelper {
 	private static OllamaApi.Message merge(OllamaApi.Message previous, OllamaApi.Message current) {
 
 		String content = mergeContent(previous, current);
+		String thinking = mergeThinking(previous, current);
 		OllamaApi.Message.Role role = (current.role() != null ? current.role() : previous.role());
 		role = (role != null ? role : OllamaApi.Message.Role.ASSISTANT);
 		List<String> images = mergeImages(previous, current);
 		List<OllamaApi.Message.ToolCall> toolCalls = mergeToolCall(previous, current);
+		String toolName = mergeToolName(previous, current);
 
-		return OllamaApi.Message.builder(role).content(content).images(images).toolCalls(toolCalls).build();
+		return OllamaApi.Message.builder(role)
+			.content(content)
+			.thinking(thinking)
+			.images(images)
+			.toolCalls(toolCalls)
+			.toolName(toolName)
+			.build();
 	}
 
-	private static Instant merge(Instant previous, Instant current) {
+	@Contract("_, !null -> !null; !null, _ -> !null")
+	private static @Nullable Instant merge(@Nullable Instant previous, @Nullable Instant current) {
 		return (current != null ? current : previous);
 	}
 
-	private static Integer merge(Integer previous, Integer current) {
+	@Contract("_, !null -> !null; !null, _ -> !null")
+	private static @Nullable Integer merge(@Nullable Integer previous, @Nullable Integer current) {
 		if (previous == null) {
 			return current;
 		}
@@ -103,7 +119,8 @@ public final class OllamaApiHelper {
 		return previous + current;
 	}
 
-	private static Long merge(Long previous, Long current) {
+	@Contract("_, !null -> !null; !null, _ -> !null")
+	private static @Nullable Long merge(@Nullable Long previous, @Nullable Long current) {
 		if (previous == null) {
 			return current;
 		}
@@ -113,7 +130,8 @@ public final class OllamaApiHelper {
 		return previous + current;
 	}
 
-	private static String merge(String previous, String current) {
+	@Contract("_, !null -> !null; !null, _ -> !null")
+	private static @Nullable String merge(@Nullable String previous, @Nullable String current) {
 		if (previous == null) {
 			return current;
 		}
@@ -123,19 +141,20 @@ public final class OllamaApiHelper {
 		return previous + current;
 	}
 
-	private static String mergeContent(OllamaApi.Message previous, OllamaApi.Message current) {
+	private static @Nullable String mergeContent(OllamaApi.@Nullable Message previous,
+			OllamaApi.@Nullable Message current) {
 		if (previous == null || previous.content() == null) {
 			return (current != null ? current.content() : null);
 		}
 		if (current == null || current.content() == null) {
-			return (previous != null ? previous.content() : null);
+			return previous.content();
 		}
 
 		return previous.content() + current.content();
 	}
 
-	private static List<OllamaApi.Message.ToolCall> mergeToolCall(OllamaApi.Message previous,
-			OllamaApi.Message current) {
+	private static @Nullable List<OllamaApi.Message.ToolCall> mergeToolCall(OllamaApi.@Nullable Message previous,
+			OllamaApi.@Nullable Message current) {
 		if (previous == null) {
 			return (current != null ? current.toolCalls() : null);
 		}
@@ -145,7 +164,32 @@ public final class OllamaApiHelper {
 		return merge(previous.toolCalls(), current.toolCalls());
 	}
 
-	private static List<String> mergeImages(OllamaApi.Message previous, OllamaApi.Message current) {
+	private static @Nullable String mergeThinking(OllamaApi.@Nullable Message previous,
+			OllamaApi.@Nullable Message current) {
+		if (previous == null || previous.thinking() == null) {
+			return (current != null ? current.thinking() : null);
+		}
+		if (current == null || current.thinking() == null) {
+			return (previous.thinking());
+		}
+
+		return previous.thinking() + current.thinking();
+	}
+
+	private static @Nullable String mergeToolName(OllamaApi.@Nullable Message previous,
+			OllamaApi.@Nullable Message current) {
+		if (previous == null || previous.toolName() == null) {
+			return (current != null ? current.toolName() : null);
+		}
+		if (current == null || current.toolName() == null) {
+			return (previous.toolName());
+		}
+
+		return previous.toolName() + current.toolName();
+	}
+
+	private static @Nullable List<String> mergeImages(OllamaApi.@Nullable Message previous,
+			OllamaApi.@Nullable Message current) {
 		if (previous == null) {
 			return (current != null ? current.images() : null);
 		}
@@ -155,7 +199,7 @@ public final class OllamaApiHelper {
 		return merge(previous.images(), current.images());
 	}
 
-	private static <T> List<T> merge(List<T> previous, List<T> current) {
+	private static <T> @Nullable List<T> merge(@Nullable List<T> previous, @Nullable List<T> current) {
 		if (previous == null) {
 			return current;
 		}

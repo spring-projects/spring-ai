@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,6 +50,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  *
  * @author Thomas Vitale
  * @author Alexandros Pappas
+ * @author Jason Smith
  */
 @SpringBootTest(classes = MistralAiChatModelObservationIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
@@ -69,7 +70,7 @@ public class MistralAiChatModelObservationIT {
 	@Test
 	void observationForChatOperation() {
 		var options = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.SMALL.getValue())
+			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
 			.maxTokens(2048)
 			.stop(List.of("this-is-the-end"))
 			.temperature(0.7)
@@ -93,7 +94,7 @@ public class MistralAiChatModelObservationIT {
 	@Test
 	void observationForStreamingChatOperation() {
 		var options = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.SMALL.getValue())
+			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
 			.maxTokens(2048)
 			.stop(List.of("this-is-the-end"))
 			.temperature(0.7)
@@ -130,12 +131,12 @@ public class MistralAiChatModelObservationIT {
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
 			.that()
-			.hasContextualNameEqualTo("chat " + MistralAiApi.ChatModel.SMALL.getValue())
+			.hasContextualNameEqualTo("chat " + MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.CHAT.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.MISTRAL_AI.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					MistralAiApi.ChatModel.SMALL.getValue())
+					MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(),
 					StringUtils.hasText(responseMetadata.getModel()) ? responseMetadata.getModel()
 							: KeyValue.NONE_VALUE)
@@ -180,7 +181,7 @@ public class MistralAiChatModelObservationIT {
 
 		@Bean
 		public MistralAiApi mistralAiApi() {
-			return new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY"));
+			return MistralAiApi.builder().apiKey(System.getenv("MISTRAL_AI_API_KEY")).build();
 		}
 
 		@Bean
@@ -189,7 +190,7 @@ public class MistralAiChatModelObservationIT {
 			return MistralAiChatModel.builder()
 				.mistralAiApi(mistralAiApi)
 				.defaultOptions(MistralAiChatOptions.builder().build())
-				.retryTemplate(RetryTemplate.defaultInstance())
+				.retryTemplate(new RetryTemplate())
 				.observationRegistry(observationRegistry)
 				.build();
 		}

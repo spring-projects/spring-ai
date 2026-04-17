@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,14 +48,14 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration
 @ConditionalOnClass({ EmbeddingModel.class, WeaviateVectorStore.class })
-@EnableConfigurationProperties({ WeaviateVectorStoreProperties.class })
+@EnableConfigurationProperties(WeaviateVectorStoreProperties.class)
 @ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.WEAVIATE,
 		matchIfMissing = true)
 public class WeaviateVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(WeaviateConnectionDetails.class)
-	public PropertiesWeaviateConnectionDetails weaviateConnectionDetails(WeaviateVectorStoreProperties properties) {
+	PropertiesWeaviateConnectionDetails weaviateConnectionDetails(WeaviateVectorStoreProperties properties) {
 		return new PropertiesWeaviateConnectionDetails(properties);
 	}
 
@@ -74,7 +74,7 @@ public class WeaviateVectorStoreAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy batchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}
@@ -94,7 +94,7 @@ public class WeaviateVectorStoreAutoConfiguration {
 				.toList())
 			.consistencyLevel(WeaviateVectorStore.ConsistentLevel.valueOf(properties.getConsistencyLevel().name()))
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.customObservationConvention(customObservationConvention.getIfAvailable())
 			.batchingStrategy(batchingStrategy)
 			.build();
 	}

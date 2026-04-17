@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
@@ -94,6 +95,92 @@ class PromptTemplateBuilderTests {
 			// Fail if any other unexpected exception is caught
 			Assertions.fail("Caught unexpected exception: " + e.getClass().getName());
 		}
+	}
+
+	@Test
+	void builderWithWhitespaceOnlyTemplateShouldThrow() {
+		assertThatThrownBy(() -> PromptTemplate.builder().template("   ")).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("template cannot be null or empty");
+	}
+
+	@Test
+	void builderWithEmptyVariablesMapShouldWork() {
+		Map<String, Object> emptyVariables = new HashMap<>();
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template("Status: active")
+			.variables(emptyVariables)
+			.build();
+
+		assertThat(promptTemplate.render()).isEqualTo("Status: active");
+	}
+
+	@Test
+	void builderNullVariableValueShouldWork() {
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("value", null);
+
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template("Result: {value}")
+			.variables(variables)
+			.build();
+
+		// Should handle null values gracefully
+		String result = promptTemplate.render();
+		assertThat(result).contains("Result:").contains(":");
+	}
+
+	@Test
+	void builderWithMultipleMissingVariablesShouldThrow() {
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template("Processing {item} with {type} at {level}")
+			.build();
+
+		assertThatIllegalStateException().isThrownBy(promptTemplate::render)
+			.withMessageContainingAll("Not all variables were replaced in the template", "item", "type", "level");
+	}
+
+	@Test
+	void builderWithPartialVariablesShouldThrow() {
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("item", "data");
+		// Missing 'type' variable
+
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template("Processing {item} with {type}")
+			.variables(variables)
+			.build();
+
+		assertThatIllegalStateException().isThrownBy(promptTemplate::render)
+			.withMessageContaining("Missing variable names are: [type]");
+	}
+
+	@Test
+	void builderWithCompleteVariablesShouldRender() {
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("item", "data");
+		variables.put("count", 42);
+
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template("Processing {item} with count {count}")
+			.variables(variables)
+			.build();
+
+		String result = promptTemplate.render();
+		assertThat(result).isEqualTo("Processing data with count 42");
+	}
+
+	@Test
+	void builderWithEmptyStringVariableShouldWork() {
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("name", "");
+
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template("Hello '{name}'!")
+			.variables(variables)
+			.build();
+
+		String result = promptTemplate.render();
+		assertThat(result).isEqualTo("Hello ''!");
 	}
 
 }

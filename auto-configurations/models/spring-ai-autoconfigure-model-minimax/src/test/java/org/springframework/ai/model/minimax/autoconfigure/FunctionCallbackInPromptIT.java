@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,26 +32,28 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxChatOptions;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Geng Rong
+ * @author Issam El-atif
  */
-@EnabledIfEnvironmentVariable(named = "MINIMAX_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "MINIMAX_API_KEY", matches = ".+")
 public class FunctionCallbackInPromptIT {
 
 	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackInPromptIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.minimax.apiKey=" + System.getenv("MINIMAX_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-				RestClientAutoConfiguration.class, MiniMaxChatAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(MiniMaxChatAutoConfiguration.class, RestClientAutoConfiguration.class,
+				SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class));
 
 	@Test
 	void functionCallTest() {

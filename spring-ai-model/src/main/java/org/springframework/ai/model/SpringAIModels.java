@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,6 @@ public final class SpringAIModels {
 
 	public static final String BEDROCK_TITAN = "bedrock-titan";
 
-	public static final String HUGGINGFACE = "huggingface";
-
 	public static final String MINIMAX = "minimax";
 
 	public static final String MISTRAL = "mistral";
@@ -44,6 +42,8 @@ public final class SpringAIModels {
 
 	public static final String OPENAI = "openai";
 
+	public static final String OPENAI_SDK = "openai-sdk";
+
 	public static final String POSTGRESML = "postgresml";
 
 	public static final String STABILITY_AI = "stabilityai";
@@ -52,8 +52,10 @@ public final class SpringAIModels {
 
 	public static final String VERTEX_AI = "vertexai";
 
-	public static final String ZHIPUAI = "zhipuai";
+	public static final String GOOGLE_GEN_AI = "google-genai";
 
 	public static final String DEEPSEEK = "deepseek";
+
+	public static final String ELEVEN_LABS = "elevenlabs";
 
 }

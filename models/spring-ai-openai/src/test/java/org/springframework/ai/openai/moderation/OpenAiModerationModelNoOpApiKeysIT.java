@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,8 @@ package org.springframework.ai.openai.moderation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.moderation.ModerationPrompt;
 import org.springframework.ai.openai.OpenAiModerationModel;
-import org.springframework.ai.openai.api.OpenAiModerationApi;
-import org.springframework.ai.retry.NonTransientAiException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -47,20 +44,17 @@ public class OpenAiModerationModelNoOpApiKeysIT {
 			ModerationPrompt prompt = new ModerationPrompt("I want to kill them..");
 
 			this.moderationModel.call(prompt);
-		}).isInstanceOf(NonTransientAiException.class);
+		}).isInstanceOf(RuntimeException.class);
 	}
 
 	@SpringBootConfiguration
 	static class Config {
 
 		@Bean
-		public OpenAiModerationApi moderationGenerationApi() {
-			return OpenAiModerationApi.builder().apiKey(new NoopApiKey()).build();
-		}
-
-		@Bean
-		public OpenAiModerationModel openAiModerationClient(OpenAiModerationApi openAiModerationApi) {
-			return new OpenAiModerationModel(openAiModerationApi);
+		public OpenAiModerationModel openAiModerationClient() {
+			return OpenAiModerationModel.builder()
+				.options(org.springframework.ai.openai.OpenAiModerationOptions.builder().apiKey("noop").build())
+				.build();
 		}
 
 	}

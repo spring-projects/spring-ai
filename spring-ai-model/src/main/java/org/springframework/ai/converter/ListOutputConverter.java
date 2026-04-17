@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 
 package org.springframework.ai.converter;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.core.convert.support.DefaultConversionService;
-import org.springframework.lang.NonNull;
 
 /**
  * {@link StructuredOutputConverter} implementation that uses a
@@ -48,8 +48,9 @@ public class ListOutputConverter extends AbstractConversionServiceOutputConverte
 	}
 
 	@Override
-	public List<String> convert(@NonNull String text) {
-		return this.getConversionService().convert(text, List.class);
+	public List<String> convert(String text) {
+		List<String> result = this.getConversionService().convert(text, List.class);
+		return result == null ? Collections.emptyList() : result;
 	}
 
 }

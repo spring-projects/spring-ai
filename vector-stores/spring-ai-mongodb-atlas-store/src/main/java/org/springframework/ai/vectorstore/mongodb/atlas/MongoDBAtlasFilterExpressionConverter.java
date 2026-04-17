@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.mongodb.atlas;
 
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR;
@@ -44,6 +45,7 @@ public class MongoDBAtlasFilterExpressionConverter extends AbstractFilterExpress
 	}
 
 	private void doCompoundExpressionType(Filter.Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "expected expression.right to be non null");
 		context.append("{");
 		context.append(getOperationSymbol(expression));
 		context.append(":[");
@@ -54,6 +56,7 @@ public class MongoDBAtlasFilterExpressionConverter extends AbstractFilterExpress
 	}
 
 	private void doSingleExpressionType(Filter.Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "expected expression.right to be non null");
 		context.append("{");
 		this.convertOperand(expression.left(), context);
 		context.append(":{");
@@ -64,36 +67,37 @@ public class MongoDBAtlasFilterExpressionConverter extends AbstractFilterExpress
 	}
 
 	private String getOperationSymbol(Filter.Expression exp) {
-		switch (exp.type()) {
-			case AND:
-				return "$and";
-			case OR:
-				return "$or";
-			case EQ:
-				return "$eq";
-			case NE:
-				return "$ne";
-			case LT:
-				return "$lt";
-			case LTE:
-				return "$lte";
-			case GT:
-				return "$gt";
-			case GTE:
-				return "$gte";
-			case IN:
-				return "$in";
-			case NIN:
-				return "$nin";
-			default:
-				throw new RuntimeException("Not supported expression type:" + exp.type());
-		}
+		return switch (exp.type()) {
+			case AND -> "$and";
+			case OR -> "$or";
+			case EQ -> "$eq";
+			case NE -> "$ne";
+			case LT -> "$lt";
+			case LTE -> "$lte";
+			case GT -> "$gt";
+			case GTE -> "$gte";
+			case IN -> "$in";
+			case NIN -> "$nin";
+			default -> throw new RuntimeException("Not supported expression type:" + exp.type());
+		};
 	}
 
 	@Override
 	protected void doKey(Filter.Key filterKey, StringBuilder context) {
 		var identifier = (hasOuterQuotes(filterKey.key())) ? removeOuterQuotes(filterKey.key()) : filterKey.key();
 		context.append("\"metadata." + identifier + "\"");
+	}
+
+	/**
+	 * Serialize values using JSON serialization for MongoDB Atlas filter expressions.
+	 * Delegates to {@link #emitJsonValue(Object, StringBuilder)} for Jackson-based JSON
+	 * serialization.
+	 * @param value the value to serialize
+	 * @param context the context to append the JSON representation to
+	 */
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		emitJsonValue(value, context);
 	}
 
 }

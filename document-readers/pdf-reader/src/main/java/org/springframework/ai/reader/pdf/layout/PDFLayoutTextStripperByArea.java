@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import java.util.Map;
 
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.text.TextPosition;
+
+import org.springframework.util.Assert;
 
 /**
  * Re-implement the PDFLayoutTextStripperByArea on top of the PDFLayoutTextStripper
@@ -100,6 +102,7 @@ public class PDFLayoutTextStripperByArea extends ForkPDFLayoutTextStripper {
 	 */
 	public String getTextForRegion(String regionName) {
 		StringWriter text = this.regionText.get(regionName);
+		Assert.state(text != null, "Text for region " + regionName + " not found");
 		return text.toString();
 	}
 

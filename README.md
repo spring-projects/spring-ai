@@ -1,4 +1,10 @@
-# Spring AI [![build status](https://github.com/spring-projects/spring-ai/actions/workflows/continuous-integration.yml/badge.svg)](https://github.com/spring-projects/spring-ai/actions/workflows/continuous-integration.yml) [![build status](https://github.com/spring-projects/spring-ai-integration-tests/actions/workflows/spring-ai-integration-tests.yml/badge.svg)](https://github.com/spring-projects/spring-ai-integration-tests/actions/workflows/spring-ai-integration-tests.yml)
+# Spring AI [![build status](https://github.com/spring-projects/spring-ai/actions/workflows/continuous-integration.yml/badge.svg)](https://github.com/spring-projects/spring-ai/actions/workflows/continuous-integration.yml) [![build status](https://github.com/spring-projects/spring-ai-integration-tests/actions/workflows/spring-ai-integration-tests.yml/badge.svg)](https://github.com/spring-projects/spring-ai-integration-tests/actions/workflows/spring-ai-integration-tests.yml) [![Maven Central](https://img.shields.io/maven-central/v/org.springframework.ai/spring-ai-model?label=Maven%20Central&versionPrefix=2.0)](https://central.sonatype.com/artifact/org.springframework.ai/spring-ai-model)
+
+### Spring Boot Version Compatibility
+
+> **Spring AI 2.x.x** ([main](https://github.com/spring-projects/spring-ai/tree/main) branch) - Spring Boot `4.x`
+>
+> **Spring AI 1.1.x** ([1.1.x](https://github.com/spring-projects/spring-ai/tree/1.1.x) branch) - Spring Boot `3.5.x`
 
 
 The Spring AI project provides a Spring-friendly API and abstractions for developing AI applications.
@@ -23,9 +29,10 @@ You can find more details in the [Reference Documentation](https://docs.spring.i
   - [Audio Transcription](https://docs.spring.io/spring-ai/reference/api/audio/transcriptions.html)
   - [Text to Speech](https://docs.spring.io/spring-ai/reference/api/audio/speech.html)
   - [Moderation](https://docs.spring.io/spring-ai/reference/api/index.html#api/moderation)
+  - **Latest Models**: GPT-5, and other cutting-edge models for advanced AI applications.
 * Portable API support across AI providers for both synchronous and streaming options. Access to [model-specific features](https://docs.spring.io/spring-ai/reference/api/chatmodel.html#_chat_options) is also available.
 * [Structured Outputs](https://docs.spring.io/spring-ai/reference/api/structured-output-converter.html) - Mapping of AI Model output to POJOs.
-* Support for all major [Vector Database providers](https://docs.spring.io/spring-ai/reference/api/vectordbs.html) such as *Apache Cassandra, Azure Vector Search, Chroma, Elasticsearch, Milvus, MongoDB Atlas, MariaDB, Neo4j, Oracle, PostgreSQL/PGVector, PineCone, Qdrant, Redis, and Weaviate*.
+* Support for all major [Vector Database providers](https://docs.spring.io/spring-ai/reference/api/vectordbs.html) such as *Apache Cassandra, Azure Vector Search, Chroma, Elasticsearch, Milvus, MongoDB Atlas, MariaDB, Neo4j, Oracle, PostgreSQL/PGVector, Pinecone, Qdrant, Redis, and Weaviate*.
 * Portable API across Vector Store providers, including a novel SQL-like [metadata filter API](https://docs.spring.io/spring-ai/reference/api/vectordbs.html#metadata-filters).
 * [Tools/Function Calling](https://docs.spring.io/spring-ai/reference/api/tools.html) - permits the model to request the execution of client-side tools and functions, thereby accessing necessary real-time information as required.
 * [Observability](https://docs.spring.io/spring-ai/reference/observability/index.html) - Provides insights into AI-related operations.
@@ -47,6 +54,7 @@ Please refer to the [Getting Started Guide](https://docs.spring.io/spring-ai/ref
 <!-- * [Discussions](https://github.com/spring-projects/spring-ai/discussions) - Go here if you have a question, suggestion, or feedback! -->
 * [Awesome Spring AI](https://github.com/spring-ai-community/awesome-spring-ai) - A curated list of awesome resources, tools, tutorials, and projects for building generative AI applications using Spring AI
 * [Spring AI Examples](https://github.com/spring-projects/spring-ai-examples) contains example projects that explain specific features in more detail.
+* [Spring AI Community](https://github.com/spring-ai-community) - A community-driven organization for building Spring-based integrations with AI models, agents, vector databases, and more.
 
 ## Breaking changes
 
@@ -62,6 +70,9 @@ To clone it you have to either:
 
 
 ## Building
+
+The project targets and build artifacts compatible with Java 17+, but requires JDK 21
+to build. This is enforced by the maven enforcer plugin.
 
 To build with running unit tests
 
@@ -79,11 +90,11 @@ Note that you should set API key environment variables for OpenAI or other model
 
 To run a specific integration test allowing for up to two attempts to succeed.  This is useful when a hosted service is not reliable or times out.
 ```shell
-./mvnw -pl vector-stores/spring-ai-pgvector-store -Pintegration-tests -Dfailsafe.rerunFailingTestsCount=2 -Dit.test=PgVectorStoreIT verify
+./mvnw -pl vector-stores/spring-ai-pgvector-store -am -Pintegration-tests -Dfailsafe.failIfNoSpecifiedTests=false -Dfailsafe.rerunFailingTestsCount=2 -Dit.test=PgVectorStoreIT verify
 ```
 
 ### Integration Tests
-There are many integration tests ,so it often isn't realistic to run them all at once.
+There are many integration tests, so it often isn't realistic to run them all at once.
 
 A quick pass through the most important pathways that runs integration tests for
 
@@ -102,6 +113,7 @@ One way to run integration tests on part of the code is to first do a quick comp
 ./mvnw clean install -DskipTests -Dmaven.javadoc.skip=true
 ```
 Then run the integration test for a specific module using the `-pl` option
+
 ```shell
 ./mvnw verify -Pintegration-tests -pl spring-ai-spring-boot-testcontainers
 ```
@@ -117,10 +129,9 @@ The docs are then in the directory `spring-ai-docs/target/antora/site/index.html
 
 ### Formatting the Source Code
 
-To reformat using the [java-format plugin](https://github.com/spring-io/spring-javaformat)
-```shell
-./mvnw spring-javaformat:apply
-```
+The code is formatted using the [java-format plugin](https://github.com/spring-io/spring-javaformat) as part of the build. Correct
+formatting is enforced by CI.
+
 ### Updating License Headers
 
 To update the year on license headers using the [license-maven-plugin](https://oss.carbou.me/license-maven-plugin/#goals)
@@ -131,14 +142,7 @@ To update the year on license headers using the [license-maven-plugin](https://o
 
 To check javadocs using the [javadoc:javadoc](https://maven.apache.org/plugins/maven-javadoc-plugin/)
 ```shell
-./mvnw javadoc:javadoc -Pjavadoc
-```
-### Enabling Checkstyle
-
-Checkstyles are currently disabled, but you can enable them by doing the following:
-
-```shell
-./mvnw clean package -DskipTests -Ddisable.checks=false
+./mvnw javadoc:javadoc
 ```
 
 #### Source Code Style
@@ -148,3 +152,12 @@ The wiki pages
 [Code Style](https://github.com/spring-projects/spring-framework/wiki/Code-Style) and
 [IntelliJ IDEA Editor Settings](https://github.com/spring-projects/spring-framework/wiki/IntelliJ-IDEA-Editor-Settings)
 define the source file coding standards we use along with some IDEA editor settings we customize.
+
+Run checkstyle manually:
+```shell
+./mvnw process-sources -P checkstyle-check
+```
+
+## Contributing
+
+Your contributions are always welcome! Please read the [contribution guidelines](CONTRIBUTING.adoc) first.

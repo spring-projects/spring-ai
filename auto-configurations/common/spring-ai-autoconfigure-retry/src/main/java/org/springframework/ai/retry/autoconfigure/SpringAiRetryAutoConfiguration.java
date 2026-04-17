@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,9 @@
 package org.springframework.ai.retry.autoconfigure;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,14 +32,15 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.retry.RetryListener;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
+import org.springframework.core.retry.Retryable;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.lang.NonNull;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.RetryListener;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StreamUtils;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
 
 /**
@@ -47,6 +50,7 @@ import org.springframework.web.client.ResponseErrorHandler;
  *
  * @author Christian Tzolov
  * @author SriVarshan P
+ * @author Seunggyu Lee
  */
 @AutoConfiguration
 @ConditionalOnClass(RetryUtils.class)
@@ -58,21 +62,26 @@ public class SpringAiRetryAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public RetryTemplate retryTemplate(SpringAiRetryProperties properties) {
-		return RetryTemplate.builder()
-			.maxAttempts(properties.getMaxAttempts())
-			.retryOn(TransientAiException.class)
-			.exponentialBackoff(properties.getBackoff().getInitialInterval(), properties.getBackoff().getMultiplier(),
-					properties.getBackoff().getMaxInterval())
-			.withListener(new RetryListener() {
-
-				@Override
-				public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback,
-						Throwable throwable) {
-					logger.warn("Retry error. Retry count: {}, Exception: {}", context.getRetryCount(),
-							throwable.getMessage(), throwable);
-				}
-			})
+		RetryPolicy retryPolicy = RetryPolicy.builder()
+			.maxRetries(properties.getMaxAttempts())
+			.includes(TransientAiException.class)
+			.includes(ResourceAccessException.class)
+			.delay(properties.getBackoff().getInitialInterval())
+			.multiplier(properties.getBackoff().getMultiplier())
+			.maxDelay(properties.getBackoff().getMaxInterval())
 			.build();
+
+		RetryTemplate retryTemplate = new RetryTemplate(retryPolicy);
+		retryTemplate.setRetryListener(new RetryListener() {
+			private final AtomicInteger retryCount = new AtomicInteger(0);
+
+			@Override
+			public void onRetryFailure(RetryPolicy policy, Retryable<?> retryable, Throwable throwable) {
+				int currentRetries = this.retryCount.incrementAndGet();
+				logger.warn("Retry error. Retry count:{}", currentRetries, throwable);
+			}
+		});
+		return retryTemplate;
 	}
 
 	@Bean
@@ -82,12 +91,17 @@ public class SpringAiRetryAutoConfiguration {
 		return new ResponseErrorHandler() {
 
 			@Override
-			public boolean hasError(@NonNull ClientHttpResponse response) throws IOException {
+			public boolean hasError(ClientHttpResponse response) throws IOException {
 				return response.getStatusCode().isError();
 			}
 
 			@Override
-			public void handleError(@NonNull ClientHttpResponse response) throws IOException {
+			public void handleError(URI url, HttpMethod method, ClientHttpResponse response) throws IOException {
+				handleError(response);
+			}
+
+			@SuppressWarnings("removal")
+			public void handleError(ClientHttpResponse response) throws IOException {
 				if (!response.getStatusCode().isError()) {
 					return;
 				}

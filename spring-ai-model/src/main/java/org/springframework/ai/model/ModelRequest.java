@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.ai.model;
+
+import org.jspecify.annotations.Nullable;
 
 /**
  * Interface representing a request to an AI model. This interface encapsulates the
@@ -39,6 +41,6 @@ public interface ModelRequest<T> {
 	 * Retrieves the customizable options for AI model interactions.
 	 * @return the customizable options for AI model interactions
 	 */
-	ModelOptions getOptions();
+	@Nullable ModelOptions getOptions();
 
 }

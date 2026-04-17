@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,10 +44,11 @@ import org.springframework.context.annotation.Bean;
  *
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Alexandros Pappas
  */
 @AutoConfiguration
 @ConditionalOnClass({ EmbeddingModel.class, SearchIndexClient.class, AzureVectorStore.class })
-@EnableConfigurationProperties({ AzureVectorStoreProperties.class })
+@EnableConfigurationProperties(AzureVectorStoreProperties.class)
 @ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.AZURE,
 		matchIfMissing = true)
 public class AzureVectorStoreAutoConfiguration {
@@ -74,7 +75,7 @@ public class AzureVectorStoreAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy batchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}
@@ -100,6 +101,18 @@ public class AzureVectorStoreAutoConfiguration {
 
 		if (properties.getDefaultSimilarityThreshold() >= 0.0) {
 			builder.defaultSimilarityThreshold(properties.getDefaultSimilarityThreshold());
+		}
+
+		if (properties.getContentFieldName() != null) {
+			builder.contentFieldName(properties.getContentFieldName());
+		}
+
+		if (properties.getEmbeddingFieldName() != null) {
+			builder.embeddingFieldName(properties.getEmbeddingFieldName());
+		}
+
+		if (properties.getMetadataFieldName() != null) {
+			builder.metadataFieldName(properties.getMetadataFieldName());
 		}
 
 		return builder.build();

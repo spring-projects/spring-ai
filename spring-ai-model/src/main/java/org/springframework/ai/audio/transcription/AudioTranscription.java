@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.springframework.ai.audio.transcription;
 import java.util.Objects;
 
 import org.springframework.ai.model.ModelResult;
-import org.springframework.lang.Nullable;
 
 /**
  * Represents a response returned by the AI.
@@ -32,7 +31,7 @@ public class AudioTranscription implements ModelResult<String> {
 
 	private final String text;
 
-	private AudioTranscriptionMetadata transcriptionMetadata;
+	private AudioTranscriptionMetadata transcriptionMetadata = AudioTranscriptionMetadata.NULL;
 
 	public AudioTranscription(String text) {
 		this.text = text;
@@ -45,10 +44,10 @@ public class AudioTranscription implements ModelResult<String> {
 
 	@Override
 	public AudioTranscriptionMetadata getMetadata() {
-		return this.transcriptionMetadata != null ? this.transcriptionMetadata : AudioTranscriptionMetadata.NULL;
+		return this.transcriptionMetadata;
 	}
 
-	public AudioTranscription withTranscriptionMetadata(@Nullable AudioTranscriptionMetadata transcriptionMetadata) {
+	public AudioTranscription withTranscriptionMetadata(AudioTranscriptionMetadata transcriptionMetadata) {
 		this.transcriptionMetadata = transcriptionMetadata;
 		return this;
 	}

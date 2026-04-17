@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ public class QdrantVectorStorePropertiesTests {
 		var props = new QdrantVectorStoreProperties();
 
 		assertThat(props.getCollectionName()).isEqualTo(QdrantVectorStore.DEFAULT_COLLECTION_NAME);
+		assertThat(props.getContentFieldName()).isEqualTo(QdrantVectorStore.DEFAULT_CONTENT_FIELD_NAME);
 		assertThat(props.getHost()).isEqualTo("localhost");
 		assertThat(props.getPort()).isEqualTo(6334);
 		assertThat(props.isUseTls()).isFalse();
@@ -44,12 +45,14 @@ public class QdrantVectorStorePropertiesTests {
 		var props = new QdrantVectorStoreProperties();
 
 		props.setCollectionName("MY_COLLECTION");
+		props.setContentFieldName("MY_CONTENT_FIELD");
 		props.setHost("MY_HOST");
 		props.setPort(999);
 		props.setUseTls(true);
 		props.setApiKey("MY_API_KEY");
 
 		assertThat(props.getCollectionName()).isEqualTo("MY_COLLECTION");
+		assertThat(props.getContentFieldName()).isEqualTo("MY_CONTENT_FIELD");
 		assertThat(props.getHost()).isEqualTo("MY_HOST");
 		assertThat(props.getPort()).isEqualTo(999);
 		assertThat(props.isUseTls()).isTrue();

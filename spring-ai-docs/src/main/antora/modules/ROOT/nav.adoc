@@ -5,6 +5,7 @@
 * Reference
 ** xref:api/chatclient.adoc[]
 *** xref:api/advisors.adoc[Advisors]
+**** xref:api/advisors-recursive.adoc[Recursive Advisors]
 
 ** xref:api/prompt.adoc[]
 ** xref:api/structured-output-converter.adoc[Structured Output]
@@ -18,30 +19,27 @@
 **** xref:api/chat/azure-openai-chat.adoc[Azure OpenAI]
 **** xref:api/chat/deepseek-chat.adoc[DeepSeek]
 **** xref:api/chat/dmr-chat.adoc[Docker Model Runner]
-**** xref:api/chat/google-vertexai.adoc[Google VertexAI]
-***** xref:api/chat/vertexai-gemini-chat.adoc[VertexAI Gemini]
+**** Google
+***** xref:api/chat/google-genai-chat.adoc[Google GenAI]
 **** xref:api/chat/groq-chat.adoc[Groq]
-**** xref:api/chat/huggingface.adoc[Hugging Face]
 **** xref:api/chat/mistralai-chat.adoc[Mistral AI]
 **** xref:api/chat/minimax-chat.adoc[MiniMax]
 **** xref:api/chat/moonshot-chat.adoc[Moonshot AI]
 **** xref:api/chat/nvidia-chat.adoc[NVIDIA]
 **** xref:api/chat/ollama-chat.adoc[Ollama]
 **** xref:api/chat/perplexity-chat.adoc[Perplexity AI]
-**** OCI Generative AI
-***** xref:api/chat/oci-genai/cohere-chat.adoc[Cohere]
 **** xref:api/chat/openai-chat.adoc[OpenAI]
 **** xref:api/chat/qianfan-chat.adoc[QianFan]
-**** xref:api/chat/zhipuai-chat.adoc[ZhiPu AI]
 
 *** xref:api/embeddings.adoc[Embedding Models]
 **** xref:api/bedrock.adoc[Amazon Bedrock]
 ***** xref:api/embeddings/bedrock-cohere-embedding.adoc[Cohere]
 ***** xref:api/embeddings/bedrock-titan-embedding.adoc[Titan]
 **** xref:api/embeddings/azure-openai-embeddings.adoc[Azure OpenAI]
+**** Google
+***** xref:api/embeddings/google-genai-embeddings-text.adoc[Google GenAI Text Embedding]
 **** xref:api/embeddings/mistralai-embeddings.adoc[Mistral AI]
 **** xref:api/embeddings/minimax-embeddings.adoc[MiniMax]
-**** xref:api/embeddings/oci-genai-embeddings.adoc[OCI GenAI]
 **** xref:api/embeddings/ollama-embeddings.adoc[Ollama]
 **** xref:api/embeddings/onnx.adoc[(ONNX) Transformers]
 **** xref:api/embeddings/openai-embeddings.adoc[OpenAI]
@@ -50,13 +48,11 @@
 **** VertexAI
 ***** xref:api/embeddings/vertexai-embeddings-text.adoc[Text Embedding]
 ***** xref:api/embeddings/vertexai-embeddings-multimodal.adoc[Multimodal Embedding]
-**** xref:api/embeddings/zhipuai-embeddings.adoc[ZhiPu AI]
 
 *** xref:api/imageclient.adoc[Image Models]
 **** xref:api/image/azure-openai-image.adoc[Azure OpenAI]
 **** xref:api/image/openai-image.adoc[OpenAI]
 **** xref:api/image/stabilityai-image.adoc[Stability]
-**** xref:api/image/zhipuai-image.adoc[ZhiPuAI]
 **** xref:api/image/qianfan-image.adoc[QianFan]
 
 *** xref:api/audio[Audio Models]
@@ -79,7 +75,16 @@
 ** xref:api/mcp/mcp-overview.adoc[Model Context Protocol (MCP)]
 *** xref:api/mcp/mcp-client-boot-starter-docs.adoc[MCP Client Boot Starters]
 *** xref:api/mcp/mcp-server-boot-starter-docs.adoc[MCP Server Boot Starters]
-*** xref:api/mcp/mcp-helpers.adoc[MCP Utilities]
+**** xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc[STDIO and SSE MCP Servers]
+**** xref:api/mcp/mcp-streamable-http-server-boot-starter-docs.adoc[Streamable-HTTP MCP Servers]
+**** xref:api/mcp/mcp-stateless-server-boot-starter-docs.adoc[Stateless Streamable-HTTP MCP Servers]
+// *** xref:api/mcp/mcp-helpers.adoc[MCP Utilities]
+*** xref:api/mcp/mcp-security.adoc[MCP Security (WIP)]
+*** xref:api/mcp/mcp-annotations-overview.adoc[MCP Annotations]
+**** xref:api/mcp/mcp-annotations-client.adoc[Client Annotations]
+**** xref:api/mcp/mcp-annotations-server.adoc[Server Annotations]
+**** xref:api/mcp/mcp-annotations-special-params.adoc[Special Parameters]
+**** xref:api/mcp/mcp-annotations-examples.adoc[MCP Annotations Examples]
 
 ** xref:api/retrieval-augmented-generation.adoc[Retrieval Augmented Generation (RAG)]
 *** xref:api/etl-pipeline.adoc[]
@@ -89,6 +94,7 @@
 ** xref:api/vectordbs.adoc[]
 *** xref:api/vectordbs/azure.adoc[]
 *** xref:api/vectordbs/azure-cosmos-db.adoc[]
+*** xref:api/vectordbs/bedrock-knowledge-base.adoc[]
 *** xref:api/vectordbs/apache-cassandra.adoc[]
 *** xref:api/vectordbs/chroma.adoc[]
 *** xref:api/vectordbs/couchbase.adoc[]
@@ -107,6 +113,7 @@
 *** xref:api/vectordbs/hana.adoc[SAP Hana]
 *** xref:api/vectordbs/typesense.adoc[]
 *** xref:api/vectordbs/weaviate.adoc[]
+*** xref:api/vectordbs/s3-vector-store.adoc[]
 
 ** xref:observability/index.adoc[]
 
@@ -117,6 +124,9 @@
 
 * Guides
 ** https://github.com/spring-ai-community/awesome-spring-ai[Awesome Spring AI]
+** xref:guides/getting-started-mcp.adoc[Getting Started with MCP]
+** xref:guides/dynamic-tool-search.adoc[Dynamic Tool Discovery]
+** xref:guides/llm-as-judge.adoc[LLM-as-a-Judge Evaluation]
 ** xref:api/chat/prompt-engineering-patterns.adoc[]
 ** xref:api/effective-agents.adoc[Building Effective Agents]
 ** xref:api/cloud-bindings.adoc[Deploying to the Cloud]

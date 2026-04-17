@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientCustomizer;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
+import org.springframework.ai.chat.client.observation.ChatClientCompletionObservationHandler;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientPromptContentObservationHandler;
@@ -56,8 +58,7 @@ import org.springframework.context.annotation.Scope;
  * @author Jonatan Ivanov
  * @since 1.0.0
  */
-@AutoConfiguration(
-		afterName = { "org.springframework.boot.actuate.autoconfigure.observation.ObservationAutoConfiguration" })
+@AutoConfiguration
 @ConditionalOnClass(ChatClient.class)
 @EnableConfigurationProperties(ChatClientBuilderProperties.class)
 @ConditionalOnProperty(prefix = ChatClientBuilderProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
@@ -69,6 +70,11 @@ public class ChatClientAutoConfiguration {
 	private static void logPromptContentWarning() {
 		logger.warn(
 				"You have enabled logging out the ChatClient prompt content with the risk of exposing sensitive or private information. Please, be careful!");
+	}
+
+	private static void logCompletionWarning() {
+		logger.warn(
+				"You have enabled logging out the ChatClient completion content with the risk of exposing sensitive or private information. Please, be careful!");
 	}
 
 	@Bean
@@ -84,11 +90,11 @@ public class ChatClientAutoConfiguration {
 	@ConditionalOnMissingBean
 	ChatClient.Builder chatClientBuilder(ChatClientBuilderConfigurer chatClientBuilderConfigurer, ChatModel chatModel,
 			ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<ChatClientObservationConvention> observationConvention) {
-
+			ObjectProvider<ChatClientObservationConvention> chatClientObservationConvention,
+			ObjectProvider<AdvisorObservationConvention> advisorObservationConvention) {
 		ChatClient.Builder builder = ChatClient.builder(chatModel,
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				observationConvention.getIfUnique(() -> null));
+				chatClientObservationConvention.getIfUnique(), advisorObservationConvention.getIfUnique());
 		return chatClientBuilderConfigurer.configure(builder);
 	}
 
@@ -108,6 +114,17 @@ public class ChatClientAutoConfiguration {
 			return new TracingAwareLoggingObservationHandler<>(new ChatClientPromptContentObservationHandler(), tracer);
 		}
 
+		@Bean
+		@ConditionalOnMissingBean(value = ChatClientCompletionObservationHandler.class,
+				name = "chatClientCompletionObservationHandler")
+		@ConditionalOnProperty(prefix = ChatClientBuilderProperties.CONFIG_PREFIX + ".observations",
+				name = "log-completion", havingValue = "true")
+		TracingAwareLoggingObservationHandler<ChatClientObservationContext> chatClientCompletionObservationHandler(
+				Tracer tracer) {
+			logCompletionWarning();
+			return new TracingAwareLoggingObservationHandler<>(new ChatClientCompletionObservationHandler(), tracer);
+		}
+
 	}
 
 	@Configuration(proxyBeanMethods = false)
@@ -121,6 +138,15 @@ public class ChatClientAutoConfiguration {
 		ChatClientPromptContentObservationHandler chatClientPromptContentObservationHandler() {
 			logPromptContentWarning();
 			return new ChatClientPromptContentObservationHandler();
+		}
+
+		@Bean
+		@ConditionalOnMissingBean
+		@ConditionalOnProperty(prefix = ChatClientBuilderProperties.CONFIG_PREFIX + ".observations",
+				name = "log-completion", havingValue = "true")
+		ChatClientCompletionObservationHandler chatClientCompletionObservationHandler() {
+			logCompletionWarning();
+			return new ChatClientCompletionObservationHandler();
 		}
 
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ public class MistralAiEmbeddingProperties extends MistralAiParentProperties {
 	public MetadataMode metadataMode = MetadataMode.EMBED;
 
 	@NestedConfigurationProperty
-	private MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder()
+	private final MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder()
 		.withModel(DEFAULT_EMBEDDING_MODEL)
 		.withEncodingFormat(DEFAULT_ENCODING_FORMAT)
 		.build();
@@ -51,10 +51,6 @@ public class MistralAiEmbeddingProperties extends MistralAiParentProperties {
 
 	public MistralAiEmbeddingOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(MistralAiEmbeddingOptions options) {
-		this.options = options;
 	}
 
 	public MetadataMode getMetadataMode() {

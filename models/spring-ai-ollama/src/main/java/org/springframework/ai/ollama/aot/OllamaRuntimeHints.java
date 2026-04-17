@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.ai.ollama.aot;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
@@ -33,7 +35,7 @@ import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClasses
 public class OllamaRuntimeHints implements RuntimeHintsRegistrar {
 
 	@Override
-	public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+	public void registerHints(RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
 		for (var tr : findJsonAnnotatedClassesInPackage("org.springframework.ai.ollama")) {
 			hints.reflection().registerType(tr, mcs);

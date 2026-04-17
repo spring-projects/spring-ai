@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 
@@ -126,8 +126,8 @@ class OpenSearchContainerConnectionDetailsFactoryIT {
 
 		@Bean
 		@ServiceConnection
-		OpensearchContainer<?> opensearch() {
-			return new OpensearchContainer<>(OpenSearchImage.DEFAULT_IMAGE);
+		OpenSearchContainer<?> opensearch() {
+			return new OpenSearchContainer<>(OpenSearchImage.DEFAULT_IMAGE);
 		}
 
 	}

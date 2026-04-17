@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import com.google.cloud.aiplatform.v1.PredictionServiceClient;
 
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 public class TestVertexAiTextEmbeddingModel extends VertexAiTextEmbeddingModel {
 

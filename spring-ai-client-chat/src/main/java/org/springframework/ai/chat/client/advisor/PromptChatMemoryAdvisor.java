@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -39,7 +40,6 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.util.Assert;
 
@@ -132,7 +132,7 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		// 5. Add all user messages from the current prompt to memory (after system
 		// message is generated)
 		// 4. Add the new user message to the conversation memory.
-		UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
+		Message userMessage = processedChatClientRequest.prompt().getLastUserOrToolResponseMessage();
 		this.chatMemory.add(conversationId, userMessage);
 
 		return processedChatClientRequest;
@@ -141,18 +141,20 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 	@Override
 	public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
 		List<Message> assistantMessages = new ArrayList<>();
-		// Handle streaming case where we have a single result
-		if (chatClientResponse.chatResponse() != null && chatClientResponse.chatResponse().getResult() != null
-				&& chatClientResponse.chatResponse().getResult().getOutput() != null) {
-			assistantMessages = List.of((Message) chatClientResponse.chatResponse().getResult().getOutput());
-		}
-		else if (chatClientResponse.chatResponse() != null) {
-			assistantMessages = chatClientResponse.chatResponse()
-				.getResults()
+		// Extract assistant messages from chat client response.
+		// Processes all results from getResults() which automatically handles both single
+		// and multiple
+		// result scenarios (since getResult() == getResults().get(0)). Uses Optional
+		// chaining for
+		// null safety and returns empty list if no results are available.
+		assistantMessages = Optional.ofNullable(chatClientResponse)
+			.map(ChatClientResponse::chatResponse)
+			.filter(response -> response.getResults() != null && !response.getResults().isEmpty())
+			.map(response -> response.getResults()
 				.stream()
 				.map(g -> (Message) g.getOutput())
-				.toList();
-		}
+				.collect(Collectors.toList()))
+			.orElse(List.of());
 
 		if (!assistantMessages.isEmpty()) {
 			this.chatMemory.add(this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
@@ -201,7 +203,7 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 		private Scheduler scheduler = BaseAdvisor.DEFAULT_SCHEDULER;
 
-		private ChatMemory chatMemory;
+		private final ChatMemory chatMemory;
 
 		private Builder(ChatMemory chatMemory) {
 			this.chatMemory = chatMemory;

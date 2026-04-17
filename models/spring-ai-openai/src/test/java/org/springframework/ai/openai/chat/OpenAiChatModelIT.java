@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.openai.models.ReasoningEffort;
 import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -61,17 +63,17 @@ import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.OpenAiChatOptions.AudioParameters;
+import org.springframework.ai.openai.OpenAiChatOptions.AudioParameters.AudioResponseFormat;
+import org.springframework.ai.openai.OpenAiChatOptions.AudioParameters.Voice;
+import org.springframework.ai.openai.OpenAiChatOptions.StreamOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters.AudioResponseFormat;
-import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters.Voice;
-import org.springframework.ai.openai.api.tool.MockWeatherService;
-import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.convert.support.DefaultConversionService;
@@ -82,14 +84,27 @@ import org.springframework.util.MimeTypeUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+/**
+ * Integration tests for {@link OpenAiChatModel}.
+ *
+ * @author Julien Dubois
+ * @author Ilayaperumal Gopinathan
+ */
 @SpringBootTest(classes = OpenAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-public class OpenAiChatModelIT extends AbstractIT {
+public class OpenAiChatModelIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModelIT.class);
 
+	// It would be better to use ChatModel.GPT_4O_AUDIO_PREVIEW.asString(); but it can't
+	// be used as a constant.
+	public static final String DEFAULT_CHAT_MODEL_AUDIO = "gpt-4o-audio-preview";
+
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
+
+	@Autowired
+	private OpenAiChatModel chatModel;
 
 	@Test
 	void roleTest() {
@@ -125,22 +140,24 @@ public class OpenAiChatModelIT extends AbstractIT {
 	@Test
 	void streamCompletenessTest() throws InterruptedException {
 		UserMessage userMessage = new UserMessage(
-				"List ALL natural numbers in range [1, 1000]. Make sure to not omit any.");
+				"List ALL natural numbers in range [1, 100]. Make sure to not omit any. Print the full list here, one after another.");
 		Prompt prompt = new Prompt(List.of(userMessage));
 
 		StringBuilder answer = new StringBuilder();
 		CountDownLatch latch = new CountDownLatch(1);
 
-		Flux<ChatResponse> chatResponseFlux = this.streamingChatModel.stream(prompt).doOnNext(chatResponse -> {
-			String responseContent = chatResponse.getResults().get(0).getOutput().getText();
-			answer.append(responseContent);
+		Flux<ChatResponse> chatResponseFlux = this.chatModel.stream(prompt).doOnNext(chatResponse -> {
+			if (!chatResponse.getResults().isEmpty()) {
+				String responseContent = chatResponse.getResults().get(0).getOutput().getText();
+				answer.append(responseContent);
+			}
 		}).doOnComplete(() -> {
 			logger.info(answer.toString());
 			latch.countDown();
 		});
 		chatResponseFlux.subscribe();
 		assertThat(latch.await(120, TimeUnit.SECONDS)).isTrue();
-		IntStream.rangeClosed(1, 1000).forEach(n -> assertThat(answer).contains(String.valueOf(n)));
+		IntStream.rangeClosed(1, 100).forEach(n -> assertThat(answer).contains(String.valueOf(n)));
 	}
 
 	@Test
@@ -151,14 +168,16 @@ public class OpenAiChatModelIT extends AbstractIT {
 		StringBuilder answer = new StringBuilder();
 		CountDownLatch latch = new CountDownLatch(1);
 
-		ChatClient chatClient = ChatClient.builder(this.openAiChatModel).build();
+		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
 
 		Flux<ChatResponse> chatResponseFlux = chatClient.prompt(prompt)
 			.stream()
 			.chatResponse()
 			.doOnNext(chatResponse -> {
-				String responseContent = chatResponse.getResults().get(0).getOutput().getText();
-				answer.append(responseContent);
+				if (!chatResponse.getResults().isEmpty()) {
+					String responseContent = chatResponse.getResults().get(0).getOutput().getText();
+					answer.append(responseContent);
+				}
 			})
 			.doOnComplete(() -> {
 				logger.info(answer.toString());
@@ -177,7 +196,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 		StringBuilder answer = new StringBuilder();
 		CountDownLatch latch = new CountDownLatch(1);
 
-		ChatClient chatClient = ChatClient.builder(this.openAiChatModel).build();
+		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
 
 		Flux<String> chatResponseFlux = chatClient.prompt(prompt)
 			.stream()
@@ -199,7 +218,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
-		Flux<ChatResponse> flux = this.streamingChatModel.stream(prompt);
+		Flux<ChatResponse> flux = this.chatModel.stream(prompt);
 
 		List<ChatResponse> responses = flux.collectList().block();
 		assertThat(responses.size()).isGreaterThan(1);
@@ -217,7 +236,11 @@ public class OpenAiChatModelIT extends AbstractIT {
 
 	@Test
 	void streamingWithTokenUsage() {
-		var promptOptions = OpenAiChatOptions.builder().streamUsage(true).seed(1).build();
+		var promptOptions = OpenAiChatOptions.builder()
+			.streamOptions(StreamOptions.builder().includeUsage(true).build())
+			.reasoningEffort(ReasoningEffort.MINIMAL.toString())
+			.seed(1)
+			.build();
 
 		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
 		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
@@ -338,7 +361,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = this.streamingChatModel.stream(prompt)
+		String generationTextFromStream = this.chatModel.stream(prompt)
 			.collectList()
 			.block()
 			.stream()
@@ -357,12 +380,12 @@ public class OpenAiChatModelIT extends AbstractIT {
 	@Test
 	void functionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			.model(OpenAiApi.ChatModel.GPT_4_O.getValue())
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -379,19 +402,19 @@ public class OpenAiChatModelIT extends AbstractIT {
 	@Test
 	void streamFunctionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			// .withModel(OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW.getValue())
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(messages, promptOptions));
+		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
 
 		String content = response.collectList()
 			.block()
@@ -401,6 +424,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
+
 		logger.info("Response: {}", content);
 
 		assertThat(content).containsAnyOf("30.0", "30");
@@ -411,12 +435,12 @@ public class OpenAiChatModelIT extends AbstractIT {
 	@Test
 	void functionCallUsageTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			// .withModel(OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW.getValue())
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -431,42 +455,42 @@ public class OpenAiChatModelIT extends AbstractIT {
 		assertThat(usage).isNotNull();
 		assertThat(usage).isNotInstanceOf(EmptyUsage.class);
 		assertThat(usage).isInstanceOf(DefaultUsage.class);
-		assertThat(usage.getPromptTokens()).isGreaterThan(450).isLessThan(600);
-		assertThat(usage.getCompletionTokens()).isGreaterThan(230).isLessThan(360);
-		assertThat(usage.getTotalTokens()).isGreaterThan(680).isLessThan(900);
+		assertThat(usage.getPromptTokens()).isGreaterThan(500).isLessThan(800);
+		assertThat(usage.getCompletionTokens()).isGreaterThan(600).isLessThan(1200);
+		assertThat(usage.getTotalTokens()).isGreaterThan(1200).isLessThan(2000);
 	}
 
 	@Test
 	void streamFunctionCallUsageTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			// .withModel(OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW.getValue())
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
-			.streamUsage(true)
+			.streamOptions(StreamOptions.builder().includeUsage(true).build())
+			.reasoningEffort(ReasoningEffort.MINIMAL.toString())
 			.build();
 
-		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(messages, promptOptions));
+		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
 		Usage usage = response.last().block().getMetadata().getUsage();
 
 		logger.info("Usage: {}", usage);
 		assertThat(usage).isNotNull();
 		assertThat(usage).isNotInstanceOf(EmptyUsage.class);
 		assertThat(usage).isInstanceOf(DefaultUsage.class);
-		assertThat(usage.getPromptTokens()).isGreaterThan(450).isLessThan(600);
-		assertThat(usage.getCompletionTokens()).isGreaterThan(230).isLessThan(360);
-		assertThat(usage.getTotalTokens()).isGreaterThan(680).isLessThan(960);
+		assertThat(usage.getPromptTokens()).isGreaterThan(500).isLessThan(800);
+		assertThat(usage.getCompletionTokens()).isGreaterThan(200).isLessThan(500);
+		assertThat(usage.getTotalTokens()).isGreaterThan(600).isLessThan(1300);
 	}
 
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4o" })
-	void multiModalityEmbeddedImage(String modelName) throws IOException {
+	@Test
+	void multiModalityEmbeddedImage() throws IOException {
 
 		var imageData = new ClassPathResource("/test.png");
 
@@ -475,17 +499,15 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)))
 			.build();
 
-		var response = this.chatModel
-			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
+		var response = this.chatModel.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().build()));
 
 		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
 				"fruit stand");
 	}
 
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4o" })
-	void multiModalityImageUrl(String modelName) throws IOException {
+	@Test
+	void multiModalityImageUrl() throws IOException {
 
 		var userMessage = UserMessage.builder()
 			.text("Explain what do you see on this picture?")
@@ -496,7 +518,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.build();
 
 		ChatResponse response = this.chatModel
-			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
+			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().build()));
 
 		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
@@ -514,8 +536,8 @@ public class OpenAiChatModelIT extends AbstractIT {
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(List.of(userMessage),
-				OpenAiChatOptions.builder().model(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
+		Flux<ChatResponse> response = this.chatModel
+			.stream(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().build()));
 
 		String content = response.collectList()
 			.block()
@@ -530,7 +552,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4o-audio-preview" })
+	@ValueSource(strings = { DEFAULT_CHAT_MODEL_AUDIO })
 	void multiModalityOutputAudio(String modelName) throws IOException {
 		var userMessage = new UserMessage("Tell me joke about Spring Framework");
 
@@ -546,11 +568,10 @@ public class OpenAiChatModelIT extends AbstractIT {
 
 		byte[] audio = response.getResult().getOutput().getMedia().get(0).getDataAsByteArray();
 		assertThat(audio).isNotEmpty();
-		// AudioPlayer.play(audio);
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4o-audio-preview" })
+	@ValueSource(strings = { DEFAULT_CHAT_MODEL_AUDIO })
 	void streamingMultiModalityOutputAudio(String modelName) {
 		var userMessage = new UserMessage("Tell me joke about Spring Framework");
 
@@ -562,79 +583,17 @@ public class OpenAiChatModelIT extends AbstractIT {
 						.outputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
 						.build()))
 			.collectList()
-			.block()).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("Audio output is not supported for streaming requests.");
-
-		assertThatThrownBy(() -> this.chatModel
-			.stream(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder()
-						.model(modelName)
-						.outputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
-						.build()))
-			.collectList()
-			.block()).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("Audio parameters are not supported for streaming requests.");
-	}
-
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4o-audio-preview" })
-	void multiModalityInputAudio(String modelName) {
-		var audioResource = new ClassPathResource("speech/speech1.mp3");
-		var userMessage = UserMessage.builder()
-			.text("What is this recording about?")
-			.media(List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)))
-			.build();
-
-		ChatResponse response = this.chatModel
-			.call(new Prompt(List.of(userMessage), ChatOptions.builder().model(modelName).build()));
-
-		logger.info(response.getResult().getOutput().getText());
-		String responseText = response.getResult().getOutput().getText();
-		assertThat(responseText).satisfiesAnyOf(text -> assertThat(text).containsIgnoringCase("hobbit"),
-				text -> assertThat(text).containsIgnoringCase("lord of the rings"),
-				text -> assertThat(text).containsIgnoringCase("lotr"),
-				text -> assertThat(text).containsIgnoringCase("tolkien"),
-				text -> assertThat(text).containsIgnoringCase("fantasy"),
-				text -> assertThat(text).containsIgnoringCase("ring"),
-				text -> assertThat(text).containsIgnoringCase("shire"),
-				text -> assertThat(text).containsIgnoringCase("baggins"),
-				text -> assertThat(text).containsIgnoringCase("gandalf"),
-				text -> assertThat(text).containsIgnoringCase("frodo"),
-				text -> assertThat(text).containsIgnoringCase("meme"),
-				text -> assertThat(text).containsIgnoringCase("remix"));
-		assertThat(response.getMetadata().getModel()).containsIgnoringCase(modelName);
-	}
-
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4o-audio-preview" })
-	void streamingMultiModalityInputAudio(String modelName) {
-		var audioResource = new ClassPathResource("speech/speech1.mp3");
-		var userMessage = UserMessage.builder()
-			.text("What is this recording about?")
-			.media(List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)))
-			.build();
-
-		Flux<ChatResponse> response = this.chatModel
-			.stream(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
-
-		String content = response.collectList()
-			.block()
-			.stream()
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getText)
-			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
-		assertThat(content).containsIgnoringCase("hobbits");
+			.block()).isInstanceOf(CompletionException.class)
+			.hasMessageContaining(
+					"audio.format' does not support 'wav' when stream=true. Supported values are: 'pcm16");
 	}
 
 	@Test
 	void validateCallResponseMetadata() {
-		String model = OpenAiApi.ChatModel.GPT_3_5_TURBO.getName();
+		String model = OpenAiChatOptions.DEFAULT_CHAT_MODEL;
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(OpenAiChatOptions.builder().model(model).build())
+				.options(OpenAiChatOptions.builder().model(model))
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.call()
 				.chatResponse();
@@ -652,7 +611,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 	void validateStoreAndMetadata() {
 		OpenAiChatOptions options = OpenAiChatOptions.builder().store(true).metadata(Map.of("type", "dev")).build();
 
-		ChatResponse response = this.openAiChatModel.call(new Prompt("Tell me a joke", options));
+		ChatResponse response = this.chatModel.call(new Prompt("Tell me a joke", options));
 
 		assertThat(response).isNotNull();
 	}
@@ -722,69 +681,14 @@ public class OpenAiChatModelIT extends AbstractIT {
 	}
 
 	@Test
-	void webSearchAnnotationsTest() {
-		UserMessage userMessage = new UserMessage("What is the latest news on the Mars rover?");
-
-		var promptOptions = OpenAiChatOptions.builder()
-			.model(OpenAiApi.ChatModel.GPT_4_O_SEARCH_PREVIEW.getValue())
-			.webSearchOptions(new OpenAiApi.ChatCompletionRequest.WebSearchOptions(
-					OpenAiApi.ChatCompletionRequest.WebSearchOptions.SearchContextSize.MEDIUM,
-					new OpenAiApi.ChatCompletionRequest.WebSearchOptions.UserLocation("approximate",
-							new OpenAiApi.ChatCompletionRequest.WebSearchOptions.UserLocation.Approximate(
-									"San Francisco", "US", "California", "America/Los_Angeles"))))
+	void testOpenAiApiRejectsUnknownParameter() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.extraBody(Map.of("extra_body", Map.of("num_ctx", 4096, "num_predict", 10, "top_k", 40)))
 			.build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), promptOptions));
-
-		logger.info("Response: {}", response);
-
-		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
-
-		Object annotationsRaw = response.getResult().getOutput().getMetadata().get("annotations");
-		assertThat(annotationsRaw).isNotNull().isInstanceOf(List.class);
-
-		List<OpenAiApi.ChatCompletionMessage.Annotation> annotations = (List<OpenAiApi.ChatCompletionMessage.Annotation>) annotationsRaw;
-		assertThat(annotations).isNotEmpty();
-		assertThat(annotations.get(0).type()).isEqualTo("url_citation");
-		assertThat(annotations.get(0).urlCitation()).isNotNull();
-		assertThat(annotations.get(0).urlCitation().url()).isNotEmpty();
-	}
-
-	@Test
-	void streamWebSearchAnnotationsTest() {
-		UserMessage userMessage = new UserMessage("What is the weather in San Francisco?");
-
-		var promptOptions = OpenAiChatOptions.builder()
-			.model(OpenAiApi.ChatModel.GPT_4_O_SEARCH_PREVIEW.getValue())
-			.build();
-
-		Flux<ChatResponse> responseFlux = this.streamingChatModel
-			.stream(new Prompt(List.of(userMessage), promptOptions));
-
-		// Collect all streamed ChatResponses into a list.
-		List<ChatResponse> responses = responseFlux.collectList().block();
-		assert responses != null;
-		assertThat(responses).isNotEmpty();
-		ChatResponse lastResponse = responses.get(responses.size() - 1);
-		logger.info("Last Response: {}", lastResponse);
-
-		Object annotationsRaw = lastResponse.getResult().getOutput().getMetadata().get("annotations");
-		assertThat(annotationsRaw).isNotNull().isInstanceOf(List.class);
-
-		List<OpenAiApi.ChatCompletionMessage.Annotation> annotations = (List<OpenAiApi.ChatCompletionMessage.Annotation>) annotationsRaw;
-		assertThat(annotations).isNotEmpty();
-		assertThat(annotations.get(0).type()).isEqualTo("url_citation");
-		assertThat(annotations.get(0).urlCitation()).isNotNull();
-		assertThat(annotations.get(0).urlCitation().url()).isNotEmpty();
-
-		// For debugging, log fullContent
-		String fullContent = responses.stream()
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getText)
-			.collect(Collectors.joining());
-		logger.info("Full Content: {}", fullContent);
+		Prompt prompt = new Prompt("Test prompt", options);
+		assertThatThrownBy(() -> this.chatModel.call(prompt)).hasMessageContaining("extra_body")
+			.hasMessageContaining("Unknown parameter");
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {

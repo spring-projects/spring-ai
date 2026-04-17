@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ public class MistralAiModerationProperties extends MistralAiParentProperties {
 	private static final String DEFAULT_MODERATION_MODEL = MistralAiModerationApi.Model.MISTRAL_MODERATION.getValue();
 
 	@NestedConfigurationProperty
-	private MistralAiModerationOptions options = MistralAiModerationOptions.builder()
+	private final MistralAiModerationOptions options = MistralAiModerationOptions.builder()
 		.model(DEFAULT_MODERATION_MODEL)
 		.build();
 
@@ -42,10 +42,6 @@ public class MistralAiModerationProperties extends MistralAiParentProperties {
 
 	public MistralAiModerationOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(MistralAiModerationOptions options) {
-		this.options = options;
 	}
 
 }

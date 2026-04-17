@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,32 +17,27 @@
 package org.springframework.ai.model.openai.autoconfigure;
 
 import org.springframework.ai.document.MetadataMode;
+import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 @ConfigurationProperties(OpenAiEmbeddingProperties.CONFIG_PREFIX)
-public class OpenAiEmbeddingProperties extends OpenAiParentProperties {
+public class OpenAiEmbeddingProperties extends AbstractOpenAiOptions {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.embedding";
 
-	public static final String DEFAULT_EMBEDDING_MODEL = "text-embedding-ada-002";
-
-	public static final String DEFAULT_EMBEDDINGS_PATH = "/v1/embeddings";
+	public static final String DEFAULT_EMBEDDING_MODEL = OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL;
 
 	private MetadataMode metadataMode = MetadataMode.EMBED;
 
-	private String embeddingsPath = DEFAULT_EMBEDDINGS_PATH;
-
 	@NestedConfigurationProperty
-	private OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder().model(DEFAULT_EMBEDDING_MODEL).build();
+	private final OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
+		.model(DEFAULT_EMBEDDING_MODEL)
+		.build();
 
 	public OpenAiEmbeddingOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(OpenAiEmbeddingOptions options) {
-		this.options = options;
 	}
 
 	public MetadataMode getMetadataMode() {
@@ -51,14 +46,6 @@ public class OpenAiEmbeddingProperties extends OpenAiParentProperties {
 
 	public void setMetadataMode(MetadataMode metadataMode) {
 		this.metadataMode = metadataMode;
-	}
-
-	public String getEmbeddingsPath() {
-		return this.embeddingsPath;
-	}
-
-	public void setEmbeddingsPath(String embeddingsPath) {
-		this.embeddingsPath = embeddingsPath;
 	}
 
 }

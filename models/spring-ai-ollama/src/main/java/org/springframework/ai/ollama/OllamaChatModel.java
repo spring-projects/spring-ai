@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,19 +20,21 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
+import tools.jackson.core.type.TypeReference;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
@@ -60,19 +62,16 @@ import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
 import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCall;
 import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCallFunction;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.api.common.OllamaApiConstants;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
-
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.json.JsonParser;
-
-import org.springframework.ai.retry.RetryUtils;
-import org.springframework.retry.support.RetryTemplate;
-
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -113,13 +112,15 @@ public class OllamaChatModel implements ChatModel {
 
 	private static final String METADATA_EVAL_DURATION = "eval-duration";
 
+	private static final String THINKING_METADATA_KEY = "thinking";
+
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
 	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
 
 	private final OllamaApi chatApi;
 
-	private final OllamaOptions defaultOptions;
+	private final OllamaChatOptions defaultOptions;
 
 	private final ObservationRegistry observationRegistry;
 
@@ -137,13 +138,13 @@ public class OllamaChatModel implements ChatModel {
 
 	private final RetryTemplate retryTemplate;
 
-	public OllamaChatModel(OllamaApi ollamaApi, OllamaOptions defaultOptions, ToolCallingManager toolCallingManager,
+	public OllamaChatModel(OllamaApi ollamaApi, OllamaChatOptions defaultOptions, ToolCallingManager toolCallingManager,
 			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
 		this(ollamaApi, defaultOptions, toolCallingManager, observationRegistry, modelManagementOptions,
 				new DefaultToolExecutionEligibilityPredicate(), RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
-	public OllamaChatModel(OllamaApi ollamaApi, OllamaOptions defaultOptions, ToolCallingManager toolCallingManager,
+	public OllamaChatModel(OllamaApi ollamaApi, OllamaChatOptions defaultOptions, ToolCallingManager toolCallingManager,
 			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions,
 			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate, RetryTemplate retryTemplate) {
 
@@ -161,14 +162,16 @@ public class OllamaChatModel implements ChatModel {
 		this.modelManager = new OllamaModelManager(this.chatApi, modelManagementOptions);
 		this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
 		this.retryTemplate = retryTemplate;
-		initializeModel(defaultOptions.getModel(), modelManagementOptions.pullModelStrategy());
+		String model = defaultOptions.getModel();
+		Assert.state(model != null, "model must not be null");
+		initializeModel(model, modelManagementOptions.pullModelStrategy());
 	}
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	static ChatResponseMetadata from(OllamaApi.ChatResponse response, ChatResponse previousChatResponse) {
+	static ChatResponseMetadata from(OllamaApi.ChatResponse response, @Nullable ChatResponse previousChatResponse) {
 		Assert.notNull(response, "OllamaApi.ChatResponse must not be null");
 
 		DefaultUsage newUsage = getDefaultUsage(response);
@@ -212,10 +215,10 @@ public class OllamaChatModel implements ChatModel {
 			.model(response.model())
 			.keyValue(METADATA_CREATED_AT, response.createdAt())
 			.keyValue(METADATA_EVAL_DURATION, evalDuration)
-			.keyValue(METADATA_EVAL_COUNT, aggregatedUsage.getCompletionTokens().intValue())
+			.keyValue(METADATA_EVAL_COUNT, aggregatedUsage.getCompletionTokens())
 			.keyValue(METADATA_LOAD_DURATION, loadDuration)
 			.keyValue(METADATA_PROMPT_EVAL_DURATION, promptEvalDuration)
-			.keyValue(METADATA_PROMPT_EVAL_COUNT, aggregatedUsage.getPromptTokens().intValue())
+			.keyValue(METADATA_PROMPT_EVAL_COUNT, aggregatedUsage.getPromptTokens())
 			.keyValue(METADATA_TOTAL_DURATION, totalDuration)
 			.keyValue(DONE, response.done())
 			.build();
@@ -234,7 +237,7 @@ public class OllamaChatModel implements ChatModel {
 		return this.internalCall(requestPrompt, null);
 	}
 
-	private ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
+	private ChatResponse internalCall(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
 
 		OllamaApi.ChatRequest request = ollamaChatRequest(prompt, false);
 
@@ -248,7 +251,8 @@ public class OllamaChatModel implements ChatModel {
 					this.observationRegistry)
 			.observe(() -> {
 
-				OllamaApi.ChatResponse ollamaResponse = this.retryTemplate.execute(ctx -> this.chatApi.chat(request));
+				OllamaApi.ChatResponse ollamaResponse = RetryUtils.execute(this.retryTemplate,
+						() -> this.chatApi.chat(request));
 
 				List<AssistantMessage.ToolCall> toolCalls = ollamaResponse.message().toolCalls() == null ? List.of()
 						: ollamaResponse.message()
@@ -258,13 +262,21 @@ public class OllamaChatModel implements ChatModel {
 									ModelOptionsUtils.toJsonString(toolCall.function().arguments())))
 							.toList();
 
-				var assistantMessage = new AssistantMessage(ollamaResponse.message().content(), Map.of(), toolCalls);
+				var assistantMessage = AssistantMessage.builder()
+					.content(ollamaResponse.message().content())
+					.properties(Map.of())
+					.toolCalls(toolCalls)
+					.build();
 
 				ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
 				if (ollamaResponse.promptEvalCount() != null && ollamaResponse.evalCount() != null) {
-					generationMetadata = ChatGenerationMetadata.builder()
-						.finishReason(ollamaResponse.doneReason())
-						.build();
+					ChatGenerationMetadata.Builder builder = ChatGenerationMetadata.builder()
+						.finishReason(ollamaResponse.doneReason());
+					String thinking = ollamaResponse.message().thinking();
+					if (thinking != null) {
+						builder.metadata(THINKING_METADATA_KEY, thinking);
+					}
+					generationMetadata = builder.build();
 				}
 
 				var generator = new Generation(assistantMessage, generationMetadata);
@@ -277,7 +289,9 @@ public class OllamaChatModel implements ChatModel {
 
 			});
 
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+		ChatOptions options = prompt.getOptions();
+		Assert.state(options != null, "ChatOptions must not be null");
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(options, response)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -288,8 +302,7 @@ public class OllamaChatModel implements ChatModel {
 			}
 			else {
 				// Send the tool execution result back to the model.
-				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						response);
+				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), options), response);
 			}
 		}
 
@@ -304,7 +317,7 @@ public class OllamaChatModel implements ChatModel {
 		return this.internalStream(requestPrompt, null);
 	}
 
-	private Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
+	private Flux<ChatResponse> internalStream(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
 		return Flux.deferContextual(contextView -> {
 			OllamaApi.ChatRequest request = ollamaChatRequest(prompt, true);
 
@@ -336,11 +349,25 @@ public class OllamaChatModel implements ChatModel {
 						.toList();
 				}
 
-				var assistantMessage = new AssistantMessage(content, Map.of(), toolCalls);
+				var assistantMessage = AssistantMessage.builder()
+					.content(content)
+					.properties(Map.of())
+					.toolCalls(toolCalls)
+					.build();
 
 				ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
-				if (chunk.promptEvalCount() != null && chunk.evalCount() != null) {
-					generationMetadata = ChatGenerationMetadata.builder().finishReason(chunk.doneReason()).build();
+				boolean hasEvalCount = chunk.promptEvalCount() != null && chunk.evalCount() != null;
+				String thinking = chunk.message().thinking();
+
+				if (hasEvalCount || thinking != null) {
+					ChatGenerationMetadata.Builder builder = ChatGenerationMetadata.builder();
+					if (hasEvalCount) {
+						builder.finishReason(chunk.doneReason());
+					}
+					if (thinking != null) {
+						builder.metadata(THINKING_METADATA_KEY, thinking);
+					}
+					generationMetadata = builder.build();
 				}
 
 				var generator = new Generation(assistantMessage, generationMetadata);
@@ -349,15 +376,18 @@ public class OllamaChatModel implements ChatModel {
 
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response -> {
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+				ChatOptions options = prompt.getOptions();
+				Assert.state(options != null, "ChatOptions must not be null");
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(options, response)) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					//  is currently only synchronous
-					return Flux.deferContextual((ctx) -> {
+					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult toolExecutionResult;
 						try {
 							ToolCallReactiveContextHolder.setContext(ctx);
 							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-						} finally {
+						}
+						finally {
 							ToolCallReactiveContextHolder.clearContext();
 						}
 						if (toolExecutionResult.returnDirect()) {
@@ -368,7 +398,7 @@ public class OllamaChatModel implements ChatModel {
 						}
 						else {
 							// Send the tool execution result back to the model.
-							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), options),
 									response);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
@@ -389,41 +419,9 @@ public class OllamaChatModel implements ChatModel {
 	}
 
 	Prompt buildRequestPrompt(Prompt prompt) {
-		// Process runtime options
-		OllamaOptions runtimeOptions = null;
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-						OllamaOptions.class);
-			}
-			else {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						OllamaOptions.class);
-			}
-		}
 
-		// Define request options by merging runtime options and default options
-		OllamaOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
-				OllamaOptions.class);
-		// Merge @JsonIgnore-annotated options explicitly since they are ignored by
-		// Jackson, used by ModelOptionsUtils.
-		if (runtimeOptions != null) {
-			requestOptions.setInternalToolExecutionEnabled(
-					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
-							this.defaultOptions.getInternalToolExecutionEnabled()));
-			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
-					this.defaultOptions.getToolNames()));
-			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
-					this.defaultOptions.getToolCallbacks()));
-			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
-					this.defaultOptions.getToolContext()));
-		}
-		else {
-			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
-			requestOptions.setToolNames(this.defaultOptions.getToolNames());
-			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
-			requestOptions.setToolContext(this.defaultOptions.getToolContext());
-		}
+		var requestOptions = (OllamaChatOptions) prompt.getOptions();
+		requestOptions = requestOptions == null ? this.defaultOptions : requestOptions;
 
 		// Validate request options
 		if (!StringUtils.hasText(requestOptions.getModel())) {
@@ -432,7 +430,7 @@ public class OllamaChatModel implements ChatModel {
 
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
 
-		return new Prompt(prompt.getInstructions(), requestOptions);
+		return prompt.mutate().chatOptions(requestOptions).build();
 	}
 
 	/**
@@ -441,18 +439,24 @@ public class OllamaChatModel implements ChatModel {
 	OllamaApi.ChatRequest ollamaChatRequest(Prompt prompt, boolean stream) {
 
 		List<OllamaApi.Message> ollamaMessages = prompt.getInstructions().stream().map(message -> {
-			if (message instanceof UserMessage userMessage) {
+			if (message.getMessageType() == MessageType.SYSTEM) {
+				return List.of(OllamaApi.Message.builder(Role.SYSTEM).content(message.getText()).build());
+			}
+			else if (message.getMessageType() == MessageType.USER) {
 				var messageBuilder = OllamaApi.Message.builder(Role.USER).content(message.getText());
-				if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
-					messageBuilder.images(
-							userMessage.getMedia().stream().map(media -> this.fromMediaData(media.getData())).toList());
+				if (message instanceof UserMessage userMessage) {
+					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
+						messageBuilder.images(userMessage.getMedia()
+							.stream()
+							.map(media -> this.fromMediaData(media.getData()))
+							.toList());
+					}
 				}
+
 				return List.of(messageBuilder.build());
 			}
-			else if (message instanceof SystemMessage systemMessage) {
-				return List.of(OllamaApi.Message.builder(Role.SYSTEM).content(systemMessage.getText()).build());
-			}
-			else if (message instanceof AssistantMessage assistantMessage) {
+			else if (message.getMessageType() == MessageType.ASSISTANT) {
+				var assistantMessage = (AssistantMessage) message;
 				List<ToolCall> toolCalls = null;
 				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 					toolCalls = assistantMessage.getToolCalls().stream().map(toolCall -> {
@@ -467,7 +471,8 @@ public class OllamaChatModel implements ChatModel {
 					.toolCalls(toolCalls)
 					.build());
 			}
-			else if (message instanceof ToolResponseMessage toolMessage) {
+			else if (message.getMessageType() == MessageType.TOOL) {
+				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
 				return toolMessage.getResponses()
 					.stream()
 					.map(tr -> OllamaApi.Message.builder(Role.TOOL).content(tr.responseData()).build())
@@ -476,12 +481,22 @@ public class OllamaChatModel implements ChatModel {
 			throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
 		}).flatMap(List::stream).toList();
 
-		OllamaOptions requestOptions = (OllamaOptions) prompt.getOptions();
+		OllamaChatOptions requestOptions = null;
+		if (prompt.getOptions() instanceof OllamaChatOptions) {
+			requestOptions = (OllamaChatOptions) prompt.getOptions();
+		}
+		else {
+			requestOptions = OllamaChatOptions
+				.fromOptions((OllamaChatOptions) Objects.requireNonNull(prompt.getOptions()));
+		}
 
-		OllamaApi.ChatRequest.Builder requestBuilder = OllamaApi.ChatRequest.builder(requestOptions.getModel())
+		String model = requestOptions.getModel();
+		Assert.state(model != null, "model must not be null");
+		OllamaApi.ChatRequest.Builder requestBuilder = OllamaApi.ChatRequest.builder(model)
 			.stream(stream)
 			.messages(ollamaMessages)
-			.options(requestOptions);
+			.options(requestOptions)
+			.think(requestOptions.getThinkOption());
 
 		if (requestOptions.getFormat() != null) {
 			requestBuilder.format(requestOptions.getFormat());
@@ -522,13 +537,13 @@ public class OllamaChatModel implements ChatModel {
 
 	@Override
 	public ChatOptions getDefaultOptions() {
-		return OllamaOptions.fromOptions(this.defaultOptions);
+		return OllamaChatOptions.fromOptions(this.defaultOptions);
 	}
 
 	/**
 	 * Pull the given model into Ollama based on the specified strategy.
 	 */
-	private void initializeModel(String model, PullModelStrategy pullModelStrategy) {
+	private void initializeModel(String model, @Nullable PullModelStrategy pullModelStrategy) {
 		if (pullModelStrategy != null && !PullModelStrategy.NEVER.equals(pullModelStrategy)) {
 			this.modelManager.pullModel(model, pullModelStrategy);
 		}
@@ -545,11 +560,11 @@ public class OllamaChatModel implements ChatModel {
 
 	public static final class Builder {
 
-		private OllamaApi ollamaApi;
+		private @Nullable OllamaApi ollamaApi;
 
-		private OllamaOptions defaultOptions = OllamaOptions.builder().model(OllamaModel.MISTRAL.id()).build();
+		private OllamaChatOptions defaultOptions = OllamaChatOptions.builder().model(OllamaModel.MISTRAL.id()).build();
 
-		private ToolCallingManager toolCallingManager;
+		private @Nullable ToolCallingManager toolCallingManager;
 
 		private ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate = new DefaultToolExecutionEligibilityPredicate();
 
@@ -567,7 +582,7 @@ public class OllamaChatModel implements ChatModel {
 			return this;
 		}
 
-		public Builder defaultOptions(OllamaOptions defaultOptions) {
+		public Builder defaultOptions(OllamaChatOptions defaultOptions) {
 			this.defaultOptions = defaultOptions;
 			return this;
 		}
@@ -599,12 +614,9 @@ public class OllamaChatModel implements ChatModel {
 		}
 
 		public OllamaChatModel build() {
-			if (this.toolCallingManager != null) {
-				return new OllamaChatModel(this.ollamaApi, this.defaultOptions, this.toolCallingManager,
-						this.observationRegistry, this.modelManagementOptions, this.toolExecutionEligibilityPredicate,
-						this.retryTemplate);
-			}
-			return new OllamaChatModel(this.ollamaApi, this.defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
+			Assert.state(this.ollamaApi != null, "OllamaApi must not be null");
+			return new OllamaChatModel(this.ollamaApi, this.defaultOptions,
+					Objects.requireNonNullElse(this.toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER),
 					this.observationRegistry, this.modelManagementOptions, this.toolExecutionEligibilityPredicate,
 					this.retryTemplate);
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,6 +121,37 @@ class DefaultToolCallResultConverterTests {
 		assertThat(imgRes.getWidth()).isEqualTo(64);
 		assertThat(imgRes.getHeight()).isEqualTo(64);
 		assertThat(imgRes.getRGB(0, 0)).isEqualTo(img.getRGB(0, 0));
+	}
+
+	@Test
+	void convertEmptyCollectionsShouldReturnEmptyJson() {
+		assertThat(this.converter.convert(List.of(), List.class)).isEqualTo("[]");
+		assertThat(this.converter.convert(Map.of(), Map.class)).isEqualTo("{}");
+		assertThat(this.converter.convert(new String[0], String[].class)).isEqualTo("[]");
+	}
+
+	@Test
+	void convertRecordReturnTypeShouldReturnJson() {
+		TestRecord record = new TestRecord("recordName", 1);
+		String result = this.converter.convert(record, TestRecord.class);
+
+		assertThat(result).containsIgnoringWhitespaces("\"recordName\"");
+		assertThat(result).containsIgnoringWhitespaces("1");
+	}
+
+	@Test
+	void convertSpecialCharactersInStringsShouldEscapeJson() {
+		String specialChars = "Test with \"quotes\", newlines\n, tabs\t, and backslashes\\";
+		String result = this.converter.convert(specialChars, String.class);
+
+		// Should properly escape JSON special characters
+		assertThat(result).contains("\\\"quotes\\\"");
+		assertThat(result).contains("\\n");
+		assertThat(result).contains("\\t");
+		assertThat(result).contains("\\\\");
+	}
+
+	record TestRecord(String name, int value) {
 	}
 
 	record Base64Wrapper(MimeType mimeType, String data) {

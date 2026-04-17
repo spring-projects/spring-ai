@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
-import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -68,7 +68,7 @@ public class HanaCloudVectorStoreIT {
 			logger.info("Purged all embeddings: count={}", deleteCount);
 
 			Supplier<List<Document>> reader = new PagePdfDocumentReader("classpath:Cricket_World_Cup.pdf");
-			Function<List<Document>, List<Document>> splitter = new TokenTextSplitter();
+			Function<List<Document>, List<Document>> splitter = TokenTextSplitter.builder().build();
 			List<Document> documents = splitter.apply(reader.get());
 			vectorStore.accept(documents);
 
@@ -128,7 +128,10 @@ public class HanaCloudVectorStoreIT {
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
+			return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder()
+				.apiKey(System.getenv("OPENAI_API_KEY"))
+				.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
+				.build());
 		}
 
 	}

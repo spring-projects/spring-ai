@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.springframework.ai.reader.pdf.layout;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -27,6 +26,7 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.TextPosition;
 import org.apache.pdfbox.text.TextPositionComparator;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +48,7 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 
 	private double currentPageWidth;
 
-	private TextPosition previousTextPosition;
+	private @Nullable TextPosition previousTextPosition;
 
 	private List<TextLine> textLineList;
 
@@ -78,12 +78,11 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 	@Override
 	protected void writePage() throws IOException {
 		List<List<TextPosition>> charactersByArticle = super.getCharactersByArticle();
-		for (int i = 0; i < charactersByArticle.size(); i++) {
-			List<TextPosition> textList = charactersByArticle.get(i);
+		for (List<TextPosition> textList : charactersByArticle) {
 			try {
 				this.sortTextPositionList(textList);
 			}
-			catch (java.lang.IllegalArgumentException e) {
+			catch (IllegalArgumentException e) {
 				logger.error("Error sorting text positions", e);
 			}
 			this.iterateThroughTextList(textList.iterator());
@@ -106,7 +105,7 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 	 */
 	private void sortTextPositionList(final List<TextPosition> textList) {
 		TextPositionComparator comparator = new TextPositionComparator();
-		Collections.sort(textList, comparator);
+		textList.sort(comparator);
 	}
 
 	private void writeLine(final List<TextPosition> textPositionList) {
@@ -188,7 +187,7 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 		return textLine;
 	}
 
-	private TextPosition getPreviousTextPosition() {
+	private @Nullable TextPosition getPreviousTextPosition() {
 		return this.previousTextPosition;
 	}
 

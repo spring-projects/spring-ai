@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,10 +73,9 @@ public class ModerationPrompt implements ModelRequest<ModerationMessage> {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof ModerationPrompt)) {
+		if (!(o instanceof ModerationPrompt that)) {
 			return false;
 		}
-		ModerationPrompt that = (ModerationPrompt) o;
 		return Objects.equals(this.message, that.message)
 				&& Objects.equals(this.moderationModelOptions, that.moderationModelOptions);
 	}

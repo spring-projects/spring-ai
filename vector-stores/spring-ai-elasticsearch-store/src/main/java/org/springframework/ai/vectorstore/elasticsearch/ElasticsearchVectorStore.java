@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.ai.vectorstore.elasticsearch;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -30,17 +31,20 @@ import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.json.jackson.Jackson3JsonpMapper;
 import co.elastic.clients.transport.Version;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.elasticsearch.client.RestClient;
+import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
+import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -150,6 +154,11 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			SimilarityFunction.cosine, VectorStoreSimilarityMetric.COSINE, SimilarityFunction.l2_norm,
 			VectorStoreSimilarityMetric.EUCLIDEAN, SimilarityFunction.dot_product, VectorStoreSimilarityMetric.DOT);
 
+	private final JsonMapper jsonMapper = JsonMapper.builder()
+		.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+		.enable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+		.build();
+
 	private final ElasticsearchClient elasticsearchClient;
 
 	private final ElasticsearchVectorStoreOptions options;
@@ -168,22 +177,16 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		this.filterExpressionConverter = builder.filterExpressionConverter;
 
 		String version = Version.VERSION == null ? "Unknown" : Version.VERSION.toString();
-		this.elasticsearchClient = new ElasticsearchClient(new RestClientTransport(builder.restClient,
-				new JacksonJsonpMapper(
-						new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))))
+		this.elasticsearchClient = new ElasticsearchClient(
+				new Rest5ClientTransport(builder.restClient, new Jackson3JsonpMapper(this.jsonMapper)))
 			.withTransportOptions(t -> t.addHeader("user-agent", "spring-ai elastic-java/" + version));
 	}
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		// For the index to be present, either it must be pre-created or set the
-		// initializeSchema to true.
-		if (!indexExists()) {
-			throw new IllegalArgumentException("Index not found");
-		}
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
 		for (int i = 0; i < embeddings.size(); i++) {
@@ -214,11 +217,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	@Override
 	public void doDelete(List<String> idList) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
-		// For the index to be present, either it must be pre-created or set the
-		// initializeSchema to true.
-		if (!indexExists()) {
-			throw new IllegalArgumentException("Index not found");
-		}
 		for (String id : idList) {
 			bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));
 		}
@@ -229,12 +227,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	@Override
 	public void doDelete(Filter.Expression filterExpression) {
-		// For the index to be present, either it must be pre-created or set the
-		// initializeSchema to true.
-		if (!indexExists()) {
-			throw new IllegalArgumentException("Index not found");
-		}
-
 		try {
 			this.elasticsearchClient.deleteByQuery(d -> d.index(this.options.getIndexName())
 				.query(q -> q.queryString(qs -> qs.query(getElasticsearchQueryString(filterExpression)))));
@@ -265,7 +257,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			final float finalThreshold = threshold;
 			float[] vectors = this.embeddingModel.embed(searchRequest.getQuery());
 
-			SearchResponse<Document> res = this.elasticsearchClient.search(sr -> sr.index(this.options.getIndexName())
+			SearchResponse<ObjectNode> res = this.elasticsearchClient.search(sr -> sr.index(this.options.getIndexName())
 				.knn(knn -> knn.queryVector(EmbeddingUtils.toList(vectors))
 					.similarity(finalThreshold)
 					.k(searchRequest.getTopK())
@@ -273,7 +265,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 					.numCandidates((int) (1.5 * searchRequest.getTopK()))
 					.filter(fl -> fl
 						.queryString(qs -> qs.query(getElasticsearchQueryString(searchRequest.getFilterExpression())))))
-				.size(searchRequest.getTopK()), Document.class);
+				.size(searchRequest.getTopK()), ObjectNode.class);
 
 			return res.hits().hits().stream().map(this::toDocument).collect(Collectors.toList());
 		}
@@ -282,18 +274,33 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		}
 	}
 
-	private String getElasticsearchQueryString(Filter.Expression filterExpression) {
+	private String getElasticsearchQueryString(Filter.@Nullable Expression filterExpression) {
 		return Objects.isNull(filterExpression) ? "*"
 				: this.filterExpressionConverter.convertExpression(filterExpression);
 
 	}
 
-	private Document toDocument(Hit<Document> hit) {
-		Document document = hit.source();
-		Document.Builder documentBuilder = document.mutate();
+	private Document toDocument(Hit<ObjectNode> hit) {
+		ObjectNode source = hit.source();
+		Assert.notNull(source, "source unexpectedly null");
+		Assert.notNull(source.get("id"), "id must not be null");
+		String id = source.get("id").asString();
+		Assert.notNull(id, "id must not be null");
+		String content = source.has("content") ? source.get("content").asString() : null;
+		Map<String, Object> metadata = new HashMap<>();
+		if (source.has("metadata")) {
+			tools.jackson.databind.JsonNode metadataNode = source.get("metadata");
+			Map<String, Object> extractedMetadata = this.jsonMapper.convertValue(metadataNode,
+					new tools.jackson.core.type.TypeReference<Map<String, Object>>() {
+					});
+			metadata.putAll(extractedMetadata);
+		}
+
+		Document.Builder documentBuilder = Document.builder().id(id).text(content).metadata(metadata);
 		if (hit.score() != null) {
-			documentBuilder.metadata(DocumentMetadata.DISTANCE.value(), 1 - normalizeSimilarityScore(hit.score()));
-			documentBuilder.score(normalizeSimilarityScore(hit.score()));
+			double normalizedScore = normalizeSimilarityScore(hit.score());
+			documentBuilder.metadata(DocumentMetadata.DISTANCE.value(), 1 - normalizedScore);
+			documentBuilder.score(normalizedScore);
 		}
 		return documentBuilder.build();
 	}
@@ -301,17 +308,16 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	// more info on score/distance calculation
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/knn-search.html#knn-similarity-search
 	private double normalizeSimilarityScore(double score) {
-		switch (this.options.getSimilarity()) {
-			case l2_norm:
+		return switch (this.options.getSimilarity()) {
+			case l2_norm ->
 				// the returned value of l2_norm is the opposite of the other functions
 				// (closest to zero means more accurate), so to make it consistent
 				// with the other functions the reverse is returned applying a "1-"
 				// to the standard transformation
-				return (1 - (java.lang.Math.sqrt((1 / score) - 1)));
+				(1 - (Math.sqrt((1 / score) - 1)));
 			// cosine and dot_product
-			default:
-				return (2 * score) - 1;
-		}
+			default -> (2 * score) - 1;
+		};
 	}
 
 	public boolean indexExists() {
@@ -349,12 +355,15 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	@Override
 	public void afterPropertiesSet() {
-		if (!this.initializeSchema) {
+		// For the index to be present, either it must be pre-created or set the
+		// initializeSchema to true.
+		if (indexExists()) {
 			return;
 		}
-		if (!indexExists()) {
-			createIndexMapping();
+		if (!this.initializeSchema) {
+			throw new IllegalArgumentException("Index not found");
 		}
+		createIndexMapping();
 	}
 
 	@Override
@@ -383,13 +392,13 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	 * Creates a new builder instance for ElasticsearchVectorStore.
 	 * @return a new ElasticsearchBuilder instance
 	 */
-	public static Builder builder(RestClient restClient, EmbeddingModel embeddingModel) {
+	public static Builder builder(Rest5Client restClient, EmbeddingModel embeddingModel) {
 		return new Builder(restClient, embeddingModel);
 	}
 
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
-		private final RestClient restClient;
+		private final Rest5Client restClient;
 
 		private ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
 
@@ -402,7 +411,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		 * @param restClient the Elasticsearch REST client
 		 * @param embeddingModel the Embedding Model to be used
 		 */
-		public Builder(RestClient restClient, EmbeddingModel embeddingModel) {
+		public Builder(Rest5Client restClient, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(restClient, "RestClient must not be null");
 			this.restClient = restClient;

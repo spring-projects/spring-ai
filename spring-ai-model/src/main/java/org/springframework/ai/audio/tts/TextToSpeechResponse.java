@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ public class TextToSpeechResponse implements ModelResponse<Speech> {
 	private final TextToSpeechResponseMetadata textToSpeechResponseMetadata;
 
 	public TextToSpeechResponse(List<Speech> results) {
-		this(results, null);
+		this(results, new TextToSpeechResponseMetadata());
 	}
 
 	public TextToSpeechResponse(List<Speech> results, TextToSpeechResponseMetadata textToSpeechResponseMetadata) {
@@ -57,21 +57,23 @@ public class TextToSpeechResponse implements ModelResponse<Speech> {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof TextToSpeechResponse that))
+		}
+		if (!(o instanceof TextToSpeechResponse that)) {
 			return false;
-		return Objects.equals(results, that.results);
+		}
+		return Objects.equals(this.results, that.results);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(results);
+		return Objects.hash(this.results);
 	}
 
 	@Override
 	public String toString() {
-		return "TextToSpeechResponse{" + "results=" + results + '}';
+		return "TextToSpeechResponse{" + "results=" + this.results + '}';
 	}
 
 }

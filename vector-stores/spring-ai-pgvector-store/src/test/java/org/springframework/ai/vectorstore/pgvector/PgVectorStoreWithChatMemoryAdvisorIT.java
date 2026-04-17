@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -70,6 +71,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 
 	private static @NonNull ChatModel chatModelAlwaysReturnsTheSameReply() {
 		ChatModel chatModel = mock(ChatModel.class);
+		given(chatModel.getDefaultOptions()).willReturn(ChatOptions.builder().build());
 		ArgumentCaptor<Prompt> argumentCaptor = ArgumentCaptor.forClass(Prompt.class);
 		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("""
 				Why don't scientists trust atoms?
@@ -125,6 +127,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 	 */
 	private static @NonNull ChatModel chatModelWithStreamingSupport() {
 		ChatModel chatModel = mock(ChatModel.class);
+		given(chatModel.getDefaultOptions()).willReturn(ChatOptions.builder().build());
 
 		// Mock the regular call method
 		ArgumentCaptor<Prompt> argumentCaptor = ArgumentCaptor.forClass(Prompt.class);
@@ -160,6 +163,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 	 */
 	private static @NonNull ChatModel chatModelWithProblematicStreamingBehavior() {
 		ChatModel chatModel = mock(ChatModel.class);
+		given(chatModel.getDefaultOptions()).willReturn(ChatOptions.builder().build());
 
 		// Mock the regular call method
 		ArgumentCaptor<Prompt> argumentCaptor = ArgumentCaptor.forClass(Prompt.class);

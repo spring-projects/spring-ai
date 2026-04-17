@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +29,6 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.util.PromptAssert;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -136,15 +136,15 @@ public final class ContextualQueryAugmenter implements QueryAugmenter {
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
-		private PromptTemplate promptTemplate;
+		private @Nullable PromptTemplate promptTemplate;
 
-		private PromptTemplate emptyContextPromptTemplate;
+		private @Nullable PromptTemplate emptyContextPromptTemplate;
 
-		private Boolean allowEmptyContext;
+		private @Nullable Boolean allowEmptyContext;
 
-		private Function<List<Document>, String> documentFormatter;
+		private @Nullable Function<List<Document>, String> documentFormatter;
 
 		public Builder promptTemplate(PromptTemplate promptTemplate) {
 			this.promptTemplate = promptTemplate;

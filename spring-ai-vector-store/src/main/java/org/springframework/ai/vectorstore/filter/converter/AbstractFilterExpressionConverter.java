@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,16 @@
 
 package org.springframework.ai.vectorstore.filter.converter;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.Date;
 import java.util.List;
+import java.util.regex.Pattern;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
@@ -36,6 +45,25 @@ import org.springframework.ai.vectorstore.filter.FilterHelper;
  * @author Christian Tzolov
  */
 public abstract class AbstractFilterExpressionConverter implements FilterExpressionConverter {
+
+	/**
+	 * ObjectMapper used for JSON string escaping.
+	 */
+	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+	/**
+	 * Pattern for ISO-8601 date strings in UTC (yyyy-MM-dd'T'HH:mm:ss'Z') used to
+	 * recognize and normalize date strings before passing to converters.
+	 */
+	protected static final Pattern ISO_DATE_PATTERN = Pattern
+		.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,9})?Z");
+
+	/**
+	 * Formatter for parsing and normalizing ISO date strings.
+	 */
+	protected static final DateTimeFormatter ISO_DATE_FORMATTER = DateTimeFormatter
+		.ofPattern("yyyy-MM-dd'T'HH:mm:ss[.SSS]'Z'")
+		.withZone(ZoneOffset.UTC);
 
 	/**
 	 * Create a new AbstractFilterExpressionConverter.
@@ -77,8 +105,9 @@ public abstract class AbstractFilterExpressionConverter implements FilterExpress
 		}
 		else if (operand instanceof Filter.Expression expression) {
 			if ((expression.type() != ExpressionType.NOT && expression.type() != ExpressionType.AND
-					&& expression.type() != ExpressionType.OR) && !(expression.right() instanceof Filter.Value)) {
-				throw new RuntimeException("Non AND/OR expression must have Value right argument!");
+					&& expression.type() != ExpressionType.OR) && !(expression.right() instanceof Filter.Value)
+					&& !(expression.type() == ExpressionType.ISNULL || expression.type() == ExpressionType.ISNOTNULL)) {
+				throw new RuntimeException("Non AND/OR/ISNULL/ISNOTNULL expression must have Value right argument!");
 			}
 			if (expression.type() == ExpressionType.NOT) {
 				this.doNot(expression, context);
@@ -126,7 +155,7 @@ public abstract class AbstractFilterExpressionConverter implements FilterExpress
 			doStartValueRange(filterValue, context);
 			int c = 0;
 			for (Object v : list) {
-				this.doSingleValue(v, context);
+				this.doSingleValue(normalizeDateString(v), context);
 				if (c++ < list.size() - 1) {
 					this.doAddValueRangeSpitter(filterValue, context);
 				}
@@ -134,21 +163,116 @@ public abstract class AbstractFilterExpressionConverter implements FilterExpress
 			this.doEndValueRange(filterValue, context);
 		}
 		else {
-			this.doSingleValue(filterValue.value(), context);
+			this.doSingleValue(normalizeDateString(filterValue.value()), context);
 		}
 	}
 
 	/**
-	 * Convert the given value into a string representation.
+	 * If the value is a string matching the ISO date pattern, parse and return as
+	 * {@link Date} so that all converters that handle {@code Date} automatically support
+	 * date strings. Otherwise return the value unchanged.
+	 * @param value the value (possibly a date string)
+	 * @return the value, or a {@code Date} if the value was a parseable date string
+	 */
+	protected static Object normalizeDateString(Object value) {
+		if (!(value instanceof String text) || !ISO_DATE_PATTERN.matcher(text).matches()) {
+			return value;
+		}
+		try {
+			return Date.from(Instant.from(ISO_DATE_FORMATTER.parse(text)));
+		}
+		catch (DateTimeParseException e) {
+			throw new IllegalArgumentException("Invalid date type: " + text, e);
+		}
+	}
+
+	/**
+	 * Convert the given single value into a string representation and append it to the
+	 * context. This method handles all value types including String, Number, Boolean,
+	 * Date, etc.
+	 * <p>
+	 * For convenience, implementations can use the provided static helper methods such as
+	 * {@link #emitJsonValue(Object, StringBuilder)} for JSON-based filters,
+	 * {@link #emitLuceneString(String, StringBuilder)} for Lucene-based filters, or
+	 * implement their own format-specific escaping logic as needed.
 	 * @param value the value to convert
 	 * @param context the context to append the string representation to
 	 */
-	protected void doSingleValue(Object value, StringBuilder context) {
-		if (value instanceof String) {
-			context.append(String.format("\"%s\"", value));
+	protected abstract void doSingleValue(Object value, StringBuilder context);
+
+	/**
+	 * Emit a string value formatted for Lucene query syntax by appending escaped
+	 * characters to the provided context. Used by Elasticsearch, OpenSearch, and GemFire
+	 * VectorDB query string filters.
+	 * <p>
+	 * Lucene/Elasticsearch query strings require backslash-escaping of special
+	 * characters: {@code + - = ! ( ) { } [ ] ^ " ~ * ? : \ / & | < >}
+	 * @param value the string value to format
+	 * @param context the context to append the escaped string to
+	 * @see <a href=
+	 * "https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#_reserved_characters">Elasticsearch
+	 * Reserved Characters</a>
+	 */
+	protected static void emitLuceneString(String value, StringBuilder context) {
+		for (int i = 0; i < value.length(); i++) {
+			char c = value.charAt(i);
+
+			// Escape Lucene query string special characters
+			switch (c) {
+				case '+':
+				case '-':
+				case '=':
+				case '!':
+				case '(':
+				case ')':
+				case '{':
+				case '}':
+				case '[':
+				case ']':
+				case '^':
+				case '"':
+				case '~':
+				case '*':
+				case '?':
+				case ':':
+				case '\\':
+				case '/':
+				case '&':
+				case '|':
+				case '<':
+				case '>':
+					context.append('\\').append(c);
+					break;
+				default:
+					context.append(c);
+					break;
+			}
 		}
-		else {
-			context.append(value);
+	}
+
+	/**
+	 * Emit a value formatted as JSON by appending its JSON representation to the provided
+	 * context. Used for PostgreSQL JSONPath, Neo4j Cypher, Weaviate GraphQL, and other
+	 * JSON-based filter expressions.
+	 * <p>
+	 * This method uses Jackson's ObjectMapper to properly serialize all value types:
+	 * <ul>
+	 * <li>Strings: properly quoted and escaped with double quotes, backslashes, and
+	 * control characters handled</li>
+	 * <li>Numbers: formatted without quotes (e.g., 42, 3.14)</li>
+	 * <li>Booleans: formatted as JSON literals {@code true} or {@code false}</li>
+	 * <li>null: formatted as JSON literal {@code null}</li>
+	 * <li>Other types: handled according to Jackson's default serialization</li>
+	 * </ul>
+	 * @param value the value to format (can be any type)
+	 * @param context the context to append the JSON representation to
+	 */
+	protected static void emitJsonValue(Object value, StringBuilder context) {
+		try {
+			context.append(OBJECT_MAPPER.writeValueAsString(value));
+		}
+		catch (JacksonException e) {
+			throw new RuntimeException("Error serializing value to JSON.", e);
 		}
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,64 @@ class ToolCallingContentObservationFilterTests {
 			.filter(kv -> kv.getKey()
 				.equals(ToolCallingObservationDocumentation.HighCardinalityKeyNames.TOOL_CALL_RESULT.name())))
 			.isEmpty();
+	}
+
+	@Test
+	void whenToolCallArgumentsIsEmptyStringThenHighCardinalityKeyValueIsEmpty() {
+		var originalContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.toolCallArguments("")
+			.toolCallResult("result")
+			.build();
+		var augmentedContext = this.observationFilter.map(originalContext);
+
+		assertThat(augmentedContext.getHighCardinalityKeyValues()).contains(KeyValue
+			.of(ToolCallingObservationDocumentation.HighCardinalityKeyNames.TOOL_CALL_ARGUMENTS.asString(), ""));
+		assertThat(augmentedContext.getHighCardinalityKeyValues()).contains(KeyValue
+			.of(ToolCallingObservationDocumentation.HighCardinalityKeyNames.TOOL_CALL_RESULT.asString(), "result"));
+	}
+
+	@Test
+	void whenToolCallResultIsEmptyStringThenHighCardinalityKeyValueIsEmpty() {
+		var originalContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.toolCallArguments("input")
+			.toolCallResult("")
+			.build();
+		var augmentedContext = this.observationFilter.map(originalContext);
+
+		assertThat(augmentedContext.getHighCardinalityKeyValues()).contains(KeyValue
+			.of(ToolCallingObservationDocumentation.HighCardinalityKeyNames.TOOL_CALL_ARGUMENTS.asString(), "input"));
+		assertThat(augmentedContext.getHighCardinalityKeyValues()).contains(KeyValue
+			.of(ToolCallingObservationDocumentation.HighCardinalityKeyNames.TOOL_CALL_RESULT.asString(), ""));
+	}
+
+	@Test
+	void whenFilterAppliedMultipleTimesThenIdempotent() {
+		var originalContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.toolCallArguments("input")
+			.toolCallResult("result")
+			.build();
+
+		var augmentedOnce = this.observationFilter.map(originalContext);
+		var augmentedTwice = this.observationFilter.map(augmentedOnce);
+
+		// Count occurrences of each key
+		long argumentsCount = augmentedTwice.getHighCardinalityKeyValues()
+			.stream()
+			.filter(kv -> kv.getKey()
+				.equals(ToolCallingObservationDocumentation.HighCardinalityKeyNames.TOOL_CALL_ARGUMENTS.asString()))
+			.count();
+		long resultCount = augmentedTwice.getHighCardinalityKeyValues()
+			.stream()
+			.filter(kv -> kv.getKey()
+				.equals(ToolCallingObservationDocumentation.HighCardinalityKeyNames.TOOL_CALL_RESULT.asString()))
+			.count();
+
+		// Should not duplicate keys
+		assertThat(argumentsCount).isEqualTo(1);
+		assertThat(resultCount).isEqualTo(1);
 	}
 
 }

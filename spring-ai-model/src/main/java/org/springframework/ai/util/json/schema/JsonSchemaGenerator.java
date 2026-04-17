@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,6 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.generator.Option;
 import com.github.victools.jsonschema.generator.OptionPreset;
@@ -34,15 +32,18 @@ import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.generator.SchemaVersion;
-import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
+import com.github.victools.jsonschema.module.jackson.JacksonSchemaModule;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.util.json.JsonParser;
-import org.springframework.lang.Nullable;
+import org.springframework.core.Nullness;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
@@ -89,7 +90,7 @@ public final class JsonSchemaGenerator {
 	 * Initialize JSON Schema generators.
 	 */
 	static {
-		Module jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
+		Module jacksonModule = new JacksonSchemaModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
 		Module openApiModule = new Swagger2Module();
 		Module springAiSchemaModule = PROPERTY_REQUIRED_BY_DEFAULT ? new SpringAiSchemaModule()
 				: new SpringAiSchemaModule(SpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
@@ -118,7 +119,7 @@ public final class JsonSchemaGenerator {
 	 * Generate a JSON Schema for a method's input parameters.
 	 */
 	public static String generateForMethodInput(Method method, SchemaOption... schemaOptions) {
-		ObjectNode schema = JsonParser.getObjectMapper().createObjectNode();
+		ObjectNode schema = JsonParser.getJsonMapper().createObjectNode();
 		schema.put("$schema", SchemaVersion.DRAFT_2020_12.getIdentifier());
 		schema.put("type", "object");
 
@@ -140,6 +141,8 @@ public final class JsonSchemaGenerator {
 				required.add(parameterName);
 			}
 			ObjectNode parameterNode = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
+			// Remove OpenAPI format as some LLMs (like Mistral) don't handle them.
+			parameterNode.remove("format");
 			String parameterDescription = getMethodParameterDescription(method, i);
 			if (StringUtils.hasText(parameterDescription)) {
 				parameterNode.put("description", parameterDescription);
@@ -213,8 +216,8 @@ public final class JsonSchemaGenerator {
 					|| schemaAnnotation.requiredMode() == Schema.RequiredMode.AUTO || schemaAnnotation.required();
 		}
 
-		var nullableAnnotation = parameter.getAnnotation(Nullable.class);
-		if (nullableAnnotation != null) {
+		Nullness nullness = Nullness.forParameter(parameter);
+		if (nullness == Nullness.NULLABLE) {
 			return false;
 		}
 
@@ -232,8 +235,7 @@ public final class JsonSchemaGenerator {
 	 * </ul>
 	 * <p>
 	 */
-	@Nullable
-	private static String getMethodParameterDescription(Method method, int index) {
+	private static @Nullable String getMethodParameterDescription(Method method, int index) {
 		Parameter parameter = method.getParameters()[index];
 
 		var toolParamAnnotation = parameter.getAnnotation(ToolParam.class);
@@ -257,13 +259,13 @@ public final class JsonSchemaGenerator {
 	// Based on the method in ModelOptionsUtils.
 	public static void convertTypeValuesToUpperCase(ObjectNode node) {
 		if (node.isObject()) {
-			node.fields().forEachRemaining(entry -> {
+			node.properties().forEach(entry -> {
 				JsonNode value = entry.getValue();
 				if (value.isObject()) {
 					convertTypeValuesToUpperCase((ObjectNode) value);
 				}
 				else if (value.isArray()) {
-					value.elements().forEachRemaining(element -> {
+					value.forEach(element -> {
 						if (element.isObject() || element.isArray()) {
 							convertTypeValuesToUpperCase((ObjectNode) element);
 						}
@@ -276,7 +278,7 @@ public final class JsonSchemaGenerator {
 			});
 		}
 		else if (node.isArray()) {
-			node.elements().forEachRemaining(element -> {
+			node.forEach(element -> {
 				if (element.isObject() || element.isArray()) {
 					convertTypeValuesToUpperCase((ObjectNode) element);
 				}

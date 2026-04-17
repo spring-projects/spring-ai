@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,12 +28,13 @@ import org.springframework.ai.model.ResponseMetadata;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Mengqi Xu
  */
 public class EmbeddingResponseMetadata extends AbstractResponseMetadata implements ResponseMetadata {
 
-	private String model;
+	private String model = "";
 
-	private Usage usage;
+	private Usage usage = new EmptyUsage();
 
 	public EmbeddingResponseMetadata() {
 	}
@@ -45,16 +46,14 @@ public class EmbeddingResponseMetadata extends AbstractResponseMetadata implemen
 	public EmbeddingResponseMetadata(String model, Usage usage, Map<String, Object> metadata) {
 		this.model = model;
 		this.usage = usage;
-		for (Map.Entry<String, Object> entry : metadata.entrySet()) {
-			this.map.put(entry.getKey(), entry.getValue());
-		}
+		this.map.putAll(metadata);
 	}
 
 	/**
 	 * The model that handled the request.
 	 */
 	public String getModel() {
-		return this.model != null ? this.model : "";
+		return this.model;
 	}
 
 	public void setModel(String model) {
@@ -66,7 +65,7 @@ public class EmbeddingResponseMetadata extends AbstractResponseMetadata implemen
 	 * @see Usage
 	 */
 	public Usage getUsage() {
-		return this.usage != null ? this.usage : new EmptyUsage();
+		return this.usage;
 	}
 
 	public void setUsage(Usage usage) {

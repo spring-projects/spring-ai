@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -280,6 +280,20 @@ class McpSseClientPropertiesTests {
 				assertThat(properties.getConnections().get("server1").url()).isEqualTo("http://localhost:8080");
 				assertThat(properties.getConnections().get("server1").sseEndpoint())
 					.isEqualTo("/events/stream?format=json&timeout=30");
+			});
+	}
+
+	@Test
+	void mcpHubStyleUrlWithTokenPath() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.client.sse.connections.mcp-hub.url=http://localhost:3000",
+				"spring.ai.mcp.client.sse.connections.mcp-hub.sse-endpoint=/mcp-hub/sse/cf9ec4527e3c4a2cbb149a85ea45ab01")
+			.run(context -> {
+				McpSseClientProperties properties = context.getBean(McpSseClientProperties.class);
+				assertThat(properties.getConnections()).hasSize(1);
+				assertThat(properties.getConnections()).containsKey("mcp-hub");
+				assertThat(properties.getConnections().get("mcp-hub").url()).isEqualTo("http://localhost:3000");
+				assertThat(properties.getConnections().get("mcp-hub").sseEndpoint())
+					.isEqualTo("/mcp-hub/sse/cf9ec4527e3c4a2cbb149a85ea45ab01");
 			});
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,14 +32,10 @@ public class AzureOpenAiImageOptionsProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.azure.openai.image";
 
 	@NestedConfigurationProperty
-	private AzureOpenAiImageOptions options = AzureOpenAiImageOptions.builder().build();
+	private final AzureOpenAiImageOptions options = AzureOpenAiImageOptions.builder().build();
 
 	public AzureOpenAiImageOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(AzureOpenAiImageOptions options) {
-		this.options = options;
 	}
 
 }

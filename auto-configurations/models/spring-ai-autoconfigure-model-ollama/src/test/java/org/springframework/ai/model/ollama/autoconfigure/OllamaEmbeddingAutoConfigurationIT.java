@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,6 @@ import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.management.OllamaModelManager;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,8 +43,7 @@ public class OllamaEmbeddingAutoConfigurationIT extends BaseOllamaIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.ollama.embedding.options.model=" + MODEL_NAME,
 				"spring.ai.ollama.base-url=" + getBaseUrl())
-		.withConfiguration(
-				AutoConfigurations.of(RestClientAutoConfiguration.class, OllamaEmbeddingAutoConfiguration.class));
+		.withConfiguration(ollamaAutoConfig(OllamaEmbeddingAutoConfiguration.class));
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {

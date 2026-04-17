@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,14 +27,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.RetryListener;
-import org.springframework.retry.support.RetryTemplate;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.any;
+import org.springframework.core.retry.RetryListener;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
+import org.springframework.core.retry.Retryable;
 
 /**
  * @author Mark Pollack
@@ -59,13 +55,13 @@ public class GoogleGenAiRetryTests {
 	public void setUp() {
 		this.retryTemplate = RetryUtils.SHORT_RETRY_TEMPLATE;
 		this.retryListener = new TestRetryListener();
-		this.retryTemplate.registerListener(this.retryListener);
+		this.retryTemplate.setRetryListener(this.retryListener);
 
 		this.chatModel = new org.springframework.ai.google.genai.TestGoogleGenAiGeminiChatModel(this.genAiClient,
 				GoogleGenAiChatOptions.builder()
 					.temperature(0.7)
 					.topP(1.0)
-					.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
+					.model(GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW.getValue())
 					.build(),
 				this.retryTemplate);
 
@@ -99,14 +95,15 @@ public class GoogleGenAiRetryTests {
 		int onSuccessRetryCount = 0;
 
 		@Override
-		public <T, E extends Throwable> void onSuccess(RetryContext context, RetryCallback<T, E> callback, T result) {
-			this.onSuccessRetryCount = context.getRetryCount();
+		public void beforeRetry(final RetryPolicy retryPolicy, final Retryable<?> retryable) {
+			// Count each retry attempt
+			this.onErrorRetryCount++;
 		}
 
 		@Override
-		public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback,
-				Throwable throwable) {
-			this.onErrorRetryCount = context.getRetryCount();
+		public void onRetrySuccess(final RetryPolicy retryPolicy, final Retryable<?> retryable, final Object result) {
+			// Count successful retries - we increment when we succeed after a failure
+			this.onSuccessRetryCount++;
 		}
 
 	}

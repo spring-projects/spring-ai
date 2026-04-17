@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.ai.vectorstore.mariadb.autoconfigure;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.vectorstore.mariadb.MariaDBVectorStore;
 import org.springframework.ai.vectorstore.mariadb.MariaDBVectorStore.MariaDBDistanceType;
@@ -37,7 +39,7 @@ public class MariaDbStoreProperties extends CommonVectorStoreProperties {
 
 	private String tableName = MariaDBVectorStore.DEFAULT_TABLE_NAME;
 
-	private String schemaName = null;
+	private @Nullable String schemaName = null;
 
 	private String embeddingFieldName = MariaDBVectorStore.DEFAULT_COLUMN_EMBEDDING;
 
@@ -83,11 +85,11 @@ public class MariaDbStoreProperties extends CommonVectorStoreProperties {
 		this.tableName = vectorTableName;
 	}
 
-	public String getSchemaName() {
+	public @Nullable String getSchemaName() {
 		return this.schemaName;
 	}
 
-	public void setSchemaName(String schemaName) {
+	public void setSchemaName(@Nullable String schemaName) {
 		this.schemaName = schemaName;
 	}
 

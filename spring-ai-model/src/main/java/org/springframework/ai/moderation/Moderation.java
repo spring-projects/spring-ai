@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,14 @@
 
 package org.springframework.ai.moderation;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
+
+import org.springframework.util.Assert;
 
 /**
  * The Moderation class represents the result of a moderation process. It contains the
@@ -38,6 +43,8 @@ public final class Moderation {
 	private final List<ModerationResult> results;
 
 	private Moderation(Builder builder) {
+		Assert.state(builder.id != null, "id is required");
+		Assert.state(builder.model != null, "model is required");
 		this.id = builder.id;
 		this.model = builder.model;
 		this.results = builder.moderationResultList;
@@ -70,10 +77,9 @@ public final class Moderation {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof Moderation)) {
+		if (!(o instanceof Moderation that)) {
 			return false;
 		}
-		Moderation that = (Moderation) o;
 		return Objects.equals(this.id, that.id) && Objects.equals(this.model, that.model)
 				&& Objects.equals(this.results, that.results);
 	}
@@ -83,13 +89,13 @@ public final class Moderation {
 		return Objects.hash(this.id, this.model, this.results);
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
-		private String id;
+		private @Nullable String id;
 
-		private String model;
+		private @Nullable String model;
 
-		private List<ModerationResult> moderationResultList;
+		private List<ModerationResult> moderationResultList = new ArrayList<>();
 
 		public Builder id(String id) {
 			this.id = id;

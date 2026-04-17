@@ -3,6 +3,30 @@
 Spring AI supports the Mistral AI's text embeddings models.
 Embeddings are vectorial representations of text that capture the semantic meaning of paragraphs through their position in a high dimensional vector space. Mistral AI Embeddings API offers cutting-edge, state-of-the-art embeddings for text, which can be used for many NLP tasks.
 
+== Available Models
+
+Mistral AI provides two embedding models, each optimized for different use cases:
+
+[cols="2,2,1,4", stripes=even]
+|====
+| Model | Dimensions | Use Case | Description
+
+| `mistral-embed`
+| 1024
+| General text
+| General-purpose embedding model suitable for semantic search, clustering, and text similarity tasks. Ideal for natural language content.
+
+| `codestral-embed`
+| 1536
+| Code
+| Specialized embedding model optimized for code similarity, code search, and retrieval-augmented generation (RAG) with code repositories. Provides higher-dimensional embeddings specifically designed for understanding code semantics.
+|====
+
+When choosing a model:
+
+* Use `mistral-embed` for general text content such as documents, articles, or user queries
+* Use `codestral-embed` when working with code, technical documentation, or building code-aware RAG systems
+
 == Prerequisites
 
 You will need to create an API with MistralAI to access MistralAI embeddings models.
@@ -160,10 +184,18 @@ For example to override the default model name for a specific request:
 
 [source,java]
 ----
-EmbeddingResponse embeddingResponse = embeddingModel.call(
+// Using mistral-embed for general text
+EmbeddingResponse textEmbeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         MistralAiEmbeddingOptions.builder()
-            .withModel("Different-Embedding-Model-Deployment-Name")
+            .withModel("mistral-embed")
+        .build()));
+
+// Using codestral-embed for code
+EmbeddingResponse codeEmbeddingResponse = embeddingModel.call(
+    new EmbeddingRequest(List.of("public class HelloWorld {}", "def hello_world():"),
+        MistralAiEmbeddingOptions.builder()
+            .withModel("codestral-embed")
         .build()));
 ----
 

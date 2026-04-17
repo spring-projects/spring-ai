@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,15 +19,14 @@ package org.springframework.ai.util.json;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.util.JacksonUtils;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
@@ -36,21 +35,25 @@ import org.springframework.util.ClassUtils;
  */
 public final class JsonParser {
 
-	private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
-		.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-		.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-		.addModules(JacksonUtils.instantiateAvailableModules())
-		.build();
+	private static final JsonMapper jsonMapper;
+
+	static {
+		jsonMapper = JsonMapper.builder()
+			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+			.disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+			.addModules(JacksonUtils.instantiateAvailableModules())
+			.build();
+	}
 
 	private JsonParser() {
 	}
 
 	/**
-	 * Returns a Jackson {@link ObjectMapper} instance tailored for JSON-parsing
-	 * operations for tool calling and structured output.
+	 * Returns a Jackson {@link JsonMapper} instance tailored for JSON-parsing operations
+	 * for tool calling and structured output.
 	 */
-	public static ObjectMapper getObjectMapper() {
-		return OBJECT_MAPPER;
+	public static JsonMapper getJsonMapper() {
+		return jsonMapper;
 	}
 
 	/**
@@ -61,9 +64,9 @@ public final class JsonParser {
 		Assert.notNull(type, "type cannot be null");
 
 		try {
-			return OBJECT_MAPPER.readValue(json, type);
+			return jsonMapper.readValue(json, type);
 		}
-		catch (JsonProcessingException ex) {
+		catch (JacksonException ex) {
 			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getName()), ex);
 		}
 	}
@@ -76,9 +79,9 @@ public final class JsonParser {
 		Assert.notNull(type, "type cannot be null");
 
 		try {
-			return OBJECT_MAPPER.readValue(json, OBJECT_MAPPER.constructType(type));
+			return jsonMapper.readValue(json, jsonMapper.constructType(type));
 		}
-		catch (JsonProcessingException ex) {
+		catch (JacksonException ex) {
 			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getTypeName()), ex);
 		}
 	}
@@ -91,9 +94,9 @@ public final class JsonParser {
 		Assert.notNull(type, "type cannot be null");
 
 		try {
-			return OBJECT_MAPPER.readValue(json, type);
+			return jsonMapper.readValue(json, type);
 		}
-		catch (JsonProcessingException ex) {
+		catch (JacksonException ex) {
 			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getType().getTypeName()),
 					ex);
 		}
@@ -104,10 +107,10 @@ public final class JsonParser {
 	 */
 	private static boolean isValidJson(String input) {
 		try {
-			OBJECT_MAPPER.readTree(input);
+			jsonMapper.readTree(input);
 			return true;
 		}
-		catch (JsonProcessingException e) {
+		catch (JacksonException e) {
 			return false;
 		}
 	}
@@ -116,13 +119,13 @@ public final class JsonParser {
 	 * Converts a Java object to a JSON string if it's not already a valid JSON string.
 	 */
 	public static String toJson(@Nullable Object object) {
-		if (object instanceof String && isValidJson((String) object)) {
-			return (String) object;
+		if (object instanceof String str && isValidJson(str)) {
+			return str;
 		}
 		try {
-			return OBJECT_MAPPER.writeValueAsString(object);
+			return jsonMapper.writeValueAsString(object);
 		}
-		catch (JsonProcessingException ex) {
+		catch (JacksonException ex) {
 			throw new IllegalStateException("Conversion from Object to JSON failed", ex);
 		}
 	}
@@ -168,8 +171,22 @@ public final class JsonParser {
 			return Enum.valueOf((Class<Enum>) javaType, value.toString());
 		}
 
-		String json = JsonParser.toJson(value);
-		return JsonParser.fromJson(json, javaType);
+		Object result = null;
+		if (value instanceof String jsonString) {
+			try {
+				result = JsonParser.fromJson(jsonString, javaType);
+			}
+			catch (JacksonException e) {
+				// ignore
+			}
+		}
+
+		if (result == null) {
+			String json = JsonParser.toJson(value);
+			result = JsonParser.fromJson(json, javaType);
+		}
+
+		return result;
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Operand;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
+import org.springframework.util.Assert;
 
 /**
  * @author Anush Shetty
@@ -51,10 +52,12 @@ class QdrantFilterExpressionConverter {
 				mustNotClauses.add(io.qdrant.client.ConditionFactory.filter(convertOperand(group.content())));
 			}
 			else if (expression.type() == ExpressionType.AND) {
+				Assert.state(expression.right() != null, "expected an expression with a right operand");
 				mustClauses.add(io.qdrant.client.ConditionFactory.filter(convertOperand(expression.left())));
 				mustClauses.add(io.qdrant.client.ConditionFactory.filter(convertOperand(expression.right())));
 			}
 			else if (expression.type() == ExpressionType.OR) {
+				Assert.state(expression.right() != null, "expected an expression with a right operand");
 				shouldClauses.add(io.qdrant.client.ConditionFactory.filter(convertOperand(expression.left())));
 				shouldClauses.add(io.qdrant.client.ConditionFactory.filter(convertOperand(expression.right())));
 			}
@@ -73,26 +76,17 @@ class QdrantFilterExpressionConverter {
 	protected Condition parseComparison(Key key, Value value, Expression exp) {
 
 		ExpressionType type = exp.type();
-		switch (type) {
-			case EQ:
-				return buildEqCondition(key, value);
-			case NE:
-				return buildNeCondition(key, value);
-			case GT:
-				return buildGtCondition(key, value);
-			case GTE:
-				return buildGteCondition(key, value);
-			case LT:
-				return buildLtCondition(key, value);
-			case LTE:
-				return buildLteCondition(key, value);
-			case IN:
-				return buildInCondition(key, value);
-			case NIN:
-				return buildNInCondition(key, value);
-			default:
-				throw new RuntimeException("Unsupported expression type: " + type);
-		}
+		return switch (type) {
+			case EQ -> buildEqCondition(key, value);
+			case NE -> buildNeCondition(key, value);
+			case GT -> buildGtCondition(key, value);
+			case GTE -> buildGteCondition(key, value);
+			case LT -> buildLtCondition(key, value);
+			case LTE -> buildLteCondition(key, value);
+			case IN -> buildInCondition(key, value);
+			case NIN -> buildNInCondition(key, value);
+			default -> throw new RuntimeException("Unsupported expression type: " + type);
+		};
 	}
 
 	protected Condition buildEqCondition(Key key, Value value) {

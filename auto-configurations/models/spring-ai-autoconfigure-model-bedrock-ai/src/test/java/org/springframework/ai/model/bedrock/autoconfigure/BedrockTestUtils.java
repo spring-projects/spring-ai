@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package org.springframework.ai.model.bedrock.autoconfigure;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.regions.Region;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -45,8 +45,8 @@ public final class BedrockTestUtils {
 	static class Config {
 
 		@Bean
-		public ObjectMapper objectMapper() {
-			return new ObjectMapper();
+		public JsonMapper jsonMapper() {
+			return new JsonMapper();
 		}
 
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,8 +39,11 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateTableStart;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.springframework.util.Assert;
 
 /**
  * Configuration for the Cassandra Chat Memory store.
@@ -83,11 +86,12 @@ public final class CassandraChatMemoryRepositoryConfig {
 
 	final SessionIdToPrimaryKeysTranslator primaryKeyTranslator;
 
-	private final Integer timeToLiveSeconds;
+	private final @Nullable Integer timeToLiveSeconds;
 
 	private final boolean disallowSchemaChanges;
 
 	private CassandraChatMemoryRepositoryConfig(Builder builder) {
+		Assert.state(builder.session != null, "session is required");
 		this.session = builder.session;
 		this.schema = new Schema(builder.keyspace, builder.table, builder.partitionKeys, builder.clusteringKeys);
 		this.messagesColumn = builder.messagesColumn;
@@ -177,6 +181,7 @@ public final class CassandraChatMemoryRepositoryConfig {
 				createTable = (null != createTable ? createTable : createTableStart).withPartitionKey(partitionKey.name,
 						partitionKey.type);
 			}
+			Assert.state(createTable != null, "createTable should not be null");
 			for (SchemaColumn clusteringKey : this.schema.clusteringKeys) {
 				createTable = createTable.withClusteringColumn(clusteringKey.name, clusteringKey.type);
 			}
@@ -247,9 +252,9 @@ public final class CassandraChatMemoryRepositoryConfig {
 
 	public static final class Builder {
 
-		private CqlSession session = null;
+		private @Nullable CqlSession session = null;
 
-		private CqlSessionBuilder sessionBuilder = null;
+		private @Nullable CqlSessionBuilder sessionBuilder = null;
 
 		private String keyspace = DEFAULT_KEYSPACE_NAME;
 
@@ -262,7 +267,7 @@ public final class CassandraChatMemoryRepositoryConfig {
 
 		private String messagesColumn = DEFAULT_MESSAGES_COLUMN_NAME;
 
-		private Integer timeToLiveSeconds = null;
+		private @Nullable Integer timeToLiveSeconds = null;
 
 		private boolean disallowSchemaChanges = false;
 

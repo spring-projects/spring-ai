@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import org.springframework.test.context.jdbc.Sql;
  * @author Yanming Zhou
  */
 @SpringBootTest
-@TestPropertySource(properties = { "spring.datasource.url=jdbc:tc:mariadb:10.3.39:///" })
+@TestPropertySource(properties = "spring.datasource.url=jdbc:tc:mariadb:10.3.39:///")
 @Sql(scripts = "classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-mariadb.sql")
 class JdbcChatMemoryRepositoryMariaDbIT extends AbstractJdbcChatMemoryRepositoryIT {
 

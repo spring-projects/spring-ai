@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,15 +25,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
@@ -47,7 +46,6 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -169,7 +167,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 	private final JdbcTemplate jdbcTemplate;
 
-	private final String schemaName;
+	private final @Nullable String schemaName;
 
 	private final boolean schemaValidation;
 
@@ -187,7 +185,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 	private final MariaDBDistanceType distanceType;
 
-	private final ObjectMapper objectMapper;
+	private final JsonMapper jsonMapper;
 
 	private final boolean removeExistingVectorStoreTable;
 
@@ -208,7 +206,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 		Assert.notNull(builder.jdbcTemplate, "JdbcTemplate must not be null");
 
-		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
+		this.jsonMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 
 		this.vectorTableName = builder.vectorTableName.isEmpty() ? DEFAULT_TABLE_NAME
 				: MariaDBSchemaValidator.validateAndEnquoteIdentifier(builder.vectorTableName.trim(), false);
@@ -251,7 +249,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	@Override
 	public void doAdd(List<Document> documents) {
 		// Batch the documents based on the batching strategy
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
 		List<List<MariaDBDocument>> batchedDocuments = batchDocuments(documents, embeddings);
@@ -307,12 +305,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	private String toJson(Map<String, Object> map) {
-		try {
-			return this.objectMapper.writeValueAsString(map);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		return this.jsonMapper.writeValueAsString(map);
 	}
 
 	@Override
@@ -364,9 +357,9 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 				this.idFieldName, this.contentFieldName, this.metadataFieldName, distanceType, this.embeddingFieldName,
 				getFullyQualifiedTableName(), jsonPathFilter);
 
-		logger.debug("SQL query: " + sql);
+		logger.debug("SQL query: {}", sql);
 
-		return this.jdbcTemplate.query(sql, new DocumentRowMapper(this.objectMapper), embedding, distance,
+		return this.jdbcTemplate.query(sql, new DocumentRowMapper(this.jsonMapper), embedding, distance,
 				request.getTopK());
 	}
 
@@ -443,18 +436,25 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
-		return VectorStoreObservationContext.builder(VectorStoreProvider.MARIADB.value(), operationName)
+		VectorStoreObservationContext.Builder builder = VectorStoreObservationContext
+			.builder(VectorStoreProvider.MARIADB.value(), operationName)
 			.collectionName(this.vectorTableName)
 			.dimensions(this.embeddingDimensions())
-			.namespace(this.schemaName)
 			.similarityMetric(getSimilarityMetric());
+		if (this.schemaName != null) {
+			builder.namespace(this.schemaName);
+		}
+		return builder;
 	}
 
 	private String getSimilarityMetric() {
-		if (!SIMILARITY_TYPE_MAPPING.containsKey(this.getDistanceType())) {
+		VectorStoreSimilarityMetric metric = SIMILARITY_TYPE_MAPPING.get(this.distanceType);
+		if (metric != null) {
+			return metric.value();
+		}
+		else {
 			return this.getDistanceType().name();
 		}
-		return SIMILARITY_TYPE_MAPPING.get(this.distanceType).value();
 	}
 
 	@Override
@@ -472,10 +472,10 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 	private static class DocumentRowMapper implements RowMapper<Document> {
 
-		private final ObjectMapper objectMapper;
+		private final JsonMapper jsonMapper;
 
-		DocumentRowMapper(ObjectMapper objectMapper) {
-			this.objectMapper = objectMapper;
+		DocumentRowMapper(JsonMapper jsonMapper) {
+			this.jsonMapper = jsonMapper;
 		}
 
 		@Override
@@ -487,16 +487,17 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 			metadata.put("distance", distance);
 
-			return new Document(id, content, metadata);
+			// @formatter:off
+			return Document.builder()
+					.id(id)
+					.text(content)
+					.metadata(metadata)
+					.score(1.0 - distance)
+					.build(); // @formatter:on
 		}
 
 		private Map<String, Object> toMap(String source) {
-			try {
-				return (Map<String, Object>) this.objectMapper.readValue(source, Map.class);
-			}
-			catch (JsonProcessingException e) {
-				throw new RuntimeException(e);
-			}
+			return (Map<String, Object>) this.jsonMapper.readValue(source, Map.class);
 		}
 
 	}
@@ -519,8 +520,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 		private final JdbcTemplate jdbcTemplate;
 
-		@Nullable
-		private String schemaName;
+		private @Nullable String schemaName;
 
 		private String vectorTableName = DEFAULT_TABLE_NAME;
 
@@ -707,7 +707,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	 * @param embedding The vectors representing the content of the document
 	 */
 	public record MariaDBDocument(String id, @Nullable String content, Map<String, Object> metadata,
-			@Nullable float[] embedding) {
+			float @Nullable [] embedding) {
 	}
 
 }

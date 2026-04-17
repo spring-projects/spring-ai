@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2023-2024 the original author or authors.
+  ~ Copyright 2023-present the original author or authors.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 
 	<groupId>org.springframework.ai</groupId>
     <artifactId>spring-ai-bom</artifactId>
-	<version>1.1.0-SNAPSHOT</version>
+	<version>2.0.0-SNAPSHOT</version>
 
     <packaging>pom</packaging>
 
@@ -32,8 +32,8 @@
 
     <scm>
         <url>https://github.com/spring-projects/spring-ai</url>
-        <connection>git://github.com/spring-projects/spring-ai.git</connection>
-        <developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
+        <connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
     </scm>
 
 	<organization>
@@ -73,14 +73,6 @@
 
 	<properties>
 		<flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
-		<spring-javaformat-maven-plugin.version>0.0.43</spring-javaformat-maven-plugin.version>
-		<maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
-		<maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
-		<maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
-		<maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
-		<maven-javadoc-plugin.version>3.5.0</maven-javadoc-plugin.version>
-		<maven-site-plugin.version>4.0.0-M13</maven-site-plugin.version>
-		<maven-source-plugin.version>3.3.0</maven-source-plugin.version>
 		<maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
 	</properties>
 
@@ -157,6 +149,18 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>mcp-spring-webflux</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>mcp-spring-webmvc</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Spring AI Document Readers -->
 
 			<dependency>
@@ -207,13 +211,31 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-model-chat-memory-repository-cosmos-db</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-model-chat-memory-repository-jdbc</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-model-chat-memory-repository-mongodb</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-model-chat-memory-repository-neo4j</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-model-chat-memory-repository-redis</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -250,11 +272,17 @@
 				<optional>true</optional>
 			</dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-huggingface</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-google-genai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-google-genai-embedding</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
@@ -268,12 +296,6 @@
 				<version>${project.version}</version>
 			</dependency>
 
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-oci-genai</artifactId>
-                <version>${project.version}</version>
-            </dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
@@ -310,18 +332,6 @@
                 <artifactId>spring-ai-vertex-ai-embedding</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-vertex-ai-gemini</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-zhipuai</artifactId>
-				<version>${project.version}</version>
-			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
@@ -441,6 +451,18 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-redis-semantic-cache</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-s3-vector-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-typesense-store</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -454,6 +476,18 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-couchbase-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-infinispan-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-bedrock-knowledgebase-store</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -492,13 +526,31 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-chat-memory-repository-cosmos-db</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-model-chat-memory-repository-jdbc</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-chat-memory-repository-mongodb</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-model-chat-memory-repository-neo4j</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-chat-memory-redis</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -547,11 +599,23 @@
                 <version>${project.version}</version>
             </dependency>
 
-			<!-- Spring AI MCP server autoconfiguration -->
+			<!-- Spring AI MCP server autoconfigurations -->
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-autoconfigure-mcp-server</artifactId>
+                <artifactId>spring-ai-autoconfigure-mcp-server-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-autoconfigure-mcp-server-webmvc</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-autoconfigure-mcp-server-webflux</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -591,7 +655,7 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-autoconfigure-model-huggingface</artifactId>
+				<artifactId>spring-ai-autoconfigure-model-google-genai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -607,12 +671,6 @@
 				<version>${project.version}</version>
 			</dependency>
 
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-autoconfigure-model-oci-genai</artifactId>
-				<version>${project.version}</version>
-			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
@@ -648,12 +706,6 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-model-vertex-ai</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-autoconfigure-model-zhipuai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -703,6 +755,12 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-vector-store-gemfire</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-infinispan</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -774,6 +832,18 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-redis-semantic-cache</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-s3</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-vector-store-typesense</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -781,6 +851,12 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-vector-store-weaviate</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-bedrock-knowledgebase</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -896,6 +972,12 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-s3</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-vector-store-typesense</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -903,6 +985,12 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-vector-store-weaviate</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-bedrock-knowledgebase</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -934,12 +1022,6 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-starter-model-huggingface</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-elevenlabs</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -956,12 +1038,6 @@
 				<version>${project.version}</version>
 			</dependency>
 
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-starter-model-oci-genai</artifactId>
-				<version>${project.version}</version>
-			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
@@ -1002,13 +1078,13 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-starter-model-vertex-ai-gemini</artifactId>
+				<artifactId>spring-ai-starter-model-google-genai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-starter-model-zhipuai</artifactId>
+				<artifactId>spring-ai-starter-model-google-genai-embedding</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -1034,6 +1110,12 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-mcp-server-common</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-mcp-server</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -1049,6 +1131,13 @@
 				<artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
 				<version>${project.version}</version>
 			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-mcp-annotations</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 
 			<!-- Spring AI Spring Boot starter for Chat Memory (with the default in-memory Chat memory repository) -->
 
@@ -1068,13 +1157,31 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-chat-memory-repository-cosmos-db</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-chat-memory-repository-jdbc</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-chat-memory-repository-mongodb</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-chat-memory-repository-neo4j</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-chat-memory-repository-redis</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -1171,106 +1278,6 @@
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>io.spring.javaformat</groupId>
-				<artifactId>spring-javaformat-maven-plugin</artifactId>
-				<version>${spring-javaformat-maven-plugin.version}</version>
-				<executions>
-					<execution>
-						<phase>validate</phase>
-						<inherited>true</inherited>
-						<goals>
-							<goal>validate</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-site-plugin</artifactId>
-				<version>${maven-site-plugin.version}</version>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>${maven-compiler-plugin.version}</version>
-				<configuration>
-					<release>${java.version}</release>
-					<compilerArgs>
-						<compilerArg>-parameters</compilerArg>
-					</compilerArgs>
-				</configuration>
-				<executions>
-					<!-- Replacing default-compile as it is treated specially by Maven -->
-					<execution>
-						<id>default-compile</id>
-						<phase>none</phase>
-					</execution>
-					<!-- Replacing default-testCompile as it is treated specially by Maven -->
-					<execution>
-						<id>default-testCompile</id>
-						<phase>none</phase>
-					</execution>
-					<execution>
-						<id>java-compile</id>
-						<phase>compile</phase>
-						<goals>
-							<goal>compile</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>java-test-compile</id>
-						<phase>test-compile</phase>
-						<goals>
-							<goal>testCompile</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<version>${maven-surefire-plugin.version}</version>
-				<configuration>
-					<argLine>${surefireArgLine}</argLine>
-
-					<useFile>false</useFile>
-					<trimStackTrace>false</trimStackTrace>
-
-					<!-- Show test timing information -->
-					<reportFormat>plain</reportFormat>
-
-					<!-- Output test execution times in the logs -->
-					<redirectTestOutputToFile>false</redirectTestOutputToFile>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<version>${maven-jar-plugin.version}</version>
-				<configuration>
-					<archive>
-						<manifestEntries>
-							<Implementation-Title>${project.artifactId}</Implementation-Title>
-							<Implementation-Version>${project.version}</Implementation-Version>
-						</manifestEntries>
-					</archive>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-source-plugin</artifactId>
-				<version>${maven-source-plugin.version}</version>
-				<executions>
-					<execution>
-						<id>generate-sources</id>
-						<phase>package</phase>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>flatten-maven-plugin</artifactId>
 				<version>${flatten-maven-plugin.version}</version>
@@ -1308,28 +1315,6 @@
 				<artifactId>maven-deploy-plugin</artifactId>
 				<version>${maven-deploy-plugin.version}</version>
 			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>${maven-javadoc-plugin.version}</version>
-				<configuration>
-					<overview>
-						${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
-					<detectJavaApiLink>false</detectJavaApiLink>
-					<failOnError>false</failOnError>
-					<doclint>none</doclint>
-				</configuration>
-				<executions>
-					<execution>
-						<id>generate-javadocs</id>
-						<phase>package</phase>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-
 		</plugins>
 	</build>
 
@@ -1358,44 +1343,43 @@
 				</repository>
 			</distributionManagement>
 		</profile>
-		<profile>
-			<id>sonatype</id>
-			<properties>
-				<maven.test.skip>true</maven.test.skip>
-			</properties>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-gpg-plugin</artifactId>
-						<executions>
-							<execution>
-								<id>sign-artifacts</id>
-								<phase>verify</phase>
-								<goals>
-									<goal>sign</goal>
-								</goals>
-							</execution>
-						</executions>
-						<configuration>
-							<!-- Passphrase consumed from MAVEN_GPG_PASSPHRASE environment variable. -->
-						</configuration>
-					</plugin>
-					<plugin>
-						<groupId>org.sonatype.plugins</groupId>
-						<artifactId>nexus-staging-maven-plugin</artifactId>
-						<version>1.7.0</version>
-						<extensions>true</extensions>
-						<configuration>
-							<serverId>sonatype-new</serverId>
-							<nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-							<autoReleaseAfterClose>true</autoReleaseAfterClose>
-							<keepStagingRepositoryOnFailure>true</keepStagingRepositoryOnFailure>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
+    <profile>
+	    <id>sonatype</id>
+	    <properties>
+	        <maven.test.skip>true</maven.test.skip>
+	    </properties>
+	    <build>
+	        <plugins>
+	            <plugin>
+	                <groupId>org.sonatype.central</groupId>
+	                <artifactId>central-publishing-maven-plugin</artifactId>
+	                <version>0.8.0</version>
+	                <extensions>true</extensions>
+	                <configuration>
+	                    <publishingServerId>central</publishingServerId>
+	                    <autoPublish>true</autoPublish>
+	                </configuration>
+	            </plugin>
+	            <plugin>
+	                <groupId>org.apache.maven.plugins</groupId>
+	                <artifactId>maven-gpg-plugin</artifactId>
+	                <version>3.2.5</version>
+	                <executions>
+	                    <execution>
+	                        <id>sign-artifacts</id>
+	                        <phase>verify</phase>
+	                        <goals>
+	                            <goal>sign</goal>
+	                        </goals>
+	                    </execution>
+	                </executions>
+	                <configuration>
+	                    <!-- Passphrase consumed from MAVEN_GPG_PASSPHRASE environment variable. -->
+	                </configuration>
+	            </plugin>
+	        </plugins>
+	    </build>
+	   </profile>
 	</profiles>
 
 </project>

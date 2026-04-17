@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
-import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
@@ -45,7 +44,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  *
  * @author Alexandros Pappas
  */
-public class ElevenLabsApi {
+public final class ElevenLabsApi {
 
 	public static final String DEFAULT_BASE_URL = "https://api.elevenlabs.io";
 
@@ -62,24 +61,34 @@ public class ElevenLabsApi {
 	 * @param webClientBuilder A builder for the Spring WebClient.
 	 * @param responseErrorHandler A custom error handler for API responses.
 	 */
-	private ElevenLabsApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
-			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
+	private ElevenLabsApi(String baseUrl, ApiKey apiKey, HttpHeaders headers, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = h -> {
 			if (!(apiKey instanceof NoopApiKey)) {
 				h.set("xi-api-key", apiKey.getValue());
 			}
-			h.addAll(headers);
+			h.addAll(HttpHeaders.readOnlyHttpHeaders(headers));
 			h.setContentType(MediaType.APPLICATION_JSON);
 		};
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
+		this.restClient = restClientBuilder.clone()
+			.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 
-		this.webClient = webClientBuilder.baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
+		this.webClient = webClientBuilder.clone().baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
+	}
+
+	/**
+	 * Create a new ElevenLabs API client.
+	 * @param restClient Spring RestClient instance.
+	 * @param webClient Spring WebClient instance.
+	 */
+	public ElevenLabsApi(RestClient restClient, WebClient webClient) {
+		this.restClient = restClient;
+		this.webClient = webClient;
 	}
 
 	public static Builder builder() {
@@ -223,7 +232,7 @@ public class ElevenLabsApi {
 				@JsonProperty("version_id") String versionId) {
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			private String text;
 
@@ -311,10 +320,11 @@ public class ElevenLabsApi {
 			}
 
 			public SpeechRequest build() {
-				Assert.hasText(text, "text must not be empty");
-				return new SpeechRequest(text, modelId, languageCode, voiceSettings, pronunciationDictionaryLocators,
-						seed, previousText, nextText, previousRequestIds, nextRequestIds, applyTextNormalization,
-						applyLanguageTextNormalization);
+				Assert.hasText(this.text, "text must not be empty");
+				return new SpeechRequest(this.text, this.modelId, this.languageCode, this.voiceSettings,
+						this.pronunciationDictionaryLocators, this.seed, this.previousText, this.nextText,
+						this.previousRequestIds, this.nextRequestIds, this.applyTextNormalization,
+						this.applyLanguageTextNormalization);
 			}
 
 		}
@@ -324,13 +334,13 @@ public class ElevenLabsApi {
 	/**
 	 * Builder to construct {@link ElevenLabsApi} instance.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private String baseUrl = DEFAULT_BASE_URL;
 
 		private ApiKey apiKey;
 
-		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		private HttpHeaders headers = new HttpHeaders();
 
 		private RestClient.Builder restClientBuilder = RestClient.builder();
 
@@ -356,7 +366,7 @@ public class ElevenLabsApi {
 			return this;
 		}
 
-		public Builder headers(MultiValueMap<String, String> headers) {
+		public Builder headers(HttpHeaders headers) {
 			Assert.notNull(headers, "headers cannot be null");
 			this.headers = headers;
 			return this;

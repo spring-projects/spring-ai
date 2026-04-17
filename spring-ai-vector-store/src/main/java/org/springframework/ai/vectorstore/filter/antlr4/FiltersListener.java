@@ -1,5 +1,8 @@
+// Generated from org/springframework/ai/vectorstore/filter/antlr4/Filters.g4 by ANTLR 4.13.1
+package org.springframework.ai.vectorstore.filter.antlr4;
+
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.springframework.ai.vectorstore.filter.antlr4;
-
-// Generated from org/springframework/ai/vectorstore/filter/antlr4/Filters.g4 by ANTLR 4.13.1
 
 // ############################################################
 // # NOTE: This is ANTLR4 auto-generated code. Do not modify! #
@@ -55,6 +54,34 @@ public interface FiltersListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitNinExpression(FiltersParser.NinExpressionContext ctx);
+
+	/**
+	 * Enter a parse tree produced by the {@code IsNullExpression} labeled alternative in
+	 * {@link FiltersParser#booleanExpression}.
+	 * @param ctx the parse tree
+	 */
+	void enterIsNullExpression(FiltersParser.IsNullExpressionContext ctx);
+
+	/**
+	 * Exit a parse tree produced by the {@code IsNullExpression} labeled alternative in
+	 * {@link FiltersParser#booleanExpression}.
+	 * @param ctx the parse tree
+	 */
+	void exitIsNullExpression(FiltersParser.IsNullExpressionContext ctx);
+
+	/**
+	 * Enter a parse tree produced by the {@code IsNotNullExpression} labeled alternative
+	 * in {@link FiltersParser#booleanExpression}.
+	 * @param ctx the parse tree
+	 */
+	void enterIsNotNullExpression(FiltersParser.IsNotNullExpressionContext ctx);
+
+	/**
+	 * Exit a parse tree produced by the {@code IsNotNullExpression} labeled alternative
+	 * in {@link FiltersParser#booleanExpression}.
+	 * @param ctx the parse tree
+	 */
+	void exitIsNotNullExpression(FiltersParser.IsNotNullExpressionContext ctx);
 
 	/**
 	 * Enter a parse tree produced by the {@code AndExpression} labeled alternative in
@@ -165,16 +192,60 @@ public interface FiltersListener extends ParseTreeListener {
 	void exitCompare(FiltersParser.CompareContext ctx);
 
 	/**
-	 * Enter a parse tree produced by {@link FiltersParser#identifier}.
+	 * Enter a parse tree produced by the {@code CompoundIdentifier} labeled alternative
+	 * in {@link FiltersParser#identifier}.
 	 * @param ctx the parse tree
 	 */
-	void enterIdentifier(FiltersParser.IdentifierContext ctx);
+	void enterCompoundIdentifier(FiltersParser.CompoundIdentifierContext ctx);
 
 	/**
-	 * Exit a parse tree produced by {@link FiltersParser#identifier}.
+	 * Exit a parse tree produced by the {@code CompoundIdentifier} labeled alternative in
+	 * {@link FiltersParser#identifier}.
 	 * @param ctx the parse tree
 	 */
-	void exitIdentifier(FiltersParser.IdentifierContext ctx);
+	void exitCompoundIdentifier(FiltersParser.CompoundIdentifierContext ctx);
+
+	/**
+	 * Enter a parse tree produced by the {@code SimpleIdentifier} labeled alternative in
+	 * {@link FiltersParser#identifier}.
+	 * @param ctx the parse tree
+	 */
+	void enterSimpleIdentifier(FiltersParser.SimpleIdentifierContext ctx);
+
+	/**
+	 * Exit a parse tree produced by the {@code SimpleIdentifier} labeled alternative in
+	 * {@link FiltersParser#identifier}.
+	 * @param ctx the parse tree
+	 */
+	void exitSimpleIdentifier(FiltersParser.SimpleIdentifierContext ctx);
+
+	/**
+	 * Enter a parse tree produced by the {@code QuotedIdentifier} labeled alternative in
+	 * {@link FiltersParser#identifier}.
+	 * @param ctx the parse tree
+	 */
+	void enterQuotedIdentifier(FiltersParser.QuotedIdentifierContext ctx);
+
+	/**
+	 * Exit a parse tree produced by the {@code QuotedIdentifier} labeled alternative in
+	 * {@link FiltersParser#identifier}.
+	 * @param ctx the parse tree
+	 */
+	void exitQuotedIdentifier(FiltersParser.QuotedIdentifierContext ctx);
+
+	/**
+	 * Enter a parse tree produced by the {@code LongConstant} labeled alternative in
+	 * {@link FiltersParser#constant}.
+	 * @param ctx the parse tree
+	 */
+	void enterLongConstant(FiltersParser.LongConstantContext ctx);
+
+	/**
+	 * Exit a parse tree produced by the {@code LongConstant} labeled alternative in
+	 * {@link FiltersParser#constant}.
+	 * @param ctx the parse tree
+	 */
+	void exitLongConstant(FiltersParser.LongConstantContext ctx);
 
 	/**
 	 * Enter a parse tree produced by the {@code IntegerConstant} labeled alternative in

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ public interface IdGenerator {
 
 	/**
 	 * Generate a unique ID for the given content. Note: some generator, such as the
-	 * random generator might not dependant on or use the content parameters.
+	 * random generator might not depend on or use the content parameters.
 	 * @param contents the content to generate an ID for.
 	 * @return the generated ID.
 	 */

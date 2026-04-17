@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,14 @@
 package org.springframework.ai.vectorstore.gemfire.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.SpringAIVectorStoreTypes;
 import org.springframework.ai.vectorstore.gemfire.GemFireVectorStore;
+import org.springframework.ai.vectorstore.gemfire.GemFireVectorStore.Builder;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -38,6 +40,7 @@ import org.springframework.context.annotation.Bean;
  * @author Geet Rawat
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Jason Huynh
  */
 @AutoConfiguration
 @ConditionalOnClass({ GemFireVectorStore.class, EmbeddingModel.class })
@@ -54,7 +57,7 @@ public class GemFireVectorStoreAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy batchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}
@@ -66,7 +69,7 @@ public class GemFireVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		return GemFireVectorStore.builder(embeddingModel)
+		Builder builder = GemFireVectorStore.builder(embeddingModel)
 			.host(gemFireConnectionDetails.getHost())
 			.port(gemFireConnectionDetails.getPort())
 			.indexName(properties.getIndexName())
@@ -79,8 +82,17 @@ public class GemFireVectorStoreAutoConfiguration {
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
-			.batchingStrategy(batchingStrategy)
-			.build();
+			.batchingStrategy(batchingStrategy);
+		if (gemFireConnectionDetails.getUsername() != null) {
+			builder.username(gemFireConnectionDetails.getUsername());
+		}
+		if (gemFireConnectionDetails.getPassword() != null) {
+			builder.password(gemFireConnectionDetails.getPassword());
+		}
+		if (gemFireConnectionDetails.getToken() != null) {
+			builder.token(gemFireConnectionDetails.getToken());
+		}
+		return builder.build();
 	}
 
 	private static class PropertiesGemFireConnectionDetails implements GemFireConnectionDetails {
@@ -99,6 +111,21 @@ public class GemFireVectorStoreAutoConfiguration {
 		@Override
 		public int getPort() {
 			return this.properties.getPort();
+		}
+
+		@Override
+		public @Nullable String getUsername() {
+			return this.properties.getUsername();
+		}
+
+		@Override
+		public @Nullable String getPassword() {
+			return this.properties.getPassword();
+		}
+
+		@Override
+		public @Nullable String getToken() {
+			return this.properties.getToken();
 		}
 
 	}

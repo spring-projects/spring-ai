@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.bedrock.autoconfigure.BedrockTestUtils;
 import org.springframework.ai.model.bedrock.autoconfigure.RequiresAwsCredentials;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -44,9 +45,10 @@ public class BedrockConverseProxyChatAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = BedrockTestUtils.getContextRunner()
 		.withPropertyValues(
-				"spring.ai.bedrock.converse.chat.options.model=" + "anthropic.claude-3-5-sonnet-20240620-v1:0",
+				"spring.ai.bedrock.converse.chat.options.model=" + "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
 				"spring.ai.bedrock.converse.chat.options.temperature=0.5")
-		.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class,
+				ToolCallingAutoConfiguration.class));
 
 	@Test
 	void call() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,48 +16,52 @@
 
 package org.springframework.ai.openai;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import java.net.Proxy;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import com.openai.azure.AzureOpenAIServiceVersion;
+import com.openai.credential.Credential;
+import com.openai.models.audio.AudioModel;
+import com.openai.models.audio.AudioResponseFormat;
+import com.openai.models.audio.transcriptions.TranscriptionCreateParams;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.audio.transcription.AudioTranscriptionOptions;
-import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptResponseFormat;
-import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptionRequest.GranularityType;
 
 /**
- * OpenAI Audio Transcription Options.
+ * OpenAI SDK Audio Transcription Options.
  *
  * @author Michael Lavelle
  * @author Christian Tzolov
  * @author Piotr Olaszewski
  * @author Ilayaperumal Gopinathan
- * @since 0.8.1
  */
-@JsonInclude(Include.NON_NULL)
-public class OpenAiAudioTranscriptionOptions implements AudioTranscriptionOptions {
-
-	// @formatter:off
-	/**
-	 * ID of the model to use.
-	 */
-	private @JsonProperty("model") String model;
+public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions implements AudioTranscriptionOptions {
 
 	/**
-	 * The format of the transcript output, in one of these options: json, text, srt, verbose_json, or vtt.
+	 * Default transcription model (Whisper 1).
 	 */
-	private @JsonProperty("response_format") TranscriptResponseFormat responseFormat;
-
-	private @JsonProperty("prompt") String prompt;
-
-	private @JsonProperty("language") String language;
+	public static final String DEFAULT_TRANSCRIPTION_MODEL = AudioModel.WHISPER_1.asString();
 
 	/**
-	 * What sampling temperature to use, between 0 and 1. Higher values like 0.8 will make the output
-	 * more random, while lower values like 0.2 will make it more focused and deterministic.
+	 * Default response format.
 	 */
-	private @JsonProperty("temperature") Float temperature;
+	public static final AudioResponseFormat DEFAULT_RESPONSE_FORMAT = AudioResponseFormat.TEXT;
 
-	private @JsonProperty("timestamp_granularities") GranularityType granularityType;
+	private @Nullable String model;
+
+	private AudioResponseFormat responseFormat = DEFAULT_RESPONSE_FORMAT;
+
+	private @Nullable String prompt;
+
+	private @Nullable String language;
+
+	private @Nullable Float temperature;
+
+	private @Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities;
 
 	public static Builder builder() {
 		return new Builder();
@@ -65,156 +69,346 @@ public class OpenAiAudioTranscriptionOptions implements AudioTranscriptionOption
 
 	@Override
 	public String getModel() {
-		return this.model;
+		return this.model != null ? this.model : DEFAULT_TRANSCRIPTION_MODEL;
 	}
 
-	public void setModel(String model) {
+	public void setModel(@Nullable String model) {
 		this.model = model;
 	}
 
-	public String getLanguage() {
-		return this.language;
-	}
-
-	public void setLanguage(String language) {
-		this.language = language;
-	}
-
-	public String getPrompt() {
-		return this.prompt;
-	}
-
-	public void setPrompt(String prompt) {
-		this.prompt = prompt;
-	}
-
-	public Float getTemperature() {
-		return this.temperature;
-	}
-
-	public void setTemperature(Float temperature) {
-		this.temperature = temperature;
-	}
-
-	public TranscriptResponseFormat getResponseFormat() {
+	public AudioResponseFormat getResponseFormat() {
 		return this.responseFormat;
 	}
 
-	public void setResponseFormat(TranscriptResponseFormat responseFormat) {
+	public void setResponseFormat(AudioResponseFormat responseFormat) {
 		this.responseFormat = responseFormat;
 	}
 
-	public GranularityType getGranularityType() {
-		return this.granularityType;
+	public @Nullable String getPrompt() {
+		return this.prompt;
 	}
 
-	public void setGranularityType(GranularityType granularityType) {
-		this.granularityType = granularityType;
+	public void setPrompt(@Nullable String prompt) {
+		this.prompt = prompt;
+	}
+
+	public @Nullable String getLanguage() {
+		return this.language;
+	}
+
+	public void setLanguage(@Nullable String language) {
+		this.language = language;
+	}
+
+	public @Nullable Float getTemperature() {
+		return this.temperature;
+	}
+
+	public void setTemperature(@Nullable Float temperature) {
+		this.temperature = temperature;
+	}
+
+	public @Nullable List<TranscriptionCreateParams.TimestampGranularity> getTimestampGranularities() {
+		return this.timestampGranularities;
+	}
+
+	public void setTimestampGranularities(
+			@Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities) {
+		this.timestampGranularities = timestampGranularities;
+	}
+
+	public OpenAiAudioTranscriptionOptions copy() {
+		return OpenAiAudioTranscriptionOptions.builder()
+			.model(this.model)
+			.responseFormat(this.responseFormat)
+			.prompt(this.prompt)
+			.language(this.language)
+			.temperature(this.temperature)
+			.timestampGranularities(this.timestampGranularities)
+			.baseUrl(this.getBaseUrl())
+			.apiKey(this.getApiKey())
+			.credential(this.getCredential())
+			.deploymentName(this.getDeploymentName())
+			.microsoftFoundryServiceVersion(this.getMicrosoftFoundryServiceVersion())
+			.organizationId(this.getOrganizationId())
+			.microsoftFoundry(this.isMicrosoftFoundry())
+			.gitHubModels(this.isGitHubModels())
+			.timeout(this.getTimeout())
+			.maxRetries(this.getMaxRetries())
+			.proxy(this.getProxy())
+			.customHeaders(this.getCustomHeaders())
+			.build();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		OpenAiAudioTranscriptionOptions that = (OpenAiAudioTranscriptionOptions) o;
+		return Objects.equals(this.model, that.model) && Objects.equals(this.responseFormat, that.responseFormat)
+				&& Objects.equals(this.prompt, that.prompt) && Objects.equals(this.language, that.language)
+				&& Objects.equals(this.temperature, that.temperature)
+				&& Objects.equals(this.timestampGranularities, that.timestampGranularities);
 	}
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((this.model == null) ? 0 : this.model.hashCode());
-		result = prime * result + ((this.prompt == null) ? 0 : this.prompt.hashCode());
-		result = prime * result + ((this.language == null) ? 0 : this.language.hashCode());
-		result = prime * result + ((this.responseFormat == null) ? 0 : this.responseFormat.hashCode());
-		return result;
+		return Objects.hash(this.model, this.responseFormat, this.prompt, this.language, this.temperature,
+				this.timestampGranularities);
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		OpenAiAudioTranscriptionOptions other = (OpenAiAudioTranscriptionOptions) obj;
-		if (this.model == null) {
-			if (other.model != null) {
-				return false;
-			}
-		}
-		else if (!this.model.equals(other.model)) {
-			return false;
-		}
-		if (this.prompt == null) {
-			if (other.prompt != null) {
-				return false;
-			}
-		}
-		else if (!this.prompt.equals(other.prompt)) {
-			return false;
-		}
-		if (this.language == null) {
-			if (other.language != null) {
-				return false;
-			}
-		}
-		else if (!this.language.equals(other.language)) {
-			return false;
-		}
-		if (this.responseFormat == null) {
-			if (other.responseFormat != null) {
-				return false;
-			}
-		}
-		else if (!this.responseFormat.equals(other.responseFormat)) {
-			return false;
-		}
-		return true;
+	public String toString() {
+		return "OpenAiAudioTranscriptionOptions{" + "model='" + this.model + '\'' + ", responseFormat="
+				+ this.responseFormat + ", prompt='" + this.prompt + '\'' + ", language='" + this.language + '\''
+				+ ", temperature=" + this.temperature + ", timestampGranularities=" + this.timestampGranularities + '}';
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
-		protected OpenAiAudioTranscriptionOptions options;
+		private @Nullable String model;
 
-		public Builder() {
-			this.options = new OpenAiAudioTranscriptionOptions();
+		private @Nullable AudioResponseFormat responseFormat;
+
+		private @Nullable String prompt;
+
+		private @Nullable String language;
+
+		private @Nullable Float temperature;
+
+		private @Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities;
+
+		private @Nullable String baseUrl;
+
+		private @Nullable String apiKey;
+
+		private @Nullable Credential credential;
+
+		private @Nullable String deploymentName;
+
+		private @Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion;
+
+		private @Nullable String organizationId;
+
+		private boolean microsoftFoundry;
+
+		private boolean gitHubModels;
+
+		private @Nullable Duration timeout;
+
+		private @Nullable Integer maxRetries;
+
+		private @Nullable Proxy proxy;
+
+		private @Nullable Map<String, String> customHeaders;
+
+		private Builder() {
 		}
 
-		public Builder(OpenAiAudioTranscriptionOptions options) {
-			this.options = options;
-		}
-
-		public Builder model(String model) {
-			this.options.model = model;
+		public Builder from(OpenAiAudioTranscriptionOptions fromOptions) {
+			this.baseUrl = fromOptions.getBaseUrl();
+			this.apiKey = fromOptions.getApiKey();
+			this.credential = fromOptions.getCredential();
+			this.model = fromOptions.getModel();
+			this.deploymentName = fromOptions.getDeploymentName();
+			this.microsoftFoundryServiceVersion = fromOptions.getMicrosoftFoundryServiceVersion();
+			this.organizationId = fromOptions.getOrganizationId();
+			this.microsoftFoundry = fromOptions.isMicrosoftFoundry();
+			this.gitHubModels = fromOptions.isGitHubModels();
+			this.timeout = fromOptions.getTimeout();
+			this.maxRetries = fromOptions.getMaxRetries();
+			this.proxy = fromOptions.getProxy();
+			this.customHeaders = fromOptions.getCustomHeaders();
+			this.responseFormat = fromOptions.getResponseFormat();
+			this.prompt = fromOptions.getPrompt();
+			this.language = fromOptions.getLanguage();
+			this.temperature = fromOptions.getTemperature();
+			this.timestampGranularities = fromOptions.getTimestampGranularities();
 			return this;
 		}
 
-		public Builder language(String language) {
-			this.options.language = language;
+		public Builder merge(@Nullable AudioTranscriptionOptions from) {
+			if (from == null) {
+				return this;
+			}
+			if (from.getModel() != null) {
+				this.model = from.getModel();
+			}
+			if (from instanceof OpenAiAudioTranscriptionOptions castFrom) {
+				if (castFrom.getBaseUrl() != null) {
+					this.baseUrl = castFrom.getBaseUrl();
+				}
+				if (castFrom.getApiKey() != null) {
+					this.apiKey = castFrom.getApiKey();
+				}
+				if (castFrom.getCredential() != null) {
+					this.credential = castFrom.getCredential();
+				}
+				if (castFrom.getDeploymentName() != null) {
+					this.deploymentName = castFrom.getDeploymentName();
+				}
+				if (castFrom.getMicrosoftFoundryServiceVersion() != null) {
+					this.microsoftFoundryServiceVersion = castFrom.getMicrosoftFoundryServiceVersion();
+				}
+				if (castFrom.getOrganizationId() != null) {
+					this.organizationId = castFrom.getOrganizationId();
+				}
+				this.microsoftFoundry = castFrom.isMicrosoftFoundry();
+				this.gitHubModels = castFrom.isGitHubModels();
+				this.timeout = castFrom.getTimeout();
+				this.maxRetries = castFrom.getMaxRetries();
+				if (castFrom.getProxy() != null) {
+					this.proxy = castFrom.getProxy();
+				}
+				if (castFrom.getCustomHeaders() != null) {
+					this.customHeaders = castFrom.getCustomHeaders();
+				}
+				if (castFrom.getResponseFormat() != null) {
+					this.responseFormat = castFrom.getResponseFormat();
+				}
+				if (castFrom.getPrompt() != null) {
+					this.prompt = castFrom.getPrompt();
+				}
+				if (castFrom.getLanguage() != null) {
+					this.language = castFrom.getLanguage();
+				}
+				if (castFrom.getTemperature() != null) {
+					this.temperature = castFrom.getTemperature();
+				}
+				if (castFrom.getTimestampGranularities() != null) {
+					this.timestampGranularities = castFrom.getTimestampGranularities();
+				}
+			}
 			return this;
 		}
 
-		public Builder prompt(String prompt) {
-			this.options.prompt = prompt;
+		public Builder model(@Nullable String model) {
+			this.model = model;
 			return this;
 		}
 
-		public Builder responseFormat(TranscriptResponseFormat responseFormat) {
-			this.options.responseFormat = responseFormat;
+		public Builder responseFormat(AudioResponseFormat responseFormat) {
+			this.responseFormat = responseFormat;
 			return this;
 		}
 
-		public Builder temperature(Float temperature) {
-			this.options.temperature = temperature;
+		public Builder prompt(@Nullable String prompt) {
+			this.prompt = prompt;
 			return this;
 		}
 
-		public Builder granularityType(GranularityType granularityType) {
-			this.options.granularityType = granularityType;
+		public Builder language(@Nullable String language) {
+			this.language = language;
+			return this;
+		}
+
+		public Builder temperature(@Nullable Float temperature) {
+			this.temperature = temperature;
+			return this;
+		}
+
+		public Builder timestampGranularities(
+				@Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities) {
+			this.timestampGranularities = timestampGranularities;
+			return this;
+		}
+
+		public Builder baseUrl(@Nullable String baseUrl) {
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder apiKey(@Nullable String apiKey) {
+			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder credential(@Nullable Credential credential) {
+			this.credential = credential;
+			return this;
+		}
+
+		public Builder deploymentName(@Nullable String deploymentName) {
+			this.deploymentName = deploymentName;
+			return this;
+		}
+
+		public Builder microsoftFoundryServiceVersion(
+				@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion) {
+			this.microsoftFoundryServiceVersion = microsoftFoundryServiceVersion;
+			return this;
+		}
+
+		public Builder organizationId(@Nullable String organizationId) {
+			this.organizationId = organizationId;
+			return this;
+		}
+
+		public Builder microsoftFoundry(boolean microsoftFoundry) {
+			this.microsoftFoundry = microsoftFoundry;
+			return this;
+		}
+
+		public Builder gitHubModels(boolean gitHubModels) {
+			this.gitHubModels = gitHubModels;
+			return this;
+		}
+
+		public Builder timeout(Duration timeout) {
+			this.timeout = timeout;
+			return this;
+		}
+
+		public Builder maxRetries(int maxRetries) {
+			this.maxRetries = maxRetries;
+			return this;
+		}
+
+		public Builder proxy(@Nullable Proxy proxy) {
+			this.proxy = proxy;
+			return this;
+		}
+
+		public Builder customHeaders(Map<String, String> customHeaders) {
+			this.customHeaders = customHeaders;
 			return this;
 		}
 
 		public OpenAiAudioTranscriptionOptions build() {
-			return this.options;
+			OpenAiAudioTranscriptionOptions options = new OpenAiAudioTranscriptionOptions();
+			options.setBaseUrl(this.baseUrl);
+			options.setApiKey(this.apiKey);
+			options.setCredential(this.credential);
+			options.setModel(this.model);
+			options.setDeploymentName(this.deploymentName);
+			options.setMicrosoftFoundryServiceVersion(this.microsoftFoundryServiceVersion);
+			options.setOrganizationId(this.organizationId);
+			options.setMicrosoftFoundry(this.microsoftFoundry);
+			options.setGitHubModels(this.gitHubModels);
+			if (this.timeout != null) {
+				options.setTimeout(this.timeout);
+			}
+			if (this.maxRetries != null) {
+				options.setMaxRetries(this.maxRetries);
+			}
+			options.setProxy(this.proxy);
+			if (this.customHeaders != null) {
+				options.setCustomHeaders(this.customHeaders);
+			}
+			if (this.responseFormat != null) {
+				options.setResponseFormat(this.responseFormat);
+			}
+			options.setPrompt(this.prompt);
+			options.setLanguage(this.language);
+			options.setTemperature(this.temperature);
+			options.setTimestampGranularities(this.timestampGranularities);
+			return options;
 		}
 
 	}
+
 }

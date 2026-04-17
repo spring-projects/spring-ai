@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,9 +38,7 @@ public final class BedrockConverseChatModelMain3 {
 
 	public static void main(String[] args) {
 
-		// String modelId = "anthropic.claude-3-5-sonnet-20240620-v1:0";
-		// String modelId = "ai21.jamba-1-5-large-v1:0";
-		String modelId = "anthropic.claude-3-5-sonnet-20240620-v1:0";
+		String modelId = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 
 		// var prompt = new Prompt("Tell me a joke?",
 		// ChatOptions.builder().model(modelId).build();

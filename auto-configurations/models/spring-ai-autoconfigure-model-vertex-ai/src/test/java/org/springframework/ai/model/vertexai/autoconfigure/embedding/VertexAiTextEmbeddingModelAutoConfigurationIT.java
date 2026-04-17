@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,10 @@ import org.junit.jupiter.api.io.TempDir;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.DocumentEmbeddingRequest;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResultMetadata;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.vertexai.embedding.multimodal.VertexAiMultimodalEmbeddingModel;
 import org.springframework.ai.vertexai.embedding.text.VertexAiTextEmbeddingModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -38,9 +39,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
+ * @author Issam El-atif
  */
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".+")
 public class VertexAiTextEmbeddingModelAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
@@ -52,12 +54,15 @@ public class VertexAiTextEmbeddingModelAutoConfigurationIT {
 
 	@Test
 	public void textEmbedding() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(VertexAiTextEmbeddingAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(VertexAiTextEmbeddingAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, VertexAiEmbeddingConnectionAutoConfiguration.class))
 			.run(context -> {
 				var connectionProperties = context.getBean(VertexAiEmbeddingConnectionProperties.class);
 				var textEmbeddingProperties = context.getBean(VertexAiTextEmbeddingProperties.class);
 
 				assertThat(connectionProperties).isNotNull();
+				assertThat(textEmbeddingProperties).isNotNull();
 
 				VertexAiTextEmbeddingModel embeddingModel = context.getBean(VertexAiTextEmbeddingModel.class);
 				assertThat(embeddingModel).isInstanceOf(VertexAiTextEmbeddingModel.class);
@@ -71,21 +76,27 @@ public class VertexAiTextEmbeddingModelAutoConfigurationIT {
 
 	@Test
 	void textEmbeddingActivation() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(VertexAiTextEmbeddingAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(VertexAiTextEmbeddingAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, VertexAiEmbeddingConnectionAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.embedding.text=none")
 			.run(context -> {
 				assertThat(context.getBeansOfType(VertexAiTextEmbeddingProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(VertexAiTextEmbeddingModel.class)).isEmpty();
 			});
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(VertexAiTextEmbeddingAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(VertexAiTextEmbeddingAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, VertexAiEmbeddingConnectionAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.embedding.text=vertexai")
 			.run(context -> {
 				assertThat(context.getBeansOfType(VertexAiTextEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(VertexAiTextEmbeddingModel.class)).isNotEmpty();
 			});
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(VertexAiTextEmbeddingAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(VertexAiTextEmbeddingAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, VertexAiEmbeddingConnectionAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(VertexAiTextEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(VertexAiTextEmbeddingModel.class)).isNotEmpty();
@@ -95,12 +106,15 @@ public class VertexAiTextEmbeddingModelAutoConfigurationIT {
 
 	@Test
 	public void multimodalEmbedding() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(VertexAiMultiModalEmbeddingAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(VertexAiMultiModalEmbeddingAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, VertexAiEmbeddingConnectionAutoConfiguration.class))
 			.run(context -> {
 				var connectionProperties = context.getBean(VertexAiEmbeddingConnectionProperties.class);
 				var multimodalEmbeddingProperties = context.getBean(VertexAiMultimodalEmbeddingProperties.class);
 
 				assertThat(connectionProperties).isNotNull();
+				assertThat(multimodalEmbeddingProperties).isNotNull();
 
 				VertexAiMultimodalEmbeddingModel multiModelEmbeddingModel = context
 					.getBean(VertexAiMultimodalEmbeddingModel.class);
@@ -110,7 +124,7 @@ public class VertexAiTextEmbeddingModelAutoConfigurationIT {
 				var document = new Document("Hello World");
 
 				DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(List.of(document),
-						EmbeddingOptionsBuilder.builder().build());
+						EmbeddingOptions.builder().build());
 
 				EmbeddingResponse embeddingResponse = multiModelEmbeddingModel.call(embeddingRequest);
 				assertThat(embeddingResponse.getResults()).hasSize(1);
@@ -129,21 +143,27 @@ public class VertexAiTextEmbeddingModelAutoConfigurationIT {
 
 	@Test
 	void multimodalEmbeddingActivation() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(VertexAiMultiModalEmbeddingAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(VertexAiMultiModalEmbeddingAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, VertexAiEmbeddingConnectionAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.embedding.multimodal=none")
 			.run(context -> {
 				assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingModel.class)).isEmpty();
 			});
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(VertexAiMultiModalEmbeddingAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(VertexAiMultiModalEmbeddingAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, VertexAiEmbeddingConnectionAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.embedding.multimodal=vertexai")
 			.run(context -> {
 				assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingModel.class)).isNotEmpty();
 			});
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(VertexAiMultiModalEmbeddingAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(VertexAiMultiModalEmbeddingAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, VertexAiEmbeddingConnectionAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingModel.class)).isNotEmpty();

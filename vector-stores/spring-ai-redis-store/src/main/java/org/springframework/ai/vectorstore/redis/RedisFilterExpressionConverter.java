@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import redis.clients.jedis.search.RediSearchUtil;
+
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
@@ -29,20 +31,17 @@ import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore.MetadataField;
+import org.springframework.util.Assert;
 
 /**
- * Converts {@link Expression} into Redis search filter expression format.
- * (https://redis.io/docs/interact/search-and-query/query/)
+ * Converts {@link Expression} into Redis search filter expression format. (<a href=
+ * "https://redis.io/docs/latest/develop/ai/search-and-query/">search-and-query</a>)
  *
  * @author Julien Ruaux
  */
 public class RedisFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
-	public static final NumericBoundary POSITIVE_INFINITY = new NumericBoundary(Double.POSITIVE_INFINITY, true);
-
-	public static final NumericBoundary NEGATIVE_INFINITY = new NumericBoundary(Double.NEGATIVE_INFINITY, true);
-
-	private Map<String, MetadataField> metadataFields;
+	private final Map<String, MetadataField> metadataFields;
 
 	public RedisFilterExpressionConverter(List<MetadataField> metadataFields) {
 		this.metadataFields = metadataFields.stream()
@@ -96,6 +95,7 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 	}
 
 	private void doBinaryOperation(String delimiter, Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "expected an expression with a right operand");
 		this.convertOperand(expression.left(), context);
 		context.append(delimiter);
 		this.convertOperand(expression.right(), context);
@@ -106,6 +106,7 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 		doKey(key, context);
 		MetadataField field = this.metadataFields.getOrDefault(key.key(), MetadataField.tag(key.key()));
 		Value value = (Value) expression.right();
+		Assert.state(value != null, "expected an expression with a right operand");
 		switch (field.fieldType()) {
 			case NUMERIC:
 				Numeric numeric = numeric(expression, value);
@@ -117,12 +118,12 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 				break;
 			case TAG:
 				context.append("{");
-				context.append(stringValue(expression, value));
+				context.append(tagStringValue(expression, value));
 				context.append("}");
 				break;
 			case TEXT:
 				context.append("(");
-				context.append(stringValue(expression, value));
+				context.append(textStringValue(expression, value));
 				context.append(")");
 				break;
 			default:
@@ -131,12 +132,41 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 		}
 	}
 
-	private Object stringValue(Expression expression, Value value) {
+	private String tagStringValue(Expression expression, Value value) {
 		String delimiter = tagValueDelimiter(expression);
 		if (value.value() instanceof List<?> list) {
-			return String.join(delimiter, list.stream().map(String::valueOf).toList());
+			return list.stream().map(String::valueOf).map(this::escapeTagValue).collect(Collectors.joining(delimiter));
 		}
-		return value.value();
+		return escapeTagValue(String.valueOf(value.value()));
+	}
+
+	private String textStringValue(Expression expression, Value value) {
+		String delimiter = tagValueDelimiter(expression);
+		if (value.value() instanceof List<?> list) {
+			return list.stream()
+				.map(String::valueOf)
+				.map(RediSearchUtil::escapeQuery)
+				.collect(Collectors.joining(delimiter));
+		}
+		return RediSearchUtil.escapeQuery(String.valueOf(value.value()));
+	}
+
+	/**
+	 * Escapes characters that have special meaning inside a RediSearch TAG query clause
+	 * ({@code @field:\{value\}}). The following characters are escaped with a backslash:
+	 * {@code $}, {@code \}, {@code |}, {@code {}, {@code }}, {@code (}, {@code )},
+	 * {@code [}, {@code ]}, {@code -}, and {@code '}.
+	 */
+	private String escapeTagValue(String value) {
+		StringBuilder sb = new StringBuilder(value.length());
+		for (int i = 0; i < value.length(); i++) {
+			char c = value.charAt(i);
+			switch (c) {
+				case '\\', '$', '|', '{', '}', '(', ')', '[', ']', '-', '\'' -> sb.append('\\').append(c);
+				default -> sb.append(c);
+			}
+		}
+		return sb.toString();
 	}
 
 	private String tagValueDelimiter(Expression expression) {
@@ -151,10 +181,10 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 	private Numeric numeric(Expression expression, Value value) {
 		return switch (expression.type()) {
 			case EQ -> new Numeric(inclusive(value), inclusive(value));
-			case GT -> new Numeric(exclusive(value), POSITIVE_INFINITY);
-			case GTE -> new Numeric(inclusive(value), POSITIVE_INFINITY);
-			case LT -> new Numeric(NEGATIVE_INFINITY, exclusive(value));
-			case LTE -> new Numeric(NEGATIVE_INFINITY, inclusive(value));
+			case GT -> new Numeric(exclusive(value), NumericBoundary.POSITIVE_INFINITY);
+			case GTE -> new Numeric(inclusive(value), NumericBoundary.POSITIVE_INFINITY);
+			case LT -> new Numeric(NumericBoundary.NEGATIVE_INFINITY, exclusive(value));
+			case LTE -> new Numeric(NumericBoundary.NEGATIVE_INFINITY, inclusive(value));
 			default -> throw new UnsupportedOperationException(
 					MessageFormat.format("Expression type {0} not supported for numeric fields", expression.type()));
 		};
@@ -168,11 +198,20 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 		return new NumericBoundary(value.value(), true);
 	}
 
-	static record Numeric(NumericBoundary lower, NumericBoundary upper) {
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		emitJsonValue(value, context);
+	}
+
+	record Numeric(NumericBoundary lower, NumericBoundary upper) {
 
 	}
 
-	static record NumericBoundary(Object value, boolean exclusive) {
+	record NumericBoundary(Object value, boolean exclusive) {
+
+		private static final NumericBoundary POSITIVE_INFINITY = new NumericBoundary(Double.POSITIVE_INFINITY, true);
+
+		private static final NumericBoundary NEGATIVE_INFINITY = new NumericBoundary(Double.NEGATIVE_INFINITY, true);
 
 		private static final String INFINITY = "inf";
 

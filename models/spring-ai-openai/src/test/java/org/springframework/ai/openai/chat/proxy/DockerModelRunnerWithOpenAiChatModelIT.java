@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,9 +48,8 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.chat.ActorsFilms;
+import org.springframework.ai.openai.chat.MockWeatherService;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -329,7 +328,7 @@ class DockerModelRunnerWithOpenAiChatModelIT {
 	void validateCallResponseMetadata() {
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(OpenAiChatOptions.builder().model(DEFAULT_MODEL).build())
+				.options(OpenAiChatOptions.builder().model(DEFAULT_MODEL))
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.call()
 				.chatResponse();
@@ -351,16 +350,15 @@ class DockerModelRunnerWithOpenAiChatModelIT {
 	static class Config {
 
 		@Bean
-		public OpenAiApi chatCompletionApi() {
+		public OpenAiChatModel openAiClient() {
 			var baseUrl = "http://%s:%d/engines".formatted(socat.getHost(), socat.getMappedPort(80));
-			return OpenAiApi.builder().baseUrl(baseUrl).apiKey("test").build();
-		}
-
-		@Bean
-		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
 			return OpenAiChatModel.builder()
-				.openAiApi(openAiApi)
-				.defaultOptions(OpenAiChatOptions.builder().maxTokens(2048).model(DEFAULT_MODEL).build())
+				.options(OpenAiChatOptions.builder()
+					.baseUrl(baseUrl)
+					.apiKey("test")
+					.maxTokens(2048)
+					.model(DEFAULT_MODEL)
+					.build())
 				.build();
 		}
 

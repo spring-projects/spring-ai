@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingOptions;
@@ -45,11 +44,11 @@ import org.springframework.ai.minimax.api.MiniMaxApi.EmbeddingRequest;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
+import org.springframework.core.retry.RetryListener;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
+import org.springframework.core.retry.Retryable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.RetryListener;
-import org.springframework.retry.support.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -78,7 +77,7 @@ public class MiniMaxRetryTests {
 	public void beforeEach() {
 		this.retryTemplate = RetryUtils.SHORT_RETRY_TEMPLATE;
 		this.retryListener = new TestRetryListener();
-		this.retryTemplate.registerListener(this.retryListener);
+		this.retryTemplate.setRetryListener(this.retryListener);
 
 		this.chatModel = new MiniMaxChatModel(this.miniMaxApi, MiniMaxChatOptions.builder().build(),
 				ToolCallingManager.builder().build(), this.retryTemplate);
@@ -99,11 +98,11 @@ public class MiniMaxRetryTests {
 			.willThrow(new TransientAiException("Transient Error 2"))
 			.willReturn(ResponseEntity.of(Optional.of(expectedChatCompletion)));
 
-		var result = this.chatModel.call(new Prompt("text", ChatOptions.builder().build()));
+		var result = this.chatModel.call(new Prompt("text", MiniMaxChatOptions.builder().build()));
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getText()).isSameAs("Response");
-		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
 
@@ -127,11 +126,11 @@ public class MiniMaxRetryTests {
 			.willThrow(new TransientAiException("Transient Error 2"))
 			.willReturn(Flux.just(expectedChatCompletion));
 
-		var result = this.chatModel.stream(new Prompt("text", ChatOptions.builder().build()));
+		var result = this.chatModel.stream(new Prompt("text", MiniMaxChatOptions.builder().build()));
 
 		assertThat(result).isNotNull();
 		assertThat(result.collectList().block().get(0).getResult().getOutput().getText()).isSameAs("Response");
-		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
 
@@ -158,7 +157,7 @@ public class MiniMaxRetryTests {
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput()).isEqualTo(new float[] { 9.9f, 8.8f });
-		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
 
@@ -171,21 +170,22 @@ public class MiniMaxRetryTests {
 			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), options)));
 	}
 
-	private class TestRetryListener implements RetryListener {
+	private static class TestRetryListener implements RetryListener {
 
 		int onErrorRetryCount = 0;
 
 		int onSuccessRetryCount = 0;
 
 		@Override
-		public <T, E extends Throwable> void onSuccess(RetryContext context, RetryCallback<T, E> callback, T result) {
-			this.onSuccessRetryCount = context.getRetryCount();
+		public void beforeRetry(final RetryPolicy retryPolicy, final Retryable<?> retryable) {
+			// Count each retry attempt
+			this.onErrorRetryCount++;
 		}
 
 		@Override
-		public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback,
-				Throwable throwable) {
-			this.onErrorRetryCount = context.getRetryCount();
+		public void onRetrySuccess(final RetryPolicy retryPolicy, final Retryable<?> retryable, final Object result) {
+			// Count successful retries - we increment when we succeed after a failure
+			this.onSuccessRetryCount++;
 		}
 
 	}
