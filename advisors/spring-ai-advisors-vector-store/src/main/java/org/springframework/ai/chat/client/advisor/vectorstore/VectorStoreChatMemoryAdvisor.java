@@ -46,6 +46,7 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.util.Assert;
 
 /**
@@ -126,7 +127,7 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 		String conversationId = getConversationId(request.context(), this.defaultConversationId);
 		String query = Objects.requireNonNullElse(request.prompt().getUserMessage().getText(), "");
 		int topK = getChatMemoryTopK(request.context());
-		String filter = DOCUMENT_METADATA_CONVERSATION_ID + "=='" + conversationId + "'";
+		var filter = new FilterExpressionBuilder().eq(DOCUMENT_METADATA_CONVERSATION_ID, conversationId).build();
 		SearchRequest searchRequest = SearchRequest.builder().query(query).topK(topK).filterExpression(filter).build();
 		List<Document> documents = this.vectorStore.similaritySearch(searchRequest);
 
