@@ -23,6 +23,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import java.util.function.Function;
+import org.springframework.ai.tool.function.FunctionToolCallback;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
@@ -278,6 +281,59 @@ class DeepSeekChatModelIT {
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
+	}
+
+	private static final DeepSeekApi.FunctionTool CURRENT_TIME_TOOL = new DeepSeekApi.FunctionTool(
+			DeepSeekApi.FunctionTool.Type.FUNCTION,
+			new DeepSeekApi.FunctionTool.Function("Get the current time", "getCurrentTime", """
+					{
+						"type": "object",
+						"properties": {},
+						"required": []
+					}
+					"""));
+
+	private static final DeepSeekApi.FunctionTool TOMORROW_WEATHER_TOOL = new DeepSeekApi.FunctionTool(
+			DeepSeekApi.FunctionTool.Type.FUNCTION,
+			new DeepSeekApi.FunctionTool.Function("Get the weather for tomorrow", "getTomorrowWeather", """
+					{
+						"type": "object",
+						"properties": {
+							"location": {
+								"type": "string",
+								"description": "The city and state e.g. San Francisco, CA"
+							}
+						},
+						"required": ["location"]
+					}
+					"""));
+
+	@Test
+	void reasonerModelMultiRoundWithToolsTest() {
+
+		Function<Void, String> timeFunction = v -> "2026-03-13";
+		Function<Map<String, Object>, String> weatherFunction = req -> "Sunny";
+
+		var promptOptions = DeepSeekChatOptions.builder()
+			.model(DeepSeekApi.ChatModel.DEEPSEEK_REASONER.getValue())
+			.tools(Arrays.asList(CURRENT_TIME_TOOL, TOMORROW_WEATHER_TOOL))
+			.toolCallbacks(List.of(
+					FunctionToolCallback.builder("getCurrentTime", timeFunction)
+						.description("Get the current time")
+						.inputType(Void.class)
+						.build(),
+					FunctionToolCallback.builder("getTomorrowWeather", weatherFunction)
+						.description("Get the weather for tomorrow")
+						.inputType(Map.class)
+						.build()))
+			.build();
+
+		Prompt prompt = new Prompt("What is the weather like tomorrow in San Francisco?", promptOptions);
+		ChatResponse response = this.chatModel.call(prompt);
+
+		DeepSeekAssistantMessage deepSeekAssistantMessage = (DeepSeekAssistantMessage) response.getResult().getOutput();
+		assertThat(deepSeekAssistantMessage.getReasoningContent()).isNotEmpty();
+		assertThat(deepSeekAssistantMessage.getText()).isNotEmpty();
 	}
 
 }
