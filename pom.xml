@@ -349,7 +349,7 @@
 		<mcp.sdk.version>1.1.0</mcp.sdk.version>
 
 		<!-- plugin versions -->
-		<antlr.version>4.13.1</antlr.version>
+ 		<antlr.version>4.13.2</antlr.version>
 		<maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
 		<maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
 		<!-- The version (range) of the JDK we want to use to compile.
