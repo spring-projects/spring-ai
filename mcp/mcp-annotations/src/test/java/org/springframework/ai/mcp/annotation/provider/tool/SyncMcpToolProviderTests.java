@@ -917,6 +917,33 @@ public class SyncMcpToolProviderTests {
 		assertThat(toolSpec.tool().inputSchema()).isNotNull();
 	}
 
+	@Test
+	void testSetExceptionHandler_customHandlerIsInvoked() {
+		class FailingTool {
+
+			@McpTool(name = "failing-tool", description = "Tool that always fails")
+			public String failingTool(String input) {
+				throw new RuntimeException("tool failure: " + input);
+			}
+
+		}
+
+		SyncMcpToolProvider provider = new SyncMcpToolProvider(List.of(new FailingTool()));
+		provider.setExceptionHandler((toolName, ex) -> CallToolResult.builder()
+			.isError(true)
+			.addTextContent("CUSTOM[" + toolName + "]: " + ex.getMessage())
+			.build());
+
+		CallToolResult result = provider.getToolSpecifications()
+			.get(0)
+			.callHandler()
+			.apply(mock(McpSyncServerExchange.class), new CallToolRequest("failing-tool", Map.of("input", "test")));
+
+		assertThat(result.isError()).isTrue();
+		assertThat(((TextContent) result.content().get(0)).text())
+			.isEqualTo("CUSTOM[failing-tool]: tool failure: test");
+	}
+
 	public static class UiMetaProvider implements MetaProvider {
 
 		@Override

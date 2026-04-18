@@ -136,7 +136,8 @@ public class AsyncStatelessMcpToolMethodCallbackTests {
 			assertThat(result.isError()).isTrue();
 			assertThat(result.content()).hasSize(1);
 			assertThat(result.content().get(0)).isInstanceOf(TextContent.class);
-			assertThat(((TextContent) result.content().get(0)).text()).contains("Error invoking method");
+			assertThat(((TextContent) result.content().get(0)).text())
+				.contains("Error invoking tool 'exception-mono-tool'");
 		}).verifyComplete();
 	}
 

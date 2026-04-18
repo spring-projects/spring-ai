@@ -54,6 +54,7 @@ import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.annotation.method.tool.McpToolCallExceptionHandler;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerChangeNotificationProperties;
@@ -365,6 +366,28 @@ public class McpServerAutoConfigurationIT {
 	void toolCallbackProviderConfiguration() {
 		this.contextRunner.withUserConfiguration(TestToolCallbackProviderConfiguration.class)
 			.run(context -> assertThat(context).hasSingleBean(ToolCallbackProvider.class));
+	}
+
+	@Test
+	void defaultMcpToolCallExceptionHandlerBeanIsRegistered() {
+		this.contextRunner.withUserConfiguration(McpServerAnnotationScannerAutoConfiguration.class)
+			.run(context -> assertThat(context).hasSingleBean(McpToolCallExceptionHandler.class));
+	}
+
+	@Test
+	void customMcpToolCallExceptionHandlerOverridesDefault() {
+		McpToolCallExceptionHandler customHandler = (toolName,
+				ex) -> io.modelcontextprotocol.spec.McpSchema.CallToolResult.builder()
+					.isError(true)
+					.addTextContent("custom: " + ex.getMessage())
+					.build();
+
+		this.contextRunner.withUserConfiguration(McpServerAnnotationScannerAutoConfiguration.class)
+			.withBean(McpToolCallExceptionHandler.class, () -> customHandler)
+			.run(context -> {
+				assertThat(context).hasSingleBean(McpToolCallExceptionHandler.class);
+				assertThat(context.getBean(McpToolCallExceptionHandler.class)).isSameAs(customHandler);
+			});
 	}
 
 	@SuppressWarnings("unchecked")

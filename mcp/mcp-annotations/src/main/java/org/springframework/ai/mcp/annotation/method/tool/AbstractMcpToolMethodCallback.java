@@ -54,10 +54,15 @@ public abstract class AbstractMcpToolMethodCallback<T, RC extends McpRequestCont
 
 	protected final ReturnMode returnMode;
 
+	protected final String mcpToolName;
+
 	protected AbstractMcpToolMethodCallback(ReturnMode returnMode, Method toolMethod, Object toolObject) {
 		this.toolMethod = toolMethod;
 		this.toolObject = toolObject;
 		this.returnMode = returnMode;
+		McpTool annotation = toolMethod.getAnnotation(McpTool.class);
+		this.mcpToolName = (annotation != null && annotation.name() != null && !annotation.name().isEmpty())
+				? annotation.name() : toolMethod.getName();
 	}
 
 	/**
@@ -78,7 +83,14 @@ public abstract class AbstractMcpToolMethodCallback<T, RC extends McpRequestCont
 			throw new RuntimeException("Failed to access tool method", ex);
 		}
 		catch (InvocationTargetException ex) {
-			throw new RuntimeException("Error invoking method: " + this.toolMethod.getName(), ex.getCause());
+			Throwable cause = ex.getCause();
+			if (cause instanceof RuntimeException re) {
+				throw re;
+			}
+			if (cause instanceof Error error) {
+				throw error;
+			}
+			throw new RuntimeException(cause);
 		}
 		return result;
 	}
