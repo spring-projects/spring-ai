@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
-import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
@@ -62,12 +61,13 @@ import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.util.ResourceUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.json.JsonContent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.core.io.ClassPathResource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -280,18 +280,32 @@ class OllamaChatModelIT extends BaseOllamaIT {
 	// Example from https://ollama.com/blog/structured-outputs
 	@Test
 	void jsonStructuredOutputWithOutputSchemaOption() {
-		var jsonSchemaAsText = ResourceUtils.getText("classpath:country-json-schema.json");
-		var chatOptions = OllamaChatOptions.builder().model(MODEL).outputSchema(jsonSchemaAsText).build();
+		var outputSchemaResource = new ClassPathResource("schemas/country-json-schema.json");
+		// @formatter:off
+		var chatOptions = OllamaChatOptions.builder()
+				.model(MODEL)
+				.outputSchemaResource(outputSchemaResource)
+				.build();
+		// @formatter:on
 		var prompt = new Prompt("Tell me about Canada.", chatOptions);
 
 		var chatResponse = this.chatModel.call(prompt);
 
-		var outputText = chatResponse.getResult().getOutput().getText();
-		Map<String, Object> map = JsonMapper.builder().build().readValue(outputText, Map.class);
-		assertThat(map).containsOnlyKeys("name", "capital", "languages")
+		var result = chatResponse.getResult();
+		assertThat(result).isNotNull();
+		var outputText = result.getOutput().getText();
+		assertThat(outputText).isNotNull();
+
+		// @formatter:off
+		assertThat(new JsonContent<>(getClass(), null, outputText))
+			.extractingJsonPathMapValue("$")
+			.containsOnlyKeys("name", "capital", "languages")
 			.containsEntry("name", "Canada")
-			.containsEntry("capital", "Ottawa");
-		assertThat(map.get("languages")).asInstanceOf(InstanceOfAssertFactories.LIST).contains("English", "French");
+			.containsEntry("capital", "Ottawa")
+			.extracting("languages")
+			.asInstanceOf(InstanceOfAssertFactories.LIST)
+			.contains("English", "French");
+		// @formatter:on
 	}
 
 	@Test

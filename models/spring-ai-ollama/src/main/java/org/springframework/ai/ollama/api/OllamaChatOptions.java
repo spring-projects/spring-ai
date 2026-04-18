@@ -34,6 +34,7 @@ import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 
 /**
@@ -55,7 +56,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 	public OllamaChatOptions() {
 		// Temporary constructor to maintain compat with ModelOptionUtils
-		this.toolNames = new HashSet<String>();
+		this.toolNames = new HashSet<>();
 		this.toolContext = new HashMap<>();
 	}
 
@@ -773,6 +774,11 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	@Override
 	public void setOutputSchema(String outputSchema) {
 		this.format = ModelOptionsUtils.jsonToMap(outputSchema);
+	}
+
+	@Override
+	public void setOutputSchemaResource(Resource outputSchemaResource) {
+		this.setOutputSchema(StructuredOutputChatOptions.extractOutputSchema(outputSchemaResource));
 	}
 
 	/**
