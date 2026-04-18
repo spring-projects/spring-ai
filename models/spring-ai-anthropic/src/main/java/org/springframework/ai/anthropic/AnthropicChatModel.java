@@ -16,6 +16,7 @@
 
 package org.springframework.ai.anthropic;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -91,6 +92,8 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptCacheChatOptions;
+import org.springframework.ai.chat.prompt.PromptCacheStrategy;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -601,13 +604,85 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		return response;
 	}
 
+	@SuppressWarnings("deprecation")
 	Prompt buildRequestPrompt(Prompt prompt) {
 		var requestOptions = (AnthropicChatOptions) prompt.getOptions();
 		requestOptions = requestOptions == null ? this.options : requestOptions;
 
+		// Resolve cache options via the portable PromptCacheChatOptions API.
+		// During the deprecation period, fall back to the deprecated native
+		// AnthropicCacheOptions if the user has not migrated yet.
+		if (prompt.getOptions() instanceof PromptCacheChatOptions promptCacheChatOptions
+				&& promptCacheChatOptions.getPromptCacheStrategy() != null
+				&& promptCacheChatOptions.getPromptCacheStrategy() != PromptCacheStrategy.NONE) {
+			copyPromptCacheFields(promptCacheChatOptions, requestOptions);
+		}
+		else if (prompt.getOptions() instanceof AnthropicChatOptions originalAnthropicOptions
+				&& originalAnthropicOptions.getCacheOptions() != null
+				&& originalAnthropicOptions.getCacheOptions().getStrategy() != AnthropicCacheStrategy.NONE) {
+			mapFromAnthropicCacheOptions(originalAnthropicOptions.getCacheOptions(), requestOptions);
+		}
+
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
 
 		return prompt.mutate().chatOptions(requestOptions).build();
+	}
+
+	/**
+	 * Copies portable prompt cache fields from source options to target options.
+	 */
+	private void copyPromptCacheFields(PromptCacheChatOptions source, AnthropicChatOptions target) {
+		target.setPromptCacheStrategy(source.getPromptCacheStrategy());
+		target.setPromptCacheTtl(source.getPromptCacheTtl());
+		target.setPromptCacheMinContentLength(source.getPromptCacheMinContentLength());
+		target.setPromptCacheMultiBlockSystemCaching(source.getPromptCacheMultiBlockSystemCaching());
+		target.setPromptCacheMessageTypeTtl(source.getPromptCacheMessageTypeTtl());
+		target.setPromptCacheMessageTypeMinContentLengths(source.getPromptCacheMessageTypeMinContentLengths());
+		target.setPromptCacheContentLengthFunction(source.getPromptCacheContentLengthFunction());
+	}
+
+	/**
+	 * Maps deprecated {@link AnthropicCacheOptions} to portable prompt cache fields on
+	 * {@link AnthropicChatOptions} for backward compatibility during the deprecation
+	 * period.
+	 */
+	@SuppressWarnings("deprecation")
+	private void mapFromAnthropicCacheOptions(AnthropicCacheOptions nativeOptions, AnthropicChatOptions target) {
+		PromptCacheStrategy strategy = switch (nativeOptions.getStrategy()) {
+			case NONE -> PromptCacheStrategy.NONE;
+			case SYSTEM_ONLY -> PromptCacheStrategy.SYSTEM_ONLY;
+			case TOOLS_ONLY -> PromptCacheStrategy.TOOLS_ONLY;
+			case SYSTEM_AND_TOOLS -> PromptCacheStrategy.SYSTEM_AND_TOOLS;
+			case CONVERSATION_HISTORY -> PromptCacheStrategy.CONVERSATION_HISTORY;
+		};
+		target.setPromptCacheStrategy(strategy);
+
+		// Map per-message-type TTL
+		if (nativeOptions.getMessageTypeTtl() != null) {
+			Map<MessageType, Duration> messageTypeTtl = new HashMap<>();
+			for (var entry : nativeOptions.getMessageTypeTtl().entrySet()) {
+				Duration duration = entry.getValue() == AnthropicCacheTtl.ONE_HOUR ? Duration.ofHours(1)
+						: Duration.ofMinutes(5);
+				messageTypeTtl.put(entry.getKey(), duration);
+			}
+			target.setPromptCacheMessageTypeTtl(messageTypeTtl);
+		}
+
+		// Map per-message-type min content lengths
+		if (nativeOptions.getMessageTypeMinContentLengths() != null) {
+			target.setPromptCacheMessageTypeMinContentLengths(
+					new HashMap<>(nativeOptions.getMessageTypeMinContentLengths()));
+		}
+
+		// Map multi-block system caching
+		if (nativeOptions.isMultiBlockSystemCaching()) {
+			target.setPromptCacheMultiBlockSystemCaching(true);
+		}
+
+		// Map content length function
+		if (nativeOptions.getContentLengthFunction() != null) {
+			target.setPromptCacheContentLengthFunction(nativeOptions.getContentLengthFunction());
+		}
 	}
 
 	/**
@@ -634,8 +709,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		long maxTokens = requestOptions.getMaxTokens() != null ? requestOptions.getMaxTokens() : DEFAULT_MAX_TOKENS;
 		builder.maxTokens(maxTokens);
 
-		// Create cache resolver
-		CacheEligibilityResolver cacheResolver = CacheEligibilityResolver.from(requestOptions.getCacheOptions());
+		AnthropicCacheEligibilityResolver cacheResolver = AnthropicCacheEligibilityResolver.from(requestOptions);
 
 		// Prepare citation documents for inclusion in the first user message
 		List<AnthropicCitationDocument> citationDocuments = requestOptions.getCitationDocuments();
@@ -662,7 +736,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				// No caching: join all system texts and use simple string format
 				builder.system(String.join("\n\n", systemTexts));
 			}
-			else if (requestOptions.getCacheOptions().isMultiBlockSystemCaching() && systemTexts.size() > 1) {
+			else if (cacheResolver.isMultiBlockSystemCaching() && systemTexts.size() > 1) {
 				// Multi-block system caching: each text becomes a separate
 				// TextBlockParam.
 				// Cache control is applied to the second-to-last block.

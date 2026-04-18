@@ -16,6 +16,7 @@
 
 package org.springframework.ai.bedrock.converse;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,11 +24,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.bedrock.converse.api.BedrockCacheOptions;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.PromptCacheChatOptions;
+import org.springframework.ai.chat.prompt.PromptCacheStrategy;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -39,7 +44,7 @@ import org.springframework.util.Assert;
  *
  * @author Sun Yuhan
  */
-public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
+public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions, PromptCacheChatOptions {
 
 	private String model;
 
@@ -68,6 +73,20 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	private Boolean internalToolExecutionEnabled;
 
 	private BedrockCacheOptions cacheOptions;
+
+	private @Nullable PromptCacheStrategy promptCacheStrategy;
+
+	private @Nullable Duration promptCacheTtl;
+
+	private @Nullable Integer promptCacheMinContentLength;
+
+	private @Nullable Boolean promptCacheMultiBlockSystemCaching;
+
+	private @Nullable Map<MessageType, Duration> promptCacheMessageTypeTtl;
+
+	private @Nullable Map<MessageType, Integer> promptCacheMessageTypeMinContentLengths;
+
+	private @Nullable Function<@Nullable String, Integer> promptCacheContentLengthFunction;
 
 	private String outputSchema;
 
@@ -230,12 +249,95 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
+	/**
+	 * @deprecated since 2.0.0-M5, use {@link #getPromptCacheStrategy()} and related
+	 * prompt cache methods instead.
+	 */
+	@Deprecated(since = "2.0.0-M5", forRemoval = true)
 	public BedrockCacheOptions getCacheOptions() {
 		return this.cacheOptions;
 	}
 
+	/**
+	 * @deprecated since 2.0.0-M5, use
+	 * {@link #setPromptCacheStrategy(PromptCacheStrategy)} and related prompt cache
+	 * methods instead.
+	 */
+	@Deprecated(since = "2.0.0-M5", forRemoval = true)
 	public void setCacheOptions(BedrockCacheOptions cacheOptions) {
 		this.cacheOptions = cacheOptions;
+	}
+
+	@Override
+	public @Nullable PromptCacheStrategy getPromptCacheStrategy() {
+		return this.promptCacheStrategy;
+	}
+
+	@Override
+	public void setPromptCacheStrategy(@Nullable PromptCacheStrategy strategy) {
+		this.promptCacheStrategy = strategy;
+	}
+
+	@Override
+	public @Nullable Duration getPromptCacheTtl() {
+		return this.promptCacheTtl;
+	}
+
+	@Override
+	public void setPromptCacheTtl(@Nullable Duration ttl) {
+		this.promptCacheTtl = ttl;
+	}
+
+	@Override
+	public @Nullable Integer getPromptCacheMinContentLength() {
+		return this.promptCacheMinContentLength;
+	}
+
+	@Override
+	public void setPromptCacheMinContentLength(@Nullable Integer minContentLength) {
+		this.promptCacheMinContentLength = minContentLength;
+	}
+
+	@Override
+	public @Nullable Boolean getPromptCacheMultiBlockSystemCaching() {
+		return this.promptCacheMultiBlockSystemCaching;
+	}
+
+	@Override
+	public void setPromptCacheMultiBlockSystemCaching(@Nullable Boolean multiBlockSystemCaching) {
+		this.promptCacheMultiBlockSystemCaching = multiBlockSystemCaching;
+	}
+
+	@Override
+	public @Nullable Map<MessageType, Duration> getPromptCacheMessageTypeTtl() {
+		return this.promptCacheMessageTypeTtl;
+	}
+
+	@Override
+	public void setPromptCacheMessageTypeTtl(@Nullable Map<MessageType, Duration> messageTypeTtl) {
+		this.promptCacheMessageTypeTtl = messageTypeTtl;
+	}
+
+	@Override
+	public @Nullable Map<MessageType, Integer> getPromptCacheMessageTypeMinContentLengths() {
+		return this.promptCacheMessageTypeMinContentLengths;
+	}
+
+	@Override
+	public void setPromptCacheMessageTypeMinContentLengths(
+			@Nullable Map<MessageType, Integer> messageTypeMinContentLengths) {
+		this.promptCacheMessageTypeMinContentLengths = messageTypeMinContentLengths;
+	}
+
+	@Override
+	public @Nullable Function<@Nullable String, Integer> getPromptCacheContentLengthFunction() {
+		return this.promptCacheContentLengthFunction;
+	}
+
+	@Override
+	public void setPromptCacheContentLengthFunction(
+			@Nullable Function<@Nullable String, Integer> contentLengthFunction) {
+		this.promptCacheContentLengthFunction = contentLengthFunction;
 	}
 
 	@Override
@@ -273,6 +375,13 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 			// Bedrock Specific
 			.requestParameters(this.requestParameters)
 			.cacheOptions(this.cacheOptions)
+			.promptCacheStrategy(this.promptCacheStrategy)
+			.promptCacheTtl(this.promptCacheTtl)
+			.promptCacheMinContentLength(this.promptCacheMinContentLength)
+			.promptCacheMultiBlockSystemCaching(this.promptCacheMultiBlockSystemCaching)
+			.promptCacheMessageTypeTtl(this.promptCacheMessageTypeTtl)
+			.promptCacheMessageTypeMinContentLengths(this.promptCacheMessageTypeMinContentLengths)
+			.promptCacheContentLengthFunction(this.promptCacheContentLengthFunction)
 			.outputSchema(this.outputSchema);
 	}
 
@@ -294,6 +403,13 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.cacheOptions, that.cacheOptions)
+				&& Objects.equals(this.promptCacheStrategy, that.promptCacheStrategy)
+				&& Objects.equals(this.promptCacheTtl, that.promptCacheTtl)
+				&& Objects.equals(this.promptCacheMinContentLength, that.promptCacheMinContentLength)
+				&& Objects.equals(this.promptCacheMultiBlockSystemCaching, that.promptCacheMultiBlockSystemCaching)
+				&& Objects.equals(this.promptCacheMessageTypeTtl, that.promptCacheMessageTypeTtl)
+				&& Objects.equals(this.promptCacheMessageTypeMinContentLengths,
+						that.promptCacheMessageTypeMinContentLengths)
 				&& Objects.equals(this.outputSchema, that.outputSchema);
 	}
 
@@ -301,7 +417,10 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	public int hashCode() {
 		return Objects.hash(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 				this.requestParameters, this.stopSequences, this.temperature, this.topK, this.topP, this.toolCallbacks,
-				this.toolNames, this.toolContext, this.internalToolExecutionEnabled, this.cacheOptions);
+				this.toolNames, this.toolContext, this.internalToolExecutionEnabled, this.cacheOptions,
+				this.promptCacheStrategy, this.promptCacheTtl, this.promptCacheMinContentLength,
+				this.promptCacheMultiBlockSystemCaching, this.promptCacheMessageTypeTtl,
+				this.promptCacheMessageTypeMinContentLengths, this.outputSchema);
 	}
 
 	// public Builder class exposed to users. Avoids having to deal with noisy generic
@@ -311,7 +430,8 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	}
 
 	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
-			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
+			extends DefaultToolCallingChatOptions.Builder<B>
+			implements StructuredOutputChatOptions.Builder<B>, PromptCacheChatOptions.Builder<B> {
 
 		@Override
 		public B clone() {
@@ -326,11 +446,31 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 
 		private @Nullable String outputSchema;
 
+		private @Nullable PromptCacheStrategy promptCacheStrategy;
+
+		private @Nullable Duration promptCacheTtl;
+
+		private @Nullable Integer promptCacheMinContentLength;
+
+		private @Nullable Boolean promptCacheMultiBlockSystemCaching;
+
+		private @Nullable Map<MessageType, Duration> promptCacheMessageTypeTtl;
+
+		private @Nullable Map<MessageType, Integer> promptCacheMessageTypeMinContentLengths;
+
+		private @Nullable Function<@Nullable String, Integer> promptCacheContentLengthFunction;
+
 		public B requestParameters(Map<String, String> requestParameters) {
 			this.requestParameters = requestParameters;
 			return self();
 		}
 
+		/**
+		 * @deprecated since 2.0.0-M5, use
+		 * {@link #promptCacheStrategy(PromptCacheStrategy)} and related prompt cache
+		 * methods instead.
+		 */
+		@Deprecated(since = "2.0.0-M5", forRemoval = true)
 		public B cacheOptions(@Nullable BedrockCacheOptions cacheOptions) {
 			this.cacheOptions = cacheOptions;
 			return self();
@@ -345,6 +485,27 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 				if (that.cacheOptions != null) {
 					this.cacheOptions = that.cacheOptions;
 				}
+				if (that.promptCacheStrategy != null) {
+					this.promptCacheStrategy = that.promptCacheStrategy;
+				}
+				if (that.promptCacheTtl != null) {
+					this.promptCacheTtl = that.promptCacheTtl;
+				}
+				if (that.promptCacheMinContentLength != null) {
+					this.promptCacheMinContentLength = that.promptCacheMinContentLength;
+				}
+				if (that.promptCacheMultiBlockSystemCaching != null) {
+					this.promptCacheMultiBlockSystemCaching = that.promptCacheMultiBlockSystemCaching;
+				}
+				if (that.promptCacheMessageTypeTtl != null) {
+					this.promptCacheMessageTypeTtl = that.promptCacheMessageTypeTtl;
+				}
+				if (that.promptCacheMessageTypeMinContentLengths != null) {
+					this.promptCacheMessageTypeMinContentLengths = that.promptCacheMessageTypeMinContentLengths;
+				}
+				if (that.promptCacheContentLengthFunction != null) {
+					this.promptCacheContentLengthFunction = that.promptCacheContentLengthFunction;
+				}
 			}
 			return self();
 		}
@@ -356,11 +517,62 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		}
 
 		@Override
+		public B promptCacheStrategy(@Nullable PromptCacheStrategy strategy) {
+			this.promptCacheStrategy = strategy;
+			return self();
+		}
+
+		@Override
+		public B promptCacheTtl(@Nullable Duration ttl) {
+			this.promptCacheTtl = ttl;
+			return self();
+		}
+
+		@Override
+		public B promptCacheMinContentLength(@Nullable Integer minContentLength) {
+			this.promptCacheMinContentLength = minContentLength;
+			return self();
+		}
+
+		@Override
+		public B promptCacheMultiBlockSystemCaching(@Nullable Boolean multiBlockSystemCaching) {
+			this.promptCacheMultiBlockSystemCaching = multiBlockSystemCaching;
+			return self();
+		}
+
+		@Override
+		public B promptCacheMessageTypeTtl(@Nullable Map<MessageType, Duration> messageTypeTtl) {
+			this.promptCacheMessageTypeTtl = messageTypeTtl;
+			return self();
+		}
+
+		@Override
+		public B promptCacheMessageTypeMinContentLengths(
+				@Nullable Map<MessageType, Integer> messageTypeMinContentLengths) {
+			this.promptCacheMessageTypeMinContentLengths = messageTypeMinContentLengths;
+			return self();
+		}
+
+		@Override
+		public B promptCacheContentLengthFunction(@Nullable Function<@Nullable String, Integer> contentLengthFunction) {
+			this.promptCacheContentLengthFunction = contentLengthFunction;
+			return self();
+		}
+
+		@Override
 		public BedrockChatOptions build() {
-			return new BedrockChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
-					this.requestParameters, this.stopSequences, this.temperature, this.topK, this.topP,
-					this.internalToolExecutionEnabled, this.toolCallbacks, this.toolNames, this.toolContext,
+			BedrockChatOptions options = new BedrockChatOptions(this.model, this.frequencyPenalty, this.maxTokens,
+					this.presencePenalty, this.requestParameters, this.stopSequences, this.temperature, this.topK,
+					this.topP, this.internalToolExecutionEnabled, this.toolCallbacks, this.toolNames, this.toolContext,
 					this.cacheOptions, this.outputSchema);
+			options.promptCacheStrategy = this.promptCacheStrategy;
+			options.promptCacheTtl = this.promptCacheTtl;
+			options.promptCacheMinContentLength = this.promptCacheMinContentLength;
+			options.promptCacheMultiBlockSystemCaching = this.promptCacheMultiBlockSystemCaching;
+			options.promptCacheMessageTypeTtl = this.promptCacheMessageTypeTtl;
+			options.promptCacheMessageTypeMinContentLengths = this.promptCacheMessageTypeMinContentLengths;
+			options.promptCacheContentLengthFunction = this.promptCacheContentLengthFunction;
+			return options;
 		}
 
 	}

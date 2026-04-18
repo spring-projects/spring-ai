@@ -9,6 +9,7 @@
 
 ** xref:api/prompt.adoc[]
 ** xref:api/structured-output-converter.adoc[Structured Output]
+** xref:api/prompt-caching.adoc[Prompt Caching]
 ** xref:api/multimodality.adoc[Multimodality]
 ** xref:api/index.adoc[Models]
 

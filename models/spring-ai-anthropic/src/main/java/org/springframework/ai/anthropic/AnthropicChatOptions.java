@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 
 import com.anthropic.core.JsonValue;
 import com.anthropic.models.messages.JsonOutputFormat;
@@ -41,7 +42,10 @@ import org.jspecify.annotations.Nullable;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.PromptCacheChatOptions;
+import org.springframework.ai.chat.prompt.PromptCacheStrategy;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -68,7 +72,7 @@ import org.springframework.util.Assert;
  * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
  */
 public class AnthropicChatOptions extends AbstractAnthropicOptions
-		implements ToolCallingChatOptions, StructuredOutputChatOptions {
+		implements ToolCallingChatOptions, StructuredOutputChatOptions, PromptCacheChatOptions {
 
 	/**
 	 * Default model to use for chat completions.
@@ -192,6 +196,20 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	 * Tiers</a>.
 	 */
 	private @Nullable AnthropicServiceTier serviceTier;
+
+	private @Nullable PromptCacheStrategy promptCacheStrategy;
+
+	private @Nullable Duration promptCacheTtl;
+
+	private @Nullable Integer promptCacheMinContentLength;
+
+	private @Nullable Boolean promptCacheMultiBlockSystemCaching;
+
+	private @Nullable Map<MessageType, Duration> promptCacheMessageTypeTtl;
+
+	private @Nullable Map<MessageType, Integer> promptCacheMessageTypeMinContentLengths;
+
+	private @Nullable Function<@Nullable String, Integer> promptCacheContentLengthFunction;
 
 	private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
 
@@ -354,10 +372,21 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		}
 	}
 
+	/**
+	 * @deprecated since 2.0.0-M5, use {@link #getPromptCacheStrategy()} and related
+	 * prompt cache getters instead.
+	 */
+	@Deprecated(since = "2.0.0-M5", forRemoval = true)
 	public AnthropicCacheOptions getCacheOptions() {
 		return this.cacheOptions;
 	}
 
+	/**
+	 * @deprecated since 2.0.0-M5, use
+	 * {@link #setPromptCacheStrategy(PromptCacheStrategy)} and related prompt cache
+	 * setters instead.
+	 */
+	@Deprecated(since = "2.0.0-M5", forRemoval = true)
 	public void setCacheOptions(AnthropicCacheOptions cacheOptions) {
 		Assert.notNull(cacheOptions, "cacheOptions cannot be null");
 		this.cacheOptions = cacheOptions;
@@ -409,6 +438,78 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 
 	public void setServiceTier(@Nullable AnthropicServiceTier serviceTier) {
 		this.serviceTier = serviceTier;
+	}
+
+	@Override
+	public @Nullable PromptCacheStrategy getPromptCacheStrategy() {
+		return this.promptCacheStrategy;
+	}
+
+	@Override
+	public void setPromptCacheStrategy(@Nullable PromptCacheStrategy promptCacheStrategy) {
+		this.promptCacheStrategy = promptCacheStrategy;
+	}
+
+	@Override
+	public @Nullable Duration getPromptCacheTtl() {
+		return this.promptCacheTtl;
+	}
+
+	@Override
+	public void setPromptCacheTtl(@Nullable Duration promptCacheTtl) {
+		this.promptCacheTtl = promptCacheTtl;
+	}
+
+	@Override
+	public @Nullable Integer getPromptCacheMinContentLength() {
+		return this.promptCacheMinContentLength;
+	}
+
+	@Override
+	public void setPromptCacheMinContentLength(@Nullable Integer promptCacheMinContentLength) {
+		this.promptCacheMinContentLength = promptCacheMinContentLength;
+	}
+
+	@Override
+	public @Nullable Boolean getPromptCacheMultiBlockSystemCaching() {
+		return this.promptCacheMultiBlockSystemCaching;
+	}
+
+	@Override
+	public void setPromptCacheMultiBlockSystemCaching(@Nullable Boolean promptCacheMultiBlockSystemCaching) {
+		this.promptCacheMultiBlockSystemCaching = promptCacheMultiBlockSystemCaching;
+	}
+
+	@Override
+	public @Nullable Map<MessageType, Duration> getPromptCacheMessageTypeTtl() {
+		return this.promptCacheMessageTypeTtl;
+	}
+
+	@Override
+	public void setPromptCacheMessageTypeTtl(@Nullable Map<MessageType, Duration> promptCacheMessageTypeTtl) {
+		this.promptCacheMessageTypeTtl = promptCacheMessageTypeTtl;
+	}
+
+	@Override
+	public @Nullable Map<MessageType, Integer> getPromptCacheMessageTypeMinContentLengths() {
+		return this.promptCacheMessageTypeMinContentLengths;
+	}
+
+	@Override
+	public void setPromptCacheMessageTypeMinContentLengths(
+			@Nullable Map<MessageType, Integer> promptCacheMessageTypeMinContentLengths) {
+		this.promptCacheMessageTypeMinContentLengths = promptCacheMessageTypeMinContentLengths;
+	}
+
+	@Override
+	public @Nullable Function<@Nullable String, Integer> getPromptCacheContentLengthFunction() {
+		return this.promptCacheContentLengthFunction;
+	}
+
+	@Override
+	public void setPromptCacheContentLengthFunction(
+			@Nullable Function<@Nullable String, Integer> promptCacheContentLengthFunction) {
+		this.promptCacheContentLengthFunction = promptCacheContentLengthFunction;
 	}
 
 	@Override
@@ -550,7 +651,14 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 			.skillContainer(this.getSkillContainer())
 			.inferenceGeo(this.inferenceGeo)
 			.webSearchTool(this.webSearchTool)
-			.serviceTier(this.serviceTier);
+			.serviceTier(this.serviceTier)
+			.promptCacheStrategy(this.getPromptCacheStrategy())
+			.promptCacheTtl(this.getPromptCacheTtl())
+			.promptCacheMinContentLength(this.getPromptCacheMinContentLength())
+			.promptCacheMultiBlockSystemCaching(this.getPromptCacheMultiBlockSystemCaching())
+			.promptCacheMessageTypeTtl(this.getPromptCacheMessageTypeTtl())
+			.promptCacheMessageTypeMinContentLengths(this.getPromptCacheMessageTypeMinContentLengths())
+			.promptCacheContentLengthFunction(this.getPromptCacheContentLengthFunction());
 	}
 
 	@Override
@@ -579,7 +687,13 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 				&& Objects.equals(this.skillContainer, that.skillContainer)
 				&& Objects.equals(this.inferenceGeo, that.inferenceGeo)
 				&& Objects.equals(this.webSearchTool, that.webSearchTool)
-				&& Objects.equals(this.serviceTier, that.serviceTier);
+				&& Objects.equals(this.serviceTier, that.serviceTier)
+				&& Objects.equals(this.promptCacheStrategy, that.promptCacheStrategy)
+				&& Objects.equals(this.promptCacheTtl, that.promptCacheTtl)
+				&& Objects.equals(this.promptCacheMinContentLength, that.promptCacheMinContentLength)
+				&& Objects.equals(this.promptCacheMultiBlockSystemCaching, that.promptCacheMultiBlockSystemCaching)
+				&& Objects.equals(this.promptCacheMessageTypeTtl, that.promptCacheMessageTypeTtl) && Objects
+					.equals(this.promptCacheMessageTypeMinContentLengths, that.promptCacheMessageTypeMinContentLengths);
 	}
 
 	@Override
@@ -588,7 +702,9 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 				this.topP, this.topK, this.toolChoice, this.thinking, this.disableParallelToolUse, this.toolCallbacks,
 				this.toolNames, this.internalToolExecutionEnabled, this.toolContext, this.citationDocuments,
 				this.cacheOptions, this.outputConfig, this.httpHeaders, this.skillContainer, this.inferenceGeo,
-				this.webSearchTool, this.serviceTier);
+				this.webSearchTool, this.serviceTier, this.promptCacheStrategy, this.promptCacheTtl,
+				this.promptCacheMinContentLength, this.promptCacheMultiBlockSystemCaching,
+				this.promptCacheMessageTypeTtl, this.promptCacheMessageTypeMinContentLengths);
 	}
 
 	@Override
@@ -615,7 +731,8 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	}
 
 	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
-			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
+			extends DefaultToolCallingChatOptions.Builder<B>
+			implements StructuredOutputChatOptions.Builder<B>, PromptCacheChatOptions.Builder<B> {
 
 		@Override
 		public B clone() {
@@ -669,6 +786,64 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		private @Nullable AnthropicWebSearchTool webSearchTool;
 
 		private @Nullable AnthropicServiceTier serviceTier;
+
+		private @Nullable PromptCacheStrategy promptCacheStrategy;
+
+		private @Nullable Duration promptCacheTtl;
+
+		private @Nullable Integer promptCacheMinContentLength;
+
+		private @Nullable Boolean promptCacheMultiBlockSystemCaching;
+
+		private @Nullable Map<MessageType, Duration> promptCacheMessageTypeTtl;
+
+		private @Nullable Map<MessageType, Integer> promptCacheMessageTypeMinContentLengths;
+
+		private @Nullable Function<@Nullable String, Integer> promptCacheContentLengthFunction;
+
+		@Override
+		public B promptCacheStrategy(@Nullable PromptCacheStrategy promptCacheStrategy) {
+			this.promptCacheStrategy = promptCacheStrategy;
+			return self();
+		}
+
+		@Override
+		public B promptCacheTtl(@Nullable Duration promptCacheTtl) {
+			this.promptCacheTtl = promptCacheTtl;
+			return self();
+		}
+
+		@Override
+		public B promptCacheMinContentLength(@Nullable Integer promptCacheMinContentLength) {
+			this.promptCacheMinContentLength = promptCacheMinContentLength;
+			return self();
+		}
+
+		@Override
+		public B promptCacheMultiBlockSystemCaching(@Nullable Boolean promptCacheMultiBlockSystemCaching) {
+			this.promptCacheMultiBlockSystemCaching = promptCacheMultiBlockSystemCaching;
+			return self();
+		}
+
+		@Override
+		public B promptCacheMessageTypeTtl(@Nullable Map<MessageType, Duration> promptCacheMessageTypeTtl) {
+			this.promptCacheMessageTypeTtl = promptCacheMessageTypeTtl;
+			return self();
+		}
+
+		@Override
+		public B promptCacheMessageTypeMinContentLengths(
+				@Nullable Map<MessageType, Integer> promptCacheMessageTypeMinContentLengths) {
+			this.promptCacheMessageTypeMinContentLengths = promptCacheMessageTypeMinContentLengths;
+			return self();
+		}
+
+		@Override
+		public B promptCacheContentLengthFunction(
+				@Nullable Function<@Nullable String, Integer> promptCacheContentLengthFunction) {
+			this.promptCacheContentLengthFunction = promptCacheContentLengthFunction;
+			return self();
+		}
 
 		@Override
 		public B outputSchema(@Nullable String outputSchema) {
@@ -821,6 +996,12 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 			return self();
 		}
 
+		/**
+		 * @deprecated since 2.0.0-M5, use
+		 * {@link #promptCacheStrategy(PromptCacheStrategy)} and related prompt cache
+		 * builder methods instead.
+		 */
+		@Deprecated(since = "2.0.0-M5", forRemoval = true)
 		public B cacheOptions(AnthropicCacheOptions cacheOptions) {
 			Assert.notNull(cacheOptions, "cacheOptions cannot be null");
 			this.cacheOptions = cacheOptions;
@@ -1006,6 +1187,27 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 				if (options.serviceTier != null) {
 					this.serviceTier = options.serviceTier;
 				}
+				if (options.promptCacheStrategy != null) {
+					this.promptCacheStrategy = options.promptCacheStrategy;
+				}
+				if (options.promptCacheTtl != null) {
+					this.promptCacheTtl = options.promptCacheTtl;
+				}
+				if (options.promptCacheMinContentLength != null) {
+					this.promptCacheMinContentLength = options.promptCacheMinContentLength;
+				}
+				if (options.promptCacheMultiBlockSystemCaching != null) {
+					this.promptCacheMultiBlockSystemCaching = options.promptCacheMultiBlockSystemCaching;
+				}
+				if (options.promptCacheMessageTypeTtl != null) {
+					this.promptCacheMessageTypeTtl = options.promptCacheMessageTypeTtl;
+				}
+				if (options.promptCacheMessageTypeMinContentLengths != null) {
+					this.promptCacheMessageTypeMinContentLengths = options.promptCacheMessageTypeMinContentLengths;
+				}
+				if (options.promptCacheContentLengthFunction != null) {
+					this.promptCacheContentLengthFunction = options.promptCacheContentLengthFunction;
+				}
 			}
 			return self();
 		}
@@ -1046,6 +1248,13 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 			options.inferenceGeo = this.inferenceGeo;
 			options.webSearchTool = this.webSearchTool;
 			options.serviceTier = this.serviceTier;
+			options.promptCacheStrategy = this.promptCacheStrategy;
+			options.promptCacheTtl = this.promptCacheTtl;
+			options.promptCacheMinContentLength = this.promptCacheMinContentLength;
+			options.promptCacheMultiBlockSystemCaching = this.promptCacheMultiBlockSystemCaching;
+			options.promptCacheMessageTypeTtl = this.promptCacheMessageTypeTtl;
+			options.promptCacheMessageTypeMinContentLengths = this.promptCacheMessageTypeMinContentLengths;
+			options.promptCacheContentLengthFunction = this.promptCacheContentLengthFunction;
 			options.validateCitationConsistency();
 			return options;
 		}

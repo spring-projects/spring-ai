@@ -28,10 +28,13 @@ package org.springframework.ai.bedrock.converse.api;
  *
  * @author Soby Chacko
  * @since 1.1.0
+ * @deprecated since 2.0.0-M5, use
+ * {@link org.springframework.ai.chat.prompt.PromptCacheStrategy} instead.
  * @see <a href=
  * "https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html">AWS Bedrock
  * Prompt Caching</a>
  */
+@Deprecated(since = "2.0.0-M5", forRemoval = true)
 public enum BedrockCacheStrategy {
 
 	/**
