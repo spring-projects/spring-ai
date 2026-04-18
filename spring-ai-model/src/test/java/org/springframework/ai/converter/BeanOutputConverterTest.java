@@ -33,6 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -193,6 +194,44 @@ class BeanOutputConverterTest {
 			List<TestClass> testClass = converter.convert("[{ \"someString\": \"some value\" }]");
 			assertThat(testClass).hasSize(1);
 			assertThat(testClass.get(0).getSomeString()).isEqualTo("some value");
+		}
+
+		@Test
+		void convertListTypeFromSchemaShapedResponse() {
+			var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<List<TestClass>>() {
+
+			});
+
+			String schemaShapedResponse = """
+					{"type":"array","items":[{"someString":"value1"},{"someString":"value2"}]}
+					""";
+			List<TestClass> result = converter.convert(schemaShapedResponse);
+			assertThat(result).hasSize(2);
+			assertThat(result.get(0).getSomeString()).isEqualTo("value1");
+			assertThat(result.get(1).getSomeString()).isEqualTo("value2");
+		}
+
+		@Test
+		void convertListTypeFromSchemaShapedResponseWithEmptyArray() {
+			var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<List<TestClass>>() {
+
+			});
+			String schemaShapedResponse = """
+					{"type":"array","items":[]}
+					""";
+			List<TestClass> result = converter.convert(schemaShapedResponse);
+			assertThat(result).isEmpty();
+		}
+
+		@Test
+		void convertListTypeIgnoresObjectWithItemsField() {
+			var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<List<TestClass>>() {
+
+			});
+			String objectWithItemsField = """
+					{"type":"object","items":{"someString":"value1"}}
+					""";
+			assertThatThrownBy(() -> converter.convert(objectWithItemsField)).isInstanceOf(JacksonException.class);
 		}
 
 		@Test
