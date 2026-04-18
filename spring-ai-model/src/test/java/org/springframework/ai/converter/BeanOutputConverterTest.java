@@ -29,9 +29,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.LoggerFactory;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
@@ -51,17 +48,12 @@ import static org.springframework.ai.util.LoggingMarkers.SENSITIVE_DATA_MARKER;
  * @author Soby Chacko
  * @author Konstantin Pavlov
  */
-@ExtendWith(MockitoExtension.class)
 class BeanOutputConverterTest {
 
 	private ListAppender<ILoggingEvent> logAppender;
 
-	@Mock
-	private JsonMapper jsonMapperMock;
-
 	@BeforeEach
 	void beforeEach() {
-
 		var logger = (Logger) LoggerFactory.getLogger(BeanOutputConverter.class);
 
 		this.logAppender = new ListAppender<>();
@@ -82,19 +74,15 @@ class BeanOutputConverterTest {
 
 		private String someString;
 
-		@SuppressWarnings("unused")
 		TestClass() {
-		}
-
-		TestClass(String someString) {
-			this.someString = someString;
 		}
 
 		String getSomeString() {
 			return this.someString;
 		}
 
-		public void setSomeString(String someString) {
+		@SuppressWarnings("unused")
+		void setSomeString(String someString) {
 			this.someString = someString;
 		}
 
@@ -104,19 +92,15 @@ class BeanOutputConverterTest {
 
 		private LocalDate someString;
 
-		@SuppressWarnings("unused")
 		TestClassWithDateProperty() {
-		}
-
-		TestClassWithDateProperty(LocalDate someString) {
-			this.someString = someString;
 		}
 
 		LocalDate getSomeString() {
 			return this.someString;
 		}
 
-		public void setSomeString(LocalDate someString) {
+		@SuppressWarnings("unused")
+		void setSomeString(LocalDate someString) {
 			this.someString = someString;
 		}
 

@@ -41,7 +41,7 @@ class CompositeResponseTextCleanerTest {
 
 	@Test
 	void shouldWorkWithSingleCleaner() {
-		var cleaner = new CompositeResponseTextCleaner(text -> text.trim());
+		var cleaner = new CompositeResponseTextCleaner(String::trim);
 		String result = cleaner.clean("  content  ");
 		assertThat(result).isEqualTo("content");
 	}
