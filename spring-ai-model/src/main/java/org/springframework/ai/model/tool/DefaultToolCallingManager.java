@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
@@ -53,6 +55,7 @@ import org.springframework.util.StringUtils;
  * Default implementation of {@link ToolCallingManager}.
  *
  * @author Thomas Vitale
+ * @author chabinhwang
  * @since 1.0.0
  */
 public final class DefaultToolCallingManager implements ToolCallingManager {
@@ -103,13 +106,16 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 		Assert.notNull(chatOptions, "chatOptions cannot be null");
 
 		List<ToolCallback> toolCallbacks = new ArrayList<>(chatOptions.getToolCallbacks());
+		Set<String> existingToolNames = chatOptions.getToolCallbacks()
+			.stream()
+			.map(tool -> tool.getToolDefinition().name())
+			.collect(Collectors.toSet());
+
 		for (String toolName : chatOptions.getToolNames()) {
 			// Skip the tool if it is already present in the request toolCallbacks.
 			// That might happen if a tool is defined in the options
 			// both as a ToolCallback and as a tool name.
-			if (chatOptions.getToolCallbacks()
-				.stream()
-				.anyMatch(tool -> tool.getToolDefinition().name().equals(toolName))) {
+			if (existingToolNames.contains(toolName)) {
 				continue;
 			}
 			ToolCallback toolCallback = this.toolCallbackResolver.resolve(toolName);
