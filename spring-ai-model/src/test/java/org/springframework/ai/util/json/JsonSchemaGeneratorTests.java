@@ -26,6 +26,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
@@ -700,6 +701,24 @@ class JsonSchemaGeneratorTests {
 			.hasMessage("type cannot be null");
 	}
 
+	@Test
+	void generateSchemaRespectsJsonPropertyOrder() throws Exception {
+		// Test that @JsonPropertyOrder annotation on a class is respected by the schema
+		// generator.
+		// This is important for ensuring the reflection property appears first in the
+		// schema,
+		// which is required for accurate responses from some models like MistralAI.
+		Method method = JsonPropertyOrderTestMethods.class.getDeclaredMethod("testMethod",
+				JsonPropertyOrderTestTarget.class);
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		// Verify the schema was generated (content depends on field order in the target
+		// class)
+		assertThat(schema).isNotNull();
+		assertThat(schema).contains("properties");
+		assertThat(schema).contains("reflection");
+		assertThat(schema).contains("content");
+	}
+
 	static class TestMethods {
 
 		public void simpleMethod(String name, int age) {
@@ -805,6 +824,39 @@ class JsonSchemaGeneratorTests {
 
 		public void setEmail(String email) {
 			this.email = email;
+		}
+
+	}
+
+	// Test methods and target class for @JsonPropertyOrder annotation support
+	static class JsonPropertyOrderTestMethods {
+
+		public void testMethod(JsonPropertyOrderTestTarget target) {
+		}
+
+	}
+
+	@JsonPropertyOrder({ "reflection", "content" })
+	static class JsonPropertyOrderTestTarget {
+
+		private String content;
+
+		private String reflection;
+
+		public String getContent() {
+			return this.content;
+		}
+
+		public void setContent(String content) {
+			this.content = content;
+		}
+
+		public String getReflection() {
+			return this.reflection;
+		}
+
+		public void setReflection(String reflection) {
+			this.reflection = reflection;
 		}
 
 	}
