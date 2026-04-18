@@ -30,8 +30,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.retry.RetryTemplate;
-import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
@@ -40,6 +38,7 @@ import org.springframework.web.client.RestClient;
  *
  * @author Ricken Bazolo
  * @author Yanming Zhou
+ * @author Nicolas Krier
  */
 @AutoConfiguration
 @EnableConfigurationProperties({ MistralAiCommonProperties.class, MistralAiModerationProperties.class })
@@ -50,31 +49,29 @@ public class MistralAiModerationAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public MistralAiModerationModel mistralAiModerationModel(MistralAiCommonProperties commonProperties,
+	MistralAiModerationModel mistralAiModerationModel(MistralAiCommonProperties commonProperties,
 			MistralAiModerationProperties moderationProperties, ObjectProvider<RetryTemplate> retryTemplate,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
-
-		var apiKey = moderationProperties.getApiKey();
-		var baseUrl = moderationProperties.getBaseUrl();
-
-		var resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonProperties.getApiKey();
-		var resoledBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonProperties.getBaseUrl();
-
-		Assert.hasText(resolvedApiKey, "Mistral API key must be set");
-		Assert.hasText(resoledBaseUrl, "Mistral base URL must be set");
-
-		var mistralAiModerationApi = MistralAiModerationApi.builder()
-			.baseUrl(resoledBaseUrl)
-			.apiKey(resolvedApiKey)
-			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
-			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
-			.build();
+		var mistralAiModerationApi = mistralAiModerationApi(commonProperties, moderationProperties,
+				restClientBuilderProvider, responseErrorHandler);
 
 		return MistralAiModerationModel.builder()
 			.mistralAiModerationApi(mistralAiModerationApi)
 			.retryTemplate(retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))
 			.options(moderationProperties.getOptions())
+			.build();
+	}
+
+	private static MistralAiModerationApi mistralAiModerationApi(MistralAiCommonProperties commonProperties,
+			MistralAiModerationProperties moderationProperties,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
+		return MistralAiModerationApi.builder()
+			.baseUrl(moderationProperties.getBaseUrlOrDefaultFrom(commonProperties))
+			.apiKey(moderationProperties.getApiKeyOrDefaultFrom(commonProperties))
+			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
+			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
 			.build();
 	}
 
