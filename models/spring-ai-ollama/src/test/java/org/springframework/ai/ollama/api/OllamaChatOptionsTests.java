@@ -38,6 +38,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions, Builder> {
 
+	private static final String JSON_SCHEMA_AS_TEXT = ResourceUtils
+		.getText("classpath:schemas/country-json-schema.json");
+
 	@Override
 	protected Class<OllamaChatOptions> getConcreteOptionsClass() {
 		return OllamaChatOptions.class;
@@ -50,10 +53,6 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 
 	@Test
 	void testBasicOptions() {
-		var b1 = OllamaChatOptions.builder().model("model").mainGPU(12);
-
-		var b = OllamaChatOptions.builder().mainGPU(12).model("model");
-
 		var options = OllamaChatOptions.builder().temperature(3.14).topK(30).stop(List.of("a", "b", "c")).build();
 
 		var optionsMap = options.toMap();
@@ -147,10 +146,9 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 
 	@Test
 	void testOutputSchemaOptionWithJsonSchemaObjectAsString() {
-		var jsonSchemaAsText = ResourceUtils.getText("classpath:country-json-schema.json");
-		var options = OllamaChatOptions.builder().outputSchema(jsonSchemaAsText).build();
+		var options = OllamaChatOptions.builder().outputSchema(JSON_SCHEMA_AS_TEXT).build();
 
-		assertThat(options.getOutputSchema()).isEqualToIgnoringWhitespace(jsonSchemaAsText);
+		assertThat(options.getOutputSchema()).isEqualToIgnoringWhitespace(JSON_SCHEMA_AS_TEXT);
 	}
 
 	@Test
@@ -283,9 +281,10 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 
 	/**
 	 * Demonstrates the difference between simple "json" format and JSON Schema format.
-	 *
+	 * <p>
 	 * Simple "json" format: Tells Ollama to return any valid JSON structure. JSON Schema
 	 * format: Tells Ollama to return JSON matching a specific schema.
+	 * </p>
 	 */
 	@Test
 	void testSimpleJsonFormatVsJsonSchema() {
@@ -295,8 +294,7 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 		assertThat(simpleJsonMap).containsEntry("format", "json");
 		assertThat(simpleJsonOptions.getFormat()).isEqualTo("json");
 
-		var jsonSchemaAsText = ResourceUtils.getText("classpath:country-json-schema.json");
-		var schemaOptions = OllamaChatOptions.builder().outputSchema(jsonSchemaAsText).build();
+		var schemaOptions = OllamaChatOptions.builder().outputSchema(JSON_SCHEMA_AS_TEXT).build();
 
 		var schemaMap = schemaOptions.toMap();
 		assertThat(schemaMap).containsKey("format");
@@ -312,8 +310,8 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 		var formatOnlyOptions = OllamaChatOptions.builder().format("json").build();
 		assertThat(formatOnlyOptions.getOutputSchema()).isEqualTo("json");
 
-		var schemaRoundTrip = OllamaChatOptions.builder().outputSchema(jsonSchemaAsText).build();
-		assertThat(schemaRoundTrip.getOutputSchema()).isEqualToIgnoringWhitespace(jsonSchemaAsText);
+		var schemaRoundTrip = OllamaChatOptions.builder().outputSchema(JSON_SCHEMA_AS_TEXT).build();
+		assertThat(schemaRoundTrip.getOutputSchema()).isEqualToIgnoringWhitespace(JSON_SCHEMA_AS_TEXT);
 	}
 
 	/**
@@ -344,8 +342,7 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 		assertThat(stringFormatOptions.getOutputSchema()).isEqualTo("json");
 		assertThat(stringFormatOptions.getOutputSchema()).doesNotContain("\"");
 
-		var jsonSchemaAsText = ResourceUtils.getText("classpath:country-json-schema.json");
-		var schemaFormatOptions = OllamaChatOptions.builder().outputSchema(jsonSchemaAsText).build();
+		var schemaFormatOptions = OllamaChatOptions.builder().outputSchema(JSON_SCHEMA_AS_TEXT).build();
 		String retrievedSchema = schemaFormatOptions.getOutputSchema();
 
 		// Should be valid JSON
@@ -354,7 +351,7 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 		assertThat(retrievedSchema).contains("\"properties\"");
 		assertThat(retrievedSchema).contains("\"required\"");
 
-		assertThat(retrievedSchema).isEqualToIgnoringWhitespace(jsonSchemaAsText);
+		assertThat(retrievedSchema).isEqualToIgnoringWhitespace(JSON_SCHEMA_AS_TEXT);
 	}
 
 	/**
@@ -362,9 +359,7 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 	 */
 	@Test
 	void testSetOutputSchemaWithValidJsonSchema() {
-		var jsonSchemaAsText = ResourceUtils.getText("classpath:country-json-schema.json");
-
-		var options = OllamaChatOptions.builder().outputSchema(jsonSchemaAsText).build();
+		var options = OllamaChatOptions.builder().outputSchema(JSON_SCHEMA_AS_TEXT).build();
 
 		// Format should be a Map, not a String
 		assertThat(options.getFormat()).isInstanceOf(Map.class);
@@ -375,7 +370,7 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 		assertThat(optionsMap.get("format")).isInstanceOf(Map.class);
 
 		// getOutputSchema() should return the original JSON string (ignoring whitespace)
-		assertThat(options.getOutputSchema()).isEqualToIgnoringWhitespace(jsonSchemaAsText);
+		assertThat(options.getOutputSchema()).isEqualToIgnoringWhitespace(JSON_SCHEMA_AS_TEXT);
 	}
 
 }

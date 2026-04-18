@@ -36,6 +36,7 @@ import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 
 /**
@@ -391,6 +392,11 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	public void setOutputSchema(String outputSchema) {
 		this.setResponseFormat(
 				ResponseFormat.builder().type(ResponseFormat.Type.JSON_SCHEMA).jsonSchema(outputSchema).build());
+	}
+
+	@Override
+	public void setOutputSchemaResource(Resource outputSchemaResource) {
+		this.setOutputSchema(StructuredOutputChatOptions.extractOutputSchema(outputSchemaResource));
 	}
 
 	@Override
