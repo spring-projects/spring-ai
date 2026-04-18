@@ -22,6 +22,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
@@ -87,6 +93,8 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 	private ToolCallingObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
+	private boolean parallelToolExecution = false;
+
 	public DefaultToolCallingManager(ObservationRegistry observationRegistry, ToolCallbackResolver toolCallbackResolver,
 			ToolExecutionExceptionProcessor toolExecutionExceptionProcessor) {
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
@@ -96,6 +104,14 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 		this.observationRegistry = observationRegistry;
 		this.toolCallbackResolver = toolCallbackResolver;
 		this.toolExecutionExceptionProcessor = toolExecutionExceptionProcessor;
+	}
+
+	public void setParallelToolExecution(boolean parallelToolExecution) {
+		this.parallelToolExecution = parallelToolExecution;
+	}
+
+	public boolean isParallelToolExecution() {
+		return parallelToolExecution;
 	}
 
 	@Override
@@ -178,68 +194,144 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 		Boolean returnDirect = null;
 
-		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
+		List<AssistantMessage.ToolCall> toolCalls = assistantMessage.getToolCalls();
 
-			logger.debug("Executing tool call: {}", toolCall.name());
+		if (this.parallelToolExecution && toolCalls.size() > 1) {
+			// Parallel execution using CompletableFuture
+			ExecutorService executor = Executors.newFixedThreadPool(Math.min(toolCalls.size(), 10));
+			try {
+				AtomicBoolean returnDirectAccumulator = new AtomicBoolean(true);
+				AtomicInteger responseIndex = new AtomicInteger(0);
+				ToolResponseMessage.ToolResponse[] responseArray = new ToolResponseMessage.ToolResponse[toolCalls
+					.size()];
 
-			String toolName = toolCall.name();
-			String toolInputArguments = toolCall.arguments();
+				AtomicBoolean returnDirectResult = new AtomicBoolean(true);
 
-			// Handle the possible null parameter situation in streaming mode.
-			final String finalToolInputArguments;
-			if (!StringUtils.hasText(toolInputArguments)) {
-				logger.warn("Tool call arguments are null or empty for tool: {}. Using empty JSON object as default.",
-						toolName);
-				finalToolInputArguments = "{}";
-			}
-			else {
-				finalToolInputArguments = toolInputArguments;
-			}
+				List<CompletableFuture<Void>> futures = toolCalls.stream()
+					.map(toolCall -> CompletableFuture.runAsync(() -> {
+						try {
+							ToolResponseMessage.ToolResponse response = executeSingleToolCall(toolCall, toolCallbacks,
+									toolContext, returnDirectAccumulator);
+							int index = responseIndex.getAndIncrement();
+							responseArray[index] = response;
+						}
+						catch (Exception e) {
+							throw new RuntimeException("Tool execution failed for: " + toolCall.name(), e);
+						}
+					}, executor))
+					.toList();
 
-			ToolCallback toolCallback = toolCallbacks.stream()
-				.filter(tool -> toolName.equals(tool.getToolDefinition().name()))
-				.findFirst()
-				.orElseGet(() -> this.toolCallbackResolver.resolve(toolName));
+				CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
-			if (toolCallback == null) {
-				logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolName);
-				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
-			}
-
-			if (returnDirect == null) {
-				returnDirect = toolCallback.getToolMetadata().returnDirect();
-			}
-			else {
-				returnDirect = returnDirect && toolCallback.getToolMetadata().returnDirect();
-			}
-
-			ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
-				.toolDefinition(toolCallback.getToolDefinition())
-				.toolMetadata(toolCallback.getToolMetadata())
-				.toolCallArguments(finalToolInputArguments)
-				.build();
-
-			String toolCallResult = ToolCallingObservationDocumentation.TOOL_CALL
-				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-						this.observationRegistry)
-				.observe(() -> {
-					String toolResult;
-					try {
-						toolResult = toolCallback.call(finalToolInputArguments, toolContext);
+				for (ToolResponseMessage.ToolResponse response : responseArray) {
+					if (response != null) {
+						toolResponses.add(response);
 					}
-					catch (ToolExecutionException ex) {
-						toolResult = this.toolExecutionExceptionProcessor.process(ex);
-					}
-					observationContext.setToolCallResult(toolResult);
-					return toolResult;
-				});
+				}
 
-			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName,
-					toolCallResult != null ? toolCallResult : ""));
+				returnDirectResult.set(returnDirectAccumulator.get());
+				returnDirect = returnDirectResult.get();
+			}
+			finally {
+				executor.shutdown();
+				try {
+					if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+						executor.shutdownNow();
+					}
+				}
+				catch (InterruptedException e) {
+					executor.shutdownNow();
+					Thread.currentThread().interrupt();
+				}
+			}
+		}
+		else {
+			// Sequential execution (default behavior for backward compatibility)
+			for (AssistantMessage.ToolCall toolCall : toolCalls) {
+				ToolResponseMessage.ToolResponse response = executeSingleToolCall(toolCall, toolCallbacks, toolContext,
+						null);
+				toolResponses.add(response);
+
+				boolean toolReturnDirect = toolCallbacks.stream()
+					.filter(tool -> toolCall.name().equals(tool.getToolDefinition().name()))
+					.findFirst()
+					.orElseGet(() -> this.toolCallbackResolver.resolve(toolCall.name()))
+					.getToolMetadata()
+					.returnDirect();
+
+				if (returnDirect == null) {
+					returnDirect = toolReturnDirect;
+				}
+				else {
+					returnDirect = returnDirect && toolReturnDirect;
+				}
+			}
 		}
 
 		return new InternalToolExecutionResult(ToolResponseMessage.builder().responses(toolResponses).build(),
 				Objects.requireNonNullElse(returnDirect, false));
+	}
+
+	/**
+	 * Execute a single tool call.
+	 */
+	private ToolResponseMessage.ToolResponse executeSingleToolCall(AssistantMessage.ToolCall toolCall,
+			List<ToolCallback> toolCallbacks, ToolContext toolContext, AtomicBoolean returnDirectAccumulator) {
+
+		logger.debug("Executing tool call: {}", toolCall.name());
+
+		String toolName = toolCall.name();
+		String toolInputArguments = toolCall.arguments();
+
+		// Handle the possible null parameter situation in streaming mode.
+		final String finalToolInputArguments;
+		if (!StringUtils.hasText(toolInputArguments)) {
+			logger.warn("Tool call arguments are null or empty for tool: {}. Using empty JSON object as default.",
+					toolName);
+			finalToolInputArguments = "{}";
+		}
+		else {
+			finalToolInputArguments = toolInputArguments;
+		}
+
+		ToolCallback toolCallback = toolCallbacks.stream()
+			.filter(tool -> toolName.equals(tool.getToolDefinition().name()))
+			.findFirst()
+			.orElseGet(() -> this.toolCallbackResolver.resolve(toolName));
+
+		if (toolCallback == null) {
+			logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolName);
+			throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
+		}
+
+		if (returnDirectAccumulator != null) {
+			// In parallel mode, use atomic accumulator
+			returnDirectAccumulator.set(returnDirectAccumulator.get() && toolCallback.getToolMetadata().returnDirect());
+		}
+
+		ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(toolCallback.getToolDefinition())
+			.toolMetadata(toolCallback.getToolMetadata())
+			.toolCallArguments(finalToolInputArguments)
+			.build();
+
+		String toolCallResult = ToolCallingObservationDocumentation.TOOL_CALL
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
+				String toolResult;
+				try {
+					toolResult = toolCallback.call(finalToolInputArguments, toolContext);
+				}
+				catch (ToolExecutionException ex) {
+					toolResult = this.toolExecutionExceptionProcessor.process(ex);
+				}
+				observationContext.setToolCallResult(toolResult);
+				return toolResult;
+			});
+
+		return new ToolResponseMessage.ToolResponse(toolCall.id(), toolName,
+				toolCallResult != null ? toolCallResult : "");
 	}
 
 	private List<Message> buildConversationHistoryAfterToolExecution(List<Message> previousMessages,
@@ -269,6 +361,8 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 		private ToolExecutionExceptionProcessor toolExecutionExceptionProcessor = DEFAULT_TOOL_EXECUTION_EXCEPTION_PROCESSOR;
 
+		private boolean parallelToolExecution = false;
+
 		private Builder() {
 		}
 
@@ -288,9 +382,16 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			return this;
 		}
 
+		public Builder parallelToolExecution(boolean parallelToolExecution) {
+			this.parallelToolExecution = parallelToolExecution;
+			return this;
+		}
+
 		public DefaultToolCallingManager build() {
-			return new DefaultToolCallingManager(this.observationRegistry, this.toolCallbackResolver,
-					this.toolExecutionExceptionProcessor);
+			DefaultToolCallingManager manager = new DefaultToolCallingManager(this.observationRegistry,
+					this.toolCallbackResolver, this.toolExecutionExceptionProcessor);
+			manager.setParallelToolExecution(this.parallelToolExecution);
+			return manager;
 		}
 
 	}

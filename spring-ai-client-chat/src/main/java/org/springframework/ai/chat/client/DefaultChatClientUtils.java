@@ -119,6 +119,17 @@ final class DefaultChatClientUtils {
 			else if (processedChatOptions instanceof DefaultChatOptions defaultChatOptions) {
 				processedChatOptions = ModelOptionsUtils.copyToTarget(defaultChatOptions, ChatOptions.class,
 						DefaultToolCallingChatOptions.class);
+				// When options were DefaultChatOptions, copy toolCallbacks from request
+				// spec
+				// (mergeBeans won't copy them since DefaultChatOptions doesn't have them)
+				List<ToolCallback> allToolCallbacks = new ArrayList<>(inputRequest.getToolCallbacks());
+				for (var provider : inputRequest.getToolCallbackProviders()) {
+					allToolCallbacks.addAll(java.util.List.of(provider.getToolCallbacks()));
+				}
+				if (!allToolCallbacks.isEmpty() && processedChatOptions != null) {
+					ToolCallingChatOptions tcOptions = (ToolCallingChatOptions) processedChatOptions;
+					tcOptions.setToolCallbacks(allToolCallbacks);
+				}
 			}
 		}
 

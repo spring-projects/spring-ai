@@ -474,6 +474,28 @@ class DefaultChatClientUtilsTests {
 		assertThat(result.context()).containsAllEntriesOf(advisorParams);
 	}
 
+	@Test
+	void whenToolCallbacksFromRequestAndDefaultChatOptionsAreProvidedThenToolCallbacksArePropagated() {
+		// This tests the fix: when DefaultChatOptions is provided via options(),
+		// toolCallbacks from the request spec (.toolCallbacks()) should be propagated.
+		ToolCallback toolCallback = new TestToolCallback("requestTool");
+		DefaultChatOptions chatOptions = new DefaultChatOptions();
+		ChatModel chatModel = mock(ChatModel.class);
+		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
+			.create(chatModel)
+			.prompt()
+			.options(chatOptions)
+			.toolCallbacks(toolCallback);
+
+		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
+
+		assertThat(result).isNotNull();
+		assertThat(result.prompt().getOptions()).isInstanceOf(ToolCallingChatOptions.class);
+		ToolCallingChatOptions resultOptions = (ToolCallingChatOptions) result.prompt().getOptions();
+		assertThat(resultOptions).isNotNull();
+		assertThat(resultOptions.getToolCallbacks()).contains(toolCallback);
+	}
+
 	static class TestToolCallback implements ToolCallback {
 
 		private final ToolDefinition toolDefinition;
