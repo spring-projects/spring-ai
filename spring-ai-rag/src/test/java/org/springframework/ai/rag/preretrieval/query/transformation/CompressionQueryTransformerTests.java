@@ -20,9 +20,11 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.rag.Query;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link CompressionQueryTransformer}.
@@ -67,6 +69,20 @@ class CompressionQueryTransformerTests {
 			.build()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("The following placeholders must be present in the prompt template")
 			.hasMessageContaining("query");
+	}
+
+
+	@Test
+	void whenHistoryIsEmptyThenReturnQueryUnchanged() {
+		ChatClient.Builder chatClientBuilder = mock(ChatClient.Builder.class);
+		ChatClient chatClient = mock(ChatClient.class);
+		when(chatClientBuilder.build()).thenReturn(chatClient);
+		QueryTransformer queryTransformer = CompressionQueryTransformer.builder()
+			.chatClientBuilder(chatClientBuilder)
+			.build();
+		Query query = new Query("What is Spring AI?");
+		Query result = queryTransformer.transform(query);
+		org.assertj.core.api.Assertions.assertThat(result.text()).isEqualTo("What is Spring AI?");
 	}
 
 }
