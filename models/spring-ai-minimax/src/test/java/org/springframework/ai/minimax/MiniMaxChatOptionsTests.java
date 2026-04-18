@@ -59,6 +59,7 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 			.stop(List.of("test"))
 			.temperature(0.6)
 			.topP(0.6)
+			.reasoningSplit(true)
 			.maskSensitiveInfo(false)
 			.toolChoice("test")
 			.internalToolExecutionEnabled(true)
@@ -67,10 +68,10 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 
 		assertThat(options)
 			.extracting("model", "frequencyPenalty", "maxTokens", "N", "presencePenalty", "responseFormat", "seed",
-					"stop", "temperature", "topP", "maskSensitiveInfo", "toolChoice", "internalToolExecutionEnabled",
-					"toolContext")
+					"stop", "temperature", "topP", "reasoningSplit", "maskSensitiveInfo", "toolChoice",
+					"internalToolExecutionEnabled", "toolContext")
 			.containsExactly("test-model", 0.5, 10, 1, 0.5, new MiniMaxApi.ChatCompletionRequest.ResponseFormat("text"),
-					1, List.of("test"), 0.6, 0.6, false, "test", true, Map.of("key1", "value1"));
+					1, List.of("test"), 0.6, 0.6, true, false, "test", true, Map.of("key1", "value1"));
 	}
 
 	@Test
@@ -86,6 +87,7 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 			.stop(List.of("test"))
 			.temperature(0.6)
 			.topP(0.6)
+			.reasoningSplit(true)
 			.maskSensitiveInfo(false)
 			.toolChoice("test")
 			.internalToolExecutionEnabled(true)
@@ -121,6 +123,7 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 		options.setStop(null);
 		options.setTemperature(null);
 		options.setTopP(null);
+		options.setReasoningSplit(null);
 		options.setMaskSensitiveInfo(null);
 		options.setTools(null);
 		options.setToolChoice(null);
@@ -137,6 +140,7 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 		assertThat(options.getStop()).isNull();
 		assertThat(options.getTemperature()).isNull();
 		assertThat(options.getTopP()).isNull();
+		assertThat(options.getReasoningSplit()).isNull();
 		assertThat(options.getMaskSensitiveInfo()).isNull();
 		assertThat(options.getTools()).isNull();
 		assertThat(options.getToolChoice()).isNull();
@@ -178,6 +182,7 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 		options.setStop(List.of("test"));
 		options.setTemperature(0.6);
 		options.setTopP(0.6);
+		options.setReasoningSplit(true);
 		options.setMaskSensitiveInfo(false);
 		options.setToolChoice("test");
 		options.setInternalToolExecutionEnabled(true);
@@ -193,6 +198,7 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 		assertThat(options.getStop()).isEqualTo(List.of("test"));
 		assertThat(options.getTemperature()).isEqualTo(0.6);
 		assertThat(options.getTopP()).isEqualTo(0.6);
+		assertThat(options.getReasoningSplit()).isTrue();
 		assertThat(options.getMaskSensitiveInfo()).isEqualTo(false);
 		assertThat(options.getToolChoice()).isEqualTo("test");
 		assertThat(options.getInternalToolExecutionEnabled()).isEqualTo(true);
@@ -212,6 +218,7 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 		assertThat(options.getStop()).isNull();
 		assertThat(options.getTemperature()).isNull();
 		assertThat(options.getTopP()).isNull();
+		assertThat(options.getReasoningSplit()).isNull();
 		assertThat(options.getMaskSensitiveInfo()).isNull();
 		assertThat(options.getToolChoice()).isNull();
 		assertThat(options.getInternalToolExecutionEnabled()).isNull();
