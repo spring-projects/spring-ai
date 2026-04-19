@@ -349,6 +349,10 @@ public class ChatClientNativeStructuredResponseTests {
 				"""))), metadata);
 
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
+		ChatOptions.Builder builder = mock(ChatOptions.Builder.class);
+		when(this.chatModel.getDefaultOptions()).thenReturn(this.structuredOutputChatOptions);
+		when(this.structuredOutputChatOptions.mutate()).thenReturn(builder);
+		when(builder.build()).thenReturn(this.structuredOutputChatOptions);
 		willDoNothing().given(this.structuredOutputChatOptions).setOutputSchema(outputSchemaCaptor.capture());
 
 		var textCallAdvisor = new ContextCatcherCallAdvisor();
@@ -356,7 +360,6 @@ public class ChatClientNativeStructuredResponseTests {
 		ResponseEntity<ChatResponse, JsonNode> responseEntity = ChatClient.builder(this.chatModel)
 			.build()
 			.prompt()
-			.options(this.structuredOutputChatOptions)
 			.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
 			.advisors(textCallAdvisor)
 			.user("Tell me about John")
@@ -398,6 +401,10 @@ public class ChatClientNativeStructuredResponseTests {
 				"""))), metadata);
 
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
+		ChatOptions.Builder builder = mock(ChatOptions.Builder.class);
+		when(this.chatModel.getDefaultOptions()).thenReturn(this.structuredOutputChatOptions);
+		when(this.structuredOutputChatOptions.mutate()).thenReturn(builder);
+		when(builder.build()).thenReturn(this.structuredOutputChatOptions);
 		willDoNothing().given(this.structuredOutputChatOptions).setOutputSchema(outputSchemaCaptor.capture());
 
 		var textCallAdvisor = new ContextCatcherCallAdvisor();
@@ -405,7 +412,6 @@ public class ChatClientNativeStructuredResponseTests {
 		JsonNode entity = ChatClient.builder(this.chatModel)
 			.build()
 			.prompt()
-			.options(this.structuredOutputChatOptions)
 			.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
 			.advisors(textCallAdvisor)
 			.user("Tell me about John")
@@ -444,14 +450,16 @@ public class ChatClientNativeStructuredResponseTests {
 				"""))), metadata);
 
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
-		given(this.structuredOutputChatOptions.copy()).willReturn(this.structuredOutputChatOptions);
+		ChatOptions.Builder builder = mock(ChatOptions.Builder.class);
+		when(this.chatModel.getDefaultOptions()).thenReturn(this.structuredOutputChatOptions);
+		when(this.structuredOutputChatOptions.mutate()).thenReturn(builder);
+		when(builder.build()).thenReturn(this.structuredOutputChatOptions);
 
 		var textCallAdvisor = new ContextCatcherCallAdvisor();
 
 		ResponseEntity<ChatResponse, JsonNode> responseEntity = ChatClient.builder(this.chatModel)
 			.build()
 			.prompt()
-			.options(this.structuredOutputChatOptions)
 			.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
 			.advisors(textCallAdvisor)
 			.user("Tell me about John")
@@ -491,14 +499,16 @@ public class ChatClientNativeStructuredResponseTests {
 				"""))), metadata);
 
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
-		given(this.structuredOutputChatOptions.copy()).willReturn(this.structuredOutputChatOptions);
+		ChatOptions.Builder builder = mock(ChatOptions.Builder.class);
+		when(this.chatModel.getDefaultOptions()).thenReturn(this.structuredOutputChatOptions);
+		when(this.structuredOutputChatOptions.mutate()).thenReturn(builder);
+		when(builder.build()).thenReturn(this.structuredOutputChatOptions);
 
 		var textCallAdvisor = new ContextCatcherCallAdvisor();
 
 		JsonNode entity = ChatClient.builder(this.chatModel)
 			.build()
 			.prompt()
-			.options(this.structuredOutputChatOptions)
 			.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
 			.advisors(textCallAdvisor)
 			.user("Tell me about John")
