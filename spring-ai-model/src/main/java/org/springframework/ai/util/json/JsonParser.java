@@ -176,7 +176,7 @@ public final class JsonParser {
 			try {
 				result = JsonParser.fromJson(jsonString, javaType);
 			}
-			catch (JacksonException e) {
+			catch (Exception e) {
 				// ignore
 			}
 		}
