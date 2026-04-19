@@ -16,8 +16,6 @@
 
 package org.springframework.ai.converter;
 
-import org.jspecify.annotations.Nullable;
-
 import org.springframework.core.convert.converter.Converter;
 
 /**
@@ -33,12 +31,18 @@ import org.springframework.core.convert.converter.Converter;
 public interface StructuredOutputConverter<T> extends Converter<String, T>, FormatProvider {
 
 	/**
+	 * Constant for when there is no JSON schema available.
+	 */
+	String NO_JSON_SCHEMA = "";
+
+	/**
 	 * Returns the JSON schema for the structured output of an LLM call.
-	 * @return the JSON schema or {@code null} if not available
+	 * @return the JSON schema or {@link StructuredOutputConverter#NO_JSON_SCHEMA} if not
+	 * available
 	 * @since 2.0.0
 	 */
-	@Nullable default String getJsonSchema() {
-		return null;
+	default String getJsonSchema() {
+		return NO_JSON_SCHEMA;
 	}
 
 }

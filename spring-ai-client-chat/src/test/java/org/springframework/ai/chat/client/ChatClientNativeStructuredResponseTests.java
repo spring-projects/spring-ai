@@ -16,9 +16,9 @@
 
 package org.springframework.ai.chat.client;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import net.javacrumbs.jsonunit.assertj.JsonAssertions;
 import net.javacrumbs.jsonunit.core.Option;
@@ -456,7 +456,7 @@ public class ChatClientNativeStructuredResponseTests {
 			.advisors(textCallAdvisor)
 			.user("Tell me about John")
 			.call()
-			.responseEntity(new CustomJsonSchemaOutputConverter(null));
+			.responseEntity(new CustomJsonSchemaOutputConverter(StructuredOutputConverter.NO_JSON_SCHEMA));
 
 		var context = textCallAdvisor.getContext();
 
@@ -503,7 +503,7 @@ public class ChatClientNativeStructuredResponseTests {
 			.advisors(textCallAdvisor)
 			.user("Tell me about John")
 			.call()
-			.entity(new CustomJsonSchemaOutputConverter(null));
+			.entity(new CustomJsonSchemaOutputConverter(StructuredOutputConverter.NO_JSON_SCHEMA));
 
 		var context = textCallAdvisor.getContext();
 
@@ -530,7 +530,7 @@ public class ChatClientNativeStructuredResponseTests {
 
 	private static class ContextCatcherCallAdvisor implements CallAdvisor {
 
-		private Map<String, Object> context = new HashMap<>();
+		private Map<String, Object> context = new ConcurrentHashMap<>();
 
 		@Override
 		public String getName() {

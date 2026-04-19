@@ -16,7 +16,7 @@
 
 package org.springframework.ai.chat.client.advisor;
 
-import java.util.HashMap;
+import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
 
@@ -59,7 +59,7 @@ public final class ChatModelCallAdvisor implements CallAdvisor {
 
 		return ChatClientResponse.builder()
 			.chatResponse(chatResponse)
-			.context(new HashMap<>(formattedChatClientRequest.context()))
+			.context(Map.copyOf(formattedChatClientRequest.context()))
 			.build();
 	}
 
@@ -88,7 +88,10 @@ public final class ChatModelCallAdvisor implements CallAdvisor {
 				.text(userMessage.getText() + System.lineSeparator() + outputFormat)
 				.build());
 
-		return chatClientRequest.mutate().prompt(augmentedPrompt).build();
+		return ChatClientRequest.builder()
+			.prompt(augmentedPrompt)
+			.context(Map.copyOf(chatClientRequest.context()))
+			.build();
 	}
 
 	@Override
