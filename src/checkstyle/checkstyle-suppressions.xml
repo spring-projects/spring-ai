@@ -77,7 +77,6 @@
 	<suppress files="models[\\/]spring-ai-google-genai-embedding" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-minimax" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-mistral-ai" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-openai" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-transformers" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-vertex-ai-embedding" id="bannedNullabilityImports" />
 
