@@ -388,12 +388,17 @@ public class MistralAiChatModel implements ChatModel {
 	}
 
 	Prompt buildRequestPrompt(Prompt prompt) {
-		// Process runtime options
-		MistralAiChatOptions runtimeOptions = (MistralAiChatOptions) prompt.getOptions();
-		runtimeOptions = runtimeOptions == null ? this.defaultOptions : runtimeOptions;
-		ToolCallingChatOptions.validateToolCallbacks(runtimeOptions.getToolCallbacks());
+		MistralAiChatOptions.Builder requestBuilder = this.defaultOptions.mutate();
 
-		return prompt.mutate().chatOptions(runtimeOptions).build();
+		if (prompt.getOptions() != null) {
+			requestBuilder.combineWith(prompt.getOptions().mutate());
+		}
+
+		MistralAiChatOptions requestOptions = requestBuilder.build();
+
+		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
+
+		return new Prompt(prompt.getInstructions(), requestOptions);
 	}
 
 	/**
