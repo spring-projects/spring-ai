@@ -77,6 +77,29 @@ public abstract class ModelOptionsUtils {
 			.build();
 	}
 
+	private static final AtomicReference<JsonMapper> JSON_MAPPER_REF = new AtomicReference<>(JSON_MAPPER);
+
+	/**
+	 * Returns the {@link JsonMapper} used for model option and response JSON conversions.
+	 * Initially returns {@link #JSON_MAPPER}; replaced by
+	 * {@link #setJsonMapper(JsonMapper)} when Spring AI's tool-calling autoconfiguration
+	 * wires a user-overridable named {@code modelOptionsJsonMapper} bean.
+	 */
+	public static JsonMapper getJsonMapper() {
+		return JSON_MAPPER_REF.get();
+	}
+
+	/**
+	 * Replaces the {@link JsonMapper} used for model option and response JSON
+	 * conversions. Callers injecting a custom mapper should typically do so via the named
+	 * {@code modelOptionsJsonMapper} bean exposed by {@code ToolCallingAutoConfiguration}
+	 * rather than calling this method directly.
+	 */
+	public static void setJsonMapper(JsonMapper jsonMapper) {
+		Assert.notNull(jsonMapper, "jsonMapper cannot be null");
+		JSON_MAPPER_REF.set(jsonMapper);
+	}
+
 	private static final List<String> BEAN_MERGE_FIELD_EXCISIONS = List.of("class");
 
 	private static final ConcurrentHashMap<Class<?>, List<String>> REQUEST_FIELD_NAMES_PER_CLASS = new ConcurrentHashMap<>();
@@ -94,7 +117,7 @@ public abstract class ModelOptionsUtils {
 	 * @return the converted Map.
 	 */
 	public static Map<String, Object> jsonToMap(String json) {
-		return jsonToMap(json, JSON_MAPPER);
+		return jsonToMap(json, JSON_MAPPER_REF.get());
 	}
 
 	/**
@@ -116,7 +139,7 @@ public abstract class ModelOptionsUtils {
 	 * @return Object instance of the given type.
 	 */
 	public static <T> T jsonToObject(String json, Class<T> type) {
-		return JSON_MAPPER.readValue(json, type);
+		return JSON_MAPPER_REF.get().readValue(json, type);
 	}
 
 	/**
@@ -125,7 +148,7 @@ public abstract class ModelOptionsUtils {
 	 * @return the JSON string.
 	 */
 	public static String toJsonString(Object object) {
-		return JSON_MAPPER.writeValueAsString(object);
+		return JSON_MAPPER_REF.get().writeValueAsString(object);
 	}
 
 	/**
@@ -134,7 +157,7 @@ public abstract class ModelOptionsUtils {
 	 * @return the JSON string.
 	 */
 	public static String toJsonStringPrettyPrinter(Object object) {
-		return JSON_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(object);
+		return JSON_MAPPER_REF.get().writerWithDefaultPrettyPrinter().writeValueAsString(object);
 	}
 
 	/**
@@ -207,8 +230,9 @@ public abstract class ModelOptionsUtils {
 		if (source == null) {
 			return new HashMap<>();
 		}
-		String json = JSON_MAPPER.writeValueAsString(source);
-		return JSON_MAPPER.readValue(json, new TypeReference<Map<String, @Nullable Object>>() {
+		JsonMapper mapper = JSON_MAPPER_REF.get();
+		String json = mapper.writeValueAsString(source);
+		return mapper.readValue(json, new TypeReference<Map<String, @Nullable Object>>() {
 
 		})
 			.entrySet()
@@ -225,8 +249,9 @@ public abstract class ModelOptionsUtils {
 	 * @return the converted class.
 	 */
 	public static <T> T mapToClass(Map<String, Object> source, Class<T> clazz) {
-		String json = JSON_MAPPER.writeValueAsString(source);
-		return JSON_MAPPER.readValue(json, clazz);
+		JsonMapper mapper = JSON_MAPPER_REF.get();
+		String json = mapper.writeValueAsString(source);
+		return mapper.readValue(json, clazz);
 	}
 
 	/**

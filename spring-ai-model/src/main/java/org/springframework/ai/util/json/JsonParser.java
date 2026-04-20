@@ -18,6 +18,7 @@ package org.springframework.ai.util.json;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
@@ -35,15 +36,11 @@ import org.springframework.util.ClassUtils;
  */
 public final class JsonParser {
 
-	private static final JsonMapper jsonMapper;
-
-	static {
-		jsonMapper = JsonMapper.builder()
-			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-			.disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
-			.addModules(JacksonUtils.instantiateAvailableModules())
-			.build();
-	}
+	private static final AtomicReference<JsonMapper> JSON_MAPPER = new AtomicReference<>(JsonMapper.builder()
+		.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+		.disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+		.addModules(JacksonUtils.instantiateAvailableModules())
+		.build());
 
 	private JsonParser() {
 	}
@@ -53,7 +50,18 @@ public final class JsonParser {
 	 * for tool calling and structured output.
 	 */
 	public static JsonMapper getJsonMapper() {
-		return jsonMapper;
+		return JSON_MAPPER.get();
+	}
+
+	/**
+	 * Replaces the {@link JsonMapper} used by this utility. Spring AI's tool-calling
+	 * autoconfiguration wires a user-overridable named {@code jsonParserJsonMapper} bean
+	 * via this method so that applications can enable Jackson features (for example
+	 * {@code JsonReadFeature.ALLOW_UNESCAPED_CONTROL_CHARS}) without forking Spring AI.
+	 */
+	public static void setJsonMapper(JsonMapper jsonMapper) {
+		Assert.notNull(jsonMapper, "jsonMapper cannot be null");
+		JSON_MAPPER.set(jsonMapper);
 	}
 
 	/**
@@ -64,7 +72,7 @@ public final class JsonParser {
 		Assert.notNull(type, "type cannot be null");
 
 		try {
-			return jsonMapper.readValue(json, type);
+			return JSON_MAPPER.get().readValue(json, type);
 		}
 		catch (JacksonException ex) {
 			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getName()), ex);
@@ -79,7 +87,8 @@ public final class JsonParser {
 		Assert.notNull(type, "type cannot be null");
 
 		try {
-			return jsonMapper.readValue(json, jsonMapper.constructType(type));
+			JsonMapper mapper = JSON_MAPPER.get();
+			return mapper.readValue(json, mapper.constructType(type));
 		}
 		catch (JacksonException ex) {
 			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getTypeName()), ex);
@@ -94,7 +103,7 @@ public final class JsonParser {
 		Assert.notNull(type, "type cannot be null");
 
 		try {
-			return jsonMapper.readValue(json, type);
+			return JSON_MAPPER.get().readValue(json, type);
 		}
 		catch (JacksonException ex) {
 			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getType().getTypeName()),
@@ -107,7 +116,7 @@ public final class JsonParser {
 	 */
 	private static boolean isValidJson(String input) {
 		try {
-			jsonMapper.readTree(input);
+			JSON_MAPPER.get().readTree(input);
 			return true;
 		}
 		catch (JacksonException e) {
@@ -123,7 +132,7 @@ public final class JsonParser {
 			return str;
 		}
 		try {
-			return jsonMapper.writeValueAsString(object);
+			return JSON_MAPPER.get().writeValueAsString(object);
 		}
 		catch (JacksonException ex) {
 			throw new IllegalStateException("Conversion from Object to JSON failed", ex);
