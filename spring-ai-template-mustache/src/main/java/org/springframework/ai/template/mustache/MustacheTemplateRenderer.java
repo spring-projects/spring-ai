@@ -56,7 +56,7 @@ import org.springframework.util.Assert;
  * {@link MustacheFactory} is thread-safe, and each call to {@link #apply(String, Map)}
  * compiles and executes a new Mustache template instance.
  *
- * @author Hyunjoon Park
+ * @author SangHo Park
  * @since 2.0.0
  * @see <a href="https://mustache.github.io/">Mustache Template Language</a>
  * @see <a href="https://github.com/spullara/mustache.java">Mustache.java</a>
