@@ -27,6 +27,7 @@ import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
@@ -886,6 +887,17 @@ class JsonSchemaGeneratorTests {
 			.hasMessage("type cannot be null");
 	}
 
+	@Test
+	void generateSchemaForTypeRespectsJsonPropertyOrder() throws Exception {
+		String schema = JsonSchemaGenerator.generateForType(OrderedPerson.class);
+		JsonNode schemaNode = JsonParser.getJsonMapper().readTree(schema);
+		JsonNode properties = schemaNode.get("properties");
+
+		assertThat(properties).isNotNull();
+		List<String> fieldNames = new java.util.ArrayList<>(properties.propertyNames());
+		assertThat(fieldNames).containsExactly("name", "email", "id");
+	}
+
 	static class TestMethods {
 
 		public void simpleMethod(String name, int age) {
@@ -1023,6 +1035,41 @@ class JsonSchemaGeneratorTests {
 	}
 
 	record WithMapField(String name, Map<String, Integer> scores) {
+
+	}
+
+	@JsonPropertyOrder({ "name", "email", "id" })
+	static class OrderedPerson {
+
+		private int id;
+
+		private String name;
+
+		private String email;
+
+		public int getId() {
+			return this.id;
+		}
+
+		public void setId(int id) {
+			this.id = id;
+		}
+
+		public String getName() {
+			return this.name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public String getEmail() {
+			return this.email;
+		}
+
+		public void setEmail(String email) {
+			this.email = email;
+		}
 
 	}
 
