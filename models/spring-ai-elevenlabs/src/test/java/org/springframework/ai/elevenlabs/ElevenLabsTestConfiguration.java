@@ -17,6 +17,7 @@
 package org.springframework.ai.elevenlabs;
 
 import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
+import org.springframework.ai.elevenlabs.api.ElevenLabsSpeechToTextApi;
 import org.springframework.ai.elevenlabs.api.ElevenLabsVoicesApi;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.boot.SpringBootConfiguration;
@@ -53,6 +54,16 @@ public class ElevenLabsTestConfiguration {
 	@Bean
 	public ElevenLabsTextToSpeechModel elevenLabsSpeechModel() {
 		return ElevenLabsTextToSpeechModel.builder().elevenLabsApi(elevenLabsApi()).build();
+	}
+
+	@Bean
+	public ElevenLabsSpeechToTextApi elevenLabsSpeechToTextApi() {
+		return ElevenLabsSpeechToTextApi.builder().apiKey(getApiKey()).build();
+	}
+
+	@Bean
+	public ElevenLabsAudioTranscriptionModel elevenLabsAudioTranscriptionModel() {
+		return ElevenLabsAudioTranscriptionModel.builder().api(elevenLabsSpeechToTextApi()).build();
 	}
 
 }
