@@ -17,6 +17,7 @@
 package org.springframework.ai.openai.chat.proxy;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -79,7 +80,9 @@ class OllamaWithOpenAiChatModelIT {
 
 	static OllamaContainer ollamaContainer;
 
-	static String baseUrl = "http://localhost:11434/v1";
+	static String getBaseUrl() {
+		return SKIP_CONTAINER_CREATION ? "http://localhost:11434/v1" : ollamaContainer.getEndpoint() + "/v1";
+	}
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
@@ -98,7 +101,7 @@ class OllamaWithOpenAiChatModelIT {
 			ollamaContainer.execInContainer("ollama", "pull", MULTIMODAL_MODEL);
 			logger.info(DEFAULT_OLLAMA_MODEL + " pulling competed!");
 
-			baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434) + "/v1";
+			// No need to set baseUrl here, it's evaluated dynamically
 		}
 	}
 
@@ -304,7 +307,11 @@ class OllamaWithOpenAiChatModelIT {
 		@Bean
 		public OpenAiChatModel openAiSdkChatModel() {
 			return OpenAiChatModel.builder()
-				.options(OpenAiChatOptions.builder().baseUrl(baseUrl).model(DEFAULT_OLLAMA_MODEL).build())
+				.options(OpenAiChatOptions.builder()
+					.baseUrl(getBaseUrl())
+					.model(DEFAULT_OLLAMA_MODEL)
+					.timeout(Duration.ofMinutes(5))
+					.build())
 				.build();
 		}
 
