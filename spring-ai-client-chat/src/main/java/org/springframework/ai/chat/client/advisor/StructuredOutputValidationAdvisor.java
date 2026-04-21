@@ -40,6 +40,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
@@ -180,20 +181,31 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 	@SuppressWarnings("null")
 	private SchemaValidation validateOutputSchema(ChatClientResponse chatClientResponse) {
 
-		if (chatClientResponse.chatResponse() == null || chatClientResponse.chatResponse().getResult() == null
-				|| chatClientResponse.chatResponse().getResult().getOutput() == null
-				|| chatClientResponse.chatResponse().getResult().getOutput().getText() == null) {
-
+		if (chatClientResponse.chatResponse() == null) {
 			logger.warn("ChatClientResponse is missing required json output for validation.");
 			return SchemaValidation.failed("Missing required json output for validation.");
 		}
 
-		// TODO: should we consider validation for multiple results?
-		String json = chatClientResponse.chatResponse().getResult().getOutput().getText();
+		List<Generation> results = chatClientResponse.chatResponse().getResults();
+		if (results == null || results.isEmpty()) {
+			logger.warn("ChatClientResponse is missing required json output for validation.");
+			return SchemaValidation.failed("Missing required json output for validation.");
+		}
 
-		logger.debug("Validating JSON output against schema. Attempts left: {}", this.maxRepeatAttempts);
+		logger.debug("Validating {} result(s) against schema. Attempts left: {}", results.size(),
+				this.maxRepeatAttempts);
 
-		return validateJsonText(json);
+		for (Generation result : results) {
+			if (result == null || result.getOutput() == null || result.getOutput().getText() == null) {
+				return SchemaValidation.failed("Missing required json output for validation.");
+			}
+			SchemaValidation validation = validateJsonText(result.getOutput().getText());
+			if (!validation.success()) {
+				return validation;
+			}
+		}
+
+		return SchemaValidation.passed();
 	}
 
 	private SchemaValidation validateJsonText(String json) {

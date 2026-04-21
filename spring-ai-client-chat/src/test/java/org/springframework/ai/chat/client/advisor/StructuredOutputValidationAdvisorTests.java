@@ -396,7 +396,7 @@ public class StructuredOutputValidationAdvisorTests {
 
 		ChatClientRequest request = createMockRequest();
 		ChatResponse chatResponse = mock(ChatResponse.class);
-		when(chatResponse.getResult()).thenReturn(null);
+		when(chatResponse.getResults()).thenReturn(List.of());
 		ChatClientResponse nullResultResponse = mock(ChatClientResponse.class);
 		when(nullResultResponse.chatResponse()).thenReturn(chatResponse);
 
@@ -1027,6 +1027,89 @@ public class StructuredOutputValidationAdvisorTests {
 		assertThat(advisor.getName()).isEqualTo("Structured Output Validation Advisor");
 	}
 
+	@Test
+	void testValidationWithMultipleResultsAllValid() {
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputType(new TypeReference<Person>() {
+			})
+			.maxRepeatAttempts(0)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse multiResultResponse = createMockResponseWithMultipleResults(
+				"{\"name\":\"Alice\",\"age\":25}", "{\"name\":\"Bob\",\"age\":30}");
+
+		CallAdvisor terminalAdvisor = new CallAdvisor() {
+			@Override
+			public String getName() {
+				return "terminal";
+			}
+
+			@Override
+			public int getOrder() {
+				return Ordered.LOWEST_PRECEDENCE;
+			}
+
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest req, CallAdvisorChain chain) {
+				return multiResultResponse;
+			}
+		};
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ChatClientResponse result = realChain.nextCall(request);
+
+		assertThat(result).isEqualTo(multiResultResponse);
+	}
+
+	@Test
+	void testValidationWithMultipleResultsSecondInvalid() {
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputType(new TypeReference<Person>() {
+			})
+			.maxRepeatAttempts(1)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		// First result valid, second missing required 'age'
+		ChatClientResponse invalidMultiResponse = createMockResponseWithMultipleResults(
+				"{\"name\":\"Alice\",\"age\":25}", "{\"name\":\"Bob\"}");
+		String validJson = "{\"name\":\"Alice\",\"age\":25}";
+		ChatClientResponse validResponse = createMockResponse(validJson);
+
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new CallAdvisor() {
+			@Override
+			public String getName() {
+				return "terminal";
+			}
+
+			@Override
+			public int getOrder() {
+				return Ordered.LOWEST_PRECEDENCE;
+			}
+
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest req, CallAdvisorChain chain) {
+				callCount[0]++;
+				return callCount[0] == 1 ? invalidMultiResponse : validResponse;
+			}
+		};
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ChatClientResponse result = realChain.nextCall(request);
+
+		// Should retry because second result was invalid
+		assertThat(result).isEqualTo(validResponse);
+		assertThat(callCount[0]).isEqualTo(2);
+	}
+
 	// Helper methods
 
 	private ChatClientRequest createMockRequest() {
@@ -1038,6 +1121,18 @@ public class StructuredOutputValidationAdvisorTests {
 		AssistantMessage assistantMessage = new AssistantMessage(jsonOutput);
 		Generation generation = new Generation(assistantMessage);
 		ChatResponse chatResponse = new ChatResponse(List.of(generation));
+
+		ChatClientResponse response = mock(ChatClientResponse.class);
+		when(response.chatResponse()).thenReturn(chatResponse);
+
+		return response;
+	}
+
+	private ChatClientResponse createMockResponseWithMultipleResults(String... jsonOutputs) {
+		List<Generation> generations = java.util.Arrays.stream(jsonOutputs)
+			.map(json -> new Generation(new AssistantMessage(json)))
+			.toList();
+		ChatResponse chatResponse = new ChatResponse(generations);
 
 		ChatClientResponse response = mock(ChatClientResponse.class);
 		when(response.chatResponse()).thenReturn(chatResponse);
