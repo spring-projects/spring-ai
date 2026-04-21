@@ -74,6 +74,8 @@ To clone it you have to either:
 The project targets and build artifacts compatible with Java 17+, but requires JDK 21
 to build. This is enforced by the maven enforcer plugin.
 
+**NOTE:** Building Spring AI requires components that depend on your specific CPU architecture (PyTorch for example). MacOS has the ability to hide that detail for normal Java applications that will not work for building this project (this is not an issue for consuming the libraries). If you are unsure if you have the correct JDK distribution for your CPU, run the command `java -XshowSettings:properties -version 2>&1 | grep os.arch` from a fresh terminal to validate that it matches your machine.
+
 To build with running unit tests
 
 ```shell
