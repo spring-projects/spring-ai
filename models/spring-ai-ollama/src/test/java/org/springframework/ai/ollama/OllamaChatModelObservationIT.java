@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
@@ -122,7 +123,7 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 		ChatResponseMetadata responseMetadata = lastChatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata);
+		Awaitility.await().untilAsserted(() -> validate(responseMetadata));
 	}
 
 	private void validate(ChatResponseMetadata responseMetadata) {
