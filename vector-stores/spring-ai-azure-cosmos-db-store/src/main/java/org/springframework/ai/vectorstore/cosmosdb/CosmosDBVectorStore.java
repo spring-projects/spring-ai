@@ -307,8 +307,9 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 					String metadataKey = this.partitionKeyPath.substring("/metadata/".length());
 
 					// Run a reactive query to fetch the document by ID
-					String query = String.format("SELECT * FROM c WHERE c.id = '%s'", id);
-					CosmosPagedFlux<JsonNode> queryFlux = this.container.queryItems(query,
+					SqlQuerySpec querySpec = new SqlQuerySpec("SELECT * FROM c WHERE c.id = @id",
+							List.of(new SqlParameter("@id", id)));
+					CosmosPagedFlux<JsonNode> queryFlux = this.container.queryItems(querySpec,
 							new CosmosQueryRequestOptions(), JsonNode.class);
 
 					// Block to retrieve the first page synchronously
