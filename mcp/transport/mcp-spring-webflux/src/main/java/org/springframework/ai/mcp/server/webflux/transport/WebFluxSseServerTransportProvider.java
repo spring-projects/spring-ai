@@ -267,7 +267,6 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 	 * @return A Mono that completes when the notification has been sent, or empty if the
 	 * session is not found
 	 */
-
 	@Override
 	public Mono<Void> notifyClient(String sessionId, String method, Object params) {
 		return Mono.defer(() -> {
@@ -347,6 +346,7 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 					.requireNonNull(this.sessionFactory, "sessionFactory must be set before handling connections")
 					.create(sessionTransport);
 				String sessionId = session.getId();
+				sessionTransport.setSessionId(sessionId);
 
 				logger.debug("Created new SSE connection for session: {}", sessionId);
 				this.sessions.put(sessionId, session);
@@ -456,8 +456,14 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 
 		private final FluxSink<ServerSentEvent<?>> sink;
 
+		private @Nullable String sessionId;
+
 		WebFluxMcpSessionTransport(FluxSink<ServerSentEvent<?>> sink) {
 			this.sink = sink;
+		}
+
+		void setSessionId(String sessionId) {
+			this.sessionId = sessionId;
 		}
 
 		@Override
@@ -476,8 +482,8 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 					.build();
 				this.sink.next(event);
 			}).doOnError(e -> {
-				// TODO log with sessionid
 				Throwable exception = Exceptions.unwrap(e);
+				logger.error("Error sending message to session {}: {}", this.sessionId, exception.getMessage());
 				this.sink.error(exception);
 			}).then();
 		}
