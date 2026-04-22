@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,7 @@ import org.springframework.context.annotation.Conditional;
  * ToolCallbacksProviders. These providers are used by Spring AI to discover and execute
  * tools.
  */
-@AutoConfiguration(after = McpClientAutoConfiguration.class,
-		beforeName = "org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration")
+@AutoConfiguration
 @EnableConfigurationProperties(McpClientCommonProperties.class)
 @Conditional(McpToolCallbackAutoConfiguration.McpToolCallbackAutoConfigurationCondition.class)
 public class McpToolCallbackAutoConfiguration {

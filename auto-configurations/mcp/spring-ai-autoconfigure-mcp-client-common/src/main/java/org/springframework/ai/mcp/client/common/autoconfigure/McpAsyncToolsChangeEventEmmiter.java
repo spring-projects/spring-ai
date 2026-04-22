@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import io.modelcontextprotocol.util.Assert;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.McpToolsChangedEvent;
-import org.springframework.ai.mcp.customizer.McpAsyncClientCustomizer;
+import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.context.ApplicationEventPublisher;
 
 /**
@@ -30,7 +30,7 @@ import org.springframework.context.ApplicationEventPublisher;
  *
  * @author Christian Tzolov
  */
-public class McpAsyncToolsChangeEventEmmiter implements McpAsyncClientCustomizer {
+public class McpAsyncToolsChangeEventEmmiter implements McpClientCustomizer<AsyncSpec> {
 
 	private final ApplicationEventPublisher applicationEventPublisher;
 

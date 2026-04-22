@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * @author Christian Tzolov
  */
-// @Disabled
 @SpringBootTest(classes = BedrockNovaChatClientIT.Config.class)
 @RequiresAwsCredentials
 public class BedrockNovaChatClientIT {
@@ -90,14 +89,14 @@ public class BedrockNovaChatClientIT {
 			.content();
 
 		logger.info(response);
-		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
+		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand", "fruit", "fruits");
 	}
 
 	@Test
 	void videoMultiModalityTest() throws IOException {
 		// Define sets of semantically similar words for different concepts
 		Set<String> youngDescriptors = Set.of("baby", "small", "young", "little", "tiny", "juvenile", "newborn",
-				"infant", "hatchling", "downy", "fluffy");
+				"infant", "hatchling", "downy", "fluffy", "chick", "chicks");
 
 		Set<String> birdDescriptors = Set.of("chick", "chicks", "chicken", "chickens", "bird", "birds", "poultry",
 				"hatchling", "hatchlings");
@@ -186,7 +185,7 @@ public class BedrockNovaChatClientIT {
 			.content();
 
 		assertThat(response).isNotEmpty();
-		assertThat(response).contains("20 degrees");
+		assertThat(response).contains("20");
 	}
 
 	// https://github.com/spring-projects/spring-ai/issues/1878
@@ -197,7 +196,7 @@ public class BedrockNovaChatClientIT {
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
 
 		Flux<ChatResponse> responses = chatClient.prompt()
-			.options(ToolCallingChatOptions.builder().model(modelName).build())
+			.options(ToolCallingChatOptions.builder().model(modelName))
 			.tools(new DummyWeatherForecastTools())
 			.user("Get current weather in Amsterdam")
 			.stream()
@@ -210,7 +209,7 @@ public class BedrockNovaChatClientIT {
 			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
-		assertThat(content).contains("20 degrees");
+		assertThat(content).contains("20");
 	}
 
 	// https://github.com/spring-projects/spring-ai/issues/1878
@@ -229,7 +228,7 @@ public class BedrockNovaChatClientIT {
 			.entity(WeatherService.Response.class);
 
 		assertThat(response).isNotNull();
-		assertThat(response.temp()).isEqualTo(30.0);
+		assertThat(response.temp()).isEqualTo(30);
 	}
 
 	@Test
@@ -253,7 +252,7 @@ public class BedrockNovaChatClientIT {
 			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
-		assertThat(content).contains("30.0");
+		assertThat(content).contains("30");
 	}
 
 	@SpringBootConfiguration

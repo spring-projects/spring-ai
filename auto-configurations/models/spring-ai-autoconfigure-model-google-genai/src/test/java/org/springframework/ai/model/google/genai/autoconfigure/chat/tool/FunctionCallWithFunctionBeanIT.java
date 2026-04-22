@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,11 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.model.google.genai.autoconfigure.chat.GoogleGenAiChatAutoConfiguration;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -48,12 +50,13 @@ public class FunctionCallWithFunctionBeanIT {
 	private static final Logger logger = LoggerFactory.getLogger(FunctionCallWithFunctionBeanIT.class);
 
 	@Test
-	@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".*")
+	@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
 	void functionCallWithApiKey() {
 		ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.google.genai.api-key=" + System.getenv("GOOGLE_API_KEY"))
-			.withConfiguration(SpringAiTestAutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class,
-					RestClientAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class, RestClientAutoConfiguration.class,
+							SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.withUserConfiguration(FunctionConfiguration.class);
 
 		contextRunner.run(context -> {
@@ -62,7 +65,7 @@ public class FunctionCallWithFunctionBeanIT {
 
 			var options = GoogleGenAiChatOptions.builder()
 				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
-				.toolName("CurrentWeatherService")
+				.toolNames("CurrentWeatherService")
 				.build();
 
 			Prompt prompt = new Prompt("What's the weather like in San Francisco, Paris and in Tokyo?"
@@ -72,19 +75,20 @@ public class FunctionCallWithFunctionBeanIT {
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getText()).contains("30.5", "10.5", "15.5");
+			assertThat(response.getResult().getOutput().getText()).contains("30.789", "10.456", "15.123");
 		});
 	}
 
 	@Test
-	@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
-	@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
+	@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
+	@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".+")
 	void functionCallWithVertexAi() {
 		ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.google.genai.project-id=" + System.getenv("GOOGLE_CLOUD_PROJECT"),
 					"spring.ai.google.genai.location=" + System.getenv("GOOGLE_CLOUD_LOCATION"))
-			.withConfiguration(SpringAiTestAutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class,
-					RestClientAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class, RestClientAutoConfiguration.class,
+							SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.withUserConfiguration(FunctionConfiguration.class);
 
 		contextRunner.run(context -> {
@@ -93,7 +97,7 @@ public class FunctionCallWithFunctionBeanIT {
 
 			var options = GoogleGenAiChatOptions.builder()
 				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
-				.toolName("CurrentWeatherService")
+				.toolNames("CurrentWeatherService")
 				.build();
 
 			Prompt prompt = new Prompt("What's the weather like in San Francisco, Paris and in Tokyo?"
@@ -103,7 +107,7 @@ public class FunctionCallWithFunctionBeanIT {
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getText()).contains("30.5", "10.5", "15.5");
+			assertThat(response.getResult().getOutput().getText()).contains("30.789", "10.456", "15.123");
 		});
 	}
 

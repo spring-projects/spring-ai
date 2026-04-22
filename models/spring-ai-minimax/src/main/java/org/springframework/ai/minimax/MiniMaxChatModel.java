@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -238,8 +238,6 @@ public class MiniMaxChatModel implements ChatModel {
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
-		// Before moving any further, build the final request Prompt,
-		// merging runtime and default options.
 		Prompt requestPrompt = buildRequestPrompt(prompt);
 		ChatCompletionRequest request = createRequest(requestPrompt, false);
 
@@ -466,45 +464,12 @@ public class MiniMaxChatModel implements ChatModel {
 
 	Prompt buildRequestPrompt(Prompt prompt) {
 		// Process runtime options
-		MiniMaxChatOptions runtimeOptions = null;
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-						MiniMaxChatOptions.class);
-			}
-			else {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						MiniMaxChatOptions.class);
-			}
-		}
+		MiniMaxChatOptions runtimeOptions = (MiniMaxChatOptions) prompt.getOptions();
+		runtimeOptions = runtimeOptions == null ? this.defaultOptions : runtimeOptions;
 
-		// Define request options by merging runtime options and default options
-		MiniMaxChatOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
-				MiniMaxChatOptions.class);
+		ToolCallingChatOptions.validateToolCallbacks(runtimeOptions.getToolCallbacks());
 
-		// Merge @JsonIgnore-annotated options explicitly since they are ignored by
-		// Jackson, used by ModelOptionsUtils.
-		if (runtimeOptions != null) {
-			requestOptions.setInternalToolExecutionEnabled(
-					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
-							this.defaultOptions.getInternalToolExecutionEnabled()));
-			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
-					this.defaultOptions.getToolNames()));
-			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
-					this.defaultOptions.getToolCallbacks()));
-			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
-					this.defaultOptions.getToolContext()));
-		}
-		else {
-			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
-			requestOptions.setToolNames(this.defaultOptions.getToolNames());
-			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
-			requestOptions.setToolContext(this.defaultOptions.getToolContext());
-		}
-
-		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
-
-		return new Prompt(prompt.getInstructions(), requestOptions);
+		return prompt.mutate().chatOptions(runtimeOptions).build();
 	}
 
 	/**
@@ -549,32 +514,30 @@ public class MiniMaxChatModel implements ChatModel {
 
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
 		MiniMaxChatOptions requestOptions = (MiniMaxChatOptions) prompt.getOptions();
-		request = ModelOptionsUtils.merge(requestOptions, request, ChatCompletionRequest.class);
+
+		request = new ChatCompletionRequest(request.messages(),
+				ModelOptionsUtils.mergeOption(requestOptions.getModel(), request.model()),
+				ModelOptionsUtils.mergeOption(requestOptions.getFrequencyPenalty(), request.frequencyPenalty()),
+				ModelOptionsUtils.mergeOption(requestOptions.getMaxTokens(), request.maxTokens()),
+				ModelOptionsUtils.mergeOption(requestOptions.getN(), request.n()),
+				ModelOptionsUtils.mergeOption(requestOptions.getPresencePenalty(), request.presencePenalty()),
+				ModelOptionsUtils.mergeOption(requestOptions.getResponseFormat(), request.responseFormat()),
+				ModelOptionsUtils.mergeOption(requestOptions.getSeed(), request.seed()),
+				ModelOptionsUtils.mergeOption(requestOptions.getStop(), request.stop()), request.stream(),
+				ModelOptionsUtils.mergeOption(requestOptions.getTemperature(), request.temperature()),
+				ModelOptionsUtils.mergeOption(requestOptions.getTopP(), request.topP()),
+				ModelOptionsUtils.mergeOption(requestOptions.getMaskSensitiveInfo(), request.maskSensitiveInfo()),
+				ModelOptionsUtils.mergeOption(requestOptions.getTools(), request.tools()),
+				ModelOptionsUtils.mergeOption(requestOptions.getToolChoice(), request.toolChoice()));
 
 		// Add the tool definitions to the request's tools parameter.
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
-			request = ModelOptionsUtils.merge(
-					MiniMaxChatOptions.builder().tools(this.getFunctionTools(toolDefinitions)).build(), request,
-					ChatCompletionRequest.class);
+			request = new ChatCompletionRequest(request.messages(), request.model(), request.frequencyPenalty(),
+					request.maxTokens(), request.n(), request.presencePenalty(), request.responseFormat(),
+					request.seed(), request.stop(), request.stream(), request.temperature(), request.topP(),
+					request.maskSensitiveInfo(), this.getFunctionTools(toolDefinitions), request.toolChoice());
 		}
-
-		if (prompt.getOptions() != null) {
-			MiniMaxChatOptions updatedRuntimeOptions;
-
-			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions,
-						ToolCallingChatOptions.class, MiniMaxChatOptions.class);
-			}
-			else {
-				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						MiniMaxChatOptions.class);
-			}
-
-			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
-		}
-
-		request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
 
 		return request;
 	}

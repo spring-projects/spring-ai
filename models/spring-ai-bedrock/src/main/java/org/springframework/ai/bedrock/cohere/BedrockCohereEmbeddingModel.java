@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -124,16 +124,15 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 	 */
 	BedrockCohereEmbeddingOptions mergeOptions(EmbeddingOptions requestOptions) {
 
-		BedrockCohereEmbeddingOptions options = (this.defaultOptions != null) ? this.defaultOptions
-				: BedrockCohereEmbeddingOptions.builder()
-					.inputType(CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT)
-					.truncate(CohereEmbeddingRequest.Truncate.NONE)
-					.build();
-
-		if (requestOptions != null) {
-			options = ModelOptionsUtils.merge(requestOptions, options, BedrockCohereEmbeddingOptions.class);
+		BedrockCohereEmbeddingOptions options = this.defaultOptions;
+		// BedrockCohereEmbeddingOptions disregards options from EmbeddingOptions, so only
+		// specific options make sense here
+		if (requestOptions instanceof BedrockCohereEmbeddingOptions ro) {
+			options = BedrockCohereEmbeddingOptions.builder()
+				.inputType(ModelOptionsUtils.mergeOption(ro.getInputType(), options.getInputType()))
+				.truncate(ModelOptionsUtils.mergeOption(ro.getTruncate(), options.getTruncate()))
+				.build();
 		}
-
 		return options;
 	}
 

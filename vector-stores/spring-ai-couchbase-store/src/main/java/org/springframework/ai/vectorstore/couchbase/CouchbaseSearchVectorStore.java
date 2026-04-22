@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -189,7 +189,15 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 
 		QueryResult result = this.scope.query(statement, QueryOptions.queryOptions());
 
-		return result.rowsAs(Document.class);
+		// Deserialize to CouchbaseDocument then map to Document: Couchbase SDK uses its
+		// own bundled Jackson 2 (com.couchbase.client.core.deps) for rowsAs(); Spring AI
+		// Document cannot be deserialized from our stored shape (id, content, metadata,
+		// embedding)
+		// by that ObjectMapper, so we use the store's native type and convert explicitly.
+		return result.rowsAs(CouchbaseDocument.class)
+			.stream()
+			.map(cbDoc -> new Document(cbDoc.id(), cbDoc.content(), cbDoc.metadata()))
+			.toList();
 	}
 
 	@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.mistralai.MistralAiChatOptions.Builder;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
@@ -37,8 +38,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * @author Alexandros Pappas
  */
-class MistralAiChatOptionsTests<B extends MistralAiChatOptions.Builder<B>>
-		extends AbstractChatOptionsTests<MistralAiChatOptions, B> {
+class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOptions, Builder> {
 
 	@Test
 	void testBuilderWithAllFields() {
@@ -555,9 +555,8 @@ class MistralAiChatOptionsTests<B extends MistralAiChatOptions.Builder<B>>
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	protected B readyToBuildBuilder() {
-		return (B) MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_SMALL).maxTokens(500);
+	protected Builder readyToBuildBuilder() {
+		return MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_SMALL).maxTokens(500);
 	}
 
 	// Test record for schema generation tests

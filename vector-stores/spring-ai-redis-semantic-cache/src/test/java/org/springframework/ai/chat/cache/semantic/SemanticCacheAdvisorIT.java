@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,10 +41,8 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore;
@@ -58,7 +56,6 @@ import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.retry.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -76,7 +73,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Testcontainers
 @SpringBootTest(classes = SemanticCacheAdvisorIT.TestApplication.class)
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class SemanticCacheAdvisorIT {
 
 	@Container
@@ -976,14 +973,17 @@ class SemanticCacheAdvisorIT {
 
 		@Bean(name = "openAiChatModel")
 		public OpenAiChatModel openAiChatModel(ObservationRegistry observationRegistry) {
-			var openAiApi = OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build();
+
 			var openAiChatOptions = OpenAiChatOptions.builder()
+				.apiKey(System.getenv("OPENAI_API_KEY"))
 				.model("gpt-3.5-turbo")
 				.temperature(0.4)
 				.maxTokens(200)
 				.build();
-			return new OpenAiChatModel(openAiApi, openAiChatOptions, ToolCallingManager.builder().build(),
-					new RetryTemplate(), observationRegistry);
+			return OpenAiChatModel.builder()
+				.options(openAiChatOptions)
+				.observationRegistry(observationRegistry)
+				.build();
 		}
 
 	}

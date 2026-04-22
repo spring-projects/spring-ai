@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import com.azure.ai.openai.models.AzureChatOCREnhancementConfiguration;
 import com.azure.ai.openai.models.ChatCompletionStreamOptions;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.azure.openai.AzureOpenAiChatOptions.Builder;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,8 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Alexandros Pappas
  */
-class AzureOpenAiChatOptionsTests<B extends AzureOpenAiChatOptions.Builder<B>>
-		extends AbstractChatOptionsTests<AzureOpenAiChatOptions, B> {
+class AzureOpenAiChatOptionsTests extends AbstractChatOptionsTests<AzureOpenAiChatOptions, Builder> {
 
 	@Override
 	protected Class<AzureOpenAiChatOptions> getConcreteOptionsClass() {
@@ -43,8 +44,8 @@ class AzureOpenAiChatOptionsTests<B extends AzureOpenAiChatOptions.Builder<B>>
 	}
 
 	@Override
-	protected B readyToBuildBuilder() {
-		return (B) AzureOpenAiChatOptions.builder();
+	protected Builder readyToBuildBuilder() {
+		return AzureOpenAiChatOptions.builder();
 	}
 
 	@Test
@@ -406,6 +407,20 @@ class AzureOpenAiChatOptionsTests<B extends AzureOpenAiChatOptions.Builder<B>>
 
 		assertThat(optionsWithMaxCompletionTokens.getMaxTokens()).isNull();
 		assertThat(optionsWithMaxCompletionTokens.getMaxCompletionTokens()).isEqualTo(300);
+	}
+
+	@Test
+	void stopFieldShouldBeNullAfterJacksonRoundtrip() {
+		// Create options where stop is null (via builder)
+		var options = AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").build();
+		assertThat(options.getStop()).isNull();
+
+		// ModelOptionsUtils.merge() uses Jackson roundtrip internally
+		var source = AzureOpenAiChatOptions.builder().temperature(0.7).build();
+		var merged = ModelOptionsUtils.merge(source, options, AzureOpenAiChatOptions.class);
+
+		// Should be null, not []
+		assertThat(merged.getStop()).isNull();
 	}
 
 }

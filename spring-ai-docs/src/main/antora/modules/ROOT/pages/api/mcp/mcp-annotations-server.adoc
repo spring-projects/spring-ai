@@ -25,13 +25,49 @@ public class CalculatorTools {
 }
 ----
 
-==== Advanced Features
+==== Annotation Attributes
+
+The `@McpTool` annotation supports the following attributes:
+
+[cols="1,1,3"]
+|===
+|Attribute |Default |Description
+
+|`name`
+|method name
+|The tool identifier. Defaults to the method name if not provided.
+
+|`description`
+|method name
+|Human-readable description of the tool.
+
+|`title`
+|`""`
+|Intended for UI and end-user contexts — optimized to be human-readable. If not provided, `name` is used for display. (Precedence: `annotations.title` > `title` > `name`)
+
+|`generateOutputSchema`
+|`false`
+|If `true`, automatically generates a JSON output schema for non-primitive return types.
+
+|`annotations`
+|`@McpAnnotations`
+|Additional hints for clients (see tool annotations below).
+
+|`metaProvider`
+|`DefaultMetaProvider.class`
+|Class implementing `MetaProvider` that supplies data for the `_meta` field in the tool declaration.
+
+|===
+
+==== Tool Annotations (Hints)
 
 [source,java]
 ----
-@McpTool(name = "calculate-area", 
+@McpTool(name = "calculate-area",
          description = "Calculate the area of a rectangle",
-         annotations = McpTool.McpAnnotations(
+         title = "Rectangle Area Calculator",
+         generateOutputSchema = true,
+         annotations = @McpTool.McpAnnotations(
              title = "Rectangle Area Calculator",
              readOnlyHint = true,
              destructiveHint = false,
@@ -40,10 +76,38 @@ public class CalculatorTools {
 public AreaResult calculateRectangleArea(
         @McpToolParam(description = "Width", required = true) double width,
         @McpToolParam(description = "Height", required = true) double height) {
-    
+
     return new AreaResult(width * height, "square units");
 }
 ----
+
+The `McpAnnotations` nested annotation provides client hints:
+
+[cols="1,1,3"]
+|===
+|Hint |Default |Description
+
+|`title`
+|`""`
+|Human-readable title for the tool.
+
+|`readOnlyHint`
+|`false`
+|If `true`, the tool does not modify its environment.
+
+|`destructiveHint`
+|`true`
+|If `true`, the tool may perform destructive updates (meaningful only when `readOnlyHint == false`).
+
+|`idempotentHint`
+|`false`
+|If `true`, calling with the same arguments has no additional effect (meaningful only when `readOnlyHint == false`).
+
+|`openWorldHint`
+|`true`
+|If `true`, the tool may interact with external entities (e.g., web search). If `false`, the domain is closed.
+
+|===
 
 ==== With Request Context
 
@@ -118,6 +182,62 @@ public String performLongTask(
 
 The `@McpResource` annotation provides access to resources via URI templates.
 
+==== Annotation Attributes
+
+[cols="1,1,3"]
+|===
+|Attribute |Default |Description
+
+|`uri`
+|`""`
+|The URI (or URI template) of the resource. Use `+{varName}+` for template variables.
+
+|`name`
+|`""`
+|Programmatic identifier. Also used as display name when `title` is absent.
+
+|`title`
+|`""`
+|Optional human-readable name for display purposes.
+
+|`description`
+|`""`
+|Description of what the resource represents.
+
+|`mimeType`
+|`"text/plain"`
+|The MIME type of the resource content.
+
+|`metaProvider`
+|`DefaultMetaProvider.class`
+|Class implementing `MetaProvider` that supplies data for the `_meta` field.
+
+|`annotations`
+|`@McpAnnotations(...)`
+|Client annotations for audience, priority, and last-modified metadata.
+
+|===
+
+The nested `McpAnnotations` for resources supports:
+
+[cols="1,1,3"]
+|===
+|Attribute |Default |Description
+
+|`audience`
+|`{Role.USER}`
+|Describes intended consumers (`Role.USER`, `Role.ASSISTANT`, or both).
+
+|`priority`
+|`0.5`
+|Importance from `0.0` (least) to `1.0` (most). A value of `1.0` indicates effectively required.
+
+|`lastModified`
+|`""`
+|ISO 8601 date-time when the resource was last modified.
+
+|===
+
 ==== Basic Usage
 
 [source,java]
@@ -126,8 +246,9 @@ The `@McpResource` annotation provides access to resources via URI templates.
 public class ResourceProvider {
 
     @McpResource(
-        uri = "config://{key}", 
-        name = "Configuration", 
+        uri = "config://{key}",
+        name = "Configuration",
+        title = "App Configuration",
         description = "Provides configuration data")
     public String getConfig(String key) {
         return configData.get(key);
@@ -184,6 +305,30 @@ public ReadResourceResult getData(
 === @McpPrompt
 
 The `@McpPrompt` annotation generates prompt messages for AI interactions.
+
+==== Annotation Attributes
+
+[cols="1,1,3"]
+|===
+|Attribute |Default |Description
+
+|`name`
+|`""`
+|Unique identifier for the prompt.
+
+|`title`
+|`""`
+|Optional human-readable name for display purposes.
+
+|`description`
+|`""`
+|Optional human-readable description.
+
+|`metaProvider`
+|`DefaultMetaProvider.class`
+|Class implementing `MetaProvider` that supplies data for the `_meta` field.
+
+|===
 
 ==== Basic Usage
 
@@ -243,9 +388,14 @@ public GetPromptResult personalizedMessage(
 
 === @McpComplete
 
-The `@McpComplete` annotation provides auto-completion functionality for prompts.
+The `@McpComplete` annotation provides auto-completion functionality for prompts and resource URI templates.
 
-==== Basic Usage
+Use either the `prompt` or `uri` attribute — not both simultaneously:
+
+* `prompt` — completes an argument of the named prompt
+* `uri` — completes a URI template expression of the named resource URI
+
+==== Prompt Argument Completion
 
 [source,java]
 ----
@@ -259,6 +409,19 @@ public class CompletionProvider {
             .limit(10)
             .toList();
     }
+}
+----
+
+==== Resource URI Completion
+
+[source,java]
+----
+@McpComplete(uri = "config://{key}")
+public List<String> completeConfigKey(String prefix) {
+    return configKeys.stream()
+        .filter(key -> key.startsWith(prefix))
+        .limit(10)
+        .toList();
 }
 ----
 
@@ -336,13 +499,19 @@ public String unifiedTool(
             // Use elicited data
         }
     }
-    
+
     if (context.sampleEnabled()) {
         // Request LLM sampling (only in stateful mode)
         CreateMessageResult samplingResult = context.sample("Generate response");
         // Use sampling result
     }
-    
+
+    // Access root directories (only in stateful mode)
+    if (context.rootsEnabled()) {
+        ListRootsResult roots = context.roots();
+        roots.roots().forEach(root -> context.info("Root: " + root.uri()));
+    }
+
     return "Processed with unified context";
 }
 ----

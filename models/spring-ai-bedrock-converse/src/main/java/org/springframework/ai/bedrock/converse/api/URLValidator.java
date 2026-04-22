@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,11 @@
 
 package org.springframework.ai.bedrock.converse.api;
 
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.regex.Pattern;
 
 /**
@@ -47,9 +49,14 @@ public final class URLValidator {
 	}
 
 	/**
-	 * Quick validation using regex pattern Good for basic checks but may not catch all
-	 * edge cases
+	 * Check if the string looks like a URL using a simple regex pattern to disstinct it
+	 * from base64 or other text. This is a quick check to avoid unnecessary URL parsing
+	 * for clearly non-URL strings.
+	 * @deprecated This method is not sufficient for security-sensitive URL validation and
+	 * should not be relied upon for security-critical checks. Use
+	 * {@link #isValidURLStrict(String)} instead for robust validation.
 	 */
+	@Deprecated
 	public static boolean isValidURLBasic(String urlString) {
 		if (urlString == null || urlString.trim().isEmpty()) {
 			return false;
@@ -77,13 +84,23 @@ public final class URLValidator {
 				return false;
 			}
 
-			// Validate host (not empty and contains at least one dot, unless it's
-			// localhost)
+			// Validate host (not empty)
+			// IPv6 hosts contain ':' instead of '.', so skip the dot check for them
 			String host = url.getHost();
 			if (host == null || host.isEmpty()) {
 				return false;
 			}
-			if (!host.equals("localhost") && !host.contains(".")) {
+			boolean isIPv6 = host.contains(":");
+			if (!isIPv6 && !host.contains(".")) {
+				return false;
+			}
+
+			// Block internal/private addresses (loopback, link-local, site-local)
+			// including raw IP literals that bypass the dot-based localhost check
+			try {
+				assertNoInternalAddress(host);
+			}
+			catch (SecurityException e) {
 				return false;
 			}
 
@@ -98,6 +115,41 @@ public final class URLValidator {
 		catch (MalformedURLException | URISyntaxException e) {
 			return false;
 		}
+	}
+
+	/**
+	 * Resolves all IP addresses for the given hostname and throws
+	 * {@link SecurityException} if any resolve to a loopback, link-local, site-local, or
+	 * wildcard address. Protects against SSRF via internal network access (including IPv6
+	 * equivalents) and limits exposure from DNS rebinding by checking all returned
+	 * addresses.
+	 * @param host the hostname to check
+	 * @throws SecurityException if the host resolves to a blocked internal address or
+	 * cannot be resolved
+	 */
+	public static void assertNoInternalAddress(String host) {
+		try {
+			for (InetAddress address : InetAddress.getAllByName(host)) {
+				if (isBlockedAddress(address)) {
+					throw new SecurityException("URL host '" + host + "' resolves to a blocked internal address: "
+							+ address.getHostAddress());
+				}
+			}
+		}
+		catch (UnknownHostException e) {
+			throw new SecurityException("Failed to resolve host: " + host, e);
+		}
+	}
+
+	/**
+	 * Returns {@code true} if the given address is a loopback, link-local, site-local, or
+	 * wildcard address. Covers both IPv4 and IPv6 private/internal ranges.
+	 * @param address the address to test
+	 * @return {@code true} if the address should be blocked
+	 */
+	public static boolean isBlockedAddress(InetAddress address) {
+		return address.isLoopbackAddress() || address.isLinkLocalAddress() || address.isSiteLocalAddress()
+				|| address.isAnyLocalAddress();
 	}
 
 	/**

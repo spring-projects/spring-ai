@@ -5,6 +5,42 @@ These parameters are automatically injected by the framework and are excluded fr
 
 == Special Parameter Types
 
+=== MetaProvider
+
+The `MetaProvider` interface supplies data for the `_meta` field in tool, prompt, and resource declarations.
+
+==== Overview
+
+* Implemented as a class referenced in `@McpTool(metaProvider = ...)`, `@McpPrompt(metaProvider = ...)`, or `@McpResource(metaProvider = ...)`
+* Allows attaching static or computed metadata to a tool/prompt/resource specification at startup
+* The default `DefaultMetaProvider` returns an empty map (no `_meta` appended)
+
+==== Custom MetaProvider
+
+[source,java]
+----
+public class MyToolMetaProvider implements MetaProvider {
+
+    @Override
+    public Map<String, Object> getMeta() {
+        return Map.of(
+            "version", "1.0",
+            "team", "platform",
+            "experimental", false
+        );
+    }
+}
+
+@McpTool(name = "my-tool",
+         description = "Tool with metadata",
+         metaProvider = MyToolMetaProvider.class)
+public String myTool(@McpToolParam(description = "Input") String input) {
+    return "Processed: " + input;
+}
+----
+
+The same pattern applies to `@McpPrompt` and `@McpResource`.
+
 === McpMeta
 
 The `McpMeta` class provides access to metadata from MCP requests, notifications, and results.
@@ -170,8 +206,39 @@ Request context objects provide unified access to MCP request information and se
 * Provides unified interface for both stateful and stateless operations
 * Automatically injected when used as a parameter
 * Excluded from JSON schema generation
-* Enables advanced features like logging, progress notifications, sampling, and elicitation
+* Enables advanced features like logging, progress notifications, sampling, elicitation, and roots access
 * Works with both stateful (server exchange) and stateless (transport context) modes
+
+==== Context Getters
+
+Both `McpSyncRequestContext` and `McpAsyncRequestContext` expose the following read-only context:
+
+[cols="1,3"]
+|===
+|Method |Description
+
+|`request()`
+|The original MCP request (e.g., `CallToolRequest`, `ReadResourceRequest`). Use `request().progressToken()` to access the progress token.
+
+|`exchange()`
+|The underlying server exchange (`McpSyncServerExchange` / `McpAsyncServerExchange`). Available in stateful mode only; `null` in stateless mode.
+
+|`sessionId()`
+|The current session identifier.
+
+|`clientInfo()`
+|The client implementation info (`Implementation`).
+
+|`clientCapabilities()`
+|The capabilities declared by the client.
+
+|`requestMeta()`
+|Metadata map from the `_meta` field of the request. Prefer this over injecting `McpMeta` when already using a context object.
+
+|`transportContext()`
+|The transport-level context (`McpTransportContext`).
+
+|===
 
 ==== McpSyncRequestContext Features
 
@@ -215,7 +282,13 @@ public String advancedTool(
                 .modelPreferences(pref -> pref.modelHints("gpt-4"))
         );
     }
-    
+
+    // Access client root directories (only available in stateful mode)
+    if (context.rootsEnabled()) {
+        ListRootsResult roots = context.roots();
+        roots.roots().forEach(root -> context.info("Client root: " + root.uri()));
+    }
+
     return "Processed with advanced features";
 }
 ----
@@ -395,11 +468,12 @@ public CallToolResult flexibleWithProgress(
 
 The following parameters are automatically injected by the framework:
 
-1. `McpMeta` - Metadata from the request
+1. `McpMeta` - Metadata from the `_meta` field of the request
 2. `@McpProgressToken String` - Progress token if available
-3. `McpSyncServerExchange` / `McpAsyncServerExchange` - Server exchange context
-4. `McpTransportContext` - Transport context for stateless operations
-5. `CallToolRequest` - Full tool request for dynamic schema
+3. `McpSyncRequestContext` / `McpAsyncRequestContext` - Unified request context (recommended)
+4. `McpSyncServerExchange` / `McpAsyncServerExchange` - Low-level server exchange context (stateful only)
+5. `McpTransportContext` - Transport context for stateless operations
+6. `CallToolRequest` - Full tool request for dynamic schema (tools only)
 
 === Schema Generation
 

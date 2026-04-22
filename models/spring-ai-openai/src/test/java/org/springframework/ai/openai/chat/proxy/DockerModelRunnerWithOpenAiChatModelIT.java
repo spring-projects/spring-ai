@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.DockerModelRunnerContainer;
+import org.testcontainers.containers.SocatContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Flux;
@@ -48,9 +48,8 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.chat.ActorsFilms;
+import org.springframework.ai.openai.chat.MockWeatherService;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -77,7 +76,7 @@ class DockerModelRunnerWithOpenAiChatModelIT {
 	private static final String DEFAULT_MODEL = "ai/gemma3:4B-F16";
 
 	@Container
-	private static final DockerModelRunnerContainer DMR = new DockerModelRunnerContainer("alpine/socat:1.7.4.3-r0");
+	private static final SocatContainer socat = new SocatContainer().withTarget(80, "model-runner.docker.internal");
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
@@ -89,7 +88,7 @@ class DockerModelRunnerWithOpenAiChatModelIT {
 	public static void beforeAll() throws IOException, InterruptedException {
 		logger.info("Start pulling the '" + DEFAULT_MODEL + "' generative ... would take several minutes ...");
 
-		String baseUrl = "http://%s:%d".formatted(DMR.getHost(), DMR.getMappedPort(80));
+		String baseUrl = "http://%s:%d".formatted(socat.getHost(), socat.getMappedPort(80));
 
 		RestAssured.given().baseUri(baseUrl).body("""
 				{
@@ -329,7 +328,7 @@ class DockerModelRunnerWithOpenAiChatModelIT {
 	void validateCallResponseMetadata() {
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(OpenAiChatOptions.builder().model(DEFAULT_MODEL).build())
+				.options(OpenAiChatOptions.builder().model(DEFAULT_MODEL))
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.call()
 				.chatResponse();
@@ -351,15 +350,15 @@ class DockerModelRunnerWithOpenAiChatModelIT {
 	static class Config {
 
 		@Bean
-		public OpenAiApi chatCompletionApi() {
-			return OpenAiApi.builder().baseUrl(DMR.getOpenAIEndpoint()).apiKey("test").build();
-		}
-
-		@Bean
-		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
+		public OpenAiChatModel openAiClient() {
+			var baseUrl = "http://%s:%d/engines".formatted(socat.getHost(), socat.getMappedPort(80));
 			return OpenAiChatModel.builder()
-				.openAiApi(openAiApi)
-				.defaultOptions(OpenAiChatOptions.builder().maxTokens(2048).model(DEFAULT_MODEL).build())
+				.options(OpenAiChatOptions.builder()
+					.baseUrl(baseUrl)
+					.apiKey("test")
+					.maxTokens(2048)
+					.model(DEFAULT_MODEL)
+					.build())
 				.build();
 		}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.springframework.ai.anthropic;
 
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.ai.anthropic.api.CitationDocument;
 import org.springframework.util.Assert;
 
 /**
@@ -44,23 +43,9 @@ import org.springframework.util.Assert;
  * start/end indices</li>
  * </ul>
  *
- * <h3>Example Usage</h3>
- *
- * <pre>{@code
- * ChatResponse response = chatModel.call(prompt);
- *
- * List<Citation> citations = (List<Citation>) response.getMetadata().get("citations");
- *
- * for (Citation citation : citations) {
- *     System.out.println("Document: " + citation.getDocumentTitle());
- *     System.out.println("Location: " + citation.getLocationDescription());
- *     System.out.println("Text: " + citation.getCitedText());
- * }
- * }</pre>
- *
  * @author Soby Chacko
  * @since 1.1.0
- * @see CitationDocument
+ * @see AnthropicCitationDocument
  */
 public final class Citation {
 
@@ -76,7 +61,10 @@ public final class Citation {
 		PAGE_LOCATION,
 
 		/** Block-based location for custom content documents */
-		CONTENT_BLOCK_LOCATION
+		CONTENT_BLOCK_LOCATION,
+
+		/** URL-based location for web search results */
+		WEB_SEARCH_RESULT_LOCATION
 
 	}
 
@@ -100,6 +88,8 @@ public final class Citation {
 	private @Nullable Integer startBlockIndex;
 
 	private @Nullable Integer endBlockIndex;
+
+	private @Nullable String url;
 
 	// Private constructor
 	private Citation(LocationType type, String citedText, int documentIndex, @Nullable String documentTitle) {
@@ -160,6 +150,21 @@ public final class Citation {
 		return citation;
 	}
 
+	/**
+	 * Create a web search result location citation. For this type,
+	 * {@link #getDocumentIndex()} returns 0 and is not meaningful — use {@link #getUrl()}
+	 * instead.
+	 * @param citedText the text that was cited from the search result
+	 * @param url the URL of the search result
+	 * @param documentTitle the title of the web page
+	 * @return a new Citation with WEB_SEARCH_RESULT_LOCATION type
+	 */
+	public static Citation ofWebSearchResultLocation(String citedText, String url, @Nullable String documentTitle) {
+		Citation citation = new Citation(LocationType.WEB_SEARCH_RESULT_LOCATION, citedText, 0, documentTitle);
+		citation.url = url;
+		return citation;
+	}
+
 	public LocationType getType() {
 		return this.type;
 	}
@@ -200,6 +205,10 @@ public final class Citation {
 		return this.endBlockIndex;
 	}
 
+	public @Nullable String getUrl() {
+		return this.url;
+	}
+
 	/**
 	 * Get a human-readable location description.
 	 */
@@ -219,6 +228,10 @@ public final class Citation {
 				yield this.startBlockIndex.equals(this.endBlockIndex - 1)
 						? String.format("Block %d", this.startBlockIndex)
 						: String.format("Blocks %d-%d", this.startBlockIndex, this.endBlockIndex - 1);
+			}
+			case WEB_SEARCH_RESULT_LOCATION -> {
+				Assert.state(this.url != null, "url must be defined with web search result location");
+				yield this.url;
 			}
 		};
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.util.StringUtils;
@@ -42,10 +41,9 @@ import org.springframework.util.StringUtils;
  * @author Brian Sam-Bodden
  * @author Eddú Meléndez
  */
-@AutoConfiguration(after = DataRedisAutoConfiguration.class)
+@AutoConfiguration
 @ConditionalOnClass({ DefaultSemanticCache.class, JedisPooled.class, CallAdvisor.class, StreamAdvisor.class,
 		TransformersEmbeddingModel.class })
-@ConditionalOnBean(JedisConnectionFactory.class)
 @EnableConfigurationProperties(RedisSemanticCacheProperties.class)
 @ConditionalOnProperty(name = "spring.ai.vectorstore.redis.semantic-cache.enabled", havingValue = "true",
 		matchIfMissing = true)

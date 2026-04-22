@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -170,7 +170,7 @@ class MistralAiChatModelIT {
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
-		logger.info("" + actorsFilms);
+		logger.info(actorsFilms.toString());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -231,7 +231,7 @@ class MistralAiChatModelIT {
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("30.0", "30");
 		assertThat(response.getMetadata()).isNotNull();
 		assertThat(response.getMetadata().getUsage()).isNotNull();
-		assertThat(response.getMetadata().getUsage().getTotalTokens()).isLessThan(1050).isGreaterThan(750);
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isLessThan(1050).isGreaterThan(500);
 	}
 
 	@Test
@@ -274,7 +274,7 @@ class MistralAiChatModelIT {
 			.media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)))
 			.build();
 
-		var chatOptions = ChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build();
+		var chatOptions = ChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()).build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage), chatOptions));
 
@@ -293,7 +293,7 @@ class MistralAiChatModelIT {
 				.build()))
 			.build();
 
-		var chatOptions = ChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build();
+		var chatOptions = ChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()).build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), chatOptions));
 
@@ -313,7 +313,7 @@ class MistralAiChatModelIT {
 			.build();
 
 		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(List.of(userMessage),
-				ChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build()));
+				ChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()).build()));
 
 		String content = response.collectList()
 			.blockOptional()

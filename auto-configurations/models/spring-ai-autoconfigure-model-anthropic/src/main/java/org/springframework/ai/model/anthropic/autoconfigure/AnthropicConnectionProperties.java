@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,84 +16,18 @@
 
 package org.springframework.ai.model.anthropic.autoconfigure;
 
-import org.springframework.ai.anthropic.api.AnthropicApi;
+import org.springframework.ai.anthropic.AbstractAnthropicOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Anthropic API connection properties.
+ * Anthropic connection properties.
  *
- * @author Christian Tzolov
- * @since 1.0.0
+ * @author Soby Chacko
+ * @since 2.0.0
  */
 @ConfigurationProperties(AnthropicConnectionProperties.CONFIG_PREFIX)
-public class AnthropicConnectionProperties {
+public class AnthropicConnectionProperties extends AbstractAnthropicOptions {
 
 	public static final String CONFIG_PREFIX = "spring.ai.anthropic";
-
-	/**
-	 * Anthropic API access key.
-	 */
-	private String apiKey;
-
-	/**
-	 * Anthropic API base URL.
-	 */
-	private String baseUrl = AnthropicApi.DEFAULT_BASE_URL;
-
-	/**
-	 * Path to append to the base URL
-	 */
-	private String completionsPath = AnthropicApi.DEFAULT_MESSAGE_COMPLETIONS_PATH;
-
-	/**
-	 * Anthropic API version.
-	 */
-	private String version = AnthropicApi.DEFAULT_ANTHROPIC_VERSION;
-
-	/**
-	 * Beta features version. Such as tools-2024-04-04 or
-	 * max-tokens-3-5-sonnet-2024-07-15.
-	 */
-	private String betaVersion = AnthropicApi.DEFAULT_ANTHROPIC_BETA_VERSION;
-
-	public String getApiKey() {
-		return this.apiKey;
-	}
-
-	public void setApiKey(String apiKey) {
-		this.apiKey = apiKey;
-	}
-
-	public String getBaseUrl() {
-		return this.baseUrl;
-	}
-
-	public void setBaseUrl(String baseUrl) {
-		this.baseUrl = baseUrl;
-	}
-
-	public String getCompletionsPath() {
-		return this.completionsPath;
-	}
-
-	public void setCompletionsPath(String completionsPath) {
-		this.completionsPath = completionsPath;
-	}
-
-	public String getVersion() {
-		return this.version;
-	}
-
-	public void setVersion(String version) {
-		this.version = version;
-	}
-
-	public String getBetaVersion() {
-		return this.betaVersion;
-	}
-
-	public void setBetaVersion(String betaVersion) {
-		this.betaVersion = betaVersion;
-	}
 
 }

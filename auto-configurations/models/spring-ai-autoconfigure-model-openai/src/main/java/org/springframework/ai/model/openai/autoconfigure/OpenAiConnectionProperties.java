@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,12 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(OpenAiConnectionProperties.CONFIG_PREFIX)
-public class OpenAiConnectionProperties extends OpenAiParentProperties {
+public class OpenAiConnectionProperties extends AbstractOpenAiOptions {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai";
-
-	public static final String DEFAULT_BASE_URL = "https://api.openai.com";
-
-	public OpenAiConnectionProperties() {
-		super.setBaseUrl(DEFAULT_BASE_URL);
-	}
 
 }

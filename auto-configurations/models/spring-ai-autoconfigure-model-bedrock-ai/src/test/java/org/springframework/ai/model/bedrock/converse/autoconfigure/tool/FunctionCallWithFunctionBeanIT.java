@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,8 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.bedrock.autoconfigure.BedrockTestUtils;
 import org.springframework.ai.model.bedrock.autoconfigure.RequiresAwsCredentials;
 import org.springframework.ai.model.bedrock.converse.autoconfigure.BedrockConverseProxyChatAutoConfiguration;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -47,7 +48,8 @@ class FunctionCallWithFunctionBeanIT {
 	private final Logger logger = LoggerFactory.getLogger(FunctionCallWithFunctionBeanIT.class);
 
 	private final ApplicationContextRunner contextRunner = BedrockTestUtils.getContextRunner()
-		.withConfiguration(SpringAiTestAutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class,
+				ToolCallingAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test
@@ -55,7 +57,7 @@ class FunctionCallWithFunctionBeanIT {
 
 		this.contextRunner
 			.withPropertyValues(
-					"spring.ai.bedrock.converse.chat.options.model=" + "anthropic.claude-haiku-4-5-20251001-v1:0")
+					"spring.ai.bedrock.converse.chat.options.model=" + "us.anthropic.claude-haiku-4-5-20251001-v1:0")
 			.run(context -> {
 
 				BedrockProxyChatModel chatModel = context.getBean(BedrockProxyChatModel.class);
@@ -84,7 +86,7 @@ class FunctionCallWithFunctionBeanIT {
 
 		this.contextRunner
 			.withPropertyValues(
-					"spring.ai.bedrock.converse.chat.options.model=" + "anthropic.claude-haiku-4-5-20251001-v1:0")
+					"spring.ai.bedrock.converse.chat.options.model=" + "us.anthropic.claude-haiku-4-5-20251001-v1:0")
 			.run(context -> {
 
 				BedrockProxyChatModel chatModel = context.getBean(BedrockProxyChatModel.class);

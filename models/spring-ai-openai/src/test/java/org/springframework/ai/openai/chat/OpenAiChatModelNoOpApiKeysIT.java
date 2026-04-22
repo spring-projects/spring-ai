@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,7 @@ package org.springframework.ai.openai.chat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.retry.NonTransientAiException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -42,21 +39,17 @@ public class OpenAiChatModelNoOpApiKeysIT {
 
 	@Test
 	void checkNoOpApiKey() {
-		assertThatThrownBy(() -> this.openAiChatModel.call("Tell me a joke"))
-			.isInstanceOf(NonTransientAiException.class);
+		assertThatThrownBy(() -> this.openAiChatModel.call("Tell me a joke")).isInstanceOf(RuntimeException.class);
 	}
 
 	@SpringBootConfiguration
 	static class Config {
 
 		@Bean
-		public OpenAiApi chatCompletionApi() {
-			return OpenAiApi.builder().apiKey(new NoopApiKey()).build();
-		}
-
-		@Bean
-		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
-			return OpenAiChatModel.builder().openAiApi(openAiApi).build();
+		public OpenAiChatModel openAiClient() {
+			return OpenAiChatModel.builder()
+				.options(org.springframework.ai.openai.OpenAiChatOptions.builder().apiKey("noop").build())
+				.build();
 		}
 
 	}

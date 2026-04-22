@@ -4,7 +4,7 @@ The https://ai.google.dev/gemini-api/docs[Google GenAI API] allows developers to
 The Google GenAI API supports multimodal prompts as input and outputs text or code.
 A multimodal model is capable of processing information from multiple modalities, including images, videos, and text. For example, you can send the model a photo of a plate of cookies and ask it to give you a recipe for those cookies.
 
-Gemini is a family of generative AI models developed by Google DeepMind that is designed for multimodal use cases. The Gemini API gives you access to link:https://ai.google.dev/gemini-api/docs/models#gemini-2.0-flash[Gemini 2.0 Flash], link:https://ai.google.dev/gemini-api/docs/models#gemini-2.0-flash-lite[Gemini 2.0 Flash-Lite], all link:https://ai.google.dev/gemini-api/docs/models[Gemini Pro] models, up to and including the most recent link:https://ai.google.dev/gemini-api/docs/models#gemini-3-pro[Gemini 3 Pro].
+Gemini is a family of generative AI models developed by Google DeepMind that is designed for multimodal use cases. The Gemini API gives you access to link:https://ai.google.dev/gemini-api/docs/models[various models] like Gemini Flash-Lite, Gemini Flash or Gemini Pro.
 
 This implementation provides two authentication modes:
 
@@ -108,6 +108,7 @@ The prefix `spring.ai.google.genai.chat` is the property prefix that lets you co
 | spring.ai.google.genai.chat.options.model | Supported https://ai.google.dev/gemini-api/docs/models[Google GenAI Chat models] to use include `gemini-2.0-flash`, `gemini-2.0-flash-lite`, `gemini-pro`, and `gemini-1.5-flash`. | gemini-2.0-flash
 | spring.ai.google.genai.chat.options.response-mime-type | Output response mimetype of the generated candidate text. |  `text/plain`: (default) Text output or `application/json`: JSON response.
 | spring.ai.google.genai.chat.options.google-search-retrieval | Use Google search Grounding feature | `true` or `false`, default `false`.
+| spring.ai.google.genai.chat.options.include-server-side-tool-invocations | When true, the API response includes server-side tool calls and responses (e.g., Google Search invocations) in the response metadata, allowing observation of the server's tool usage. Only supported with Gemini Developer API (MLDev), not Vertex AI. See <<server-side-tool-invocations>>. | `false`
 | spring.ai.google.genai.chat.options.temperature | Controls the randomness of the output. Values can range over [0.0,1.0], inclusive. A value closer to 1.0 will produce responses that are more varied, while a value closer to 0.0 will typically result in less surprising responses from the generative. | -
 | spring.ai.google.genai.chat.options.top-k | The maximum number of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Top-k sampling considers the set of topK most probable tokens. | -
 | spring.ai.google.genai.chat.options.top-p | The maximum cumulative probability of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Nucleus sampling considers the smallest set of tokens whose probability sum is at least topP.  | -
@@ -196,6 +197,112 @@ String response = ChatClient.create(this.chatModel)
 ----
 
 Find more in xref:api/tools.adoc[Tools] documentation.
+
+== Server-Side Tool Invocations [[server-side-tool-invocations]]
+
+When Google Search or other server-side tools are enabled via `googleSearchRetrieval(true)`, the model executes these tools on the server. By default, these invocations are invisible to the client — you only see the final text response. Setting `includeServerSideToolInvocations(true)` makes the API include the server's tool calls and responses in the response content, allowing you to observe what the model searched for and what results it received.
+
+[IMPORTANT]
+====
+This feature is only supported with the **Gemini Developer API** (MLDev / API key authentication), and models from Gemini 3.x and up. It is **not supported** on Vertex AI.
+====
+
+=== Configuration
+
+Enable via application properties:
+
+[source,application.properties]
+----
+spring.ai.google.genai.chat.options.google-search-retrieval=true
+spring.ai.google.genai.chat.options.include-server-side-tool-invocations=true
+----
+
+Or programmatically at runtime:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What are the latest developments in quantum computing?",
+        GoogleGenAiChatOptions.builder()
+            .model("gemini-2.0-flash")
+            .googleSearchRetrieval(true)
+            .includeServerSideToolInvocations(true)
+            .build()
+    ));
+----
+
+=== Accessing Server-Side Tool Invocation Metadata
+
+When enabled, server-side tool invocations are available in the response message metadata under the `serverSideToolInvocations` key:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(prompt);
+
+Map<String, Object> metadata = response.getResult().getOutput().getMetadata();
+
+@SuppressWarnings("unchecked")
+List<Map<String, Object>> invocations =
+    (List<Map<String, Object>>) metadata.get("serverSideToolInvocations");
+
+if (invocations != null) {
+    for (Map<String, Object> invocation : invocations) {
+        String type = (String) invocation.get("type");       // "toolCall" or "toolResponse"
+        String id = (String) invocation.get("id");            // Unique invocation ID
+        String toolType = (String) invocation.get("toolType"); // e.g., "GOOGLE_SEARCH_WEB"
+
+        if ("toolCall".equals(type)) {
+            Map<String, Object> args = (Map<String, Object>) invocation.get("args");
+            // Inspect what the model searched for
+        } else if ("toolResponse".equals(type)) {
+            Map<String, Object> responseData = (Map<String, Object>) invocation.get("response");
+            // Inspect what search results the model received
+        }
+    }
+}
+----
+
+Each entry in the list contains:
+
+[cols="1,3", stripes=even]
+|====
+| Field | Description
+
+| `type` | Either `"toolCall"` (the model's invocation request) or `"toolResponse"` (the server's result)
+| `id` | Unique identifier linking a `toolCall` to its corresponding `toolResponse`
+| `toolType` | The type of server-side tool (e.g., `GOOGLE_SEARCH_WEB`, `GOOGLE_SEARCH_IMAGE`, `URL_CONTEXT`, `GOOGLE_MAPS`)
+| `args` | (toolCall only) The arguments passed to the tool
+| `response` | (toolResponse only) The results returned by the tool
+|====
+
+=== Combined with Function Calling
+
+Server-side tool invocations work alongside client-side function calling. You can enable both Google Search (server-side) and custom functions (client-side) in the same request:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What's the weather in San Francisco? Also search for the latest news about the city.",
+        GoogleGenAiChatOptions.builder()
+            .model("gemini-2.0-flash")
+            .googleSearchRetrieval(true)
+            .includeServerSideToolInvocations(true)
+            .toolCallbacks(List.of(
+                FunctionToolCallback.builder("get_current_weather", new WeatherService())
+                    .description("Get the current weather in a given location")
+                    .inputType(WeatherRequest.class)
+                    .build()))
+            .build()
+    ));
+
+// The response contains:
+// - Weather data from the client-side function call (executed locally)
+// - Google Search invocations visible in metadata (executed server-side)
+----
+
+NOTE: Server-side tool invocations are observational only — the client does not execute them. They are surfaced in metadata separately from client-side function calls to avoid interfering with the tool execution loop.
 
 == Thinking Configuration [[thinking-config]]
 
@@ -799,26 +906,16 @@ The `GoogleGenAiChatOptions.Builder` is fluent options builder.
 
 == Migration from Vertex AI Gemini
 
-If you're currently using the Vertex AI Gemini implementation (`spring-ai-vertex-ai-gemini`), you can migrate to Google GenAI with minimal changes:
+If you were previously using the Vertex AI Gemini implementation (`spring-ai-vertex-ai-gemini`), which has been removed, migrate to Google GenAI:
 
-=== Key Differences
+Key Differences:
 
 1. **SDK**: Google GenAI uses the new `com.google.genai.Client` instead of `com.google.cloud.vertexai.VertexAI`
-2. **Authentication**: Supports both API key and Google Cloud credentials
+2. **Authentication**: Supports both API key and Google Cloud credentials (Vertex AI mode)
 3. **Package Names**: Classes are in `org.springframework.ai.google.genai` instead of `org.springframework.ai.vertexai.gemini`
 4. **Property Prefix**: Uses `spring.ai.google.genai` instead of `spring.ai.vertex.ai.gemini`
 
-=== When to Use Google GenAI vs Vertex AI Gemini
-
-**Use Google GenAI when:**
-- You want quick prototyping with API keys
-- You need the latest Gemini features from the Developer API
-- You want flexibility to switch between API key and Vertex AI modes
-
-**Use Vertex AI Gemini when:**
-- You have existing Vertex AI infrastructure
-- You need specific Vertex AI enterprise features
-- Your organization requires Google Cloud-only deployment
+Google GenAI supports both quick prototyping with API keys and production deployments using Vertex AI through Google Cloud credentials.
 
 == Low-level Java Client [[low-level-api]]
 

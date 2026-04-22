@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @since 1.1.0
  */
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
 class GoogleGenAiThoughtSignatureLifecycleIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiThoughtSignatureLifecycleIT.class);

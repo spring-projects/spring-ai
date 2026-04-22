@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -241,6 +241,52 @@ public class DefaultUsageTests {
 
 		String json = JsonMapper.shared().writeValueAsString(usage);
 		assertThat(json).isEqualTo("{\"promptTokens\":-1,\"completionTokens\":-2,\"totalTokens\":-3}");
+	}
+
+	@Test
+	void testCacheFields() {
+		DefaultUsage usage = new DefaultUsage(100, 50, 150, null, 500L, 200L);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(500L);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(200L);
+	}
+
+	@Test
+	void testCacheFieldsNullByDefault() {
+		DefaultUsage usage = new DefaultUsage(100, 50, 150);
+		assertThat(usage.getCacheReadInputTokens()).isNull();
+		assertThat(usage.getCacheWriteInputTokens()).isNull();
+	}
+
+	@Test
+	void testToStringWithCacheFields() {
+		DefaultUsage usage = new DefaultUsage(100, 50, 150, null, 500L, 200L);
+		assertThat(usage).hasToString("DefaultUsage{promptTokens=100, completionTokens=50, totalTokens=150, "
+				+ "cacheReadInputTokens=500, cacheWriteInputTokens=200}");
+	}
+
+	@Test
+	void testSerializationWithCacheFields() throws Exception {
+		DefaultUsage usage = new DefaultUsage(100, 50, 150, null, 500L, 200L);
+		String json = JsonMapper.shared().writeValueAsString(usage);
+		assertThat(json).contains("\"cacheReadInputTokens\":500");
+		assertThat(json).contains("\"cacheWriteInputTokens\":200");
+	}
+
+	@Test
+	void testDeserializationWithCacheFields() throws Exception {
+		String json = "{\"promptTokens\":100,\"completionTokens\":50,\"totalTokens\":150,"
+				+ "\"cacheReadInputTokens\":500,\"cacheWriteInputTokens\":200}";
+		DefaultUsage usage = JsonMapper.shared().readValue(json, DefaultUsage.class);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(500L);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(200L);
+	}
+
+	@Test
+	void testDeserializationWithoutCacheFields() throws Exception {
+		String json = "{\"promptTokens\":100,\"completionTokens\":50,\"totalTokens\":150}";
+		DefaultUsage usage = JsonMapper.shared().readValue(json, DefaultUsage.class);
+		assertThat(usage.getCacheReadInputTokens()).isNull();
+		assertThat(usage.getCacheWriteInputTokens()).isNull();
 	}
 
 	@Test

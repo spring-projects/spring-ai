@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-  ~ Copyright 2023-2024 the original author or authors.
+  ~ Copyright 2023-present the original author or authors.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@
 
 	<suppress files=".*BeanOutputConverterTest\.java$" checks="RegexpSinglelineJava"/>
 	<suppress  files="BaseOllamaIT.java" checks="HideUtilityClassConstructor"/>
-	<suppress  files="BaseOCIGenAITest.java" checks="HideUtilityClassConstructor"/>
 	<suppress  files="OpenAiApiBuilderTests.java" checks="RegexpSinglelineJava"/>
 	<suppress  files="AnthropicApiBuilderTests.java" checks="RegexpSinglelineJava"/>
 	<suppress  files="OpenAiChatModelResponseFormatIT.java" checks="RegexpSinglelineJava"/>
@@ -76,17 +75,10 @@
 	<suppress files="models[\\/]spring-ai-elevenlabs" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-google-genai" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-google-genai-embedding" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-huggingface" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-minimax" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-mistral-ai" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-oci-genai" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-openai" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-openai-sdk" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-transformers" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-vertex-ai-embedding" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-vertex-ai-gemini" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-zhipuai" id="bannedNullabilityImports" />
-	
+
 	<suppress files="spring-ai-integration-tests" id="bannedNullabilityImports" />
 	<suppress files="spring-ai-spring-boot-docker-compose" id="bannedNullabilityImports" />
 	<suppress files="spring-ai-spring-boot-starters" id="bannedNullabilityImports" />

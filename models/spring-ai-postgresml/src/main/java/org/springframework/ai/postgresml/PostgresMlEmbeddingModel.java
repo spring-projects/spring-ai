@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -155,13 +155,31 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 	 */
 	PostgresMlEmbeddingOptions mergeOptions(@Nullable EmbeddingOptions requestOptions) {
 
-		PostgresMlEmbeddingOptions options = this.defaultOptions;
-
-		if (requestOptions != null) {
-			options = ModelOptionsUtils.merge(requestOptions, options, PostgresMlEmbeddingOptions.class);
+		if (requestOptions == null) {
+			return this.defaultOptions;
 		}
 
-		return options;
+		PostgresMlEmbeddingOptions.Builder builder = PostgresMlEmbeddingOptions.builder();
+
+		// PostgresMlEmbeddingOptions disregards base EmbeddingOptions properties
+		if (requestOptions instanceof PostgresMlEmbeddingOptions pgOptions) {
+			builder
+				.transformer(
+						ModelOptionsUtils.mergeOption(pgOptions.getTransformer(), this.defaultOptions.getTransformer()))
+				.vectorType(
+						ModelOptionsUtils.mergeOption(pgOptions.getVectorType(), this.defaultOptions.getVectorType()))
+				.kwargs(ModelOptionsUtils.mergeOption(pgOptions.getKwargs(), this.defaultOptions.getKwargs()))
+				.metadataMode(ModelOptionsUtils.mergeOption(pgOptions.getMetadataMode(),
+						this.defaultOptions.getMetadataMode()));
+		}
+		else {
+			builder.transformer(this.defaultOptions.getTransformer())
+				.vectorType(this.defaultOptions.getVectorType())
+				.kwargs(this.defaultOptions.getKwargs())
+				.metadataMode(this.defaultOptions.getMetadataMode());
+		}
+
+		return builder.build();
 	}
 
 	@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -489,56 +490,12 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 	Prompt buildRequestPrompt(Prompt prompt) {
 		// Process runtime options
-		GoogleGenAiChatOptions runtimeOptions = null;
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-						GoogleGenAiChatOptions.class);
-			}
-			else {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						GoogleGenAiChatOptions.class);
-			}
-		}
+		GoogleGenAiChatOptions runtimeOptions = (GoogleGenAiChatOptions) prompt.getOptions();
+		runtimeOptions = runtimeOptions == null ? this.defaultOptions : runtimeOptions;
 
-		// Define request options by merging runtime options and default options
-		GoogleGenAiChatOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
-				GoogleGenAiChatOptions.class);
+		ToolCallingChatOptions.validateToolCallbacks(runtimeOptions.getToolCallbacks());
 
-		// Merge @JsonIgnore-annotated options explicitly since they are ignored by
-		// Jackson, used by ModelOptionsUtils.
-		if (runtimeOptions != null) {
-			requestOptions.setInternalToolExecutionEnabled(
-					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
-							this.defaultOptions.getInternalToolExecutionEnabled()));
-			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
-					this.defaultOptions.getToolNames()));
-			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
-					this.defaultOptions.getToolCallbacks()));
-			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
-					this.defaultOptions.getToolContext()));
-
-			requestOptions.setGoogleSearchRetrieval(ModelOptionsUtils.mergeOption(
-					runtimeOptions.getGoogleSearchRetrieval(), this.defaultOptions.getGoogleSearchRetrieval()));
-			requestOptions.setSafetySettings(ModelOptionsUtils.mergeOption(runtimeOptions.getSafetySettings(),
-					this.defaultOptions.getSafetySettings()));
-			requestOptions
-				.setLabels(ModelOptionsUtils.mergeOption(runtimeOptions.getLabels(), this.defaultOptions.getLabels()));
-		}
-		else {
-			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
-			requestOptions.setToolNames(this.defaultOptions.getToolNames());
-			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
-			requestOptions.setToolContext(this.defaultOptions.getToolContext());
-
-			requestOptions.setGoogleSearchRetrieval(this.defaultOptions.getGoogleSearchRetrieval());
-			requestOptions.setSafetySettings(this.defaultOptions.getSafetySettings());
-			requestOptions.setLabels(this.defaultOptions.getLabels());
-		}
-
-		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
-
-		return new Prompt(prompt.getInstructions(), requestOptions);
+		return prompt.mutate().chatOptions(runtimeOptions).build();
 	}
 
 	@Override
@@ -567,7 +524,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				ResponseStream<GenerateContentResponse> responseStream = this.genAiClient.models
 					.generateContentStream(request.modelName, request.contents, request.config);
 
-				Flux<ChatResponse> chatResponseFlux = Flux.fromIterable(responseStream).switchMap(response -> {
+				Flux<ChatResponse> chatResponseFlux = Flux.fromIterable(responseStream).concatMap(response -> {
 					List<Generation> generations = response.candidates()
 						.orElse(List.of())
 						.stream()
@@ -585,42 +542,48 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 					return Flux.just(chatResponse);
 				});
 
-				// @formatter:off
-				Flux<ChatResponse> flux = chatResponseFlux.flatMap(response -> {
-					if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
-						// FIXME: bounded elastic needs to be used since tool calling
-						//  is currently only synchronous
-						return Flux.deferContextual(ctx -> {
-							ToolExecutionResult toolExecutionResult;
-							try {
-								ToolCallReactiveContextHolder.setContext(ctx);
-								toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-							}
-							finally {
-								ToolCallReactiveContextHolder.clearContext();
-							}
-							if (toolExecutionResult.returnDirect()) {
-								// Return tool execution result directly to the client.
-								return Flux.just(ChatResponse.builder().from(response)
-										.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-										.build());
-							}
-							else {
-								// Send the tool execution result back to the model.
-								return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()), response);
-							}
-						}).subscribeOn(Schedulers.boundedElastic());
-					}
-					else {
-						return Flux.just(response);
-					}
-				})
-				.doOnError(observation::error)
-				.doFinally(s -> observation.stop())
-				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
-				// @formatter:on;
+				AtomicReference<ChatResponse> aggregatedResponseRef = new AtomicReference<>();
 
-				return new MessageAggregator().aggregate(flux, observationContext::setResponse);
+				Flux<ChatResponse> aggregatedFlux = new MessageAggregator().aggregate(chatResponseFlux,
+						aggregatedResponse -> {
+							aggregatedResponseRef.set(aggregatedResponse);
+							observationContext.setResponse(aggregatedResponse);
+						});
+
+				Flux<ChatResponse> resultFlux = aggregatedFlux.concatWith(Flux.deferContextual(ctx -> {
+					ChatResponse aggregatedResponse = aggregatedResponseRef.get();
+					if (aggregatedResponse != null && this.toolExecutionEligibilityPredicate
+						.isToolExecutionRequired(prompt.getOptions(), aggregatedResponse)) {
+						// FIXME: bounded elastic needs to be used since tool calling
+						// is currently only synchronous
+						ToolExecutionResult toolExecutionResult;
+						try {
+							ToolCallReactiveContextHolder.setContext(ctx);
+							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, aggregatedResponse);
+						}
+						finally {
+							ToolCallReactiveContextHolder.clearContext();
+						}
+						if (toolExecutionResult.returnDirect()) {
+							// Return tool execution result directly to the client.
+							return Flux.just(ChatResponse.builder()
+								.from(aggregatedResponse)
+								.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+								.build());
+						}
+						else {
+							// Send the tool execution result back to the model.
+							return this.internalStream(
+									new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+									aggregatedResponse);
+						}
+					}
+					return Flux.empty();
+				}).subscribeOn(Schedulers.boundedElastic()));
+
+				return resultFlux.doOnError(observation::error)
+					.doFinally(s -> observation.stop())
+					.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
 			}
 			catch (Exception e) {
@@ -651,6 +614,32 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			if (!thoughtSignatures.isEmpty()) {
 				messageMetadata.put("thoughtSignatures", thoughtSignatures);
 			}
+
+			// Extract server-side tool invocations if present
+			List<Map<String, Object>> serverSideToolInvocations = new ArrayList<>();
+			for (Part part : parts) {
+				if (part.toolCall().isPresent()) {
+					com.google.genai.types.ToolCall tc = part.toolCall().get();
+					Map<String, Object> inv = new HashMap<>();
+					inv.put("type", "toolCall");
+					inv.put("id", tc.id().orElse(""));
+					inv.put("toolType", tc.toolType().map(Object::toString).orElse(""));
+					inv.put("args", tc.args().orElse(Map.of()));
+					serverSideToolInvocations.add(inv);
+				}
+				if (part.toolResponse().isPresent()) {
+					com.google.genai.types.ToolResponse tr = part.toolResponse().get();
+					Map<String, Object> inv = new HashMap<>();
+					inv.put("type", "toolResponse");
+					inv.put("id", tr.id().orElse(""));
+					inv.put("toolType", tr.toolType().map(Object::toString).orElse(""));
+					inv.put("response", tr.response().orElse(Map.of()));
+					serverSideToolInvocations.add(inv);
+				}
+			}
+			if (!serverSideToolInvocations.isEmpty()) {
+				messageMetadata.put("serverSideToolInvocations", serverSideToolInvocations);
+			}
 		}
 
 		ChatGenerationMetadata chatGenerationMetadata = ChatGenerationMetadata.builder()
@@ -658,7 +647,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			.build();
 
 		boolean isFunctionCall = candidate.content().isPresent() && candidate.content().get().parts().isPresent()
-				&& candidate.content().get().parts().get().stream().allMatch(part -> part.functionCall().isPresent());
+				&& candidate.content().get().parts().get().stream().anyMatch(part -> part.functionCall().isPresent());
 
 		if (isFunctionCall) {
 			List<AssistantMessage.ToolCall> assistantToolCalls = candidate.content()
@@ -684,17 +673,34 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
 		}
 		else {
-			return candidate.content()
+			List<Generation> generations = candidate.content()
 				.get()
 				.parts()
 				.orElse(List.of())
 				.stream()
-				.map(part -> AssistantMessage.builder()
-					.content(part.text().orElse(""))
-					.properties(messageMetadata)
-					.build())
+				.filter(part -> part.toolCall().isEmpty() && part.toolResponse().isEmpty())
+				.map(part -> {
+					var partMessageMetadata = new HashMap<>(messageMetadata);
+					partMessageMetadata.put("isThought", part.thought().orElse(false));
+					return AssistantMessage.builder()
+						.content(part.text().orElse(""))
+						.properties(partMessageMetadata)
+						.build();
+				})
 				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
 				.toList();
+
+			// If all parts were server-side tool invocations, return a single generation
+			// with empty text but with the server-side tool invocation metadata
+			if (generations.isEmpty()) {
+				AssistantMessage assistantMessage = AssistantMessage.builder()
+					.content("")
+					.properties(messageMetadata)
+					.build();
+				return List.of(new Generation(assistantMessage, chatGenerationMetadata));
+			}
+
+			return generations;
 		}
 	}
 
@@ -817,6 +823,12 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 		if (!CollectionUtils.isEmpty(tools)) {
 			configBuilder.tools(tools);
+		}
+
+		// Build ToolConfig if includeServerSideToolInvocations is enabled
+		if (Boolean.TRUE.equals(requestOptions.getIncludeServerSideToolInvocations())) {
+			configBuilder
+				.toolConfig(com.google.genai.types.ToolConfig.builder().includeServerSideToolInvocations(true));
 		}
 
 		// Handle cached content
@@ -1089,27 +1101,6 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	public enum ChatModel implements ChatModelDescription {
 
 		/**
-		 * <b>gemini-1.5-pro</b> is recommended to upgrade to <b>gemini-2.0-flash</b>
-		 * <p>
-		 * Discontinuation date: September 24, 2025
-		 * <p>
-		 * See: <a href=
-		 * "https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions#stable-version">stable-version</a>
-		 */
-		GEMINI_1_5_PRO("gemini-1.5-pro-002"),
-
-		/**
-		 * <b>gemini-1.5-flash</b> is recommended to upgrade to
-		 * <b>gemini-2.0-flash-lite</b>
-		 * <p>
-		 * Discontinuation date: September 24, 2025
-		 * <p>
-		 * See: <a href=
-		 * "https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions#stable-version">stable-version</a>
-		 */
-		GEMINI_1_5_FLASH("gemini-1.5-flash-002"),
-
-		/**
 		 * <b>gemini-2.0-flash</b> delivers next-gen features and improved capabilities,
 		 * including superior speed, built-in tool use, multimodal generation, and a 1M
 		 * token context window.
@@ -1192,9 +1183,11 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		 */
 		GEMINI_2_5_FLASH_LIGHT("gemini-2.5-flash-lite"),
 
-		GEMINI_3_PRO_PREVIEW("gemini-3-pro-preview"),
+		GEMINI_3_PRO_PREVIEW("gemini-3.1-pro-preview"),
 
-		GEMINI_3_FLASH_PREVIEW("gemini-3-flash-preview");
+		GEMINI_3_FLASH_PREVIEW("gemini-3-flash-preview"),
+
+		GEMINI_3_1_FLASH_LITE_PREVIEW("gemini-3.1-flash-lite-preview");
 
 		public final String value;
 

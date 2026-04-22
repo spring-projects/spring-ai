@@ -259,7 +259,7 @@ public McpSyncClient mcpClient() {
                 .build();
     }
 
-    return McpClient.sync(new StdioClientTransport(stdioParams, McpJsonMapper.createDefault()))
+    return McpClient.sync(new StdioClientTransport(stdioParams, McpJsonDefaults.getMapper()))
             .requestTimeout(Duration.ofSeconds(10))
             .build()
             .initialize();
@@ -499,7 +499,7 @@ Clients can control logging verbosity by setting minimum log levels
 
 ==== Client Customization Example
 
-You can implement either `McpSyncClientCustomizer` for synchronous clients or `McpAsyncClientCustomizer` for asynchronous clients, depending on your application's needs.
+You can implement `McpCustomizer<McpClient.SyncSpec>` for synchronous clients or `McpCustomizer<McpClient.AsyncSpec>` for asynchronous clients, depending on your application's needs.
 
 [tabs]
 ======
@@ -508,7 +508,7 @@ Sync::
 [source,java]
 ----
 @Component
-public class CustomMcpSyncClientCustomizer implements McpSyncClientCustomizer {
+public class CustomMcpSyncClientCustomizer implements McpCustomizer<McpClient.SyncSpec> {
     @Override
     public void customize(String serverConfigurationName, McpClient.SyncSpec spec) {
 
@@ -567,7 +567,7 @@ Async::
 [source,java]
 ----
 @Component
-public class CustomMcpAsyncClientCustomizer implements McpAsyncClientCustomizer {
+public class CustomMcpAsyncClientCustomizer implements McpCustomizer<McpClient.AsyncSpec> {
     @Override
     public void customize(String serverConfigurationName, McpClient.AsyncSpec spec) {
         // Customize the async client configuration

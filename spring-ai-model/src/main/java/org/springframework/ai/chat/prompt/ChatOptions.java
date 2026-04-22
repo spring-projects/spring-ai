@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,7 +113,9 @@ public interface ChatOptions extends ModelOptions {
 	/**
 	 * Builder for creating {@link ChatOptions} instance.
 	 */
-	interface Builder<B extends Builder<B>> {
+	interface Builder<B extends Builder<B>> extends Cloneable {
+
+		B clone();
 
 		/**
 		 * Builds with the model to use for the chat.

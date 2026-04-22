@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,11 @@ package org.springframework.ai.mistralai;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -33,10 +30,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.definition.DefaultToolDefinition;
-import org.springframework.ai.tool.definition.ToolDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -90,40 +83,6 @@ class MistralAiChatCompletionRequestTests {
 	}
 
 	@Test
-	void whenToolRuntimeOptionsThenMergeWithDefaults() {
-		MistralAiChatOptions defaultOptions = MistralAiChatOptions.builder()
-			.model("DEFAULT_MODEL")
-			.internalToolExecutionEnabled(true)
-			.toolCallbacks(new TestToolCallback("tool1"), new TestToolCallback("tool2"))
-			.toolNames("tool1", "tool2")
-			.toolContext(Map.of("key1", "value1", "key2", "valueA"))
-			.build();
-
-		MistralAiChatModel anotherChatModel = MistralAiChatModel.builder()
-			.mistralAiApi(MistralAiApi.builder().baseUrl(BASE_URL).apiKey(API_KEY).build())
-			.defaultOptions(defaultOptions)
-			.build();
-
-		MistralAiChatOptions runtimeOptions = MistralAiChatOptions.builder()
-			.internalToolExecutionEnabled(false)
-			.toolCallbacks(new TestToolCallback("tool3"), new TestToolCallback("tool4"))
-			.toolNames("tool3")
-			.toolContext(Map.of("key2", "valueB"))
-			.build();
-		Prompt prompt = anotherChatModel.buildRequestPrompt(new Prompt("Test message content", runtimeOptions));
-
-		assertThat(((ToolCallingChatOptions) prompt.getOptions())).isNotNull();
-		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getInternalToolExecutionEnabled()).isFalse();
-		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()).hasSize(2);
-		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()
-			.stream()
-			.map(toolCallback -> toolCallback.getToolDefinition().name())).containsExactlyInAnyOrder("tool3", "tool4");
-		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolNames()).containsExactlyInAnyOrder("tool3");
-		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolContext()).containsEntry("key1", "value1")
-			.containsEntry("key2", "valueB");
-	}
-
-	@Test
 	void createChatCompletionMessagesWithUserMessage() {
 		var userMessage = new UserMessage(TEXT_CONTENT);
 		userMessage.getMedia().add(IMAGE_MEDIA);
@@ -133,29 +92,9 @@ class MistralAiChatCompletionRequestTests {
 	}
 
 	@Test
-	void createChatCompletionMessagesWithSimpleUserMessage() {
-		var simpleUserMessage = new SimpleMessage(MessageType.USER, TEXT_CONTENT);
-		var prompt = createPrompt(simpleUserMessage);
-		var chatCompletionRequest = this.chatModel.createRequest(prompt, false);
-		var chatCompletionMessages = chatCompletionRequest.messages();
-		assertThat(chatCompletionMessages).hasSize(1);
-		var chatCompletionMessage = chatCompletionMessages.get(0);
-		assertThat(chatCompletionMessage.role()).isEqualTo(ChatCompletionMessage.Role.USER);
-		assertThat(chatCompletionMessage.content()).isEqualTo(TEXT_CONTENT);
-	}
-
-	@Test
 	void createChatCompletionMessagesWithSystemMessage() {
 		var systemMessage = new SystemMessage(TEXT_CONTENT);
 		var prompt = createPrompt(systemMessage);
-		var chatCompletionRequest = this.chatModel.createRequest(prompt, false);
-		verifySystemChatCompletionMessages(chatCompletionRequest.messages());
-	}
-
-	@Test
-	void createChatCompletionMessagesWithSimpleSystemMessage() {
-		var simpleSystemMessage = new SimpleMessage(MessageType.SYSTEM, TEXT_CONTENT);
-		var prompt = createPrompt(simpleSystemMessage);
 		var chatCompletionRequest = this.chatModel.createRequest(prompt, false);
 		verifySystemChatCompletionMessages(chatCompletionRequest.messages());
 	}
@@ -186,15 +125,6 @@ class MistralAiChatCompletionRequestTests {
 	}
 
 	@Test
-	void createChatCompletionMessagesWithSimpleAssistantMessage() {
-		var simpleAssistantMessage = new SimpleMessage(MessageType.ASSISTANT, TEXT_CONTENT);
-		var prompt = createPrompt(simpleAssistantMessage);
-		assertThatThrownBy(() -> this.chatModel.createRequest(prompt, false))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("Unsupported assistant message class: " + SimpleMessage.class.getName());
-	}
-
-	@Test
 	void createChatCompletionMessagesWithToolResponseMessage() {
 		var toolResponse1 = createToolResponse(1);
 		var toolResponse2 = createToolResponse(2);
@@ -219,15 +149,6 @@ class MistralAiChatCompletionRequestTests {
 		assertThatThrownBy(() -> this.chatModel.createRequest(prompt, false))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("ToolResponseMessage.ToolResponse must have an id.");
-	}
-
-	@Test
-	void createChatCompletionMessagesWithSimpleToolMessage() {
-		var simpleToolMessage = new SimpleMessage(MessageType.TOOL, TEXT_CONTENT);
-		var prompt = createPrompt(simpleToolMessage);
-		assertThatThrownBy(() -> this.chatModel.createRequest(prompt, false))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("Unsupported tool message class: " + SimpleMessage.class.getName());
 	}
 
 	private Prompt createPrompt(Message message) {
@@ -277,46 +198,18 @@ class MistralAiChatCompletionRequestTests {
 		assertThat(chatCompletionMessage.role()).isEqualTo(ChatCompletionMessage.Role.USER);
 		var rawContent = chatCompletionMessage.rawContent();
 		assertThat(rawContent).isNotNull();
-		var maps = (List<Map<String, Object>>) rawContent;
+		var maps = (List<ChatCompletionMessage.MediaContent>) rawContent;
 		assertThat(maps).hasSize(2);
 		// @formatter:off
 		var textMap = maps.get(0);
-		assertThat(textMap).hasSize(2)
-				.containsEntry("type", "text")
-				.containsEntry("text", TEXT_CONTENT);
+		assertThat(textMap)
+				.hasFieldOrPropertyWithValue("type", "text")
+				.hasFieldOrPropertyWithValue("text", TEXT_CONTENT);
 		var imageUrlMap = maps.get(1);
-		assertThat(imageUrlMap).hasSize(2)
-				.containsEntry("type", "image_url")
-				.containsEntry("image_url", Map.of("url", IMAGE_URL));
+		assertThat(imageUrlMap)
+				.hasFieldOrPropertyWithValue("type", "image_url")
+				.hasFieldOrPropertyWithValue("imageUrl", new ChatCompletionMessage.MediaContent.ImageUrl(IMAGE_URL));
 		// @formatter:on
-	}
-
-	static class SimpleMessage extends AbstractMessage {
-
-		SimpleMessage(MessageType messageType, String textContent) {
-			super(messageType, textContent, Map.of());
-		}
-
-	}
-
-	static class TestToolCallback implements ToolCallback {
-
-		private final ToolDefinition toolDefinition;
-
-		TestToolCallback(String name) {
-			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
-		}
-
-		@Override
-		public ToolDefinition getToolDefinition() {
-			return this.toolDefinition;
-		}
-
-		@Override
-		public String call(String toolInput) {
-			return "Mission accomplished!";
-		}
-
 	}
 
 }

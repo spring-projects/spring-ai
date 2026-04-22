@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,5 +66,29 @@ public interface Usage {
 	 * @return the object of type inferred by the API response.
 	 */
 	@Nullable Object getNativeUsage();
+
+	/**
+	 * Returns the number of input tokens read from the prompt cache, if the provider
+	 * supports prompt caching. Cached tokens are tokens that were previously processed
+	 * and stored by the provider, reducing cost and latency for repeated prompt prefixes.
+	 * @return the number of cached input tokens read, or {@code null} if the provider
+	 * does not support prompt caching or no cache hit occurred.
+	 * @since 2.0.0
+	 */
+	default @Nullable Long getCacheReadInputTokens() {
+		return null;
+	}
+
+	/**
+	 * Returns the number of input tokens written to the prompt cache, if the provider
+	 * supports prompt caching. Cache writes occur when new prompt content is cached for
+	 * the first time.
+	 * @return the number of input tokens written to cache, or {@code null} if the
+	 * provider does not support prompt caching or no cache write occurred.
+	 * @since 2.0.0
+	 */
+	default @Nullable Long getCacheWriteInputTokens() {
+		return null;
+	}
 
 }

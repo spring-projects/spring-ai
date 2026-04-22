@@ -532,7 +532,11 @@ This example demonstrates how to use MCP Sampling to generate creative content f
 
 === Sampling Server Implementation
 
-The server provides a weather tool that uses MCP Sampling to generate poems from different LLM providers:
+The server provides a weather tool that uses MCP Sampling to generate poems from different LLM providers.
+
+[NOTE]
+This example uses `McpSyncServerExchange` directly for fine-grained control over the low-level MCP API. For simpler cases, use `McpSyncRequestContext` which provides a higher-level, more convenient interface (e.g., `context.sampleEnabled()`, `context.sample(...)`, `context.info(...)`).
+
 
 [source,java]
 ----

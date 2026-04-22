@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -191,8 +191,12 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 	}
 
 	private Usage getCurrentUsage() {
+		TokenUsage nativeUsage = this.tokenUsageRef.get();
+		Integer cacheReadInt = nativeUsage != null ? nativeUsage.cacheReadInputTokens() : null;
+		Integer cacheWriteInt = nativeUsage != null ? nativeUsage.cacheWriteInputTokens() : null;
 		return new DefaultUsage(this.promptTokens.get(), this.generationTokens.get(), this.totalTokens.get(),
-				this.tokenUsageRef.get());
+				nativeUsage, cacheReadInt != null ? cacheReadInt.longValue() : null,
+				cacheWriteInt != null ? cacheWriteInt.longValue() : null);
 	}
 
 	/**

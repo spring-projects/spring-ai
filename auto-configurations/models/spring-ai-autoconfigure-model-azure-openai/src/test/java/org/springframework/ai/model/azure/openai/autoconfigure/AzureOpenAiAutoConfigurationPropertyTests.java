@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,8 @@ package org.springframework.ai.model.azure.openai.autoconfigure;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,7 +38,7 @@ public class AzureOpenAiAutoConfigurationPropertyTests {
 			.withPropertyValues("spring.ai.azure.openai.api-key=TEST_API_KEY",
 					"spring.ai.azure.openai.endpoint=TEST_ENDPOINT",
 					"spring.ai.azure.openai.embedding.options.deployment-name=MODEL_XYZ")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(AzureOpenAiEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(AzureOpenAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(AzureOpenAiEmbeddingProperties.class);
 				var connectionProperties = context.getBean(AzureOpenAiConnectionProperties.class);
@@ -69,8 +70,8 @@ public class AzureOpenAiAutoConfigurationPropertyTests {
 				"spring.ai.azure.openai.chat.options.user=userXYZ"
 				)
 			// @formatter:on
-			.withConfiguration(SpringAiTestAutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class,
-					AzureOpenAiEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class,
+					AzureOpenAiEmbeddingAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(AzureOpenAiChatProperties.class);
 				var connectionProperties = context.getBean(AzureOpenAiConnectionProperties.class);

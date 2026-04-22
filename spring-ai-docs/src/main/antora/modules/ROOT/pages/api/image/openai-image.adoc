@@ -3,6 +3,11 @@
 
 Spring AI supports DALL-E, the Image generation model from OpenAI.
 
+[NOTE]
+====
+Starting from version `2.0.0-M5`, Spring AI uses the official `openai-java` SDK under the hood for all OpenAI models. The transition is expected to be seamless and there are no breaking changes for existing users of the OpenAI API properties and builders. If you find any issues, please report them to us at https://github.com/spring-projects/spring-ai/issues[Spring AI GitHub Issues].
+====
+
 == Prerequisites
 
 You will need to create an API key with OpenAI to access ChatGPT models.

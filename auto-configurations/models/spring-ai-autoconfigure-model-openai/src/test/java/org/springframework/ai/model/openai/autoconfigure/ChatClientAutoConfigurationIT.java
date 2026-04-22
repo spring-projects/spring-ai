@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientCustomizer;
 import org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,9 +36,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
- * @author Issam El-atif
  */
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class ChatClientAutoConfigurationIT {
 
 	private static final Log logger = LogFactory.getLog(ChatClientAutoConfigurationIT.class);
@@ -45,8 +45,8 @@ public class ChatClientAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
 				"spring.ai.openai.chat.options.model=gpt-4o")
-		.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class,
-				ChatClientAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ChatClientAutoConfiguration.class,
+				ToolCallingAutoConfiguration.class));
 
 	@Test
 	void implicitlyEnabled() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,29 +19,43 @@ package org.springframework.ai.openai.image;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.ImageResponseMetadata;
+import org.springframework.ai.openai.OpenAiImageModel;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
-import org.springframework.ai.openai.testutils.AbstractIT;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Integration tests for {@link OpenAiImageModel}.
+ *
+ * @author Julien Dubois
+ */
 @SpringBootTest(classes = OpenAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-public class OpenAiImageModelIT extends AbstractIT {
+public class OpenAiImageModelIT {
+
+	private final Logger logger = LoggerFactory.getLogger(OpenAiImageModelIT.class);
+
+	@Autowired
+	private OpenAiImageModel imageModel;
 
 	@Test
 	void imageAsUrlTest() {
 		var options = ImageOptionsBuilder.builder().height(1024).width(1024).build();
 
 		var instructions = """
-				A light cream colored mini golden doodle with a sign that contains the message "I'm on my way to BARCADE!".""";
+				A cup of coffee at a restaurant table in Paris, France.
+				""";
 
 		ImagePrompt imagePrompt = new ImagePrompt(instructions, options);
 
@@ -55,16 +69,17 @@ public class OpenAiImageModelIT extends AbstractIT {
 		var generation = imageResponse.getResult();
 		Image image = generation.getOutput();
 		assertThat(image.getUrl()).isNotEmpty();
-		// System.out.println(image.getUrl());
+		logger.info("Generated image URL: {}", image.getUrl());
 		assertThat(image.getB64Json()).isNull();
 
 		var imageGenerationMetadata = generation.getMetadata();
 		Assertions.assertThat(imageGenerationMetadata).isInstanceOf(OpenAiImageGenerationMetadata.class);
 
-		OpenAiImageGenerationMetadata openAiImageGenerationMetadata = (OpenAiImageGenerationMetadata) imageGenerationMetadata;
+		OpenAiImageGenerationMetadata openAiSdkImageGenerationMetadata = (OpenAiImageGenerationMetadata) imageGenerationMetadata;
 
-		assertThat(openAiImageGenerationMetadata).isNotNull();
-		assertThat(openAiImageGenerationMetadata.getRevisedPrompt()).isNotBlank();
+		assertThat(openAiSdkImageGenerationMetadata).isNotNull();
+		assertThat(openAiSdkImageGenerationMetadata.getRevisedPrompt()).isNotBlank();
+
 	}
 
 }

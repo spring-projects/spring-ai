@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package org.springframework.ai.mcp.client.autoconfigure;
 import java.util.List;
 
 import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.client.transport.customizer.McpAsyncHttpClientRequestCustomizer;
+import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import org.junit.jupiter.api.AfterAll;
@@ -30,11 +30,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
-import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.client.httpclient.autoconfigure.StreamableHttpHttpClientTransportAutoConfiguration;
+import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.context.annotation.UserConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -46,8 +46,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 @Timeout(15)
 public class StreamableHttpHttpClientTransportAutoConfigurationIT {
@@ -108,10 +106,8 @@ public class StreamableHttpHttpClientTransportAutoConfigurationIT {
 	}
 
 	@Test
-	void usesSyncRequestCustomizer() {
-		this.contextRunner
-			.withConfiguration(UserConfigurations.of(SyncRequestCustomizerConfiguration.class,
-					AsyncRequestCustomizerConfiguration.class))
+	void usesRequestCustomizer() {
+		this.contextRunner.withConfiguration(UserConfigurations.of(SyncRequestCustomizerConfiguration.class))
 			.run(context -> {
 				List<McpSyncClient> mcpClients = (List<McpSyncClient>) context.getBean("mcpSyncClients");
 
@@ -124,25 +120,6 @@ public class StreamableHttpHttpClientTransportAutoConfigurationIT {
 
 				verify(context.getBean(McpSyncHttpClientRequestCustomizer.class), atLeastOnce()).customize(any(), any(),
 						any(), any(), any());
-				verifyNoInteractions(context.getBean(McpAsyncHttpClientRequestCustomizer.class));
-			});
-	}
-
-	@Test
-	void usesAsyncRequestCustomizer() {
-		this.contextRunner.withConfiguration(UserConfigurations.of(AsyncRequestCustomizerConfiguration.class))
-			.run(context -> {
-				List<McpSyncClient> mcpClients = (List<McpSyncClient>) context.getBean("mcpSyncClients");
-
-				assertThat(mcpClients).isNotNull();
-				assertThat(mcpClients).hasSize(1);
-
-				McpSyncClient mcpClient = mcpClients.get(0);
-
-				mcpClient.ping();
-
-				verify(context.getBean(McpAsyncHttpClientRequestCustomizer.class), atLeastOnce()).customize(any(),
-						any(), any(), any(), any());
 			});
 	}
 
@@ -154,17 +131,10 @@ public class StreamableHttpHttpClientTransportAutoConfigurationIT {
 			return mock(McpSyncHttpClientRequestCustomizer.class);
 		}
 
-	}
-
-	@Configuration
-	static class AsyncRequestCustomizerConfiguration {
-
 		@Bean
-		McpAsyncHttpClientRequestCustomizer asyncHttpRequestCustomizer() {
-			McpAsyncHttpClientRequestCustomizer requestCustomizerMock = mock(McpAsyncHttpClientRequestCustomizer.class);
-			when(requestCustomizerMock.customize(any(), any(), any(), any(), any()))
-				.thenAnswer(invocation -> Mono.just(invocation.getArguments()[0]));
-			return requestCustomizerMock;
+		McpClientCustomizer<HttpClientStreamableHttpTransport.Builder> streamableHttpTransportCustomizer(
+				McpSyncHttpClientRequestCustomizer syncHttpRequestCustomizer) {
+			return (name, builder) -> builder.httpRequestCustomizer(syncHttpRequestCustomizer);
 		}
 
 	}

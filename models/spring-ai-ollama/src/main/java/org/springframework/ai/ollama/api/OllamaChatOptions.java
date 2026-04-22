@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -53,7 +49,6 @@ import org.springframework.util.Assert;
  * Valid Parameters and Values</a>
  * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama Types</a>
  */
-@JsonInclude(Include.NON_NULL)
 public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
 	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate");
@@ -75,7 +70,8 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 			@Nullable Boolean penalizeNewline, @Nullable List<String> stop, @Nullable String model,
 			@Nullable Object format, @Nullable String keepAlive, @Nullable Boolean truncate,
 			@Nullable ThinkOption thinkOption, @Nullable Boolean internalToolExecutionEnabled,
-			List<ToolCallback> toolCallbacks, Set<String> toolNames, Map<String, Object> toolContext) {
+			@Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames,
+			@Nullable Map<String, Object> toolContext) {
 		this.useNUMA = useNUMA;
 		this.numCtx = numCtx;
 		this.numBatch = numBatch;
@@ -112,9 +108,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.truncate = truncate;
 		this.thinkOption = thinkOption;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks;
-		this.toolNames = toolNames;
-		this.toolContext = toolContext;
+		this.toolCallbacks = toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(toolCallbacks);
+		this.toolNames = toolNames == null ? new HashSet<>() : new HashSet<>(toolNames);
+		this.toolContext = toolContext == null ? new HashMap<>() : new HashMap<>(toolContext);
 	}
 
 	// Following fields are options which must be set when the model is loaded into
@@ -126,19 +122,16 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	/**
 	 * Whether to use NUMA. (Default: false)
 	 */
-	@JsonProperty("numa")
 	private @Nullable Boolean useNUMA;
 
 	/**
 	 * Sets the size of the context window used to generate the next token. (Default: 2048)
 	 */
-	@JsonProperty("num_ctx")
 	private @Nullable Integer numCtx;
 
 	/**
 	 * Prompt processing maximum batch size. (Default: 512)
 	 */
-	@JsonProperty("num_batch")
 	private @Nullable Integer numBatch;
 
 	/**
@@ -146,7 +139,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * to enable metal support, 0 to disable.
 	 * (Default: -1, which indicates that numGPU should be set dynamically)
 	 */
-	@JsonProperty("num_gpu")
 	private @Nullable Integer numGPU;
 
 	/**
@@ -156,32 +148,27 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * more VRAM to store a scratch buffer for temporary results.
 	 * By default, GPU 0 is used.
 	 */
-	@JsonProperty("main_gpu")
 	private @Nullable Integer mainGPU;
 
 	/**
 	 * (Default: false)
 	 */
-	@JsonProperty("low_vram")
 	private @Nullable Boolean lowVRAM;
 
 	/**
 	 * (Default: true)
 	 */
-	@JsonProperty("f16_kv")
 	private @Nullable Boolean f16KV;
 
 	/**
 	 * Return logits for all the tokens, not just the last one.
 	 * To enable completions to return logprobs, this must be true.
 	 */
-	@JsonProperty("logits_all")
 	private @Nullable Boolean logitsAll;
 
 	/**
 	 * Load only the vocabulary, not the weights.
 	 */
-	@JsonProperty("vocab_only")
 	private @Nullable Boolean vocabOnly;
 
 	/**
@@ -193,7 +180,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * the model from loading at all.
 	 * (Default: null)
 	 */
-	@JsonProperty("use_mmap")
 	private @Nullable Boolean useMMap;
 
 	/**
@@ -202,7 +188,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * by requiring more RAM to run and potentially slowing down load times as the model loads into RAM.
 	 * (Default: false)
 	 */
-	@JsonProperty("use_mlock")
 	private @Nullable Boolean useMLock;
 
 	/**
@@ -211,7 +196,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * Using the correct number of threads can greatly improve performance.
 	 * By default, Ollama will detect this value for optimal performance.
 	 */
-	@JsonProperty("num_thread")
 	private @Nullable Integer numThread;
 
 	// Following fields are predict options used at runtime.
@@ -219,7 +203,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	/**
 	 * (Default: 4)
 	 */
-	@JsonProperty("num_keep")
 	private @Nullable Integer numKeep;
 
 	/**
@@ -227,14 +210,12 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * specific number will make the model generate the same text for the same prompt.
 	 * (Default: -1)
 	 */
-	@JsonProperty("seed")
 	private @Nullable Integer seed;
 
 	/**
 	 * Maximum number of tokens to predict when generating text.
 	 * (Default: 128, -1 = infinite generation, -2 = fill context)
 	 */
-	@JsonProperty("num_predict")
 	private @Nullable Integer numPredict;
 
 	/**
@@ -242,7 +223,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * 100) will give more diverse answers, while a lower value (e.g. 10) will be more
 	 * conservative. (Default: 40)
 	 */
-	@JsonProperty("top_k")
 	private @Nullable Integer topK;
 
 	/**
@@ -250,7 +230,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * more diverse text, while a lower value (e.g., 0.5) will generate more focused and
 	 * conservative text. (Default: 0.9)
 	 */
-	@JsonProperty("top_p")
 	private @Nullable Double topP;
 
 	/**
@@ -260,7 +239,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * the most likely token having a probability of 0.9, logits with a value
 	 * less than 0.045 are filtered out. (Default: 0.0)
 	 */
-	@JsonProperty("min_p")
 	private @Nullable Double minP;
 
 	/**
@@ -268,27 +246,23 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * from the output. A higher value (e.g., 2.0) will reduce the impact more, while a
 	 * value of 1.0 disables this setting. (default: 1)
 	 */
-	@JsonProperty("tfs_z")
 	private @Nullable Float tfsZ;
 
 	/**
 	 * (Default: 1.0)
 	 */
-	@JsonProperty("typical_p")
 	private @Nullable Float typicalP;
 
 	/**
 	 * Sets how far back for the model to look back to prevent
 	 * repetition. (Default: 64, 0 = disabled, -1 = num_ctx)
 	 */
-	@JsonProperty("repeat_last_n")
 	private @Nullable Integer repeatLastN;
 
 	/**
 	 * The temperature of the model. Increasing the temperature will
 	 * make the model answer more creatively. (Default: 0.8)
 	 */
-	@JsonProperty("temperature")
 	private @Nullable Double temperature;
 
 	/**
@@ -296,33 +270,28 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * (e.g., 1.5) will penalize repetitions more strongly, while a lower value (e.g.,
 	 * 0.9) will be more lenient. (Default: 1.1)
 	 */
-	@JsonProperty("repeat_penalty")
 	private @Nullable Double repeatPenalty;
 
 	/**
 	 * (Default: 0.0)
 	 */
-	@JsonProperty("presence_penalty")
 	private @Nullable Double presencePenalty;
 
 	/**
 	 * (Default: 0.0)
 	 */
-	@JsonProperty("frequency_penalty")
 	private @Nullable Double frequencyPenalty;
 
 	/**
 	 * Enable Mirostat sampling for controlling perplexity. (default: 0, 0
 	 * = disabled, 1 = Mirostat, 2 = Mirostat 2.0)
 	 */
-	@JsonProperty("mirostat")
 	private @Nullable Integer mirostat;
 
 	/**
 	 * Controls the balance between coherence and diversity of the output.
 	 * A lower value will result in more focused and coherent text. (Default: 5.0)
 	 */
-	@JsonProperty("mirostat_tau")
 	private @Nullable Float mirostatTau;
 
 	/**
@@ -330,13 +299,11 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * A lower learning rate will result in slower adjustments, while a higher learning rate
 	 * will make the algorithm more responsive. (Default: 0.1)
 	 */
-	@JsonProperty("mirostat_eta")
 	private @Nullable Float mirostatEta;
 
 	/**
 	 * (Default: true)
 	 */
-	@JsonProperty("penalize_newline")
 	private @Nullable Boolean penalizeNewline;
 
 	/**
@@ -344,7 +311,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * LLM will stop generating text and return. Multiple stop patterns may be set by
 	 * specifying multiple separate stop parameters in a modelfile.
 	 */
-	@JsonProperty("stop")
 	private @Nullable List<String> stop;
 
 
@@ -355,14 +321,12 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * Used to allow overriding the model name with prompt options.
 	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">parameters</a>.
 	 */
-	@JsonProperty("model")
 	private @Nullable String model;
 
 	/**
 	 * Sets the desired format of output from the LLM. The only valid values are null or "json".
 	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">advanced parameters</a>.
 	 */
-	@JsonProperty("format")
 	private @Nullable Object format;
 
 	/**
@@ -370,14 +334,12 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * setting are parsed by <a href="https://pkg.go.dev/time#ParseDuration">ParseDuration in Go</a>.
 	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">advanced parameters</a>.
 	 */
-	@JsonProperty("keep_alive")
 	private @Nullable String keepAlive;
 
 	/**
 	 * Truncates the end of each input to fit within context length. Returns error if false and context length is exceeded.
 	 * Defaults to true.
 	 */
-	@JsonProperty("truncate")
 	private @Nullable Boolean truncate;
 
 	/**
@@ -391,21 +353,19 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * <li>Thinking-capable models (e.g., qwen3:*-thinking, deepseek-r1, deepseek-v3.1)
 	 * <strong>auto-enable thinking by default</strong> when this field is not set.</li>
 	 * <li>Standard models (e.g., qwen2.5:*, llama3.2) do not enable thinking by default.</li>
-	 * <li>To explicitly control behavior, use {@link Builder#enableThinking()} or
-	 * {@link Builder#disableThinking()}.</li>
+	 * <li>To explicitly control behavior, use {@link AbstractBuilder#enableThinking()} or
+	 * {@link AbstractBuilder#disableThinking()}.</li>
 	 * </ul>
 	 * <p>
-	 * Use {@link Builder#enableThinking()}, {@link Builder#disableThinking()}, or
-	 * {@link Builder#thinkHigh()} to configure this option.
+	 * Use {@link AbstractBuilder#enableThinking()}, {@link AbstractBuilder#disableThinking()}, or
+	 * {@link AbstractBuilder#thinkHigh()} to configure this option.
 	 *
 	 * @see ThinkOption
 	 * @see ThinkOption.ThinkBoolean
 	 * @see ThinkOption.ThinkLevel
 	 */
-	@JsonProperty("think")
 	private @Nullable ThinkOption thinkOption;
 
-	@JsonIgnore
 	private @Nullable Boolean internalToolExecutionEnabled;
 
 	/**
@@ -414,7 +374,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * For Default Options the toolCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
 	 * from the registry to be used by the ChatModel chat completion requests.
 	 */
-	@JsonIgnore
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 	/**
@@ -425,14 +384,12 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
 	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
 	 */
-	@JsonIgnore
 	private Set<String> toolNames;
 
-	@JsonIgnore
 	private Map<String, Object> toolContext;
 
-	public static Builder<?> builder() {
-		return new Builder<>();
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	/**
@@ -591,12 +548,10 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	@JsonIgnore
 	public @Nullable Integer getMaxTokens() {
 		return getNumPredict();
 	}
 
-	@JsonIgnore
 	public void setMaxTokens(@Nullable Integer maxTokens) {
 		setNumPredict(maxTokens);
 	}
@@ -727,12 +682,10 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	@JsonIgnore
 	public @Nullable List<String> getStopSequences() {
 		return getStop();
 	}
 
-	@JsonIgnore
 	public void setStopSequences(@Nullable List<String> stopSequences) {
 		setStop(stopSequences);
 	}
@@ -762,13 +715,11 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	@JsonIgnore
 	public List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
 	}
 
 	@Override
-	@JsonIgnore
 	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
@@ -776,13 +727,11 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	@JsonIgnore
 	public Set<String> getToolNames() {
 		return this.toolNames;
 	}
 
 	@Override
-	@JsonIgnore
 	public void setToolNames(Set<String> toolNames) {
 		Assert.notNull(toolNames, "toolNames cannot be null");
 		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
@@ -791,31 +740,26 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	@JsonIgnore
 	public @Nullable Boolean getInternalToolExecutionEnabled() {
 		return this.internalToolExecutionEnabled;
 	}
 
 	@Override
-	@JsonIgnore
 	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
 	@Override
-	@JsonIgnore
 	public Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
 
 	@Override
-	@JsonIgnore
 	public void setToolContext(Map<String, Object> toolContext) {
 		this.toolContext = toolContext;
 	}
 
 	@Override
-	@JsonIgnore
 	public String getOutputSchema() {
 		Assert.state(this.format != null, "format must not be null");
 		// If format is a simple string (e.g., "json"), return it as-is
@@ -827,7 +771,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	@JsonIgnore
 	public void setOutputSchema(String outputSchema) {
 		this.format = ModelOptionsUtils.jsonToMap(outputSchema);
 	}
@@ -883,7 +826,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	public OllamaChatOptions.Builder<?> mutate() {
+	public Builder mutate() {
 		return OllamaChatOptions.builder()
 			// ChatOptions
 			.model(this.model)
@@ -976,8 +919,14 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 				this.internalToolExecutionEnabled, this.toolContext);
 	}
 
-	public static class Builder<B extends Builder<B>> extends DefaultToolCallingChatOptions.Builder<B>
-			implements StructuredOutputChatOptions.Builder<B> {
+	// public Builder class exposed to users. Avoids having to deal with noisy generic
+	// parameters.
+	public static class Builder extends AbstractBuilder<Builder> {
+
+	}
+
+	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
+			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
 
 		protected @Nullable Boolean useNUMA;
 
@@ -1036,7 +985,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		@Override
 		public B combineWith(ChatOptions.Builder<?> other) {
 			super.combineWith(other);
-			if (other instanceof Builder<?> options) {
+			if (other instanceof AbstractBuilder<?> options) {
 				if (options.format != null) {
 					this.format = options.format;
 				}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -125,20 +125,15 @@ public class AzureOpenAiImageModel implements ImageModel {
 	private String getDeploymentName(ImagePrompt prompt) {
 		var runtimeImageOptions = prompt.getOptions();
 
-		if (this.defaultOptions != null) {
-			// Merge options fixed in beta7
-			// https://github.com/Azure/azure-sdk-for-java/issues/38183
-			runtimeImageOptions = ModelOptionsUtils.merge(runtimeImageOptions, this.defaultOptions,
-					AzureOpenAiImageOptions.class);
-		}
+		// Merge options fixed in beta7
+		// https://github.com/Azure/azure-sdk-for-java/issues/38183
+		runtimeImageOptions = ModelOptionsUtils.merge(runtimeImageOptions, this.defaultOptions,
+				AzureOpenAiImageOptions.class);
 
-		if (runtimeImageOptions != null) {
-			if (runtimeImageOptions instanceof AzureOpenAiImageOptions runtimeAzureOpenAiImageOptions) {
-				if (runtimeAzureOpenAiImageOptions.getDeploymentName() != null) {
-					return runtimeAzureOpenAiImageOptions.getDeploymentName();
-				}
+		if (runtimeImageOptions instanceof AzureOpenAiImageOptions runtimeAzureOpenAiImageOptions) {
+			if (runtimeAzureOpenAiImageOptions.getDeploymentName() != null) {
+				return runtimeAzureOpenAiImageOptions.getDeploymentName();
 			}
-
 		}
 
 		// By default the one provided in the image prompt

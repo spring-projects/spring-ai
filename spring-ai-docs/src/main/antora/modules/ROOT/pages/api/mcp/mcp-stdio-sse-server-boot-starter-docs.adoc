@@ -88,6 +88,7 @@ All Common properties are prefixed with `spring.ai.mcp.server`:
 |`resource-change-notification` |Enable resource change notifications |`true`
 |`prompt-change-notification` |Enable prompt change notifications |`true`
 |`tool-change-notification` |Enable tool change notifications |`true`
+|`expose-mcp-client-tools` |Whether to re-expose downstream MCP tools (provided by MCP clients) as tools in this MCP server |`false`
 |`tool-response-mime-type` |Optional response MIME type per tool name. For example, `spring.ai.mcp.server.tool-response-mime-type.generateImage=image/png` will associate the `image/png` MIME type with the `generateImage()` tool name |`-`
 |`request-timeout` |Duration to wait for server responses before timing out requests. Applies to all requests made through the client, including tool calls, resource access, and prompt operations |`20 seconds`
 |===

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -396,42 +396,11 @@ public class DeepSeekChatModel implements ChatModel {
 	}
 
 	Prompt buildRequestPrompt(Prompt prompt) {
-		DeepSeekChatOptions runtimeOptions = null;
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-						DeepSeekChatOptions.class);
-			}
-			else {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						DeepSeekChatOptions.class);
-			}
-		}
+		DeepSeekChatOptions runtimeOptions = (DeepSeekChatOptions) prompt.getOptions();
+		runtimeOptions = runtimeOptions == null ? this.defaultOptions : runtimeOptions;
+		ToolCallingChatOptions.validateToolCallbacks(runtimeOptions.getToolCallbacks());
 
-		DeepSeekChatOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
-				DeepSeekChatOptions.class);
-
-		if (runtimeOptions != null) {
-			requestOptions.setInternalToolExecutionEnabled(
-					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
-							this.defaultOptions.getInternalToolExecutionEnabled()));
-			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
-					this.defaultOptions.getToolNames()));
-			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
-					this.defaultOptions.getToolCallbacks()));
-			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
-					this.defaultOptions.getToolContext()));
-		}
-		else {
-			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
-			requestOptions.setToolNames(this.defaultOptions.getToolNames());
-			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
-			requestOptions.setToolContext(this.defaultOptions.getToolContext());
-		}
-
-		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
-
-		return new Prompt(prompt.getInstructions(), requestOptions);
+		return prompt.mutate().chatOptions(runtimeOptions).build();
 	}
 
 	/**
@@ -482,16 +451,29 @@ public class DeepSeekChatModel implements ChatModel {
 
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
 
-		DeepSeekChatOptions requestOptions = (DeepSeekChatOptions) prompt.getOptions();
-		Assert.state(requestOptions != null, "requestOptions must not be null");
-		request = ModelOptionsUtils.merge(requestOptions, request, ChatCompletionRequest.class);
+		DeepSeekChatOptions options = (DeepSeekChatOptions) prompt.getOptions();
+		Assert.state(options != null, "requestOptions must not be null");
+		request = new ChatCompletionRequest(request.messages(),
+				ModelOptionsUtils.mergeOption(options.getModel(), request.model()),
+				ModelOptionsUtils.mergeOption(options.getFrequencyPenalty(), request.frequencyPenalty()),
+				ModelOptionsUtils.mergeOption(options.getMaxTokens(), request.maxTokens()),
+				ModelOptionsUtils.mergeOption(options.getPresencePenalty(), request.presencePenalty()),
+				ModelOptionsUtils.mergeOption(options.getResponseFormat(), request.responseFormat()),
+				ModelOptionsUtils.mergeOption(options.getStop(), request.stop()), request.stream(),
+				ModelOptionsUtils.mergeOption(options.getTemperature(), request.temperature()),
+				ModelOptionsUtils.mergeOption(options.getTopP(), request.topP()),
+				ModelOptionsUtils.mergeOption(options.getLogprobs(), request.logprobs()),
+				ModelOptionsUtils.mergeOption(options.getTopLogprobs(), request.topLogprobs()),
+				ModelOptionsUtils.mergeOption(options.getTools(), request.tools()),
+				ModelOptionsUtils.mergeOption(options.getToolChoice(), request.toolChoice()));
 
 		// Add the tool definitions to the request's tools parameter.
-		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
+		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(options);
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
-			request = ModelOptionsUtils.merge(
-					DeepSeekChatOptions.builder().tools(this.getFunctionTools(toolDefinitions)).build(), request,
-					ChatCompletionRequest.class);
+			request = new ChatCompletionRequest(request.messages(), request.model(), request.frequencyPenalty(),
+					request.maxTokens(), request.presencePenalty(), request.responseFormat(), request.stop(),
+					request.stream(), request.temperature(), request.topP(), request.logprobs(), request.topLogprobs(),
+					this.getFunctionTools(toolDefinitions), request.toolChoice());
 		}
 
 		return request;

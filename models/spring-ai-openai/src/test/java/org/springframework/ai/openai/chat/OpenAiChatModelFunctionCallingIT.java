@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,10 +40,8 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.tool.MockWeatherService;
-import org.springframework.ai.openai.api.tool.MockWeatherService.Request;
-import org.springframework.ai.openai.api.tool.MockWeatherService.Response;
+import org.springframework.ai.openai.chat.MockWeatherService.Request;
+import org.springframework.ai.openai.chat.MockWeatherService.Response;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -82,7 +80,7 @@ class OpenAiChatModelFunctionCallingIT {
 	@Test
 	void functionCallTest() {
 		functionCallTest(OpenAiChatOptions.builder()
-			.model(OpenAiApi.ChatModel.GPT_4_O.getValue())
+			.model("gpt-4o")
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -117,7 +115,7 @@ class OpenAiChatModelFunctionCallingIT {
 		};
 
 		functionCallTest(OpenAiChatOptions.builder()
-			.model(OpenAiApi.ChatModel.GPT_4_O.getValue())
+			.model("gpt-4o")
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", biFunction)
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -128,7 +126,8 @@ class OpenAiChatModelFunctionCallingIT {
 
 	void functionCallTest(OpenAiChatOptions promptOptions) {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -190,7 +189,8 @@ class OpenAiChatModelFunctionCallingIT {
 
 	void streamFunctionCallTest(OpenAiChatOptions promptOptions) {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -213,13 +213,13 @@ class OpenAiChatModelFunctionCallingIT {
 	static class Config {
 
 		@Bean
-		public OpenAiApi chatCompletionApi() {
-			return OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build();
-		}
-
-		@Bean
-		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
-			return OpenAiChatModel.builder().openAiApi(openAiApi).build();
+		public OpenAiChatModel openAiClient() {
+			return OpenAiChatModel.builder()
+				.options(org.springframework.ai.openai.OpenAiChatOptions.builder()
+					.apiKey(System.getenv("OPENAI_API_KEY"))
+					.model(org.springframework.ai.openai.OpenAiChatOptions.DEFAULT_CHAT_MODEL)
+					.build())
+				.build();
 		}
 
 	}

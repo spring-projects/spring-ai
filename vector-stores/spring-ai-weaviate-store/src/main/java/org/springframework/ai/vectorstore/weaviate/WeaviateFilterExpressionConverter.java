@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -182,10 +182,12 @@ public class WeaviateFilterExpressionConverter extends AbstractFilterExpressionC
 			context.append(String.format("valueBoolean:%s ", b));
 		}
 		else if (value instanceof String s) {
-			context.append(String.format("valueText:\"%s\" ", s));
+			context.append("valueText:");
+			emitJsonValue(s, context);
+			context.append(" ");
 		}
 		else if (value instanceof Date date) {
-			String dateString = DateFormatUtils.format(date, "yyyy-MM-dd\'T\'HH:mm:ssZZZZZ");
+			String dateString = DateFormatUtils.format(date, "yyyy-MM-dd'T'HH:mm:ssZZZZZ");
 			context.append(String.format("valueDate:\"%s\" ", dateString));
 		}
 		else {

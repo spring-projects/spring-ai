@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,9 +89,9 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 		this.enhancements = enhancements;
 		this.streamOptions = streamOptions;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks != null ? new ArrayList<>(toolCallbacks) : new ArrayList<>();
-		this.toolNames = toolNames != null ? new HashSet<>(toolNames) : new HashSet<>();
-		this.toolContext = toolContext != null ? new HashMap<>(toolContext) : new HashMap<>();
+		this.toolCallbacks = toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(toolCallbacks);
+		this.toolNames = toolNames == null ? new HashSet<>() : new HashSet<>(toolNames);
+		this.toolContext = toolContext == null ? new HashMap<>() : new HashMap<>(toolContext);
 		this.enableStreamUsage = enableStreamUsage;
 		this.reasoningEffort = reasoningEffort;
 	}
@@ -169,7 +169,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	 * A collection of textual sequences that will end completions generation.
 	 */
 	@JsonProperty("stop")
-	private List<String> stop = new ArrayList<>();
+	private List<String> stop;
 
 	/**
 	 * A value that influences the probability of generated tokens appearing based on
@@ -339,8 +339,8 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
-	public static Builder<?> builder() {
-		return new Builder<>();
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	public static AzureOpenAiChatOptions fromOptions(AzureOpenAiChatOptions fromOptions) {
@@ -348,7 +348,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public AzureOpenAiChatOptions.Builder<?> mutate() {
+	public Builder mutate() {
 		return AzureOpenAiChatOptions.builder()
 			// ChatOptions
 			.deploymentName(getDeploymentName())// alias for model in azure
@@ -619,7 +619,21 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 				this.temperature, this.topP);
 	}
 
-	public static class Builder<B extends Builder<B>> extends DefaultToolCallingChatOptions.Builder<B> {
+	// public Builder class exposed to users. Avoids having to deal with noisy generic
+	// parameters.
+	public static class Builder extends AbstractBuilder<Builder> {
+
+	}
+
+	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
+			extends DefaultToolCallingChatOptions.Builder<B> {
+
+		@Override
+		public B clone() {
+			B copy = super.clone();
+			copy.logitBias = this.logitBias == null ? null : new HashMap<>(this.logitBias);
+			return copy;
+		}
 
 		protected @Nullable Map<String, Integer> logitBias;
 
@@ -644,9 +658,6 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 		protected @Nullable Boolean enableStreamUsage;
 
 		protected @Nullable String reasoningEffort;
-
-		public Builder() {
-		}
 
 		public B deploymentName(@Nullable String deploymentName) {
 			return this.model(deploymentName);
@@ -786,7 +797,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 		@Override
 		public B combineWith(ChatOptions.Builder<?> other) {
 			super.combineWith(other);
-			if (other instanceof Builder<?> that) {
+			if (other instanceof AbstractBuilder<?> that) {
 				if (that.logitBias != null) {
 					this.logitBias = that.logitBias;
 				}
@@ -832,9 +843,8 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 			return new AzureOpenAiChatOptions(this.maxTokens, this.temperature, this.topP, this.logitBias, this.user,
 					this.n, this.stopSequences, this.presencePenalty, this.frequencyPenalty, this.model,
 					this.responseFormat, this.seed, this.logprobs, this.topLogProbs, this.maxCompletionTokens,
-					this.enhancements, this.streamOptions, this.internalToolExecutionEnabled,
-					new ArrayList<>(this.toolCallbacks), new HashSet<>(this.toolNames), new HashMap<>(this.toolContext),
-					this.enableStreamUsage, this.reasoningEffort);
+					this.enhancements, this.streamOptions, this.internalToolExecutionEnabled, this.toolCallbacks,
+					this.toolNames, this.toolContext, this.enableStreamUsage, this.reasoningEffort);
 		}
 
 	}

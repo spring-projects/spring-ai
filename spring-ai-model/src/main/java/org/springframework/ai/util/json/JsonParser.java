@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -177,9 +177,10 @@ public final class JsonParser {
 				result = JsonParser.fromJson(jsonString, javaType);
 			}
 			catch (IllegalStateException e) {
-				// ignore: fromJson wraps JacksonException in IllegalStateException,
-				// which happens for types like LocalDate/LocalTime where the raw string
-				// (e.g. "08:00") is not valid JSON but can be deserialized after quoting
+				// If the type is a raw string that should read as JSON String,
+				// parsing will fail but pass the following toJson -> fromJson cycle.
+				// Example: LocalDate, with jsonString = "2026-04-22", which is not valid
+				// JSON. Instead, it should be "\"2026-04-22\"".
 			}
 		}
 

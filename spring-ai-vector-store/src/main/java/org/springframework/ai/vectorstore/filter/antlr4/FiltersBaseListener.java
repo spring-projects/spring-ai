@@ -2,7 +2,7 @@
 package org.springframework.ai.vectorstore.filter.antlr4;
 
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -305,7 +305,7 @@ public class FiltersBaseListener implements FiltersListener {
 	 * </p>
 	 */
 	@Override
-	public void enterIdentifier(FiltersParser.IdentifierContext ctx) {
+	public void enterCompoundIdentifier(FiltersParser.CompoundIdentifierContext ctx) {
 	}
 
 	/**
@@ -316,7 +316,51 @@ public class FiltersBaseListener implements FiltersListener {
 	 * </p>
 	 */
 	@Override
-	public void exitIdentifier(FiltersParser.IdentifierContext ctx) {
+	public void exitCompoundIdentifier(FiltersParser.CompoundIdentifierContext ctx) {
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation does nothing.
+	 * </p>
+	 */
+	@Override
+	public void enterSimpleIdentifier(FiltersParser.SimpleIdentifierContext ctx) {
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation does nothing.
+	 * </p>
+	 */
+	@Override
+	public void exitSimpleIdentifier(FiltersParser.SimpleIdentifierContext ctx) {
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation does nothing.
+	 * </p>
+	 */
+	@Override
+	public void enterQuotedIdentifier(FiltersParser.QuotedIdentifierContext ctx) {
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation does nothing.
+	 * </p>
+	 */
+	@Override
+	public void exitQuotedIdentifier(FiltersParser.QuotedIdentifierContext ctx) {
 	}
 
 	/**

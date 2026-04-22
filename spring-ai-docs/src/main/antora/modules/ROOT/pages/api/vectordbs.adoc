@@ -398,7 +398,9 @@ These are the available implementations of the `VectorStore` interface:
 * xref:api/vectordbs/typesense.adoc[Typesense Vector Store] - The https://typesense.org/docs/0.24.0/api/vector-search.html[Typesense] vector store.
 * xref:api/vectordbs/weaviate.adoc[Weaviate Vector Store] - The https://weaviate.io/[Weaviate] vector store.
 * xref:api/vectordbs/s3-vector-store.adoc[S3 Vector Store] - The https://aws.amazon.com/s3/features/vectors/[AWS S3] vector store.
-* link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-vector-store/src/main/java/org/springframework/ai/vectorstore/SimpleVectorStore.java[SimpleVectorStore] - A simple implementation of persistent vector storage, good for educational purposes.
+* link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-vector-store/src/main/java/org/springframework/ai/vectorstore/SimpleVectorStore.java[SimpleVectorStore] - A simple implementation of a vector storage, good only for testing purposes. 
+
+WARNING: The `SimpleVectorStore` implementation is not designed for production use and should only be used for testing or demonstration purposes.
 
 More implementations may be supported in future releases.
 

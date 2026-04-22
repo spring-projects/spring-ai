@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import redis.clients.jedis.search.RediSearchUtil;
 
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
@@ -116,12 +118,12 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 				break;
 			case TAG:
 				context.append("{");
-				context.append(stringValue(expression, value));
+				context.append(tagStringValue(expression, value));
 				context.append("}");
 				break;
 			case TEXT:
 				context.append("(");
-				context.append(stringValue(expression, value));
+				context.append(textStringValue(expression, value));
 				context.append(")");
 				break;
 			default:
@@ -130,12 +132,41 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 		}
 	}
 
-	private Object stringValue(Expression expression, Value value) {
+	private String tagStringValue(Expression expression, Value value) {
 		String delimiter = tagValueDelimiter(expression);
 		if (value.value() instanceof List<?> list) {
-			return String.join(delimiter, list.stream().map(String::valueOf).toList());
+			return list.stream().map(String::valueOf).map(this::escapeTagValue).collect(Collectors.joining(delimiter));
 		}
-		return value.value();
+		return escapeTagValue(String.valueOf(value.value()));
+	}
+
+	private String textStringValue(Expression expression, Value value) {
+		String delimiter = tagValueDelimiter(expression);
+		if (value.value() instanceof List<?> list) {
+			return list.stream()
+				.map(String::valueOf)
+				.map(RediSearchUtil::escapeQuery)
+				.collect(Collectors.joining(delimiter));
+		}
+		return RediSearchUtil.escapeQuery(String.valueOf(value.value()));
+	}
+
+	/**
+	 * Escapes characters that have special meaning inside a RediSearch TAG query clause
+	 * ({@code @field:\{value\}}). The following characters are escaped with a backslash:
+	 * {@code $}, {@code \}, {@code |}, {@code {}, {@code }}, {@code (}, {@code )},
+	 * {@code [}, {@code ]}, {@code -}, and {@code '}.
+	 */
+	private String escapeTagValue(String value) {
+		StringBuilder sb = new StringBuilder(value.length());
+		for (int i = 0; i < value.length(); i++) {
+			char c = value.charAt(i);
+			switch (c) {
+				case '\\', '$', '|', '{', '}', '(', ')', '[', ']', '-', '\'' -> sb.append('\\').append(c);
+				default -> sb.append(c);
+			}
+		}
+		return sb.toString();
 	}
 
 	private String tagValueDelimiter(Expression expression) {
@@ -165,6 +196,11 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 
 	private NumericBoundary exclusive(Value value) {
 		return new NumericBoundary(value.value(), true);
+	}
+
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		emitJsonValue(value, context);
 	}
 
 	record Numeric(NumericBoundary lower, NumericBoundary upper) {

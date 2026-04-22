@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -45,7 +41,6 @@ import org.springframework.util.Assert;
  *
  * @author Geng Rong
  */
-@JsonInclude(Include.NON_NULL)
 public class DeepSeekChatOptions implements ToolCallingChatOptions {
 
 	// @formatter:off
@@ -53,58 +48,58 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	 * ID of the model to use. You can use either use deepseek-reasoner or deepseek-chat.
 	 */
 	@SuppressWarnings("NullAway.Init")
-	private @JsonProperty("model") String model;
+	private String model;
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
 	 * frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
 	 */
-	private @JsonProperty("frequency_penalty") @Nullable Double frequencyPenalty;
+	private @Nullable Double frequencyPenalty;
 	/**
 	 * The maximum number of tokens that can be generated in the chat completion.
 	 * The total length of input tokens and generated tokens is limited by the model's context length.
 	 */
-	private @JsonProperty("max_tokens") @Nullable Integer maxTokens;
+	private @Nullable Integer maxTokens;
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
 	 * appear in the text so far, increasing the model's likelihood to talk about new topics.
 	 */
-	private @JsonProperty("presence_penalty") @Nullable Double presencePenalty;
+	private @Nullable Double presencePenalty;
 	/**
 	 * An object specifying the format that the model must output. Setting to { "type":
 	 * "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 	 */
-	private @JsonProperty("response_format") @Nullable ResponseFormat responseFormat;
+	private @Nullable ResponseFormat responseFormat;
 	/**
 	 * A string or a list containing up to 4 strings, upon encountering these words, the API will cease generating more tokens.
 	 */
-	private @JsonProperty("stop") @Nullable List<String> stop;
+	private @Nullable List<String> stop;
 	/**
 	 * What sampling temperature to use, between 0 and 2.
 	 * Higher values like 0.8 will make the output more random,
 	 * while lower values like 0.2 will make it more focused and deterministic.
 	 * We generally recommend altering this or top_p but not both.
 	 */
-	private @JsonProperty("temperature") @Nullable Double temperature;
+	private @Nullable Double temperature;
 	/**
 	 * An alternative to sampling with temperature, called nucleus sampling,
 	 * where the model considers the results of the tokens with top_p probability mass.
 	 * So 0.1 means only the tokens comprising the top 10% probability mass are considered.
 	 * We generally recommend altering this or temperature but not both.
 	 */
-	private @JsonProperty("top_p") @Nullable Double topP;
+	private @Nullable Double topP;
 	/**
 	 * Whether to return log probabilities of the output tokens or not.
 	 * If true, returns the log probabilities of each output token returned in the content of message.
 	 */
-	private @JsonProperty("logprobs") @Nullable Boolean logprobs;
+	private @Nullable Boolean logprobs;
 	/**
 	 * An integer between 0 and 20 specifying the number of most likely tokens to return at each token position,
 	 * each with an associated log probability. logprobs must be set to true if this parameter is used.
 	 */
-	private @JsonProperty("top_logprobs") @Nullable Integer topLogprobs;
+	private @Nullable Integer topLogprobs;
 
 
-	private @JsonProperty("tools") @Nullable List<DeepSeekApi.FunctionTool> tools;
+	private @Nullable List<DeepSeekApi.FunctionTool> tools;
 
 	/**
 	 * Controls which (if any) function is called by the model. none means the model will
@@ -116,12 +111,11 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	 * {@link DeepSeekApi.ChatCompletionRequest.ToolChoiceBuilder} to create a tool choice
 	 * object.
 	 */
-	private @JsonProperty("tool_choice") @Nullable Object toolChoice;
+	private @Nullable Object toolChoice;
 
 	/**
 	 * Whether to enable the tool execution lifecycle internally in ChatModel.
 	 */
-	@JsonIgnore
 	private @Nullable Boolean internalToolExecutionEnabled;
 
 	/**
@@ -130,7 +124,6 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	 * For Default Options the toolCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
 	 * from the registry to be used by the ChatModel chat completion requests.
 	 */
-	@JsonIgnore
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 	/**
@@ -141,10 +134,8 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
 	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
 	 */
-	@JsonIgnore
 	private Set<String> toolNames = new HashSet<>();
 
-	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
 
 	// TODO: left here for ModelOptionUtils.merge*() for now
@@ -157,7 +148,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 			@Nullable Double temperature, @Nullable Double topP, @Nullable Boolean logprobs,
 			@Nullable Integer topLogprobs, @Nullable List<DeepSeekApi.FunctionTool> tools,
 			@Nullable Object toolChoice, @Nullable Boolean internalToolExecutionEnabled,
-			List<ToolCallback> toolCallbacks, Set<String> toolNames, Map<String, Object> toolContext) {
+			@Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames, @Nullable Map<String, Object> toolContext) {
 		this.model = model;
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
@@ -171,13 +162,13 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		this.tools = tools;
 		this.toolChoice = toolChoice;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks;
-		this.toolNames = toolNames;
-		this.toolContext = toolContext;
+		this.toolCallbacks = toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(toolCallbacks);
+		this.toolNames = toolNames == null ? new HashSet<>() : new HashSet<>(toolNames);
+		this.toolContext = toolContext ==  null ? new HashMap<>() : new HashMap<>(toolContext);
 	}
 
-	public static Builder<?> builder() {
-		return new Builder<>();
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	@Override
@@ -225,12 +216,10 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@JsonIgnore
 	public @Nullable List<String> getStopSequences() {
 		return getStop();
 	}
 
-	@JsonIgnore
 	public void setStopSequences(@Nullable List<String> stopSequences) {
 		setStop(stopSequences);
 	}
@@ -279,13 +268,11 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 
 
 	@Override
-	@JsonIgnore
 	public List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
 	}
 
 	@Override
-	@JsonIgnore
 	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
@@ -293,13 +280,11 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@JsonIgnore
 	public Set<String> getToolNames() {
 		return this.toolNames;
 	}
 
 	@Override
-	@JsonIgnore
 	public void setToolNames(Set<String> toolNames) {
 		Assert.notNull(toolNames, "toolNames cannot be null");
 		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
@@ -308,13 +293,11 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@JsonIgnore
 	public @Nullable Boolean getInternalToolExecutionEnabled() {
 		return this.internalToolExecutionEnabled;
 	}
 
 	@Override
-	@JsonIgnore
 	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
@@ -336,7 +319,6 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@JsonIgnore
 	public @Nullable Integer getTopK() {
 		return null;
 	}
@@ -358,7 +340,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public DeepSeekChatOptions.Builder<?> mutate() {
+	public Builder mutate() {
 		return DeepSeekChatOptions.builder()
 			// ChatOptions
 			.model(this.model)
@@ -419,7 +401,20 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		return fromOptions.mutate().build();
 	}
 
-	public static class Builder<B extends Builder<B>> extends DefaultToolCallingChatOptions.Builder<B> {
+	// public Builder class exposed to users. Avoids having to deal with noisy generic parameters.
+	public static class Builder extends AbstractBuilder<Builder> {
+
+	}
+
+	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
+			extends DefaultToolCallingChatOptions.Builder<B> {
+
+		@Override
+		public B clone() {
+			B copy = super.clone();
+			copy.tools = this.tools == null ? null : new ArrayList<>(this.tools);
+			return copy;
+		}
 
 		protected @Nullable ResponseFormat responseFormat;
 
@@ -472,7 +467,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 
 		public B combineWith(ChatOptions.Builder<?> other) {
 			super.combineWith(other);
-			if (other instanceof DeepSeekChatOptions.Builder<?> that) {
+			if (other instanceof AbstractBuilder<?> that) {
 				if (that.responseFormat != null) {
 					this.responseFormat = that.responseFormat;
 				}
@@ -493,8 +488,10 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		}
 
 		@Override
+		@SuppressWarnings("NullAway")
 		public DeepSeekChatOptions build() {
-			Assert.state(this.model != null, "model must not be null");
+			// TODO Un-comment assertion when tool definitions merging will use the builder/customizer
+			// Assert.state(this.model != null, "model must not be null");
 			return new DeepSeekChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 					this.responseFormat, this.stopSequences, this.temperature, this.topP, this.logprobs,
 					this.topLogprobs, this.tools, this.toolChoice, this.internalToolExecutionEnabled,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.pgvector;
 
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -241,6 +243,175 @@ public class PgVectorFilterExpressionConverterTests {
 						new Expression(EQ, new Key("state"), new Value("pending"))),
 				new Expression(EQ, new Key("state"), new Value("processing"))));
 		assertThat(vectorExpr).isEqualTo("$.state == \"ready\" || $.state == \"pending\" || $.state == \"processing\"");
+	}
+
+	// Security Tests - JSONPath Injection Prevention
+
+	@Test
+	public void testInjectionWithDoubleQuoteEscape() {
+		// Attempt to inject: department == "" || $.department == "Finance"
+		// Malicious value: " || $.department == "Finance
+		String maliciousValue = "\" || $.department == \"Finance";
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("department"), new Value(maliciousValue)));
+
+		// Expected format with escaped quotes
+		String expected = "$.department == \"\\\" || $.department == \\\"Finance\"";
+
+		// Verify the quotes are escaped (backslash + quote)
+		assertThat(vectorExpr).isEqualTo(expected);
+		assertThat(vectorExpr).contains("\\\"");
+
+		// Critical: verify we don't have the vulnerable pattern: $.department == "" ||
+		// (two quotes together would allow injection to work)
+		assertThat(vectorExpr).doesNotContain("== \"\"");
+	}
+
+	@Test
+	public void testInjectionWithBackslashEscape() {
+		// Attempt to inject using backslash escape: value\"
+		String maliciousValue = "value\\\"";
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("field"), new Value(maliciousValue)));
+
+		// Should escape both backslash and quote
+		assertThat(vectorExpr).isEqualTo("$.field == \"value\\\\\\\"\"");
+		// Verify the backslashes are escaped
+		assertThat(vectorExpr).contains("\\\\");
+	}
+
+	@Test
+	public void testInjectionWithSingleQuote() {
+		// Attempt to inject using single quotes: value' || $.other == 'admin
+		String maliciousValue = "value' || $.other == 'admin";
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("field"), new Value(maliciousValue)));
+
+		// In JSON double-quoted strings, single quotes don't need escaping
+		// Jackson treats them as literal characters
+		assertThat(vectorExpr).isEqualTo("$.field == \"value' || $.other == 'admin\"");
+		// Single quotes are kept as-is (no escaping needed in JSON)
+		assertThat(vectorExpr).contains("value' || $.other == 'admin");
+	}
+
+	@Test
+	public void testInjectionWithControlCharacters() {
+		// Attempt to inject using newline: value\n|| $.field == "admin"
+		String maliciousValue = "value\n|| $.field == \"admin\"";
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("field"), new Value(maliciousValue)));
+
+		// Should escape newline and quotes
+		assertThat(vectorExpr).isEqualTo("$.field == \"value\\n|| $.field == \\\"admin\\\"\"");
+		// Verify newline is escaped
+		assertThat(vectorExpr).contains("\\n");
+	}
+
+	@Test
+	public void testInjectionWithMultipleEscapes() {
+		// Complex injection with multiple special characters
+		String maliciousValue = "test\"\\'\n\r\t";
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("field"), new Value(maliciousValue)));
+
+		// JSON escaping: double quotes and backslashes escaped, single quotes not escaped
+		assertThat(vectorExpr).isEqualTo("$.field == \"test\\\"\\\\'\\n\\r\\t\"");
+		// Verify escapes are present
+		assertThat(vectorExpr).contains("\\\""); // escaped double quote
+		assertThat(vectorExpr).contains("\\\\"); // escaped backslash
+		// Single quotes are NOT escaped in JSON double-quoted strings
+		assertThat(vectorExpr).contains("'");
+	}
+
+	@Test
+	public void testInjectionInListValues() {
+		// Attempt injection through IN clause
+		String maliciousValue1 = "HR\" || $.department == \"Finance";
+		String maliciousValue2 = "Engineering";
+		String vectorExpr = this.converter.convertExpression(
+				new Expression(IN, new Key("department"), new Value(List.of(maliciousValue1, maliciousValue2))));
+
+		// Should escape quotes in list values
+		assertThat(vectorExpr).contains("HR\\\" || $.department == \\\"Finance");
+		assertThat(vectorExpr).contains("Engineering");
+	}
+
+	@Test
+	public void testInjectionInComplexExpression() {
+		// Attempt injection in a complex AND/OR expression
+		String maliciousValue = "\" || $.role == \"admin\" || $.dept == \"";
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(AND, new Expression(EQ, new Key("department"), new Value(maliciousValue)),
+					new Expression(GTE, new Key("year"), new Value(2020))));
+
+		// Should not allow injection to break out of the expression
+		assertThat(vectorExpr).contains("\\\" || $.role == \\\"admin\\\" || $.dept == \\\"");
+		// Verify the AND operator is still present (not broken by injection)
+		assertThat(vectorExpr).contains("&&");
+	}
+
+	@Test
+	public void testNormalStringsNotAffected() {
+		// Verify normal strings work correctly after escaping fix
+		String normalValue = "HR Department";
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("department"), new Value(normalValue)));
+
+		assertThat(vectorExpr).isEqualTo("$.department == \"HR Department\"");
+	}
+
+	@Test
+	public void testUnicodeControlCharacters() {
+		// Test Unicode control characters are escaped
+		String valueWithControlChar = "test\u0000value"; // null character
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("field"), new Value(valueWithControlChar)));
+
+		// Should escape Unicode control character
+		assertThat(vectorExpr).contains("\\u0000");
+	}
+
+	@Test
+	public void testDateInINClause() {
+		// Test that date strings in IN clauses are properly normalized
+		String vectorExpr = this.converter.convertExpression(new Expression(IN, new Key("activationDate"),
+				new Value(List.of("2024-01-15T10:30:00Z", "2024-02-20T14:45:00Z"))));
+
+		// Verify dates are properly formatted in the JSONPath expression
+		// Note: Jackson serializes dates with milliseconds, so .000Z is expected
+		assertThat(vectorExpr).contains("$.activationDate == \"2024-01-15T10:30:00.000Z\"");
+		assertThat(vectorExpr).contains("$.activationDate == \"2024-02-20T14:45:00.000Z\"");
+		assertThat(vectorExpr).contains(" || "); // OR operator between conditions
+	}
+
+	@Test
+	public void testDateInNINClause() {
+		// Test that date strings in NIN clauses are properly normalized
+		String vectorExpr = this.converter.convertExpression(new Expression(NIN, new Key("activationDate"),
+				new Value(List.of("2024-01-15T10:30:00Z", "2024-02-20T14:45:00Z"))));
+
+		// Verify dates are properly formatted and wrapped in negation
+		assertThat(vectorExpr).startsWith("!(");
+		assertThat(vectorExpr).endsWith(")");
+		// Note: Jackson serializes dates with milliseconds
+		assertThat(vectorExpr).contains("$.activationDate == \"2024-01-15T10:30:00.000Z\"");
+		assertThat(vectorExpr).contains("$.activationDate == \"2024-02-20T14:45:00.000Z\"");
+	}
+
+	@Test
+	public void testDateObjectInINClause() {
+		// Test that Date objects in IN clauses are properly formatted
+		Date date1 = Date.from(Instant.parse("2024-01-15T10:30:00Z"));
+		Date date2 = Date.from(Instant.parse("2024-02-20T14:45:00Z"));
+
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(IN, new Key("activationDate"), new Value(List.of(date1, date2))));
+
+		// Verify Date objects are formatted in JSONPath
+		assertThat(vectorExpr).contains("$.activationDate");
+		// Jackson includes milliseconds in date serialization
+		assertThat(vectorExpr).contains("2024-01-15T10:30:00.000Z");
+		assertThat(vectorExpr).contains("2024-02-20T14:45:00.000Z");
 	}
 
 }

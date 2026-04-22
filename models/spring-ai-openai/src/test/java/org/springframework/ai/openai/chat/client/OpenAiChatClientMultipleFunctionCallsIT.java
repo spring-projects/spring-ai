@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,9 +32,9 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
-import org.springframework.ai.openai.api.tool.MockWeatherService;
-import org.springframework.ai.openai.api.tool.MockWeatherService.Request;
-import org.springframework.ai.openai.api.tool.MockWeatherService.Response;
+import org.springframework.ai.openai.chat.MockWeatherService;
+import org.springframework.ai.openai.chat.MockWeatherService.Request;
+import org.springframework.ai.openai.chat.MockWeatherService.Response;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Value;
@@ -72,7 +72,7 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 
 		// @formatter:off
 		String response = chatClientBuilder.build().prompt()
-				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
+				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities."))
 				.call()
 				.content();
 		// @formatter:on
@@ -83,7 +83,7 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 
 		// @formatter:off
 		response = chatClientBuilder.build().prompt()
-				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
+				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities."))
 				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
@@ -98,7 +98,7 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 
 		// @formatter:off
 		response = chatClientBuilder.build().prompt()
-				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
+				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities."))
 				.call()
 				.content();
 		// @formatter:on
@@ -118,7 +118,7 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
-				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
+				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities."))
 			.build()
 			.prompt().call().content();
 		// @formatter:on
@@ -160,7 +160,7 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
-				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
+				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities."))
 				.defaultToolContext(Map.of("sessionId", "123"))
 			.build()
 			.prompt().call().content();
@@ -203,7 +203,7 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
-				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
+				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities."))
 				.build()
 			.prompt()
 			.toolContext(Map.of("sessionId", "123"))
@@ -220,7 +220,7 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
-				.user("What's the weather like in San Francisco, Tokyo, and Paris?")
+				.user("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.")
 				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)

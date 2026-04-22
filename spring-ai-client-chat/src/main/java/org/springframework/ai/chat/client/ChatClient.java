@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -208,7 +208,7 @@ public interface ChatClient {
 
 		ChatClientRequestSpec messages(List<Message> messages);
 
-		<T extends ChatOptions> ChatClientRequestSpec options(T options);
+		<B extends ChatOptions.Builder<?>> ChatClientRequestSpec options(B customizer);
 
 		ChatClientRequestSpec toolNames(String... toolNames);
 
@@ -257,7 +257,7 @@ public interface ChatClient {
 
 		Builder defaultAdvisors(List<Advisor> advisors);
 
-		Builder defaultOptions(ChatOptions chatOptions);
+		Builder defaultOptions(ChatOptions.Builder chatOptions);
 
 		Builder defaultUser(String text);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -224,9 +224,8 @@ class DeepSeekChatModelIT {
 				```
 				""";
 		UserMessage userMessage = new UserMessage(userMessageContent);
-		Message assistantMessage = AssistantMessage.builder()
-			.content("{\"code\":200,\"result\":{\"total\":1,\"data\":[1")
-			.build();
+		Message assistantMessage = DeepSeekAssistantMessage
+			.prefixAssistantMessage("{\"code\":200,\"result\":{\"total\":1,\"data\":[1");
 		Prompt prompt = new Prompt(List.of(userMessage, assistantMessage));
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).isEqualTo(",2,3]}}");

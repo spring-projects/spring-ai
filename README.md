@@ -74,6 +74,8 @@ To clone it you have to either:
 The project targets and build artifacts compatible with Java 17+, but requires JDK 21
 to build. This is enforced by the maven enforcer plugin.
 
+**NOTE:** Building Spring AI requires components that depend on your specific CPU architecture (PyTorch for example). MacOS can seamlessly run x86 Java applications on ARM processors using Rosetta, but this will fail when building this project because it tries to download architecture-specific native dependencies. (Note: this is only an issue for building the project, not for consuming the libraries). If you are unsure if you have the correct JDK distribution for your CPU, run the command `java -XshowSettings:properties -version 2>&1 | grep os.arch` from a fresh terminal to validate that it matches your machine.
+
 To build with running unit tests
 
 ```shell
@@ -142,7 +144,7 @@ To update the year on license headers using the [license-maven-plugin](https://o
 
 To check javadocs using the [javadoc:javadoc](https://maven.apache.org/plugins/maven-javadoc-plugin/)
 ```shell
-./mvnw javadoc:javadoc -Pjavadoc
+./mvnw javadoc:javadoc
 ```
 
 #### Source Code Style
@@ -152,6 +154,11 @@ The wiki pages
 [Code Style](https://github.com/spring-projects/spring-framework/wiki/Code-Style) and
 [IntelliJ IDEA Editor Settings](https://github.com/spring-projects/spring-framework/wiki/IntelliJ-IDEA-Editor-Settings)
 define the source file coding standards we use along with some IDEA editor settings we customize.
+
+Run checkstyle manually:
+```shell
+./mvnw process-sources -P checkstyle-check
+```
 
 ## Contributing
 

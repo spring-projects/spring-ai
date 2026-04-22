@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,38 +16,26 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.ai.openai.OpenAiModerationOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
- * OpenAI Moderation autoconfiguration properties.
+ * OpenAI SDK Moderation autoconfiguration properties.
  *
  * @author Ahmed Yousri
- * @since 0.9.0
+ * @author Ilayaperumal Gopinathan
  */
 @ConfigurationProperties(OpenAiModerationProperties.CONFIG_PREFIX)
-public class OpenAiModerationProperties extends OpenAiParentProperties {
+public class OpenAiModerationProperties extends AbstractOpenAiOptions {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.moderation";
 
-	public static final String DEFAULT_MODERATION_PATH = "/v1/moderations";
-
-	private String moderationPath = DEFAULT_MODERATION_PATH;
-
-	/**
-	 * Options for OpenAI Moderation API.
-	 */
 	@NestedConfigurationProperty
-	private final OpenAiModerationOptions options = OpenAiModerationOptions.builder().build();
-
-	public String getModerationPath() {
-		return this.moderationPath;
-	}
-
-	public void setModerationPath(String moderationPath) {
-		this.moderationPath = moderationPath;
-	}
+	private final OpenAiModerationOptions options = OpenAiModerationOptions.builder()
+		.model(OpenAiModerationOptions.DEFAULT_MODERATION_MODEL)
+		.build();
 
 	public OpenAiModerationOptions getOptions() {
 		return this.options;

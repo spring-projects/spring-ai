@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
-import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.ai.vectorstore.redis.cache.semantic.DefaultSemanticCache;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
@@ -47,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration tests for {@link RedisSemanticCacheAutoConfiguration}.
  */
 @Testcontainers
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class RedisSemanticCacheAutoConfigurationIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(RedisSemanticCacheAutoConfigurationIT.class);
@@ -126,7 +126,10 @@ class RedisSemanticCacheAutoConfigurationIT {
 		public EmbeddingModel embeddingModel() {
 			// Get API key from environment variable
 			String apiKey = System.getenv("OPENAI_API_KEY");
-			return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(apiKey).build());
+			return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder()
+				.apiKey(apiKey)
+				.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
+				.build());
 		}
 
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,7 @@
 package org.springframework.ai.util.json;
 
 import java.lang.reflect.Type;
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.Test;
 import tools.jackson.core.type.TypeReference;
@@ -292,6 +291,13 @@ class JsonParserTests {
 		String input = "[1,2,3]";
 		String result = JsonParser.toJson(input);
 		assertThat(input).isEqualTo(result);
+	}
+
+	@Test
+	void localDateTime() {
+		String input = "2026-04-19T07:12:00";
+		LocalDateTime result = (LocalDateTime) JsonParser.toTypedObject(input, LocalDateTime.class);
+		assertThat(result.getYear()).isEqualTo(2026);
 	}
 
 	record TestRecord(String name, Integer age) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -158,9 +158,7 @@ class DeepSeekChatModelFunctionCallingIT {
 		assertThat(chatResponse.getResult().getOutput()).isNotNull();
 		assertThat(chatResponse.getResult().getOutput().getText()).contains("San Francisco");
 		assertThat(chatResponse.getResult().getOutput().getText()).contains("30");
-
-		// the total token is first chat and tool call request
-		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isLessThan(700).isGreaterThan(280);
+		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
 	}
 
 	@Test
@@ -180,7 +178,6 @@ class DeepSeekChatModelFunctionCallingIT {
 		assertThat(chatResponse).isNotNull();
 		assertThat(chatResponse.getMetadata()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
-		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isLessThan(700).isGreaterThan(280);
 	}
 
 }

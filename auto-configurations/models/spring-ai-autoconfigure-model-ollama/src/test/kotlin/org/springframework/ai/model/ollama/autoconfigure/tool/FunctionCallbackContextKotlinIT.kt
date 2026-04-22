@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.")
 
 			val response = chatModel
-					.call(Prompt(listOf(userMessage), OllamaChatOptions.builder().toolNames("weatherInfo").build()))
+					.call(Prompt(listOf(userMessage), OllamaChatOptions.builder().model(MODEL_NAME).toolNames("weatherInfo").build()))
 
 			logger.info("Response: $response")
 
@@ -86,7 +86,8 @@ class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 			val userMessage = UserMessage(
 				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.")
 
-			val functionOptions = ToolCallingChatOptions.builder()
+			val functionOptions = OllamaChatOptions.builder()
+				.model(MODEL_NAME)
 				.toolNames("weatherInfo")
 				.build()
 

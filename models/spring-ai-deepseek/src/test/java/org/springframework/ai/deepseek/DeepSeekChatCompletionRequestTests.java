@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,12 +31,10 @@ public class DeepSeekChatCompletionRequestTests {
 	@Test
 	public void createRequestWithChatOptions() {
 
-		var client = DeepSeekChatModel.builder()
-			.deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build())
-			.defaultOptions(DeepSeekChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build())
-			.build();
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
 
-		var prompt = client.buildRequestPrompt(new Prompt("Test message content"));
+		var prompt = client.buildRequestPrompt(new Prompt("Test message content",
+				DeepSeekChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build()));
 
 		var request = client.createRequest(prompt, false);
 

@@ -13,7 +13,7 @@ It covers selecting the right LLM provider for your use case and configuring imp
 === LLM Provider Selection
 
 For prompt engineering, you will start by choosing a model.
-Spring AI supports xref::api/chat/comparison.adoc[multiple LLM providers] (such as OpenAI, Anthropic, Google Vertex AI, AWS Bedrock, Ollama and more), letting you switch providers without changing application code - just update your configuration.
+Spring AI supports xref::api/chat/comparison.adoc[multiple LLM providers] (such as OpenAI, Anthropic, Google GenAI, AWS Bedrock, Ollama and more), letting you switch providers without changing application code - just update your configuration.
 Just add the selected starter dependency `spring-ai-starter-model-<MODEL-PROVIDER-NAME>`.
 For example, here is how to enable Anthropic Claude API:
 

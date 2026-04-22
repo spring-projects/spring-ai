@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import org.springframework.ai.stabilityai.api.StabilityAiApi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@EnabledIfEnvironmentVariable(named = "STABILITYAI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "STABILITYAI_API_KEY", matches = ".+")
 public class StabilityAiApiIT {
 
 	StabilityAiApi stabilityAiApi = new StabilityAiApi(System.getenv("STABILITYAI_API_KEY"));

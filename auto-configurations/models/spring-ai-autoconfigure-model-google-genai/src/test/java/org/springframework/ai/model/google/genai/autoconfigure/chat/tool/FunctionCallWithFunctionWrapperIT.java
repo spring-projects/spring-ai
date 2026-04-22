@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,9 +30,11 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.model.google.genai.autoconfigure.chat.GoogleGenAiChatAutoConfiguration;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,11 +48,12 @@ public class FunctionCallWithFunctionWrapperIT {
 	private static final Logger logger = LoggerFactory.getLogger(FunctionCallWithFunctionWrapperIT.class);
 
 	@Test
-	@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".*")
+	@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
 	void functionCallWithApiKey() {
 		ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.google.genai.api-key=" + System.getenv("GOOGLE_API_KEY"))
-			.withConfiguration(SpringAiTestAutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class));
+			.withConfiguration(AutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class));
 
 		contextRunner.run(context -> {
 
@@ -76,18 +79,19 @@ public class FunctionCallWithFunctionWrapperIT {
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getText()).contains("30.5", "10.5", "15.5");
+			assertThat(response.getResult().getOutput().getText()).contains("30.789", "10.456", "15.123");
 		});
 	}
 
 	@Test
-	@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
-	@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
+	@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
+	@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".+")
 	void functionCallWithVertexAi() {
 		ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.google.genai.project-id=" + System.getenv("GOOGLE_CLOUD_PROJECT"),
 					"spring.ai.google.genai.location=" + System.getenv("GOOGLE_CLOUD_LOCATION"))
-			.withConfiguration(SpringAiTestAutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class));
+			.withConfiguration(AutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class));
 
 		contextRunner.run(context -> {
 
@@ -113,7 +117,7 @@ public class FunctionCallWithFunctionWrapperIT {
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getText()).contains("30.5", "10.5", "15.5");
+			assertThat(response.getResult().getOutput().getText()).contains("30.789", "10.456", "15.123");
 		});
 	}
 

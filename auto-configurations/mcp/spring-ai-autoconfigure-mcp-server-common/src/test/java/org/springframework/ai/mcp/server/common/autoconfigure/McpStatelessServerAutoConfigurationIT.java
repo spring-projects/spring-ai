@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,15 +42,15 @@ import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpStatelessServerTransport;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springaicommunity.mcp.annotation.McpArg;
-import org.springaicommunity.mcp.annotation.McpComplete;
-import org.springaicommunity.mcp.annotation.McpPrompt;
-import org.springaicommunity.mcp.annotation.McpResource;
-import org.springaicommunity.mcp.annotation.McpTool;
-import org.springaicommunity.mcp.annotation.McpToolParam;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.SyncMcpToolCallback;
+import org.springframework.ai.mcp.annotation.McpArg;
+import org.springframework.ai.mcp.annotation.McpComplete;
+import org.springframework.ai.mcp.annotation.McpPrompt;
+import org.springframework.ai.mcp.annotation.McpResource;
+import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.StatelessServerSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
@@ -168,10 +168,12 @@ public class McpStatelessServerAutoConfigurationIT {
 
 	@Test
 	void toolSpecificationConfiguration() {
-		this.contextRunner.withUserConfiguration(TestToolConfiguration.class).run(context -> {
-			List<SyncToolSpecification> tools = context.getBean("syncTools", List.class);
-			assertThat(tools).hasSize(1);
-		});
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.expose-mcp-client-tools=true")
+			.withUserConfiguration(TestToolConfiguration.class)
+			.run(context -> {
+				List<SyncToolSpecification> tools = context.getBean("syncTools", List.class);
+				assertThat(tools).hasSize(1);
+			});
 	}
 
 	@Test
@@ -192,7 +194,8 @@ public class McpStatelessServerAutoConfigurationIT {
 
 	@Test
 	void asyncToolSpecificationConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.server.type=ASYNC", "spring.ai.mcp.server.expose-mcp-client-tools=true")
 			.withUserConfiguration(TestToolConfiguration.class)
 			.run(context -> {
 				List<AsyncToolSpecification> tools = context.getBean("asyncTools", List.class);
@@ -247,7 +250,9 @@ public class McpStatelessServerAutoConfigurationIT {
 
 	@Test
 	void toolResponseMimeTypeConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.tool-response-mime-type.test-tool=application/json")
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.server.tool-response-mime-type.test-tool=application/json",
+					"spring.ai.mcp.server.expose-mcp-client-tools=true")
 			.withUserConfiguration(TestToolConfiguration.class)
 			.run(context -> {
 				McpServerProperties properties = context.getBean(McpServerProperties.class);

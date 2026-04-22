@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,12 +74,12 @@ class FunctionCallbackInPromptIT extends BaseOllamaIT {
 
 			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			var promptOptions = OllamaChatOptions.builder()
-				.toolCallbacks(List.of(FunctionToolCallback.builder(TOOL_NAME, new MockWeatherService())
-					.description(TOOL_DESCRIPTION)
-					.inputType(MockWeatherService.Request.class)
-					.build()))
-				.build();
+			var promptOptions = mergeOptions(chatModel,
+					OllamaChatOptions.builder()
+						.toolCallbacks(List.of(FunctionToolCallback.builder(TOOL_NAME, new MockWeatherService())
+							.description(TOOL_DESCRIPTION)
+							.inputType(MockWeatherService.Request.class)
+							.build())));
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 
@@ -99,12 +99,12 @@ class FunctionCallbackInPromptIT extends BaseOllamaIT {
 
 			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			var promptOptions = OllamaChatOptions.builder()
-				.toolCallbacks(List.of(FunctionToolCallback.builder(TOOL_NAME, new MockWeatherService())
-					.description(TOOL_DESCRIPTION)
-					.inputType(MockWeatherService.Request.class)
-					.build()))
-				.build();
+			var promptOptions = mergeOptions(chatModel,
+					OllamaChatOptions.builder()
+						.toolCallbacks(List.of(FunctionToolCallback.builder(TOOL_NAME, new MockWeatherService())
+							.description(TOOL_DESCRIPTION)
+							.inputType(MockWeatherService.Request.class)
+							.build())));
 
 			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage), promptOptions));
 
