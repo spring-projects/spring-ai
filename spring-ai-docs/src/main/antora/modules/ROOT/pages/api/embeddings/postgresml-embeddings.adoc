@@ -25,7 +25,7 @@ There has been a significant change in the Spring AI auto-configuration, starter
 Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
 ====
 
-Spring AI provides Spring Boot auto-configuration for the Azure PostgresML Embedding Model.
+Spring AI provides Spring Boot auto-configuration for the PostgresML Embedding Model.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
 
 [source, xml]

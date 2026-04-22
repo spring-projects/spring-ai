@@ -40,7 +40,7 @@ There has been a significant change in the Spring AI auto-configuration, starter
 Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
 ====
 
-Spring AI provides Spring Boot auto-configuration for the Azure Ollama Embedding Model.
+Spring AI provides Spring Boot auto-configuration for the Ollama Embedding Model.
 To enable it add the following dependency to your Maven `pom.xml` or Gradle `build.gradle` build files:
 
 [tabs]

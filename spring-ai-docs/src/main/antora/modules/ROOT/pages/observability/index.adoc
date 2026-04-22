@@ -138,7 +138,7 @@ They measure the time spent in the advisor (including the time spend on the inne
 == Chat Model
 
 NOTE: Observability features are currently supported only for `ChatModel` implementations from the following AI model
-providers: Anthropic, Azure OpenAI, Mistral AI, Ollama, OpenAI, Google GenAI, MiniMax, Moonshot, QianFan.
+providers: Anthropic, Mistral AI, Ollama, OpenAI, Google GenAI, MiniMax, Moonshot, QianFan.
 Additional AI model providers will be supported in a future release.
 
 The `gen_ai.client.operation` observations are recorded when calling the ChatModel `call` or `stream` methods. 
@@ -245,7 +245,7 @@ WARNING: If you enable the inclusion of the tool call arguments and result in th
 == EmbeddingModel
 
 NOTE: Observability features are currently supported only for `EmbeddingModel` implementations from the following
-AI model providers: Azure OpenAI, Mistral AI, Ollama, and OpenAI.
+AI model providers: Mistral AI, Ollama, and OpenAI.
 Additional AI model providers will be supported in a future release.
 
 The `gen_ai.client.operation` observations are recorded on embedding model method calls. 
