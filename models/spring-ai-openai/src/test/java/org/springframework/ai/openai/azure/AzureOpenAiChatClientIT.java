@@ -14,24 +14,26 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.azure.openai;
+package org.springframework.ai.openai.azure;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import com.azure.ai.openai.OpenAIClientBuilder;
-import com.azure.ai.openai.OpenAIServiceVersion;
-import com.azure.core.credential.AzureKeyCredential;
-import com.azure.core.http.policy.HttpLogOptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.test.CurlyBracketEscaper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -46,7 +48,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Soby Chacko
  */
 @SpringBootTest(classes = AzureOpenAiChatClientIT.TestConfiguration.class)
-@RequiresAzureCredentials
+@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+"),
+		@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+") })
 public class AzureOpenAiChatClientIT {
 
 	@Autowired
@@ -96,7 +99,10 @@ public class AzureOpenAiChatClientIT {
 
 		String generationTextFromStream = chatResponses
 				.stream()
-				.map(cr -> cr.getResult().getOutput().getText())
+				.map(ChatResponse::getResults)
+				.flatMap(List::stream)
+				.map(Generation::getOutput)
+				.map(AssistantMessage::getText)
 				.filter(Objects::nonNull)
 				.collect(Collectors.joining());
 		// @formatter:on
@@ -154,24 +160,20 @@ public class AzureOpenAiChatClientIT {
 	public static class TestConfiguration {
 
 		@Bean
-		public OpenAIClientBuilder openAIClient() {
-			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
-				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
-				.serviceVersion(OpenAIServiceVersion.V2024_02_15_PREVIEW)
-				.httpLogOptions(new HttpLogOptions()
-					.setLogLevel(com.azure.core.http.policy.HttpLogDetailLevel.BODY_AND_HEADERS));
-		}
-
-		@Bean
-		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder) {
-			return AzureOpenAiChatModel.builder()
-				.openAIClientBuilder(openAIClientBuilder)
-				.defaultOptions(AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").maxTokens(1000).build())
+		public OpenAiChatModel azureOpenAiChatModel() {
+			return OpenAiChatModel.builder()
+				.options(OpenAiChatOptions.builder()
+					.baseUrl(System.getenv("AZURE_OPENAI_ENDPOINT"))
+					.apiKey(System.getenv("AZURE_OPENAI_API_KEY"))
+					.deploymentName("gpt-4o")
+					.azureOpenAIServiceVersion(com.openai.azure.AzureOpenAIServiceVersion.latestStableVersion())
+					.maxTokens(1000)
+					.build())
 				.build();
 		}
 
 		@Bean
-		public ChatClient chatClient(AzureOpenAiChatModel azureOpenAiChatModel) {
+		public ChatClient chatClient(OpenAiChatModel azureOpenAiChatModel) {
 			return ChatClient.builder(azureOpenAiChatModel).build();
 		}
 

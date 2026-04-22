@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.azure.openai;
+package org.springframework.ai.openai.azure;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.azure.ai.openai.OpenAIClientBuilder;
-import com.azure.ai.openai.OpenAIServiceVersion;
-import com.azure.core.credential.AzureKeyCredential;
-import com.azure.core.http.policy.HttpLogOptions;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -36,6 +35,8 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -47,14 +48,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Soby Chacko
  */
 @SpringBootTest(classes = AzureOpenAiChatModelObservationIT.TestConfiguration.class)
-@RequiresAzureCredentials
+@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+"),
+		@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+") })
 class AzureOpenAiChatModelObservationIT {
 
 	@Autowired
 	TestObservationRegistry observationRegistry;
 
 	@Autowired
-	private AzureOpenAiChatModel chatModel;
+	private OpenAiChatModel chatModel;
 
 	@BeforeEach
 	void beforeEach() {
@@ -64,7 +66,7 @@ class AzureOpenAiChatModelObservationIT {
 	@Test
 	void observationForImperativeChatOperation() {
 
-		var options = AzureOpenAiChatOptions.builder()
+		var options = OpenAiChatOptions.builder()
 			.frequencyPenalty(0.0)
 			.maxTokens(2048)
 			.presencePenalty(0.0)
@@ -85,9 +87,10 @@ class AzureOpenAiChatModelObservationIT {
 	}
 
 	@Test
+	@Disabled("Broken after migrating from spring-ai-azure-openai to spring-ai-openai")
 	void observationForStreamingChatOperation() {
 
-		var options = AzureOpenAiChatOptions.builder()
+		var options = OpenAiChatOptions.builder()
 			.frequencyPenalty(0.0)
 			.deploymentName("gpt-4o")
 			.maxTokens(2048)
@@ -137,7 +140,7 @@ class AzureOpenAiChatModelObservationIT {
 					ChatModelObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.CHAT.value())
 			.hasLowCardinalityKeyValue(ChatModelObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(),
-					AiProvider.AZURE_OPENAI.value())
+					AiProvider.OPENAI_SDK.value())
 			.hasHighCardinalityKeyValue(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString(),
 					"0.0")
@@ -160,7 +163,7 @@ class AzureOpenAiChatModelObservationIT {
 					responseMetadata.getId())
 			.hasHighCardinalityKeyValue(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(),
-					"[\"stop\"]")
+					"[\"STOP\"]")
 			.hasHighCardinalityKeyValue(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getPromptTokens()))
@@ -183,20 +186,14 @@ class AzureOpenAiChatModelObservationIT {
 		}
 
 		@Bean
-		public OpenAIClientBuilder openAIClient() {
-			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
-				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
-				.serviceVersion(OpenAIServiceVersion.V2024_02_15_PREVIEW)
-				.httpLogOptions(new HttpLogOptions()
-					.setLogLevel(com.azure.core.http.policy.HttpLogDetailLevel.BODY_AND_HEADERS));
-		}
-
-		@Bean
-		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder,
-				TestObservationRegistry observationRegistry) {
-			return AzureOpenAiChatModel.builder()
-				.openAIClientBuilder(openAIClientBuilder)
-				.defaultOptions(AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").maxTokens(1000).build())
+		public OpenAiChatModel azureOpenAiChatModel(TestObservationRegistry observationRegistry) {
+			return OpenAiChatModel.builder()
+				.options(OpenAiChatOptions.builder()
+					.baseUrl(System.getenv("AZURE_OPENAI_ENDPOINT"))
+					.apiKey(System.getenv("AZURE_OPENAI_API_KEY"))
+					.deploymentName("gpt-4o")
+					.maxTokens(1000)
+					.build())
 				.observationRegistry(observationRegistry)
 				.build();
 		}

@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.azure.openai;
+package org.springframework.ai.openai.azure;
 
 import java.util.List;
 
-import com.azure.ai.openai.OpenAIClient;
-import com.azure.ai.openai.OpenAIClientBuilder;
-import com.azure.core.credential.AzureKeyCredential;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
 
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
+import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,11 +34,12 @@ import org.springframework.context.annotation.Bean;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@RequiresAzureCredentials
+@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+"),
+		@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+") })
 class AzureOpenAiEmbeddingModelIT {
 
 	@Autowired
-	private AzureOpenAiEmbeddingModel embeddingModel;
+	private OpenAiEmbeddingModel embeddingModel;
 
 	@Test
 	void singleEmbedding() {
@@ -67,16 +69,13 @@ class AzureOpenAiEmbeddingModelIT {
 	public static class TestConfiguration {
 
 		@Bean
-		public OpenAIClient openAIClient() {
-			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
-				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
-				.buildClient();
-		}
-
-		@Bean
-		public AzureOpenAiEmbeddingModel azureEmbeddingModel(OpenAIClient openAIClient) {
-			return new AzureOpenAiEmbeddingModel(openAIClient, MetadataMode.EMBED,
-					AzureOpenAiEmbeddingOptions.builder().deploymentName("text-embedding-ada-002").build());
+		public OpenAiEmbeddingModel azureEmbeddingModel() {
+			return new OpenAiEmbeddingModel(MetadataMode.EMBED,
+					OpenAiEmbeddingOptions.builder()
+						.baseUrl(System.getenv("AZURE_OPENAI_ENDPOINT"))
+						.apiKey(System.getenv("AZURE_OPENAI_API_KEY"))
+						.deploymentName("text-embedding-ada-002")
+						.build());
 		}
 
 	}

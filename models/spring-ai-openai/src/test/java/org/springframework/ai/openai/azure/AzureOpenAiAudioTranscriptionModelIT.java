@@ -14,21 +14,17 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.azure.openai;
+package org.springframework.ai.openai.azure;
 
-import java.util.concurrent.TimeUnit;
-
-import com.azure.ai.openai.OpenAIClient;
-import com.azure.ai.openai.OpenAIClientBuilder;
-import com.azure.core.credential.AzureKeyCredential;
-import com.azure.core.http.okhttp.OkHttpAsyncHttpClientBuilder;
-import okhttp3.OkHttpClient;
+import com.openai.models.audio.AudioResponseFormat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
 
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
+import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
+import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -44,21 +40,20 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Piotr Olaszewski
  */
 @SpringBootTest(classes = AzureOpenAiAudioTranscriptionModelIT.TestConfiguration.class)
-@EnabledIfEnvironmentVariables({
-		@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_TRANSCRIPTION_API_KEY", matches = ".+"),
-		@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_TRANSCRIPTION_ENDPOINT", matches = ".+") })
+@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+"),
+		@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+") })
 class AzureOpenAiAudioTranscriptionModelIT {
 
-	@Value("classpath:/speech/jfk.flac")
+	@Value("classpath:/speech.flac")
 	private Resource audioFile;
 
 	@Autowired
-	private AzureOpenAiAudioTranscriptionModel transcriptionModel;
+	private OpenAiAudioTranscriptionModel transcriptionModel;
 
 	@Test
 	void transcriptionTest() {
-		AzureOpenAiAudioTranscriptionOptions transcriptionOptions = AzureOpenAiAudioTranscriptionOptions.builder()
-			.responseFormat(AzureOpenAiAudioTranscriptionOptions.TranscriptResponseFormat.TEXT)
+		OpenAiAudioTranscriptionOptions transcriptionOptions = OpenAiAudioTranscriptionOptions.builder()
+			.responseFormat(AudioResponseFormat.TEXT)
 			.temperature(0f)
 			.build();
 		AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(this.audioFile,
@@ -70,9 +65,9 @@ class AzureOpenAiAudioTranscriptionModelIT {
 
 	@Test
 	void transcriptionTestWithOptions() {
-		AzureOpenAiAudioTranscriptionOptions.TranscriptResponseFormat responseFormat = AzureOpenAiAudioTranscriptionOptions.TranscriptResponseFormat.VTT;
+		AudioResponseFormat responseFormat = AudioResponseFormat.VTT;
 
-		AzureOpenAiAudioTranscriptionOptions transcriptionOptions = AzureOpenAiAudioTranscriptionOptions.builder()
+		OpenAiAudioTranscriptionOptions transcriptionOptions = OpenAiAudioTranscriptionOptions.builder()
 			.language("en")
 			.prompt("Ask not this, but ask that")
 			.temperature(0f)
@@ -89,31 +84,14 @@ class AzureOpenAiAudioTranscriptionModelIT {
 	public static class TestConfiguration {
 
 		@Bean
-		public OpenAIClient openAIClient() {
-			String apiKey = System.getenv("AZURE_OPENAI_TRANSCRIPTION_API_KEY");
-			String endpoint = System.getenv("AZURE_OPENAI_TRANSCRIPTION_ENDPOINT");
-
-			// System.out.println("API Key: " + apiKey);
-			// System.out.println("Endpoint: " + endpoint);
-			int readTimeout = 120;
-			int writeTimeout = 120;
-
-			// OkHttp client with long timeouts
-			OkHttpClient okHttpClient = new OkHttpClient.Builder().readTimeout(readTimeout, TimeUnit.SECONDS)
-				.callTimeout(writeTimeout, TimeUnit.SECONDS)
+		public OpenAiAudioTranscriptionModel azureOpenAiChatModel() {
+			return OpenAiAudioTranscriptionModel.builder()
+				.options(OpenAiAudioTranscriptionOptions.builder()
+					.baseUrl(System.getenv("AZURE_OPENAI_ENDPOINT"))
+					.apiKey(System.getenv("AZURE_OPENAI_API_KEY"))
+					.deploymentName("whisper")
+					.build())
 				.build();
-
-			return new OpenAIClientBuilder().httpClient(new OkHttpAsyncHttpClientBuilder(okHttpClient).build())
-				.credential(new AzureKeyCredential(apiKey))
-				.endpoint(endpoint)
-				// .serviceVersion(OpenAIServiceVersion.V2024_02_15_PREVIEW)
-				.buildClient();
-		}
-
-		@Bean
-		public AzureOpenAiAudioTranscriptionModel azureOpenAiChatModel(OpenAIClient openAIClient) {
-			return new AzureOpenAiAudioTranscriptionModel(openAIClient,
-					AzureOpenAiAudioTranscriptionOptions.builder().deploymentName("whisper").build());
 		}
 
 	}

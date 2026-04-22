@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.azure.openai;
+package org.springframework.ai.openai.azure;
 
 import java.io.IOException;
 import java.net.URL;
@@ -25,11 +25,9 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import com.azure.ai.openai.OpenAIClientBuilder;
-import com.azure.ai.openai.OpenAIServiceVersion;
-import com.azure.core.credential.AzureKeyCredential;
-import com.azure.core.http.policy.HttpLogOptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -46,6 +44,8 @@ import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -58,13 +58,14 @@ import org.springframework.util.MimeTypeUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = AzureOpenAiChatModelIT.TestConfiguration.class)
-@RequiresAzureCredentials
+@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+"),
+		@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+") })
 class AzureOpenAiChatModelIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiChatModelIT.class);
 
 	@Autowired
-	private AzureOpenAiChatModel chatModel;
+	private OpenAiChatModel chatModel;
 
 	@Test
 	void roleTest() {
@@ -257,7 +258,7 @@ class AzureOpenAiChatModelIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.options(AzureOpenAiChatOptions.builder().deploymentName("gpt-4o"))
+				.options(OpenAiChatOptions.builder().deploymentName("gpt-4o"))
 				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 				.call()
 				.content();
@@ -270,11 +271,11 @@ class AzureOpenAiChatModelIT {
 	@Test
 	void multiModalityImageResource() {
 
-		Resource resource = new ClassPathResource("multimodality/multimodal.test.png");
+		Resource resource = new ClassPathResource("/test.png");
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.options(AzureOpenAiChatOptions.builder().deploymentName("gpt-4o"))
+				.options(OpenAiChatOptions.builder().deploymentName("gpt-4o"))
 				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, resource))
 				.call()
 				.content();
@@ -294,7 +295,7 @@ class AzureOpenAiChatModelIT {
 
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(AzureOpenAiChatOptions.builder()
+				.options(OpenAiChatOptions.builder()
 						.deploymentName("gpt-4o")
 						.maxCompletionTokens(50))
 				.user(prompt)
@@ -336,7 +337,7 @@ class AzureOpenAiChatModelIT {
 
 		// @formatter:off
 		String content = ChatClient.create(this.chatModel).prompt()
-				.options(AzureOpenAiChatOptions.builder()
+				.options(OpenAiChatOptions.builder()
 						.deploymentName("gpt-4o")
 						.maxCompletionTokens(30))
 				.user(prompt)
@@ -360,7 +361,7 @@ class AzureOpenAiChatModelIT {
 	@Test
 	void testMaxCompletionTokensOptionsBuilder() {
 		// Test that maxCompletionTokens can be set via builder and is properly retrieved
-		AzureOpenAiChatOptions options = AzureOpenAiChatOptions.builder()
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
 			.deploymentName("gpt-4o")
 			.maxCompletionTokens(100)
 			.temperature(0.7)
@@ -379,7 +380,7 @@ class AzureOpenAiChatModelIT {
 
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(AzureOpenAiChatOptions.builder()
+				.options(OpenAiChatOptions.builder()
 						.deploymentName("gpt-4o")
 						.maxTokens(100))  // Total tokens limit for non-reasoning models
 				.user(prompt)
@@ -413,7 +414,7 @@ class AzureOpenAiChatModelIT {
 
 		// @formatter:off
 		Flux<ChatResponse> responseFlux = ChatClient.create(this.chatModel).prompt()
-				.options(AzureOpenAiChatOptions.builder()
+				.options(OpenAiChatOptions.builder()
 						.deploymentName("gpt-4o"))
 				.user(prompt)
 				.stream()
@@ -459,19 +460,13 @@ class AzureOpenAiChatModelIT {
 	public static class TestConfiguration {
 
 		@Bean
-		public OpenAIClientBuilder openAIClientBuilder() {
-			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
-				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
-				.serviceVersion(OpenAIServiceVersion.V2024_02_15_PREVIEW)
-				.httpLogOptions(new HttpLogOptions()
-					.setLogLevel(com.azure.core.http.policy.HttpLogDetailLevel.BODY_AND_HEADERS));
-		}
-
-		@Bean
-		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder) {
-			return AzureOpenAiChatModel.builder()
-				.openAIClientBuilder(openAIClientBuilder)
-				.defaultOptions(AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").build())
+		public OpenAiChatModel azureOpenAiChatModel() {
+			return OpenAiChatModel.builder()
+				.options(OpenAiChatOptions.builder()
+					.baseUrl(System.getenv("AZURE_OPENAI_ENDPOINT"))
+					.apiKey(System.getenv("AZURE_OPENAI_API_KEY"))
+					.deploymentName("gpt-4o")
+					.build())
 				.build();
 		}
 

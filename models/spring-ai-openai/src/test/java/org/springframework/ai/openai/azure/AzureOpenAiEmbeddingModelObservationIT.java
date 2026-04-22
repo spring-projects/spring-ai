@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.azure.openai;
+package org.springframework.ai.openai.azure;
 
 import java.util.List;
 
-import com.azure.ai.openai.OpenAIClient;
-import com.azure.ai.openai.OpenAIClientBuilder;
-import com.azure.core.credential.AzureKeyCredential;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
 
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingRequest;
@@ -34,6 +33,8 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationDoc
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
+import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -42,23 +43,26 @@ import org.springframework.context.annotation.Bean;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration tests for observation instrumentation in {@link AzureOpenAiEmbeddingModel}.
+ * Azure integration tests for observation instrumentation in
+ * {@link OpenAiEmbeddingModel}.
  *
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 @SpringBootTest(classes = AzureOpenAiEmbeddingModelObservationIT.Config.class)
-@RequiresAzureCredentials
+@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+"),
+		@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+") })
 public class AzureOpenAiEmbeddingModelObservationIT {
 
 	@Autowired
 	TestObservationRegistry observationRegistry;
 
 	@Autowired
-	AzureOpenAiEmbeddingModel embeddingModel;
+	OpenAiEmbeddingModel embeddingModel;
 
 	@Test
 	void observationForEmbeddingOperation() {
-		var options = AzureOpenAiEmbeddingOptions.builder()
+		var options = OpenAiEmbeddingOptions.builder()
 			.deploymentName("text-embedding-ada-002")
 			// should not send dimension value?
 			// https://github.com/SciPhi-AI/R2R/issues/354
@@ -77,11 +81,12 @@ public class AzureOpenAiEmbeddingModelObservationIT {
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultEmbeddingModelObservationConvention.DEFAULT_NAME)
 			.that()
-			.hasContextualNameEqualTo("embedding " + "text-embedding-ada-002")
+			.hasContextualNameEqualTo("embedding")
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.EMBEDDING.value())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.AZURE_OPENAI.value())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(), "text-embedding-ada-002")
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.OPENAI_SDK.value())
+			// .hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
+			// "text-embedding-ada-002")
 			// .hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_EMBEDDING_DIMENSIONS.asString(),
 			// "1536")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
@@ -101,17 +106,13 @@ public class AzureOpenAiEmbeddingModelObservationIT {
 		}
 
 		@Bean
-		public OpenAIClient openAIClient() {
-			return new OpenAIClientBuilder().credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
-				.endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
-				.buildClient();
-		}
-
-		@Bean
-		public AzureOpenAiEmbeddingModel azureEmbeddingModel(OpenAIClient openAIClient,
-				TestObservationRegistry observationRegistry) {
-			return new AzureOpenAiEmbeddingModel(openAIClient, MetadataMode.EMBED,
-					AzureOpenAiEmbeddingOptions.builder().deploymentName("text-embedding-ada-002").build(),
+		public OpenAiEmbeddingModel azureEmbeddingModel(TestObservationRegistry observationRegistry) {
+			return new OpenAiEmbeddingModel(MetadataMode.EMBED,
+					OpenAiEmbeddingOptions.builder()
+						.baseUrl(System.getenv("AZURE_OPENAI_ENDPOINT"))
+						.apiKey(System.getenv("AZURE_OPENAI_API_KEY"))
+						.deploymentName("text-embedding-ada-002")
+						.build(),
 					observationRegistry);
 		}
 

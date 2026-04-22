@@ -14,26 +14,22 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.azure.openai.image;
+package org.springframework.ai.openai.azure;
 
-import com.azure.ai.openai.OpenAIClient;
-import com.azure.ai.openai.OpenAIClientBuilder;
-import com.azure.core.credential.AzureKeyCredential;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
 
-import org.springframework.ai.azure.openai.AzureOpenAiImageModel;
-import org.springframework.ai.azure.openai.AzureOpenAiImageOptions;
-import org.springframework.ai.azure.openai.metadata.AzureOpenAiImageGenerationMetadata;
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.ImageResponseMetadata;
+import org.springframework.ai.openai.OpenAiImageModel;
+import org.springframework.ai.openai.OpenAiImageOptions;
+import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -42,12 +38,11 @@ import org.springframework.context.annotation.Bean;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * NOTE: use deployment ID dall-e-3
+ * NOTE: use deployment ID gpt-image-1-mini
  */
-@Disabled("Disabling until the default image model is configured in the test environment.")
 @SpringBootTest(classes = AzureOpenAiImageModelIT.TestConfiguration.class)
-@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_IMAGE_API_KEY", matches = ".+"),
-		@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_IMAGE_ENDPOINT", matches = ".+") })
+@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+"),
+		@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+") })
 public class AzureOpenAiImageModelIT {
 
 	@Autowired
@@ -71,40 +66,30 @@ public class AzureOpenAiImageModelIT {
 
 		var generation = imageResponse.getResult();
 		Image image = generation.getOutput();
-		assertThat(image.getUrl()).isNotEmpty();
-		// System.out.println(image.getUrl());
-		assertThat(image.getB64Json()).isNull();
+		assertThat(image.getUrl()).isNull();
+		assertThat(image.getB64Json()).isNotEmpty();
 
 		var imageGenerationMetadata = generation.getMetadata();
-		Assertions.assertThat(imageGenerationMetadata).isInstanceOf(AzureOpenAiImageGenerationMetadata.class);
+		Assertions.assertThat(imageGenerationMetadata).isInstanceOf(OpenAiImageGenerationMetadata.class);
 
-		AzureOpenAiImageGenerationMetadata openAiImageGenerationMetadata = (AzureOpenAiImageGenerationMetadata) imageGenerationMetadata;
+		OpenAiImageGenerationMetadata openAiImageGenerationMetadata = (OpenAiImageGenerationMetadata) imageGenerationMetadata;
 
 		assertThat(openAiImageGenerationMetadata).isNotNull();
-		assertThat(openAiImageGenerationMetadata.getRevisedPrompt()).isNotBlank();
 	}
 
 	@SpringBootConfiguration
 	public static class TestConfiguration {
 
 		@Bean
-		public OpenAIClient openAIClient() {
-			String apiKey = System.getenv("AZURE_OPENAI_IMAGE_API_KEY");
-			String endpoint = System.getenv("AZURE_OPENAI_IMAGE_ENDPOINT");
+		public OpenAiImageModel azureOpenAiImageModel() {
+			String apiKey = System.getenv("AZURE_OPENAI_API_KEY");
+			String endpoint = System.getenv("AZURE_OPENAI_ENDPOINT");
 
-			// System.out.println("API Key: " + apiKey);
-			// System.out.println("Endpoint: " + endpoint);
-
-			return new OpenAIClientBuilder().credential(new AzureKeyCredential(apiKey))
-				.endpoint(endpoint)
-				.buildClient();
-		}
-
-		@Bean
-		public AzureOpenAiImageModel azureOpenAiImageModel(OpenAIClient openAIClient) {
-			return new AzureOpenAiImageModel(openAIClient,
-					AzureOpenAiImageOptions.builder().deploymentName("dall-e-3").build());
-
+			return new OpenAiImageModel(OpenAiImageOptions.builder()
+				.baseUrl(endpoint)
+				.apiKey(apiKey)
+				.deploymentName("gpt-image-1-mini")
+				.build());
 		}
 
 	}
