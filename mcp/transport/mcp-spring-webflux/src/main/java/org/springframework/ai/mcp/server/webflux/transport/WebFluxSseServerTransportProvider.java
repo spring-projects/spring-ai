@@ -250,9 +250,23 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 			.then();
 	}
 
-	// FIXME: This javadoc makes claims about using isClosing flag but it's not
-	// actually
-	// doing that.
+	/**
+	 * Sends a JSON-RPC notification to a specific client session through its SSE
+	 * connection.
+	 *
+	 * <p>
+	 * The method:
+	 * <ul>
+	 * <li>Looks up the session by the given session ID</li>
+	 * <li>Returns an empty Mono if the session is not found</li>
+	 * <li>Sends the notification to the specific session if found</li>
+	 * </ul>
+	 * @param sessionId The ID of the target client session
+	 * @param method The JSON-RPC method to send to the client
+	 * @param params The method parameters to send to the client
+	 * @return A Mono that completes when the notification has been sent, or empty if the
+	 * session is not found
+	 */
 
 	@Override
 	public Mono<Void> notifyClient(String sessionId, String method, Object params) {
