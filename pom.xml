@@ -342,7 +342,7 @@
 		<json-schema-validator.version>3.0.1</json-schema-validator.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>2.0.0-SNAPSHOT</mcp.sdk.version>
+		<mcp.sdk.version>2.0.0-M1</mcp.sdk.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>
