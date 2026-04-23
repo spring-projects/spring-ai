@@ -66,6 +66,9 @@
 *** xref:api/moderation[Moderation Models]
 **** xref:api/moderation/openai-moderation.adoc[OpenAI]
 **** xref:api/moderation/mistral-ai-moderation.adoc[Mistral AI]
+
+*** Batch API
+**** xref:api/batch/openai-batch.adoc[OpenAI]
 // ** xref:api/generic-model.adoc[]
 
 ** xref:api/chat-memory.adoc[Chat Memory]
