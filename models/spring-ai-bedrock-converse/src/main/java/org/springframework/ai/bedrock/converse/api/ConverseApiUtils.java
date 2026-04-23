@@ -81,6 +81,22 @@ public final class ConverseApiUtils {
 		attributes.remove("maxTokens");
 		attributes.remove("topP");
 
+		attributes.remove("frequencyPenalty");
+		attributes.remove("presencePenalty");
+		attributes.remove("cacheOptions");
+		attributes.remove("outputSchema");
+
+		if (attributes.containsKey("requestParameters")) {
+			Object reqMap = attributes.remove("requestParameters");
+			if (reqMap instanceof Map map) {
+				attributes.putAll(map);
+			}
+		}
+
+		if (attributes.isEmpty()) {
+			return null;
+		}
+
 		return convertObjectToDocument(attributes);
 	}
 
