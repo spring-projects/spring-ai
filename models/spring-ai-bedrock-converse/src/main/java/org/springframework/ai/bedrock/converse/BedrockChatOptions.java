@@ -41,23 +41,23 @@ import org.springframework.util.Assert;
  */
 public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
-	private String model;
+	private @Nullable String model;
 
-	private Double frequencyPenalty;
+	private @Nullable Double frequencyPenalty;
 
-	private Integer maxTokens;
+	private @Nullable Integer maxTokens;
 
-	private Double presencePenalty;
+	private @Nullable Double presencePenalty;
 
 	private Map<String, String> requestParameters = new HashMap<>();
 
-	private List<String> stopSequences;
+	private @Nullable List<String> stopSequences;
 
-	private Double temperature;
+	private @Nullable Double temperature;
 
-	private Integer topK;
+	private @Nullable Integer topK;
 
-	private Double topP;
+	private @Nullable Double topP;
 
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
@@ -65,26 +65,28 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 
 	private Map<String, Object> toolContext = new HashMap<>();
 
-	private Boolean internalToolExecutionEnabled;
+	private @Nullable Boolean internalToolExecutionEnabled;
 
-	private BedrockCacheOptions cacheOptions;
+	private @Nullable BedrockCacheOptions cacheOptions;
 
-	private String outputSchema;
+	private @Nullable String outputSchema;
 
 	// TODO: left here for ModelOptionUtils.merge*()
 	public BedrockChatOptions() {
 	}
 
-	protected BedrockChatOptions(String model, Double frequencyPenalty, Integer maxTokens, Double presencePenalty,
-			Map<String, String> requestParameters, List<String> stopSequences, Double temperature, Integer topK,
-			Double topP, Boolean internalToolExecutionEnabled, @Nullable List<ToolCallback> toolCallbacks,
-			@Nullable Set<String> toolNames, @Nullable Map<String, Object> toolContext,
-			BedrockCacheOptions cacheOptions, String outputSchema) {
+	protected BedrockChatOptions(@Nullable String model, @Nullable Double frequencyPenalty, @Nullable Integer maxTokens,
+			@Nullable Double presencePenalty, @Nullable Map<String, String> requestParameters,
+			@Nullable List<String> stopSequences, @Nullable Double temperature, @Nullable Integer topK,
+			@Nullable Double topP, @Nullable Boolean internalToolExecutionEnabled,
+			@Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames,
+			@Nullable Map<String, Object> toolContext, @Nullable BedrockCacheOptions cacheOptions,
+			@Nullable String outputSchema) {
 		this.model = model;
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
 		this.presencePenalty = presencePenalty;
-		this.requestParameters = requestParameters;
+		this.requestParameters = requestParameters == null ? new HashMap<>() : new HashMap<>(requestParameters);
 		this.stopSequences = stopSequences;
 		this.temperature = temperature;
 		this.topK = topK;
@@ -106,29 +108,29 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	}
 
 	@Override
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
+	public void setModel(@Nullable String model) {
 		this.model = model;
 	}
 
 	@Override
-	public Double getFrequencyPenalty() {
+	public @Nullable Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
 
-	public void setFrequencyPenalty(Double frequencyPenalty) {
+	public void setFrequencyPenalty(@Nullable Double frequencyPenalty) {
 		this.frequencyPenalty = frequencyPenalty;
 	}
 
 	@Override
-	public Integer getMaxTokens() {
+	public @Nullable Integer getMaxTokens() {
 		return this.maxTokens;
 	}
 
-	public void setMaxTokens(Integer maxTokens) {
+	public void setMaxTokens(@Nullable Integer maxTokens) {
 		this.maxTokens = maxTokens;
 	}
 
@@ -141,47 +143,47 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	}
 
 	@Override
-	public Double getPresencePenalty() {
+	public @Nullable Double getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
-	public void setPresencePenalty(Double presencePenalty) {
+	public void setPresencePenalty(@Nullable Double presencePenalty) {
 		this.presencePenalty = presencePenalty;
 	}
 
 	@Override
-	public List<String> getStopSequences() {
+	public @Nullable List<String> getStopSequences() {
 		return this.stopSequences;
 	}
 
-	public void setStopSequences(List<String> stopSequences) {
+	public void setStopSequences(@Nullable List<String> stopSequences) {
 		this.stopSequences = stopSequences;
 	}
 
 	@Override
-	public Double getTemperature() {
+	public @Nullable Double getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(Double temperature) {
+	public void setTemperature(@Nullable Double temperature) {
 		this.temperature = temperature;
 	}
 
 	@Override
-	public Integer getTopK() {
+	public @Nullable Integer getTopK() {
 		return this.topK;
 	}
 
-	public void setTopK(Integer topK) {
+	public void setTopK(@Nullable Integer topK) {
 		this.topK = topK;
 	}
 
 	@Override
-	public Double getTopP() {
+	public @Nullable Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(Double topP) {
+	public void setTopP(@Nullable Double topP) {
 		this.topP = topP;
 	}
 
@@ -230,11 +232,11 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
-	public BedrockCacheOptions getCacheOptions() {
+	public @Nullable BedrockCacheOptions getCacheOptions() {
 		return this.cacheOptions;
 	}
 
-	public void setCacheOptions(BedrockCacheOptions cacheOptions) {
+	public void setCacheOptions(@Nullable BedrockCacheOptions cacheOptions) {
 		this.cacheOptions = cacheOptions;
 	}
 
@@ -244,7 +246,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	}
 
 	@Override
-	public void setOutputSchema(String outputSchema) {
+	public void setOutputSchema(@Nullable String outputSchema) {
 		this.outputSchema = outputSchema;
 	}
 
@@ -320,13 +322,13 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 			return copy;
 		}
 
-		protected Map<String, String> requestParameters = new HashMap<>();
+		protected @Nullable Map<String, String> requestParameters = new HashMap<>();
 
 		protected @Nullable BedrockCacheOptions cacheOptions;
 
 		private @Nullable String outputSchema;
 
-		public B requestParameters(Map<String, String> requestParameters) {
+		public B requestParameters(@Nullable Map<String, String> requestParameters) {
 			this.requestParameters = requestParameters;
 			return self();
 		}

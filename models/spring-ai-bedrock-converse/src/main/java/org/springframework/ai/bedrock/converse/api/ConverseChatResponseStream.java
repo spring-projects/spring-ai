@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -82,7 +83,7 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 	private final ConverseStreamRequest converseStreamRequest;
 
 	public ConverseChatResponseStream(BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient,
-			ConverseStreamRequest converseStreamRequest, Usage accumulatedUsage) {
+			ConverseStreamRequest converseStreamRequest, @Nullable Usage accumulatedUsage) {
 
 		Assert.notNull(bedrockRuntimeAsyncClient, "'bedrockRuntimeAsyncClient' must not be null");
 		Assert.notNull(converseStreamRequest, "'converseStreamRequest' must not be null");
