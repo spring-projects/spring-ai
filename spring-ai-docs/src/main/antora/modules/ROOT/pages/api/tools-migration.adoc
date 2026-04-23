@@ -1,0 +1,272 @@
+= Migrating from FunctionCallback to ToolCallback API
+
+This guide helps you migrate from the deprecated `FunctionCallback` API to the new `ToolCallback` API in Spring AI. For more information about the new APIs, check out the xref:api/tools.adoc[Tools Calling] documentation.
+
+== Overview of Changes
+
+These changes are part of a broader effort to improve and extend the tool calling capabilities in Spring AI. Among the other things, the new API moves from "functions" to "tools" terminology to better align with industry conventions. This involves several API changes while maintaining backward compatibility through deprecated methods.
+
+== Key Changes
+
+1. `FunctionCallback` → `ToolCallback`
+2. `FunctionCallback.builder().function()` → `FunctionToolCallback.builder()`
+3. `FunctionCallback.builder().method()` → `MethodToolCallback.builder()`
+4. `FunctionCallingOptions` → `ToolCallingChatOptions`
+5. `ChatClient.builder().defaultFunctions()` → `ChatClient.builder().defaultTools()`
+6. `ChatClient.functions()` → `ChatClient.tools()`
+7. `FunctionCallingOptions.builder().functions()` → `ToolCallingChatOptions.builder().toolNames()`
+8. `FunctionCallingOptions.builder().functionCallbacks()` → `ToolCallingChatOptions.builder().toolCallbacks()`
+
+== Migration Examples
+
+=== 1. Basic Function Callback
+
+Before:
+[source,java]
+----
+FunctionCallback.builder()
+    .function("getCurrentWeather", new MockWeatherService())
+    .description("Get the weather in location")
+    .inputType(MockWeatherService.Request.class)
+    .build()
+----
+
+After:
+[source,java]
+----
+FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+    .description("Get the weather in location")
+    .inputType(MockWeatherService.Request.class)
+    .build()
+----
+
+=== 2. ChatClient Usage
+
+Before:
+[source,java]
+----
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .user("What's the weather like in San Francisco?")
+    .functions(FunctionCallback.builder()
+        .function("getCurrentWeather", new MockWeatherService())
+        .description("Get the weather in location")
+        .inputType(MockWeatherService.Request.class)
+        .build())
+    .call()
+    .content();
+----
+
+After:
+[source,java]
+----
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .user("What's the weather like in San Francisco?")
+    .tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+        .description("Get the weather in location")
+        .inputType(MockWeatherService.Request.class)
+        .build())
+    .call()
+    .content();
+----
+
+=== 3. Method-Based Function Callbacks
+
+Before:
+[source,java]
+----
+FunctionCallback.builder()
+    .method("getWeatherInLocation", String.class, Unit.class)
+    .description("Get the weather in location")
+    .targetClass(TestFunctionClass.class)
+    .build()
+----
+
+After:
+[source,java]
+----
+var toolMethod = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherInLocation");
+
+MethodToolCallback.builder()
+    .toolDefinition(ToolDefinition.builder(toolMethod)
+        .description("Get the weather in location")
+        .build())
+    .toolMethod(toolMethod)
+    .build()
+----
+
+Or with the declarative approach:
+[source,java]
+----
+class WeatherTools {
+
+    @Tool(description = "Get the weather in location")
+    public void getWeatherInLocation(String location, Unit unit) {
+        // ...
+    }
+
+}
+----
+
+And you can use the same `ChatClient#tools()` API to register method-based tool callbacks:
+
+[source,java]
+----
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .user("What's the weather like in San Francisco?")
+    .tools(MethodToolCallback.builder()
+        .toolDefinition(ToolDefinition.builder(toolMethod)
+            .description("Get the weather in location")
+            .build())
+        .toolMethod(toolMethod)
+        .build())
+    .call()
+    .content();
+----
+
+Or with the declarative approach:
+
+[source,java]
+----
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .user("What's the weather like in San Francisco?")
+    .tools(new WeatherTools())
+    .call()
+    .content();
+----
+
+=== 4. Options Configuration
+
+Before:
+[source,java]
+----
+FunctionCallingOptions.builder()
+    .model(modelName)
+    .function("weatherFunction")
+    .build()
+----
+
+After:
+[source,java]
+----
+ToolCallingChatOptions.builder()
+    .model(modelName)
+    .toolNames("weatherFunction")
+    .build()
+----
+
+=== 5. Default Functions in ChatClient Builder
+
+Before:
+[source,java]
+----
+ChatClient.builder(chatModel)
+    .defaultFunctions(FunctionCallback.builder()
+        .function("getCurrentWeather", new MockWeatherService())
+        .description("Get the weather in location")
+        .inputType(MockWeatherService.Request.class)
+        .build())
+    .build()
+----
+
+After:
+[source,java]
+----
+ChatClient.builder(chatModel)
+    .defaultTools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+        .description("Get the weather in location")
+        .inputType(MockWeatherService.Request.class)
+        .build())
+    .build()
+----
+
+=== 6. Spring Bean Configuration
+
+Before:
+[source,java]
+----
+@Bean
+public FunctionCallback weatherFunctionInfo() {
+    return FunctionCallback.builder()
+        .function("WeatherInfo", new MockWeatherService())
+        .description("Get the current weather")
+        .inputType(MockWeatherService.Request.class)
+        .build();
+}
+----
+
+After:
+[source,java]
+----
+@Bean
+public ToolCallback weatherFunctionInfo() {
+    return FunctionToolCallback.builder("WeatherInfo", new MockWeatherService())
+        .description("Get the current weather")
+        .inputType(MockWeatherService.Request.class)
+        .build();
+}
+----
+
+== Breaking Changes
+
+1. The `method()` configuration in function callbacks has been replaced with a more explicit method tool configuration using `ToolDefinition` and `MethodToolCallback`.
+
+2. When using method-based callbacks, you now need to explicitly find the method using `ReflectionUtils` and provide it to the builder. Alternatively, you can use the declarative approach with the `@Tool` annotation.
+
+3. For non-static methods, you must now provide both the method and the target object:
+[source,java]
+----
+MethodToolCallback.builder()
+    .toolDefinition(ToolDefinition.builder(toolMethod)
+        .description("Description")
+        .build())
+    .toolMethod(toolMethod)
+    .toolObject(targetObject)
+    .build()
+----
+
+== Deprecated Methods
+
+The following methods are deprecated and will be removed in a future release:
+
+- `ChatClient.Builder.defaultFunctions(String...)`
+- `ChatClient.Builder.defaultFunctions(FunctionCallback...)`
+- `ChatClient.RequestSpec.functions()`
+
+Use their `tools` counterparts instead.
+
+== Declarative Specification with @Tool
+
+Now you can use the method-level annotation (`@Tool`) to register tools with Spring AI:
+
+[source,java]
+----
+class Home {
+
+    @Tool(description = "Turn light On or Off in a room.")
+    void turnLight(String roomName, boolean on) {
+        // ...
+        logger.info("Turn light in room: {} to: {}", roomName, on);
+    }
+}
+
+String response = ChatClient.create(this.chatModel).prompt()
+        .user("Turn the light in the living room On.")
+        .tools(new Home())
+        .call()
+        .content();
+----
+
+== Additional Notes
+
+1. The new API provides better separation between tool definition and implementation.
+2. Tool definitions can be reused across different implementations.
+3. The builder pattern has been simplified for common use cases.
+4. Better support for method-based tools with improved error handling.
+
+== Timeline
+
+The deprecated methods will be maintained for backward compatibility in the current milestone version but will be removed in the next milestone release. It's recommended to migrate to the new API as soon as possible.

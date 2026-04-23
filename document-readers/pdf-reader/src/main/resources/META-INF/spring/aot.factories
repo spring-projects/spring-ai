@@ -1,0 +1,2 @@
+org.springframework.aot.hint.RuntimeHintsRegistrar=\
+	org.springframework.ai.reader.pdf.aot.PdfReaderRuntimeHints

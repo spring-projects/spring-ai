@@ -1,0 +1,273 @@
+= OpenSearch
+
+This section walks you through setting up `OpenSearchVectorStore` to store document embeddings and perform similarity searches.
+
+link:https://opensearch.org[OpenSearch] is an open-source search and analytics engine originally forked from Elasticsearch, distributed under the Apache License 2.0. It enhances AI application development by simplifying the integration and management of AI-generated assets. OpenSearch supports vector, lexical, and hybrid search capabilities, leveraging advanced vector database functionalities to facilitate low-latency queries and similarity searches as detailed on the link:https://opensearch.org/platform/search/vector-database.html[vector database page].
+
+The link:https://opensearch.org/docs/latest/search-plugins/knn/index/[OpenSearch k-NN] functionality allows users to query vector embeddings from large datasets. An embedding is a numerical representation of a data object, such as text, image, audio, or document. Embeddings can be stored in the index and queried using various similarity functions.
+
+== Prerequisites
+
+* A running OpenSearch instance. The following options are available:
+** link:https://opensearch.org/docs/latest/opensearch/install/index/[Self-Managed OpenSearch]
+** link:https://docs.aws.amazon.com/opensearch-service/[Amazon OpenSearch Service]
+* If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] to generate the embeddings stored by the `OpenSearchVectorStore`.
+
+== Auto-configuration
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
+Spring AI provides Spring Boot auto-configuration for the OpenSearch Vector Store.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-vector-store-opensearch</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-opensearch'
+}
+----
+
+TIP: For both self-hosted and Amazon OpenSearch Service, use the same dependency.
+Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Please have a look at the list of xref:#_configuration_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
+
+Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
+
+Now you can auto-wire the `OpenSearchVectorStore` as a vector store in your application:
+
+[source,java]
+----
+@Autowired VectorStore vectorStore;
+
+// ...
+
+List<Document> documents = List.of(
+    new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
+    new Document("The World is Big and Salvation Lurks Around the Corner"),
+    new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+
+// Add the documents to OpenSearch
+vectorStore.add(documents);
+
+// Retrieve documents similar to a query
+List<Document> results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
+----
+
+=== Configuration Properties
+
+To connect to OpenSearch and use the `OpenSearchVectorStore`, you need to provide access details for your instance.
+A simple configuration can be provided via Spring Boot's `application.yml`:
+
+[source,yaml]
+----
+spring:
+  ai:
+    vectorstore:
+      opensearch:
+        uris: <opensearch instance URIs>
+        username: <opensearch username>
+        password: <opensearch password>
+        index-name: spring-ai-document-index
+        initialize-schema: true
+        similarity-function: cosinesimil
+        read-timeout: <time to wait for response>
+        connect-timeout: <time to wait until connection established>
+        path-prefix: <custom path prefix>
+        ssl-bundle: <name of SSL bundle>
+        aws:  # Only for Amazon OpenSearch Service
+          host: <aws opensearch host>
+          service-name: <aws service name>
+          access-key: <aws access key>
+          secret-key: <aws secret key>
+          region: <aws region>
+----
+
+Properties starting with `spring.ai.vectorstore.opensearch.*` are used to configure the `OpenSearchVectorStore`:
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+
+|`spring.ai.vectorstore.opensearch.uris`| URIs of the OpenSearch cluster endpoints | -
+|`spring.ai.vectorstore.opensearch.username`| Username for accessing the OpenSearch cluster | -
+|`spring.ai.vectorstore.opensearch.password`| Password for the specified username | -
+|`spring.ai.vectorstore.opensearch.index-name`| Name of the index to store vectors | `spring-ai-document-index`
+|`spring.ai.vectorstore.opensearch.initialize-schema`| Whether to initialize the required schema | `false`
+|`spring.ai.vectorstore.opensearch.similarity-function`| The similarity function to use (cosinesimil, l1, l2, linf, innerproduct) | `cosinesimil`
+|`spring.ai.vectorstore.opensearch.use-approximate-knn`| Whether to use approximate k-NN for faster searches. If true, uses HNSW-based approximate search. If false, uses exact brute-force k-NN. See link:https://opensearch.org/docs/latest/search-plugins/knn/approximate-knn/[Approximate k-NN] and link:https://opensearch.org/docs/latest/search-plugins/knn/knn-score-script/[Exact k-NN] | `false`
+|`spring.ai.vectorstore.opensearch.dimensions`| Number of dimensions for vector embeddings. Used when creating index mapping for approximate k-NN. If not set, uses the embedding model's dimensions. | `1536`
+|`spring.ai.vectorstore.opensearch.mapping-json`| Custom JSON mapping for the index. Overrides default mapping generation. | -
+|`spring.ai.vectorstore.opensearch.read-timeout`| Time to wait for response from the opposite endpoint. 0 - infinity. | -
+|`spring.ai.vectorstore.opensearch.connect-timeout`| Time to wait until connection established. 0 - infinity. | -
+|`spring.ai.vectorstore.opensearch.path-prefix`| Path prefix for OpenSearch API endpoints. Useful when OpenSearch is behind a reverse proxy with a non-root path. | -
+|`spring.ai.vectorstore.opensearch.ssl-bundle`| Name of the SSL Bundle to use in case of SSL connection | -
+|`spring.ai.vectorstore.opensearch.aws.host`| Hostname of the OpenSearch instance | -
+|`spring.ai.vectorstore.opensearch.aws.service-name`| AWS service name | -
+|`spring.ai.vectorstore.opensearch.aws.access-key`| AWS access key | -
+|`spring.ai.vectorstore.opensearch.aws.secret-key`| AWS secret key | -
+|`spring.ai.vectorstore.opensearch.aws.region`| AWS region | -
+|===
+
+[NOTE]
+====
+You can control whether the AWS-specific OpenSearch auto-configuration is enabled using the `spring.ai.vectorstore.opensearch.aws.enabled` property.
+
+- If this property is set to `false`, the non-AWS OpenSearch configuration is activated, even if AWS SDK classes are present on the classpath. This allows you to use self-managed or third-party OpenSearch clusters in environments where AWS SDKs are present for other services.
+- If AWS SDK classes are not present, the non-AWS configuration is always used.
+- If AWS SDK classes are present and the property is not set or set to `true`, the AWS-specific configuration is used by default.
+
+This fallback logic ensures that users have explicit control over the type of OpenSearch integration, preventing accidental activation of AWS-specific logic when not desired.
+====
+
+[NOTE]
+====
+The `path-prefix` property allows you to specify a custom path prefix when OpenSearch is running behind a reverse proxy that uses a non-root path.
+For example, if your OpenSearch instance is accessible at `https://example.com/opensearch/` instead of `https://example.com/`, you would set `path-prefix: /opensearch`.
+====
+
+The following similarity functions are available:
+
+* `cosinesimil` - Default, suitable for most use cases. Measures cosine similarity between vectors.
+* `l1` - Manhattan distance between vectors.
+* `l2` - Euclidean distance between vectors.
+* `linf` - Chebyshev distance between vectors.
+
+== Manual Configuration
+
+Instead of using the Spring Boot auto-configuration, you can manually configure the OpenSearch vector store. For this you need to add the `spring-ai-opensearch-store` to your project:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-opensearch-store</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-opensearch-store'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Create an OpenSearch client bean:
+
+[source,java]
+----
+@Bean
+public OpenSearchClient openSearchClient() {
+    RestClient restClient = RestClient.builder(
+        HttpHost.create("http://localhost:9200"))
+        .build();
+    
+    return new OpenSearchClient(new RestClientTransport(
+        restClient, new JacksonJsonpMapper()));
+}
+----
+
+Then create the `OpenSearchVectorStore` bean using the builder pattern:
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel) {
+    return OpenSearchVectorStore.builder(openSearchClient, embeddingModel)
+        .index("custom-index")                // Optional: defaults to "spring-ai-document-index"
+        .similarityFunction("l2")             // Optional: defaults to "cosinesimil"
+        .useApproximateKnn(true)              // Optional: defaults to false (exact k-NN)
+        .dimensions(1536)                     // Optional: defaults to 1536 or embedding model's dimensions
+        .initializeSchema(true)               // Optional: defaults to false
+        .batchingStrategy(new TokenCountBatchingStrategy()) // Optional: defaults to TokenCountBatchingStrategy
+        .build();
+}
+
+// This can be any EmbeddingModel implementation
+@Bean
+public EmbeddingModel embeddingModel() {
+    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+}
+----
+
+== Metadata Filtering
+
+You can leverage the generic, portable xref:api/vectordbs.adoc#metadata-filters[metadata filters] with OpenSearch as well.
+
+For example, you can use either the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(
+    SearchRequest.builder()
+        .query("The World")
+        .topK(TOP_K)
+        .similarityThreshold(SIMILARITY_THRESHOLD)
+        .filterExpression("author in ['john', 'jill'] && 'article_type' == 'blog'").build());
+----
+
+or programmatically using the `Filter.Expression` DSL:
+
+[source,java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.similaritySearch(SearchRequest.builder()
+    .query("The World")
+    .topK(TOP_K)
+    .similarityThreshold(SIMILARITY_THRESHOLD)
+    .filterExpression(b.and(
+        b.in("author", "john", "jill"),
+        b.eq("article_type", "blog")).build()).build());
+----
+
+NOTE: Those (portable) filter expressions get automatically converted into the proprietary OpenSearch link:https://opensearch.org/docs/latest/query-dsl/full-text/query-string/[Query string query].
+
+For example, this portable filter expression:
+
+[source,sql]
+----
+author in ['john', 'jill'] && 'article_type' == 'blog'
+----
+
+is converted into the proprietary OpenSearch filter format:
+
+[source,text]
+----
+(metadata.author:john OR jill) AND metadata.article_type:blog
+----
+
+== Accessing the Native Client
+
+The OpenSearch Vector Store implementation provides access to the underlying native OpenSearch client (`OpenSearchClient`) through the `getNativeClient()` method:
+
+[source,java]
+----
+OpenSearchVectorStore vectorStore = context.getBean(OpenSearchVectorStore.class);
+Optional<OpenSearchClient> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    OpenSearchClient client = nativeClient.get();
+    // Use the native client for OpenSearch-specific operations
+}
+----
+
+The native client gives you access to OpenSearch-specific features and operations that might not be exposed through the `VectorStore` interface.

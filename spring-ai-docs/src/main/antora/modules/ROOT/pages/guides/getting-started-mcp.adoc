@@ -1,0 +1,150 @@
+= Getting Started with Model Context Protocol (MCP)
+
+The Model Context Protocol (MCP) standardizes how AI applications interact with external tools and resources.
+
+Spring joined the MCP ecosystem early as a key contributor, helping to develop and maintain the link:https://github.com/modelcontextprotocol/java-sdk[official MCP Java SDK] that serves as the foundation for Java-based MCP implementations. 
+Building on this contribution, Spring AI provides MCP support through Boot Starters and annotations, making it easy to build both MCP servers and clients.
+
+== Introduction Video
+
+**link:https://www.youtube.com/watch?v=FLpS7OfD5-s[Introduction to Model Context Protocol (MCP) - YouTube]**
+
+Start here for an introductory overview of the Model Context Protocol, explaining core concepts and architecture.
+
+== Complete Tutorial and Source Code
+
+**📖 Blog Tutorial:** link:https://spring.io/blog/2025/09/16/spring-ai-mcp-intro-blog[Connect Your AI to Everything]
+
+**💻 Complete Source Code:** link:https://github.com/tzolov/spring-ai-mcp-blogpost[MCP Weather Example Repository]
+
+The tutorial covers the essentials of MCP development with Spring AI, including advanced features, and deployment patterns. 
+All code examples below are taken from this tutorial.
+
+== Quick Start
+
+The fastest way to get started is with Spring AI's annotation-based approach. The following examples are from the blog tutorial:
+
+=== Simple MCP Server
+
+[source,java]
+----
+@Service
+public class WeatherService {
+
+    @McpTool(description = "Get current temperature for a location")
+    public String getTemperature(
+            @McpToolParam(description = "City name", required = true) String city) {
+        return String.format("Current temperature in %s: 22°C", city);
+    }
+}
+----
+
+Add the dependency and configure:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
+</dependency>
+----
+
+[source,properties]
+----
+spring.ai.mcp.server.protocol=STREAMABLE
+----
+
+=== Simple MCP Client
+
+[source,java]
+----
+@Bean
+public CommandLineRunner demo(ChatClient chatClient, ToolCallbackProvider mcpTools) {
+    return args -> {
+        String response = chatClient
+            .prompt("What's the weather like in Paris?")
+            .toolCallbacks(mcpTools)
+            .call()
+            .content();
+        System.out.println(response);
+    };
+}
+----
+
+Add the dependency and configure:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-starter-mcp-client</artifactId>
+</dependency>
+----
+
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        streamable-http:
+          connections:
+            weather-server:
+              url: http://localhost:8080
+----
+
+== Learning Resources
+
+=== Implementation Video
+
+**link:https://www.youtube.com/watch?v=hmEVUtulHTI[Spring AI Model Context Protocol (MCP) Integration - YouTube]**
+
+A video walkthrough of Spring AI's MCP integration, covering both server and client implementations.
+
+== Additional Examples Repository
+
+Beyond the tutorial examples, the link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol[Spring AI Examples] repository contains numerous MCP implementations.
+
+=== Recommended Starting Points
+
+*Annotation-based examples*
+
+* link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/mcp-annotations/[Complete Annotations Example] - All annotation features (Client & Server)
+* link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/sampling/annotations/[Sampling with Annotations] - Advanced bidirectional AI (Client & Server)
+* link:https://github.com/tzolov/spring-ai-mcp-blogpost[MCP Weather Tutorial] - Full tutorial source code (Client & Server)
+
+=== By Use Case
+
+**Weather Services:**
+
+* link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/weather/starter-webflux-server[WebFlux Weather Server]
+* link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/weather/starter-webmvc-oauth2-server[OAuth2 Secured Weather Server]
+
+**Data Integration:**
+
+* link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/sqlite/chatbot[SQLite AI Chatbot]
+* link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/filesystem[Filesystem Access Server]
+
+**Web Integration:**
+
+* link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/web-search/brave-chatbot[Brave Search Chatbot]
+
+**Client Examples:**
+
+* link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/client-starter/starter-default-client[Basic MCP Client]
+* link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/mcp-annotations/mcp-annotations-client[Annotations Client]
+
+== Community Resources
+
+* link:https://github.com/spring-ai-community/awesome-spring-ai[Awesome Spring AI] - Community examples and resources
+* link:https://modelcontextprotocol.org/[Official MCP Specification]
+* link:https://github.com/modelcontextprotocol/java-sdk[Official MCP Java SDK] - Java SDK developed by the Spring team
+* link:https://modelcontextprotocol.io/sdk/java/mcp-overview[MCP Java SDK Documentation]
+
+== Reference Documentation
+
+* xref:api/mcp/mcp-overview.adoc[MCP Overview and Architecture]
+* xref:api/mcp/mcp-annotations-overview.adoc[MCP Annotations Guide]
+* xref:api/mcp/mcp-server-boot-starter-docs.adoc[Server Boot Starters]
+* xref:api/mcp/mcp-client-boot-starter-docs.adoc[Client Boot Starters]

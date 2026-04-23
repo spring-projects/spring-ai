@@ -1,0 +1,280 @@
+= Couchbase
+
+This section will walk you through setting up the `CouchbaseSearchVectorStore` to store document embeddings and perform similarity searches using Couchbase.
+
+link:https://docs.couchbase.com/server/current/vector-search/vector-search.html[Couchbase] is a distributed, JSON document database, with all the desired capabilities of a relational DBMS. Among other features, it allows users to query information using vector-based storage and retrieval.
+
+== Prerequisites
+
+
+A running Couchbase instance. The following options are available:
+Couchbase
+* link:https://hub.docker.com/_/couchbase/[Docker]
+* link:https://cloud.couchbase.com/[Capella - Couchbase as a Service]
+* link:https://www.couchbase.com/downloads/?family=couchbase-server[Install Couchbase locally]
+* link:https://www.couchbase.com/downloads/?family=open-source-kubernetes[Couchbase Kubernetes Operator]
+
+== Auto-configuration
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
+Spring AI provides Spring Boot auto-configuration for the Couchbase Vector Store.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-vector-store-couchbase</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-couchbase-store-spring-boot-starter'
+}
+----
+NOTE: Couchbase Vector search is only available in starting version 7.6 and Java SDK version 3.6.0"
+
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+TIP: Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+
+The vector store implementation can initialize the configured bucket, scope, collection and search index for you, with default options, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor.
+
+NOTE: This is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
+
+Please have a look at the list of <<couchbasevector-properties,configuration parameters>> for the vector store to learn about the default values and configuration options.
+
+Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
+
+
+Now you can auto-wire the `CouchbaseSearchVectorStore` as a vector store in your application.
+
+[source,java]
+----
+@Autowired VectorStore vectorStore;
+
+// ...
+
+List <Document> documents = List.of(
+    new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
+    new Document("The World is Big and Salvation Lurks Around the Corner"),
+    new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+
+// Add the documents to Qdrant
+vectorStore.add(documents);
+
+// Retrieve documents similar to a query
+List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+----
+
+[[couchbasevector-properties]]
+=== Configuration Properties
+
+To connect to Couchbase and use the `CouchbaseSearchVectorStore`, you need to provide access details for your instance.
+Configuration can be provided via Spring Boot's `application.properties`:
+
+[source,properties]
+----
+spring.ai.openai.api-key=<key>
+spring.couchbase.connection-string=<conn_string>
+spring.couchbase.username=<username>
+spring.couchbase.password=<password>
+----
+
+If you prefer to use environment variables for sensitive information like passwords or API keys, you have multiple options:
+
+==== Option 1: Using Spring Expression Language (SpEL)
+
+You can use custom environment variable names and reference them in your application configuration using SpEL:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+  couchbase:
+    connection-string: ${COUCHBASE_CONN_STRING}
+    username: ${COUCHBASE_USER}
+    password: ${COUCHBASE_PASSWORD}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export OPENAI_API_KEY=<api-key>
+export COUCHBASE_CONN_STRING=<couchbase connection string like couchbase://localhost>
+export COUCHBASE_USER=<couchbase username>
+export COUCHBASE_PASSWORD=<couchbase password>
+----
+
+==== Option 2: Accessing Environment Variables Programmatically
+
+Alternatively, you can access environment variables in your Java code:
+
+[source,java]
+----
+String apiKey = System.getenv("OPENAI_API_KEY");
+----
+
+This approach gives you flexibility in naming your environment variables while keeping sensitive information out of your application configuration files.
+
+NOTE: If you choose to create a shell script for ease in future work, be sure to run it prior to starting your application by "sourcing" the file, i.e. `source <your_script_name>.sh`.
+
+Spring Boot's auto-configuration feature for the Couchbase Cluster will create a bean instance that will be used by the `CouchbaseSearchVectorStore`.
+
+The Spring Boot properties starting with `spring.couchbase.*` are used to configure the Couchbase cluster instance:
+
+|===
+|Property | Description | Default Value
+
+| `spring.couchbase.connection-string` | A couchbase connection string | `couchbase://localhost`
+| `spring.couchbase.password` | Password for authentication with Couchbase. | -
+| `spring.couchbase.username` | Username for authentication with Couchbase.| -
+| `spring.couchbase.env.io.minEndpoints` | Minimum number of sockets per node.| 1
+| `spring.couchbase.env.io.maxEndpoints` | Maximum number of sockets per node.| 12
+| `spring.couchbase.env.io.idleHttpConnectionTimeout` | Length of time an HTTP connection may remain idle before it is closed and removed from the pool.| 1s
+| `spring.couchbase.env.ssl.enabled` | Whether to enable SSL support. Enabled automatically if a "bundle" is provided unless specified otherwise.| -
+| `spring.couchbase.env.ssl.bundle` | SSL bundle name.| -
+| `spring.couchbase.env.timeouts.connect` | Bucket connect timeout.| 10s
+| `spring.couchbase.env.timeouts.disconnect` | Bucket disconnect timeout.| 10s
+| `spring.couchbase.env.timeouts.key-value` | Timeout for operations on a specific key-value.| 2500ms
+| `spring.couchbase.env.timeouts.key-value` | Timeout for operations on a specific key-value with a durability level.| 10s
+| `spring.couchbase.env.timeouts.key-value-durable` | Timeout for operations on a specific key-value with a durability level.| 10s
+| `spring.couchbase.env.timeouts.query` | SQL++ query operations timeout.| 75s
+| `spring.couchbase.env.timeouts.view` | Regular and geospatial view operations timeout.| 75s
+| `spring.couchbase.env.timeouts.search` | Timeout for the search service.| 75s
+| `spring.couchbase.env.timeouts.analytics` | Timeout for the analytics service.| 75s
+| `spring.couchbase.env.timeouts.management` | Timeout for the management operations.| 75s
+|===
+
+Properties starting with the `spring.ai.vectorstore.couchbase.*` prefix are used to configure `CouchbaseSearchVectorStore`.
+
+|===
+|Property | Description | Default Value
+
+|`spring.ai.vectorstore.couchbase.index-name` | The name of the index to store the vectors. | spring-ai-document-index
+|`spring.ai.vectorstore.couchbase.bucket-name` | The name of the Couchbase Bucket, parent of the scope. | default
+|`spring.ai.vectorstore.couchbase.scope-name` |The name of the Couchbase scope, parent of the collection. Search queries will be executed in the scope context.| _default_
+|`spring.ai.vectorstore.couchbase.collection-name` | The name of the Couchbase collection to store the Documents. | _default_
+|`spring.ai.vectorstore.couchbase.dimensions` | The number of dimensions in the vector. | 1536
+|`spring.ai.vectorstore.couchbase.similarity` | The similarity function to use. | `dot_product`
+|`spring.ai.vectorstore.couchbase.optimization` | The similarity function to use. | `recall`
+|`spring.ai.vectorstore.couchbase.initialize-schema`| whether to initialize the required schema  | `false`
+|===
+
+The following similarity functions are available:
+
+* l2_norm
+* dot_product
+
+The following index optimizations are available:
+
+* recall
+* latency
+
+More details about each in the https://docs.couchbase.com/server/current/search/child-field-options-reference.html[Couchbase Documentation] on vector searches.
+
+== Metadata Filtering
+
+You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with the Couchbase store.
+
+For example, you can use either the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(
+    SearchRequest.defaults()
+    .query("The World")
+    .topK(TOP_K)
+    .filterExpression("author in ['john', 'jill'] && article_type == 'blog'"));
+----
+
+or programmatically using the `Filter.Expression` DSL:
+
+[source,java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.similaritySearch(SearchRequest.defaults()
+    .query("The World")
+    .topK(TOP_K)
+    .filterExpression(b.and(
+        b.in("author","john", "jill"),
+        b.eq("article_type", "blog")).build()));
+----
+
+NOTE: These filter expressions are converted into the equivalent Couchbase SQL++ filters.
+
+
+== Manual Configuration
+
+Instead of using the Spring Boot auto-configuration, you can manually configure the Couchbase vector store. For this you need to add the `spring-ai-couchbase-store` to your project:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-couchbase-store</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-couchbase-store'
+}
+----
+
+Create a Couchbase `Cluster` bean.
+Read the link:https://docs.couchbase.com/java-sdk/current/hello-world/start-using-sdk.html[Couchbase Documentation] for more in-depth information about the configuration of a custom Cluster instance.
+
+[source,java]
+----
+@Bean
+public Cluster cluster() {
+    return Cluster.connect("couchbase://localhost", "username", "password");
+}
+
+----
+
+and then create the `CouchbaseSearchVectorStore` bean using the builder pattern:
+
+[source,java]
+----
+@Bean
+public VectorStore couchbaseSearchVectorStore(Cluster cluster,
+                                              EmbeddingModel embeddingModel,
+                                              Boolean initializeSchema) {
+    return CouchbaseSearchVectorStore
+            .builder(cluster, embeddingModel)
+            .bucketName("test")
+            .scopeName("test")
+            .collectionName("test")
+            .initializeSchema(initializeSchema)
+            .build();
+}
+
+// This can be any EmbeddingModel implementation.
+@Bean
+public EmbeddingModel embeddingModel() {
+    return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(this.openaiKey).build());
+}
+----
+
+== Limitations
+
+NOTE: It is mandatory to have the following Couchbase services activated: Data, Query, Index, Search. While Data and Search could be enough, Query and Index are necessary to support the complete metadata filtering mechanism.

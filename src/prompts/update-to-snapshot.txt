@@ -1,0 +1,129 @@
+Please perform the following three tasks in my project:
+
+  Important: File Access Instructions
+
+  - For all file reading operations, use the view tool to view file contents. e.g. cat on linux/mac
+  - For multi-module projects, you'll need to examine multiple pom.xml or build.gradle files
+  - Examples:
+  cat pom.xml                   # For Maven root project
+  cat module/pom.xml            # For Maven modules
+  cat build.gradle              # For Gradle
+  cat module/build.gradle       # For Gradle modules
+  cat build.gradle.kts          # For Kotlin DSL
+
+  Task 1: Update Spring AI BOM Version to 1.0.0-SNAPSHOT
+
+  For Maven (pom.xml):
+  - Replace <version>1.0.0-M5</version> with <version>1.0.0-SNAPSHOT</version> within the spring-ai-bom dependency
+  - Use the exact whitespace/indentation from the original file
+
+  For Gradle (build.gradle or build.gradle.kts):
+  - Update implementation platform("org.springframework.ai:spring-ai-bom:1.0.0-M5") to:
+  implementation platform("org.springframework.ai:spring-ai-bom:1.0.0-SNAPSHOT")
+
+  Task 2: Ensure All Required Repositories Exist
+
+  For Maven (pom.xml):
+  - Verify these three repositories exist in pom.xml file:
+
+  <repository>
+    <id>spring-milestones</id>
+    <name>Spring Milestones</name>
+    <url>https://repo.spring.io/milestone</url>
+    <snapshots>
+      <enabled>false</enabled>
+    </snapshots>
+  </repository>
+
+  <repository>
+    <id>spring-snapshots</id>
+    <name>Spring Snapshots</name>
+    <url>https://repo.spring.io/snapshot</url>
+    <releases>
+      <enabled>false</enabled>
+    </releases>
+  </repository>
+
+  <repository>
+    <id>central-portal-snapshots</id>
+    <name>Central Portal Snapshots</name>
+    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+    <releases>
+      <enabled>false</enabled>
+    </releases>
+    <snapshots>
+      <enabled>true</enabled>
+    </snapshots>
+  </repository>
+
+  - Add any missing repositories to the <repositories> section
+  - Use the existing indentation style from the pom.xml file
+
+  For Gradle:
+  - Add any missing repositories with proper formatting:
+  repositories {
+      mavenCentral()
+      maven {
+          url = uri("https://repo.spring.io/milestone")
+          mavenContent {
+              releasesOnly()
+          }
+      }
+      maven {
+          url = uri("https://repo.spring.io/snapshot")
+          mavenContent {
+              snapshotsOnly()
+          }
+      }
+      maven {
+          url = uri("https://central.sonatype.com/repository/maven-snapshots/")
+          mavenContent {
+              snapshotsOnly()
+          }
+      }
+  }
+
+  Task 3: Update Spring AI Artifact IDs
+
+  Apply this pattern for all Spring AI starters:
+  - Model starters: spring-ai-{model}-spring-boot-starter → spring-ai-starter-model-{model}
+  - Vector Store starters: spring-ai-{store}-store-spring-boot-starter → spring-ai-starter-vector-store-{store}
+  - MCP starters: spring-ai-mcp-{type}-spring-boot-starter → spring-ai-starter-mcp-{type}
+
+  For Maven (pom.xml) - Examples:
+  <!-- BEFORE -->
+  <dependency>
+      <groupId>org.springframework.ai</groupId>
+      <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+  </dependency>
+
+  <!-- AFTER -->
+  <dependency>
+      <groupId>org.springframework.ai</groupId>
+      <artifactId>spring-ai-starter-model-openai</artifactId>
+  </dependency>
+
+  For Gradle - Examples:
+  // BEFORE
+  implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
+  implementation 'org.springframework.ai:spring-ai-redis-store-spring-boot-starter'
+
+  // AFTER
+  implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+  implementation 'org.springframework.ai:spring-ai-starter-vector-store-redis'
+
+  CRITICAL - Do NOT make these changes:
+
+  1. Do NOT change any XML tags such as:
+    - Do NOT change <name> to <n> (leave all <name> tags exactly as they are)
+    - Do NOT modify any other XML elements like <description>, <properties>, etc.
+  2. Do NOT attempt to fix XML formatting:
+    - Do NOT add or remove whitespace except where specifically instructed
+    - Do NOT add or remove newlines
+    - Do NOT reformat XML indentation
+  3. Make ONLY the three specific changes described above:
+    - Update spring-ai-bom version to 1.0.0-SNAPSHOT
+    - Add missing repositories from the list above
+    - Update Spring AI artifactIds using the specified patterns
+
+  For all replacements, maintain the exact indentation and whitespace from the original file.

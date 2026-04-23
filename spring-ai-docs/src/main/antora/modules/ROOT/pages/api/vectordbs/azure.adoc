@@ -1,0 +1,393 @@
+= Azure AI Service
+
+This section will walk you through setting up the `AzureVectorStore` to store document embeddings and perform similarity searches using the Azure AI Search Service.
+
+link:https://azure.microsoft.com/en-us/products/ai-services/ai-search/[Azure AI Search] is a versatile cloud-hosted cloud information retrieval system that is part of Microsoft's larger AI platform. Among other features, it allows users to query information using vector-based storage and retrieval.
+
+== Prerequisites
+
+1. Azure Subscription: You will need an link:https://azure.microsoft.com/en-us/free/[Azure subscription] to use any Azure service.
+2. Azure AI Search Service: Create an link:https://portal.azure.com/#create/Microsoft.Search[AI Search service]. Once the service is created, obtain the admin apiKey from the `Keys` section under `Settings` and retrieve the endpoint from the `Url` field under the `Overview` section.
+3. (Optional) Azure OpenAI Service: Create an Azure link:https://portal.azure.com/#create/Microsoft.AIServicesOpenAI[OpenAI service]. **NOTE:** You may have to fill out a separate form to gain access to Azure Open AI services. Once the service is created, obtain the endpoint and apiKey from the `Keys and Endpoint` section under `Resource Management`.
+
+== Configuration
+
+On startup, the `AzureVectorStore` can  attempt to create a new index within your AI Search service instance if you've opted in by setting the relevant `initialize-schema` `boolean` property to `true` in the constructor or, if using Spring Boot, setting `...initialize-schema=true`  in your `application.properties` file.
+
+
+NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
+
+Alternatively, you can create the index manually.
+
+To set up an AzureVectorStore, you will need the settings retrieved from the prerequisites above along with your index name:
+
+* Azure AI Search Endpoint
+* Azure AI Search Key
+* (optional) Azure OpenAI API Endpoint
+* (optional) Azure OpenAI API Key
+
+You can provide these values as OS environment variables.
+
+[source,bash]
+----
+export AZURE_AI_SEARCH_API_KEY=<My AI Search API Key>
+export AZURE_AI_SEARCH_ENDPOINT=<My AI Search Index>
+export OPENAI_API_KEY=<My Azure AI API Key> (Optional)
+----
+
+[NOTE]
+====
+You can replace Azure Open AI implementation with any valid OpenAI implementation that supports the Embeddings interface. For example, you could use Spring AI's Open AI or `TransformersEmbedding` implementations for embeddings instead of the Azure implementation.
+====
+
+== Dependencies
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
+Add these dependencies to your project:
+
+=== 1. Select an Embeddings interface implementation. You can choose between:
+
+[tabs]
+======
+OpenAI Embedding::
++
+[source,xml]
+----
+<dependency>
+   <groupId>org.springframework.ai</groupId>
+   <artifactId>spring-ai-starter-model-openai</artifactId>
+</dependency>
+----
+
+Azure AI Embedding::
++
+[source,xml]
+----
+<dependency>
+ <groupId>org.springframework.ai</groupId>
+ <artifactId>spring-ai-starter-model-azure-openai</artifactId>
+</dependency>
+----
+
+Local Sentence Transformers Embedding::
++
+[source,xml]
+----
+<dependency>
+ <groupId>org.springframework.ai</groupId>
+ <artifactId>spring-ai-starter-model-transformers</artifactId>
+</dependency>
+----
+======
+
+=== 2. Azure (AI Search) Vector Store
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-azure-store</artifactId>
+</dependency>
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+== Configuration Properties
+
+You can use the following properties in your Spring Boot configuration to customize the Azure vector store.
+
+[stripes=even]
+|===
+|Property|Default value
+
+|`spring.ai.vectorstore.azure.url`|
+|`spring.ai.vectorstore.azure.api-key`|
+|`spring.ai.vectorstore.azure.useKeylessAuth`|false
+|`spring.ai.vectorstore.azure.initialize-schema`|false
+|`spring.ai.vectorstore.azure.index-name`|spring_ai_azure_vector_store
+|`spring.ai.vectorstore.azure.default-top-k`|4
+|`spring.ai.vectorstore.azure.default-similarity-threshold`|0.0
+|`spring.ai.vectorstore.azure.content-field-name`|content
+|`spring.ai.vectorstore.azure.embedding-field-name`|embedding
+|`spring.ai.vectorstore.azure.metadata-field-name`|metadata
+|===
+
+
+== Sample Code
+
+To configure an Azure `SearchIndexClient` in your application, you can use the following code:
+
+[source,java]
+----
+@Bean
+public SearchIndexClient searchIndexClient() {
+  return new SearchIndexClientBuilder().endpoint(System.getenv("AZURE_AI_SEARCH_ENDPOINT"))
+    .credential(new AzureKeyCredential(System.getenv("AZURE_AI_SEARCH_API_KEY")))
+    .buildClient();
+}
+----
+
+To create a vector store, you can use the following code by injecting the `SearchIndexClient` bean created in the above sample along with an `EmbeddingModel` provided by the Spring AI library that implements the desired Embeddings interface.
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
+
+  return AzureVectorStore.builder(searchIndexClient, embeddingModel)
+    .initializeSchema(true)
+    // Define the metadata fields to be used
+    // in the similarity search filters.
+    .filterMetadataFields(List.of(MetadataField.text("country"), MetadataField.int64("year"),
+            MetadataField.date("activationDate")))
+    .defaultTopK(5)
+    .defaultSimilarityThreshold(0.7)
+    .indexName("spring-ai-document-index")
+    .build();
+}
+----
+
+[NOTE]
+====
+You must list explicitly all metadata field names and types for any metadata key used in the filter expression. The list above registers filterable metadata fields: `country` of type `TEXT`, `year` of type `INT64`, and `active` of type `BOOLEAN`.
+
+If the filterable metadata fields are expanded with new entries, you have to (re)upload/update the documents with this metadata.
+====
+
+In your main code, create some documents:
+
+[source,java]
+----
+List<Document> documents = List.of(
+	new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("country", "BG", "year", 2020)),
+	new Document("The World is Big and Salvation Lurks Around the Corner"),
+	new Document("You walk forward facing the past and you turn back toward the future.", Map.of("country", "NL", "year", 2023)));
+----
+
+Add the documents to your vector store:
+
+[source,java]
+----
+vectorStore.add(documents);
+----
+
+And finally, retrieve documents similar to a query:
+
+[source,java]
+----
+List<Document> results = vectorStore.similaritySearch(
+    SearchRequest.builder()
+      .query("Spring")
+      .topK(5).build());
+----
+
+If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
+
+=== Metadata filtering
+
+You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with AzureVectorStore as well.
+
+For example, you can use either the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(
+   SearchRequest.builder()
+      .query("The World")
+      .topK(TOP_K)
+      .similarityThreshold(SIMILARITY_THRESHOLD)
+      .filterExpression("country in ['UK', 'NL'] && year >= 2020").build());
+----
+
+or programmatically using the expression DSL:
+
+[source,java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.similaritySearch(
+    SearchRequest.builder()
+      .query("The World")
+      .topK(TOP_K)
+      .similarityThreshold(SIMILARITY_THRESHOLD)
+      .filterExpression(b.and(
+         b.in("country", "UK", "NL"),
+         b.gte("year", 2020)).build()).build());
+----
+
+The portable filter expressions get automatically converted into the proprietary Azure Search link:https://learn.microsoft.com/en-us/azure/search/search-query-odata-filter[OData filters]. For example, the following portable filter expression:
+
+[source,sql]
+----
+country in ['UK', 'NL'] && year >= 2020
+----
+
+is converted into the following Azure OData link:https://learn.microsoft.com/en-us/azure/search/search-query-odata-filter[filter expression]:
+
+[source,graphql]
+----
+$filter search.in(meta_country, 'UK,NL', ',') and meta_year ge 2020
+----
+
+== Custom Field Names
+
+By default, the Azure Vector Store uses the following field names in the Azure AI Search index:
+
+* `content` - for document text
+* `embedding` - for vector embeddings
+* `metadata` - for document metadata
+
+However, when working with existing Azure AI Search indexes that use different field names, you can configure custom field names to match your index schema. This allows you to integrate Spring AI with pre-existing indexes without needing to modify them.
+
+=== Use Cases
+
+Custom field names are particularly useful when:
+
+* **Integrating with existing indexes**: Your organization already has Azure AI Search indexes with established field naming conventions (e.g., `chunk_text`, `vector`, `meta_data`).
+* **Following naming standards**: Your team follows specific naming conventions that differ from the defaults.
+* **Migrating from other systems**: You're migrating from another vector database or search system and want to maintain consistent field names.
+
+=== Configuration via Properties
+
+You can configure custom field names using Spring Boot application properties:
+
+[source,properties]
+----
+spring.ai.vectorstore.azure.url=${AZURE_AI_SEARCH_ENDPOINT}
+spring.ai.vectorstore.azure.api-key=${AZURE_AI_SEARCH_API_KEY}
+spring.ai.vectorstore.azure.index-name=my-existing-index
+spring.ai.vectorstore.azure.initialize-schema=false
+
+# Custom field names to match existing index schema
+spring.ai.vectorstore.azure.content-field-name=chunk_text
+spring.ai.vectorstore.azure.embedding-field-name=vector
+spring.ai.vectorstore.azure.metadata-field-name=meta_data
+----
+
+IMPORTANT: When using an existing index with custom field names, set `initialize-schema=false` to prevent Spring AI from trying to create a new index with the default schema.
+
+=== Configuration via Builder API
+
+Alternatively, you can configure custom field names programmatically using the builder API:
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
+
+	return AzureVectorStore.builder(searchIndexClient, embeddingModel)
+		.indexName("my-existing-index")
+		.initializeSchema(false) // Don't create schema - use existing index
+		// Configure custom field names to match existing index
+		.contentFieldName("chunk_text")
+		.embeddingFieldName("vector")
+		.metadataFieldName("meta_data")
+		.filterMetadataFields(List.of(
+			MetadataField.text("category"),
+			MetadataField.text("source")))
+		.build();
+}
+----
+
+=== Complete Example: Working with Existing Index
+
+Here's a complete example showing how to use Spring AI with an existing Azure AI Search index that has custom field names:
+
+[source,java]
+----
+@Configuration
+public class VectorStoreConfig {
+
+	@Bean
+	public SearchIndexClient searchIndexClient() {
+		return new SearchIndexClientBuilder()
+			.endpoint(System.getenv("AZURE_AI_SEARCH_ENDPOINT"))
+			.credential(new AzureKeyCredential(System.getenv("AZURE_AI_SEARCH_API_KEY")))
+			.buildClient();
+	}
+
+	@Bean
+	public VectorStore vectorStore(SearchIndexClient searchIndexClient,
+			EmbeddingModel embeddingModel) {
+
+		return AzureVectorStore.builder(searchIndexClient, embeddingModel)
+			.indexName("production-documents-index")
+			.initializeSchema(false) // Use existing index
+			// Map to existing index field names
+			.contentFieldName("document_text")
+			.embeddingFieldName("text_vector")
+			.metadataFieldName("document_metadata")
+			// Define filterable metadata fields from existing schema
+			.filterMetadataFields(List.of(
+				MetadataField.text("department"),
+				MetadataField.int64("year"),
+				MetadataField.date("created_date")))
+			.defaultTopK(10)
+			.defaultSimilarityThreshold(0.75)
+			.build();
+	}
+}
+----
+
+You can then use the vector store as normal:
+
+[source,java]
+----
+// Search using the existing index with custom field names
+List<Document> results = vectorStore.similaritySearch(
+	SearchRequest.builder()
+		.query("artificial intelligence")
+		.topK(5)
+		.filterExpression("department == 'Engineering' && year >= 2023")
+		.build());
+
+// The results contain documents with text from the 'document_text' field
+results.forEach(doc -> System.out.println(doc.getText()));
+----
+
+=== Creating New Index with Custom Field Names
+
+You can also create a new index with custom field names by setting `initializeSchema=true`:
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(SearchIndexClient searchIndexClient,
+		EmbeddingModel embeddingModel) {
+
+	return AzureVectorStore.builder(searchIndexClient, embeddingModel)
+		.indexName("new-custom-index")
+		.initializeSchema(true) // Create new index with custom field names
+		.contentFieldName("text_content")
+		.embeddingFieldName("content_vector")
+		.metadataFieldName("doc_metadata")
+		.filterMetadataFields(List.of(
+			MetadataField.text("category"),
+			MetadataField.text("author")))
+		.build();
+}
+----
+
+This will create a new Azure AI Search index with your custom field names, allowing you to establish your own naming conventions from the start.
+
+== Accessing the Native Client
+
+The Azure Vector Store implementation provides access to the underlying native Azure Search client (`SearchClient`) through the `getNativeClient()` method:
+
+[source,java]
+----
+AzureVectorStore vectorStore = context.getBean(AzureVectorStore.class);
+Optional<SearchClient> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    SearchClient client = nativeClient.get();
+    // Use the native client for Azure Search-specific operations
+}
+----
+
+The native client gives you access to Azure Search-specific features and operations that might not be exposed through the `VectorStore` interface.

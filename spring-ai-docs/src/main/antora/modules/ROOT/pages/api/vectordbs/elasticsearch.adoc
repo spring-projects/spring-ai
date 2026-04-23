@@ -1,0 +1,293 @@
+= Elasticsearch
+
+This section walks you through setting up the Elasticsearch `VectorStore` to store document embeddings and perform similarity searches.
+
+link:https://www.elastic.co/elasticsearch[Elasticsearch] is an open source search and analytics engine based on the Apache Lucene library.
+
+== Prerequisites
+
+A running Elasticsearch instance. The following options are available:
+
+* link:https://hub.docker.com/_/elasticsearch/[Docker]
+* link:https://www.elastic.co/guide/en/elasticsearch/reference/current/install-elasticsearch.html#elasticsearch-install-packages[Self-Managed Elasticsearch]
+* link:https://www.elastic.co/cloud/elasticsearch-service/signup?page=docs&placement=docs-body[Elastic Cloud]
+
+
+== Auto-configuration
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
+Spring AI provides Spring Boot auto-configuration for the Elasticsearch Vector Store.
+To enable it, add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
+
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-vector-store-elasticsearch</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-elasticsearch'
+}
+----
+======
+
+[NOTE]
+--
+For spring-boot versions pre 3.3.0 it's necessary to explicitly add the elasticsearch-java dependency with version > 8.13.3, otherwise the older version used will be incompatible with the queries performed:
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependency>
+    <groupId>co.elastic.clients</groupId>
+    <artifactId>elasticsearch-java</artifactId>
+    <version>8.13.3</version>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'co.elastic.clients:elasticsearch-java:8.13.3'
+}
+----
+======
+--
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+TIP: Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
+
+The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
+Alternatively you can opt-out the initialization and create the index manually using the Elasticsearch client, which can be useful if the index needs advanced mapping or additional configuration.
+
+NOTE: this is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
+
+Please have a look at the list of <<elasticsearchvector-properties,configuration parameters>> for the vector store to learn about the default values and configuration options.
+These properties can be also set by configuring the `ElasticsearchVectorStoreOptions` bean.
+
+Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
+
+Now you can auto-wire the `ElasticsearchVectorStore` as a vector store in your application.
+
+[source,java]
+----
+@Autowired VectorStore vectorStore;
+
+// ...
+
+List <Document> documents = List.of(
+    new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
+    new Document("The World is Big and Salvation Lurks Around the Corner"),
+    new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+
+// Add the documents to Elasticsearch
+vectorStore.add(documents);
+
+// Retrieve documents similar to a query
+List<Document> results = this.vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
+----
+
+[[elasticsearchvector-properties]]
+=== Configuration Properties
+
+To connect to Elasticsearch and use the `ElasticsearchVectorStore`, you need to provide access details for your instance.
+A simple configuration can either be provided via Spring Boot's `application.yml`,
+
+[source,yaml]
+----
+spring:
+  elasticsearch:
+    uris: <elasticsearch instance URIs>
+    username: <elasticsearch username>
+    password: <elasticsearch password>
+  ai:
+    vectorstore:
+      elasticsearch:
+        initialize-schema: true
+        index-name: custom-index
+        dimensions: 1536
+        similarity: cosine
+----
+
+The Spring Boot properties starting with `spring.elasticsearch.*` are used to configure the Elasticsearch client:
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+
+| `spring.elasticsearch.connection-timeout` | Connection timeout used when communicating with Elasticsearch. | `1s`
+| `spring.elasticsearch.password` | Password for authentication with Elasticsearch. | -
+| `spring.elasticsearch.username` | Username for authentication with Elasticsearch.| -
+| `spring.elasticsearch.uris` | Comma-separated list of the Elasticsearch instances to use. | `+http://localhost:9200+`
+| `spring.elasticsearch.path-prefix` | Prefix added to the path of every request sent to Elasticsearch. | -
+| `spring.elasticsearch.restclient.sniffer.delay-after-failure` | Delay of a sniff execution scheduled after a failure.| `1m`
+| `spring.elasticsearch.restclient.sniffer.interval` | Interval between consecutive ordinary sniff executions. | `5m`
+| `spring.elasticsearch.restclient.ssl.bundle` | SSL bundle name. | -
+| `spring.elasticsearch.socket-keep-alive` | Whether to enable socket keep alive between client and Elasticsearch. | `false`
+| `spring.elasticsearch.socket-timeout` | Socket timeout used when communicating with Elasticsearch. | `30s`
+|===
+
+Properties starting with `spring.ai.vectorstore.elasticsearch.*` are used to configure the `ElasticsearchVectorStore`:
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+
+|`spring.ai.vectorstore.elasticsearch.initialize-schema`| Whether to initialize the required schema | `false`
+|`spring.ai.vectorstore.elasticsearch.index-name` | The name of the index to store the vectors | `spring-ai-document-index`
+|`spring.ai.vectorstore.elasticsearch.dimensions` | The number of dimensions in the vector | `1536`
+|`spring.ai.vectorstore.elasticsearch.similarity` | The similarity function to use | `cosine`
+|`spring.ai.vectorstore.elasticsearch.embedding-field-name` | The name of the vector field to search against | `embedding`
+|===
+
+The following similarity functions are available:
+
+* `cosine` - Default, suitable for most use cases. Measures cosine similarity between vectors.
+* `l2_norm` - Euclidean distance between vectors. Lower values indicate higher similarity.
+* `dot_product` - Best performance for normalized vectors (e.g., OpenAI embeddings).
+
+More details about each in the https://www.elastic.co/guide/en/elasticsearch/reference/master/dense-vector.html#dense-vector-params[Elasticsearch Documentation] on dense vectors.
+
+== Metadata Filtering
+
+You can leverage the generic, portable xref:api/vectordbs.adoc#metadata-filters[metadata filters] with Elasticsearch as well.
+
+For example, you can use either the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(SearchRequest.builder()
+        .query("The World")
+        .topK(TOP_K)
+        .similarityThreshold(SIMILARITY_THRESHOLD)
+        .filterExpression("author in ['john', 'jill'] && 'article_type' == 'blog'").build());
+----
+
+or programmatically using the `Filter.Expression` DSL:
+
+[source,java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.similaritySearch(SearchRequest.builder()
+        .query("The World")
+        .topK(TOP_K)
+        .similarityThreshold(SIMILARITY_THRESHOLD)
+        .filterExpression(b.and(
+                b.in("author", "john", "jill"),
+                b.eq("article_type", "blog")).build()).build());
+----
+
+NOTE: Those (portable) filter expressions get automatically converted into the proprietary Elasticsearch link:https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html[Query string query].
+
+For example, this portable filter expression:
+
+[source,sql]
+----
+author in ['john', 'jill'] && 'article_type' == 'blog'
+----
+
+is converted into the proprietary Elasticsearch filter format:
+
+[source,text]
+----
+(metadata.author:john OR jill) AND metadata.article_type:blog
+----
+
+== Manual Configuration
+
+Instead of using the Spring Boot auto-configuration, you can manually configure the Elasticsearch vector store. For this you need to add the `spring-ai-elasticsearch-store` to your project:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-elasticsearch-store</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-elasticsearch-store'
+}
+----
+
+Create an Elasticsearch `RestClient` bean.
+Read the link:https://www.elastic.co/guide/en/elasticsearch/client/java-api-client/current/java-rest-low-usage-initialization.html[Elasticsearch Documentation] for more in-depth information about the configuration of a custom RestClient.
+
+[source,java]
+----
+@Bean
+public RestClient restClient() {
+    return RestClient.builder(new HttpHost("<host>", 9200, "http"))
+        .setDefaultHeaders(new Header[]{
+            new BasicHeader("Authorization", "Basic <encoded username and password>")
+        })
+        .build();
+}
+----
+
+Then create the `ElasticsearchVectorStore` bean using the builder pattern:
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(RestClient restClient, EmbeddingModel embeddingModel) {
+    ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
+    options.setIndexName("custom-index");    // Optional: defaults to "spring-ai-document-index"
+    options.setSimilarity(COSINE);           // Optional: defaults to COSINE
+    options.setDimensions(1536);             // Optional: defaults to model dimensions or 1536
+
+    return ElasticsearchVectorStore.builder(restClient, embeddingModel)
+        .options(options)                     // Optional: use custom options
+        .initializeSchema(true)               // Optional: defaults to false
+        .batchingStrategy(new TokenCountBatchingStrategy()) // Optional: defaults to TokenCountBatchingStrategy
+        .build();
+}
+
+// This can be any EmbeddingModel implementation
+@Bean
+public EmbeddingModel embeddingModel() {
+    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+}
+----
+
+== Accessing the Native Client
+
+The Elasticsearch Vector Store implementation provides access to the underlying native Elasticsearch client (`ElasticsearchClient`) through the `getNativeClient()` method:
+
+[source,java]
+----
+ElasticsearchVectorStore vectorStore = context.getBean(ElasticsearchVectorStore.class);
+Optional<ElasticsearchClient> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    ElasticsearchClient client = nativeClient.get();
+    // Use the native client for Elasticsearch-specific operations
+}
+----
+
+The native client gives you access to Elasticsearch-specific features and operations that might not be exposed through the `VectorStore` interface.

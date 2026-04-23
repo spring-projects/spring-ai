@@ -1,0 +1,5 @@
+= QianFan Embeddings
+
+This functionality has been moved to the Spring AI Community repository.
+
+Please visit https://github.com/spring-ai-community/qianfan for the latest version.

@@ -1,0 +1,13 @@
+name: Auto Cherry-Pick
+
+on:
+  push:
+    branches:
+      - main
+      - '*.x'
+
+jobs:
+  cherry-pick-commit:
+    uses: spring-io/spring-github-workflows/.github/workflows/spring-cherry-pick.yml@v5
+    secrets:
+      GH_ACTIONS_REPO_TOKEN: ${{ secrets.GH_ACTIONS_REPO_TOKEN }}

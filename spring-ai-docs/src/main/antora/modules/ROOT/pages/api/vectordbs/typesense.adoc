@@ -1,0 +1,254 @@
+= Typesense
+
+This section walks you through setting up `TypesenseVectorStore` to store document embeddings and perform similarity searches.
+
+link:https://typesense.org[Typesense] is an open source typo tolerant search engine that is optimized for instant sub-50ms searches while providing an intuitive developer experience. It provides vector search capabilities that allow you to store and query high-dimensional vectors alongside your regular search data.
+
+== Prerequisites
+
+* A running Typesense instance. The following options are available:
+** link:https://typesense.org/docs/guide/install-typesense.html[Typesense Cloud] (recommended)
+** link:https://hub.docker.com/r/typesense/typesense/[Docker] image _typesense/typesense:latest_
+* If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] to generate the embeddings stored by the `TypesenseVectorStore`.
+
+== Auto-configuration
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
+Spring AI provides Spring Boot auto-configuration for the Typesense Vector Store.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-vector-store-typesense</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-typesense'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Please have a look at the list of xref:#_configuration_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
+
+TIP: Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
+
+The vector store implementation can initialize the requisite schema for you but you must opt-in by setting `...initialize-schema=true` in the `application.properties` file.
+
+Additionally you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
+
+Now you can auto-wire the `TypesenseVectorStore` as a vector store in your application:
+
+[source,java]
+----
+@Autowired VectorStore vectorStore;
+
+// ...
+
+List<Document> documents = List.of(
+    new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
+    new Document("The World is Big and Salvation Lurks Around the Corner"),
+    new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+
+// Add the documents to Typesense
+vectorStore.add(documents);
+
+// Retrieve documents similar to a query
+List<Document> results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
+----
+
+=== Configuration Properties
+
+To connect to Typesense and use the `TypesenseVectorStore` you need to provide access details for your instance.
+A simple configuration can be provided via Spring Boot's `application.yml`:
+
+[source,yaml]
+----
+spring:
+  ai:
+    vectorstore:
+      typesense:
+        initialize-schema: true
+        collection-name: vector_store
+        embedding-dimension: 1536
+        client:
+          protocol: http
+          host: localhost
+          port: 8108
+          api-key: xyz
+----
+
+Properties starting with `spring.ai.vectorstore.typesense.*` are used to configure the `TypesenseVectorStore`:
+
+[cols="2,5,1",stripes=even]
+|===
+|Property |Description |Default Value
+
+|`spring.ai.vectorstore.typesense.initialize-schema`
+|Whether to initialize the required schema
+|`false`
+
+|`spring.ai.vectorstore.typesense.collection-name`
+|The name of the collection to store vectors
+|`vector_store`
+
+|`spring.ai.vectorstore.typesense.embedding-dimension`
+|The number of dimensions in the vector
+|`1536`
+
+|`spring.ai.vectorstore.typesense.client.protocol`
+|HTTP Protocol
+|`http`
+
+|`spring.ai.vectorstore.typesense.client.host`
+|Hostname
+|`localhost`
+
+|`spring.ai.vectorstore.typesense.client.port`
+|Port
+|`8108`
+
+|`spring.ai.vectorstore.typesense.client.api-key`
+|API Key
+|`xyz`
+|===
+
+== Manual Configuration
+
+Instead of using the Spring Boot auto-configuration you can manually configure the Typesense vector store. For this you need to add the `spring-ai-typesense-store` to your project:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-typesense-store</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-typesense-store'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Create a Typesense `Client` bean:
+
+[source,java]
+----
+@Bean
+public Client typesenseClient() {
+    List<Node> nodes = new ArrayList<>();
+    nodes.add(new Node("http", "localhost", "8108"));
+    Configuration configuration = new Configuration(nodes, Duration.ofSeconds(5), "xyz");
+    return new Client(configuration);
+}
+----
+
+Then create the `TypesenseVectorStore` bean using the builder pattern:
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(Client client, EmbeddingModel embeddingModel) {
+    return TypesenseVectorStore.builder(client, embeddingModel)
+        .collectionName("custom_vectors")     // Optional: defaults to "vector_store"
+        .embeddingDimension(1536)            // Optional: defaults to 1536
+        .initializeSchema(true)              // Optional: defaults to false
+        .batchingStrategy(new TokenCountBatchingStrategy()) // Optional: defaults to TokenCountBatchingStrategy
+        .build();
+}
+
+// This can be any EmbeddingModel implementation
+@Bean
+public EmbeddingModel embeddingModel() {
+    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+}
+----
+
+== Metadata Filtering
+
+You can leverage the generic portable xref:api/vectordbs.adoc#metadata-filters[metadata filters] with Typesense store as well.
+
+For example you can use either the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(
+    SearchRequest.builder()
+        .query("The World")
+        .topK(TOP_K)
+        .similarityThreshold(SIMILARITY_THRESHOLD)
+        .filterExpression("country in ['UK', 'NL'] && year >= 2020").build());
+----
+
+or programmatically using the `Filter.Expression` DSL:
+
+[source,java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.similaritySearch(SearchRequest.builder()
+    .query("The World")
+    .topK(TOP_K)
+    .similarityThreshold(SIMILARITY_THRESHOLD)
+    .filterExpression(b.and(
+        b.in("country", "UK", "NL"),
+        b.gte("year", 2020)).build()).build());
+----
+
+NOTE: Those (portable) filter expressions get automatically converted into link:https://typesense.org/docs/0.24.0/api/search.html#filter-parameters[Typesense Search Filters].
+
+For example this portable filter expression:
+
+[source,sql]
+----
+country in ['UK', 'NL'] && year >= 2020
+----
+
+is converted into the proprietary Typesense filter format:
+
+[source,text]
+----
+country: ['UK', 'NL'] && year: >=2020
+----
+
+[NOTE]
+====
+If you are not retrieving the documents in the expected order or the search results are not as expected, check the embedding model you are using.
+
+Embedding models can have a significant impact on the search results (i.e. make sure if your data is in Spanish to use a Spanish or multilingual embedding model).
+====
+
+== Accessing the Native Client
+
+The Typesense Vector Store implementation provides access to the underlying native Typesense client (`Client`) through the `getNativeClient()` method:
+
+[source,java]
+----
+TypesenseVectorStore vectorStore = context.getBean(TypesenseVectorStore.class);
+Optional<Client> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    Client client = nativeClient.get();
+    // Use the native client for Typesense-specific operations
+}
+----
+
+The native client gives you access to Typesense-specific features and operations that might not be exposed through the `VectorStore` interface.

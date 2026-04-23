@@ -1,0 +1,15 @@
+name: Deploy Docs
+run-name: ${{ github.event_name == 'workflow_dispatch' && 'Deploy Docs (Build)' || 'Deploy Docs (Dispatcher)' }}
+on:
+  workflow_dispatch:
+permissions:
+  actions: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'spring-projects' }}
+    steps:
+      - name: Dispatch (full build)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run deploy-docs.yml -r docs-build

@@ -1,0 +1,188 @@
+= S3 Vector Store
+
+This section walks you through setting up `S3VectorStore` to store document embeddings and perform similarity searches.
+
+link:https://aws.amazon.com/s3/features/vectors/[AWS S3 Vector Store] is a serverless object storage which supports storing and querying vector at scale.
+
+link:https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors.html[S3 Vector Store API] extends the core features of AWS S3 Bucket and allows you to use S3 as a vector database:
+
+* Store vectors and the associated metadata within hashes or JSON documents
+* Retrieve vectors
+* Perform vector searches
+
+== Prerequisites
+
+1. A S3 Vector Store Bucket
+- https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors-buckets-create.html[How to create S3 Vector Bucket]
+
+2. `EmbeddingModel` instance to compute the document embeddings. Several options are available:
+- If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] to generate the embeddings stored by the `S3VectorStore`.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the S3 Vector Store.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-vector-store-s3</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-s3'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+TIP: Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
+
+Please have a look at the list of <<s3-properties,configuration parameters>> for the vector store to learn about the default values and configuration options.
+
+Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
+
+Now you can auto-wire the `S3VectorStore` as a vector store in your application.
+
+[source,java]
+----
+@Autowired VectorStore vectorStore;
+
+// ...
+
+List <Document> documents = List.of(
+    new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
+    new Document("The World is Big and Salvation Lurks Around the Corner"),
+    new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+
+// Add the documents to S3 Vector Store Bucket
+vectorStore.add(documents);
+
+// Retrieve documents similar to a query
+List<Document> results = this.vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
+----
+
+[[s3-properties]]
+=== Configuration Properties
+
+To connect to AWS S3 Vector Store and use the `S3VectorStore`, you will need to create a `Bean` of `S3VectorsClient` which needs to be supplied with correct Credentials and Region.
+
+Properties starting with `spring.ai.vectorstore.s3.*` are used to configure the `S3VectorStore`:
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+
+|`spring.ai.vectorstore.s3.index-name` | The name of the index to store the vectors | `spring-ai-index`
+|`spring.ai.vectorstore.s3.vector-bucket-name` | The name of bucket where vectors are located | `my-vector-bucket-on-aws`
+|===
+
+== Metadata Filtering
+
+You can leverage the generic, portable xref:api/vectordbs.adoc#metadata-filters[metadata filters] with S3 Vector Store as well.
+
+For example, you can use either the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(SearchRequest.builder()
+        .query("The World")
+        .topK(TOP_K)
+        .similarityThreshold(SIMILARITY_THRESHOLD)
+        .filterExpression("country in ['UK', 'NL'] && year >= 2020").build());
+----
+
+or programmatically using the `Filter.Expression` DSL:
+
+[source,java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.similaritySearch(SearchRequest.builder()
+        .query("The World")
+        .topK(TOP_K)
+        .similarityThreshold(SIMILARITY_THRESHOLD)
+        .filterExpression(b.and(
+                b.in("country", "UK", "NL"),
+                b.gte("year", 2020)).build()).build());
+----
+
+NOTE: Those (portable) filter expressions get automatically converted into link:https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/core/document/Document.html[AWS SDK Java V2 Filter Document object].
+
+For example, this portable filter expression:
+
+[source,sql]
+----
+country in ['UK', 'NL'] && year >= 2020
+----
+
+is converted into the proprietary S3 Vector Store filter format:
+
+[source,text]
+----
+@country:{UK | NL} @year:[2020 inf]
+----
+
+== Manual Configuration
+
+Instead of using the Spring Boot auto-configuration, you can manually configure the S3 Vector Store. For this you need to add the `spring-ai-s3-vector-store` to your project:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-s3-vector-store</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-s3-vector-store'
+}
+----
+
+Then create the `S3VectorStore` bean using the builder pattern:
+
+[source,java]
+----
+@Bean
+VectorStore s3VectorStore(S3VectorsClient s3VectorsClient, EmbeddingModel embeddingModel) {
+    S3VectorStore.Builder builder = new S3VectorStore.Builder(s3VectorsClient, embeddingModel); // Required a must
+    builder.indexName(properties.getIndexName()) // Required indexName must be specified
+            .vectorBucketName(properties.getVectorBucketName()) // Required vectorBucketName must be specified
+            .filterExpressionConverter(yourConverter);  // Optional if you want to override default filterConverter
+    return builder.build();
+	}
+
+// This can be any EmbeddingModel implementation
+@Bean
+public EmbeddingModel embeddingModel() {
+    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+}
+----
+
+== Accessing the Native Client
+
+The S3 Vector Store implementation provides access to the underlying native S3VectorsClient client:
+
+[source,java]
+----
+S3VectorStore vectorStore = context.getBean(S3VectorStore.class);
+Optional<S3VectorsClient> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    S3VectorsClient s3Client = nativeClient.get();
+    // Use the native client for S3-Vector-Store-specific operations
+}
+----
+
+The native client gives you access to S3-Vector-Store-specific features and operations that might not be exposed through the `VectorStore` interface.

@@ -1,0 +1,1 @@
+[Chroma Vector Store Documentation](https://docs.spring.io/spring-ai/reference/api/vectordbs/chroma.html)

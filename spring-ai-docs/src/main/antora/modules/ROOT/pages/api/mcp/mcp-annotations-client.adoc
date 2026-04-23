@@ -1,0 +1,455 @@
+= MCP Client Annotations
+
+The MCP Client Annotations provide a declarative way to implement MCP client handlers using Java annotations. 
+These annotations simplify the handling of server notifications and client-side operations.
+
+[IMPORTANT]
+**All MCP client annotations MUST include a `clients` parameter** to associate the handler with a specific MCP client connection. The `clients` must match the connection name configured in your application properties.
+
+== Client Annotations
+
+=== @McpLogging
+
+The `@McpLogging` annotation handles logging message notifications from MCP servers.
+
+==== Basic Usage
+
+[source,java]
+----
+@Component
+public class LoggingHandler {
+
+    @McpLogging(clients = "my-mcp-server")
+    public void handleLoggingMessage(LoggingMessageNotification notification) {
+        System.out.println("Received log: " + notification.level() + 
+                          " - " + notification.data());
+    }
+}
+----
+
+==== With Individual Parameters
+
+[source,java]
+----
+@McpLogging(clients = "my-mcp-server")
+public void handleLoggingWithParams(LoggingLevel level, String logger, String data) {
+    System.out.println(String.format("[%s] %s: %s", level, logger, data));
+}
+----
+
+=== @McpSampling
+
+The `@McpSampling` annotation handles sampling requests from MCP servers for LLM completions.
+
+==== Synchronous Implementation
+
+[source,java]
+----
+@Component
+public class SamplingHandler {
+
+    @McpSampling(clients = "llm-server")
+    public CreateMessageResult handleSamplingRequest(CreateMessageRequest request) {
+        // Process the request and generate a response
+        String response = generateLLMResponse(request);
+        
+        return CreateMessageResult.builder()
+            .role(Role.ASSISTANT)
+            .content(new TextContent(response))
+            .model("gpt-4")
+            .build();
+    }
+}
+----
+
+==== Asynchronous Implementation
+
+[source,java]
+----
+@Component
+public class AsyncSamplingHandler {
+
+    @McpSampling(clients = "llm-server")
+    public Mono<CreateMessageResult> handleAsyncSampling(CreateMessageRequest request) {
+        return Mono.fromCallable(() -> {
+            String response = generateLLMResponse(request);
+            
+            return CreateMessageResult.builder()
+                .role(Role.ASSISTANT)
+                .content(new TextContent(response))
+                .model("gpt-4")
+                .build();
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+}
+----
+
+=== @McpElicitation
+
+The `@McpElicitation` annotation handles elicitation requests to gather additional information from users.
+
+==== Basic Usage
+
+[source,java]
+----
+@Component
+public class ElicitationHandler {
+
+    @McpElicitation(clients = "interactive-server")
+    public ElicitResult handleElicitationRequest(ElicitRequest request) {
+        // Present the request to the user and gather input
+        Map<String, Object> userData = presentFormToUser(request.requestedSchema());
+        
+        if (userData != null) {
+            return new ElicitResult(ElicitResult.Action.ACCEPT, userData);
+        } else {
+            return new ElicitResult(ElicitResult.Action.DECLINE, null);
+        }
+    }
+}
+----
+
+==== With User Interaction
+
+[source,java]
+----
+@McpElicitation(clients = "interactive-server")
+public ElicitResult handleInteractiveElicitation(ElicitRequest request) {
+    Map<String, Object> schema = request.requestedSchema();
+    Map<String, Object> userData = new HashMap<>();
+    
+    // Check what information is being requested
+    if (schema != null && schema.containsKey("properties")) {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> properties = (Map<String, Object>) schema.get("properties");
+        
+        // Gather user input based on schema
+        if (properties.containsKey("name")) {
+            userData.put("name", promptUser("Enter your name:"));
+        }
+        if (properties.containsKey("email")) {
+            userData.put("email", promptUser("Enter your email:"));
+        }
+        if (properties.containsKey("preferences")) {
+            userData.put("preferences", gatherPreferences());
+        }
+    }
+    
+    return new ElicitResult(ElicitResult.Action.ACCEPT, userData);
+}
+----
+
+==== Async Elicitation
+
+[source,java]
+----
+@McpElicitation(clients = "interactive-server")
+public Mono<ElicitResult> handleAsyncElicitation(ElicitRequest request) {
+    return Mono.fromCallable(() -> {
+        // Async user interaction
+        Map<String, Object> userData = asyncGatherUserInput(request);
+        return new ElicitResult(ElicitResult.Action.ACCEPT, userData);
+    }).timeout(Duration.ofSeconds(30))
+      .onErrorReturn(new ElicitResult(ElicitResult.Action.CANCEL, null));
+}
+----
+
+=== @McpProgress
+
+The `@McpProgress` annotation handles progress notifications for long-running operations.
+
+==== Basic Usage
+
+[source,java]
+----
+@Component
+public class ProgressHandler {
+
+    @McpProgress(clients = "my-mcp-server")
+    public void handleProgressNotification(ProgressNotification notification) {
+        double percentage = notification.progress() * 100;
+        System.out.println(String.format("Progress: %.2f%% - %s", 
+            percentage, notification.message()));
+    }
+}
+----
+
+==== With Individual Parameters
+
+[source,java]
+----
+@McpProgress(clients = "my-mcp-server")
+public void handleProgressWithDetails(
+        String progressToken, 
+        double progress, 
+        Double total, 
+        String message) {
+    
+    if (total != null) {
+        System.out.println(String.format("[%s] %.0f/%.0f - %s", 
+            progressToken, progress, total, message));
+    } else {
+        System.out.println(String.format("[%s] %.2f%% - %s", 
+            progressToken, progress * 100, message));
+    }
+    
+    // Update UI progress bar
+    updateProgressBar(progressToken, progress);
+}
+----
+
+==== Client-Specific Progress
+
+[source,java]
+----
+@McpProgress(clients = "long-running-server")
+public void handleLongRunningProgress(ProgressNotification notification) {
+    // Track progress for specific server
+    progressTracker.update("long-running-server", notification);
+    
+    // Send notifications if needed
+    if (notification.progress() >= 1.0) {
+        notifyCompletion(notification.progressToken());
+    }
+}
+----
+
+=== @McpToolListChanged
+
+The `@McpToolListChanged` annotation handles notifications when the server's tool list changes.
+
+==== Basic Usage
+
+[source,java]
+----
+@Component
+public class ToolListChangedHandler {
+
+    @McpToolListChanged(clients = "tool-server")
+    public void handleToolListChanged(List<McpSchema.Tool> updatedTools) {
+        System.out.println("Tool list updated: " + updatedTools.size() + " tools available");
+        
+        // Update local tool registry
+        toolRegistry.updateTools(updatedTools);
+        
+        // Log new tools
+        for (McpSchema.Tool tool : updatedTools) {
+            System.out.println("  - " + tool.name() + ": " + tool.description());
+        }
+    }
+}
+----
+
+==== Async Handling
+
+[source,java]
+----
+@McpToolListChanged(clients = "tool-server")
+public Mono<Void> handleAsyncToolListChanged(List<McpSchema.Tool> updatedTools) {
+    return Mono.fromRunnable(() -> {
+        // Process tool list update asynchronously
+        processToolListUpdate(updatedTools);
+        
+        // Notify interested components
+        eventBus.publish(new ToolListUpdatedEvent(updatedTools));
+    }).then();
+}
+----
+
+==== Client-Specific Tool Updates
+
+[source,java]
+----
+@McpToolListChanged(clients = "dynamic-server")
+public void handleDynamicServerToolUpdate(List<McpSchema.Tool> updatedTools) {
+    // Handle tools from a specific server that frequently changes its tools
+    dynamicToolManager.updateServerTools("dynamic-server", updatedTools);
+    
+    // Re-evaluate tool availability
+    reevaluateToolCapabilities();
+}
+----
+
+=== @McpResourceListChanged
+
+The `@McpResourceListChanged` annotation handles notifications when the server's resource list changes.
+
+==== Basic Usage
+
+[source,java]
+----
+@Component
+public class ResourceListChangedHandler {
+
+    @McpResourceListChanged(clients = "resource-server")
+    public void handleResourceListChanged(List<McpSchema.Resource> updatedResources) {
+        System.out.println("Resources updated: " + updatedResources.size());
+        
+        // Update resource cache
+        resourceCache.clear();
+        for (McpSchema.Resource resource : updatedResources) {
+            resourceCache.register(resource);
+        }
+    }
+}
+----
+
+==== With Resource Analysis
+
+[source,java]
+----
+@McpResourceListChanged(clients = "resource-server")
+public void analyzeResourceChanges(List<McpSchema.Resource> updatedResources) {
+    // Analyze what changed
+    Set<String> newUris = updatedResources.stream()
+        .map(McpSchema.Resource::uri)
+        .collect(Collectors.toSet());
+    
+    Set<String> removedUris = previousUris.stream()
+        .filter(uri -> !newUris.contains(uri))
+        .collect(Collectors.toSet());
+    
+    if (!removedUris.isEmpty()) {
+        handleRemovedResources(removedUris);
+    }
+    
+    // Update tracking
+    previousUris = newUris;
+}
+----
+
+=== @McpPromptListChanged
+
+The `@McpPromptListChanged` annotation handles notifications when the server's prompt list changes.
+
+==== Basic Usage
+
+[source,java]
+----
+@Component
+public class PromptListChangedHandler {
+
+    @McpPromptListChanged(clients = "prompt-server")
+    public void handlePromptListChanged(List<McpSchema.Prompt> updatedPrompts) {
+        System.out.println("Prompts updated: " + updatedPrompts.size());
+        
+        // Update prompt catalog
+        promptCatalog.updatePrompts(updatedPrompts);
+        
+        // Refresh UI if needed
+        if (uiController != null) {
+            uiController.refreshPromptList(updatedPrompts);
+        }
+    }
+}
+----
+
+==== Async Processing
+
+[source,java]
+----
+@McpPromptListChanged(clients = "prompt-server")
+public Mono<Void> handleAsyncPromptUpdate(List<McpSchema.Prompt> updatedPrompts) {
+    return Flux.fromIterable(updatedPrompts)
+        .flatMap(prompt -> validatePrompt(prompt))
+        .collectList()
+        .doOnNext(validPrompts -> {
+            promptRepository.saveAll(validPrompts);
+        })
+        .then();
+}
+----
+
+== Spring Boot Integration
+
+With Spring Boot auto-configuration, client handlers are automatically detected and registered:
+
+[source,java]
+----
+@SpringBootApplication
+public class McpClientApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(McpClientApplication.class, args);
+    }
+}
+
+@Component
+public class MyClientHandlers {
+
+    @McpLogging(clients = "my-server")
+    public void handleLogs(LoggingMessageNotification notification) {
+        // Handle logs
+    }
+
+    @McpSampling(clients = "my-server")
+    public CreateMessageResult handleSampling(CreateMessageRequest request) {
+        // Handle sampling
+    }
+
+    @McpProgress(clients = "my-server")
+    public void handleProgress(ProgressNotification notification) {
+        // Handle progress
+    }
+}
+----
+
+The auto-configuration will:
+
+1. Scan for beans with MCP client annotations
+2. Create appropriate specifications
+3. Register them with the MCP client
+4. Support both sync and async implementations
+5. Handle multiple clients with client-specific handlers
+
+== Configuration Properties
+
+Configure the client annotation scanner and client connections:
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        type: SYNC  # or ASYNC
+        annotation-scanner:
+          enabled: true
+        # Configure client connections - the connection names become clients values
+        sse:
+          connections:
+            my-server:  # This becomes the clients
+              url: http://localhost:8080
+            tool-server:  # Another clients
+              url: http://localhost:8081
+        stdio:
+          connections:
+            local-server:  # This becomes the clients
+              command: /path/to/mcp-server
+              args:
+                - --mode=production
+----
+
+[IMPORTANT]
+The `clients` parameter in annotations must match the connection names defined in your configuration. In the example above, valid `clients` values would be: `"my-server"`, `"tool-server"`, and `"local-server"`.
+
+== Usage with MCP Client
+
+The annotated handlers are automatically integrated with the MCP client:
+
+[source,java]
+----
+@Autowired
+private List<McpSyncClient> mcpClients;
+
+// The clients will automatically use your annotated handlers based on clients
+// No manual registration needed - handlers are matched to clients by name
+----
+
+For each MCP client connection, handlers with matching `clients` will be automatically registered and invoked when the corresponding events occur.
+
+== Additional Resources
+
+* xref:api/mcp/mcp-annotations-overview.adoc[MCP Annotations Overview]
+* xref:api/mcp/mcp-annotations-server.adoc[Server Annotations]
+* xref:api/mcp/mcp-annotations-special-params.adoc[Special Parameters]
+* xref:api/mcp/mcp-client-boot-starter-docs.adoc[MCP Client Boot Starter]

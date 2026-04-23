@@ -1,0 +1,1 @@
+[DeepSeek Chat Documentation](https://docs.spring.io/spring-ai/reference/api/chat/deepseek-chat.html)

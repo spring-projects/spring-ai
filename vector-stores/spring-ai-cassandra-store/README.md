@@ -1,0 +1,1 @@
+[Apache Cassandra Vector Store Documentation](https://docs.spring.io/spring-ai/reference/api/vectordbs/apache-cassandra.html)

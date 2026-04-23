@@ -1,0 +1,1644 @@
+[[upgrade-notes]]
+= Upgrade Notes
+
+[[upgrading-to-2-0-0-M5]]
+== Upgrading to 2.0.0-M5
+
+=== OpenAI Java SDK Transition
+
+Starting from version `2.0.0-M5`, Spring AI uses the official `openai-java` SDK under the hood for all OpenAI models (Chat, Embeddings, Image, Audio Speech, Audio Transcription, and Moderation).
+
+The transition is seamless, and **no breaking changes are expected** for existing users of the `spring-ai-openai` module.
+All properties (with the `spring.ai.openai.*` prefix), builders, and options remain fully intact. The existing `extraBody` configuration parameter transparently maps to the underlying `additionalBodyProperties` in the `openai-java` SDK.
+
+=== ChatOptions Handling
+Users can interact with ChatModels in two ways:
+
+ * either directly by calling xref:api/chatmodel.adoc[ ChatModel.call(Prompt) / ChatModel.stream(Prompt)`],
+ * or by using the xref:api/chatclient.adoc[ChatClient] API.
+
+Starting with Spring AI 2.0.0.M5, when using the `ChatModel` approach, options set in the prompt need to be of the concrete type used by the concrete model (_e.g._ `AnthropicChatOptions` when using `AnthropicChatModel`) and need to be either "full" (_i.e._ all relevant fields set) or `null` (in which case the default options set in the model will be used).
+
+The ability to "merge" options has been moved to `ChatClient` (using a `ChatOptions.Builder` or more specific type) and happens prior to the first advisor being called.
+
+Code that previously used a "half constructed" instance of `ChatOptions` now needs to an instance of `Builder` built in a similar way:
+[source,java]
+----
+// Old
+ChatClient client = ...;
+ChatOptions opts = AnthropicChatOptions.builder()
+    .maxTokens(100)
+    .temperature(0.7)
+    .disableParallelToolUse(true)
+    .build();
+String response = client.prompt("Tell me a joke")
+    .options(opts)
+    .call().content();
+
+// New
+ChatClient client = ...;
+var customizer =  AnthropicChatOptions.builder()
+    .maxTokens(100)
+    .temperature(0.7)
+    .disableParallelToolUse(true);
+String response = client.prompt("Tell me a joke")
+    .options(customizer)
+    .call().content();
+----
+
+
+[TIP]
+--
+To easily merge a "delta" of options represented by a `ChatOptions.Builder` with the model's default options at the `ChatModel.call()` level, simply use the following construct:
+[source, java]
+----
+ChatModel model = ...;
+var customizer =  AnthropicChatOptions.builder()
+    .maxTokens(100)
+    .temperature(0.7)
+    .disableParallelToolUse(true);
+Prompt prompt = Prompt.builder().message("Tell me a joke")
+    .options(model.getDefaultOptions().mutate().combineWith(customize).build())
+    .build();
+var response = model.call(prompt);
+----
+--
+
+
+[[upgrading-to-2-0-0-M3]]
+== Upgrading to 2.0.0-M3
+
+=== MCP Annotations Migrated into Spring AI
+
+The `org.springaicommunity:mcp-annotations` external library has been removed as a dependency of the `mcp-annotations` module.
+Its classes are now part of Spring AI itself under a new package structure.
+
+==== Impact
+
+* All MCP annotation and provider classes have new fully-qualified names.
+* The `org.springaicommunity:mcp-annotations` artifact is no longer provided transitively by Spring AI.
+* Any code importing from `org.springaicommunity.mcp.*` will fail to compile.
+
+==== Package Rename
+
+[cols="1,1", options="header"]
+|===
+| Old Package | New Package
+| `org.springaicommunity.mcp.annotation.*` | `org.springframework.ai.mcp.annotation.*`
+| `org.springaicommunity.mcp.method.*` | `org.springframework.ai.mcp.annotation.method.*`
+| `org.springaicommunity.mcp.provider.*` | `org.springframework.ai.mcp.annotation.provider.*`
+|===
+
+==== Migration
+
+Update all imports in your application code:
+
+[source,java]
+----
+// Before
+import org.springaicommunity.mcp.annotation.McpTool;
+import org.springaicommunity.mcp.annotation.McpPrompt;
+import org.springaicommunity.mcp.annotation.McpResource;
+import org.springaicommunity.mcp.annotation.McpSampling;
+import org.springaicommunity.mcp.provider.tool.SyncMcpToolProvider;
+import org.springaicommunity.mcp.provider.prompt.AsyncMcpPromptProvider;
+
+// After
+import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.McpPrompt;
+import org.springframework.ai.mcp.annotation.McpResource;
+import org.springframework.ai.mcp.annotation.McpSampling;
+import org.springframework.ai.mcp.annotation.provider.tool.SyncMcpToolProvider;
+import org.springframework.ai.mcp.annotation.provider.prompt.AsyncMcpPromptProvider;
+----
+
+If you declared `org.springaicommunity:mcp-annotations` as a direct Maven or Gradle dependency, remove it — the classes are now provided by Spring AI's `spring-ai-mcp-annotations` module.
+
+==== Automated Migration with OpenRewrite
+
+You can automate all import and dependency changes using the provided OpenRewrite recipe.
+
+Apply the https://github.com/spring-projects/spring-ai/blob/main/src/rewrite/migrate-to-2-0-0-M3.yaml[`migrate-to-2-0-0-M3.yaml`] recipe from the command line:
+
+[source,shell]
+----
+mvn org.openrewrite.maven:rewrite-maven-plugin:6.32.0:run \
+  -Drewrite.configLocation=https://raw.githubusercontent.com/spring-projects/spring-ai/refs/heads/main/src/rewrite/migrate-to-2-0-0-M3.yaml \
+  -Drewrite.activeRecipes=org.springframework.ai.migration.M3MigrateMcpAnnotations \
+  -Dmaven.compiler.failOnError=false
+----
+
+The recipe performs two changes automatically:
+
+1. **Removes** the `org.springaicommunity:mcp-annotations` Maven dependency.
+2. **Rewrites** all `import` statements across `.java` files to point to the new `org.springframework.ai.mcp.annotation.*` packages.
+
+To run all M3 migrations at once, use the umbrella recipe — see <<run-all-m3-migrations>>.
+
+=== MCP Spring Transport Modules Moved to Spring AI
+
+The `mcp-spring-webflux` and `mcp-spring-webmvc` transport modules are no longer shipped by the MCP Java SDK. Starting with Spring AI 2.0, they are part of the Spring AI project itself.
+
+==== Impact
+
+* The Maven group ID for both artifacts has changed.
+* Java package names for all Spring-specific transport classes have changed.
+* The MCP Java SDK version requirement has been bumped from `0.18.x` to `1.0.x`.
+
+==== Maven Dependency Group ID Change
+
+.Before
+[source,xml]
+----
+<dependency>
+    <groupId>io.modelcontextprotocol.sdk</groupId>
+    <artifactId>mcp-spring-webflux</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>io.modelcontextprotocol.sdk</groupId>
+    <artifactId>mcp-spring-webmvc</artifactId>
+</dependency>
+----
+
+.After
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>mcp-spring-webflux</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>mcp-spring-webmvc</artifactId>
+</dependency>
+----
+
+NOTE: When using the `spring-ai-bom` or a Spring AI MCP starter (`spring-ai-starter-mcp-server-webflux`, `spring-ai-starter-mcp-server-webmvc`, `spring-ai-starter-mcp-client-webflux`), **no explicit version is needed** — the BOM manages it automatically.
+
+==== Java Package Relocation
+
+All Spring-specific transport classes have moved to `org.springframework.ai` packages.
+
+.Server transports
+|===
+|Class |Old package |New package
+
+|`WebFluxSseServerTransportProvider`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webflux.transport`
+
+|`WebFluxStreamableServerTransportProvider`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webflux.transport`
+
+|`WebFluxStatelessServerTransport`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webflux.transport`
+
+|`WebMvcSseServerTransportProvider`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webmvc.transport`
+
+|`WebMvcStreamableServerTransportProvider`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webmvc.transport`
+
+|`WebMvcStatelessServerTransport`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webmvc.transport`
+|===
+
+.Client transports
+|===
+|Class |Old package |New package
+
+|`WebFluxSseClientTransport`
+|`io.modelcontextprotocol.client.transport`
+|`org.springframework.ai.mcp.client.webflux.transport`
+
+|`WebClientStreamableHttpTransport`
+|`io.modelcontextprotocol.client.transport`
+|`org.springframework.ai.mcp.client.webflux.transport`
+|===
+
+==== Migration
+
+Update your Java imports:
+
+[source,java]
+----
+// Before
+import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
+import io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider;
+import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
+import io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport;
+
+// After
+import org.springframework.ai.mcp.server.webflux.transport.WebFluxSseServerTransportProvider;
+import org.springframework.ai.mcp.server.webmvc.transport.WebMvcSseServerTransportProvider;
+import org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport;
+import org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHttpTransport;
+----
+
+NOTE: If you rely exclusively on Spring Boot auto-configuration via the Spring AI starters, **no Java code changes are required**. Only update your `pom.xml`/`build.gradle` dependency coordinates as described above.
+
+
+For the full MCP transport migration reference, see xref:api/mcp/mcp-overview.adoc#_upgrading_to_spring_ai_2_0[Upgrading to Spring AI 2.0].
+
+
+==== Automated Migration with OpenRewrite
+
+You can automate all Maven dependency and Java import changes using the provided OpenRewrite recipe:
+
+[source,shell]
+----
+mvn org.openrewrite.maven:rewrite-maven-plugin:6.32.0:run \
+  -Drewrite.configLocation=https://raw.githubusercontent.com/spring-projects/spring-ai/refs/heads/main/src/rewrite/migrate-to-2-0-0-M3.yaml \
+  -Drewrite.activeRecipes=org.springframework.ai.migration.M3MigrateMcpSpringTransports \
+  -Dmaven.compiler.failOnError=false
+----
+
+IMPORTANT: If your project declares `io.modelcontextprotocol.sdk:mcp-spring-webflux` or `mcp-spring-webmvc` *without* an explicit `<version>` (version managed via a BOM), Maven will refuse to parse the `pom.xml` and the recipe will never run.
+Pre-patch those files first, then run OpenRewrite:
+
+[source,shell]
+----
+# Step 1 – patch the groupIds directly so Maven can load the modules
+find . -name "pom.xml" -print0 \
+  | xargs -0 perl -i -0pe \
+    's{<groupId>io\.modelcontextprotocol\.sdk</groupId>(\s+)<artifactId>mcp-spring-webflux</artifactId>}{<groupId>org.springframework.ai</groupId>$1<artifactId>mcp-spring-webflux</artifactId>}g;
+     s{<groupId>io\.modelcontextprotocol\.sdk</groupId>(\s+)<artifactId>mcp-spring-webmvc</artifactId>}{<groupId>org.springframework.ai</groupId>$1<artifactId>mcp-spring-webmvc</artifactId>}g'
+
+# Step 2 – run OpenRewrite to migrate Java imports and remaining POM changes
+mvn org.openrewrite.maven:rewrite-maven-plugin:6.32.0:run \
+  -Drewrite.configLocation=https://raw.githubusercontent.com/spring-projects/spring-ai/refs/heads/main/src/rewrite/migrate-to-2-0-0-M3.yaml \
+  -Drewrite.activeRecipes=org.springframework.ai.migration.M3MigrateMcpSpringTransports \
+  -Dmaven.compiler.failOnError=false
+----
+
+To run all M3 migrations at once, use the umbrella recipe — see <<run-all-m3-migrations>>.
+
+=== MCP Client Customizer API Consolidated
+
+`McpAsyncClientCustomizer` and `McpSyncClientCustomizer` have been removed and replaced by a single generic interface `McpClientCustomizer<B>`.
+
+==== Impact
+
+* `McpAsyncClientCustomizer` no longer exists — compile error for any implementing bean.
+* `McpSyncClientCustomizer` no longer exists — compile error for any implementing bean.
+* `McpSyncClientConfigurer` and `McpAsyncClientConfigurer` constructors now accept `List<McpClientCustomizer<...>>` instead of the old type-specific lists.
+* In the HttpClient-based transport auto-configurations (`SseHttpClientTransportAutoConfiguration`, `StreamableHttpHttpClientTransportAutoConfiguration`), the SDK-level `McpSyncHttpClientRequestCustomizer` and `McpAsyncHttpClientRequestCustomizer` beans are **no longer applied**. Transport-level customization now goes through `McpClientCustomizer<HttpClientSseClientTransport.Builder>` and `McpClientCustomizer<HttpClientStreamableHttpTransport.Builder>` respectively.
+
+==== Migration
+
+Replace your customizer beans with the new generic interface, parameterized by the spec or builder type you need:
+
+[source,java]
+----
+// Before
+@Bean
+public McpSyncClientCustomizer mySyncCustomizer() {
+    return (name, spec) -> spec.requestTimeout(Duration.ofSeconds(30));
+}
+
+@Bean
+public McpAsyncClientCustomizer myAsyncCustomizer() {
+    return (name, spec) -> spec.requestTimeout(Duration.ofSeconds(30));
+}
+
+// After
+@Bean
+public McpClientCustomizer<McpClient.SyncSpec> mySyncCustomizer() {
+    return (name, spec) -> spec.requestTimeout(Duration.ofSeconds(30));
+}
+
+@Bean
+public McpClientCustomizer<McpClient.AsyncSpec> myAsyncCustomizer() {
+    return (name, spec) -> spec.requestTimeout(Duration.ofSeconds(30));
+}
+----
+
+For HttpClient transport customization (previously done via `McpSyncHttpClientRequestCustomizer` / `McpAsyncHttpClientRequestCustomizer`):
+
+[source,java]
+----
+// Before
+@Bean
+public McpSyncHttpClientRequestCustomizer myRequestCustomizer() {
+    return requestBuilder -> requestBuilder.header("Authorization", "Bearer token");
+}
+
+// After
+@Bean
+public McpClientCustomizer<HttpClientSseClientTransport.Builder> mySseTransportCustomizer() {
+    return (name, builder) -> builder.httpRequestCustomizer(
+        req -> req.header("Authorization", "Bearer token")
+    );
+}
+----
+
+==== Automated Migration with OpenRewrite
+
+You can automate the import and type changes using the provided OpenRewrite recipe:
+
+[source,shell]
+----
+mvn org.openrewrite.maven:rewrite-maven-plugin:6.32.0:run \
+  -Drewrite.configLocation=https://raw.githubusercontent.com/spring-projects/spring-ai/refs/heads/main/src/rewrite/migrate-to-2-0-0-M3.yaml \
+  -Drewrite.activeRecipes=org.springframework.ai.migration.M3MigrateMcpClientCustomizer \
+  -Dmaven.compiler.failOnError=false
+----
+
+The recipe performs the following changes automatically:
+
+1. **Replaces** the `McpAsyncClientCustomizer` and `McpSyncClientCustomizer` imports with `McpClientCustomizer` and adds the required `import io.modelcontextprotocol.client.McpClient;`.
+2. **Rewrites** `implements McpAsyncClientCustomizer` to `implements McpClientCustomizer<McpClient.AsyncSpec>`.
+3. **Rewrites** `implements McpSyncClientCustomizer` to `implements McpClientCustomizer<McpClient.SyncSpec>`.
+4. **Rewrites** all remaining usages (return types, variable declarations, parameter types).
+
+NOTE: `McpSyncHttpClientRequestCustomizer` and `McpAsyncHttpClientRequestCustomizer` beans are no longer applied by the transport auto-configurations. Their migration to `McpClientCustomizer<TransportBuilder>` requires a manual step — the target builder type depends on which transport you are configuring (SSE vs. Streamable HTTP).
+
+To run all M3 migrations at once, use the umbrella recipe — see <<run-all-m3-migrations>>.
+
+=== MCP WebMvc Transport Headers Normalized to Lowercase
+
+In `WebMvcSseServerTransportProvider`, `WebMvcStatelessServerTransport`, and `WebMvcStreamableServerTransportProvider`, the `Map<String, List<String>>` passed to `securityValidator.validateHeaders(headers)` now has all header names normalized to **lowercase**.
+
+Previously, header names were passed with their original HTTP case (e.g. `"Authorization"`, `"Content-Type"`). They are now always lowercase (e.g. `"authorization"`, `"content-type"`).
+
+==== Impact
+
+Custom `ServerTransportSecurityValidator` implementations that look up headers by their mixed-case names will silently fail to find them.
+
+==== Migration
+
+Update all header name lookups in your `ServerTransportSecurityValidator` to use lowercase keys:
+
+[source,java]
+----
+// Before
+public void validateHeaders(Map<String, List<String>> headers) {
+    List<String> authHeader = headers.get("Authorization");
+    // ...
+}
+
+// After
+public void validateHeaders(Map<String, List<String>> headers) {
+    List<String> authHeader = headers.get("authorization");
+    // ...
+}
+----
+
+=== Conversation History Removed from ToolContext
+
+Conversation history is no longer automatically added to `ToolContext`. The `TOOL_CALL_HISTORY` constant and `getToolCallHistory()` method have been removed from the `ToolContext` class.
+
+==== Impact
+
+* `ToolContext.TOOL_CALL_HISTORY` constant no longer exists
+* `ToolContext.getToolCallHistory()` method no longer exists
+* Conversation history is no longer automatically populated in `ToolContext`
+
+==== Why This Change?
+
+1. **Memory Efficiency**: Prevents unbounded memory growth in long conversations
+2. **Separation of Concerns**: Tools should operate on their parameters, not manage conversation state
+3. **Architecture Alignment**: Conversation context belongs at the advisor level, not in tool execution
+
+==== Migration
+
+If your application needs conversation history management, use `ToolCallAdvisor`:
+
+.Managing Conversation History with ToolCallAdvisor
+[source,java]
+----
+ChatClient chatClient = ChatClient.builder()
+    .defaultAdvisors(
+        new ToolCallAdvisor()
+            .conversationHistoryEnabled(true)  // Full history (default)
+    )
+    .build();
+----
+
+**How ToolCallAdvisor Works:**
+
+The `ToolCallAdvisor` manages conversation history at the advisor level:
+
+* **conversationHistoryEnabled=true** (default): Full conversation history is maintained and sent to the LLM between tool call iterations, allowing the LLM to synthesize results with full context
+* **conversationHistoryEnabled=false**: Only the most recent tool response is sent to the LLM (useful when ChatMemory advisor manages history separately)
+
+**Key Point:** The conversation history is used by the *LLM* to understand context and formulate responses, not by the *tools* themselves. Tools receive only their input parameters and any custom context you explicitly provide.
+
+**Custom Context in Tools:**
+
+`ToolContext` remains available for passing custom, application-specific data to tools:
+
+.Passing Custom Context to Tools
+[source,java]
+----
+ChatResponse response = chatClient.prompt()
+    .user("What's the weather in SF?")
+    .options(ChatOptionsBuilder.builder()
+        .toolContext("userId", "user123")
+        .toolContext("apiKey", "secret")
+        .build())
+    .call()
+    .chatResponse();
+----
+
+**Example Flow:**
+
+1. User asks: "What's the weather in SF and LA?"
+2. LLM requests tool calls: `getWeather(SF)` and `getWeather(LA)`
+3. Tools execute with only their parameters (no conversation history)
+4. ToolCallAdvisor collects tool results and conversation history
+5. LLM receives conversation context from advisor and synthesizes: "The weather in SF is 72°F and in LA is 85°F"
+
+The LLM sees the full conversation through the advisor chain, not through ToolContext.
+
+==== The access level of model internal methods changed to private
+
+* All `internalCall` and `internalStream` methods in model classes have been changed to `private`.
+
+===== Impact
+
+* Direct calls `xxxModel.internalCall` or `xxxModel.internalStream` method, will fail to compile.
+
+===== Migration
+
+* Replace all calls to `xxxModel.internalCall` with `xxxModel.call`.
+* Replace all calls to `xxxModel.internalStream` with `xxxModel.stream`.
++
+[source,java]
+----
+// Before
+ChatResponse response = model.internalCall(prompt, previousChatResponse);
+Flux<ChatResponse> responseFlux = model.internalStream(prompt, previousChatResponse);
+
+// After
+ChatResponse response = model.call(prompt);
+Flux<ChatResponse> responseFlux = model.stream(prompt);
+----
+
+=== OpenSearch Dependencies Upgraded
+
+The OpenSearch vector store dependencies have been upgraded to newer versions:
+
+* **OpenSearch Java Client**: `2.23.0` → `3.6.0`
+* **OpenSearch Testcontainers**: `2.0.1` → `4.1.0`
+
+==== Background
+
+This upgrade was necessary for compatibility with Spring Boot 4.1.x, which uses HttpClient5 (`org.apache.httpcomponents.client5:httpclient5`) version 5.6. This version of HttpClient has a gzip content formatter breaking change that required the OpenSearch Java Client upgrade. See https://github.com/opensearch-project/opensearch-java/pull/1851[OpenSearch Java PR #1851] for details.
+
+==== Impact
+
+The OpenSearch Java Client 3.x introduces breaking API changes that affect custom code interacting directly with the native OpenSearch client.
+
+==== Migration
+
+If you're using the OpenSearch vector store through Spring AI's `VectorStore` interface, no action is required. The upgrade is transparent.
+
+**Testcontainers class renamed**: `OpensearchContainer` → `OpenSearchContainer` (proper camelCase)
+
+Spring AI's internal implementation has been updated to handle these changes automatically.
+
+=== AbstractFilterExpressionConverter: doSingleValue is now abstract
+
+In `AbstractFilterExpressionConverter` (used by vector store filter expression converters), the method `doSingleValue(Object value, StringBuilder context)` has been changed from a concrete method to an abstract method. Custom vector store implementations that extend `AbstractFilterExpressionConverter` must now implement this method explicitly.
+
+==== Impact
+
+* Any custom `FilterExpressionConverter` that extends `AbstractFilterExpressionConverter` and did not override `doSingleValue()` will fail to compile.
+* Implementations must convert a single filter value (String, Number, Boolean, Date, etc.) into the target format and append it to the provided `StringBuilder` context.
+
+==== Migration
+
+Implement `doSingleValue(Object value, StringBuilder context)` in your custom converter. You can use the provided static helper methods:
+
+* **JSON-based filters** (e.g. PostgreSQL JSONPath, Neo4j Cypher, Weaviate): use `emitJsonValue(Object value, StringBuilder context)` to serialize values with proper quoting and escaping.
+* **Lucene-based filters** (e.g. Elasticsearch, OpenSearch, GemFire): use `emitLuceneString(String value, StringBuilder context)` for string values, and handle other types (numbers, booleans, dates) according to your store's query syntax.
+* **Other formats**: implement your own logic and append the result to `context`.
+
+NOTE: The framework normalizes values (e.g. ISO date strings converted to `Date`) before invoking `doSingleValue`, so your implementation receives already-normalized values. The static helper `normalizeDateString(Object)` is available if you need the same normalization when building expressions outside of the standard flow.
+
+
+[[run-all-m3-migrations]]
+=== Running All M3 Migrations at Once
+
+The umbrella recipe `MigrateToSpringAI200M3` applies all three automated M3 migrations in a single pass:
+
+[cols="1,2", options="header"]
+|===
+| Recipe | What it does
+| `M3MigrateMcpAnnotations` | Removes `org.springaicommunity:mcp-annotations` dependency and rewrites imports to `org.springframework.ai.mcp.annotation.*`
+| `M3MigrateMcpSpringTransports` | Updates Maven `<groupId>` and Java imports for the moved Spring transport modules
+| `M3MigrateMcpClientCustomizer` | Replaces `McpAsyncClientCustomizer` / `McpSyncClientCustomizer` with `McpClientCustomizer<B>`
+|===
+
+If any of your `pom.xml` files declare `io.modelcontextprotocol.sdk:mcp-spring-webflux` or `mcp-spring-webmvc` without an explicit `<version>`, run the Perl pre-patch first (see <<_automated_migration_with_openrewrite_2>>), then execute the umbrella recipe:
+
+[source,shell]
+----
+mvn org.openrewrite.maven:rewrite-maven-plugin:6.32.0:run \
+  -Drewrite.configLocation=https://raw.githubusercontent.com/spring-projects/spring-ai/refs/heads/main/src/rewrite/migrate-to-2-0-0-M3.yaml \
+  -Drewrite.activeRecipes=org.springframework.ai.migration.MigrateToSpringAI200M3 \
+  -Dmaven.compiler.failOnError=false
+----
+
+[[upgrading-to-2-0-0-M2]]
+== Upgrading to 2.0.0-M2
+
+=== Breaking Changes
+
+==== MongoDB Chat Memory Message Ordering Fixed
+
+The `MongoChatMemoryRepository` has been fixed to return messages in the order they were sent (oldest-to-newest), matching all other chat memory repository implementations. Previously, it incorrectly returned messages in reverse order (newest-to-oldest), which broke conversation flow for LLMs.
+
+===== Impact
+
+If your application was using `MongoChatMemoryRepository` and working around the incorrect ordering (e.g., by reversing messages after retrieval), you will need to remove that workaround.
+
+===== Migration
+
+Remove any code that reverses the message order after retrieving from MongoDB chat memory:
+
+[source,java]
+----
+// BEFORE (with workaround for bug):
+List<Message> messages = chatMemoryRepository.findByConversationId(conversationId);
+Collections.reverse(messages); // Remove this workaround
+
+// AFTER (correct ordering):
+List<Message> messages = chatMemoryRepository.findByConversationId(conversationId);
+// Messages are now correctly ordered chronologically
+----
+
+All chat memory repositories now consistently return messages in the order they were sent (oldest-to-newest), which is the expected format for LLM conversation history.
+
+=== Development-time Services
+
+* Docker Compose and Testcontainers support for MongoDB Atlas is now provided natively by the Spring Boot MongoDB module. The migration should be transparent and not require any code change. Regarding dependencies, you don't need to import `org.springframework.ai:spring-ai-spring-boot-testcontainers` anymore. A dependency on `org.springframework.boot:spring-boot-testcontainers` is sufficient.
+
+[[upgrading-to-2-0-0-M1]]
+== Upgrading to 2.0.0-M1
+
+=== Breaking Changes
+
+==== Default Temperature Configuration Removed
+
+Spring AI no longer provides default temperature values for chat model autoconfiguration properties. Previously, Spring AI set a default temperature of `0.7` for most chat models. This default has been removed to allow each AI provider's native default temperature to be used.
+
+===== Impact
+
+If your application did not explicitly configure a temperature value and relied on Spring AI's default of `0.7`, you may notice different behavior after upgrading. The actual default will now be determined by each AI provider's API, which may vary:
+
+* Some providers default to `1.0`
+* Some providers default to `0.7`
+* Some providers have model-specific defaults
+
+===== Migration
+
+If you want to maintain the previous behavior, explicitly set the temperature in your configuration:
+
+[source,properties]
+----
+# Example for OpenAI
+spring.ai.openai.chat.options.temperature=0.7
+
+# Example for Anthropic
+spring.ai.anthropic.chat.options.temperature=0.7
+
+# Example for Azure OpenAI
+spring.ai.azure.openai.chat.options.temperature=0.7
+----
+
+Or programmatically when building requests:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt("Your prompt here",
+        OpenAiChatOptions.builder()
+            .temperature(0.7)
+            .build()));
+----
+
+[[upgrading-to-1-1-0-RC1]]
+== Upgrading to 1.1.0-RC1
+
+=== Breaking Changes
+
+==== Text-to-Speech (TTS) API Migration
+
+The OpenAI Text-to-Speech implementation has been migrated from provider-specific classes to shared interfaces. This enables writing portable code that works across multiple TTS providers (OpenAI, ElevenLabs, and future providers).
+
+===== Removed Classes
+
+The following deprecated classes have been removed from the `org.springframework.ai.openai.audio.speech` package:
+
+* `SpeechModel` → Use `TextToSpeechModel` (from `org.springframework.ai.audio.tts`)
+* `StreamingSpeechModel` → Use `StreamingTextToSpeechModel` (from `org.springframework.ai.audio.tts`)
+* `SpeechPrompt` → Use `TextToSpeechPrompt` (from `org.springframework.ai.audio.tts`)
+* `SpeechResponse` → Use `TextToSpeechResponse` (from `org.springframework.ai.audio.tts`)
+* `SpeechMessage` → Use `TextToSpeechMessage` (from `org.springframework.ai.audio.tts`)
+* `Speech` (in `org.springframework.ai.openai.audio.speech`) → Use `Speech` (from `org.springframework.ai.audio.tts`)
+
+Additionally, the `speed` parameter type changed from `Float` to `Double` across all OpenAI TTS components for consistency with other TTS providers.
+
+===== Migration Steps
+
+1. **Update Imports**: Replace all imports from `org.springframework.ai.openai.audio.speech.*` with `org.springframework.ai.audio.tts.*`
+
+2. **Update Type References**: Replace all occurrences of the old class names with the new ones:
++
+[source,text]
+----
+Find:    SpeechModel
+Replace: TextToSpeechModel
+
+Find:    StreamingSpeechModel
+Replace: StreamingTextToSpeechModel
+
+Find:    SpeechPrompt
+Replace: TextToSpeechPrompt
+
+Find:    SpeechResponse
+Replace: TextToSpeechResponse
+
+Find:    SpeechMessage
+Replace: TextToSpeechMessage
+----
+
+3. **Update Speed Parameter**: Change from `Float` to `Double`:
++
+[source,text]
+----
+Find:    .speed(1.0f)
+Replace: .speed(1.0)
+
+Find:    Float speed
+Replace: Double speed
+----
+
+4. **Update Dependency Injection**: If you inject `SpeechModel`, update to `TextToSpeechModel`:
++
+[source,java]
+----
+// Before
+public MyService(SpeechModel speechModel) { ... }
+
+// After
+public MyService(TextToSpeechModel textToSpeechModel) { ... }
+----
+
+===== Benefits
+
+* **Portability**: Write code once, switch between OpenAI, ElevenLabs, or other TTS providers easily
+* **Consistency**: Same patterns as ChatModel and other Spring AI abstractions
+* **Type Safety**: Improved type hierarchy with proper interface implementations
+* **Future-Proof**: New TTS providers will automatically work with your existing code
+
+===== Additional Resources
+
+For a comprehensive migration guide with detailed code examples, see:
+
+* xref:api/audio/speech/openai-speech.adoc#_migration_guide[OpenAI TTS Migration Guide]
+* xref:api/audio/speech.adoc#_writing_provider_agnostic_code[Writing Provider-Agnostic TTS Code]
+
+
+[[upgrading-to-1-0-0-snapshot]]
+== Upgrading to 1.0.0-SNAPSHOT
+
+=== Overview
+The 1.0.0-SNAPSHOT version includes significant changes to artifact IDs, package names, and module structure. This section provides guidance specific to using the SNAPSHOT version.
+
+=== Add Snapshot Repositories
+
+To use the 1.0.0-SNAPSHOT version, you need to add the snapshot repositories to your build file.
+For detailed instructions, refer to the xref:getting-started.adoc#snapshots-add-snapshot-repositories[Snapshots - Add Snapshot Repositories] section in the Getting Started guide.
+
+=== Update Dependency Management
+
+Update your Spring AI BOM version to `1.0.0-SNAPSHOT` in your build configuration.
+For detailed instructions on configuring dependency management, refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section in the Getting Started guide.
+
+=== Artifact ID, Package, and Module Changes
+The 1.0.0-SNAPSHOT includes changes to artifact IDs, package names, and module structure.
+
+For details, refer to:
+- xref:upgrade-notes.adoc#common-artifact-id-changes[Common Artifact ID Changes]
+- xref:upgrade-notes.adoc#common-package-changes[Common Package Changes]
+- xref:upgrade-notes.adoc#common-module-structure[Common Module Structure]
+
+
+[[upgrading-to-1-0-0-RC1]]
+== Upgrading to 1.0.0-RC1
+
+You can automate the upgrade process to 1.0.0-RC1 using an OpenRewrite recipe.
+This recipe helps apply many of the necessary code changes for this version.
+Find the recipe and usage instructions at https://github.com/arconia-io/arconia-migrations/blob/main/docs/spring-ai.md[Arconia Spring AI Migrations].
+
+=== Breaking Changes
+
+
+==== Chat Client and Advisors
+
+The main changes that impact end user code are:
+
+* In `VectorStoreChatMemoryAdvisor`:
+** The constant `CHAT_MEMORY_RETRIEVE_SIZE_KEY` has been renamed to `TOP_K`.
+** The constant `DEFAULT_CHAT_MEMORY_RESPONSE_SIZE` (value: 100) has been renamed to `DEFAULT_TOP_K` with a new default value of 20.
+
+* The constant `CHAT_MEMORY_CONVERSATION_ID_KEY` has been renamed to `CONVERSATION_ID` and moved from `AbstractChatMemoryAdvisor` to the `ChatMemory` interface. Update your imports to use `org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID`.
+
+===== Self-contained Templates in Advisors
+
+The built-in advisors that perform prompt augmentation have been updated to use self-contained templates. The goal is for each advisor to be able to perform templating operations without affecting nor being affected by templating and prompt decisions in other advisors.
+
+*If you were providing custom templates for the following advisors, you'll need to update them to ensure all expected placeholders are included.*
+
+* The `QuestionAnswerAdvisor` expects a template with the following placeholders (see xref:api/retrieval-augmented-generation.adoc#_questionansweradvisor[more details]):
+** a `query` placeholder to receive the user question.
+** a `question_answer_context` placeholder to receive the retrieved context.
+* The `PromptChatMemoryAdvisor` expects a template with the following placeholders (see xref:api/chat-memory.adoc#_promptchatmemoryadvisor[more details]):
+** an `instructions` placeholder to receive the original system message.
+** a `memory` placeholder to receive the retrieved conversation memory.
+* The `VectorStoreChatMemoryAdvisor` expects a template with the following placeholders (see xref:api/chat-memory.adoc#_vectorstorechatmemoryadvisor[more details]):
+** an `instructions` placeholder to receive the original system message.
+** a `long_term_memory` placeholder to receive the retrieved conversation memory.
+
+==== Observability
+* Refactored content observation to use logging instead of tracing (https://github.com/spring-projects/spring-ai/commit/ca843e85887aa1da6300c77550c379c103500897[ca843e8])
+  ** Replaced content observation filters with logging handlers
+  ** Renamed configuration properties to better reflect their purpose:
+    *** `include-prompt` → `log-prompt`
+    *** `include-completion` → `log-completion`
+    *** `include-query-response` → `log-query-response`
+  ** Added `TracingAwareLoggingObservationHandler` for trace-aware logging
+  ** Replaced `micrometer-tracing-bridge-otel` with `micrometer-tracing`
+  ** Removed event-based tracing in favor of direct logging
+  ** Removed direct dependency on the OTel SDK
+  ** Renamed `includePrompt` to `logPrompt` in observation properties (in `ChatClientBuilderProperties`, `ChatObservationProperties`, and `ImageObservationProperties`)
+
+==== Chat Memory Repository Module and Autoconfiguration Renaming
+
+We've standardized the naming pattern for chat memory components by adding the repository suffix throughout the codebase. This change affects Cassandra, JDBC, and Neo4j implementations, impacting artifact IDs, Java package names, and class names for clarity.
+
+==== Artifact IDs
+All memory-related artifacts now follow a consistent pattern:
+
+* `spring-ai-model-chat-memory-*` → `spring-ai-model-chat-memory-repository-*`
+* `spring-ai-autoconfigure-model-chat-memory-*` → `spring-ai-autoconfigure-model-chat-memory-repository-*`
+* `spring-ai-starter-model-chat-memory-*` → `spring-ai-starter-model-chat-memory-repository-*`
+
+==== Java Packages
+
+* Package paths now include `.repository.` segment
+* Example: `org.springframework.ai.chat.memory.jdbc` → `org.springframework.ai.chat.memory.repository.jdbc`
+
+==== Configuration Classes
+
+* Main autoconfiguration classes now use the `Repository` suffix
+* Example: `JdbcChatMemoryAutoConfiguration` → `JdbcChatMemoryRepositoryAutoConfiguration`
+
+==== Properties
+
+* Configuration properties renamed from `spring.ai.chat.memory.<storage>...` to `spring.ai.chat.memory.repository.<storage>...`
+
+
+**Migration Required:**
+- Update your Maven/Gradle dependencies to use the new artifact IDs.
+- Update any imports, class references, or configuration that used the old package or class names.
+
+==== Message Aggregator Refactoring
+
+===== Changes
+
+* `MessageAggregator` class has been moved from `org.springframework.ai.chat.model` package in the `spring-ai-client-chat` module to the `spring-ai-model` module (same package name)
+* The `aggregateChatClientResponse` method has been removed from `MessageAggregator` and moved to a new class `ChatClientMessageAggregator` in the `org.springframework.ai.chat.client` package
+
+===== Migration Guide
+
+If you were directly using the `aggregateChatClientResponse` method from `MessageAggregator`, you need to use the new `ChatClientMessageAggregator` class instead:
+
+[source,java]
+----
+// Before
+new MessageAggregator().aggregateChatClientResponse(chatClientResponses, aggregationHandler);
+
+// After
+new ChatClientMessageAggregator().aggregateChatClientResponse(chatClientResponses, aggregationHandler);
+----
+
+Don't forget to add the appropriate import:
+
+[source,java]
+----
+import org.springframework.ai.chat.client.ChatClientMessageAggregator;
+----
+
+==== Watson
+The Watson AI model was removed as it was based on the older text generation that is considered outdated as there is a new chat generation model available.
+Hopefully Watson will reappear in a future version of Spring AI
+
+==== MoonShot and QianFan
+
+Moonshot and Qianfan have been removed since they are not accessible from outside China.  These have been moved to the Spring AI Community repository.
+
+==== Removed Vector Store
+* Removed HanaDB vector store autoconfiguration (https://github.com/spring-projects/spring-ai/commit/f3b46244942c5072c2e2fa89e62cde71c61bbf25[f3b4624])
+
+==== Memory Management
+* Removed CassandraChatMemory implementation (https://github.com/spring-projects/spring-ai/commit/11e3c8f9a6636d77f203968b83625d3e5694c408[11e3c8f])
+* Simplified chat memory advisor hierarchy and removed deprecated API (https://github.com/spring-projects/spring-ai/commit/848a3fd31fadd07c9ba77f6dc30425389d095e9a[848a3fd])
+* Removed deprecations in JdbcChatMemory (https://github.com/spring-projects/spring-ai/commit/356a68f15eea07a040bd27c66442472fc55e6475[356a68f])
+* Refactored chat memory repository artifacts for clarity (https://github.com/spring-projects/spring-ai/commit/2d517eec5cd7ce5f88149b876ed57a06ad353e11[2d517ee])
+* Refactored chat memory repository autoconfigurations and Spring Boot starters for clarity (https://github.com/spring-projects/spring-ai/commit/f6dba1bf083d847cdc07888ba62746683e3d61bb[f6dba1b])
+
+==== Message and Template APIs
+* Removed deprecated UserMessage constructors (https://github.com/spring-projects/spring-ai/commit/06edee406978d172a1f87f4c7b255282f9d55e4c[06edee4])
+* Removed deprecated PromptTemplate constructors (https://github.com/spring-projects/spring-ai/commit/722c77e812f3f3ea40cf2258056fcf1578b15c62[722c77e])
+* Removed deprecated methods from Media (https://github.com/spring-projects/spring-ai/commit/228ef10bfbfe279d7d09f2a7ba166db873372118[228ef10])
+* Refactored StTemplateRenderer: renamed supportStFunctions to validateStFunctions (https://github.com/spring-projects/spring-ai/commit/0e15197298c0848b78a746f3d740191e6a6aee7a[0e15197])
+* Removed left over TemplateRender interface after moving it (https://github.com/spring-projects/spring-ai/commit/52675d854ccecbc702cec24c4f070520eca64938[52675d8])
+
+==== Additional Client API Changes
+* Removed deprecations in ChatClient and Advisors (https://github.com/spring-projects/spring-ai/commit/4fe74d886e26d52abf6f2f5545264d422a0be4b2[4fe74d8])
+* Removed deprecations from OllamaApi and AnthropicApi (https://github.com/spring-projects/spring-ai/commit/46be8987d6bc385bf74b9296aa4308c7a8658d2f[46be898])
+
+==== Package Structure Changes
+* Removed inter-package dependency cycles in spring-ai-model (https://github.com/spring-projects/spring-ai/commit/ebfa5b9b2cc2ab0d20e25dc6128c4b1c9c327f89[ebfa5b9])
+* Moved MessageAggregator to spring-ai-model module (https://github.com/spring-projects/spring-ai/commit/54e5c07428909ceec248e3bbd71e2df4b0812e49[54e5c07])
+
+==== Dependencies
+* Removed unused json-path dependency in spring-ai-openai (https://github.com/spring-projects/spring-ai/commit/9de13d1b2fdb67219dc7afbf319ade789784f2b9[9de13d1])
+
+=== Behavior Changes
+
+==== Azure OpenAI
+* Added Entra ID identity management for Azure OpenAI with clean autoconfiguration (https://github.com/spring-projects/spring-ai/commit/3dc86d33ce90ebd68ec3997a0eb4704ab7774e99[3dc86d3])
+
+=== General Cleanup
+* Removed all code deprecations (https://github.com/spring-projects/spring-ai/commit/76bee8ceb2854839f93a6c52876f50bb24219355[76bee8c]) and (https://github.com/spring-projects/spring-ai/commit/b6ce7f3e4a7aafe6b9031043f63813dde6e73605[b6ce7f3])
+
+[[upgrading-to-1-0-0-m8]]
+== Upgrading to 1.0.0-M8
+
+You can automate the upgrade process to 1.0.0-M8 using an OpenRewrite recipe.
+This recipe helps apply many of the necessary code changes for this version.
+Find the recipe and usage instructions at https://github.com/arconia-io/arconia-migrations/blob/main/docs/spring-ai.md[Arconia Spring AI Migrations].
+
+=== Breaking Changes
+
+When upgrading from Spring AI 1.0 M7 to 1.0 M8, users who previously registered tool callbacks are encountering breaking changes that cause tool calling functionality to silently fail. This is specifically impacting code that used the deprecated `tools()` method.
+
+==== Example
+
+Here's an example of code that worked in M7 but no longer functions as expected in M8:
+
+[source,java]
+----
+// This worked in M7 but silently fails in M8
+ChatClient chatClient = new OpenAiChatClient(api)
+    .tools(List.of(
+        new Tool("get_current_weather", "Get the current weather in a given location", 
+            new ToolSpecification.ToolParameter("location", "The city and state, e.g. San Francisco, CA", true))
+    ))
+    .toolCallbacks(List.of(
+        new ToolCallback("get_current_weather", (toolName, params) -> {
+            // Weather retrieval logic
+            return Map.of("temperature", 72, "unit", "fahrenheit", "description", "Sunny");
+        })
+    ));
+----
+
+==== Solution
+
+The solution is to use the `toolSpecifications()` method instead of the deprecated `tools()` method:
+
+[source,java]
+----
+// This works in M8
+ChatClient chatClient = new OpenAiChatClient(api)
+    .toolSpecifications(List.of(
+        new Tool("get_current_weather", "Get the current weather in a given location", 
+            new ToolSpecification.ToolParameter("location", "The city and state, e.g. San Francisco, CA", true))
+    ))
+    .toolCallbacks(List.of(
+        new ToolCallback("get_current_weather", (toolName, params) -> {
+            // Weather retrieval logic
+            return Map.of("temperature", 72, "unit", "fahrenheit", "description", "Sunny");
+        })
+    ));
+----
+
+=== Removed Implementations and APIs
+
+==== Memory Management
+* Removed CassandraChatMemory implementation (https://github.com/spring-projects/spring-ai/commit/11e3c8f9a6636d77f203968b83625d3e5694c408[11e3c8f])
+* Simplified chat memory advisor hierarchy and removed deprecated API (https://github.com/spring-projects/spring-ai/commit/848a3fd31fadd07c9ba77f6dc30425389d095e9a[848a3fd])
+* Removed deprecations in JdbcChatMemory (https://github.com/spring-projects/spring-ai/commit/356a68f15eea07a040bd27c66442472fc55e6475[356a68f])
+* Refactored chat memory repository artifacts for clarity (https://github.com/spring-projects/spring-ai/commit/2d517eec5cd7ce5f88149b876ed57a06ad353e11[2d517ee])
+* Refactored chat memory repository autoconfigurations and Spring Boot starters for clarity (https://github.com/spring-projects/spring-ai/commit/f6dba1bf083d847cdc07888ba62746683e3d61bb[f6dba1b])
+
+==== Client APIs
+* Removed deprecations in ChatClient and Advisors (https://github.com/spring-projects/spring-ai/commit/4fe74d886e26d52abf6f2f5545264d422a0be4b2[4fe74d8])
+* Breaking changes to chatclient tool calling (https://github.com/spring-projects/spring-ai/commit/5b7849de088b3c93c7ec894fcaddc85a611a8572[5b7849d])
+* Removed deprecations from OllamaApi and AnthropicApi (https://github.com/spring-projects/spring-ai/commit/46be8987d6bc385bf74b9296aa4308c7a8658d2f[46be898])
+
+==== Message and Template APIs
+* Removed deprecated UserMessage constructors (https://github.com/spring-projects/spring-ai/commit/06edee406978d172a1f87f4c7b255282f9d55e4c[06edee4])
+* Removed deprecated PromptTemplate constructors (https://github.com/spring-projects/spring-ai/commit/722c77e812f3f3ea40cf2258056fcf1578b15c62[722c77e])
+* Removed deprecated methods from Media (https://github.com/spring-projects/spring-ai/commit/228ef10bfbfe279d7d09f2a7ba166db873372118[228ef10])
+* Refactored StTemplateRenderer: renamed supportStFunctions to validateStFunctions (https://github.com/spring-projects/spring-ai/commit/0e15197298c0848b78a746f3d740191e6a6aee7a[0e15197])
+* Removed left over TemplateRender interface after moving it (https://github.com/spring-projects/spring-ai/commit/52675d854ccecbc702cec24c4f070520eca64938[52675d8])
+
+==== Model Implementations
+* Removed Watson text generation model (https://github.com/spring-projects/spring-ai/commit/9e71b163e315199fe7b46495d87a0828a807b88f[9e71b16])
+* Removed Qianfan code (https://github.com/spring-projects/spring-ai/commit/bfcaad7b5495c5927a62b44169e8713e044c2497[bfcaad7])
+* Removed HanaDB vector store autoconfiguration (https://github.com/spring-projects/spring-ai/commit/f3b46244942c5072c2e2fa89e62cde71c61bbf25[f3b4624])
+* Removed deepseek options from OpenAiApi (https://github.com/spring-projects/spring-ai/commit/59b36d14dab72d76f2f3d49ce9385a69faaabbba[59b36d1])
+
+==== Package Structure Changes
+* Removed inter-package dependency cycles in spring-ai-model (https://github.com/spring-projects/spring-ai/commit/ebfa5b9b2cc2ab0d20e25dc6128c4b1c9c327f89[ebfa5b9])
+* Moved MessageAggregator to spring-ai-model module (https://github.com/spring-projects/spring-ai/commit/54e5c07428909ceec248e3bbd71e2df4b0812e49[54e5c07])
+
+==== Dependencies
+* Removed unused json-path dependency in spring-ai-openai (https://github.com/spring-projects/spring-ai/commit/9de13d1b2fdb67219dc7afbf319ade789784f2b9[9de13d1])
+
+=== Behavior Changes
+
+==== Observability
+* Refactored content observation to use logging instead of tracing (https://github.com/spring-projects/spring-ai/commit/ca843e85887aa1da6300c77550c379c103500897[ca843e8])
+  ** Replaced content observation filters with logging handlers
+  ** Renamed configuration properties to better reflect their purpose:
+    *** `include-prompt` → `log-prompt`
+    *** `include-completion` → `log-completion`
+    *** `include-query-response` → `log-query-response`
+  ** Added `TracingAwareLoggingObservationHandler` for trace-aware logging
+  ** Replaced `micrometer-tracing-bridge-otel` with `micrometer-tracing`
+  ** Removed event-based tracing in favor of direct logging
+  ** Removed direct dependency on the OTel SDK
+  ** Renamed `includePrompt` to `logPrompt` in observation properties (in `ChatClientBuilderProperties`, `ChatObservationProperties`, and `ImageObservationProperties`)
+
+==== Azure OpenAI
+* Added Entra ID identity management for Azure OpenAI with clean autoconfiguration (https://github.com/spring-projects/spring-ai/commit/3dc86d33ce90ebd68ec3997a0eb4704ab7774e99[3dc86d3])
+
+=== General Cleanup
+* Removed all deprecations from 1.0.0-M8 (https://github.com/spring-projects/spring-ai/commit/76bee8ceb2854839f93a6c52876f50bb24219355[76bee8c])
+* General deprecation cleanup (https://github.com/spring-projects/spring-ai/commit/b6ce7f3e4a7aafe6b9031043f63813dde6e73605[b6ce7f3])
+
+[[upgrading-to-1-0-0-m7]]
+== Upgrading to 1.0.0-M7
+
+=== Overview of Changes
+Spring AI 1.0.0-M7 is the last milestone release before the RC1 and GA releases. It introduces several important changes to artifact IDs, package names, and module structure that will be maintained in the final release.
+
+=== Artifact ID, Package, and Module Changes
+The 1.0.0-M7 includes the same structural changes as 1.0.0-SNAPSHOT.
+
+For details, refer to:
+- xref:upgrade-notes.adoc#common-artifact-id-changes[Common Artifact ID Changes]
+- xref:upgrade-notes.adoc#common-package-changes[Common Package Changes]
+- xref:upgrade-notes.adoc#common-module-structure[Common Module Structure]
+
+=== MCP Java SDK Upgrade to 0.9.0
+
+Spring AI 1.0.0-M7 now uses MCP Java SDK version 0.9.0, which includes significant changes from previous versions. If you're using MCP in your applications, you'll need to update your code to accommodate these changes.
+
+Key changes include:
+
+==== Interface Renaming
+
+* `ClientMcpTransport` → `McpClientTransport`
+* `ServerMcpTransport` → `McpServerTransport`
+* `DefaultMcpSession` → `McpClientSession` or `McpServerSession`
+* All `*Registration` classes → `*Specification` classes
+
+==== Server Creation Changes
+
+* Use `McpServerTransportProvider` instead of `ServerMcpTransport`
+
+[source,java]
+----
+// Before
+ServerMcpTransport transport = new WebFluxSseServerTransport(objectMapper, "/mcp/message");
+var server = McpServer.sync(transport)
+    .serverInfo("my-server", "1.0.0")
+    .build();
+
+// After
+McpServerTransportProvider transportProvider = new WebFluxSseServerTransportProvider(objectMapper, "/mcp/message");
+var server = McpServer.sync(transportProvider)
+    .serverInfo("my-server", "1.0.0")
+    .build();
+----
+
+==== Handler Signature Changes
+
+All handlers now receive an `exchange` parameter as their first argument:
+
+[source,java]
+----
+// Before
+.tool(calculatorTool, args -> new CallToolResult("Result: " + calculate(args)))
+
+// After
+.tool(calculatorTool, (exchange, args) -> new CallToolResult("Result: " + calculate(args)))
+----
+
+==== Client Interaction via Exchange
+
+Methods previously available on the server are now accessed through the exchange object:
+
+[source,java]
+----
+// Before
+ClientCapabilities capabilities = server.getClientCapabilities();
+CreateMessageResult result = server.createMessage(new CreateMessageRequest(...));
+
+// After
+ClientCapabilities capabilities = exchange.getClientCapabilities();
+CreateMessageResult result = exchange.createMessage(new CreateMessageRequest(...));
+----
+
+==== Roots Change Handlers
+
+[source,java]
+----
+// Before
+.rootsChangeConsumers(List.of(
+    roots -> System.out.println("Roots changed: " + roots)
+))
+
+// After
+.rootsChangeHandlers(List.of(
+    (exchange, roots) -> System.out.println("Roots changed: " + roots)
+))
+----
+
+For a complete guide to migrating MCP code, refer to the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-docs/src/main/antora/modules/ROOT/pages/mcp-migration.adoc[MCP Migration Guide].
+
+=== Enabling/Disabling Model Auto-Configuration
+
+The previous configuration properties for enabling/disabling model auto-configuration have been removed:
+
+* `spring.ai.<provider>.chat.enabled`
+* `spring.ai.<provider>.embedding.enabled`
+* `spring.ai.<provider>.image.enabled`
+* `spring.ai.<provider>.moderation.enabled`
+
+By default, if a model provider (e.g., OpenAI, Ollama) is found on the classpath, its corresponding auto-configuration for relevant model types (chat, embedding, etc.) is enabled. If multiple providers for the same model type are present (e.g., both `spring-ai-openai-spring-boot-starter` and `spring-ai-ollama-spring-boot-starter`), you can use the following properties to select *which* provider's auto-configuration should be active, effectively disabling the others for that specific model type.
+
+To disable auto-configuration for a specific model type entirely, even if only one provider is present, set the corresponding property to a value that does not match any provider on the classpath (e.g., `none` or `disabled`).
+
+You can refer to the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/model/SpringAIModels.java[`SpringAIModels`] enumeration for a list of well-known provider values.
+
+* `spring.ai.model.audio.speech=<model-provider|none>`
+* `spring.ai.model.audio.transcription=<model-provider|none>`
+* `spring.ai.model.chat=<model-provider|none>`
+* `spring.ai.model.embedding=<model-provider|none>`
+* `spring.ai.model.embedding.multimodal=<model-provider|none>`
+* `spring.ai.model.embedding.text=<model-provider|none>`
+* `spring.ai.model.image=<model-provider|none>`
+* `spring.ai.model.moderation=<model-provider|none>`
+
+=== Automating upgrading using AI
+
+You can automate the upgrade process to 1.0.0-M7 using the Claude Code CLI tool with a provided prompt:
+
+1. Download the https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview[Claude Code CLI tool]
+2. Copy the prompt from the https://github.com/spring-projects/spring-ai/blob/main/src/prompts/update-to-m7.txt[update-to-m7.txt] file
+3. Paste the prompt into the Claude Code CLI
+4. The AI will analyze your project and make the necessary changes
+
+NOTE: The automated upgrade prompt currently handles artifact ID changes, package relocations, and module structure changes, but does not yet include automatic changes for upgrading to MCP 0.9.0. If you're using MCP, you'll need to manually update your code following the guidance in the xref:upgrade-notes.adoc#mcp-java-sdk-upgrade-to-0-9-0[MCP Java SDK Upgrade] section.
+
+[[common-sections]]
+== Common Changes Across Versions
+
+[[common-artifact-id-changes]]
+=== Artifact ID Changes
+
+The naming pattern for Spring AI starter artifacts has changed.
+You'll need to update your dependencies according to the following patterns:
+
+* Model starters: `spring-ai-\{model\}-spring-boot-starter` → `spring-ai-starter-model-\{model\}`
+* Vector Store starters: `spring-ai-\{store\}-store-spring-boot-starter` → `spring-ai-starter-vector-store-\{store\}`
+* MCP starters: `spring-ai-mcp-\{type\}-spring-boot-starter` → `spring-ai-starter-mcp-\{type\}`
+
+==== Examples
+
+[tabs]
+======
+Maven::
++
+[source,xml,indent=0,subs="verbatim,quotes"]
+----
+<!-- BEFORE -->
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+</dependency>
+
+<!-- AFTER -->
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-openai</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy,indent=0,subs="verbatim,quotes"]
+----
+// BEFORE
+implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
+implementation 'org.springframework.ai:spring-ai-redis-store-spring-boot-starter'
+
+// AFTER
+implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+implementation 'org.springframework.ai:spring-ai-starter-vector-store-redis'
+----
+======
+
+==== Changes to Spring AI Autoconfiguration Artifacts
+
+The Spring AI autoconfiguration has changed from a single monolithic artifact to individual autoconfiguration artifacts per model, vector store, and other components.
+This change was made to minimize the impact of different versions of dependent libraries conflicting, such as Google Protocol Buffers, Google RPC, and others.
+By separating autoconfiguration into component-specific artifacts, you can avoid pulling in unnecessary dependencies and reduce the risk of version conflicts in your application.
+
+The original monolithic artifact is no longer available:
+
+[source,xml,indent=0,subs="verbatim,quotes"]
+----
+<!-- NO LONGER AVAILABLE -->
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
+    <version>${project.version}</version>
+</dependency>
+----
+
+Instead, each component now has its own autoconfiguration artifact following these patterns:
+
+* Model autoconfiguration: `spring-ai-autoconfigure-model-\{model\}`
+* Vector Store autoconfiguration: `spring-ai-autoconfigure-vector-store-\{store\}`
+* MCP autoconfiguration: `spring-ai-autoconfigure-mcp-\{type\}`
+
+==== Examples of New Autoconfiguration Artifacts
+
+[tabs]
+======
+Models::
++
+[source,xml,indent=0,subs="verbatim,quotes"]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-autoconfigure-model-openai</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-autoconfigure-model-anthropic</artifactId>
+</dependency>
+----
+
+Vector Stores::
++
+[source,xml,indent=0,subs="verbatim,quotes"]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-autoconfigure-vector-store-redis</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-autoconfigure-vector-store-pgvector</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-autoconfigure-vector-store-chroma</artifactId>
+</dependency>
+----
+
+MCP::
++
+[source,xml,indent=0,subs="verbatim,quotes"]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-autoconfigure-mcp-client</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-autoconfigure-mcp-server</artifactId>
+</dependency>
+----
+======
+
+NOTE: In most cases, you won't need to explicitly add these autoconfiguration dependencies.
+They are included transitively when using the corresponding starter dependencies.
+
+[[common-package-changes]]
+=== Package Name Changes
+
+Your IDE should assist with refactoring to the new package locations.
+
+* `KeywordMetadataEnricher` and `SummaryMetadataEnricher` have moved from `org.springframework.ai.transformer` to `org.springframework.ai.chat.transformer`.
+* `Content`, `MediaContent`, and `Media` have moved from `org.springframework.ai.model` to `org.springframework.ai.content`.
+
+[[common-module-structure]]
+=== Module Structure
+
+The project has undergone significant changes to its module and artifact structure. Previously, `spring-ai-core` contained all central interfaces, but this has now been split into specialized domain modules to reduce unnecessary dependencies in your applications.
+
+image::spring-ai-dependencies.png[Spring AI Dependencies, width=1000, align="center"]
+
+==== spring-ai-commons
+
+Base module with no dependencies on other Spring AI modules. Contains:
+- Core domain models (`Document`, `TextSplitter`)
+- JSON utilities and resource handling
+- Structured logging and observability support
+
+==== spring-ai-model
+
+Provides AI capability abstractions:
+- Interfaces like `ChatModel`, `EmbeddingModel`, and `ImageModel`
+- Message types and prompt templates
+- Function-calling framework (`ToolDefinition`, `ToolCallback`)
+- Content filtering and observation support
+
+==== spring-ai-vector-store
+
+Unified vector database abstraction:
+- `VectorStore` interface for similarity search
+- Advanced filtering with SQL-like expressions
+- `SimpleVectorStore` for in-memory usage
+- Batching support for embeddings
+
+==== spring-ai-client-chat
+
+High-level conversational AI APIs:
+- `ChatClient` interface
+- Conversation persistence via `ChatMemory`
+- Response conversion with `OutputConverter`
+- Advisor-based interception
+- Synchronous and reactive streaming support
+
+==== spring-ai-advisors-vector-store
+
+Bridges chat with vector stores for RAG:
+- `QuestionAnswerAdvisor`: injects context into prompts
+- `VectorStoreChatMemoryAdvisor`: stores/retrieves conversation history
+
+==== spring-ai-model-chat-memory-cassandra
+
+Apache Cassandra persistence for `ChatMemory`:
+- `CassandraChatMemory` implementation
+- Type-safe CQL with Cassandra's QueryBuilder
+==== spring-ai-model-chat-memory-neo4j
+
+Neo4j graph database persistence for chat conversations.
+
+==== spring-ai-rag
+
+Comprehensive framework for Retrieval Augmented Generation:
+- Modular architecture for RAG pipelines
+- `RetrievalAugmentationAdvisor` as main entry point
+- Functional programming principles with composable components
+
+=== Dependency Structure
+
+The dependency hierarchy can be summarized as:
+
+* `spring-ai-commons` (foundation)
+* `spring-ai-model` (depends on commons)
+* `spring-ai-vector-store` and `spring-ai-client-chat` (both depend on model)
+* `spring-ai-advisors-vector-store` and `spring-ai-rag` (depend on both client-chat and vector-store)
+* `spring-ai-model-chat-memory-*` modules (depend on client-chat)
+
+[[common-toolcontext-changes]]
+=== ToolContext Changes
+
+The `ToolContext` class has been enhanced to support both explicit and implicit tool resolution. Tools can now be:
+
+1. **Explicitly Included**: Tools that are explicitly requested in the prompt and included in the call to the model.
+2. **Implicitly Available**: Tools that are made available for runtime dynamic resolution, but never included in any call to the model unless explicitly requested.
+
+Starting with 1.0.0-M7, tools are only included in the call to the model if they are explicitly requested in the prompt or explicitly included in the call.
+
+Additionally, the `ToolContext` class has now been marked as final and cannot be extended anymore. It was never supposed to be subclassed. You can add all the contextual data you need when instantiating a `ToolContext`, in the form of a `Map<String, Object>`. For more information, check the [documentation](https://docs.spring.io/spring-ai/reference/api/tools.html#_tool_context).
+
+[[upgrading-to-1-0-0-m6]]
+== Upgrading to 1.0.0-M6
+
+=== Changes to Usage Interface and DefaultUsage Implementation
+
+The `Usage` interface and its default implementation `DefaultUsage` have undergone the following changes:
+
+1. Method Rename:
+* `getGenerationTokens()` is now `getCompletionTokens()`
+
+2. Type Changes:
+* All token count fields in `DefaultUsage` changed from `Long` to `Integer`:
+** `promptTokens`
+** `completionTokens` (formerly `generationTokens`)
+** `totalTokens`
+
+==== Required Actions
+
+* Replace all calls to `getGenerationTokens()` with `getCompletionTokens()`
+
+* Update `DefaultUsage` constructor calls:
+[source,java]
+----
+// Old (M5)
+new DefaultUsage(Long promptTokens, Long generationTokens, Long totalTokens)
+
+// New (M6)
+new DefaultUsage(Integer promptTokens, Integer completionTokens, Integer totalTokens)
+----
+
+NOTE: For more information on handling Usage, refer xref:api/usage-handling.adoc[here]
+
+==== JSON Ser/Deser changes
+While M6 maintains backward compatibility for JSON deserialization of the `generationTokens` field, this field will be removed in M7. Any persisted JSON documents using the old field name should be updated to use `completionTokens`.
+
+Example of the new JSON format:
+[source,json]
+----
+{
+  "promptTokens": 100,
+  "completionTokens": 50,
+  "totalTokens": 150
+}
+----
+
+=== Changes to usage of FunctionCallingOptions for tool calling
+
+Each `ChatModel` instance, at construction time, accepts an optional `ChatOptions` or `FunctionCallingOptions` instance
+that can be used to configure default tools used for calling the model.
+
+Before 1.0.0-M6:
+
+- any tool passed via the `functions()` method of the default `FunctionCallingOptions` instance was included in
+each call to the model from that `ChatModel` instance, possibly overwritten by runtime options.
+- any tool passed via the `functionCallbacks()` method of the default `FunctionCallingOptions` instance was only
+made available for runtime dynamic resolution (see xref:api/tools.adoc#_tool_resolution[Tool Resolution]), but never
+included in any call to the model unless explicitly requested.
+
+Starting 1.0.0-M6:
+
+- any tool passed via the `functions()` method or the `functionCallbacks()` of the default `FunctionCallingOptions`
+instance is now handled in the same way: it is included in each call to the model from that `ChatModel` instance,
+possibly overwritten by runtime options. With that, there is consistency in the way tools are included in calls
+to the model and prevents any confusion due to a difference in behavior between `functionCallbacks()` and all the other options.
+
+If you want to make a tool available for runtime dynamic resolution and include it in a chat request to the model only
+when explicitly requested, you can use one of the strategies described in xref:api/tools.adoc#_tool_resolution[Tool Resolution].
+
+NOTE: 1.0.0-M6 introduced new APIs for handling tool calling. Backward compatibility is maintained for the old APIs across
+all scenarios, except the one described above. The old APIs are still available, but they are deprecated
+and will be removed in 1.0.0-M7.
+
+=== Removal of deprecated Amazon Bedrock chat models
+
+Starting 1.0.0-M6, Spring AI transitioned to using Amazon Bedrock's Converse API for all Chat conversation implementations in Spring AI.
+All the Amazon Bedrock Chat models are removed except the Embedding models for Cohere and Titan.
+
+NOTE: Refer to xref:api/chat/bedrock-converse.adoc[Bedrock Converse] documentation for using the chat models.
+
+=== Changes to use Spring Boot 3.4.2 for dependency management
+
+Spring AI updates to use Spring Boot 3.4.2 for the dependency management. You can refer https://github.com/spring-projects/spring-boot/blob/v3.4.2/spring-boot-project/spring-boot-dependencies/build.gradle[here] for the dependencies managed by Spring Boot 3.4.2
+
+==== Required Actions
+
+* If you are upgrading to Spring Boot 3.4.2, please make sure to refer to https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.4-Release-Notes#upgrading-from-spring-boot-33[this] documentation for the changes required to configure the REST Client. Notably, if you don’t have an HTTP client library on the classpath, this will likely result in the use of `JdkClientHttpRequestFactory` where `SimpleClientHttpRequestFactory` would have been used previously. To switch to use `SimpleClientHttpRequestFactory`, you need to set `spring.http.client.factory=simple`.
+* If you are using a different version of Spring Boot (say Spring Boot 3.3.x) and need a specific version of a dependency, you can override it in your build configuration.
+
+=== Vector Store API changes
+
+In version 1.0.0-M6, the `delete` method in the `VectorStore` interface has been modified to be a void operation instead of returning an `Optional<Boolean>`.
+If your code previously checked the return value of the delete operation, you'll need to remove this check.
+The operation now throws an exception if the deletion fails, providing more direct error handling.
+
+==== Before 1.0.0-M6:
+[source,java]
+----
+Optional<Boolean> result = vectorStore.delete(ids);
+if (result.isPresent() && result.get()) {
+    // handle successful deletion
+}
+----
+
+==== In 1.0.0-M6 and later:
+[source,java]
+----
+vectorStore.delete(ids);
+// deletion successful if no exception is thrown
+----
+
+== Upgrading to 1.0.0.M5
+
+* Vector Builders have been refactored for consistency.
+* Current VectorStore implementation constructors have been deprecated, use the builder pattern.
+* VectorStore implementation packages have been moved into unique package names, avoiding conflicts across artifact.  For example `org.springframework.ai.vectorstore` to `org.springframework.ai.pgvector.vectorstore`.
+
+== Upgrading to 1.0.0.RC3
+
+* The type of the portable chat options (`frequencyPenalty`, `presencePenalty`, `temperature`, `topP`) has been changed from `Float` to `Double`.
+
+== Upgrading to 1.0.0.M2
+
+* The configuration prefix for the Chroma Vector Store has been changes from `spring.ai.vectorstore.chroma.store` to `spring.ai.vectorstore.chroma` in order to align with the naming conventions of other vector stores.
+
+* The default value of the `initialize-schema` property on vector stores capable of initializing a schema is now set to `false`.
+This implies that the applications now need to explicitly opt-in for schema initialization on supported vector stores, if the schema is expected to be created at application startup.
+Not all vector stores support this property.
+See the corresponding vector store documentation for more details.
+The following are the vector stores that currently don't support the `initialize-schema` property.
+
+1. Hana
+2. Pinecone
+3. Weaviate
+
+* In Bedrock Jurassic 2, the chat options `countPenalty`, `frequencyPenalty`, and `presencePenalty`
+have been renamed to `countPenaltyOptions`, `frequencyPenaltyOptions`, and `presencePenaltyOptions`.
+Furthermore, the type of the chat option `stopSequences` have been changed from `String[]` to `List<String>`.
+
+* In Azure OpenAI, the type of the chat options `frequencyPenalty` and `presencePenalty`
+has been changed from `Double` to `Float`, consistently with all the other implementations.
+
+== Upgrading to 1.0.0.M1
+
+On our march to release 1.0.0 M1 we have made several breaking changes.  Apologies, it is for the best!
+
+=== ChatClient changes
+
+A major change was made that took the 'old' `ChatClient` and moved the functionality into `ChatModel`.  The 'new' `ChatClient` now takes an instance of `ChatModel`. This was done to support a fluent API for creating and executing prompts in a style similar to other client classes in the Spring ecosystem, such as `RestClient`, `WebClient`, and `JdbcClient`.  Refer to the [JavaDoc](https://docs.spring.io/spring-ai/docs/api) for more information on the Fluent API, proper reference documentation is coming shortly.
+
+We renamed the 'old' `ModelClient` to `Model` and renamed implementing classes, for example `ImageClient` was renamed to `ImageModel`.  The `Model` implementation represents the portability layer that converts between the Spring AI API and the underlying AI Model API.
+
+A new package `model` that contains interfaces and base classes to support creating AI Model Clients for any input/output data type combination. At the moment, the chat and image model packages implement this. We will be updating the embedding package to this new model soon.
+
+A new "portable options" design pattern. We wanted to provide as much portability in the `ModelCall` as possible across different chat based AI Models. There is a common set of generation options and then those that are specific to a model provider. A sort of "duck typing" approach is used. `ModelOptions` in the model package is a marker interface indicating implementations of this class will provide the options for a model. See `ImageOptions`, a subinterface that defines portable options across all text->image `ImageModel` implementations. Then `StabilityAiImageOptions` and `OpenAiImageOptions` provide the options specific to each model provider. All options classes are created via a fluent API builder, all can be passed into the portable `ImageModel` API. These option data types are used in autoconfiguration/configuration properties for the `ImageModel` implementations.
+
+=== Artifact name changes
+
+Renamed POM artifact names:
+- spring-ai-qdrant -> spring-ai-qdrant-store
+- spring-ai-cassandra -> spring-ai-cassandra-store
+- spring-ai-pinecone -> spring-ai-pinecone-store
+- spring-ai-redis -> spring-ai-redis-store
+- spring-ai-qdrant -> spring-ai-qdrant-store
+- spring-ai-gemfire -> spring-ai-gemfire-store
+- spring-ai-azure-vector-store-spring-boot-starter -> spring-ai-azure-store-spring-boot-starter
+- spring-ai-redis-spring-boot-starter -> spring-ai-starter-vector-store-redis
+
+== Upgrading to 0.8.1
+
+Former `spring-ai-vertex-ai` has been renamed to `spring-ai-vertex-ai-palm2` and `spring-ai-vertex-ai-spring-boot-starter` has been renamed to `spring-ai-vertex-ai-palm2-spring-boot-starter`.
+
+So, you need to change the dependency from
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-vertex-ai</artifactId>
+</dependency>
+----
+
+To
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-vertex-ai-palm2</artifactId>
+</dependency>
+----
+
+and the related Boot starter for the Palm2 model has changed from
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-vertex-ai-spring-boot-starter</artifactId>
+</dependency>
+----
+
+to
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-vertex-ai-palm2-spring-boot-starter</artifactId>
+</dependency>
+----
+
+* Renamed Classes (01.03.2024)
+
+** VertexAiApi -> VertexAiPalm2Api
+** VertexAiClientChat -> VertexAiPalm2ChatClient
+** VertexAiEmbeddingClient -> VertexAiPalm2EmbeddingClient
+** VertexAiChatOptions -> VertexAiPalm2ChatOptions
+
+== Upgrading to 0.8.0
+
+=== January 24, 2024 Update
+
+* Moving the `prompt` and `messages` and `metadata` packages to subpackages of `org.springframework.ai.chat`
+* New functionality is *text to image* clients. Classes are `OpenAiImageModel` and `StabilityAiImageModel`. See the integration tests for usage, docs are coming soon.
+* A new package `model` that contains interfaces and base classes to support creating AI Model Clients for any input/output data type combination. At the moment, the chat and image model packages implement this. We will be updating the embedding package to this new model soon.
+* A new "portable options" design pattern. We wanted to provide as much portability in the `ModelCall` as possible across different chat based AI Models. There is a common set of generation options and then those that are specific to a model provider. A sort of "duck typing" approach is used. `ModelOptions` in the model package is a marker interface indicating implementations of this class will provide the options for a model. See `ImageOptions`, a subinterface that defines portable options across all text->image `ImageModel` implementations. Then `StabilityAiImageOptions` and `OpenAiImageOptions` provide the options specific to each model provider. All options classes are created via a fluent API builder, all can be passed into the portable `ImageModel` API. These option data types are used in autoconfiguration/configuration properties for the `ImageModel` implementations.
+
+=== January 13, 2024 Update
+
+The following OpenAi Autoconfiguration chat properties have changed
+
+* from `spring.ai.openai.model` to `spring.ai.openai.chat.options.model`.
+* from `spring.ai.openai.temperature` to `spring.ai.openai.chat.options.temperature`.
+
+Find updated documentation about the OpenAi properties: https://docs.spring.io/spring-ai/reference/api/chat/openai-chat.html
+
+=== December 27, 2023 Update
+
+Merge SimplePersistentVectorStore and InMemoryVectorStore into SimpleVectorStore
+* Replace InMemoryVectorStore with SimpleVectorStore
+
+=== December 20, 2023 Update
+
+Refactor the Ollama client and related classes and package names
+
+* Replace the org.springframework.ai.ollama.client.OllamaClient by org.springframework.ai.ollama.OllamaModelCall.
+* The OllamaChatClient method signatures have changed.
+* Rename the org.springframework.ai.autoconfigure.ollama.OllamaProperties into org.springframework.ai.model.ollama.autoconfigure.OllamaChatProperties and change the suffix to: `spring.ai.ollama.chat`. Some of the properties have changed as well.
+
+=== December 19, 2023 Update
+
+Renaming of AiClient and related classes and package names
+
+* Rename AiClient to ChatClient
+* Rename AiResponse to ChatResponse
+* Rename AiStreamClient to StreamingChatClient
+* Rename package org.sf.ai.client to org.sf.ai.chat
+
+Rename artifact ID of
+
+* `transformers-embedding` to `spring-ai-transformers`
+
+Moved Maven modules from top-level directory and `embedding-clients` subdirectory to all be under a single `models` directory.
+
+[WARNING]
+
+=== December 1, 2023
+
+We are transitioning the project's Group ID:
+
+* *FROM*: `org.springframework.experimental.ai`
+* *TO*: `org.springframework.ai`
+
+Artifacts will still be hosted in the snapshot repository as shown below.
+
+The main branch will move to the version `0.8.0-SNAPSHOT`.
+It will be unstable for a week or two.
+Please use the 0.7.1-SNAPSHOT if you don't want to be on the bleeding edge.
+
+You can access `0.7.1-SNAPSHOT` artifacts as before and still access https://markpollack.github.io/spring-ai-0.7.1/[0.7.1-SNAPSHOT Documentation].
+
+=== 0.7.1-SNAPSHOT Dependencies
+
+* Azure OpenAI
++
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.experimental.ai</groupId>
+    <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
+    <version>0.7.1-SNAPSHOT</version>
+</dependency>
+----
+
+* OpenAI
++
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.experimental.ai</groupId>
+    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+    <version>0.7.1-SNAPSHOT</version>
+</dependency>
+----

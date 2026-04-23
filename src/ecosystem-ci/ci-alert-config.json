@@ -1,0 +1,15 @@
+{
+  "issue_number": 5334,
+  "tracked_branch": "main",
+  "alert_after_days": 2,
+  "heartbeat_days": 1,
+  "dependencies": [
+    { "owner": "modelcontextprotocol", "repo": "java-sdk" },
+    { "owner": "spring-projects", "repo": "spring-ai-examples" },
+    { "owner": "spring-projects", "repo": "spring-ai-integration-tests" },
+    { "owner": "spring-ai-community", "repo": "spring-ai-tool-search-tool" },
+    { "owner": "spring-ai-community", "repo": "spring-ai-agent-utils" },
+    { "owner": "spring-ai-community", "repo": "mcp-security" },
+    { "owner": "spring-ai-community", "repo": "mcp-annotations" }
+  ]
+}

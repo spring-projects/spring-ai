@@ -1,0 +1,186 @@
+== Provision SAP HANA Cloud trial account
+
+Below are the steps to provision SAP Hana Database using a trial account
+
+Let's start with creating a link:https://temp-mail.org/en/[temporary email] for registration purposes
+
+image::hanadb/0.png[width=800]
+
+TIP: Don't close the above window, otherwise a new email id would get generated.
+
+Go to link:https://sap.com/[sap.com] and navigate to `products` -> `Trials and Demos`
+
+image::hanadb/1.png[width=800]
+
+Click `Advanced Trials`
+
+image::hanadb/2.png[width=800]
+
+Click `SAP BTP Trial`
+
+image::hanadb/3.png[width=800]
+
+Click `Start your free 90-day trial`
+
+image::hanadb/4.png[width=800]
+
+Paste the `temporary email id` that we created in the first step, and click `Next`
+
+image::hanadb/5.png[width=800]
+
+We fill in our details and click `Submit`
+
+image::hanadb/6.png[width=800]
+
+It's time to check the inbox of our temporary email account
+
+image::hanadb/7.png[width=800]
+
+Notice that there is an email received in our temporary email account
+
+image::hanadb/8.png[width=800]
+
+Open the email and `click to activate` the trial account
+
+image::hanadb/9.png[width=800]
+
+It will prompt to create a `password`. Provide a password and click `Submit`
+
+image::hanadb/10.png[width=800]
+
+The trial account is now created. Click to `start the trial`
+
+image::hanadb/11.png[width=800]
+
+Provide your phone number and click `Continue`
+
+image::hanadb/13.png[width=800]
+
+We receive an OTP on the phone number. Provide the `code` and click `continue`
+
+image::hanadb/14.png[width=800]
+
+Select the `region` as `US East (VA) - AWS`
+
+image::hanadb/15.png[width=800]
+
+Click `Continue`
+
+image::hanadb/16.png[width=800]
+
+The `SAP BTP trial` account is ready. Click `Go to your Trial account`
+
+image::hanadb/17.png[width=800]
+
+Click the `Trial` sub-account
+
+image::hanadb/18.png[width=800]
+
+Open `Instances and Subscriptions`
+
+image::hanadb/19.png[width=800]
+
+It's time to create a subscription. Click the `Create` button
+
+image::hanadb/20.1.png[width=800]
+
+While creating a subscription, Select `service` as `SAP Hana Cloud` and `Plan` as `tools` and click `Create`
+
+image::hanadb/20.2.png[width=800]
+
+Notice that `SAP Hana Cloud` subscription is now created. Click `Users` on the left panel
+
+image::hanadb/21.png[width=800]
+
+Select the username (temporary email that we supplied earlier) and click `Assign Role Collection`
+
+image::hanadb/22.png[width=800]
+
+Search `hana` and select all the 3 role collections that gets displayed. Click `Assign Role Collection`
+
+image::hanadb/23.png[width=800]
+
+Our `user` now has all the 3 role collections. Click `Instances and Subscriptions`
+
+image::hanadb/24.png[width=800]
+
+Now, click `SAP Hana Cloud` application under subscriptions
+
+image::hanadb/25.png[width=800]
+
+There are no instances yet. Let's click `Create Instance`
+
+image::hanadb/26.png[width=800]
+
+Select Type as `SAP HANA Cloud, SAP HANA Database`. Click `Next Step`
+
+image::hanadb/27.png[width=800]
+
+Provide `Instance Name`, `Description`, `password` for DBADMIN administrator.
+Select the latest version `2024.2 (QRC 1/2024)`. Click `Next Step`
+
+image::hanadb/28.png[width=800]
+
+Keep everything as default. Click `Next Step`
+
+image::hanadb/29.png[width=800]
+
+Click `Next Step`
+
+image::hanadb/30.png[width=800]
+
+Select `Allow all IP addresses` and click `Next Step`
+
+image::hanadb/31.png[width=800]
+
+Click `Review and Create`
+
+image::hanadb/32.png[width=800]
+
+Click `Create Instance`
+
+image::hanadb/33.png[width=800]
+
+Notice that the provisioning of `SAP Hana Database` instance has started. It takes some time to provision - please be patient.
+
+image::hanadb/34.1.png[width=800]
+
+Once the instance is provisioned (status is displayed as `Running`) we can get the datasource url (`SQL Endpoint`) by clicking the instance and selecting `Connections`
+
+image::hanadb/34.2.png[width=800]
+
+We navigate to `SAP Hana Database Explorer` by click the `...`
+
+image::hanadb/35.png[width=800]
+
+Provide the administrator credentials and click `OK`
+
+image::hanadb/36.png[width=800]
+
+Open SQL console and create the table `CRICKET_WORLD_CUP` using the following DDL statement:
+[sql]
+----
+CREATE TABLE CRICKET_WORLD_CUP (
+    _ID VARCHAR2(255) PRIMARY KEY,
+    CONTENT CLOB,
+    EMBEDDING REAL_VECTOR(1536)
+)
+----
+
+image::hanadb/37.png[width=800]
+
+Navigate to `hana_dev_db -> Catalog -> Tables` to find our table `CRICKET_WORLD_CUP`
+
+image::hanadb/38.png[width=800]
+
+Right-click on the table and click `Open Data`
+
+image::hanadb/39.png[width=800]
+
+Notice that the table data is now displayed. There are now rows as we didn't create any embeddings yet.
+
+image::hanadb/40.png[width=800]
+
+Next steps: xref:api/vectordbs/hana.adoc[SAP Hana Vector Engine]
+
+
