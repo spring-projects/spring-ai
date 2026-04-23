@@ -290,11 +290,17 @@ public class BedrockProxyChatModel implements ChatModel {
 	}
 
 	Prompt buildRequestPrompt(Prompt prompt) {
-		BedrockChatOptions runtimeOptions = (BedrockChatOptions) prompt.getOptions();
-		runtimeOptions = runtimeOptions == null ? this.defaultOptions : runtimeOptions;
-		ToolCallingChatOptions.validateToolCallbacks(runtimeOptions.getToolCallbacks());
+		BedrockChatOptions.Builder requestBuilder = this.defaultOptions.mutate();
 
-		return prompt.mutate().chatOptions(runtimeOptions).build();
+		if (prompt.getOptions() != null) {
+			requestBuilder.combineWith(prompt.getOptions().mutate());
+		}
+
+		BedrockChatOptions requestOptions = requestBuilder.build();
+
+		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
+
+		return prompt.mutate().chatOptions(requestOptions).build();
 	}
 
 	ConverseRequest createRequest(Prompt prompt) {
