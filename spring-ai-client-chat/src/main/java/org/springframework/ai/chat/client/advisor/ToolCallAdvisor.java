@@ -556,6 +556,14 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		}
 
 		/**
+		 * Returns whether internal conversation history is enabled.
+		 * @return true if internal conversation history is enabled, false if disabled
+		 */
+		protected boolean isConversationHistoryEnabled() {
+			return this.conversationHistoryEnabled;
+		}
+
+		/**
 		 * Builds and returns a new ToolCallAdvisor instance with the configured
 		 * properties.
 		 * @return a new ToolCallAdvisor instance
