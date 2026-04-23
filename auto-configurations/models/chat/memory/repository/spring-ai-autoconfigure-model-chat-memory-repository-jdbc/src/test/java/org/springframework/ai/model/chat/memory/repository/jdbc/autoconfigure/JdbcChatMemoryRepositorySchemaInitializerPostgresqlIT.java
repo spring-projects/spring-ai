@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Yanming Zhou
  */
 @Testcontainers
-class JdbcChatMemoryRepositorySchemaInitializerPostgresqlTests {
+class JdbcChatMemoryRepositorySchemaInitializerPostgresqlIT {
 
 	static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("postgres:17");
 
