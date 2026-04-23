@@ -17,7 +17,9 @@
 package org.springframework.ai.elevenlabs;
 
 import java.util.List;
+import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -88,16 +90,16 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 	public Flux<TextToSpeechResponse> stream(TextToSpeechPrompt prompt) {
 		RequestContext requestContext = prepareRequest(prompt);
 
-		return RetryUtils.execute(this.retryTemplate,
-				() -> this.elevenLabsApi
-					.textToSpeechStream(requestContext.request, requestContext.voiceId, requestContext.queryParameters)
-					.map(entity -> new TextToSpeechResponse(List.of(new Speech(entity.getBody())))));
+		return RetryUtils.execute(this.retryTemplate, () -> this.elevenLabsApi
+			.textToSpeechStream(requestContext.request, requestContext.voiceId, requestContext.queryParameters)
+			.map(entity -> new TextToSpeechResponse(List.of(new Speech(Objects.requireNonNull(entity.getBody()))))));
 	}
 
 	private RequestContext prepareRequest(TextToSpeechPrompt prompt) {
 		ElevenLabsApi.SpeechRequest request = createRequest(prompt);
 		ElevenLabsTextToSpeechOptions options = getOptions(prompt);
 		String voiceId = options.getVoice();
+		Assert.state(voiceId != null, "voiceId must not be null");
 		MultiValueMap<String, String> queryParameters = buildQueryParameters(options);
 
 		return new RequestContext(request, voiceId, queryParameters);
@@ -171,7 +173,7 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 			.build();
 	}
 
-	private <T> T getOrDefault(T runtimeValue, T defaultValue) {
+	private <T> @Nullable T getOrDefault(@Nullable T runtimeValue, @Nullable T defaultValue) {
 		return runtimeValue != null ? runtimeValue : defaultValue;
 	}
 
@@ -182,7 +184,7 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 
 	public static final class Builder {
 
-		private ElevenLabsApi elevenLabsApi;
+		private @Nullable ElevenLabsApi elevenLabsApi;
 
 		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
 
