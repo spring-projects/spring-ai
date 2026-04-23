@@ -170,7 +170,7 @@ public class StreamableMcpAnnotationsManualIT {
 						// Call a tool that sends progress notifications
 						CallToolRequest toolRequest = CallToolRequest.builder()
 							.name("tool1")
-							.arguments(Map.of())
+							.arguments(Map.of("input", "Test Input"))
 							.progressToken("test-progress-token")
 							.build();
 

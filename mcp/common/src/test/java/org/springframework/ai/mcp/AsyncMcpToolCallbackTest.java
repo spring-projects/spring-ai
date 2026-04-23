@@ -202,7 +202,7 @@ class AsyncMcpToolCallbackTest {
 	@Test
 	void getToolDefinitionShouldReturnCorrectDefinition() {
 		when(this.tool.description()).thenReturn("Test tool description");
-		var jsonSchema = mock(McpSchema.JsonSchema.class);
+		var jsonSchema = mock(Map.class);
 		when(this.tool.inputSchema()).thenReturn(jsonSchema);
 
 		// Act
@@ -294,7 +294,7 @@ class AsyncMcpToolCallbackTest {
 	void deprecatedConstructorShouldWork() {
 		when(this.tool.name()).thenReturn("testTool");
 		when(this.tool.description()).thenReturn("Test description");
-		when(this.tool.inputSchema()).thenReturn(mock(McpSchema.JsonSchema.class));
+		when(this.tool.inputSchema()).thenReturn(mock(Map.class));
 		var clientInfo = new Implementation("testClient", "1.0.0");
 		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 
