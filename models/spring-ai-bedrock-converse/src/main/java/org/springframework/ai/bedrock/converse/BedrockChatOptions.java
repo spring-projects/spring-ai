@@ -347,6 +347,9 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 				if (that.cacheOptions != null) {
 					this.cacheOptions = that.cacheOptions;
 				}
+				if (that.outputSchema != null) {
+					this.outputSchema = that.outputSchema;
+				}
 			}
 			return self();
 		}
