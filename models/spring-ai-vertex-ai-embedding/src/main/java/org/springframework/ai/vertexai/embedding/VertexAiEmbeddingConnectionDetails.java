@@ -20,7 +20,9 @@ import java.io.IOException;
 
 import com.google.cloud.aiplatform.v1.EndpointName;
 import com.google.cloud.aiplatform.v1.PredictionServiceSettings;
+import org.jspecify.annotations.Nullable;
 
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
@@ -99,11 +101,12 @@ public class VertexAiEmbeddingConnectionDetails {
 		/**
 		 * The Vertex AI embedding endpoint.
 		 */
-		private String endpoint;
+		private @Nullable String endpoint;
 
 		/**
 		 * Your project ID.
 		 */
+		@SuppressWarnings("NullAway.Init")
 		private String projectId;
 
 		/**
@@ -114,17 +117,17 @@ public class VertexAiEmbeddingConnectionDetails {
 		 * "https://cloud.google.com/vertex-ai/generative-ai/docs/learn/locations?hl=en">Generative
 		 * AI on Vertex AI locations</a>.
 		 */
-		private String location;
+		private @Nullable String location;
 
 		/**
 		 *
 		 */
-		private String publisher;
+		private @Nullable String publisher;
 
 		/**
 		 * Allows the connection settings to be customized
 		 */
-		private PredictionServiceSettings predictionServiceSettings;
+		private @Nullable PredictionServiceSettings predictionServiceSettings;
 
 		public Builder apiEndpoint(String endpoint) {
 			this.endpoint = endpoint;
@@ -177,6 +180,7 @@ public class VertexAiEmbeddingConnectionDetails {
 				}
 			}
 
+			Assert.state(this.location != null, "location must not be null");
 			return new VertexAiEmbeddingConnectionDetails(this.projectId, this.location, this.publisher,
 					this.predictionServiceSettings);
 		}

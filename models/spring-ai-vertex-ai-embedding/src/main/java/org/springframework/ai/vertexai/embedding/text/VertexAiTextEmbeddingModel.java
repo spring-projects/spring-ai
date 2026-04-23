@@ -133,7 +133,11 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 				try (PredictionServiceClient client = createPredictionServiceClient()) {
 
 					EmbeddingOptions options = embeddingRequest.getOptions();
-					EndpointName endpointName = this.connectionDetails.getEndpointName(options.getModel());
+					Assert.state(options instanceof VertexAiTextEmbeddingOptions,
+							"options must be an instance of VertexAiTextEmbeddingOptions");
+					String model = options.getModel();
+					Assert.state(model != null, "model must not be null");
+					EndpointName endpointName = this.connectionDetails.getEndpointName(model);
 
 					PredictRequest.Builder predictRequestBuilder = getPredictRequestBuilder(request, endpointName,
 							(VertexAiTextEmbeddingOptions) options);
@@ -157,7 +161,7 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 						embeddingList.add(new Embedding(vectorValues, index++));
 					}
 					EmbeddingResponse response = new EmbeddingResponse(embeddingList,
-							generateResponseMetadata(options.getModel(), totalTokenCount));
+							generateResponseMetadata(model, totalTokenCount));
 
 					observationContext.setResponse(response);
 
@@ -216,10 +220,12 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 
 		predictRequestBuilder.setParameters(VertexAiEmbeddingUtils.valueOf(parametersBuilder.build()));
 
+		VertexAiTextEmbeddingOptions.TaskType taskType = finalOptions.getTaskType();
+		Assert.state(taskType != null, "taskType must not be null");
 		for (int i = 0; i < request.getInstructions().size(); i++) {
 
 			TextInstanceBuilder instanceBuilder = TextInstanceBuilder.of(request.getInstructions().get(i))
-				.taskType(finalOptions.getTaskType().name());
+				.taskType(taskType.name());
 			if (StringUtils.hasText(finalOptions.getTitle())) {
 				instanceBuilder.title(finalOptions.getTitle());
 			}
