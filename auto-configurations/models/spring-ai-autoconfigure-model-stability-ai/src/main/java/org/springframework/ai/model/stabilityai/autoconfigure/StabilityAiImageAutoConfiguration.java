@@ -16,6 +16,9 @@
 
 package org.springframework.ai.model.stabilityai.autoconfigure;
 
+import io.micrometer.observation.ObservationRegistry;
+
+import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.stabilityai.StabilityAiImageModel;
@@ -67,8 +70,13 @@ public class StabilityAiImageAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public StabilityAiImageModel stabilityAiImageModel(StabilityAiApi stabilityAiApi,
-			StabilityAiImageProperties stabilityAiImageProperties) {
-		return new StabilityAiImageModel(stabilityAiApi, stabilityAiImageProperties.getOptions());
+			StabilityAiImageProperties stabilityAiImageProperties,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ImageModelObservationConvention> observationConvention) {
+		var imageModel = new StabilityAiImageModel(stabilityAiApi, stabilityAiImageProperties.getOptions(),
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		observationConvention.ifAvailable(imageModel::setObservationConvention);
+		return imageModel;
 	}
 
 }
