@@ -136,6 +136,8 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 			.observe(() -> {
 				GoogleGenAiTextEmbeddingOptions options = (GoogleGenAiTextEmbeddingOptions) embeddingRequest
 					.getOptions();
+				Assert.notNull(options, "Options must not be null");
+				Assert.notNull(options.getModel(), "Model must not be null");
 				String modelName = this.connectionDetails.getModelEndpointName(options.getModel());
 
 				// Build the EmbedContentConfig

@@ -17,6 +17,7 @@
 package org.springframework.ai.google.genai;
 
 import com.google.genai.Client;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -41,7 +42,7 @@ public final class GoogleGenAiEmbeddingConnectionDetails {
 	/**
 	 * Your project ID.
 	 */
-	private final String projectId;
+	private final @Nullable String projectId;
 
 	/**
 	 * A location is a <a href="https://cloud.google.com/about/locations?hl=en">region</a>
@@ -50,20 +51,20 @@ public final class GoogleGenAiEmbeddingConnectionDetails {
 	 * "https://cloud.google.com/vertex-ai/generative-ai/docs/learn/locations?hl=en">Generative
 	 * AI on Vertex AI locations</a>.
 	 */
-	private final String location;
+	private final @Nullable String location;
 
 	/**
 	 * The API key for using Gemini Developer API. If null, Vertex AI mode will be used.
 	 */
-	private final String apiKey;
+	private final @Nullable String apiKey;
 
 	/**
 	 * The GenAI Client instance configured for this connection.
 	 */
 	private final Client genAiClient;
 
-	private GoogleGenAiEmbeddingConnectionDetails(String projectId, String location, String apiKey,
-			Client genAiClient) {
+	private GoogleGenAiEmbeddingConnectionDetails(@Nullable String projectId, @Nullable String location,
+			@Nullable String apiKey, Client genAiClient) {
 		this.projectId = projectId;
 		this.location = location;
 		this.apiKey = apiKey;
@@ -74,15 +75,15 @@ public final class GoogleGenAiEmbeddingConnectionDetails {
 		return new Builder();
 	}
 
-	public String getProjectId() {
+	public @Nullable String getProjectId() {
 		return this.projectId;
 	}
 
-	public String getLocation() {
+	public @Nullable String getLocation() {
 		return this.location;
 	}
 
-	public String getApiKey() {
+	public @Nullable String getApiKey() {
 		return this.apiKey;
 	}
 
@@ -106,7 +107,7 @@ public final class GoogleGenAiEmbeddingConnectionDetails {
 		/**
 		 * Your project ID.
 		 */
-		private String projectId;
+		private @Nullable String projectId;
 
 		/**
 		 * A location is a
@@ -116,35 +117,35 @@ public final class GoogleGenAiEmbeddingConnectionDetails {
 		 * "https://cloud.google.com/vertex-ai/generative-ai/docs/learn/locations?hl=en">Generative
 		 * AI on Vertex AI locations</a>.
 		 */
-		private String location;
+		private @Nullable String location;
 
 		/**
 		 * The API key for using Gemini Developer API. If null, Vertex AI mode will be
 		 * used.
 		 */
-		private String apiKey;
+		private @Nullable String apiKey;
 
 		/**
 		 * Custom GenAI client instance. If provided, other settings will be ignored.
 		 */
-		private Client genAiClient;
+		private @Nullable Client genAiClient;
 
-		public Builder projectId(String projectId) {
+		public Builder projectId(@Nullable String projectId) {
 			this.projectId = projectId;
 			return this;
 		}
 
-		public Builder location(String location) {
+		public Builder location(@Nullable String location) {
 			this.location = location;
 			return this;
 		}
 
-		public Builder apiKey(String apiKey) {
+		public Builder apiKey(@Nullable String apiKey) {
 			this.apiKey = apiKey;
 			return this;
 		}
 
-		public Builder genAiClient(Client genAiClient) {
+		public Builder genAiClient(@Nullable Client genAiClient) {
 			this.genAiClient = genAiClient;
 			return this;
 		}
