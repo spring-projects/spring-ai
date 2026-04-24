@@ -1,6 +1,7 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+
 [[upgrading-to-2-0-0-M5]]
 == Upgrading to 2.0.0-M5
 
@@ -75,6 +76,121 @@ Prompt prompt = Prompt.builder().message("Tell me a joke")
 var response = model.call(prompt);
 ----
 --
+
+=== MCP Java SDK Upgraded to 2.0.0
+
+Spring AI 2.0.0-M5 upgrades the MCP Java SDK from `1.1.x` to `2.0.0`. This release introduces several breaking changes at the SDK level that may affect applications that interact with MCP types directly.
+
+==== Server-Side Tool Input Validation Enabled by Default
+
+MCP servers now validate incoming tool arguments against the tool's JSON schema before invoking the tool handler.
+Failed validation produces a `CallToolResult` with `isError=true` and a descriptive error message.
+
+===== Impact
+
+Existing MCP servers that previously accepted loosely-typed or missing tool arguments may now return validation errors to clients that send non-conforming arguments.
+
+===== Migration
+
+Ensure that your tool definitions carry accurate JSON schemas and that all clients send conforming arguments.
+To disable validation and restore the pre-2.0 behavior, set `validateToolInputs(false)` on the server builder:
+
+[source,java]
+----
+McpServer.sync(transportProvider)
+    .validateToolInputs(false)
+    .tool(myTool, handler)
+    .build();
+----
+
+NOTE: When using `@McpTool` annotations, Spring AI generates JSON schemas from method parameters automatically. These schemas are compatible with the built-in validator and require no extra action.
+
+==== `Tool.inputSchema` Changed from `JsonSchema` to `Map<String, Object>`
+
+`McpSchema.Tool.inputSchema()` (and `outputSchema()`) now returns `Map<String, Object>` instead of the former `JsonSchema` record.
+This allows arbitrary JSON Schema dialect keywords (`$ref`, `unevaluatedProperties`, vendor extensions) to round-trip without being trimmed.
+
+===== Impact
+
+Code that uses `tool.inputSchema()` as a `JsonSchema` object will fail to compile.
+
+===== Migration
+
+Switch to `Map<String, Object>`:
+
+[source,java]
+----
+// Before
+McpSchema.JsonSchema schema = tool.inputSchema();
+
+// After
+Map<String, Object> schema = tool.inputSchema();
+----
+
+When constructing tools via `McpSchema.Tool.Builder`, the deprecated `inputSchema(JsonSchema)` helper is still available for backwards compatibility, but prefer `inputSchema(Map)` or `inputSchema(McpJsonMapper, String)`.
+
+NOTE: Applications that use `@McpTool` annotations or Spring AI's `SyncMcpToolProvider` / `AsyncMcpToolProvider` are not affected — Spring AI handles schema generation internally.
+
+==== `Builder.customizeRequest()` Removed from HTTP Client Transports
+
+The deprecated `Builder.customizeRequest()` method has been removed from `HttpClientSseClientTransport.Builder` and `HttpClientStreamableHttpTransport.Builder`.
+
+===== Impact
+
+Any code calling `.customizeRequest()` directly on these builder types will fail to compile.
+
+===== Migration
+
+Replace `customizeRequest()` with `httpRequestCustomizer()` (sync) or `asyncHttpRequestCustomizer()` (async):
+
+[source,java]
+----
+// Before
+HttpClientSseClientTransport.builder(baseUrl)
+    .customizeRequest(req -> req.header("Authorization", "Bearer token"))
+    .build();
+
+// After
+HttpClientSseClientTransport.builder(baseUrl)
+    .httpRequestCustomizer(req -> req.header("Authorization", "Bearer token"))
+    .build();
+----
+
+NOTE: If you already migrated to the `McpClientCustomizer<B>` API introduced in 2.0.0-M3, no further action is required.
+
+==== Sealed MCP Schema Interfaces Removed
+
+The following interfaces are no longer `sealed`:
+`McpSchema.JSONRPCMessage`, `McpSchema.Request`, `McpSchema.Result`, `McpSchema.Notification`,
+`McpSchema.ResourceContents`, `McpSchema.CompleteReference`, and `McpSchema.Content`.
+
+===== Impact
+
+Exhaustive `switch` expressions over these types that relied on the sealed hierarchy for completeness no longer compile without a `default` branch.
+
+===== Migration
+
+Add a `default` branch to any exhaustive `switch` over these types:
+
+[source,java]
+----
+// Before (no default needed when McpSchema.Content was sealed)
+String text = switch (content) {
+    case McpSchema.TextContent tc   -> tc.text();
+    case McpSchema.ImageContent ic  -> "[image]";
+    case McpSchema.EmbeddedResource er -> "[resource]";
+};
+
+// After
+String text = switch (content) {
+    case McpSchema.TextContent tc   -> tc.text();
+    case McpSchema.ImageContent ic  -> "[image]";
+    case McpSchema.EmbeddedResource er -> "[resource]";
+    default -> throw new IllegalArgumentException("Unknown content type: " + content);
+};
+----
+
+NOTE: This change is unlikely to affect most Spring AI users who interact with MCP through annotations or Spring AI's higher-level abstractions.
 
 
 [[upgrading-to-2-0-0-M3]]
