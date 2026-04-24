@@ -4,8 +4,9 @@ NOTE: This is still work in progress. The documentation and APIs may change in f
 
 The Spring AI MCP Security module provides comprehensive OAuth 2.0 and API key-based security support for Model Context Protocol implementations in Spring AI. This community-driven project enables developers to secure both MCP servers and clients with industry-standard authentication and authorization mechanisms.
 
-NOTE: This module is part of the link:https://github.com/spring-ai-community/mcp-security[spring-ai-community/mcp-security] project and currently works with Spring AI's 1.1.x branch only.
+NOTE: This module is part of the link:https://github.com/spring-ai-community/mcp-security[spring-ai-community/mcp-security] project.
 This is a community-driven project and is not officially endorsed yet by Spring AI or the MCP project.
+Check the project repository for the latest supported Spring AI version.
 
 == Overview
 
