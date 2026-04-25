@@ -191,7 +191,7 @@ class InfinispanFilterExpressionConverter extends AbstractFilterExpressionConver
 		String m = "m" + this.i + ".";
 		return "(" + metadataKey(key) + String.format(
 				"%svalue IS NULL and %svalue_int IS NULL and %svalue_date IS NULL and %svalue_float IS NULL and %svalue_bool IS NULL)",
-				m, m, m, m, m) + " OR (" + m + "name" + " NOT IN('" + key.key() + "'))";
+				m, m, m, m, m) + " OR (" + m + "name NOT IN(" + toInfinispanStringLiteral(key.key()) + "))";
 	}
 
 	private String mapIsNotNull(Filter.Key key) {
@@ -253,7 +253,7 @@ class InfinispanFilterExpressionConverter extends AbstractFilterExpressionConver
 			// single value
 			first = normalizeDateString(value.value());
 			inStatement = first instanceof Date d ? String.valueOf(d.toInstant().toEpochMilli())
-					: first instanceof String ? "'" + first + "'" : first.toString();
+					: first instanceof String str ? toInfinispanStringLiteral(str) : first.toString();
 		}
 
 		String m = "m" + this.i + ".";
@@ -283,16 +283,16 @@ class InfinispanFilterExpressionConverter extends AbstractFilterExpressionConver
 			notInFilter = m + "value_float NOT IN (" + inStatement + ")";
 		}
 
-		return "(" + notInFilter + metadataKeyLast(key) + ") " + "OR (" + inFilter + " and " + m + "name!='" + key.key()
-				+ "')" + " " + addMetadataNullCheck();
+		return "(" + notInFilter + metadataKeyLast(key) + ") " + "OR (" + inFilter + " and " + m + "name!="
+				+ toInfinispanStringLiteral(key.key()) + ")" + " " + addMetadataNullCheck();
 	}
 
 	private String metadataKey(Filter.Key key) {
-		return "m" + this.i + ".name='" + key.key() + "' and ";
+		return "m" + this.i + ".name=" + toInfinispanStringLiteral(key.key()) + " and ";
 	}
 
 	private String metadataKeyLast(Filter.Key key) {
-		return " and m" + this.i + ".name='" + key.key() + "' ";
+		return " and m" + this.i + ".name=" + toInfinispanStringLiteral(key.key()) + " ";
 	}
 
 	private String computeValue(String operator, Object value) {
@@ -314,8 +314,10 @@ class InfinispanFilterExpressionConverter extends AbstractFilterExpressionConver
 			filterQuery = m + "value_bool" + operator + bool.booleanValue();
 		}
 		else {
-			// Any other case
-			filterQuery = m + "value" + operator + "'" + value + "'";
+			var sb = new StringBuilder();
+			sb.append(m).append("value").append(operator);
+			emitInfinispanString(value.toString(), sb);
+			filterQuery = sb.toString();
 		}
 		return filterQuery;
 	}
@@ -341,9 +343,15 @@ class InfinispanFilterExpressionConverter extends AbstractFilterExpressionConver
 	private String formattedComparisonValues(Collection<?> comparisonValues) {
 		String inStatement = comparisonValues.stream()
 			.map(s -> s instanceof Date d ? String.valueOf(d.toInstant().toEpochMilli())
-					: s instanceof String ? "'" + s + "'" : s.toString())
+					: s instanceof String str ? toInfinispanStringLiteral(str) : s.toString())
 			.collect(Collectors.joining(", "));
 		return inStatement;
+	}
+
+	private static String toInfinispanStringLiteral(String text) {
+		var sb = new StringBuilder();
+		emitInfinispanString(text, sb);
+		return sb.toString();
 	}
 
 	private String addMetadataNullCheck() {

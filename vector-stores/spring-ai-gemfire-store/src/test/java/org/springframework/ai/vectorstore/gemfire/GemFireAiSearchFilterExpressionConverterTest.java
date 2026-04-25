@@ -125,12 +125,23 @@ class GemFireAiSearchFilterExpressionConverterTest {
 	@Test
 	public void testComplexIdentifiers() {
 		String vectorExpr = this.converter
+			.convertExpression(new Filter.Expression(EQ, new Filter.Key("country 1 2 3"), new Filter.Value("BG")));
+		assertThat(vectorExpr).isEqualTo("country\\ 1\\ 2\\ 3:BG");
+
+		vectorExpr = this.converter
 			.convertExpression(new Filter.Expression(EQ, new Filter.Key("\"country 1 2 3\""), new Filter.Value("BG")));
-		assertThat(vectorExpr).isEqualTo("country 1 2 3:BG");
+		assertThat(vectorExpr).isEqualTo("\\\"country\\ 1\\ 2\\ 3\\\":BG");
 
 		vectorExpr = this.converter
 			.convertExpression(new Filter.Expression(EQ, new Filter.Key("'country 1 2 3'"), new Filter.Value("BG")));
-		assertThat(vectorExpr).isEqualTo("country 1 2 3:BG");
+		assertThat(vectorExpr).isEqualTo("'country\\ 1\\ 2\\ 3':BG");
+	}
+
+	@Test
+	void metadataKeyWithDoubleQuoteAndBooleanOperatorsIsEscaped() {
+		String vectorExpr = this.converter.convertExpression(
+				new Filter.Expression(EQ, new Filter.Key("genre\" OR country:evil"), new Filter.Value("drama")));
+		assertThat(vectorExpr).isEqualTo("genre\\\"\\ OR\\ country\\:evil:drama");
 	}
 
 }

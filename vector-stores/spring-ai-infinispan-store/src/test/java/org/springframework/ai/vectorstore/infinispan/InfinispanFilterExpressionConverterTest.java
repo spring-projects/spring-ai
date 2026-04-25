@@ -201,6 +201,14 @@ public class InfinispanFilterExpressionConverterTest {
 					"m1.name='activationDate' and (m1.value IS NOT NULL or m1.value_int IS NOT NULL or m1.value_date IS NOT NULL or m1.value_float IS NOT NULL or m1.value_bool IS NOT NULL)");
 	}
 
+	@Test
+	void metadataKeyAndStringValueEscapeSingleQuotesForIckle() { // Ickle is the
+																	// infinispan query
+																	// language.
+		Filter.Expression expr = new Filter.Expression(EQ, new Filter.Key("na'me"), new Filter.Value("O'Brien"));
+		assertQueryAndJoin(expr, "m0.name='na''me' and m0.value='O''Brien'", " join i.metadata m0");
+	}
+
 	private void assertQueryAndJoin(Filter.Expression expression, String expectedQuery, String expectedJoin) {
 		String filter = this.converter.convertExpression(expression);
 		String join = this.converter.doJoin();

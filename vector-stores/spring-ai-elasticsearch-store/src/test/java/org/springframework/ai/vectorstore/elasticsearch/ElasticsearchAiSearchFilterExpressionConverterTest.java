@@ -129,11 +129,37 @@ class ElasticsearchAiSearchFilterExpressionConverterTest {
 	@Test
 	public void testComplexIdentifiers() {
 		String vectorExpr = this.converter
-			.convertExpression(new Filter.Expression(EQ, new Filter.Key("\"country 1 2 3\""), new Filter.Value("BG")));
-		assertThat(vectorExpr).isEqualTo("metadata.country 1 2 3:\"BG\"");
+			.convertExpression(new Filter.Expression(EQ, new Filter.Key("country 1 2 3"), new Filter.Value("BG")));
+		assertThat(vectorExpr).isEqualTo("metadata.country\\ 1\\ 2\\ 3:\"BG\"");
+
 		vectorExpr = this.converter
 			.convertExpression(new Filter.Expression(EQ, new Filter.Key("'country 1 2 3'"), new Filter.Value("BG")));
-		assertThat(vectorExpr).isEqualTo("metadata.country 1 2 3:\"BG\"");
+		assertThat(vectorExpr).isEqualTo("metadata.'country\\ 1\\ 2\\ 3':\"BG\"");
+
+		vectorExpr = this.converter
+			.convertExpression(new Filter.Expression(EQ, new Filter.Key("\"country 1 2 3\""), new Filter.Value("BG")));
+		assertThat(vectorExpr).isEqualTo("metadata.\\\"country\\ 1\\ 2\\ 3\\\":\"BG\"");
+	}
+
+	@Test
+	public void metadataKeyDoubleQuoteEscapedInQueryString() {
+		String vectorExpr = this.converter
+			.convertExpression(new Filter.Expression(EQ, new Filter.Key("country\"foo"), new Filter.Value("BG")));
+		assertThat(vectorExpr).isEqualTo("metadata.country\\\"foo:\"BG\"");
+	}
+
+	@Test
+	public void metadataKeyColonEscapedInQueryString() {
+		String vectorExpr = this.converter
+			.convertExpression(new Filter.Expression(EQ, new Filter.Key("a:b"), new Filter.Value("v")));
+		assertThat(vectorExpr).isEqualTo("metadata.a\\:b:\"v\"");
+	}
+
+	@Test
+	public void metadataKeyContainingOrAndSpacesIsEscaped() {
+		String vectorExpr = this.converter
+			.convertExpression(new Filter.Expression(EQ, new Filter.Key("foo OR bar"), new Filter.Value("x")));
+		assertThat(vectorExpr).isEqualTo("metadata.foo\\ OR\\ bar:\"x\"");
 	}
 
 }

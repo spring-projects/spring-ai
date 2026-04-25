@@ -135,3 +135,4 @@
 
 * xref:upgrade-notes.adoc[]
 ** xref:api/tools-migration.adoc[Migrating FunctionCallback to ToolCallback API]
+** xref:api/chat/anthropic-migration.adoc[Migrating the Anthropic Module to the Official Java SDK]

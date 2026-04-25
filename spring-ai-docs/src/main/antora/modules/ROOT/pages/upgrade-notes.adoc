@@ -192,9 +192,104 @@ String text = switch (content) {
 
 NOTE: This change is unlikely to affect most Spring AI users who interact with MCP through annotations or Spring AI's higher-level abstractions.
 
+=== Unified Cache Usage Metrics on `Usage`
+
+The `org.springframework.ai.chat.metadata.Usage` interface gains two default methods, `getCacheReadInputTokens()` and `getCacheWriteInputTokens()`. Both return `null` when the provider doesn't report a value.
+
+Anthropic, Bedrock Converse, OpenAI, and Google GenAI populate them: Anthropic and Bedrock in both directions, OpenAI and Google for cache reads only.
+
+Code that cast to native types or read provider-specific metadata keys for these numbers can switch to the interface methods. See xref:api/usage-handling.adoc#_prompt_cache_usage_metrics[Prompt Cache Usage Metrics] for examples.
+
+=== Anthropic Module Updates
+
+`spring-ai-anthropic` picks up four new chat options and an SDK bump. The full reference for each is in xref:api/chat/anthropic-chat.adoc[Anthropic Chat]; the highlights:
+
+[cols="1,3", options="header"]
+|===
+| Option | What it adds
+
+| Thinking display
+| `Display.SUMMARIZED` and `Display.OMITTED` on the `thinkingEnabled` / `thinkingAdaptive` builders, so Claude can use a thinking budget without surfacing the full reasoning. (https://github.com/spring-projects/spring-ai/issues/5642[GH-5642])
+
+| Service tier
+| `AnthropicServiceTier.AUTO` / `STANDARD_ONLY` for Anthropic's priority capacity tier. Property `spring.ai.anthropic.chat.options.service-tier`.
+
+| Built-in web search
+| `AnthropicWebSearchTool` lets Claude search the web during a request. Properties under `spring.ai.anthropic.chat.options.web-search-tool.*`.
+
+| Inference geo
+| `inferenceGeo("us")` or `inferenceGeo("eu")` for data-residency routing. Property `spring.ai.anthropic.chat.options.inference-geo`.
+|===
+
+`com.anthropic:anthropic-java` is bumped from `2.16.1` (the version M3 shipped with) to `2.24.0`, binary-compatible at every surface `spring-ai-anthropic` uses.
+
+NOTE: If you are upgrading from `1.1.x` (or `1.0.x`), the bigger change for the Anthropic module landed in M3. See xref:api/chat/anthropic-migration.adoc[Migrating the Anthropic Module to the Official Java SDK] for the `RestClient` → SDK transition.
+
 
 [[upgrading-to-2-0-0-M3]]
 == Upgrading to 2.0.0-M3
+
+=== Anthropic Module Migrated to Official Java SDK
+
+`spring-ai-anthropic` is now built on `com.anthropic:anthropic-java` instead of the hand-rolled `RestClient` / `WebClient` implementation.
+
+For most applications the change is transparent. The Maven artifact, the `spring.ai.anthropic.*` configuration, and the `AnthropicChatModel` / `AnthropicChatOptions` / `ChatClient` API are preserved, and code that goes through `ChatClient` or `ChatModel.call(Prompt)` does not need updates.
+
+Code that imported from `org.springframework.ai.anthropic.api`, constructed `AnthropicChatModel` with an `AnthropicApi` argument, or depended on the old `maxTokens` default does need attention.
+
+==== Impact
+
+* `org.springframework.ai.anthropic.api.AnthropicApi` and all its nested record types (`ChatCompletionRequest`, `ContentBlock`, `Tool`, `ToolChoice*`, streaming event records) are gone. Code referencing these will not compile.
+* The public `AnthropicChatModel(AnthropicApi, AnthropicChatOptions, ...)` constructor is gone. Use `AnthropicChatModel.builder()`.
+* `AnthropicChatOptions#maxTokens` defaults to `4096` instead of `500`. Responses that hit the old cap will now run longer, with correspondingly higher token usage.
+* `AnthropicCacheOptions`, `AnthropicCacheStrategy`, `AnthropicCacheTtl`, `CacheBreakpointTracker`, and `CacheEligibilityResolver` moved out of `api` (and `api.utils`) into the root `org.springframework.ai.anthropic` package.
+* `AnthropicCacheType`, `StreamHelper`, and `metadata.AnthropicRateLimit` were removed; the equivalent SDK types (`CacheControlEphemeral`, `AsyncStreamResponse<RawMessageStreamEvent>`, `RateLimitException`) are used directly.
+* `CitationDocument` was renamed to `AnthropicCitationDocument`.
+* `com.anthropic:anthropic-java` brings `com.squareup.okhttp3:okhttp` onto the classpath transitively.
+
+==== Migration
+
+Update imports for the moved cache and citation classes:
+
+[cols="1,1", options="header"]
+|===
+| Before | After
+| `org.springframework.ai.anthropic.api.AnthropicCacheOptions` | `org.springframework.ai.anthropic.AnthropicCacheOptions`
+| `org.springframework.ai.anthropic.api.AnthropicCacheStrategy` | `org.springframework.ai.anthropic.AnthropicCacheStrategy`
+| `org.springframework.ai.anthropic.api.AnthropicCacheTtl` | `org.springframework.ai.anthropic.AnthropicCacheTtl`
+| `org.springframework.ai.anthropic.api.utils.CacheBreakpointTracker` | `org.springframework.ai.anthropic.CacheBreakpointTracker`
+| `org.springframework.ai.anthropic.api.utils.CacheEligibilityResolver` | `org.springframework.ai.anthropic.CacheEligibilityResolver`
+| `org.springframework.ai.anthropic.api.CitationDocument` | `org.springframework.ai.anthropic.AnthropicCitationDocument`
+|===
+
+`AnthropicCacheStrategy` (`NONE`, `TOOLS_ONLY`, `SYSTEM_ONLY`, `SYSTEM_AND_TOOLS`, `CONVERSATION_HISTORY`) and `AnthropicCacheTtl` (`FIVE_MINUTES`, `ONE_HOUR`) keep the same enum values.
+
+Replace direct constructor usage with the builder:
+
+[source,java]
+----
+// Before
+AnthropicApi anthropicApi = new AnthropicApi(apiKey);
+AnthropicChatModel chatModel = new AnthropicChatModel(anthropicApi, options);
+
+// After
+AnthropicChatModel chatModel = AnthropicChatModel.builder()
+    .apiKey(apiKey)
+    .defaultOptions(options)
+    .build();
+----
+
+If you relied on the `500`-token default to bound costs, set it explicitly:
+
+[source,java]
+----
+AnthropicChatOptions.builder()
+    .maxTokens(500)
+    // ...
+    .build();
+----
+
+xref:api/chat/anthropic-migration.adoc[Migrating the Anthropic Module to the Official Java SDK] covers the rest: direct SDK access, streaming behavior, prompt caching, citations, and removed types.
 
 === MCP Annotations Migrated into Spring AI
 
