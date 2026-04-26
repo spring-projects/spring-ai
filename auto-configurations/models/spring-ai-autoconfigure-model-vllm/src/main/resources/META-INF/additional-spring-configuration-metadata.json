@@ -1,0 +1,41 @@
+{
+  "properties": [
+    {
+      "name": "spring.ai.vllm.scoring.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable vLLM scoring model.",
+      "defaultValue": true
+    },
+    {
+      "name": "spring.ai.vllm.scoring.base-url",
+      "type": "java.lang.String",
+      "description": "vLLM API base URL.",
+      "defaultValue": "http://localhost:8000"
+    },
+    {
+      "name": "spring.ai.vllm.scoring.api-key",
+      "type": "java.lang.String",
+      "description": "vLLM API Key. Optional if vLLM server is not secured."
+    },
+    {
+      "name": "spring.ai.vllm.scoring.options.model",
+      "type": "java.lang.String",
+      "description": "The name of the scoring model to use (e.g., 'BAAI/bge-reranker-v2-m3')."
+    },
+    {
+      "name": "spring.ai.vllm.scoring.options.top-n",
+      "type": "java.lang.Integer",
+      "description": "Number of top documents to return."
+    },
+    {
+      "name": "spring.ai.vllm.scoring.options.return-documents",
+      "type": "java.lang.Boolean",
+      "description": "Whether to return the original document texts."
+    },
+    {
+      "name": "spring.ai.vllm.scoring.options.truncation",
+      "type": "java.lang.Boolean",
+      "description": "Whether to truncate documents to fit the model's context window."
+    }
+  ]
+}

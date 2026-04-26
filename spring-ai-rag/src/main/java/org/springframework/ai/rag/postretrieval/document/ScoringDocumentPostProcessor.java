@@ -85,10 +85,7 @@ public final class ScoringDocumentPostProcessor implements DocumentPostProcessor
 		ScoringRequest request = new ScoringRequest(query.text(), documents, this.defaultOptions);
 		ScoringResponse response = this.scoringModel.call(request);
 
-		return response.getResults()
-			.stream()
-			.map(ScoringResult::getOutput)
-			.toList();
+		return response.getResults().stream().map(ScoringResult::getOutput).toList();
 	}
 
 	/**

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.jina;
+package org.springframework.ai.vllm;
 
 import java.util.List;
 
@@ -23,9 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.jina.api.JinaScoringApi;
-import org.springframework.ai.jina.api.JinaScoringApi.RerankRequest;
-import org.springframework.ai.jina.api.JinaScoringApi.RerankResponse;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.scoring.ScoringModel;
@@ -33,29 +30,32 @@ import org.springframework.ai.scoring.ScoringOptions;
 import org.springframework.ai.scoring.ScoringRequest;
 import org.springframework.ai.scoring.ScoringResponse;
 import org.springframework.ai.scoring.ScoringResult;
+import org.springframework.ai.vllm.api.VllmScoringApi;
+import org.springframework.ai.vllm.api.VllmScoringApi.RerankRequest;
+import org.springframework.ai.vllm.api.VllmScoringApi.RerankResponse;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 
 /**
- * Jina AI {@link ScoringModel}.
+ * vLLM {@link ScoringModel}.
  *
- * @author Wongi Kim
+ * @author Spring AI
  * @since 2.0.0
  */
-public final class JinaScoringModel implements ScoringModel {
+public final class VllmScoringModel implements ScoringModel {
 
 	/** Logger. */
 	private final Logger log = LoggerFactory.getLogger(getClass());
 
 	/** API client. */
-	private final JinaScoringApi api;
+	private final VllmScoringApi api;
 
 	/** Retry template. */
 	private final RetryTemplate retry;
 
 	/** Options. */
-	private final JinaScoringOptions options;
+	private final VllmScoringOptions options;
 
 	/**
 	 * Create model.
@@ -63,8 +63,8 @@ public final class JinaScoringModel implements ScoringModel {
 	 * @param retryParam retry
 	 * @param optionsParam options
 	 */
-	public JinaScoringModel(final JinaScoringApi apiParam, final RetryTemplate retryParam,
-			final JinaScoringOptions optionsParam) {
+	public VllmScoringModel(final VllmScoringApi apiParam, final RetryTemplate retryParam,
+			final VllmScoringOptions optionsParam) {
 		Assert.notNull(apiParam, "apiParam must not be null");
 		Assert.notNull(retryParam, "retryParam must not be null");
 		Assert.notNull(optionsParam, "optionsParam must not be null");
@@ -79,7 +79,7 @@ public final class JinaScoringModel implements ScoringModel {
 		Assert.notEmpty(request.getInstructions(), "Documents must not be empty");
 
 		return RetryUtils.execute(this.retry, () -> {
-			JinaScoringOptions opts = mergeOptions(request.getOptions());
+			VllmScoringOptions opts = mergeOptions(request.getOptions());
 			List<Document> documents = request.getInstructions();
 			List<String> texts = documents.stream().map(doc -> {
 				String text = doc.getText();
@@ -90,9 +90,10 @@ public final class JinaScoringModel implements ScoringModel {
 			}).toList();
 
 			String modelName = opts.getModel();
-			Assert.notNull(modelName, "Model name must not be null");
-			RerankRequest apiReq = new RerankRequest(modelName, request.getQuery(), texts, opts.getTopK(), null,
-					opts.getTruncation());
+			Assert.notNull(modelName, "Model name must not be null for vLLM Scoring");
+
+			RerankRequest apiReq = new RerankRequest(modelName, request.getQuery(), texts, opts.getTopK(),
+					opts.getReturnDocuments(), opts.getTruncation());
 
 			ResponseEntity<RerankResponse> resp = this.api.rerank(apiReq);
 
@@ -107,20 +108,20 @@ public final class JinaScoringModel implements ScoringModel {
 		return this.call(new ScoringRequest(query, documents));
 	}
 
-	private JinaScoringOptions mergeOptions(final @Nullable ScoringOptions runtimeOptions) {
+	private VllmScoringOptions mergeOptions(final @Nullable ScoringOptions runtimeOptions) {
 		if (runtimeOptions == null) {
 			return this.options;
 		}
 
-		JinaScoringOptions.Builder optBuilder = JinaScoringOptions.builder();
+		VllmScoringOptions.Builder optBuilder = VllmScoringOptions.builder();
 		optBuilder.model(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), this.options.getModel()));
 		optBuilder.topK(ModelOptionsUtils.mergeOption(runtimeOptions.getTopK(), this.options.getTopK()));
 
-		if (runtimeOptions instanceof JinaScoringOptions jinaOpts) {
+		if (runtimeOptions instanceof VllmScoringOptions vllmOpts) {
 			optBuilder.returnDocuments(
-					ModelOptionsUtils.mergeOption(jinaOpts.getReturnDocuments(), this.options.getReturnDocuments()));
+					ModelOptionsUtils.mergeOption(vllmOpts.getReturnDocuments(), this.options.getReturnDocuments()));
 			optBuilder
-				.truncation(ModelOptionsUtils.mergeOption(jinaOpts.getTruncation(), this.options.getTruncation()));
+				.truncation(ModelOptionsUtils.mergeOption(vllmOpts.getTruncation(), this.options.getTruncation()));
 		}
 		else {
 			optBuilder.returnDocuments(this.options.getReturnDocuments());
@@ -134,8 +135,8 @@ public final class JinaScoringModel implements ScoringModel {
 			final List<Document> docs) {
 
 		RerankResponse body = responseEntity.getBody();
-		if (body == null) {
-			this.log.warn("No response");
+		if (body == null || body.results() == null) {
+			this.log.warn("No response or empty results");
 			return new ScoringResponse(List.of());
 		}
 
@@ -158,20 +159,20 @@ public final class JinaScoringModel implements ScoringModel {
 	public static final class Builder {
 
 		/** API client. */
-		private @Nullable JinaScoringApi api;
+		private @Nullable VllmScoringApi api;
 
 		/** Retry template. */
 		private RetryTemplate retry = RetryUtils.DEFAULT_RETRY_TEMPLATE;
 
 		/** Options. */
-		private JinaScoringOptions options = JinaScoringOptions.builder().build();
+		private VllmScoringOptions options = VllmScoringOptions.builder().build();
 
 		/**
 		 * Set api.
 		 * @param apiParam api
 		 * @return builder
 		 */
-		public Builder jinaScoringApi(final JinaScoringApi apiParam) {
+		public Builder vllmScoringApi(final VllmScoringApi apiParam) {
 			this.api = apiParam;
 			return this;
 		}
@@ -191,7 +192,7 @@ public final class JinaScoringModel implements ScoringModel {
 		 * @param optionsParam options
 		 * @return builder
 		 */
-		public Builder options(final JinaScoringOptions optionsParam) {
+		public Builder options(final VllmScoringOptions optionsParam) {
 			this.options = optionsParam;
 			return this;
 		}
@@ -200,9 +201,9 @@ public final class JinaScoringModel implements ScoringModel {
 		 * Build.
 		 * @return model
 		 */
-		public JinaScoringModel build() {
+		public VllmScoringModel build() {
 			Assert.state(this.api != null, "api must not be null");
-			return new JinaScoringModel(this.api, this.retry, this.options);
+			return new VllmScoringModel(this.api, this.retry, this.options);
 		}
 
 	}

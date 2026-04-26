@@ -25,10 +25,10 @@
 		<version>2.0.1-SNAPSHOT</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
-	<artifactId>spring-ai-jina</artifactId>
+	<artifactId>spring-ai-vllm</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Model - Jina AI</name>
-	<description>Jina AI models support</description>
+	<name>Spring AI Model - vLLM</name>
+	<description>vLLM scoring models support</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>
@@ -66,6 +66,7 @@
 			<artifactId>jackson-databind</artifactId>
 			<scope>test</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-test</artifactId>

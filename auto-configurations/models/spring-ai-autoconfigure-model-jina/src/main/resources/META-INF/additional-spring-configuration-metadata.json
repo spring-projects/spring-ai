@@ -1,0 +1,18 @@
+{
+  "groups": [
+    {
+      "name": "spring.ai.jina.scoring.options",
+      "type": "org.springframework.ai.jina.JinaScoringOptions",
+      "sourceType": "org.springframework.ai.jina.autoconfigure.JinaScoringProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "spring.ai.jina.scoring.api-key",
+      "type": "java.lang.String",
+      "description": "API key for Jina AI.",
+      "sourceType": "org.springframework.ai.jina.autoconfigure.JinaScoringProperties"
+    }
+  ],
+  "hints": []
+}

@@ -14,30 +14,26 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.jina;
+package org.springframework.ai.vllm;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.ai.jina.api.JinaScoringApi;
 import org.springframework.ai.scoring.ScoringOptions;
 
 /**
- * Jina AI options.
+ * vLLM options.
  *
- * @author Wongi Kim
+ * @author Spring AI
  * @since 2.0.0
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public final class JinaScoringOptions implements ScoringOptions {
-
-	/** Default model name. */
-	private static final String DEFAULT_MODEL = JinaScoringApi.Model.JINA_RERANKER_V2_BASE_MULTILINGUAL.getValue();
+public final class VllmScoringOptions implements ScoringOptions {
 
 	/** Model name. */
 	@JsonProperty("model")
-	private @Nullable String modelName = DEFAULT_MODEL;
+	private @Nullable String modelName;
 
 	/** Top K results. */
 	@JsonProperty("top_n")
@@ -121,7 +117,7 @@ public final class JinaScoringOptions implements ScoringOptions {
 	public static final class Builder {
 
 		/** Options. */
-		private final JinaScoringOptions options = new JinaScoringOptions();
+		private final VllmScoringOptions options = new VllmScoringOptions();
 
 		/**
 		 * Set model.
@@ -167,7 +163,7 @@ public final class JinaScoringOptions implements ScoringOptions {
 		 * Build.
 		 * @return options
 		 */
-		public JinaScoringOptions build() {
+		public VllmScoringOptions build() {
 			return this.options;
 		}
 
