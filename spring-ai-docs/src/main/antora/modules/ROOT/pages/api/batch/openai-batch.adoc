@@ -1,0 +1,506 @@
+= OpenAI Batch API
+
+Spring AI supports https://platform.openai.com/docs/guides/batch[OpenAI's Batch API], which enables asynchronous processing of large volumes of API requests at 50% cost reduction compared to synchronous calls.
+Batch requests are processed within a 24-hour completion window and have separate, higher rate limits from the synchronous API.
+
+The Batch API supports the following OpenAI endpoints:
+
+* `/v1/chat/completions` — Chat completions
+* `/v1/embeddings` — Embedding generation
+* `/v1/responses` — Responses API
+* `/v1/completions` — Legacy completions
+* `/v1/moderations` — Content moderation
+* `/v1/images/generations` — Image generation
+* `/v1/images/edits` — Image editing
+
+== Prerequisites
+
+. Create an OpenAI account and obtain an API key. You can sign up at the https://platform.openai.com/signup[OpenAI signup page] and generate an API key on the https://platform.openai.com/account/api-keys[API Keys page].
+. Add the `spring-ai-starter-model-openai` dependency to your project. For more information, refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the OpenAI Batch API.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
+
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-openai</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+}
+----
+======
+
+Then enable the batch support in your `application.properties`:
+
+[source,properties]
+----
+spring.ai.openai.api-key=${OPENAI_API_KEY}
+spring.ai.openai.batch.enabled=true
+----
+
+== Architecture
+
+The batch system uses a three-phase lifecycle:
+
+1. **Prepare** — Collect pending items from registered `BatchRequestHandler` implementations and convert them into `BatchRequestLine` objects
+2. **Execute** — Upload JSONL files to OpenAI and create batch executions
+3. **Check** — Poll batch status, download output/error files, and dispatch results back to handlers
+
+[NOTE]
+====
+The batch support does **not** auto-configure scheduling.
+You control when each lifecycle phase runs — via `@Scheduled`, Spring Batch, or any other trigger.
+====
+
+=== Hybrid Storage Approach
+
+Handlers follow a **hybrid storage** approach: domain-specific input data (e.g., the text to analyze) is stored in your database, while the full OpenAI API request envelope (model, parameters, messages) is generated on demand at execution time.
+This means configuration changes (e.g., switching from `gpt-4o` to `gpt-4o-mini`, or adjusting `reasoning_effort`) automatically apply to all pending requests without requiring data cleanup.
+
+=== Endpoint-agnostic Design
+
+Each `BatchRequestHandler` declares its target endpoint.
+The `OpenAiBatchModel` orchestrator automatically groups pending requests by endpoint, since OpenAI requires each batch to target a single endpoint.
+This means you can register handlers for chat completions, embeddings, and other endpoints — all managed by a single `OpenAiBatchModel` instance.
+
+== Key Components
+
+=== `BatchRequestHandler<I>`
+
+The primary interface you implement to integrate with the batch system.
+The type parameter `I` represents your domain-specific input data type.
+
+[source,java]
+----
+public class ChatCompletionBatchHandler
+        implements BatchRequestHandler<ArticleInput> {
+
+    @Override
+    public String getHandlerId() {
+        return "article-summarizer";
+    }
+
+    @Override
+    public String getEndpoint() {
+        return "/v1/chat/completions";
+    }
+
+    @Override
+    public Map<String, Object> generateRequestBody(
+            ArticleInput input) {
+        return Map.of(
+            "model", "gpt-4o-mini",
+            "messages", List.of(
+                Map.of("role", "system",
+                    "content", "Summarize the article."),
+                Map.of("role", "user",
+                    "content", input.text())
+            )
+        );
+    }
+
+    @Override
+    public int estimateTokenUsage(ArticleInput input) {
+        return input.text().length() / 4; // rough estimate
+    }
+
+    @Override
+    public void onSuccess(BatchRequestCustomId customId,
+            Map<String, Object> responseBody,
+            int batchVersion) {
+        String entityId = customId.entityId();
+        // Process the result — save to database, etc.
+    }
+
+    @Override
+    public void onError(BatchRequestCustomId customId,
+            BatchResponseLine.Error error,
+            int batchVersion) {
+        log.error("Failed for {}: {} - {}",
+            customId.entityId(),
+            error.code(), error.message());
+    }
+
+    @Override
+    public Map<String, ArticleInput> getPendingItems(
+            int maxItems) {
+        // Query your database for unprocessed articles
+        return articleRepository.findPending(maxItems);
+    }
+}
+----
+
+=== `OpenAiBatchModel`
+
+The central orchestrator that manages the batch lifecycle.
+Build it with the builder pattern:
+
+[source,java]
+----
+OpenAiBatchModel batchModel = OpenAiBatchModel.builder()
+    .batchApi(batchApi)
+    .handlers(List.of(
+        chatHandler,
+        embeddingHandler
+    ))
+    .listeners(List.of(metricsListener))
+    .executionRepository(
+        new InMemoryBatchExecutionRepository())
+    .options(OpenAiBatchOptions.builder()
+        .maxRequestsPerBatch(10_000)
+        .completionWindow("24h")
+        .deleteFilesAfterProcessing(true)
+        .build())
+    .build();
+----
+
+Use the lifecycle methods to drive batch processing:
+
+[source,java]
+----
+// Phase 1+2: Collect pending items and create batches
+List<Batch> batches = batchModel.createBatchExecutions();
+
+// Phase 3: Check all pending batches (recommended)
+List<Batch> results =
+    batchModel.checkAllPendingExecutions();
+
+// Or check a specific batch by ID
+Batch updated = batchModel.checkBatchExecution(batchId);
+
+// Cancel if needed
+batchModel.cancelBatch(batchId);
+----
+
+=== `OpenAiBatchApi`
+
+Low-level wrapper around the OpenAI SDK's `BatchService` and `FileService`.
+You typically don't use this directly — `OpenAiBatchModel` manages it for you.
+However, it's available if you need direct access:
+
+[source,java]
+----
+// Create from an OpenAI client
+OpenAiBatchApi batchApi = new OpenAiBatchApi(
+    openAiClient, new ObjectMapper());
+
+// Retrieve batch status
+Batch batch = batchApi.retrieveBatch("batch_abc123");
+
+// Download and parse results
+String content = batchApi.downloadFileContent(
+    batch.outputFileId().orElseThrow());
+List<BatchResponseLine> lines =
+    batchApi.parseResponseLines(content);
+----
+
+=== `OpenAiBatchListener`
+
+Callback interface for observing batch lifecycle events.
+All methods have no-op defaults — override only the events you care about:
+
+[source,java]
+----
+public class MetricsListener implements OpenAiBatchListener {
+
+    @Override
+    public void onBatchCreated(Batch batch,
+            int requestCount) {
+        metrics.counter("batch.created").increment();
+        log.info("Batch {} created with {} requests",
+            batch.id(), requestCount);
+    }
+
+    @Override
+    public void onBatchCompleted(Batch batch) {
+        metrics.counter("batch.completed").increment();
+    }
+
+    @Override
+    public void onBatchResultsProcessed(Batch batch,
+            List<BatchResponseLine> successLines,
+            List<BatchResponseLine> errorLines) {
+        metrics.counter("batch.success",
+            "count", String.valueOf(successLines.size()))
+            .increment();
+        metrics.counter("batch.errors",
+            "count", String.valueOf(errorLines.size()))
+            .increment();
+    }
+}
+----
+
+=== `BatchRequestCustomId`
+
+Encodes an entity identifier and handler identifier into a single custom ID string using the `::` delimiter:
+
+[source,java]
+----
+// Create a custom ID
+BatchRequestCustomId id = new BatchRequestCustomId(
+    "article-42", "article-summarizer");
+id.toString(); // "article-42::article-summarizer"
+
+// Parse from response
+BatchRequestCustomId parsed =
+    BatchRequestCustomId.parse(
+        "article-42::article-summarizer");
+parsed.entityId();  // "article-42"
+parsed.handlerId(); // "article-summarizer"
+----
+
+=== `BatchExecutionRepository`
+
+Tracks batch executions across their lifecycle, eliminating the need for manual batch ID tracking.
+An in-memory default implementation (`InMemoryBatchExecutionRepository`) is provided out of the box.
+
+The repository tracks `BatchExecution` records with status, request count, endpoint, and timestamps.
+When using auto-configuration, the `InMemoryBatchExecutionRepository` is registered as the default bean.
+
+=== Persistence
+
+The auto-configured `InMemoryBatchExecutionRepository` works for development and single-instance deployments.
+For production scenarios (restart resilience, multi-instance), use the provided JDBC implementation or implement your own `BatchExecutionRepository`.
+
+==== JDBC Persistence
+
+Spring AI provides `JdbcBatchExecutionRepository` with multi-database support.
+Add the JDBC starter dependency:
+
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-openai-batch-repository-jdbc</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai-batch-repository-jdbc'
+}
+----
+======
+
+Configure schema initialization in `application.properties`:
+
+[source,properties]
+----
+spring.ai.openai.batch.repository.jdbc.initialize-schema=always
+----
+
+Supported databases: PostgreSQL, MySQL, MariaDB, SQL Server, H2, HSQLDB, SQLite, Oracle.
+The dialect is auto-detected from the `DataSource`.
+
+The JDBC implementation automatically takes precedence over the in-memory default when on the classpath.
+
+==== Custom Persistence
+
+You can implement your own `BatchExecutionRepository` for other data stores (MongoDB, Redis, etc.):
+
+[source,java]
+----
+@Bean
+public BatchExecutionRepository batchExecutionRepository() {
+    return new MyCustomBatchExecutionRepository();
+}
+----
+
+The `BatchRequestHandler` interface is responsible for managing its own domain data persistence (pending items, processed results).
+The `BatchExecutionRepository` only tracks OpenAI batch execution metadata.
+
+== Handler Versioning
+
+When handler code changes (e.g., response parsing logic) while batches are in-flight, the new handler code may not be compatible with responses from the old version.
+The batch system handles this by storing a version number in the OpenAI batch metadata.
+
+Configure the handler version in `OpenAiBatchOptions`:
+
+[source,java]
+----
+OpenAiBatchOptions options = OpenAiBatchOptions.builder()
+    .handlerVersion(2) // Increment when parsing logic changes
+    .build();
+----
+
+Or via properties:
+
+[source,properties]
+----
+spring.ai.openai.batch.options.handler-version=2
+----
+
+When a batch is created, the current `handlerVersion` is stored in the batch metadata.
+When responses arrive, the version is extracted from the batch metadata and passed to `onSuccess()` / `onError()` as the `batchVersion` parameter.
+Handlers can compare this to their expected version and act accordingly — for example, skipping incompatible results or applying version-specific parsing logic.
+
+[source,java]
+----
+@Override
+public void onSuccess(BatchRequestCustomId customId,
+        Map<String, Object> responseBody,
+        int batchVersion) {
+    if (batchVersion < CURRENT_VERSION) {
+        log.warn("Outdated batch version {} for {}",
+            batchVersion, customId.entityId());
+        // Re-queue for reprocessing, or apply
+        // backward-compatible parsing
+        return;
+    }
+    // Process normally
+}
+----
+
+[TIP]
+====
+Only increment the version when your handler's `onSuccess()` parsing logic changes in a backward-incompatible way.
+Changes to `generateRequestBody()` do not require a version bump since the request is generated at submission time.
+====
+
+== Scheduling Example
+
+The batch system does not include built-in scheduling.
+Here is a typical setup using Spring's `@Scheduled`:
+
+[source,java]
+----
+@Component
+public class BatchScheduler {
+
+    private final OpenAiBatchModel batchModel;
+
+    // Run every 15 minutes: collect and submit
+    @Scheduled(fixedRate = 15, timeUnit = TimeUnit.MINUTES)
+    public void submitBatches() {
+        batchModel.createBatchExecutions();
+        // Batches are automatically tracked in the
+        // BatchExecutionRepository
+    }
+
+    // Run every 5 minutes: check all pending batches
+    @Scheduled(fixedRate = 5, timeUnit = TimeUnit.MINUTES)
+    public void checkBatches() {
+        // Automatically finds and checks all
+        // non-terminal executions
+        batchModel.checkAllPendingExecutions();
+    }
+}
+----
+
+== Configuration Properties
+
+All properties are under the `spring.ai.openai.batch` prefix.
+
+[cols="3,1,3", options="header"]
+|===
+| Property | Default | Description
+
+| `spring.ai.openai.batch.enabled`
+| `false`
+| Enable OpenAI Batch API auto-configuration
+
+| `spring.ai.openai.batch.options.completion-window`
+| `24h`
+| OpenAI batch completion window
+
+| `spring.ai.openai.batch.options.max-requests-per-batch`
+| `50000`
+| Maximum requests per batch (OpenAI limit: 50,000)
+
+| `spring.ai.openai.batch.options.max-file-size-bytes`
+| `209715200`
+| Maximum JSONL file size in bytes (200 MB)
+
+| `spring.ai.openai.batch.options.token-safety-factor`
+| `1.2`
+| Multiplier applied to token estimates for safety margin
+
+| `spring.ai.openai.batch.options.minimum-tokens-to-submit`
+| `5000000`
+| Minimum available tokens before submitting a batch
+
+| `spring.ai.openai.batch.options.max-retry-attempts`
+| `2`
+| Maximum retry attempts for failed/expired requests
+
+| `spring.ai.openai.batch.options.delete-files-after-processing`
+| `true`
+| Delete input/output/error files after processing
+
+| `spring.ai.openai.batch.options.handler-version`
+| `1`
+| Version stored in batch metadata; passed to handlers when processing results
+|===
+
+Connection properties (`api-key`, `base-url`, `organization-id`, etc.) are inherited from the standard `spring.ai.openai.*` properties when using auto-configuration.
+
+== Batch Lifecycle States
+
+OpenAI batches transition through the following states:
+
+[source]
+----
+VALIDATING → IN_PROGRESS → FINALIZING → COMPLETED → RESULTS_PROCESSED
+                                      → EXPIRED
+                        → FAILED
+                        → CANCELLING  → CANCELLED
+----
+
+The `OpenAiBatchModel` handles each terminal state:
+
+* **COMPLETED** → **RESULTS_PROCESSED** — Downloads output file, dispatches successes and errors to handlers, notifies listeners, updates repository
+* **FAILED** — Downloads error file (if available), dispatches errors to handlers
+* **EXPIRED** → **RESULTS_PROCESSED** — Processes any partial output, notifies listeners
+* **CANCELLED** — Notifies listeners
+
+Non-200 responses in the output file are treated as errors and dispatched to `BatchRequestHandler.onError()` with error details extracted from the response body.
+
+== Error Handling
+
+The batch system provides multiple layers of error isolation:
+
+* **Per-handler errors** — If one handler throws during `onSuccess` or `onError`, other handlers and remaining items continue processing
+* **File processing errors** — Output/error file download failures are logged but don't crash the batch check
+* **Custom ID parsing** — Malformed custom IDs are logged and skipped
+* **Non-200 responses** — Responses with non-200 status codes in the output file have error details extracted from the response body and dispatched as errors
+
+== Sample Configuration
+
+[source,yaml]
+----
+spring:
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      batch:
+        enabled: true
+        options:
+          completion-window: 24h
+          max-requests-per-batch: 10000
+          token-safety-factor: 1.5
+          max-retry-attempts: 3
+          delete-files-after-processing: true
+          handler-version: 1
+----

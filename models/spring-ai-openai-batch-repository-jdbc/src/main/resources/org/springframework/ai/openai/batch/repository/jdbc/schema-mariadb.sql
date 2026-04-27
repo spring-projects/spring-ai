@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS SPRING_AI_BATCH_EXECUTION (
+    batch_id VARCHAR(255) NOT NULL PRIMARY KEY,
+    endpoint VARCHAR(255) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    request_count INTEGER NOT NULL,
+    input_file_id VARCHAR(255),
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL
+);
