@@ -604,6 +604,8 @@
 				<overview>
 					${maven.multiModuleProjectDirectory}/spring-ai-docs/src/main/javadoc/overview.html</overview>
 				<detectJavaApiLink>false</detectJavaApiLink>
+				<!-- Currently required to publish the spring-ai-spring-boot-testcontainers module -->
+				<failOnError>false</failOnError>
 				<doclint>none</doclint>
 			</configuration>
 			<executions>
