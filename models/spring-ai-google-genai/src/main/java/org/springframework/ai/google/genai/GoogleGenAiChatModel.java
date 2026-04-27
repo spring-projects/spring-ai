@@ -36,6 +36,7 @@ import com.google.genai.types.FunctionDeclaration;
 import com.google.genai.types.FunctionResponse;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.GenerateContentResponseUsageMetadata;
 import com.google.genai.types.GoogleSearch;
 import com.google.genai.types.Part;
 import com.google.genai.types.SafetySetting;
@@ -46,6 +47,7 @@ import com.google.genai.types.Tool;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -93,7 +95,6 @@ import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.core.retry.RetryTemplate;
-import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -166,7 +167,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	/**
 	 * The cached content service for managing cached content.
 	 */
-	private final GoogleGenAiCachedContentService cachedContentService;
+	@Nullable private final GoogleGenAiCachedContentService cachedContentService;
 
 	// GenerationConfig is now built dynamically per request
 
@@ -255,7 +256,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		}
 	}
 
-	private static GeminiMessageType toGeminiMessageType(@NonNull MessageType type) {
+	private static GeminiMessageType toGeminiMessageType(MessageType type) {
 
 		Assert.notNull(type, "Message type must not be null");
 
@@ -430,7 +431,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		return this.internalCall(requestPrompt, null);
 	}
 
-	private ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
+	private ChatResponse internalCall(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
+
+		GoogleGenAiChatOptions options = (GoogleGenAiChatOptions) prompt.getOptions();
+		Assert.notNull(options, "Options must not be null");
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
@@ -456,7 +460,6 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 						.toList();
 
 					var usage = generateContentResponse.usageMetadata();
-					GoogleGenAiChatOptions options = (GoogleGenAiChatOptions) prompt.getOptions();
 					Usage currentUsage = (usage.isPresent()) ? getDefaultUsage(usage.get(), options)
 							: getDefaultUsage(null, options);
 					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
@@ -468,7 +471,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				});
 			});
 
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(options, response)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -504,7 +507,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		return this.internalStream(requestPrompt, null);
 	}
 
-	private Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
+	private Flux<ChatResponse> internalStream(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
+		GoogleGenAiChatOptions options = (GoogleGenAiChatOptions) prompt.getOptions();
+		Assert.notNull(options, "Options must not be null");
+
 		return Flux.deferContextual(contextView -> {
 
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
@@ -533,7 +539,6 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 						.toList();
 
 					var usage = response.usageMetadata();
-					GoogleGenAiChatOptions options = (GoogleGenAiChatOptions) prompt.getOptions();
 					Usage currentUsage = usage.isPresent() ? getDefaultUsage(usage.get(), options)
 							: getDefaultUsage(null, options);
 					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
@@ -553,7 +558,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				Flux<ChatResponse> resultFlux = aggregatedFlux.concatWith(Flux.deferContextual(ctx -> {
 					ChatResponse aggregatedResponse = aggregatedResponseRef.get();
 					if (aggregatedResponse != null && this.toolExecutionEligibilityPredicate
-						.isToolExecutionRequired(prompt.getOptions(), aggregatedResponse)) {
+						.isToolExecutionRequired(options, aggregatedResponse)) {
 						// FIXME: bounded elastic needs to be used since tool calling
 						// is currently only synchronous
 						ToolExecutionResult toolExecutionResult;
@@ -708,8 +713,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		return ChatResponseMetadata.builder().usage(usage).model(modelVersion).build();
 	}
 
-	private Usage getDefaultUsage(com.google.genai.types.GenerateContentResponseUsageMetadata usageMetadata,
-			GoogleGenAiChatOptions options) {
+	private Usage getDefaultUsage(@Nullable GenerateContentResponseUsageMetadata usageMetadata,
+			@Nullable GoogleGenAiChatOptions options) {
 		// Check if extended metadata should be included (default to true if not
 		// configured)
 		boolean includeExtended = true;
@@ -725,6 +730,9 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		}
 		else {
 			// Fall back to basic usage for backward compatibility
+			if (usageMetadata == null) {
+				return new DefaultUsage(0, 0, 0);
+			}
 			return new DefaultUsage(usageMetadata.promptTokenCount().orElse(0),
 					usageMetadata.candidatesTokenCount().orElse(0), usageMetadata.totalTokenCount().orElse(0));
 		}
@@ -733,12 +741,14 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	GeminiRequest createGeminiRequest(Prompt prompt) {
 
 		GoogleGenAiChatOptions requestOptions = (GoogleGenAiChatOptions) prompt.getOptions();
+		Assert.notNull(requestOptions, "Options must not be null");
 
 		// Build GenerateContentConfig
 		GenerateContentConfig.Builder configBuilder = GenerateContentConfig.builder();
 
 		String modelName = requestOptions.getModel() != null ? requestOptions.getModel()
 				: this.defaultOptions.getModel();
+		Assert.notNull(modelName, "Model name must not be null");
 
 		// Set generation config parameters directly on configBuilder
 		if (requestOptions.getTemperature() != null) {
@@ -815,7 +825,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			tools.add(Tool.builder().functionDeclarations(functionDeclarations).build());
 		}
 
-		if (prompt.getOptions() instanceof GoogleGenAiChatOptions options && options.getGoogleSearchRetrieval()) {
+		if (prompt.getOptions() instanceof GoogleGenAiChatOptions options
+				&& Boolean.TRUE.equals(options.getGoogleSearchRetrieval())) {
 			var googleSearch = GoogleSearch.builder().build();
 			final var googleSearchRetrievalTool = Tool.builder().googleSearch(googleSearch).build();
 			tools.add(googleSearchRetrievalTool);
@@ -995,7 +1006,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	 * Gets the cached content service for managing cached content.
 	 * @return the cached content service
 	 */
-	public GoogleGenAiCachedContentService getCachedContentService() {
+	public @Nullable GoogleGenAiCachedContentService getCachedContentService() {
 		return this.cachedContentService;
 	}
 
@@ -1019,7 +1030,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 	public static final class Builder {
 
-		private Client genAiClient;
+		@Nullable private Client genAiClient;
 
 		private GoogleGenAiChatOptions defaultOptions = GoogleGenAiChatOptions.builder()
 			.temperature(0.7)
@@ -1027,7 +1038,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
 			.build();
 
-		private ToolCallingManager toolCallingManager;
+		@Nullable private ToolCallingManager toolCallingManager;
 
 		private ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate = new DefaultToolExecutionEligibilityPredicate();
 
@@ -1070,6 +1081,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		}
 
 		public GoogleGenAiChatModel build() {
+			Assert.notNull(this.genAiClient, "GenAI Client must not be null");
 			if (this.toolCallingManager != null) {
 				return new GoogleGenAiChatModel(this.genAiClient, this.defaultOptions, this.toolCallingManager,
 						this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
