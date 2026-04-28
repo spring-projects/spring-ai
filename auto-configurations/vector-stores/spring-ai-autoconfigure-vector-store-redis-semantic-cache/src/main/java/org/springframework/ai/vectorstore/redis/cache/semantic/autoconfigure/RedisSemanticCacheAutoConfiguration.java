@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.redis.cache.semantic.autoconfigure;
 
+import redis.clients.jedis.DefaultJedisClientConfig;
+import redis.clients.jedis.JedisClientConfig;
 import redis.clients.jedis.RedisClient;
 
 import org.springframework.ai.chat.cache.semantic.SemanticCache;
@@ -73,7 +75,8 @@ public class RedisSemanticCacheAutoConfiguration {
 	}
 
 	/**
-	 * Creates a RedisClient client for Redis connections.
+	 * Creates a RedisClient client for Redis connections, honoring the SSL, password,
+	 * client name, and timeout settings from the {@link JedisConnectionFactory}.
 	 * @param jedisConnectionFactory the Jedis connection factory
 	 * @return the RedisClient client
 	 */
@@ -81,9 +84,17 @@ public class RedisSemanticCacheAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(EmbeddingModel.class)
 	public RedisClient jedisClient(final JedisConnectionFactory jedisConnectionFactory) {
-		return RedisClient.builder()
-			.hostAndPort(jedisConnectionFactory.getHostName(), jedisConnectionFactory.getPort())
+		String host = jedisConnectionFactory.getHostName();
+		int port = jedisConnectionFactory.getPort();
+
+		JedisClientConfig clientConfig = DefaultJedisClientConfig.builder()
+			.ssl(jedisConnectionFactory.isUseSsl())
+			.clientName(jedisConnectionFactory.getClientName())
+			.timeoutMillis(jedisConnectionFactory.getTimeout())
+			.password(jedisConnectionFactory.getPassword())
 			.build();
+
+		return RedisClient.builder().hostAndPort(host, port).clientConfig(clientConfig).build();
 	}
 
 	/**
