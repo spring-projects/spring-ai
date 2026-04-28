@@ -20,12 +20,6 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.Objects;
 
-import com.github.victools.jsonschema.generator.Option;
-import com.github.victools.jsonschema.generator.SchemaGenerator;
-import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
-import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
-import com.github.victools.jsonschema.module.jackson.JacksonOption;
-import com.github.victools.jsonschema.module.jackson.JacksonSchemaModule;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -38,9 +32,8 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectWriter;
 import tools.jackson.databind.json.JsonMapper;
 
-import org.springframework.ai.model.KotlinModule;
 import org.springframework.ai.util.JacksonUtils;
-import org.springframework.core.KotlinDetector;
+import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.core.ParameterizedTypeReference;
 
 import static org.springframework.ai.util.LoggingMarkers.SENSITIVE_DATA_MARKER;
@@ -187,23 +180,15 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * Generates the JSON schema for the target type.
 	 */
 	private void generateSchema() {
-		JacksonSchemaModule jacksonModule = new JacksonSchemaModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
-				JacksonOption.RESPECT_JSONPROPERTY_ORDER);
-		SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(
-				com.github.victools.jsonschema.generator.SchemaVersion.DRAFT_2020_12,
-				com.github.victools.jsonschema.generator.OptionPreset.PLAIN_JSON)
-			.with(jacksonModule)
-			.with(Option.FORBIDDEN_ADDITIONAL_PROPERTIES_BY_DEFAULT);
-
-		configBuilder.forFields().withRequiredCheck(f -> true);
-
-		if (KotlinDetector.isKotlinReflectPresent()) {
-			configBuilder.with(new KotlinModule());
+		String schemaString = JsonSchemaGenerator.generateForType(this.type);
+		JsonNode jsonNode;
+		try {
+			jsonNode = this.jsonMapper.readTree(schemaString);
 		}
-
-		SchemaGeneratorConfig config = configBuilder.build();
-		SchemaGenerator generator = new SchemaGenerator(config);
-		JsonNode jsonNode = generator.generateSchema(this.type);
+		catch (JacksonException e) {
+			logger.error("Could not parse json schema for type: {}", this.type);
+			throw new RuntimeException("Could not parse json schema for " + this.type, e);
+		}
 		postProcessSchema(jsonNode);
 		ObjectWriter objectWriter = this.jsonMapper.writer()
 			.with(new DefaultPrettyPrinter()

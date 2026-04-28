@@ -26,6 +26,7 @@ import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,7 @@ import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.util.TextBlockAssertion;
 import org.springframework.core.ParameterizedTypeReference;
 
@@ -144,6 +146,14 @@ class BeanOutputConverterTest {
 			@JsonProperty(required = true, value = "bar_property") String bar,
 
 			@JsonProperty(required = true, value = "foo_property") String foo) {
+	}
+
+	record TestClassWithToolParam(@ToolParam(required = true, description = "A required field") String requiredField,
+
+			@ToolParam(required = false, description = "An optional field") String optionalField) {
+	}
+
+	record TestClassWithNullable(String requiredField, @Nullable String optionalField) {
 	}
 
 	@Nested
@@ -441,9 +451,9 @@ class BeanOutputConverterTest {
 								        "type" : "string"
 								      }
 								    },
-								    "required" : [ "someString" ],
-								    "additionalProperties" : false
-								  }
+								    "required" : [ "someString" ]
+								  },
+								  "additionalProperties" : false
 								}```
 								""");
 		}
@@ -461,7 +471,6 @@ class BeanOutputConverterTest {
 					      "description" : "string_property_description"
 					    }
 					  },
-					  "required" : [ "string_property" ],
 					  "additionalProperties" : false
 					}```
 					""");
@@ -482,12 +491,36 @@ class BeanOutputConverterTest {
 					      "description" : "string_property_description"
 					    }
 					  },
-					  "required" : [ "string_property" ],
 					  "additionalProperties" : false
 					}```
 					""");
 		}
 		// @checkstyle:on RegexpSinglelineJavaCheck
+
+		@Test
+		void formatClassTypeWithToolParamAnnotations() throws Exception {
+			var converter = new BeanOutputConverter<>(TestClassWithToolParam.class);
+			String schema = converter.getJsonSchema();
+			JsonNode schemaNode = JsonMapper.shared().readTree(schema);
+
+			assertThat(schemaNode.get("required").toString()).contains("requiredField");
+			assertThat(schemaNode.get("required").toString()).doesNotContain("optionalField");
+
+			assertThat(schemaNode.get("properties").get("requiredField").get("description").asText())
+				.isEqualTo("A required field");
+			assertThat(schemaNode.get("properties").get("optionalField").get("description").asText())
+				.isEqualTo("An optional field");
+		}
+
+		@Test
+		void formatClassTypeWithNullableAnnotation() throws Exception {
+			var converter = new BeanOutputConverter<>(TestClassWithNullable.class);
+			String schema = converter.getJsonSchema();
+			JsonNode schemaNode = JsonMapper.shared().readTree(schema);
+
+			assertThat(schemaNode.get("required").toString()).contains("requiredField");
+			assertThat(schemaNode.get("required").toString()).doesNotContain("optionalField");
+		}
 
 		@Test
 		void normalizesLineEndingsClassType() {
