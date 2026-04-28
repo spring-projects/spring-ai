@@ -74,6 +74,52 @@ Spring Boot users should prefer one of the following instead:
 
 The `spring-ai-spring-cloud-bindings` module that provided integration for https://github.com/spring-cloud/spring-cloud-bindings has been removed.
 
+=== BeanOutputConverter JSON Schema Generation
+
+`BeanOutputConverter` now delegates JSON Schema generation to `JsonSchemaGenerator`, aligning structured output conversion with the JSON Schema behavior used for tool calling.
+
+==== Impact
+
+* Kotlin properties that are optional in their primary constructor (nullable or declared with a default value) are no longer included in the JSON Schema `required` array.
+* Properties annotated with `@JsonProperty(required = false)`, including `@JsonProperty` declarations where `required` is not specified, are no longer treated as required.
+* Generated schemas now include OpenAPI-style `format` hints for primitive types (e.g., `int32` for `int`, `int64` for `long`, `date-time` for `LocalDateTime`), matching the format conventions used for tool calling.
+* The `BeanOutputConverter.postProcessSchema(JsonNode)` extension point has been removed. Custom subclasses overriding this method will fail to compile.
+
+==== Migration
+
+To customize JSON Schema generation, override `BeanOutputConverter.generateSchema()` instead. Subclasses can post-process the default schema by delegating to `super.generateSchema()`.
+
+[source,java]
+----
+// Before
+class CustomConverter extends BeanOutputConverter<MyType> {
+
+    CustomConverter() {
+        super(MyType.class);
+    }
+
+    @Override
+    protected void postProcessSchema(JsonNode schema) {
+        // mutate schema
+    }
+}
+
+// After
+class CustomConverter extends BeanOutputConverter<MyType> {
+
+    CustomConverter() {
+        super(MyType.class);
+    }
+
+    @Override
+    protected String generateSchema() {
+        String schema = super.generateSchema();
+        // post-process schema
+        return schema;
+    }
+}
+----
+
 [[upgrading-to-2-0-0-M6]]
 == Upgrading to 2.0.0-M6
 
@@ -226,20 +272,6 @@ Starting from version `2.0.0-M5`, Spring AI uses the official `openai-java` SDK 
 
 The transition should be seamless, and **no major breaking changes are expected** for existing users of the `spring-ai-openai` module.
 All properties (with the `spring.ai.openai.*` prefix), builders, and options remain fully intact. The existing `extraBody` configuration parameter transparently maps to the underlying `additionalBodyProperties` in the `openai-java` SDK.
-
-==== Removed: `spring.ai.openai.chat.completions-path`
-
-The `spring.ai.openai.chat.completions-path` property has been removed as the new `openai-java` SDK automatically appends the correct paths (like `/chat/completions`) to the base URL. If you were using a custom completions path (for example, with a local Docker Model Runner), you should update your `spring.ai.openai.chat.base-url` property to include any required API prefixes (such as `/v1`).
-
-[source,properties]
-----
-# Before M5
-spring.ai.openai.chat.base-url=http://localhost:12434/engines
-spring.ai.openai.chat.completions-path=/v1/chat/completions
-
-# After M5
-spring.ai.openai.chat.base-url=http://localhost:12434/engines/v1
-----
 
 ==== `spring-ai-azure-openai` module removal
 

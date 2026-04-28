@@ -64,7 +64,8 @@ public class ChatClientNativeStructuredResponseTests {
 				"type": "object",
 				"properties": {
 					"age": {
-						"type": "integer"
+						"type": "integer",
+						"format": "int32"
 					},
 					"name": {
 						"type": "string"
