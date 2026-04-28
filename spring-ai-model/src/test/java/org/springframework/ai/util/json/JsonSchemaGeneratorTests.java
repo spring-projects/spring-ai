@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -308,7 +309,8 @@ class JsonSchemaGeneratorTests {
 				                    "description": "The special name"
 				                }
 				            },
-				            "required": [ "id", "name" ]
+				            "required": [ "id", "name" ],
+				            "additionalProperties": false
 				        },
 				        "moreData": {
 				            "type": "object",
@@ -323,7 +325,8 @@ class JsonSchemaGeneratorTests {
 							  	}
 				            },
 				            "required": [ "id", "name" ],
-				            "description" : "Much more data"
+				            "description" : "Much more data",
+				            "additionalProperties": false
 				        }
 				    },
 				    "required": [ "items", "data", "moreData" ],
@@ -332,6 +335,20 @@ class JsonSchemaGeneratorTests {
 				""";
 
 		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForMethodWithComplexParametersAndAdditionalPropertiesAllowed() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("complexMethod", List.class, TestData.class,
+				MoreTestData.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method,
+				JsonSchemaGenerator.SchemaOption.ALLOW_ADDITIONAL_PROPERTIES_BY_DEFAULT);
+
+		JsonNode jsonNode = JsonParser.getJsonMapper().readTree(schema);
+		assertThat(jsonNode.has("additionalProperties")).isFalse();
+		assertThat(jsonNode.get("properties").get("data").has("additionalProperties")).isFalse();
+		assertThat(jsonNode.get("properties").get("moreData").has("additionalProperties")).isFalse();
 	}
 
 	@Test
@@ -641,6 +658,19 @@ class JsonSchemaGeneratorTests {
 	}
 
 	@Test
+	void generateSchemaForTypeWithMapFieldDoesNotForbidAdditionalProperties() {
+		String schema = JsonSchemaGenerator.generateForType(WithMapField.class);
+		JsonNode jsonNode = JsonParser.getJsonMapper().readTree(schema);
+		assertThat(jsonNode.get("additionalProperties").asBoolean())
+			.as("root object schema should have additionalProperties: false")
+			.isFalse();
+		JsonNode scoresNode = jsonNode.get("properties").get("scores");
+		assertThat(scoresNode.path("additionalProperties").asBoolean(true))
+			.as("Map field must not have additionalProperties set to false")
+			.isTrue();
+	}
+
+	@Test
 	void generateSchemaForEnum() {
 		String schema = JsonSchemaGenerator.generateForType(Month.class);
 		String expectedJsonSchema = """
@@ -660,8 +690,7 @@ class JsonSchemaGeneratorTests {
 				        "OCTOBER",
 				        "NOVEMBER",
 				        "DECEMBER"
-				    ],
-				    "additionalProperties": false
+				    ]
 				}
 				""";
 
@@ -772,6 +801,10 @@ class JsonSchemaGeneratorTests {
 	}
 
 	record JSpecifyNullablePerson(int id, String name, @org.jspecify.annotations.Nullable String email) {
+
+	}
+
+	record WithMapField(String name, Map<String, Integer> scores) {
 
 	}
 
