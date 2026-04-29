@@ -49,6 +49,8 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 	 */
 	private @Nullable String encodingFormat = DEFAULT_ENCODING_FORMAT;
 
+	private boolean encodingFormatSet;
+
 	/*
 	 * The number of dimensions the resulting output embeddings should have. Only
 	 * supported in `text-embedding-3` and later models.
@@ -73,6 +75,16 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 
 	public void setEncodingFormat(@Nullable String encodingFormat) {
 		this.encodingFormat = encodingFormat;
+		this.encodingFormatSet = true;
+	}
+
+	private boolean isEncodingFormatSet() {
+		return this.encodingFormatSet;
+	}
+
+	private void copyEncodingFormatFrom(OpenAiEmbeddingOptions fromOptions) {
+		this.encodingFormat = fromOptions.getEncodingFormat();
+		this.encodingFormatSet = fromOptions.isEncodingFormatSet();
 	}
 
 	@Override
@@ -140,7 +152,7 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 			this.options.setCustomHeaders(fromOptions.getCustomHeaders());
 			// Child class fields
 			this.options.setUser(fromOptions.getUser());
-			this.options.setEncodingFormat(fromOptions.getEncodingFormat());
+			this.options.copyEncodingFormatFrom(fromOptions);
 			this.options.setDimensions(fromOptions.getDimensions());
 			return this;
 		}
@@ -184,7 +196,7 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 				if (castFrom.getUser() != null) {
 					this.options.setUser(castFrom.getUser());
 				}
-				if (castFrom.getEncodingFormat() != null) {
+				if (castFrom.isEncodingFormatSet() && castFrom.getEncodingFormat() != null) {
 					this.options.setEncodingFormat(castFrom.getEncodingFormat());
 				}
 				if (castFrom.getDimensions() != null) {

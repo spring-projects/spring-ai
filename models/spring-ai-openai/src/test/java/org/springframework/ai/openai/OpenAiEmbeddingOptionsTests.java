@@ -61,4 +61,22 @@ class OpenAiEmbeddingOptionsTests {
 		assertThat(merged.getEncodingFormat()).isEqualTo("base64");
 	}
 
+	@Test
+	void unspecifiedEncodingFormatDoesNotOverrideDefaultOptionsWhenMerged() {
+		OpenAiEmbeddingOptions defaultOptions = OpenAiEmbeddingOptions.builder()
+			.model("test-model")
+			.encodingFormat("base64")
+			.build();
+		OpenAiEmbeddingOptions runtimeOptions = OpenAiEmbeddingOptions.builder().model("other-model").build();
+
+		OpenAiEmbeddingOptions merged = OpenAiEmbeddingOptions.builder()
+			.from(defaultOptions)
+			.merge(runtimeOptions)
+			.build();
+		EmbeddingCreateParams createParams = merged.toOpenAiCreateParams(List.of("test input"));
+
+		assertThat(merged.getEncodingFormat()).isEqualTo("base64");
+		assertThat(createParams.encodingFormat()).contains(EmbeddingCreateParams.EncodingFormat.BASE64);
+	}
+
 }
