@@ -28,6 +28,7 @@ import com.google.genai.types.ContentEmbeddingStatistics;
 import com.google.genai.types.EmbedContentConfig;
 import com.google.genai.types.EmbedContentResponse;
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
@@ -137,8 +138,9 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 				GoogleGenAiTextEmbeddingOptions options = (GoogleGenAiTextEmbeddingOptions) embeddingRequest
 					.getOptions();
 				Assert.notNull(options, "Options must not be null");
-				Assert.notNull(options.getModel(), "Model must not be null");
-				String modelName = this.connectionDetails.getModelEndpointName(options.getModel());
+				String model = options.getModel();
+				Assert.notNull(model, "Model must not be null");
+				String modelName = this.connectionDetails.getModelEndpointName(model);
 
 				// Build the EmbedContentConfig
 				EmbedContentConfig.Builder configBuilder = EmbedContentConfig.builder();
@@ -219,7 +221,7 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 				}
 
 				EmbeddingResponse response = new EmbeddingResponse(embeddingList,
-						generateResponseMetadata(options.getModel(), totalTokenCount));
+						generateResponseMetadata(model, totalTokenCount));
 
 				observationContext.setResponse(response);
 
@@ -228,7 +230,7 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
-		EmbeddingOptions requestOptions = embeddingRequest.getOptions();
+		@Nullable EmbeddingOptions requestOptions = embeddingRequest.getOptions();
 		GoogleGenAiTextEmbeddingOptions mergedOptions = this.defaultOptions;
 
 		if (requestOptions != null) {
@@ -282,7 +284,7 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 	 * Use the provided convention for reporting observation data
 	 * @param observationConvention The provided convention
 	 */
-	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
+	public void setObservationConvention(@Nullable EmbeddingModelObservationConvention observationConvention) {
 		Assert.notNull(observationConvention, "observationConvention cannot be null");
 		this.observationConvention = observationConvention;
 	}
