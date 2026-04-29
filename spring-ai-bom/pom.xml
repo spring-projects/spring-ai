@@ -199,12 +199,6 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-model-chat-memory</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-model-chat-memory-repository-cassandra</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -1087,12 +1081,6 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-starter-mcp-server-common</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
