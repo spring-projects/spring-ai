@@ -36,11 +36,18 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 
 	public static final String DEFAULT_EMBEDDING_MODEL = EmbeddingModel.TEXT_EMBEDDING_ADA_002.asString();
 
+	public static final String DEFAULT_ENCODING_FORMAT = EmbeddingCreateParams.EncodingFormat.FLOAT.asString();
+
 	/**
 	 * An identifier for the caller or end user of the operation. This may be used for
 	 * tracking or rate-limiting purposes.
 	 */
 	private @Nullable String user;
+
+	/**
+	 * The format to return the embeddings in. Can be either float or base64.
+	 */
+	private @Nullable String encodingFormat = DEFAULT_ENCODING_FORMAT;
 
 	/*
 	 * The number of dimensions the resulting output embeddings should have. Only
@@ -60,6 +67,14 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 		this.user = user;
 	}
 
+	public @Nullable String getEncodingFormat() {
+		return this.encodingFormat;
+	}
+
+	public void setEncodingFormat(@Nullable String encodingFormat) {
+		this.encodingFormat = encodingFormat;
+	}
+
 	@Override
 	public @Nullable Integer getDimensions() {
 		return this.dimensions;
@@ -72,7 +87,8 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 	@Override
 	public String toString() {
 		return "OpenAiEmbeddingOptions{" + "user='" + this.user + '\'' + ", model='" + this.getModel() + '\''
-				+ ", deploymentName='" + this.getDeploymentName() + '\'' + ", dimensions=" + this.dimensions + '}';
+				+ ", deploymentName='" + this.getDeploymentName() + '\'' + ", encodingFormat='" + this.encodingFormat
+				+ '\'' + ", dimensions=" + this.dimensions + '}';
 	}
 
 	public EmbeddingCreateParams toOpenAiCreateParams(List<String> instructions) {
@@ -93,6 +109,9 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 		}
 		if (this.getUser() != null) {
 			builder.user(this.getUser());
+		}
+		if (this.getEncodingFormat() != null) {
+			builder.encodingFormat(EmbeddingCreateParams.EncodingFormat.of(this.getEncodingFormat()));
 		}
 		if (this.getDimensions() != null) {
 			builder.dimensions(this.getDimensions());
@@ -121,6 +140,7 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 			this.options.setCustomHeaders(fromOptions.getCustomHeaders());
 			// Child class fields
 			this.options.setUser(fromOptions.getUser());
+			this.options.setEncodingFormat(fromOptions.getEncodingFormat());
 			this.options.setDimensions(fromOptions.getDimensions());
 			return this;
 		}
@@ -164,6 +184,9 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 				if (castFrom.getUser() != null) {
 					this.options.setUser(castFrom.getUser());
 				}
+				if (castFrom.getEncodingFormat() != null) {
+					this.options.setEncodingFormat(castFrom.getEncodingFormat());
+				}
 				if (castFrom.getDimensions() != null) {
 					this.options.setDimensions(castFrom.getDimensions());
 				}
@@ -176,6 +199,9 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 			if (openAiCreateParams.user().isPresent()) {
 				this.options.setUser(openAiCreateParams.user().get());
 			}
+			if (openAiCreateParams.encodingFormat().isPresent()) {
+				this.options.setEncodingFormat(openAiCreateParams.encodingFormat().get().asString());
+			}
 			if (openAiCreateParams.dimensions().isPresent()) {
 				this.options.setDimensions(Math.toIntExact(openAiCreateParams.dimensions().get()));
 			}
@@ -184,6 +210,11 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 
 		public Builder user(String user) {
 			this.options.setUser(user);
+			return this;
+		}
+
+		public Builder encodingFormat(String encodingFormat) {
+			this.options.setEncodingFormat(encodingFormat);
 			return this;
 		}
 
