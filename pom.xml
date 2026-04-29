@@ -153,28 +153,28 @@
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-bedrock-knowledgebase</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-s3</module>
 
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-aws-opensearch</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-azure</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-azure-cosmos-db</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-cassandra</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-chroma</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-couchbase</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-elasticsearch</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-gemfire</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-mariadb</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-milvus</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-mongodb-atlas</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-neo4j</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-opensearch</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-oracle</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-pgvector</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-pinecone</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-qdrant</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-redis</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-typesense</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-weaviate</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-bedrock-knowledgebase</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-s3</module>
+		<module>starters/spring-ai-starter-vector-store-aws-opensearch</module>
+		<module>starters/spring-ai-starter-vector-store-azure</module>
+		<module>starters/spring-ai-starter-vector-store-azure-cosmos-db</module>
+		<module>starters/spring-ai-starter-vector-store-cassandra</module>
+		<module>starters/spring-ai-starter-vector-store-chroma</module>
+		<module>starters/spring-ai-starter-vector-store-couchbase</module>
+		<module>starters/spring-ai-starter-vector-store-elasticsearch</module>
+		<module>starters/spring-ai-starter-vector-store-gemfire</module>
+		<module>starters/spring-ai-starter-vector-store-mariadb</module>
+		<module>starters/spring-ai-starter-vector-store-milvus</module>
+		<module>starters/spring-ai-starter-vector-store-mongodb-atlas</module>
+		<module>starters/spring-ai-starter-vector-store-neo4j</module>
+		<module>starters/spring-ai-starter-vector-store-opensearch</module>
+		<module>starters/spring-ai-starter-vector-store-oracle</module>
+		<module>starters/spring-ai-starter-vector-store-pgvector</module>
+		<module>starters/spring-ai-starter-vector-store-pinecone</module>
+		<module>starters/spring-ai-starter-vector-store-qdrant</module>
+		<module>starters/spring-ai-starter-vector-store-redis</module>
+		<module>starters/spring-ai-starter-vector-store-typesense</module>
+		<module>starters/spring-ai-starter-vector-store-weaviate</module>
+		<module>starters/spring-ai-starter-vector-store-bedrock-knowledgebase</module>
+		<module>starters/spring-ai-starter-vector-store-s3</module>
 
 		<module>models/spring-ai-anthropic</module>
 		<module>models/spring-ai-bedrock</module>
@@ -192,35 +192,35 @@
 		<module>models/spring-ai-google-genai-embedding</module>
 		<module>models/spring-ai-deepseek</module>
 
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-anthropic</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock-converse</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-google-genai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-google-genai-embedding</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-elevenlabs</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-minimax</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-mistral-ai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-ollama</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-openai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-postgresml-embedding</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-stability-ai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-transformers</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-embedding</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-deepseek</module>
+		<module>starters/spring-ai-starter-model-anthropic</module>
+		<module>starters/spring-ai-starter-model-bedrock</module>
+		<module>starters/spring-ai-starter-model-bedrock-converse</module>
+		<module>starters/spring-ai-starter-model-google-genai</module>
+		<module>starters/spring-ai-starter-model-google-genai-embedding</module>
+		<module>starters/spring-ai-starter-model-elevenlabs</module>
+		<module>starters/spring-ai-starter-model-minimax</module>
+		<module>starters/spring-ai-starter-model-mistral-ai</module>
+		<module>starters/spring-ai-starter-model-ollama</module>
+		<module>starters/spring-ai-starter-model-openai</module>
+		<module>starters/spring-ai-starter-model-postgresml-embedding</module>
+		<module>starters/spring-ai-starter-model-stability-ai</module>
+		<module>starters/spring-ai-starter-model-transformers</module>
+		<module>starters/spring-ai-starter-model-vertex-ai-embedding</module>
+		<module>starters/spring-ai-starter-model-deepseek</module>
 
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-cassandra</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-cosmos-db</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-jdbc</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-mongodb</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-neo4j</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-redis</module>
+		<module>starters/spring-ai-starter-model-chat-memory</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-cassandra</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-cosmos-db</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-jdbc</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-mongodb</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-neo4j</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-redis</module>
 
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client-webflux</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webflux</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webmvc</module>
+		<module>starters/spring-ai-starter-mcp-client</module>
+		<module>starters/spring-ai-starter-mcp-server</module>
+		<module>starters/spring-ai-starter-mcp-client-webflux</module>
+		<module>starters/spring-ai-starter-mcp-server-webflux</module>
+		<module>starters/spring-ai-starter-mcp-server-webmvc</module>
 
 		<module>spring-ai-integration-tests</module>
 
