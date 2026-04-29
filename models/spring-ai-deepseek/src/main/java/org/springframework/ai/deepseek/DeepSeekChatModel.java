@@ -16,9 +16,11 @@
 
 package org.springframework.ai.deepseek;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -244,6 +246,19 @@ public class DeepSeekChatModel implements ChatModel {
 			// The rest of the chunks with same ID share the same role.
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 
+			// Cross-chunk accumulators for the streaming + tool-calling path.
+			// DeepSeekApi#chatCompletionStream emits each pre-tool-call chunk
+			// (reasoning_content delta, content delta) as its own one-element
+			// window for streaming UX, and only merges chunks within the
+			// tool-call window. As a result the chunk that triggers
+			// executeToolCalls only carries the tool_calls payload — its
+			// content/reasoning_content are null. Without this side-channel,
+			// the assistant message replayed to the API in the next round
+			// would have empty content and missing reasoning_content, which
+			// deepseek-reasoner rejects when thinking is enabled (gh-5898).
+			AtomicReference<String> accumulatedContent = new AtomicReference<>("");
+			AtomicReference<String> accumulatedReasoningContent = new AtomicReference<>("");
+
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(DeepSeekConstants.PROVIDER_NAME)
@@ -272,7 +287,19 @@ public class DeepSeekChatModel implements ChatModel {
 										"finishReason", choice.finishReason() != null ? choice.finishReason().name() : ""
 								);
   				// @formatter:on
-							return buildGeneration(choice, metadata);
+							Generation generation = buildGeneration(choice, metadata);
+							// Side-channel: accumulate content/reasoning_content across
+							// chunks so we can rebuild the full assistant message when
+							// a tool call is requested mid-stream.
+							String chunkContent = choice.message().content();
+							if (chunkContent != null && !chunkContent.isEmpty()) {
+								accumulatedContent.updateAndGet(prev -> prev + chunkContent);
+							}
+							String chunkReasoning = choice.message().reasoningContent();
+							if (chunkReasoning != null && !chunkReasoning.isEmpty()) {
+								accumulatedReasoningContent.updateAndGet(prev -> prev + chunkReasoning);
+							}
+							return generation;
 						}).toList();
 						DeepSeekApi.Usage usage = chatCompletion2.usage();
 						Usage currentUsage = (usage != null) ? getDefaultUsage(usage) : new EmptyUsage();
@@ -292,27 +319,33 @@ public class DeepSeekChatModel implements ChatModel {
 				ChatOptions options = prompt.getOptions();
 				Assert.state(options != null, "options must not be null");
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(options, response)) {
+					// Snapshot the cross-chunk accumulators and merge them into the
+					// assistant message so that ToolCallingManager#executeToolCalls
+					// puts a complete assistant message (content + reasoning_content +
+					// tool_calls) into the next round's conversation history.
+					ChatResponse responseForToolCall = enrichResponseWithAccumulatedFields(response,
+							accumulatedContent.get(), accumulatedReasoningContent.get());
 					// FIXME: bounded elastic needs to be used since tool calling
 					//  is currently only synchronous
 					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult toolExecutionResult;
 						try {
 							ToolCallReactiveContextHolder.setContext(ctx);
-							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, responseForToolCall);
 						}
 						finally {
 							ToolCallReactiveContextHolder.clearContext();
 						}
 						if (toolExecutionResult.returnDirect()) {
 							// Return tool execution result directly to the client.
-							return Flux.just(ChatResponse.builder().from(response)
+							return Flux.just(ChatResponse.builder().from(responseForToolCall)
 									.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
 									.build());
 						}
 						else {
 							// Send the tool execution result back to the model.
 							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-									response);
+									responseForToolCall);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
 				}
@@ -328,6 +361,39 @@ public class DeepSeekChatModel implements ChatModel {
 			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
 
 		});
+	}
+
+	/**
+	 * Replace each {@link Generation}'s assistant message in {@code response} with a
+	 * {@link DeepSeekAssistantMessage} that includes the accumulated content and
+	 * {@code reasoning_content} from earlier stream chunks. Used right before
+	 * {@code executeToolCalls} so the message replayed to the API in the next round
+	 * carries the full pre-tool-call context. Package-private for testing.
+	 */
+	ChatResponse enrichResponseWithAccumulatedFields(ChatResponse response, String accumulatedContent,
+			String accumulatedReasoningContent) {
+		if (accumulatedContent.isEmpty() && accumulatedReasoningContent.isEmpty()) {
+			return response;
+		}
+		List<Generation> enrichedGenerations = new ArrayList<>(response.getResults().size());
+		for (Generation generation : response.getResults()) {
+			AssistantMessage existing = generation.getOutput();
+			String mergedContent = accumulatedContent;
+			if (existing.getText() != null && !existing.getText().isEmpty()) {
+				mergedContent = accumulatedContent + existing.getText();
+			}
+			String mergedReasoning = accumulatedReasoningContent.isEmpty() ? null : accumulatedReasoningContent;
+			Boolean prefix = (existing instanceof DeepSeekAssistantMessage dsm) ? dsm.getPrefix() : null;
+			DeepSeekAssistantMessage enriched = new DeepSeekAssistantMessage.Builder().content(mergedContent)
+				.reasoningContent(mergedReasoning)
+				.prefix(prefix)
+				.properties(existing.getMetadata())
+				.toolCalls(existing.getToolCalls())
+				.media(existing.getMedia())
+				.build();
+			enrichedGenerations.add(new Generation(enriched, generation.getMetadata()));
+		}
+		return ChatResponse.builder().from(response).generations(enrichedGenerations).build();
 	}
 
 	private Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
@@ -423,15 +489,21 @@ public class DeepSeekChatModel implements ChatModel {
 						return new ToolCall(toolCall.id(), toolCall.type(), function);
 					}).toList();
 				}
+				// Read deepseek-specific fields from metadata so they survive
+				// Prompt#mutate(), which rebuilds assistant messages as plain
+				// AssistantMessage and would otherwise drop subclass fields.
+				Map<String, Object> metadata = assistantMessage.getMetadata();
 				Boolean isPrefixAssistantMessage = null;
-				if (message instanceof DeepSeekAssistantMessage
-						&& Boolean.TRUE.equals(((DeepSeekAssistantMessage) message).getPrefix())) {
+				Object prefixMetadata = metadata.get(DeepSeekAssistantMessage.PREFIX_METADATA_KEY);
+				if (Boolean.TRUE.equals(prefixMetadata)) {
 					isPrefixAssistantMessage = true;
 				}
+				Object reasoningMetadata = metadata.get(DeepSeekAssistantMessage.REASONING_CONTENT_METADATA_KEY);
+				String reasoningContent = (reasoningMetadata instanceof String s) ? s : null;
 				String text = assistantMessage.getText();
 				Assert.state(text != null, "text must not be null");
 				return List.of(new ChatCompletionMessage(text, ChatCompletionMessage.Role.ASSISTANT, null, null,
-						toolCalls, isPrefixAssistantMessage, null));
+						toolCalls, isPrefixAssistantMessage, reasoningContent));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;

@@ -208,6 +208,76 @@ class DeepSeekStreamFunctionCallingHelperTest {
 	}
 
 	@Test
+	void mergeShouldAccumulateReasoningContentAcrossChunks() {
+		// Given: streamed deltas where reasoning_content is split across chunks and a
+		// tool call arrives only at the end (the failure mode reported in #5898).
+		ChatCompletionMessage previousMsg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, null, null,
+				"Let me think ");
+		ChatCompletionMessage currentMsg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, null, null,
+				"about this.");
+
+		ChatCompletionChunk previous = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, previousMsg, null)), 123L, "model", null, null,
+				null, null);
+
+		ChatCompletionChunk current = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, currentMsg, null)), 123L, "model", null, null,
+				null, null);
+
+		// When
+		ChatCompletionChunk result = this.helper.merge(previous, current);
+
+		// Then
+		assertThat(result.choices().get(0).delta().reasoningContent()).isEqualTo("Let me think about this.");
+	}
+
+	@Test
+	void mergeShouldHandleNullCurrentReasoningContent() {
+		// Given
+		ChatCompletionMessage previousMsg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, null, null,
+				"partial reasoning");
+		ChatCompletionMessage currentMsg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, null, null,
+				null);
+
+		ChatCompletionChunk previous = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, previousMsg, null)), 123L, "model", null, null,
+				null, null);
+
+		ChatCompletionChunk current = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, currentMsg, null)), 123L, "model", null, null,
+				null, null);
+
+		// When
+		ChatCompletionChunk result = this.helper.merge(previous, current);
+
+		// Then
+		assertThat(result.choices().get(0).delta().reasoningContent()).isEqualTo("partial reasoning");
+	}
+
+	@Test
+	void mergeShouldPreservePrefixFromPreviousWhenCurrentIsNull() {
+		// Given
+		ChatCompletionMessage previousMsg = new ChatCompletionMessage("hello", Role.ASSISTANT, null, null, null, true,
+				null);
+		ChatCompletionMessage currentMsg = new ChatCompletionMessage(" world", Role.ASSISTANT, null, null, null, null,
+				null);
+
+		ChatCompletionChunk previous = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, previousMsg, null)), 123L, "model", null, null,
+				null, null);
+
+		ChatCompletionChunk current = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, currentMsg, null)), 123L, "model", null, null,
+				null, null);
+
+		// When
+		ChatCompletionChunk result = this.helper.merge(previous, current);
+
+		// Then
+		assertThat(result.choices().get(0).delta().prefix()).isTrue();
+	}
+
+	@Test
 	void mergeWhenCurrentToolCallsIsEmptyListShouldNotThrowException() {
 		// Given
 		ToolCall toolCall = new ToolCall("call_1", "function", new ChatCompletionFunction("func1", "{}"));

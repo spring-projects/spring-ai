@@ -32,6 +32,20 @@ import org.springframework.ai.content.Media;
  */
 public class DeepSeekAssistantMessage extends AssistantMessage {
 
+	/**
+	 * Metadata key under which {@link #reasoningContent} is mirrored. Mirroring is
+	 * required because {@code Prompt#mutate()} rebuilds assistant messages as plain
+	 * {@link AssistantMessage} (preserving only metadata), so any subclass-only field
+	 * would otherwise be lost on the next request.
+	 */
+	public static final String REASONING_CONTENT_METADATA_KEY = "reasoning_content";
+
+	/**
+	 * Metadata key under which {@link #prefix} is mirrored. See
+	 * {@link #REASONING_CONTENT_METADATA_KEY} for the rationale.
+	 */
+	public static final String PREFIX_METADATA_KEY = "prefix";
+
 	private @Nullable Boolean prefix;
 
 	private @Nullable String reasoningContent;
@@ -41,6 +55,12 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 		super(content, properties, toolCalls, media);
 		this.reasoningContent = reasoningContent;
 		this.prefix = prefix;
+		if (reasoningContent != null) {
+			getMetadata().put(REASONING_CONTENT_METADATA_KEY, reasoningContent);
+		}
+		if (prefix != null) {
+			getMetadata().put(PREFIX_METADATA_KEY, prefix);
+		}
 	}
 
 	public static DeepSeekAssistantMessage prefixAssistantMessage(@Nullable String content) {
@@ -58,6 +78,12 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 
 	public void setPrefix(Boolean prefix) {
 		this.prefix = prefix;
+		if (prefix != null) {
+			getMetadata().put(PREFIX_METADATA_KEY, prefix);
+		}
+		else {
+			getMetadata().remove(PREFIX_METADATA_KEY);
+		}
 	}
 
 	public @Nullable String getReasoningContent() {
@@ -66,6 +92,12 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 
 	public void setReasoningContent(@Nullable String reasoningContent) {
 		this.reasoningContent = reasoningContent;
+		if (reasoningContent != null) {
+			getMetadata().put(REASONING_CONTENT_METADATA_KEY, reasoningContent);
+		}
+		else {
+			getMetadata().remove(REASONING_CONTENT_METADATA_KEY);
+		}
 	}
 
 	@Override
