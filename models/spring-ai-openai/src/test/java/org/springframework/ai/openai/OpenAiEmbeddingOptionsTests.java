@@ -26,13 +26,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class OpenAiEmbeddingOptionsTests {
 
 	@Test
-	void defaultEncodingFormatIsFloat() {
+	void defaultEncodingFormatIsNull() {
 		OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder().model("test-model").build();
 
 		EmbeddingCreateParams createParams = options.toOpenAiCreateParams(List.of("test input"));
 
-		assertThat(options.getEncodingFormat()).isEqualTo(OpenAiEmbeddingOptions.DEFAULT_ENCODING_FORMAT);
-		assertThat(createParams.encodingFormat()).contains(EmbeddingCreateParams.EncodingFormat.FLOAT);
+		assertThat(options.getEncodingFormat()).isNull();
+		assertThat(createParams.encodingFormat()).contains(EmbeddingCreateParams.EncodingFormat.BASE64);
 	}
 
 	@Test

@@ -31,12 +31,11 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  * @author Julien Dubois
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements EmbeddingOptions {
 
 	public static final String DEFAULT_EMBEDDING_MODEL = EmbeddingModel.TEXT_EMBEDDING_ADA_002.asString();
-
-	public static final String DEFAULT_ENCODING_FORMAT = EmbeddingCreateParams.EncodingFormat.FLOAT.asString();
 
 	/**
 	 * An identifier for the caller or end user of the operation. This may be used for
@@ -47,7 +46,7 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 	/**
 	 * The format to return the embeddings in. Can be either float or base64.
 	 */
-	private @Nullable String encodingFormat = DEFAULT_ENCODING_FORMAT;
+	private @Nullable String encodingFormat;
 
 	/*
 	 * The number of dimensions the resulting output embeddings should have. Only
