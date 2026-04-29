@@ -16,9 +16,12 @@
 
 package org.springframework.ai.anthropic;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
@@ -26,6 +29,7 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIOException;
 
 /**
  * Unit tests for {@link AnthropicSkillsResponseHelper}.
@@ -229,6 +233,76 @@ class AnthropicSkillsResponseHelperTests {
 		// Should only extract the valid file ID
 		assertThat(fileIds).hasSize(1);
 		assertThat(fileIds).containsExactly("file_valid");
+	}
+
+	// Filename validation tests for resolveSafeChildPath. Filenames flow from
+	// model-influenced API metadata into Path resolution, so these guard against
+	// path traversal and malformed names.
+
+	@Test
+	void resolveSafeChildPathAcceptsSimpleName(@TempDir Path tmp) throws IOException {
+		Path resolved = AnthropicSkillsResponseHelper.resolveSafeChildPath(tmp, "report.csv", "file-1");
+		assertThat(resolved).isEqualTo(tmp.toAbsolutePath().normalize().resolve("report.csv"));
+	}
+
+	@Test
+	void resolveSafeChildPathRejectsNull(@TempDir Path tmp) {
+		assertThatIOException()
+			.isThrownBy(() -> AnthropicSkillsResponseHelper.resolveSafeChildPath(tmp, null, "file-1"))
+			.withMessageContaining("null or blank");
+	}
+
+	@Test
+	void resolveSafeChildPathRejectsBlank(@TempDir Path tmp) {
+		assertThatIOException()
+			.isThrownBy(() -> AnthropicSkillsResponseHelper.resolveSafeChildPath(tmp, "   ", "file-1"))
+			.withMessageContaining("null or blank");
+	}
+
+	@Test
+	void resolveSafeChildPathRejectsAbsolutePath(@TempDir Path tmp) {
+		// Build an absolute path from the filesystem root so the assertion is portable
+		// across POSIX and Windows runners.
+		String abs = Path.of(tmp.getRoot().toString(), "etc", "foobar").toString();
+		assertThatIOException().isThrownBy(() -> AnthropicSkillsResponseHelper.resolveSafeChildPath(tmp, abs, "file-1"))
+			.withMessageContaining("absolute");
+	}
+
+	@Test
+	void resolveSafeChildPathRejectsParentTraversal(@TempDir Path tmp) {
+		// "../foobar" parses as a two-segment path, so it's caught by the single-segment
+		// rule.
+		assertThatIOException()
+			.isThrownBy(() -> AnthropicSkillsResponseHelper.resolveSafeChildPath(tmp, "../foobar", "file-1"))
+			.withMessageContaining("single path segment");
+	}
+
+	@Test
+	void resolveSafeChildPathRejectsSubdirectorySegments(@TempDir Path tmp) {
+		assertThatIOException()
+			.isThrownBy(() -> AnthropicSkillsResponseHelper.resolveSafeChildPath(tmp, "sub/file.txt", "file-1"))
+			.withMessageContaining("single path segment");
+	}
+
+	@Test
+	void resolveSafeChildPathRejectsDotSegment(@TempDir Path tmp) {
+		assertThatIOException()
+			.isThrownBy(() -> AnthropicSkillsResponseHelper.resolveSafeChildPath(tmp, ".", "file-1"));
+	}
+
+	@Test
+	void resolveSafeChildPathRejectsDoubleDotSegment(@TempDir Path tmp) {
+		assertThatIOException()
+			.isThrownBy(() -> AnthropicSkillsResponseHelper.resolveSafeChildPath(tmp, "..", "file-1"));
+	}
+
+	@Test
+	void resolveSafeChildPathRejectsNulByte(@TempDir Path tmp) {
+		// Path.of throws InvalidPathException on NUL bytes; the helper must wrap it as
+		// IOException so it doesn't leak past the declared throws of downloadAllFiles.
+		assertThatIOException()
+			.isThrownBy(() -> AnthropicSkillsResponseHelper.resolveSafeChildPath(tmp, "bad\u0000name", "file-1"))
+			.withMessageContaining("Invalid filename");
 	}
 
 }

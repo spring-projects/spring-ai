@@ -18,6 +18,7 @@ package org.springframework.ai.anthropic;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +29,7 @@ import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
 import org.springframework.ai.anthropic.api.AnthropicApi.FileMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -96,7 +98,10 @@ public final class AnthropicSkillsResponseHelper {
 
 	/**
 	 * Download all files from a Skills response to a target directory.
-	 *
+	 * <p>
+	 * Filenames returned by the API are validated before use: null/blank names, absolute
+	 * paths, multi-segment paths, and {@code .}/{@code ..} segments are rejected. An
+	 * invalid name aborts the batch; any files already written remain on disk.
 	 * <p>
 	 * <b>Note:</b> Existing files with the same name will be overwritten. Check for file
 	 * existence before calling if overwrite protection is needed.
@@ -104,7 +109,7 @@ public final class AnthropicSkillsResponseHelper {
 	 * @param api The Anthropic API client to use for downloading
 	 * @param targetDir Directory to save files (must exist)
 	 * @return List of paths to saved files
-	 * @throws IOException if file download or saving fails
+	 * @throws IOException if file download, saving, or filename validation fails
 	 */
 	public static List<Path> downloadAllFiles(ChatResponse response, AnthropicApi api, Path targetDir)
 			throws IOException {
@@ -124,12 +129,53 @@ public final class AnthropicSkillsResponseHelper {
 			byte[] content = api.downloadFile(fileId);
 
 			// Save to target directory
-			Path filePath = targetDir.resolve(metadata.filename());
+			Path filePath = resolveSafeChildPath(targetDir, metadata.filename(), fileId);
 			Files.write(filePath, content);
 			savedPaths.add(filePath);
 		}
 
 		return savedPaths;
+	}
+
+	/**
+	 * Validate an API-provided filename and resolve it to a child of {@code targetDir}.
+	 * Rejects null/blank names, absolute paths, names containing path separators or
+	 * {@code .}/{@code ..} segments, and names that resolve outside {@code targetDir}.
+	 * Filenames come from model-influenced API metadata and must not be trusted as safe
+	 * path components.
+	 */
+	static Path resolveSafeChildPath(Path targetDir, @Nullable String rawName, String fileId) throws IOException {
+		if (rawName == null || rawName.isBlank()) {
+			throw new IOException("Invalid filename for file '" + fileId + "': null or blank");
+		}
+		Path name;
+		try {
+			name = Path.of(rawName);
+		}
+		catch (InvalidPathException ex) {
+			throw new IOException("Invalid filename for file '" + fileId + "': " + rawName, ex);
+		}
+		if (name.isAbsolute() || name.getRoot() != null) {
+			throw new IOException("Invalid filename for file '" + fileId + "': absolute path '" + rawName + "'");
+		}
+		if (name.getNameCount() != 1) {
+			throw new IOException(
+					"Invalid filename for file '" + fileId + "': must be a single path segment '" + rawName + "'");
+		}
+		String only = name.getName(0).toString();
+		if (only.equals(".") || only.equals("..")) {
+			throw new IOException("Invalid filename for file '" + fileId + "': '" + rawName + "'");
+		}
+
+		// One extra hardening check to make sure nothing fell through the cracks above
+		// (future tweaks to the rules, odd platform path quirks, etc.).
+		Path base = targetDir.toAbsolutePath().normalize();
+		Path resolved = base.resolve(only).normalize();
+		if (!resolved.startsWith(base)) {
+			throw new IOException(
+					"Invalid filename for file '" + fileId + "': resolves outside target directory '" + rawName + "'");
+		}
+		return resolved;
 	}
 
 	/**
