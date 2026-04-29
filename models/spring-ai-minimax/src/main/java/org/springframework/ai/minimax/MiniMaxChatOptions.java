@@ -52,66 +52,67 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	/**
 	 * ID of the model to use.
 	 */
+	@SuppressWarnings("NullAway.Init")
 	private String model;
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
 	 * frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
 	 */
-	private Double frequencyPenalty;
+	private @Nullable Double frequencyPenalty;
 	/**
 	 * The maximum number of tokens to generate in the chat completion. The total length of input
 	 * tokens and generated tokens is limited by the model's context length.
 	 */
-	private Integer maxTokens;
+	private @Nullable Integer maxTokens;
 	/**
 	 * How many chat completion choices to generate for each input message. Note that you will be charged based
 	 * on the number of generated tokens across all of the choices. Keep n as 1 to minimize costs.
 	 */
-	private Integer n;
+	private @Nullable Integer n;
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
 	 * appear in the text so far, increasing the model's likelihood to talk about new topics.
 	 */
-	private Double presencePenalty;
+	private @Nullable Double presencePenalty;
 	/**
 	 * An object specifying the format that the model must output. Setting to { "type":
 	 * "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 	 */
-	private MiniMaxApi.ChatCompletionRequest.ResponseFormat responseFormat;
+	private MiniMaxApi.ChatCompletionRequest.@Nullable ResponseFormat responseFormat;
 	/**
 	 * This feature is in Beta. If specified, our system will make a best effort to sample
 	 * deterministically, such that repeated requests with the same seed and parameters should return the same result.
 	 * Determinism is not guaranteed, and you should refer to the system_fingerprint response parameter to monitor
 	 * changes in the backend.
 	 */
-	private Integer seed;
+	private @Nullable Integer seed;
 	/**
 	 * Up to 4 sequences where the API will stop generating further tokens.
 	 */
-	private List<String> stop;
+	private @Nullable List<String> stop;
 	/**
 	 * What sampling temperature to use, between 0 and 1. Higher values like 0.8 will make the output
 	 * more random, while lower values like 0.2 will make it more focused and deterministic. We generally recommend
 	 * altering this or top_p but not both.
 	 */
-	private Double temperature;
+	private @Nullable Double temperature;
 	/**
 	 * An alternative to sampling with temperature, called nucleus sampling, where the model considers the
 	 * results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10%
 	 * probability mass are considered. We generally recommend altering this or temperature but not both.
 	 */
-	private Double topP;
+	private @Nullable Double topP;
 	/**
 	 * Mask the text information in the output that is easy to involve privacy issues,
 	 * including but not limited to email, domain name, link, ID number, home address, etc.
 	 * The default is true, which means enabling masking.
 	 */
-	private Boolean maskSensitiveInfo;
+	private @Nullable Boolean maskSensitiveInfo;
 	/**
 	 * A list of tools the model may call. Currently, only functions are supported as a tool. Use this to
 	 * provide a list of functions the model may generate JSON inputs for.
 	 */
-	private List<MiniMaxApi.FunctionTool> tools;
+	private @Nullable List<MiniMaxApi.FunctionTool> tools;
 	/**
 	 * Controls which (if any) function is called by the model. none means the model will not call a
 	 * function and instead generates a message. auto means the model can pick between generating a message or calling a
@@ -119,7 +120,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	 * the model to call that function. none is the default when no functions are present. auto is the default if
 	 * functions are present. Use the {@link MiniMaxApi.ChatCompletionRequest.ToolChoiceBuilder} to create a tool choice object.
 	 */
-	private String toolChoice;
+	private @Nullable String toolChoice;
 
 	/**
 	 * MiniMax Tool Function Callbacks to register with the ChatModel.
@@ -145,7 +146,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	/**
 	 * Whether to enable the tool execution lifecycle internally in ChatModel.
 	 */
-	private Boolean internalToolExecutionEnabled;
+	private @Nullable Boolean internalToolExecutionEnabled;
 
 	// @formatter:on
 
@@ -153,12 +154,13 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	public MiniMaxChatOptions() {
 	}
 
-	protected MiniMaxChatOptions(String model, Double frequencyPenalty, Integer maxTokens, Integer n,
-			Double presencePenalty, MiniMaxApi.ChatCompletionRequest.ResponseFormat responseFormat, Integer seed,
-			List<String> stop, Double temperature, Double topP, Boolean maskSensitiveInfo,
-			List<MiniMaxApi.FunctionTool> tools, String toolChoice, @Nullable List<ToolCallback> toolCallbacks,
-			@Nullable Set<String> toolNames, @Nullable Map<String, Object> toolContext,
-			Boolean internalToolExecutionEnabled) {
+	protected MiniMaxChatOptions(String model, @Nullable Double frequencyPenalty, @Nullable Integer maxTokens,
+			@Nullable Integer n, @Nullable Double presencePenalty,
+			MiniMaxApi.ChatCompletionRequest.@Nullable ResponseFormat responseFormat, @Nullable Integer seed,
+			@Nullable List<String> stop, @Nullable Double temperature, @Nullable Double topP,
+			@Nullable Boolean maskSensitiveInfo, @Nullable List<MiniMaxApi.FunctionTool> tools,
+			@Nullable String toolChoice, @Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames,
+			@Nullable Map<String, Object> toolContext, @Nullable Boolean internalToolExecutionEnabled) {
 		this.model = model;
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
@@ -196,117 +198,117 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public Double getFrequencyPenalty() {
+	public @Nullable Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
 
-	public void setFrequencyPenalty(Double frequencyPenalty) {
+	public void setFrequencyPenalty(@Nullable Double frequencyPenalty) {
 		this.frequencyPenalty = frequencyPenalty;
 	}
 
 	@Override
-	public Integer getMaxTokens() {
+	public @Nullable Integer getMaxTokens() {
 		return this.maxTokens;
 	}
 
-	public void setMaxTokens(Integer maxTokens) {
+	public void setMaxTokens(@Nullable Integer maxTokens) {
 		this.maxTokens = maxTokens;
 	}
 
-	public Integer getN() {
+	public @Nullable Integer getN() {
 		return this.n;
 	}
 
-	public void setN(Integer n) {
+	public void setN(@Nullable Integer n) {
 		this.n = n;
 	}
 
 	@Override
-	public Double getPresencePenalty() {
+	public @Nullable Double getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
-	public void setPresencePenalty(Double presencePenalty) {
+	public void setPresencePenalty(@Nullable Double presencePenalty) {
 		this.presencePenalty = presencePenalty;
 	}
 
-	public MiniMaxApi.ChatCompletionRequest.ResponseFormat getResponseFormat() {
+	public MiniMaxApi.ChatCompletionRequest.@Nullable ResponseFormat getResponseFormat() {
 		return this.responseFormat;
 	}
 
-	public void setResponseFormat(MiniMaxApi.ChatCompletionRequest.ResponseFormat responseFormat) {
+	public void setResponseFormat(MiniMaxApi.ChatCompletionRequest.@Nullable ResponseFormat responseFormat) {
 		this.responseFormat = responseFormat;
 	}
 
-	public Integer getSeed() {
+	public @Nullable Integer getSeed() {
 		return this.seed;
 	}
 
-	public void setSeed(Integer seed) {
+	public void setSeed(@Nullable Integer seed) {
 		this.seed = seed;
 	}
 
 	@Override
-	public List<String> getStopSequences() {
+	public @Nullable List<String> getStopSequences() {
 		return getStop();
 	}
 
-	public void setStopSequences(List<String> stopSequences) {
+	public void setStopSequences(@Nullable List<String> stopSequences) {
 		setStop(stopSequences);
 	}
 
-	public List<String> getStop() {
+	public @Nullable List<String> getStop() {
 		return (this.stop != null) ? Collections.unmodifiableList(this.stop) : null;
 	}
 
-	public void setStop(List<String> stop) {
+	public void setStop(@Nullable List<String> stop) {
 		this.stop = stop;
 	}
 
 	@Override
-	public Double getTemperature() {
+	public @Nullable Double getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(Double temperature) {
+	public void setTemperature(@Nullable Double temperature) {
 		this.temperature = temperature;
 	}
 
 	@Override
-	public Double getTopP() {
+	public @Nullable Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(Double topP) {
+	public void setTopP(@Nullable Double topP) {
 		this.topP = topP;
 	}
 
-	public Boolean getMaskSensitiveInfo() {
+	public @Nullable Boolean getMaskSensitiveInfo() {
 		return this.maskSensitiveInfo;
 	}
 
-	public void setMaskSensitiveInfo(Boolean maskSensitiveInfo) {
+	public void setMaskSensitiveInfo(@Nullable Boolean maskSensitiveInfo) {
 		this.maskSensitiveInfo = maskSensitiveInfo;
 	}
 
-	public List<MiniMaxApi.FunctionTool> getTools() {
+	public @Nullable List<MiniMaxApi.FunctionTool> getTools() {
 		return (this.tools != null) ? Collections.unmodifiableList(this.tools) : null;
 	}
 
-	public void setTools(List<MiniMaxApi.FunctionTool> tools) {
+	public void setTools(@Nullable List<MiniMaxApi.FunctionTool> tools) {
 		this.tools = tools;
 	}
 
-	public String getToolChoice() {
+	public @Nullable String getToolChoice() {
 		return this.toolChoice;
 	}
 
-	public void setToolChoice(String toolChoice) {
+	public void setToolChoice(@Nullable String toolChoice) {
 		this.toolChoice = toolChoice;
 	}
 
 	@Override
-	public Integer getTopK() {
+	public @Nullable Integer getTopK() {
 		return null;
 	}
 
@@ -347,11 +349,12 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	public Map<String, Object> getToolContext() {
-		return (this.toolContext != null) ? Collections.unmodifiableMap(this.toolContext) : null;
+		return Collections.unmodifiableMap(this.toolContext);
 	}
 
 	@Override
 	public void setToolContext(Map<String, Object> toolContext) {
+		Assert.notNull(toolContext, "toolContext cannot be null");
 		this.toolContext = toolContext;
 	}
 
@@ -364,7 +367,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -478,6 +481,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 			return self();
 		}
 
+		@Override
 		public B combineWith(ChatOptions.Builder<?> other) {
 			super.combineWith(other);
 			if (other instanceof AbstractBuilder<?> that) {
@@ -504,7 +508,10 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		}
 
 		@Override
+		@SuppressWarnings("NullAway")
 		public MiniMaxChatOptions build() {
+			// TODO: add assertions, remove SuppressWarnings
+			// Assert.state(this.model != null, "model must be set");
 			return new MiniMaxChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.n,
 					this.presencePenalty, this.responseFormat, this.seed, this.stopSequences, this.temperature,
 					this.topP, this.maskSensitiveInfo, this.tools, this.toolChoice, this.toolCallbacks, this.toolNames,

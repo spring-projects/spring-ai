@@ -19,11 +19,13 @@ package org.springframework.ai.minimax;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -199,9 +201,10 @@ public class MiniMaxChatModel implements ChatModel {
 	}
 
 	private static Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
-		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
-				: choice.message()
-					.toolCalls()
+		ChatCompletionMessage message = choice.message();
+		Assert.state(message != null, "ChatCompletion choice must contain a message");
+		List<AssistantMessage.ToolCall> toolCalls = message.toolCalls() == null ? List.of()
+				: message.toolCalls()
 					.stream()
 					// the MiniMax's stream function calls response are really odd
 					// occasionally, tool call might get split.
@@ -227,7 +230,7 @@ public class MiniMaxChatModel implements ChatModel {
 						return acc1;
 					});
 		var assistantMessage = AssistantMessage.builder()
-			.content(choice.message().content())
+			.content(message.content())
 			.properties(metadata)
 			.toolCalls(toolCalls)
 			.build();
@@ -263,8 +266,9 @@ public class MiniMaxChatModel implements ChatModel {
 
 				List<Choice> choices = chatCompletion.choices();
 				if (choices == null) {
+					MiniMaxApi.ChatCompletion.BaseResponse baseResponse = chatCompletion.baseResponse();
 					logger.warn("No choices returned for prompt: {}, because: {}}", requestPrompt,
-							chatCompletion.baseResponse().message());
+							baseResponse != null ? baseResponse.message() : "");
 					return new ChatResponse(List.of());
 				}
 
@@ -278,24 +282,27 @@ public class MiniMaxChatModel implements ChatModel {
 						else if (!CollectionUtils.isEmpty(choice.messages())) {
 							// the MiniMax web search messages result is ['user message','assistant tool call', 'tool call', 'assistant message']
 							// so the last message is the assistant message
-							message = choice.messages().get(choice.messages().size() - 1);
+							List<ChatCompletionMessage> messages = Objects.requireNonNull(choice.messages());
+							message = messages.get(messages.size() - 1);
 						}
 						Map<String, Object> metadata = Map.of(
-								"id", chatCompletion.id(),
+								"id", chatCompletion.id() != null ? chatCompletion.id() : "",
 								"role", message != null && message.role() != null ? message.role().name() : "",
 								"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
 						// @formatter:on
 					return buildGeneration(message, choice.finishReason(), metadata);
-				}).toList();
+				}).filter(Objects::nonNull).toList();
 
-				ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody()));
+				ChatCompletion completion = Objects.requireNonNull(completionEntity.getBody());
+				ChatResponse chatResponse = new ChatResponse(generations, from(completion));
 
 				observationContext.setResponse(chatResponse);
 
 				return chatResponse;
 			});
 
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response)) {
+		ChatOptions promptOptions = Objects.requireNonNull(requestPrompt.getOptions());
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(promptOptions, response)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(requestPrompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -349,16 +356,18 @@ public class MiniMaxChatModel implements ChatModel {
 			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
 				.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
 					try {
-						@SuppressWarnings("null")
-						String id = chatCompletion2.id();
+						String id = chatCompletion2.id() != null ? chatCompletion2.id() : "";
+						List<Choice> chunkChoices = chatCompletion2.choices() != null
+								? Objects.requireNonNull(chatCompletion2.choices()) : List.of();
 
 				// @formatter:off
-							List<Generation> generations = chatCompletion2.choices().stream().map(choice -> {
-								if (choice.message().role() != null) {
-									roleMap.putIfAbsent(id, choice.message().role().name());
+							List<Generation> generations = chunkChoices.stream().map(choice -> {
+								ChatCompletionMessage message = Objects.requireNonNull(choice.message());
+								if (message.role() != null) {
+									roleMap.putIfAbsent(id, message.role().name());
 								}
 								Map<String, Object> metadata = Map.of(
-										"id", chatCompletion2.id(),
+										"id", id,
 										"role", roleMap.getOrDefault(id, ""),
 										"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
 								return buildGeneration(choice, metadata);
@@ -372,7 +381,8 @@ public class MiniMaxChatModel implements ChatModel {
 					}));
 
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
-						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response)) {
+						ChatOptions promptOptions = Objects.requireNonNull(requestPrompt.getOptions());
+						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(promptOptions, response)) {
 							// FIXME: bounded elastic needs to be used since tool calling
 							//  is currently only synchronous
 							return Flux.deferContextual(ctx -> {
@@ -422,8 +432,8 @@ public class MiniMaxChatModel implements ChatModel {
 		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
 	}
 
-	private Generation buildGeneration(ChatCompletionMessage message, ChatCompletionFinishReason completionFinishReason,
-			Map<String, Object> metadata) {
+	private @Nullable Generation buildGeneration(@Nullable ChatCompletionMessage message,
+			@Nullable ChatCompletionFinishReason completionFinishReason, Map<String, Object> metadata) {
 		if (message == null || message.role() == Role.TOOL) {
 			return null;
 		}
@@ -450,7 +460,9 @@ public class MiniMaxChatModel implements ChatModel {
 	 * @return the ChatCompletion
 	 */
 	private ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
-		List<ChatCompletion.Choice> choices = chunk.choices().stream().map(cc -> {
+		List<ChatCompletionChunk.ChunkChoice> chunkChoices = chunk.choices() != null
+				? Objects.requireNonNull(chunk.choices()) : List.of();
+		List<ChatCompletion.Choice> choices = chunkChoices.stream().map(cc -> {
 			ChatCompletionMessage delta = cc.delta();
 			if (delta == null) {
 				delta = new ChatCompletionMessage("", Role.ASSISTANT);
@@ -479,7 +491,8 @@ public class MiniMaxChatModel implements ChatModel {
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
 			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
-				Object content = message.getText();
+				String content = message.getText();
+				Assert.state(content != null, "Message content must not be null");
 				return List.of(new ChatCompletionMessage(content,
 						ChatCompletionMessage.Role.valueOf(message.getMessageType().name())));
 			}
@@ -513,7 +526,7 @@ public class MiniMaxChatModel implements ChatModel {
 		}).flatMap(List::stream).toList();
 
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
-		MiniMaxChatOptions requestOptions = (MiniMaxChatOptions) prompt.getOptions();
+		MiniMaxChatOptions requestOptions = (MiniMaxChatOptions) Objects.requireNonNull(prompt.getOptions());
 
 		request = new ChatCompletionRequest(request.messages(),
 				ModelOptionsUtils.mergeOption(requestOptions.getModel(), request.model()),

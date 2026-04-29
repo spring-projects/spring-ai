@@ -125,7 +125,6 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 		options.setTools(null);
 		options.setToolChoice(null);
 		options.setInternalToolExecutionEnabled(null);
-		options.setToolContext(null);
 
 		assertThat(options.getModel()).isNull();
 		assertThat(options.getFrequencyPenalty()).isNull();
@@ -141,7 +140,6 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 		assertThat(options.getTools()).isNull();
 		assertThat(options.getToolChoice()).isNull();
 		assertThat(options.getInternalToolExecutionEnabled()).isNull();
-		assertThat(options.getToolContext()).isNull();
 	}
 
 	@Test
