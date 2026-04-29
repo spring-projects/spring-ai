@@ -941,7 +941,7 @@ The 1.0.0-SNAPSHOT version includes significant changes to artifact IDs, package
 === Add Snapshot Repositories
 
 To use the 1.0.0-SNAPSHOT version, you need to add the snapshot repositories to your build file.
-For detailed instructions, refer to the xref:getting-started.adoc#snapshots-add-snapshot-repositories[Snapshots - Add Snapshot Repositories] section in the Getting Started guide.
+For detailed instructions, refer to the xref:getting-started.adoc#_snapshots_add_snapshot_repositories[Snapshots - Add Snapshot Repositories] section in the Getting Started guide.
 
 === Update Dependency Management
 
@@ -1338,7 +1338,7 @@ You can automate the upgrade process to 1.0.0-M7 using the Claude Code CLI tool 
 3. Paste the prompt into the Claude Code CLI
 4. The AI will analyze your project and make the necessary changes
 
-NOTE: The automated upgrade prompt currently handles artifact ID changes, package relocations, and module structure changes, but does not yet include automatic changes for upgrading to MCP 0.9.0. If you're using MCP, you'll need to manually update your code following the guidance in the xref:upgrade-notes.adoc#mcp-java-sdk-upgrade-to-0-9-0[MCP Java SDK Upgrade] section.
+NOTE: The automated upgrade prompt currently handles artifact ID changes, package relocations, and module structure changes, but does not yet include automatic changes for upgrading to MCP 0.9.0. If you're using MCP, you'll need to manually update your code following the guidance in the xref:upgrade-notes.adoc#_mcp_java_sdk_upgrade_to_0_9_0[MCP Java SDK Upgrade] section.
 
 [[common-sections]]
 == Common Changes Across Versions
