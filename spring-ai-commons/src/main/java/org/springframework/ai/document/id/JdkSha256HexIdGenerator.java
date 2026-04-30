@@ -22,6 +22,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.UUID;
 
 import org.springframework.util.Assert;
@@ -36,7 +37,7 @@ public class JdkSha256HexIdGenerator implements IdGenerator {
 
 	private static final String SHA_256 = "SHA-256";
 
-	private final String byteHexFormat = "%02x";
+	private static final HexFormat HEX_FORMAT = HexFormat.of();
 
 	private final Charset charset;
 
@@ -64,11 +65,8 @@ public class JdkSha256HexIdGenerator implements IdGenerator {
 	// https://github.com/spring-projects/spring-ai/issues/113#issue-2000373318
 	private String hash(byte[] contentWithMetadata) {
 		byte[] hashBytes = getMessageDigest().digest(contentWithMetadata);
-		StringBuilder sb = new StringBuilder();
-		for (byte b : hashBytes) {
-			sb.append(String.format(this.byteHexFormat, b));
-		}
-		return UUID.nameUUIDFromBytes(sb.toString().getBytes(this.charset)).toString();
+		String hash = HEX_FORMAT.formatHex(hashBytes);
+		return UUID.nameUUIDFromBytes(hash.getBytes(this.charset)).toString();
 	}
 
 	private byte[] serializeToBytes(Object... contents) {
