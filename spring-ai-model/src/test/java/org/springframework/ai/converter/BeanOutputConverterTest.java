@@ -523,25 +523,27 @@ class BeanOutputConverterTest {
 		}
 
 		@Test
-		void normalizesLineEndingsClassType() {
-			var converter = new BeanOutputConverter<>(TestClass.class);
+		void formatUsesCustomGeneratedSchema() {
+			var converter = new BeanOutputConverter<>(TestClass.class) {
 
-			String formatOutput = converter.getFormat();
+				@Override
+				protected String generateSchema() {
+					return """
+							{
+							  "type" : "object",
+							  "properties" : {
+							    "customProperty" : {
+							      "type" : "string"
+							    }
+							  }
+							}
+							""";
+				}
+			};
 
-			// validate that output contains \n line endings
-			assertThat(formatOutput).contains(System.lineSeparator()).doesNotContain("\r\n").doesNotContain("\r");
-		}
-
-		@Test
-		void normalizesLineEndingsTypeReference() {
-			var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<TestClass>() {
-
-			});
-
-			String formatOutput = converter.getFormat();
-
-			// validate that output contains \n line endings
-			assertThat(formatOutput).contains(System.lineSeparator()).doesNotContain("\r\n").doesNotContain("\r");
+			assertThat(converter.getJsonSchema()).contains("\"customProperty\"");
+			assertThat(converter.getJsonSchema()).doesNotContain("\"someString\"");
+			assertThat(converter.getFormat()).contains("\"customProperty\"");
 		}
 
 	}

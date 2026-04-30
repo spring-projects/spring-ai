@@ -20,16 +20,11 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.Objects;
 
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.core.JacksonException;
-import tools.jackson.core.util.DefaultIndenter;
-import tools.jackson.core.util.DefaultPrettyPrinter;
 import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectWriter;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.util.JacksonUtils;
@@ -68,7 +63,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	private final JsonMapper jsonMapper;
 
 	/** Holds the generated JSON schema for the target type. */
-	private String jsonSchema;
+	private final String jsonSchema;
 
 	/** The text cleaner used to preprocess LLM responses before parsing. */
 	private final ResponseTextCleaner textCleaner;
@@ -147,7 +142,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 		this.type = type;
 		this.jsonMapper = jsonMapper != null ? jsonMapper : getJsonMapper();
 		this.textCleaner = textCleaner != null ? textCleaner : createDefaultTextCleaner();
-		generateSchema();
+		this.jsonSchema = Objects.requireNonNull(generateSchema(), "JSON schema cannot be null");
 	}
 
 	/**
@@ -178,36 +173,13 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
 	/**
 	 * Generates the JSON schema for the target type.
+	 * <p>
+	 * This method can be overridden in subclasses to customize the JSON schema generation
+	 * logic.
+	 * @return the generated JSON schema
 	 */
-	private void generateSchema() {
-		String schemaString = JsonSchemaGenerator.generateForType(this.type);
-		JsonNode jsonNode;
-		try {
-			jsonNode = this.jsonMapper.readTree(schemaString);
-		}
-		catch (JacksonException e) {
-			logger.error("Could not parse json schema for type: {}", this.type);
-			throw new RuntimeException("Could not parse json schema for " + this.type, e);
-		}
-		postProcessSchema(jsonNode);
-		ObjectWriter objectWriter = this.jsonMapper.writer()
-			.with(new DefaultPrettyPrinter()
-				.withObjectIndenter(new DefaultIndenter().withLinefeed(System.lineSeparator())));
-		try {
-			this.jsonSchema = objectWriter.writeValueAsString(jsonNode);
-		}
-		catch (JacksonException e) {
-			logger.error("Could not pretty print json schema for jsonNode: {}", jsonNode);
-			throw new RuntimeException("Could not pretty print json schema for " + this.type, e);
-		}
-	}
-
-	/**
-	 * Empty template method that allows for customization of the JSON schema in
-	 * subclasses.
-	 * @param jsonNode the JSON schema, in the form of a JSON node
-	 */
-	protected void postProcessSchema(@NonNull JsonNode jsonNode) {
+	protected String generateSchema() {
+		return JsonSchemaGenerator.generateForType(this.type);
 	}
 
 	/**
