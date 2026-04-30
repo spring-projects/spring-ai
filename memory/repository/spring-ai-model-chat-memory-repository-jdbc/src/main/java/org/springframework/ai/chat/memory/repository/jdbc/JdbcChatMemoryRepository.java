@@ -96,11 +96,10 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		Assert.notNull(messages, "messages cannot be null");
 		Assert.noNullElements(messages, "messages cannot contain null elements");
 
-		this.transactionTemplate.execute(status -> {
+		this.transactionTemplate.executeWithoutResult(status -> {
 			deleteByConversationId(conversationId);
 			this.jdbcTemplate.batchUpdate(this.dialect.getInsertMessageSql(),
 					new AddBatchPreparedStatement(conversationId, messages));
-			return null;
 		});
 	}
 

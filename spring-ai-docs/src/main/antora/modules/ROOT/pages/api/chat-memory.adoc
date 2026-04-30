@@ -646,7 +646,9 @@ ChatClient chatClient = ChatClient.builder(chatModel)
     .build();
 ----
 
-When performing a call to the `ChatClient`, the memory will be automatically managed by the `MessageChatMemoryAdvisor`. The conversation history will be retrieved from the memory based on the specified conversation ID:
+When performing a call to the `ChatClient`, the memory will be automatically managed by the `MessageChatMemoryAdvisor`. The conversation history will be retrieved from the memory based on the specified conversation ID.
+
+IMPORTANT: The `ChatMemory.CONVERSATION_ID` parameter is *required* for all memory advisors. Calls that omit this parameter will throw an `IllegalArgumentException` at runtime. There is no default conversation ID.
 
 [source,java]
 ----

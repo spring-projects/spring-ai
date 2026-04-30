@@ -70,22 +70,18 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	private final PromptTemplate systemPromptTemplate;
 
-	private final String defaultConversationId;
-
 	private final int order;
 
 	private final Scheduler scheduler;
 
 	private final ChatMemory chatMemory;
 
-	private PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int order, Scheduler scheduler,
+	private PromptChatMemoryAdvisor(ChatMemory chatMemory, int order, Scheduler scheduler,
 			PromptTemplate systemPromptTemplate) {
 		Assert.notNull(chatMemory, "chatMemory cannot be null");
-		Assert.hasText(defaultConversationId, "defaultConversationId cannot be null or empty");
 		Assert.notNull(scheduler, "scheduler cannot be null");
 		Assert.notNull(systemPromptTemplate, "systemPromptTemplate cannot be null");
 		this.chatMemory = chatMemory;
-		this.defaultConversationId = defaultConversationId;
 		this.order = order;
 		this.scheduler = scheduler;
 		this.systemPromptTemplate = systemPromptTemplate;
@@ -107,7 +103,7 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	@Override
 	public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
-		String conversationId = getConversationId(chatClientRequest.context(), this.defaultConversationId);
+		String conversationId = getConversationId(chatClientRequest.context());
 		// 1. Retrieve the chat memory for the current conversation.
 		List<Message> memoryMessages = this.chatMemory.get(conversationId);
 		logger.debug("[PromptChatMemoryAdvisor.before] Memory before processing for conversationId={}: {}",
@@ -157,19 +153,16 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 			.orElse(List.of());
 
 		if (!assistantMessages.isEmpty()) {
-			this.chatMemory.add(this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
-					assistantMessages);
+			this.chatMemory.add(this.getConversationId(chatClientResponse.context()), assistantMessages);
 
 			if (logger.isDebugEnabled()) {
 				logger.debug(
 						"[PromptChatMemoryAdvisor.after] Added ASSISTANT messages to memory for conversationId={}: {}",
-						this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
-						assistantMessages);
+						this.getConversationId(chatClientResponse.context()), assistantMessages);
 				List<Message> memoryMessages = this.chatMemory
-					.get(this.getConversationId(chatClientResponse.context(), this.defaultConversationId));
+					.get(this.getConversationId(chatClientResponse.context()));
 				logger.debug("[PromptChatMemoryAdvisor.after] Memory after ASSISTANT add for conversationId={}: {}",
-						this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
-						memoryMessages);
+						this.getConversationId(chatClientResponse.context()), memoryMessages);
 			}
 		}
 		return chatClientResponse;
@@ -197,8 +190,6 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 		private PromptTemplate systemPromptTemplate = DEFAULT_SYSTEM_PROMPT_TEMPLATE;
 
-		private String conversationId = ChatMemory.DEFAULT_CONVERSATION_ID;
-
 		private int order = Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER;
 
 		private Scheduler scheduler = BaseAdvisor.DEFAULT_SCHEDULER;
@@ -216,16 +207,6 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		 */
 		public Builder systemPromptTemplate(PromptTemplate systemPromptTemplate) {
 			this.systemPromptTemplate = systemPromptTemplate;
-			return this;
-		}
-
-		/**
-		 * Set the conversation id.
-		 * @param conversationId the conversation id
-		 * @return the builder
-		 */
-		public Builder conversationId(String conversationId) {
-			this.conversationId = conversationId;
 			return this;
 		}
 
@@ -249,8 +230,7 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		 * @return the advisor
 		 */
 		public PromptChatMemoryAdvisor build() {
-			return new PromptChatMemoryAdvisor(this.chatMemory, this.conversationId, this.order, this.scheduler,
-					this.systemPromptTemplate);
+			return new PromptChatMemoryAdvisor(this.chatMemory, this.order, this.scheduler, this.systemPromptTemplate);
 		}
 
 	}

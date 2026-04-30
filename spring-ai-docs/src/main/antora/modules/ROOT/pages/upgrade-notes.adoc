@@ -28,6 +28,96 @@ The observations produced for tool calling operations have changed as follows:
 
 The `spring-ai-hanadb-store` module has been **removed** from Spring AI as of version `2.0.0-M6`.
 
+[[upgrading-to-2-0-0-M6]]
+== Upgrading to 2.0.0-M6
+
+=== Chat Memory Advisors: Conversation ID Is Now Required
+
+The conversation ID is no longer optional for the built-in memory advisors (`MessageChatMemoryAdvisor`, `PromptChatMemoryAdvisor`, and `VectorStoreChatMemoryAdvisor`).
+Every call through these advisors must supply `ChatMemory.CONVERSATION_ID` via the advisor context.
+If the value is absent or `null`, the advisor throws an `IllegalArgumentException` immediately.
+
+==== Removed: `ChatMemory.DEFAULT_CONVERSATION_ID`
+
+The constant `ChatMemory.DEFAULT_CONVERSATION_ID` (value `"default"`) has been removed from the `ChatMemory` interface.
+
+===== Impact
+
+Code that references this constant will fail to compile.
+
+===== Migration
+
+Replace any reference to `ChatMemory.DEFAULT_CONVERSATION_ID` with an explicit conversation ID string or a value derived from your session/user context.
+
+[source,java]
+----
+// Before
+String conversationId = ChatMemory.DEFAULT_CONVERSATION_ID;
+
+// After
+String conversationId = "my-conversation-id";
+----
+
+==== Removed: `.conversationId()` Builder Method on Memory Advisors
+
+The `.conversationId(String)` builder method has been removed from `MessageChatMemoryAdvisor.Builder`, `PromptChatMemoryAdvisor.Builder`, and `VectorStoreChatMemoryAdvisor.Builder`.
+Setting a default conversation ID at construction time is no longer supported.
+
+===== Impact
+
+Code that calls `.conversationId()` on any of these builders will fail to compile.
+
+===== Migration
+
+Remove the `.conversationId()` builder call and always supply the conversation ID at call time via the advisor context using `ChatMemory.CONVERSATION_ID`:
+
+[source,java]
+----
+// Before
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory)
+        .conversationId("my-session")
+        .build())
+    .build();
+
+chatClient.prompt()
+    .user("Hello!")
+    .call()
+    .content();
+
+// After
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+    .build();
+
+chatClient.prompt()
+    .user("Hello!")
+    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "my-session"))
+    .call()
+    .content();
+----
+
+==== Changed: `BaseChatMemoryAdvisor.getConversationId()` Signature
+
+The default method `BaseChatMemoryAdvisor.getConversationId(Map, String)` has been replaced by `getConversationId(Map)`.
+
+===== Impact
+
+Custom advisor implementations that override or call the two-argument form will fail to compile.
+
+===== Migration
+
+Update overrides and call sites to the single-argument form. Ensure the context always contains `ChatMemory.CONVERSATION_ID` before calling the method.
+
+[source,java]
+----
+// Before
+String conversationId = getConversationId(context, this.defaultConversationId);
+
+// After
+String conversationId = getConversationId(context); // throws if CONVERSATION_ID is absent
+----
+
 [[upgrading-to-2-0-0-M5]]
 == Upgrading to 2.0.0-M5
 

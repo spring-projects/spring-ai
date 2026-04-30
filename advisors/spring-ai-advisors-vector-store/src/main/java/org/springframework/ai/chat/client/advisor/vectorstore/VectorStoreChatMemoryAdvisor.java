@@ -36,7 +36,6 @@ import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
-import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
@@ -85,24 +84,20 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 
 	private final int defaultTopK;
 
-	private final String defaultConversationId;
-
 	private final int order;
 
 	private final Scheduler scheduler;
 
 	private final VectorStore vectorStore;
 
-	private VectorStoreChatMemoryAdvisor(PromptTemplate systemPromptTemplate, int defaultTopK,
-			String defaultConversationId, int order, Scheduler scheduler, VectorStore vectorStore) {
+	private VectorStoreChatMemoryAdvisor(PromptTemplate systemPromptTemplate, int defaultTopK, int order,
+			Scheduler scheduler, VectorStore vectorStore) {
 		Assert.notNull(systemPromptTemplate, "systemPromptTemplate cannot be null");
 		Assert.isTrue(defaultTopK > 0, "topK must be greater than 0");
-		Assert.hasText(defaultConversationId, "defaultConversationId cannot be null or empty");
 		Assert.notNull(scheduler, "scheduler cannot be null");
 		Assert.notNull(vectorStore, "vectorStore cannot be null");
 		this.systemPromptTemplate = systemPromptTemplate;
 		this.defaultTopK = defaultTopK;
-		this.defaultConversationId = defaultConversationId;
 		this.order = order;
 		this.scheduler = scheduler;
 		this.vectorStore = vectorStore;
@@ -124,7 +119,7 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 
 	@Override
 	public ChatClientRequest before(ChatClientRequest request, AdvisorChain advisorChain) {
-		String conversationId = getConversationId(request.context(), this.defaultConversationId);
+		String conversationId = getConversationId(request.context());
 		String query = Objects.requireNonNullElse(request.prompt().getUserMessage().getText(), "");
 		int topK = getChatMemoryTopK(request.context());
 		var filter = new FilterExpressionBuilder().eq(DOCUMENT_METADATA_CONVERSATION_ID, conversationId).build();
@@ -170,8 +165,7 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 				.map(g -> (Message) g.getOutput())
 				.toList();
 		}
-		this.vectorStore.write(toDocuments(assistantMessages,
-				this.getConversationId(chatClientResponse.context(), this.defaultConversationId)));
+		this.vectorStore.write(toDocuments(assistantMessages, this.getConversationId(chatClientResponse.context())));
 		return chatClientResponse;
 	}
 
@@ -224,8 +218,6 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 
 		private Integer defaultTopK = DEFAULT_TOP_K;
 
-		private String conversationId = ChatMemory.DEFAULT_CONVERSATION_ID;
-
 		private Scheduler scheduler = BaseAdvisor.DEFAULT_SCHEDULER;
 
 		private int order = Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER;
@@ -260,16 +252,6 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 			return this;
 		}
 
-		/**
-		 * Set the conversation id.
-		 * @param conversationId the conversation id
-		 * @return the builder
-		 */
-		public Builder conversationId(String conversationId) {
-			this.conversationId = conversationId;
-			return this;
-		}
-
 		public Builder scheduler(Scheduler scheduler) {
 			this.scheduler = scheduler;
 			return this;
@@ -290,8 +272,8 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 		 * @return the advisor
 		 */
 		public VectorStoreChatMemoryAdvisor build() {
-			return new VectorStoreChatMemoryAdvisor(this.systemPromptTemplate, this.defaultTopK, this.conversationId,
-					this.order, this.scheduler, this.vectorStore);
+			return new VectorStoreChatMemoryAdvisor(this.systemPromptTemplate, this.defaultTopK, this.order,
+					this.scheduler, this.vectorStore);
 		}
 
 	}

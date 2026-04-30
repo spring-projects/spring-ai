@@ -33,15 +33,13 @@ import org.springframework.util.Assert;
 public interface BaseChatMemoryAdvisor extends BaseAdvisor {
 
 	/**
-	 * Retrieve the conversation ID from the given context or return the default
-	 * conversation ID when not found.
+	 * Retrieve the conversation ID from the given context.
 	 */
-	default String getConversationId(Map<String, @Nullable Object> context, String defaultConversationId) {
+	default String getConversationId(Map<String, @Nullable Object> context) {
 		Assert.notNull(context, "context cannot be null");
 		Assert.noNullElements(context.keySet().toArray(), "context cannot contain null keys");
-		Assert.hasText(defaultConversationId, "defaultConversationId cannot be null or empty");
-		return context.containsKey(ChatMemory.CONVERSATION_ID) ? context.get(ChatMemory.CONVERSATION_ID).toString()
-				: defaultConversationId;
+		Assert.notNull(context.get(ChatMemory.CONVERSATION_ID), "conversationId cannot be null");
+		return context.get(ChatMemory.CONVERSATION_ID).toString();
 	}
 
 }
