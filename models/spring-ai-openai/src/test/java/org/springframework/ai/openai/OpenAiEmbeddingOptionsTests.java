@@ -26,57 +26,39 @@ import static org.assertj.core.api.Assertions.assertThat;
 class OpenAiEmbeddingOptionsTests {
 
 	@Test
-	void defaultEncodingFormatIsFloat() {
+	void defaultEncodingFormatIsNull() {
 		OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder().model("test-model").build();
 
 		EmbeddingCreateParams createParams = options.toOpenAiCreateParams(List.of("test input"));
 
-		assertThat(options.getEncodingFormat()).isEqualTo(OpenAiEmbeddingOptions.DEFAULT_ENCODING_FORMAT);
-		assertThat(createParams.encodingFormat()).contains(EmbeddingCreateParams.EncodingFormat.FLOAT);
+		assertThat(options.getEncodingFormat()).isNull();
+		assertThat(createParams.encodingFormat()).contains(EmbeddingCreateParams.EncodingFormat.BASE64);
 	}
 
 	@Test
 	void encodingFormatCanBeConfigured() {
 		OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
 			.model("test-model")
-			.encodingFormat("base64")
+			.encodingFormat(EmbeddingCreateParams.EncodingFormat.FLOAT)
 			.build();
 
 		EmbeddingCreateParams createParams = options.toOpenAiCreateParams(List.of("test input"));
 
-		assertThat(createParams.encodingFormat()).contains(EmbeddingCreateParams.EncodingFormat.BASE64);
+		assertThat(createParams.encodingFormat()).contains(EmbeddingCreateParams.EncodingFormat.FLOAT);
 	}
 
 	@Test
 	void encodingFormatIsCopiedAndMerged() {
 		OpenAiEmbeddingOptions source = OpenAiEmbeddingOptions.builder()
 			.model("test-model")
-			.encodingFormat("base64")
+			.encodingFormat(EmbeddingCreateParams.EncodingFormat.FLOAT)
 			.build();
 
 		OpenAiEmbeddingOptions copied = OpenAiEmbeddingOptions.builder().from(source).build();
 		OpenAiEmbeddingOptions merged = OpenAiEmbeddingOptions.builder().model("other-model").merge(source).build();
 
-		assertThat(copied.getEncodingFormat()).isEqualTo("base64");
-		assertThat(merged.getEncodingFormat()).isEqualTo("base64");
-	}
-
-	@Test
-	void unspecifiedEncodingFormatDoesNotOverrideDefaultOptionsWhenMerged() {
-		OpenAiEmbeddingOptions defaultOptions = OpenAiEmbeddingOptions.builder()
-			.model("test-model")
-			.encodingFormat("base64")
-			.build();
-		OpenAiEmbeddingOptions runtimeOptions = OpenAiEmbeddingOptions.builder().model("other-model").build();
-
-		OpenAiEmbeddingOptions merged = OpenAiEmbeddingOptions.builder()
-			.from(defaultOptions)
-			.merge(runtimeOptions)
-			.build();
-		EmbeddingCreateParams createParams = merged.toOpenAiCreateParams(List.of("test input"));
-
-		assertThat(merged.getEncodingFormat()).isEqualTo("base64");
-		assertThat(createParams.encodingFormat()).contains(EmbeddingCreateParams.EncodingFormat.BASE64);
+		assertThat(copied.getEncodingFormat()).isEqualTo(EmbeddingCreateParams.EncodingFormat.FLOAT);
+		assertThat(merged.getEncodingFormat()).isEqualTo(EmbeddingCreateParams.EncodingFormat.FLOAT);
 	}
 
 }
