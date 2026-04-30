@@ -988,12 +988,12 @@ public class BedrockProxyChatModel implements ChatModel {
 			return this;
 		}
 
-		public Builder bedrockRuntimeClient(BedrockRuntimeClient bedrockRuntimeClient) {
+		public Builder bedrockRuntimeClient(@Nullable BedrockRuntimeClient bedrockRuntimeClient) {
 			this.bedrockRuntimeClient = bedrockRuntimeClient;
 			return this;
 		}
 
-		public Builder bedrockRuntimeAsyncClient(BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient) {
+		public Builder bedrockRuntimeAsyncClient(@Nullable BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient) {
 			this.bedrockRuntimeAsyncClient = bedrockRuntimeAsyncClient;
 			return this;
 		}

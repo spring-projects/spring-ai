@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.vertexai.autoconfigure.embedding;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.io.Resource;
 
@@ -33,52 +35,52 @@ public class VertexAiEmbeddingConnectionProperties {
 	/**
 	 * Vertex AI Gemini project ID.
 	 */
-	private String projectId;
+	private @Nullable String projectId;
 
 	/**
 	 * Vertex AI Gemini location.
 	 */
-	private String location;
+	private @Nullable String location;
 
 	/**
 	 * URI to Vertex AI Gemini credentials (optional)
 	 */
-	private Resource credentialsUri;
+	private @Nullable Resource credentialsUri;
 
 	/**
 	 * Vertex AI Gemini API endpoint.
 	 */
-	private String apiEndpoint;
+	private @Nullable String apiEndpoint;
 
-	public String getProjectId() {
+	public @Nullable String getProjectId() {
 		return this.projectId;
 	}
 
-	public void setProjectId(String projectId) {
+	public void setProjectId(@Nullable String projectId) {
 		this.projectId = projectId;
 	}
 
-	public String getLocation() {
+	public @Nullable String getLocation() {
 		return this.location;
 	}
 
-	public void setLocation(String location) {
+	public void setLocation(@Nullable String location) {
 		this.location = location;
 	}
 
-	public Resource getCredentialsUri() {
+	public @Nullable Resource getCredentialsUri() {
 		return this.credentialsUri;
 	}
 
-	public void setCredentialsUri(Resource credentialsUri) {
+	public void setCredentialsUri(@Nullable Resource credentialsUri) {
 		this.credentialsUri = credentialsUri;
 	}
 
-	public String getApiEndpoint() {
+	public @Nullable String getApiEndpoint() {
 		return this.apiEndpoint;
 	}
 
-	public void setApiEndpoint(String apiEndpoint) {
+	public void setApiEndpoint(@Nullable String apiEndpoint) {
 		this.apiEndpoint = apiEndpoint;
 	}
 

@@ -23,6 +23,7 @@ import com.google.genai.Client;
 import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
@@ -158,7 +159,7 @@ public class GoogleGenAiChatAutoConfiguration {
 	@Conditional(CachedContentServiceCondition.class)
 	@ConditionalOnProperty(prefix = "spring.ai.google.genai.chat", name = "enable-cached-content", havingValue = "true",
 			matchIfMissing = true)
-	public GoogleGenAiCachedContentService googleGenAiCachedContentService(GoogleGenAiChatModel chatModel) {
+	public @Nullable GoogleGenAiCachedContentService googleGenAiCachedContentService(GoogleGenAiChatModel chatModel) {
 		// Extract the cached content service from the chat model
 		// The CachedContentServiceCondition ensures this is not null
 		return chatModel.getCachedContentService();

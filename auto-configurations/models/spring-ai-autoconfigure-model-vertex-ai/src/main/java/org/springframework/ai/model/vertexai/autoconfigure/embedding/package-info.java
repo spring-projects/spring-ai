@@ -14,35 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.deepseek.autoconfigure;
+@NullMarked
+package org.springframework.ai.model.vertexai.autoconfigure.embedding;
 
-import org.jspecify.annotations.Nullable;
-
-/**
- * Parent properties for DeepSeek.
- *
- * @author Geng Rong
- */
-public class DeepSeekParentProperties {
-
-	private @Nullable String apiKey;
-
-	private @Nullable String baseUrl;
-
-	public @Nullable String getApiKey() {
-		return this.apiKey;
-	}
-
-	public void setApiKey(@Nullable String apiKey) {
-		this.apiKey = apiKey;
-	}
-
-	public @Nullable String getBaseUrl() {
-		return this.baseUrl;
-	}
-
-	public void setBaseUrl(@Nullable String baseUrl) {
-		this.baseUrl = baseUrl;
-	}
-
-}
+import org.jspecify.annotations.NullMarked;
