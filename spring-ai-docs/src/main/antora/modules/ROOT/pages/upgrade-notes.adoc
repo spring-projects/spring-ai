@@ -1,6 +1,55 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-2-0-0-M7]]
+== Upgrading to 2.0.0-M7
+
+=== BeanOutputConverter JSON Schema Generation
+
+`BeanOutputConverter` now delegates JSON Schema generation to `JsonSchemaGenerator`, aligning structured output conversion with the JSON Schema behavior used for tool calling.
+
+==== Impact
+
+* Kotlin properties that are optional in their primary constructor (nullable or declared with a default value) are no longer included in the JSON Schema `required` array.
+* Properties annotated with `@JsonProperty(required = false)`, including `@JsonProperty` declarations where `required` is not specified, are no longer treated as required.
+* Generated schemas now include OpenAPI-style `format` hints for primitive types (e.g., `int32` for `int`, `int64` for `long`, `date-time` for `LocalDateTime`), matching the format conventions used for tool calling.
+* The `BeanOutputConverter.postProcessSchema(JsonNode)` extension point has been removed. Custom subclasses overriding this method will fail to compile.
+
+==== Migration
+
+To customize JSON Schema generation, override `BeanOutputConverter.generateSchema()` instead. Subclasses can post-process the default schema by delegating to `super.generateSchema()`.
+
+[source,java]
+----
+// Before
+class CustomConverter extends BeanOutputConverter<MyType> {
+
+    CustomConverter() {
+        super(MyType.class);
+    }
+
+    @Override
+    protected void postProcessSchema(JsonNode schema) {
+        // mutate schema
+    }
+}
+
+// After
+class CustomConverter extends BeanOutputConverter<MyType> {
+
+    CustomConverter() {
+        super(MyType.class);
+    }
+
+    @Override
+    protected String generateSchema() {
+        String schema = super.generateSchema();
+        // post-process schema
+        return schema;
+    }
+}
+----
+
 [[upgrading-to-2-0-0-M6]]
 == Upgrading to 2.0.0-M6
 
@@ -366,7 +415,6 @@ Code that cast to native types or read provider-specific metadata keys for these
 `com.anthropic:anthropic-java` is bumped from `2.16.1` (the version M3 shipped with) to `2.24.0`, binary-compatible at every surface `spring-ai-anthropic` uses.
 
 NOTE: If you are upgrading from `1.1.x` (or `1.0.x`), the bigger change for the Anthropic module landed in M3. See xref:api/chat/anthropic-migration.adoc[Migrating the Anthropic Module to the Official Java SDK] for the `RestClient` → SDK transition.
-
 
 [[upgrading-to-2-0-0-M3]]
 == Upgrading to 2.0.0-M3
