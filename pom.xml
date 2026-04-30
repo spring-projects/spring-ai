@@ -321,7 +321,7 @@
 		<azure-cosmos.version>5.22.0</azure-cosmos.version>
 		<elasticsearch-java.version>8.18.1</elasticsearch-java.version>
 		<weaviate-client.version>5.2.0</weaviate-client.version>
-		<qdrant.version>1.13.0</qdrant.version>
+		<qdrant.version>1.17.0</qdrant.version>
 		<typesense.version>1.3.0</typesense.version>
 		<opensearch-client.version>3.6.0</opensearch-client.version>
 		<opensearch-testcontainers.version>4.1.0</opensearch-testcontainers.version>
