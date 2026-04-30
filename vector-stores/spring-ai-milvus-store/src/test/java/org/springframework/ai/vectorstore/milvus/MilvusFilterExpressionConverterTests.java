@@ -40,6 +40,7 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR
 
 /**
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 public class MilvusFilterExpressionConverterTests {
 
@@ -341,6 +342,21 @@ public class MilvusFilterExpressionConverterTests {
 		String vectorExpr = this.converter
 			.convertExpression(new Expression(EQ, new Key("key\\inject"), new Value("v")));
 		assertThat(vectorExpr).isEqualTo("metadata[\"key\\\\inject\"] == \"v\"");
+	}
+
+	@Test
+	public void testToFilterExpressionLiteralEscapesInjection() {
+		// Plain value
+		assertThat(MilvusFilterExpressionConverter.toFilterExpressionLiteral("plain-id")).isEqualTo("\"plain-id\"");
+		// Single quote passes through unchanged (JSON does not require escaping), but the
+		// outer double quotes prevent it from breaking out of the string literal.
+		assertThat(MilvusFilterExpressionConverter.toFilterExpressionLiteral("x' || doc_id != 'x"))
+			.isEqualTo("\"x' || doc_id != 'x\"");
+		// Double quotes, backslashes and control chars are JSON-escaped.
+		assertThat(MilvusFilterExpressionConverter.toFilterExpressionLiteral("with\"dquote"))
+			.isEqualTo("\"with\\\"dquote\"");
+		assertThat(MilvusFilterExpressionConverter.toFilterExpressionLiteral("back\\slash\nnewline"))
+			.isEqualTo("\"back\\\\slash\\nnewline\"");
 	}
 
 }
