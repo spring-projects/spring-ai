@@ -29,6 +29,7 @@ import org.springframework.util.Assert;
  * <a href="https://milvus.io/docs/json-field-overview.md">json-field-overview</a>
  *
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 public class MilvusFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
@@ -79,6 +80,23 @@ public class MilvusFilterExpressionConverter extends AbstractFilterExpressionCon
 	@Override
 	protected void doSingleValue(Object value, StringBuilder context) {
 		emitJsonValue(value, context);
+	}
+
+	/**
+	 * Serialize a value as a Milvus filter-expression literal using the same
+	 * Jackson-based JSON escaping applied to values inside {@link Expression} conversion.
+	 * Produces a double-quoted, fully escaped string for text values (e.g.
+	 * {@code "a\"b"}), which Milvus accepts as a string literal in filter expressions.
+	 * This is intended for callers that build filter expressions by hand (e.g.
+	 * {@code id in [...]} deletes) and need to inline user-supplied values safely without
+	 * manual quote concatenation.
+	 * @param value the value to serialize
+	 * @return the escaped literal suitable for inlining in a Milvus filter expression
+	 */
+	static String toFilterExpressionLiteral(Object value) {
+		StringBuilder sb = new StringBuilder();
+		emitJsonValue(value, sb);
+		return sb.toString();
 	}
 
 }

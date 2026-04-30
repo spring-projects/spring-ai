@@ -284,8 +284,14 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	public void doDelete(List<String> idList) {
 		Assert.notNull(idList, "Document id list must not be null");
 
+		// Ids are user-supplied strings that get inlined into a Milvus filter
+		// expression. Delegate escaping to the same Jackson-based JSON serialization
+		// used by MilvusFilterExpressionConverter so quotes, backslashes and control
+		// chars cannot break out of the string literal and inject filter syntax.
 		String deleteExpression = String.format("%s in [%s]", this.idFieldName,
-				idList.stream().map(id -> "'" + id + "'").collect(Collectors.joining(",")));
+				idList.stream()
+					.map(MilvusFilterExpressionConverter::toFilterExpressionLiteral)
+					.collect(Collectors.joining(",")));
 
 		R<MutationResult> status = this.milvusClient.delete(DeleteParam.newBuilder()
 			.withDatabaseName(this.databaseName)

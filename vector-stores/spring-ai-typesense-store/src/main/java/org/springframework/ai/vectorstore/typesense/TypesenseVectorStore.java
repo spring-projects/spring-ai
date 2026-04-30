@@ -172,7 +172,12 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	@Override
 	public void doDelete(List<String> idList) {
 		DeleteDocumentsParameters deleteDocumentsParameters = new DeleteDocumentsParameters();
-		deleteDocumentsParameters.filterBy(DOC_ID_FIELD_NAME + ":=[" + String.join(",", idList) + "]");
+		// Typesense filter_by for the id field expects bare string values, not quoted
+		// literals — e.g. id: [id1,id2]. Typesense document IDs are restricted to
+		// URL-safe characters (no commas, brackets, or quotes), so raw string joining
+		// is safe here. The operator is `: ` (not `:=`) per the Typesense recommendation
+		// for multi-value id filters.
+		deleteDocumentsParameters.filterBy(DOC_ID_FIELD_NAME + ": [" + String.join(",", idList) + "]");
 
 		try {
 			int deletedDocs = (Integer) this.client.collections(this.collectionName)
