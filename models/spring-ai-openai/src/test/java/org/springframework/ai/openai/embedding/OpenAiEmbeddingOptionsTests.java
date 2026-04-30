@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai;
+package org.springframework.ai.openai.embedding;
 
 import java.util.List;
 
 import com.openai.models.embeddings.EmbeddingCreateParams;
 import org.junit.jupiter.api.Test;
+
+import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
