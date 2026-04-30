@@ -46,7 +46,7 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 	/**
 	 * The format to return the embeddings in. Can be either float or base64.
 	 */
-	private @Nullable String encodingFormat;
+	private @Nullable EncodingFormat encodingFormat;
 
 	/*
 	 * The number of dimensions the resulting output embeddings should have. Only
@@ -66,11 +66,11 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 		this.user = user;
 	}
 
-	public @Nullable String getEncodingFormat() {
+	public @Nullable EncodingFormat getEncodingFormat() {
 		return this.encodingFormat;
 	}
 
-	public void setEncodingFormat(@Nullable String encodingFormat) {
+	public void setEncodingFormat(@Nullable EncodingFormat encodingFormat) {
 		this.encodingFormat = encodingFormat;
 	}
 
@@ -110,12 +110,31 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 			builder.user(this.getUser());
 		}
 		if (this.getEncodingFormat() != null) {
-			builder.encodingFormat(EmbeddingCreateParams.EncodingFormat.of(this.getEncodingFormat()));
+			builder.encodingFormat(EmbeddingCreateParams.EncodingFormat.of(this.getEncodingFormat().getValue()));
 		}
 		if (this.getDimensions() != null) {
 			builder.dimensions(this.getDimensions());
 		}
 		return builder.build();
+	}
+
+	/**
+	 * The format to return the embeddings in. Can be either float or base64.
+	 */
+	public enum EncodingFormat {
+
+		FLOAT("float"), BASE64("base64");
+
+		private final String value;
+
+		EncodingFormat(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
 	}
 
 	public static final class Builder {
@@ -199,7 +218,8 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 				this.options.setUser(openAiCreateParams.user().get());
 			}
 			if (openAiCreateParams.encodingFormat().isPresent()) {
-				this.options.setEncodingFormat(openAiCreateParams.encodingFormat().get().asString());
+				this.options.setEncodingFormat(
+						EncodingFormat.valueOf(openAiCreateParams.encodingFormat().get().asString().toUpperCase()));
 			}
 			if (openAiCreateParams.dimensions().isPresent()) {
 				this.options.setDimensions(Math.toIntExact(openAiCreateParams.dimensions().get()));
@@ -212,7 +232,7 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 			return this;
 		}
 
-		public Builder encodingFormat(String encodingFormat) {
+		public Builder encodingFormat(EncodingFormat encodingFormat) {
 			this.options.setEncodingFormat(encodingFormat);
 			return this;
 		}

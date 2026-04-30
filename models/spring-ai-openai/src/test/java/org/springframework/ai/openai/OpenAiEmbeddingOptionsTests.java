@@ -39,26 +39,26 @@ class OpenAiEmbeddingOptionsTests {
 	void encodingFormatCanBeConfigured() {
 		OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
 			.model("test-model")
-			.encodingFormat("base64")
+			.encodingFormat(OpenAiEmbeddingOptions.EncodingFormat.FLOAT)
 			.build();
 
 		EmbeddingCreateParams createParams = options.toOpenAiCreateParams(List.of("test input"));
 
-		assertThat(createParams.encodingFormat()).contains(EmbeddingCreateParams.EncodingFormat.BASE64);
+		assertThat(createParams.encodingFormat()).contains(EmbeddingCreateParams.EncodingFormat.FLOAT);
 	}
 
 	@Test
 	void encodingFormatIsCopiedAndMerged() {
 		OpenAiEmbeddingOptions source = OpenAiEmbeddingOptions.builder()
 			.model("test-model")
-			.encodingFormat("base64")
+			.encodingFormat(OpenAiEmbeddingOptions.EncodingFormat.FLOAT)
 			.build();
 
 		OpenAiEmbeddingOptions copied = OpenAiEmbeddingOptions.builder().from(source).build();
 		OpenAiEmbeddingOptions merged = OpenAiEmbeddingOptions.builder().model("other-model").merge(source).build();
 
-		assertThat(copied.getEncodingFormat()).isEqualTo("base64");
-		assertThat(merged.getEncodingFormat()).isEqualTo("base64");
+		assertThat(copied.getEncodingFormat()).isEqualTo(OpenAiEmbeddingOptions.EncodingFormat.FLOAT);
+		assertThat(merged.getEncodingFormat()).isEqualTo(OpenAiEmbeddingOptions.EncodingFormat.FLOAT);
 	}
 
 }
