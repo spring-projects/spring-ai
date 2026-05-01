@@ -176,8 +176,8 @@ ChatResponse response = chatModel.call(
 | model | Name of the Claude model to use. Models include: `claude-sonnet-4-20250514`, `claude-opus-4-20250514`, `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022`, etc. See https://docs.anthropic.com/en/docs/about-claude/models[Claude Models]. | `claude-sonnet-4-20250514`
 | maxTokens | The maximum number of tokens to generate in the response. | 4096
 | temperature | Controls randomness in the response. Higher values make output more random, lower values make it more deterministic. Range: 0.0-1.0 | 1.0
-| topP | Nucleus sampling parameter. The model considers tokens with top_p probability mass. | -
-| topK | Only sample from the top K options for each token. | -
+| topP | Nucleus sampling parameter. The model considers tokens with top_p probability mass. *Supported on Claude Opus 4.6 and earlier models only. Deprecated by Anthropic for models released after Claude Opus 4.6 (e.g. `claude-opus-4-7`); values `< 0.99` are rejected with HTTP 400, and values `>= 0.99` are accepted as a backward-compatibility no-op (no actual filtering applied).* | -
+| topK | Only sample from the top K options for each token. *Supported on Claude Opus 4.6 and earlier models only. Deprecated by Anthropic for models released after Claude Opus 4.6 (e.g. `claude-opus-4-7`); any value is rejected with HTTP 400 on those models.* | -
 | stopSequences | Custom sequences that will cause the model to stop generating. | -
 | apiKey | The API key for authentication. Auto-detects from `ANTHROPIC_API_KEY` environment variable if not set. | -
 | baseUrl | The base URL for the Anthropic API. | https://api.anthropic.com
