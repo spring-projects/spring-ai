@@ -286,10 +286,8 @@
 		<awssdk.version>2.41.22</awssdk.version>
 
 		<djl.version>0.32.0</djl.version>
-		<onnxruntime.version>1.19.2</onnxruntime.version>
 		<com.google.cloud.version>26.72.0</com.google.cloud.version>
 		<com.google.genai.version>1.44.0</com.google.genai.version>
-		<ibm.sdk.version>9.20.0</ibm.sdk.version>
 		<jsonschema.version>5.0.0</jsonschema.version>
 		<swagger-annotations.version>2.2.38</swagger-annotations.version>
 		<mockk-jvm.version>1.13.13</mockk-jvm.version>
@@ -319,15 +317,11 @@
 		<azure-json.version>1.5.1</azure-json.version>
 		<azure-search.version>11.7.6</azure-search.version>
 		<azure-cosmos.version>5.22.0</azure-cosmos.version>
-		<elasticsearch-java.version>8.18.1</elasticsearch-java.version>
 		<weaviate-client.version>5.2.0</weaviate-client.version>
 		<qdrant.version>1.17.0</qdrant.version>
 		<typesense.version>1.3.0</typesense.version>
 		<opensearch-client.version>3.6.0</opensearch-client.version>
 		<opensearch-testcontainers.version>4.1.0</opensearch-testcontainers.version>
-		<postgresql.version>42.7.7</postgresql.version>
-		<mariadb.version>3.5.3</mariadb.version>
-		<mysql.version>9.2.0</mysql.version>
 		<commonmark.version>0.22.0</commonmark.version>
 		<infinispan.version>16.0.9</infinispan.version>
 		<version.protostream>6.0.6</version.protostream>
@@ -358,11 +352,8 @@
 		<jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
 		<flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
 		<maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
-		<asciidoctor-maven-plugin.version>2.2.3</asciidoctor-maven-plugin.version>
 		<maven-assembly-plugin.version>3.7.0</maven-assembly-plugin.version>
-		<maven-dependency-plugin.version>3.5.0</maven-dependency-plugin.version>
 		<maven-site-plugin.version>4.0.0-M13</maven-site-plugin.version>
-		<maven-project-info-reports-plugin.version>3.4.5</maven-project-info-reports-plugin.version>
 		<maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
 		<spring-javaformat-maven-plugin.version>0.0.47</spring-javaformat-maven-plugin.version>
 		<antora-maven-plugin.version>1.0.0-alpha.5</antora-maven-plugin.version>
