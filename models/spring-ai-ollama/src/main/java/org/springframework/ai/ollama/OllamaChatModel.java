@@ -52,7 +52,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -234,6 +233,7 @@ public class OllamaChatModel implements ChatModel {
 		// Before moving any further, build the final request Prompt,
 		// merging runtime and default options.
 		Prompt requestPrompt = buildRequestPrompt(prompt);
+		verifyPromptChatOptions(requestPrompt);
 		return this.internalCall(requestPrompt, null);
 	}
 
@@ -314,6 +314,7 @@ public class OllamaChatModel implements ChatModel {
 		// Before moving any further, build the final request Prompt,
 		// merging runtime and default options.
 		Prompt requestPrompt = buildRequestPrompt(prompt);
+		verifyPromptChatOptions(requestPrompt);
 		return this.internalStream(requestPrompt, null);
 	}
 
@@ -418,19 +419,12 @@ public class OllamaChatModel implements ChatModel {
 		});
 	}
 
-	Prompt buildRequestPrompt(Prompt prompt) {
+	private void verifyPromptChatOptions(Prompt prompt) {
+		var chatOptions = prompt.getOptions();
 
-		var requestOptions = (OllamaChatOptions) prompt.getOptions();
-		requestOptions = requestOptions == null ? this.defaultOptions : requestOptions;
-
-		// Validate request options
-		if (!StringUtils.hasText(requestOptions.getModel())) {
+		if (chatOptions != null && !StringUtils.hasText(chatOptions.getModel())) {
 			throw new IllegalArgumentException("model cannot be null or empty");
 		}
-
-		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
-
-		return prompt.mutate().chatOptions(requestOptions).build();
 	}
 
 	/**

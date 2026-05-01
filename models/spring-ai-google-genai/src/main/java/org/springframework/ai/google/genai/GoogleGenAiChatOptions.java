@@ -626,7 +626,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			.googleSearchRetrieval(this.googleSearchRetrieval)
 			.includeServerSideToolInvocations(this.includeServerSideToolInvocations)
 			.safetySettings(this.safetySettings)
-			.labels(this.labels);
+			.labels(this.labels)
+			.responseMimeType(this.responseMimeType);
 	}
 
 	public enum TransportType {

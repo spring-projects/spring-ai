@@ -63,7 +63,6 @@ import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionRequest;
 import org.springframework.ai.minimax.api.MiniMaxApiConstants;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -472,16 +471,6 @@ public class MiniMaxChatModel implements ChatModel {
 
 		return new ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(), chunk.systemFingerprint(),
 				"chat.completion", null, null);
-	}
-
-	Prompt buildRequestPrompt(Prompt prompt) {
-		// Process runtime options
-		MiniMaxChatOptions runtimeOptions = (MiniMaxChatOptions) prompt.getOptions();
-		runtimeOptions = runtimeOptions == null ? this.defaultOptions : runtimeOptions;
-
-		ToolCallingChatOptions.validateToolCallbacks(runtimeOptions.getToolCallbacks());
-
-		return prompt.mutate().chatOptions(runtimeOptions).build();
 	}
 
 	/**

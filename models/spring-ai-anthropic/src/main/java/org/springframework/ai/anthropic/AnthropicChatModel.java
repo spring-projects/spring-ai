@@ -93,7 +93,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -599,15 +598,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		return response;
-	}
-
-	Prompt buildRequestPrompt(Prompt prompt) {
-		var requestOptions = (AnthropicChatOptions) prompt.getOptions();
-		requestOptions = requestOptions == null ? this.options : requestOptions;
-
-		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
-
-		return prompt.mutate().chatOptions(requestOptions).build();
 	}
 
 	/**

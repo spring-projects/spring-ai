@@ -85,7 +85,6 @@ import org.springframework.ai.google.genai.schema.GoogleGenAiToolCallingManager;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -489,16 +488,6 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 		return response;
 
-	}
-
-	Prompt buildRequestPrompt(Prompt prompt) {
-		// Process runtime options
-		GoogleGenAiChatOptions runtimeOptions = (GoogleGenAiChatOptions) prompt.getOptions();
-		runtimeOptions = runtimeOptions == null ? this.defaultOptions : runtimeOptions;
-
-		ToolCallingChatOptions.validateToolCallbacks(runtimeOptions.getToolCallbacks());
-
-		return prompt.mutate().chatOptions(runtimeOptions).build();
 	}
 
 	@Override

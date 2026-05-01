@@ -63,7 +63,6 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.T
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -385,20 +384,6 @@ public class MistralAiChatModel implements ChatModel {
 
 		return new ChatCompletion(chunk.id(), "chat.completion", Objects.requireNonNull(chunk.created()), chunk.model(),
 				choices, chunk.usage());
-	}
-
-	Prompt buildRequestPrompt(Prompt prompt) {
-		MistralAiChatOptions.Builder requestBuilder = this.defaultOptions.mutate();
-
-		if (prompt.getOptions() != null) {
-			requestBuilder.combineWith(prompt.getOptions().mutate());
-		}
-
-		MistralAiChatOptions requestOptions = requestBuilder.build();
-
-		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
-
-		return new Prompt(prompt.getInstructions(), requestOptions);
 	}
 
 	/**

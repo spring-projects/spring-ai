@@ -31,9 +31,6 @@ import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.definition.DefaultToolDefinition;
-import org.springframework.ai.tool.definition.ToolDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -61,10 +58,10 @@ class OllamaChatRequestTests {
 		assertThat(request.stream()).isFalse();
 
 		assertThat(request.model()).isEqualTo("MODEL_NAME");
-		assertThat(request.options().get("temperature")).isEqualTo(66.6);
-		assertThat(request.options().get("top_k")).isEqualTo(99);
-		assertThat(request.options().get("num_gpu")).isEqualTo(1);
-		assertThat(request.options().get("top_p")).isNull();
+		assertThat(request.options()).containsEntry("temperature", 66.6);
+		assertThat(request.options()).containsEntry("top_k", 99);
+		assertThat(request.options()).containsEntry("num_gpu", 1);
+		assertThat(request.options()).doesNotContainKey("top_p");
 	}
 
 	@Test
@@ -84,10 +81,10 @@ class OllamaChatRequestTests {
 		assertThat(request.stream()).isTrue();
 
 		assertThat(request.model()).isEqualTo(OllamaModel.QWEN_2_5_3B.id());
-		assertThat(request.options().get("temperature")).isEqualTo(0.8);
-		assertThat(request.options()).doesNotContainKey("top_k");
-		assertThat(request.options().get("num_gpu")).isEqualTo(2);
-		assertThat(request.options().get("top_p")).isEqualTo(0.5);
+		assertThat(request.options()).containsEntry("temperature", 0.8);
+		assertThat(request.options()).containsEntry("top_k", 99);
+		assertThat(request.options()).containsEntry("num_gpu", 2);
+		assertThat(request.options()).containsEntry("top_p", 0.5);
 	}
 
 	@Test
@@ -192,26 +189,6 @@ class OllamaChatRequestTests {
 		var assistantMessage = new AssistantMessage("Test assistant message");
 
 		return List.of(systemMessage, userMessage, toolResponseMessage, assistantMessage);
-	}
-
-	static class TestToolCallback implements ToolCallback {
-
-		private final ToolDefinition toolDefinition;
-
-		TestToolCallback(String name) {
-			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
-		}
-
-		@Override
-		public ToolDefinition getToolDefinition() {
-			return this.toolDefinition;
-		}
-
-		@Override
-		public String call(String toolInput) {
-			return "Mission accomplished!";
-		}
-
 	}
 
 }
