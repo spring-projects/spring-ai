@@ -27,7 +27,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.client.advisor.PromptChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
@@ -47,7 +47,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Tests for the ChatClient with a focus on verifying the handling of conversation memory
- * and the integration of PromptChatMemoryAdvisor to ensure accurate responses based on
+ * and the integration of MessageChatMemoryAdvisor to ensure accurate responses based on
  * previous interactions.
  *
  * @author Christian Tzolov
@@ -67,7 +67,7 @@ public class ChatClientAdvisorTests {
 	}
 
 	@Test
-	public void promptChatMemory() {
+	public void messageChatMemory() {
 		ChatResponseMetadata chatResponseMetadata = ChatResponseMetadata.builder().build();
 
 		given(this.chatModel.call(this.promptCaptor.capture()))
@@ -83,7 +83,7 @@ public class ChatClientAdvisorTests {
 
 		var chatClient = ChatClient.builder(this.chatModel)
 			.defaultSystem("Default system text.")
-			.defaultAdvisors(PromptChatMemoryAdvisor.builder(chatMemory).build())
+			.defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
 			.build();
 
 		ChatResponse chatResponse = chatClient.prompt()
@@ -95,20 +95,14 @@ public class ChatClientAdvisorTests {
 		String content = chatResponse.getResult().getOutput().getText();
 		assertThat(content).isEqualTo("Hello John");
 
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(2);
 		Message systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
-		assertThat(systemMessage.getText()).isEqualToIgnoringWhitespace("""
-				Default system text.
-
-				Use the conversation memory from the MEMORY section to provide accurate answers.
-
-				---------------------
-				MEMORY:
-				---------------------
-				""");
+		assertThat(systemMessage.getText()).isEqualTo("Default system text.");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(1);
-		assertThat(userMessage.getText()).isEqualToIgnoringWhitespace("my name is John");
+		assertThat(userMessage.getText()).isEqualTo("my name is John");
+		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 
 		content = chatClient.prompt()
 			.user("What is my name?")
@@ -118,26 +112,26 @@ public class ChatClientAdvisorTests {
 
 		assertThat(content).isEqualTo("Your name is John");
 
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(4);
 		systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
-		assertThat(systemMessage.getText()).isEqualToIgnoringWhitespace("""
-				Default system text.
-
-				Use the conversation memory from the MEMORY section to provide accurate answers.
-
-				---------------------
-				MEMORY:
-				USER:my name is John
-				ASSISTANT:Hello John
-				---------------------
-				""");
+		assertThat(systemMessage.getText()).isEqualTo("Default system text.");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
-		userMessage = this.promptCaptor.getValue().getInstructions().get(1);
-		assertThat(userMessage.getText()).isEqualToIgnoringWhitespace("What is my name?");
+		Message memoryUserMessage = this.promptCaptor.getValue().getInstructions().get(1);
+		assertThat(memoryUserMessage.getText()).isEqualTo("my name is John");
+		assertThat(memoryUserMessage.getMessageType()).isEqualTo(MessageType.USER);
+
+		Message memoryAssistantMessage = this.promptCaptor.getValue().getInstructions().get(2);
+		assertThat(memoryAssistantMessage.getText()).isEqualTo("Hello John");
+		assertThat(memoryAssistantMessage.getMessageType()).isEqualTo(MessageType.ASSISTANT);
+
+		userMessage = this.promptCaptor.getValue().getInstructions().get(3);
+		assertThat(userMessage.getText()).isEqualTo("What is my name?");
+		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 	}
 
 	@Test
-	public void streamingPromptChatMemory() {
+	public void streamingMessageChatMemory() {
 		given(this.chatModel.stream(this.promptCaptor.capture())).willReturn(Flux.generate(
 				() -> new ChatResponse(List.of(new Generation(new AssistantMessage("Hello John")))), (state, sink) -> {
 					sink.next(state);
@@ -159,7 +153,7 @@ public class ChatClientAdvisorTests {
 
 		var chatClient = ChatClient.builder(this.chatModel)
 			.defaultSystem("Default system text.")
-			.defaultAdvisors(PromptChatMemoryAdvisor.builder(chatMemory).build())
+			.defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
 			.build();
 
 		var content = join(chatClient.prompt()
@@ -170,20 +164,14 @@ public class ChatClientAdvisorTests {
 
 		assertThat(content).isEqualTo("Hello John");
 
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(2);
 		Message systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
-		assertThat(systemMessage.getText()).isEqualToIgnoringWhitespace("""
-				Default system text.
-
-				Use the conversation memory from the MEMORY section to provide accurate answers.
-
-				---------------------
-				MEMORY:
-				---------------------
-				""");
+		assertThat(systemMessage.getText()).isEqualTo("Default system text.");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(1);
-		assertThat(userMessage.getText()).isEqualToIgnoringWhitespace("my name is John");
+		assertThat(userMessage.getText()).isEqualTo("my name is John");
+		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 
 		content = join(chatClient.prompt()
 			.user("What is my name?")
@@ -193,22 +181,22 @@ public class ChatClientAdvisorTests {
 
 		assertThat(content).isEqualTo("Your name is John");
 
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(4);
 		systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
-		assertThat(systemMessage.getText()).isEqualToIgnoringWhitespace("""
-				Default system text.
-
-				Use the conversation memory from the MEMORY section to provide accurate answers.
-
-				---------------------
-				MEMORY:
-				USER:my name is John
-				ASSISTANT:Hello John
-				---------------------
-				""");
+		assertThat(systemMessage.getText()).isEqualTo("Default system text.");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
-		userMessage = this.promptCaptor.getValue().getInstructions().get(1);
-		assertThat(userMessage.getText()).isEqualToIgnoringWhitespace("What is my name?");
+		Message memoryUserMessage = this.promptCaptor.getValue().getInstructions().get(1);
+		assertThat(memoryUserMessage.getText()).isEqualTo("my name is John");
+		assertThat(memoryUserMessage.getMessageType()).isEqualTo(MessageType.USER);
+
+		Message memoryAssistantMessage = this.promptCaptor.getValue().getInstructions().get(2);
+		assertThat(memoryAssistantMessage.getText()).isEqualTo("Hello John");
+		assertThat(memoryAssistantMessage.getMessageType()).isEqualTo(MessageType.ASSISTANT);
+
+		userMessage = this.promptCaptor.getValue().getInstructions().get(3);
+		assertThat(userMessage.getText()).isEqualTo("What is my name?");
+		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 	}
 
 }

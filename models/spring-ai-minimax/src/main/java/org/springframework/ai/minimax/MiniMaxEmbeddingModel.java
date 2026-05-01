@@ -174,8 +174,9 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				MiniMaxApi.EmbeddingList apiEmbeddingResponse = RetryUtils.execute(this.retryTemplate,
-						() -> this.miniMaxApi.embeddings(apiRequest).getBody());
+				var embeddingResponseEntity = RetryUtils.execute(this.retryTemplate,
+						() -> this.miniMaxApi.embeddings(apiRequest));
+				MiniMaxApi.EmbeddingList apiEmbeddingResponse = embeddingResponseEntity.getBody();
 
 				if (apiEmbeddingResponse == null) {
 					logger.warn("No embeddings returned for request: {}", request);
