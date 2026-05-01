@@ -109,13 +109,11 @@ public final class OllamaApi {
 		Assert.notNull(chatRequest, REQUEST_BODY_NULL_ERROR);
 		Assert.isTrue(!chatRequest.stream(), "Stream mode must be disabled.");
 
-		// TODO Leverage https://github.com/spring-projects/spring-framework/issues/36173 once available
-		ChatResponse chatResponse = this.restClient.post()
+		return this.restClient.post()
 				.uri("/api/chat")
 				.body(chatRequest)
 				.retrieve()
-				.body(ChatResponse.class);
-		return Objects.requireNonNull(chatResponse);
+				.requiredBody(ChatResponse.class);
 	}
 
 	/**
@@ -175,25 +173,21 @@ public final class OllamaApi {
 	public EmbeddingsResponse embed(EmbeddingsRequest embeddingsRequest) {
 		Assert.notNull(embeddingsRequest, REQUEST_BODY_NULL_ERROR);
 
-		// TODO Leverage https://github.com/spring-projects/spring-framework/issues/36173 once available
-		EmbeddingsResponse embeddingsResponse = this.restClient.post()
+		return this.restClient.post()
 				.uri("/api/embed")
 				.body(embeddingsRequest)
 				.retrieve()
-				.body(EmbeddingsResponse.class);
-		return Objects.requireNonNull(embeddingsResponse);
+				.requiredBody(EmbeddingsResponse.class);
 	}
 
 	/**
 	 * List models that are available locally on the machine where Ollama is running.
 	 */
 	public ListModelResponse listModels() {
-		// TODO Leverage https://github.com/spring-projects/spring-framework/issues/36173 once available
-		ListModelResponse listModelResponse = this.restClient.get()
+		return this.restClient.get()
 				.uri("/api/tags")
 				.retrieve()
-				.body(ListModelResponse.class);
-		return Objects.requireNonNull(listModelResponse);
+				.requiredBody(ListModelResponse.class);
 	}
 
 	/**
@@ -201,13 +195,12 @@ public final class OllamaApi {
 	 */
 	public ShowModelResponse showModel(ShowModelRequest showModelRequest) {
 		Assert.notNull(showModelRequest, "showModelRequest must not be null");
-		// TODO Leverage https://github.com/spring-projects/spring-framework/issues/36173 once available
-		ShowModelResponse showModelResponse = this.restClient.post()
+
+		return this.restClient.post()
 				.uri("/api/show")
 				.body(showModelRequest)
 				.retrieve()
-				.body(ShowModelResponse.class);
-		return Objects.requireNonNull(showModelResponse);
+				.requiredBody(ShowModelResponse.class);
 	}
 
 	/**
