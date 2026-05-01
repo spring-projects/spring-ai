@@ -17,6 +17,8 @@
 package org.springframework.ai.mcp.annotation.provider.tool;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -125,12 +127,15 @@ public class AsyncMcpToolProvider extends AbstractMcpToolProvider {
 							&& !ReactiveUtils.isReactiveReturnTypeOfCallToolResult(mcpToolMethod)) {
 
 						ReactiveUtils.getReactiveReturnTypeArgument(mcpToolMethod).ifPresent(typeArgument -> {
-							Class<?> methodReturnType = typeArgument instanceof Class<?> ? (Class<?>) typeArgument
-									: null;
-							if (!ClassUtils.isPrimitiveOrWrapper(methodReturnType)
-									&& !ClassUtils.isSimpleValueType(methodReturnType)) {
-								toolBuilder.outputSchema(this.getJsonMapper(),
-										McpJsonSchemaGenerator.generateFromClass((Class<?>) typeArgument));
+							if (typeArgument instanceof Class<?> methodReturnType) {
+								if (!ClassUtils.isPrimitiveOrWrapper(methodReturnType)
+										&& !ClassUtils.isSimpleValueType(methodReturnType)) {
+									toolBuilder.outputSchema(this.getJsonMapper(),
+											McpJsonSchemaGenerator.generateFromClass(methodReturnType));
+								}
+							}
+							else if (typeArgument instanceof ParameterizedType) {
+								toolBuilder.outputSchema(this.getJsonMapper(), McpJsonSchemaGenerator.generateFromType(typeArgument));
 							}
 						});
 					}

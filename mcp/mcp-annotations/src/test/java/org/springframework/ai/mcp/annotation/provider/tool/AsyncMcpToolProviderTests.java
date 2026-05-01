@@ -1026,4 +1026,83 @@ public class AsyncMcpToolProviderTests {
 		assertThat(toolSpec.tool().outputSchema()).isNotNull();
 	}
 
+	@Test
+	void testGetToolSpecificationsWithGenericReturnType() {
+		// Helper class for generic response wrapper (similar to OkExApiResponse)
+		class ApiResponse<T> {
+
+			private String code;
+
+			private String msg;
+
+			private List<T> data;
+
+			public ApiResponse() {
+			}
+
+			public ApiResponse(String code, String msg, List<T> data) {
+				this.code = code;
+				this.msg = msg;
+				this.data = data;
+			}
+
+			public String getCode() {
+				return code;
+			}
+
+			public void setCode(String code) {
+				this.code = code;
+			}
+
+			public String getMsg() {
+				return msg;
+			}
+
+			public void setMsg(String msg) {
+				this.msg = msg;
+			}
+
+			public List<T> getData() {
+				return data;
+			}
+
+			public void setData(List<T> data) {
+				this.data = data;
+			}
+
+		}
+
+		// Test with parameterized type: Mono<ApiResponse<String>>
+		class GenericReturnTool {
+
+			@McpTool(name = "generic-tool", description = "Tool returning generic type",
+					generateOutputSchema = true)
+			public Mono<ApiResponse<String>> genericTool(String input) {
+				ApiResponse<String> response = new ApiResponse<>("0", "", List.of(input));
+				return Mono.just(response);
+			}
+
+		}
+
+		GenericReturnTool toolObject = new GenericReturnTool();
+		AsyncMcpToolProvider provider = new AsyncMcpToolProvider(List.of(toolObject));
+
+		List<AsyncToolSpecification> toolSpecs = provider.getToolSpecifications();
+
+		assertThat(toolSpecs).hasSize(1);
+		AsyncToolSpecification toolSpec = toolSpecs.get(0);
+
+		assertThat(toolSpec.tool().name()).isEqualTo("generic-tool");
+		assertThat(toolSpec.tool().description()).isEqualTo("Tool returning generic type");
+		assertThat(toolSpec.tool().inputSchema()).isNotNull();
+		// Output schema should be generated for parameterized types
+		assertThat(toolSpec.tool().outputSchema()).isNotNull();
+		
+		// Verify the output schema contains expected fields from ApiResponse
+		String outputSchemaString = toolSpec.tool().outputSchema().toString();
+		assertThat(outputSchemaString).contains("code");
+		assertThat(outputSchemaString).contains("msg");
+		assertThat(outputSchemaString).contains("data");
+	}
+
 }
