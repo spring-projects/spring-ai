@@ -51,14 +51,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Thomas Vitale
+ * @author Anders Swanson
  */
 @Testcontainers
 public class OracleVectorStoreAutoConfigurationIT {
 
 	@Container
-	static OracleContainer oracle23aiContainer = new OracleContainer("gvenzl/oracle-free:23-slim")
-		.withCopyFileToContainer(MountableFile.forClasspathResource("/oracle/initialize.sql"),
-				"/container-entrypoint-initdb.d/initialize.sql");
+	static OracleContainer oracleContainer = new OracleContainer("gvenzl/oracle-free:23-slim").withCopyFileToContainer(
+			MountableFile.forClasspathResource("/oracle/initialize.sql"),
+			"/container-entrypoint-initdb.d/initialize.sql");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(OracleVectorStoreAutoConfiguration.class,
@@ -68,9 +69,9 @@ public class OracleVectorStoreAutoConfigurationIT {
 				"spring.ai.vectorstore.oracle.initialize-schema=true",
 				"test.spring.ai.vectorstore.oracle.dimensions=384",
 				// JdbcTemplate configuration
-				String.format("spring.datasource.url=%s", oracle23aiContainer.getJdbcUrl()),
-				String.format("spring.datasource.username=%s", oracle23aiContainer.getUsername()),
-				String.format("spring.datasource.password=%s", oracle23aiContainer.getPassword()),
+				String.format("spring.datasource.url=%s", oracleContainer.getJdbcUrl()),
+				String.format("spring.datasource.username=%s", oracleContainer.getUsername()),
+				String.format("spring.datasource.password=%s", oracleContainer.getPassword()),
 				"spring.datasource.type=oracle.jdbc.pool.OracleDataSource");
 
 	List<Document> documents = List.of(
@@ -150,6 +151,60 @@ public class OracleVectorStoreAutoConfigurationIT {
 			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
 			assertThat(context.getBean(VectorStore.class)).isInstanceOf(OracleVectorStore.class);
 		});
+	}
+
+	@Test
+	public void customOracleIndexPropertiesAreApplied() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.vectorstore.oracle.initialize-schema=false",
+					"spring.ai.vectorstore.oracle.index-type=HNSW", "spring.ai.vectorstore.oracle.hnsw-neighbors=64",
+					"spring.ai.vectorstore.oracle.hnsw-ef-construction=300",
+					"spring.ai.vectorstore.oracle.ivf-neighbor-partitions=32",
+					"spring.ai.vectorstore.oracle.ivf-sample-per-partition=16",
+					"spring.ai.vectorstore.oracle.ivf-min-vectors-per-partition=8")
+			.run(context -> {
+				OracleVectorStoreProperties properties = context.getBean(OracleVectorStoreProperties.class);
+				OracleVectorStore vectorStore = context.getBean(OracleVectorStore.class);
+
+				assertThat(properties.getIndexType()).isEqualTo(OracleVectorStore.OracleVectorStoreIndexType.HNSW);
+				assertThat(properties.getHnswNeighbors()).isEqualTo(64);
+				assertThat(properties.getHnswEfConstruction()).isEqualTo(300);
+				assertThat(properties.getIvfNeighborPartitions()).isEqualTo(32);
+				assertThat(properties.getIvfSamplePerPartition()).isEqualTo(16);
+				assertThat(properties.getIvfMinVectorsPerPartition()).isEqualTo(8);
+
+				assertThat(vectorStore.getIndexType()).isEqualTo(OracleVectorStore.OracleVectorStoreIndexType.HNSW);
+				assertThat(vectorStore.getHnswNeighbors()).isEqualTo(64);
+				assertThat(vectorStore.getHnswEfConstruction()).isEqualTo(300);
+				assertThat(vectorStore.getIvfNeighborPartitions()).isEqualTo(32);
+				assertThat(vectorStore.getIvfSamplePerPartition()).isEqualTo(16);
+				assertThat(vectorStore.getIvfMinVectorsPerPartition()).isEqualTo(8);
+			});
+	}
+
+	@Test
+	public void invalidHnswPropertiesFailAtStartup() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.vectorstore.oracle.initialize-schema=false",
+					"spring.ai.vectorstore.oracle.index-type=HNSW", "spring.ai.vectorstore.oracle.hnsw-neighbors=0")
+			.run(context -> {
+				assertThat(context).hasFailed();
+				assertThat(context.getStartupFailure()).hasRootCauseInstanceOf(IllegalArgumentException.class)
+					.hasMessageContaining("HNSW neighbors must be greater than 0");
+			});
+	}
+
+	@Test
+	public void invalidIvfPropertiesFailAtStartup() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.vectorstore.oracle.initialize-schema=false",
+					"spring.ai.vectorstore.oracle.index-type=IVF",
+					"spring.ai.vectorstore.oracle.ivf-sample-per-partition=-2")
+			.run(context -> {
+				assertThat(context).hasFailed();
+				assertThat(context.getStartupFailure()).hasRootCauseInstanceOf(IllegalArgumentException.class)
+					.hasMessageContaining("IVF sample per partition must be greater than 0");
+			});
 	}
 
 	@Configuration(proxyBeanMethods = false)

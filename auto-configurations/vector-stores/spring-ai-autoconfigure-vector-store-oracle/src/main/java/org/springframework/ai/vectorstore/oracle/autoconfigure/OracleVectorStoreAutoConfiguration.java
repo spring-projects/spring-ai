@@ -42,6 +42,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * @author Eddú Meléndez
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Anders Swanson
  */
 @AutoConfiguration
 @ConditionalOnClass({ OracleVectorStore.class, DataSource.class, JdbcTemplate.class })
@@ -69,6 +70,11 @@ public class OracleVectorStoreAutoConfiguration {
 			.distanceType(properties.getDistanceType())
 			.dimensions(properties.getDimensions())
 			.searchAccuracy(properties.getSearchAccuracy())
+			.hnswNeighbors(properties.getHnswNeighbors())
+			.hnswEfConstruction(properties.getHnswEfConstruction())
+			.ivfNeighborPartitions(properties.getIvfNeighborPartitions())
+			.ivfSamplePerPartition(properties.getIvfSamplePerPartition())
+			.ivfMinVectorsPerPartition(properties.getIvfMinVectorsPerPartition())
 			.initializeSchema(properties.isInitializeSchema())
 			.removeExistingVectorStoreTable(properties.isRemoveExistingVectorStoreTable())
 			.forcedNormalization(properties.isForcedNormalization())

@@ -63,12 +63,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Eddú Meléndez
+ * @author Anders Swanson
  */
 @Testcontainers
 public class OracleVectorStoreObservationIT {
 
 	@Container
-	static OracleContainer oracle23aiContainer = new OracleContainer(OracleImage.DEFAULT_IMAGE)
+	static OracleContainer oracleContainer = new OracleContainer(OracleImage.DEFAULT_IMAGE)
 		.withCopyFileToContainer(MountableFile.forClasspathResource("/initialize.sql"),
 				"/container-entrypoint-initdb.d/initialize.sql")
 		.withStartupTimeout(Duration.ofMinutes(5))
@@ -210,9 +211,9 @@ public class OracleVectorStoreObservationIT {
 		@Bean
 		public DataSourceProperties dataSourceProperties() {
 			DataSourceProperties properties = new DataSourceProperties();
-			properties.setUrl(oracle23aiContainer.getJdbcUrl());
-			properties.setUsername(oracle23aiContainer.getUsername());
-			properties.setPassword(oracle23aiContainer.getPassword());
+			properties.setUrl(oracleContainer.getJdbcUrl());
+			properties.setUsername(oracleContainer.getUsername());
+			properties.setPassword(oracleContainer.getPassword());
 			return properties;
 		}
 

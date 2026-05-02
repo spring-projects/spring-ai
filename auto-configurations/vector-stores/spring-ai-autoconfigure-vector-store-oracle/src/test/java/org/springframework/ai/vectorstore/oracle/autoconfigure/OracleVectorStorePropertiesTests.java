@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Anders Swanson
  */
 public class OracleVectorStorePropertiesTests {
 
@@ -35,6 +36,12 @@ public class OracleVectorStorePropertiesTests {
 		assertThat(props.getDimensions()).isEqualTo(OracleVectorStore.DEFAULT_DIMENSIONS);
 		assertThat(props.getDistanceType()).isEqualTo(OracleVectorStoreDistanceType.COSINE);
 		assertThat(props.getIndexType()).isEqualTo(OracleVectorStoreIndexType.IVF);
+		assertThat(props.getHnswNeighbors()).isEqualTo(OracleVectorStore.DEFAULT_HNSW_NEIGHBORS);
+		assertThat(props.getHnswEfConstruction()).isEqualTo(OracleVectorStore.DEFAULT_HNSW_EF_CONSTRUCTION);
+		assertThat(props.getIvfNeighborPartitions()).isEqualTo(OracleVectorStore.DEFAULT_IVF_NEIGHBOR_PARTITIONS);
+		assertThat(props.getIvfSamplePerPartition()).isEqualTo(OracleVectorStore.DEFAULT_IVF_SAMPLE_PER_PARTITION);
+		assertThat(props.getIvfMinVectorsPerPartition())
+			.isEqualTo(OracleVectorStore.DEFAULT_IVF_MIN_VECTORS_PER_PARTITION);
 		assertThat(props.isRemoveExistingVectorStoreTable()).isFalse();
 	}
 
@@ -44,12 +51,22 @@ public class OracleVectorStorePropertiesTests {
 
 		props.setDimensions(1536);
 		props.setDistanceType(OracleVectorStoreDistanceType.EUCLIDEAN);
-		props.setIndexType(OracleVectorStoreIndexType.IVF);
+		props.setIndexType(OracleVectorStoreIndexType.HNSW);
+		props.setHnswNeighbors(64);
+		props.setHnswEfConstruction(300);
+		props.setIvfNeighborPartitions(20);
+		props.setIvfSamplePerPartition(16);
+		props.setIvfMinVectorsPerPartition(8);
 		props.setRemoveExistingVectorStoreTable(true);
 
 		assertThat(props.getDimensions()).isEqualTo(1536);
 		assertThat(props.getDistanceType()).isEqualTo(OracleVectorStoreDistanceType.EUCLIDEAN);
-		assertThat(props.getIndexType()).isEqualTo(OracleVectorStoreIndexType.IVF);
+		assertThat(props.getIndexType()).isEqualTo(OracleVectorStoreIndexType.HNSW);
+		assertThat(props.getHnswNeighbors()).isEqualTo(64);
+		assertThat(props.getHnswEfConstruction()).isEqualTo(300);
+		assertThat(props.getIvfNeighborPartitions()).isEqualTo(20);
+		assertThat(props.getIvfSamplePerPartition()).isEqualTo(16);
+		assertThat(props.getIvfMinVectorsPerPartition()).isEqualTo(8);
 		assertThat(props.isRemoveExistingVectorStoreTable()).isTrue();
 	}
 

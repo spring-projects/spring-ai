@@ -24,6 +24,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Configuration properties for Oracle Vector Store.
  *
  * @author Loïc Lefèvre
+ * @author Anders Swanson
  */
 @ConfigurationProperties(OracleVectorStoreProperties.CONFIG_PREFIX)
 public class OracleVectorStoreProperties extends CommonVectorStoreProperties {
@@ -43,6 +44,16 @@ public class OracleVectorStoreProperties extends CommonVectorStoreProperties {
 	private boolean forcedNormalization;
 
 	private int searchAccuracy = OracleVectorStore.DEFAULT_SEARCH_ACCURACY;
+
+	private int hnswNeighbors = OracleVectorStore.DEFAULT_HNSW_NEIGHBORS;
+
+	private int hnswEfConstruction = OracleVectorStore.DEFAULT_HNSW_EF_CONSTRUCTION;
+
+	private int ivfNeighborPartitions = OracleVectorStore.DEFAULT_IVF_NEIGHBOR_PARTITIONS;
+
+	private int ivfSamplePerPartition = OracleVectorStore.DEFAULT_IVF_SAMPLE_PER_PARTITION;
+
+	private int ivfMinVectorsPerPartition = OracleVectorStore.DEFAULT_IVF_MIN_VECTORS_PER_PARTITION;
 
 	public String getTableName() {
 		return this.tableName;
@@ -98,6 +109,96 @@ public class OracleVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public void setSearchAccuracy(int searchAccuracy) {
 		this.searchAccuracy = searchAccuracy;
+	}
+
+	/**
+	 * Returns the configured HNSW neighbors value.
+	 * @return the configured HNSW neighbors value
+	 * @since 2.0.0
+	 */
+	public int getHnswNeighbors() {
+		return this.hnswNeighbors;
+	}
+
+	/**
+	 * Sets the HNSW neighbors value.
+	 * @param hnswNeighbors the HNSW neighbors value
+	 * @since 2.0.0
+	 */
+	public void setHnswNeighbors(int hnswNeighbors) {
+		this.hnswNeighbors = hnswNeighbors;
+	}
+
+	/**
+	 * Returns the configured HNSW efConstruction value.
+	 * @return the configured HNSW efConstruction value
+	 * @since 2.0.0
+	 */
+	public int getHnswEfConstruction() {
+		return this.hnswEfConstruction;
+	}
+
+	/**
+	 * Sets the HNSW efConstruction value.
+	 * @param hnswEfConstruction the HNSW efConstruction value
+	 * @since 2.0.0
+	 */
+	public void setHnswEfConstruction(int hnswEfConstruction) {
+		this.hnswEfConstruction = hnswEfConstruction;
+	}
+
+	/**
+	 * Returns the configured IVF neighbor partitions value.
+	 * @return the configured IVF neighbor partitions value
+	 * @since 2.0.0
+	 */
+	public int getIvfNeighborPartitions() {
+		return this.ivfNeighborPartitions;
+	}
+
+	/**
+	 * Sets the IVF neighbor partitions value.
+	 * @param ivfNeighborPartitions the IVF neighbor partitions value
+	 * @since 2.0.0
+	 */
+	public void setIvfNeighborPartitions(int ivfNeighborPartitions) {
+		this.ivfNeighborPartitions = ivfNeighborPartitions;
+	}
+
+	/**
+	 * Returns the configured IVF sample per partition value.
+	 * @return the configured IVF sample per partition value
+	 * @since 2.0.0
+	 */
+	public int getIvfSamplePerPartition() {
+		return this.ivfSamplePerPartition;
+	}
+
+	/**
+	 * Sets the IVF sample per partition value.
+	 * @param ivfSamplePerPartition the IVF sample per partition value
+	 * @since 2.0.0
+	 */
+	public void setIvfSamplePerPartition(int ivfSamplePerPartition) {
+		this.ivfSamplePerPartition = ivfSamplePerPartition;
+	}
+
+	/**
+	 * Returns the configured IVF minimum vectors per partition value.
+	 * @return the configured IVF minimum vectors per partition value
+	 * @since 2.0.0
+	 */
+	public int getIvfMinVectorsPerPartition() {
+		return this.ivfMinVectorsPerPartition;
+	}
+
+	/**
+	 * Sets the IVF minimum vectors per partition value.
+	 * @param ivfMinVectorsPerPartition the IVF minimum vectors per partition value
+	 * @since 2.0.0
+	 */
+	public void setIvfMinVectorsPerPartition(int ivfMinVectorsPerPartition) {
+		this.ivfMinVectorsPerPartition = ivfMinVectorsPerPartition;
 	}
 
 }

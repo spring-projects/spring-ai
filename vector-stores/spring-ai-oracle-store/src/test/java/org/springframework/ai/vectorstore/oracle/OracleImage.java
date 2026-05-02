@@ -20,9 +20,13 @@ import org.testcontainers.utility.DockerImageName;
 
 /**
  * @author Thomas Vitale
+ * @author Anders Swanson
  */
 public final class OracleImage {
 
+	/**
+	 * The 23-slim tag resolves to the latest version of Oracle AI Database.
+	 */
 	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("gvenzl/oracle-free:23-slim");
 
 	private OracleImage() {

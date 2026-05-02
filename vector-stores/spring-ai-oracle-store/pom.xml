@@ -27,7 +27,7 @@
 	<artifactId>spring-ai-oracle-store</artifactId>
 	<packaging>jar</packaging>
 	<name>Spring AI Vector Store - Oracle</name>
-	<description>AI Vector Search from Oracle Database 23ai+ as a Spring AI Vector Store</description>
+	<description>AI Vector Search from Oracle AI Database as a Spring AI Vector Store</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>
