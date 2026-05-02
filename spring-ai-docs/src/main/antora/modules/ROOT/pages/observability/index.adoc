@@ -280,7 +280,7 @@ Use the metric name `gen_ai.client.token.usage` that is provided by the `Embeddi
 == Image Model
 
 NOTE: Observability features are currently supported only for `ImageModel` implementations from the following AI model
-providers: OpenAI.
+providers: OpenAI, Stability AI.
 Additional AI model providers will be supported in a future release.
 
 The `gen_ai.client.operation` observations are recorded on image model method calls. 
