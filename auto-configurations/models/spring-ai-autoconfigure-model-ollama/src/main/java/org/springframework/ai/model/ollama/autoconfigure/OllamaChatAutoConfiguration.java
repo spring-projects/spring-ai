@@ -69,7 +69,7 @@ public class OllamaChatAutoConfiguration {
 
 		var chatModel = OllamaChatModel.builder()
 			.ollamaApi(ollamaApi)
-			.defaultOptions(properties.getOptions())
+			.defaultOptions(properties.toOptions())
 			.toolCallingManager(toolCallingManager)
 			.toolExecutionEligibilityPredicate(
 					ollamaToolExecutionEligibilityPredicate.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))

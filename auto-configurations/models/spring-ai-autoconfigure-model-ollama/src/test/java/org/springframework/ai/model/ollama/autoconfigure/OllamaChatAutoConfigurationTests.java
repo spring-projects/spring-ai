@@ -34,10 +34,10 @@ public class OllamaChatAutoConfigurationTests {
 		new ApplicationContextRunner().withPropertyValues(
 		// @formatter:off
 				"spring.ai.ollama.base-url=TEST_BASE_URL",
-				"spring.ai.ollama.chat.options.model=MODEL_XYZ",
-				"spring.ai.ollama.chat.options.temperature=0.55",
-				"spring.ai.ollama.chat.options.topP=0.56",
-				"spring.ai.ollama.chat.options.topK=123")
+				"spring.ai.ollama.chat.model=MODEL_XYZ",
+				"spring.ai.ollama.chat.temperature=0.55",
+				"spring.ai.ollama.chat.topP=0.56",
+				"spring.ai.ollama.chat.topK=123")
 			// @formatter:on
 
 			.withConfiguration(BaseOllamaIT.ollamaAutoConfig(OllamaChatAutoConfiguration.class))
@@ -49,10 +49,10 @@ public class OllamaChatAutoConfigurationTests {
 
 				assertThat(chatProperties.getModel()).isEqualTo("MODEL_XYZ");
 
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
-				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56);
+				assertThat(chatProperties.toOptions().getTemperature()).isEqualTo(0.55);
+				assertThat(chatProperties.toOptions().getTopP()).isEqualTo(0.56);
 
-				assertThat(chatProperties.getOptions().getTopK()).isEqualTo(123);
+				assertThat(chatProperties.toOptions().getTopK()).isEqualTo(123);
 			});
 	}
 
