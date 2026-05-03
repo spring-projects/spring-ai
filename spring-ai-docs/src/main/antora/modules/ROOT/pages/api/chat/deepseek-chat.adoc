@@ -227,7 +227,7 @@ public class CodeGenerateController {
     @GetMapping("/ai/generatePythonCode")
     public String generate(@RequestParam(value = "message", defaultValue = "Please write quick sort code") String message) {
 		UserMessage userMessage = new UserMessage(message);
-		Message assistantMessage = DeepSeekAssistantMessage.prefixAssistantMessage("```python\\n");
+		Message assistantMessage = DeepSeekAssistantMessage.builder().content("```python\\n").prefix(true).build();
 		Prompt prompt = new Prompt(List.of(userMessage, assistantMessage), ChatOptions.builder().stopSequences(List.of("```")).build());
 		ChatResponse response = chatModel.call(prompt);
 		return response.getResult().getOutput().getText();
