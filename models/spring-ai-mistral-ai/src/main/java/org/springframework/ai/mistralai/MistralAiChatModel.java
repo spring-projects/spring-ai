@@ -88,6 +88,7 @@ import org.springframework.util.MimeType;
  * @author Alexandros Pappas
  * @author Nicolas Krier
  * @author Jason Smith
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public class MistralAiChatModel implements ChatModel {
@@ -405,8 +406,11 @@ public class MistralAiChatModel implements ChatModel {
 				ModelOptionsUtils.mergeOption(options.getToolChoice(), request.toolChoice()),
 				ModelOptionsUtils.mergeOption(options.getTemperature(), request.temperature()),
 				ModelOptionsUtils.mergeOption(options.getTopP(), request.topP()),
-				ModelOptionsUtils.mergeOption(options.getMaxTokens(), request.maxTokens()), request.stream(),
-				ModelOptionsUtils.mergeOption(options.getSafePrompt(), request.safePrompt()),
+				ModelOptionsUtils.mergeOption(options.getMaxTokens(), request.maxTokens()),
+				ModelOptionsUtils.mergeOption(options.getN(), request.n()),
+				ModelOptionsUtils.mergeOption(options.getPresencePenalty(), request.presencePenalty()),
+				ModelOptionsUtils.mergeOption(options.getFrequencyPenalty(), request.frequencyPenalty()),
+				request.stream(), ModelOptionsUtils.mergeOption(options.getSafePrompt(), request.safePrompt()),
 				ModelOptionsUtils.mergeOption(options.getStop(), request.stop()),
 				ModelOptionsUtils.mergeOption(options.getRandomSeed(), request.randomSeed()),
 				ModelOptionsUtils.mergeOption(options.getResponseFormat(), request.responseFormat()));
@@ -416,7 +420,8 @@ public class MistralAiChatModel implements ChatModel {
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
 			request = new ChatCompletionRequest(request.model(), request.messages(),
 					this.getFunctionTools(toolDefinitions), request.toolChoice(), request.temperature(), request.topP(),
-					request.maxTokens(), request.stream(), request.safePrompt(), request.stop(), request.randomSeed(),
+					request.maxTokens(), request.n(), request.presencePenalty(), request.frequencyPenalty(),
+					request.stream(), request.safePrompt(), request.stop(), request.randomSeed(),
 					request.responseFormat());
 		}
 
