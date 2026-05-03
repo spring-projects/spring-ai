@@ -645,6 +645,17 @@ public class MistralAiApi {
 	 * @param maxTokens The maximum number of tokens to generate in the completion. The
 	 * token count of your prompt plus max_tokens cannot exceed the model's context
 	 * length.
+	 * @param n Number of completions to return for each request, input tokens are only
+	 * billed once. Minimum is 1.
+	 * @param presencePenalty The presence_penalty determines how much the model penalizes
+	 * the repetition of words or phrases. A higher presence penalty encourages the model
+	 * to use a wider variety of words and phrases, making the output more diverse and
+	 * creative. Supported range is between -2.0 and 2.0.
+	 * @param frequencyPenalty The frequency_penalty penalizes the repetition of words
+	 * based on their frequency in the generated text. A higher frequency penalty
+	 * discourages the model from repeating words that have already appeared frequently in
+	 * the output, promoting diversity and reducing repetition. Supported range is between
+	 * -2.0 and 2.0.
 	 * @param stream Whether to stream back partial progress. If set, tokens will be sent
 	 * as data-only server-sent events as they become available, with the stream
 	 * terminated by a data: [DONE] message. Otherwise, the server will hold the request
@@ -670,6 +681,9 @@ public class MistralAiApi {
 			@JsonProperty("temperature") Double temperature,
 			@JsonProperty("top_p") Double topP,
 			@JsonProperty("max_tokens") Integer maxTokens,
+			@JsonProperty("n") Integer n,
+			@JsonProperty("presence_penalty") Double presencePenalty,
+			@JsonProperty("frequency_penalty") Double frequencyPenalty,
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("safe_prompt") Boolean safePrompt,
 			@JsonProperty("stop") List<String> stop,
@@ -685,7 +699,7 @@ public class MistralAiApi {
 		 * @param model ID of the model to use.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model) {
-			this(model, messages, null, null, 0.7, 1.0, null, false, false, null, null, null);
+			this(model, messages, null, null, 0.7, 1.0, null, null, null, null, false, false, null, null, null);
 		}
 
 		/**
@@ -700,7 +714,8 @@ public class MistralAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature,
 				boolean stream) {
-			this(model, messages, null, null, temperature, 1.0, null, stream, false, null, null, null);
+			this(model, messages, null, null, temperature, 1.0, null, null, null, null, stream, false, null, null,
+					null);
 		}
 
 		/**
@@ -713,7 +728,7 @@ public class MistralAiApi {
 		 *
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
-			this(model, messages, null, null, temperature, 1.0, null, false, false, null, null, null);
+			this(model, messages, null, null, temperature, 1.0, null, null, null, null, false, false, null, null, null);
 		}
 
 		/**
@@ -728,7 +743,7 @@ public class MistralAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, List<FunctionTool> tools,
 				ToolChoice toolChoice) {
-			this(model, messages, tools, toolChoice, null, 1.0, null, false, false, null, null, null);
+			this(model, messages, tools, toolChoice, null, 1.0, null, null, null, null, false, false, null, null, null);
 		}
 
 		/**
@@ -736,7 +751,7 @@ public class MistralAiApi {
 		 * stream.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
-			this(null, messages, null, null, 0.7, 1.0, null, stream, false, null, null, null);
+			this(null, messages, null, null, 0.7, 1.0, null, null, null, null, stream, false, null, null, null);
 		}
 
 		/**
