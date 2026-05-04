@@ -18,6 +18,8 @@ package org.springframework.ai.docker.compose.service.connection.chroma;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 class ChromaEnvironment {
 
 	// Chroma version <= 0.4.x
@@ -26,9 +28,9 @@ class ChromaEnvironment {
 	// Chroma version >= 0.5.x
 	private static final String CHROMA_SERVER_AUTHN_CREDENTIALS = "CHROMA_SERVER_AUTHN_CREDENTIALS";
 
-	private final String keyToken;
+	private final @Nullable String keyToken;
 
-	ChromaEnvironment(Map<String, String> env) {
+	ChromaEnvironment(Map<String, @Nullable String> env) {
 		if (env.containsKey(CHROMA_SERVER_AUTH_CREDENTIALS)) {
 			this.keyToken = env.get(CHROMA_SERVER_AUTH_CREDENTIALS);
 			return;
@@ -36,7 +38,7 @@ class ChromaEnvironment {
 		this.keyToken = env.get(CHROMA_SERVER_AUTHN_CREDENTIALS);
 	}
 
-	public String getKeyToken() {
+	public @Nullable String getKeyToken() {
 		return this.keyToken;
 	}
 

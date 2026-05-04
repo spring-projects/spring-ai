@@ -14,22 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.docker.compose.service.connection.qdrant;
+@NullMarked
+package org.springframework.ai.testcontainers.service.connection.ollama;
 
-import java.util.Map;
-
-import org.jspecify.annotations.Nullable;
-
-class QdrantEnvironment {
-
-	private final @Nullable String apiKey;
-
-	QdrantEnvironment(Map<String, @Nullable String> env) {
-		this.apiKey = env.get("QDRANT__SERVICE__API_KEY");
-	}
-
-	public @Nullable String getApiKey() {
-		return this.apiKey;
-	}
-
-}
+import org.jspecify.annotations.NullMarked;
