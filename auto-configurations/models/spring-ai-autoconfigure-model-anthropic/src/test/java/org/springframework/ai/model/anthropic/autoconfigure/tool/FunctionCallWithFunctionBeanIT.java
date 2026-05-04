@@ -46,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration test for tool calling via Spring bean-registered function callbacks.
  *
  * @author Soby Chacko
+ * @author Sebastien Deleuze
  */
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 class FunctionCallWithFunctionBeanIT {
@@ -60,8 +61,7 @@ class FunctionCallWithFunctionBeanIT {
 
 	@Test
 	void functionCallTest() {
-		this.contextRunner
-			.withPropertyValues("spring.ai.anthropic.chat.options.model=" + Model.CLAUDE_HAIKU_4_5.asString())
+		this.contextRunner.withPropertyValues("spring.ai.anthropic.chat.model=" + Model.CLAUDE_HAIKU_4_5.asString())
 			.run(context -> {
 
 				AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);

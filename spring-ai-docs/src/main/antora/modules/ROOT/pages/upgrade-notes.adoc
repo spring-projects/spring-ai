@@ -212,13 +212,13 @@ Code that cast to native types or read provider-specific metadata keys for these
 | `Display.SUMMARIZED` and `Display.OMITTED` on the `thinkingEnabled` / `thinkingAdaptive` builders, so Claude can use a thinking budget without surfacing the full reasoning. (https://github.com/spring-projects/spring-ai/issues/5642[GH-5642])
 
 | Service tier
-| `AnthropicServiceTier.AUTO` / `STANDARD_ONLY` for Anthropic's priority capacity tier. Property `spring.ai.anthropic.chat.options.service-tier`.
+| `AnthropicServiceTier.AUTO` / `STANDARD_ONLY` for Anthropic's priority capacity tier. Property `spring.ai.anthropic.chat.service-tier`.
 
 | Built-in web search
-| `AnthropicWebSearchTool` lets Claude search the web during a request. Properties under `spring.ai.anthropic.chat.options.web-search-tool.*`.
+| `AnthropicWebSearchTool` lets Claude search the web during a request. Properties under `spring.ai.anthropic.chat.web-search-tool.*`.
 
 | Inference geo
-| `inferenceGeo("us")` or `inferenceGeo("eu")` for data-residency routing. Property `spring.ai.anthropic.chat.options.inference-geo`.
+| `inferenceGeo("us")` or `inferenceGeo("eu")` for data-residency routing. Property `spring.ai.anthropic.chat.inference-geo`.
 |===
 
 `com.anthropic:anthropic-java` is bumped from `2.16.1` (the version M3 shipped with) to `2.24.0`, binary-compatible at every surface `spring-ai-anthropic` uses.
@@ -832,7 +832,7 @@ If you want to maintain the previous behavior, explicitly set the temperature in
 spring.ai.openai.chat.options.temperature=0.7
 
 # Example for Anthropic
-spring.ai.anthropic.chat.options.temperature=0.7
+spring.ai.anthropic.chat.temperature=0.7
 
 # Example for Azure OpenAI
 spring.ai.azure.openai.chat.options.temperature=0.7

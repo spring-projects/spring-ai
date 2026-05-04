@@ -47,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * copy, mutate, combineWith, equals/hashCode, and validation.
  *
  * @author Soby Chacko
+ * @author Sebastien Deleuze
  */
 class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOptions, Builder> {
 
@@ -132,12 +133,6 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		// Verify collections are deep copied
 		assertThat(copied.getStopSequences()).isNotSameAs(original.getStopSequences());
 		assertThat(copied.getToolContext()).isNotSameAs(original.getToolContext());
-
-		// Modify copy and verify original is unchanged
-		copied.setModel("modified-model");
-		copied.setMaxTokens(200);
-		assertThat(original.getModel()).isEqualTo("test-model");
-		assertThat(original.getMaxTokens()).isEqualTo(100);
 
 		// Modify original collections and verify copy is unchanged
 		mutableStops.add("stop3");
