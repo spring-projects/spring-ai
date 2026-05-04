@@ -15,8 +15,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: '17'
+          distribution: 'liberica'
           cache: 'maven'
 
       - name: Setup Maven Build-Cache (~/.m2/build-cache)

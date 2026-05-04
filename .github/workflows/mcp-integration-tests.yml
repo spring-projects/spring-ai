@@ -15,11 +15,11 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v6
 
-      - name: Set up JDK 21
+      - name: Set up JDK
         uses: actions/setup-java@v5
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: '17'
+          distribution: 'liberica'
           cache: 'maven'
 
       - name: Setup Node.js
@@ -38,11 +38,11 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v6
 
-      - name: Set up JDK 21
+      - name: Set up JDK
         uses: actions/setup-java@v5
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: '17'
+          distribution: 'liberica'
           cache: 'maven'
 
       - name: Setup Node.js

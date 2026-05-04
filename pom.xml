@@ -342,9 +342,8 @@
 		<antlr.version>4.13.1</antlr.version>
 		<maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
 		<maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
-		<!-- The version (range) of the JDK we want to use to compile.
-			This is different from ${java.version} which we use as -release target. -->
-		<compiler.jdk.version>[21.0.8,)</compiler.jdk.version>
+		<!-- The version (range) of the JDK we want to use to compile -->
+		<compiler.jdk.version>[17.0.19,)</compiler.jdk.version>
 		<maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
 		<maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
 		<maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
@@ -365,8 +364,8 @@
 		<spring-javaformat-checkstyle.version>0.0.47</spring-javaformat-checkstyle.version>
 		<maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
 
-		<error-prone.version>2.46.0</error-prone.version>
-		<nullaway.version>0.13.0</nullaway.version>
+		<error-prone.version>2.42.0</error-prone.version>
+		<nullaway.version>0.13.4</nullaway.version>
 
 		<disable.checks>false</disable.checks>
 
