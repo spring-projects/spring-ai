@@ -53,6 +53,7 @@ import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator.SchemaOption;
+import org.springframework.ai.util.json.schema.SpringAiSchemaModule;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ConcurrentReferenceHashMap;
 
@@ -239,8 +240,8 @@ public final class McpJsonSchemaGenerator {
 					|| schemaAnnotation.requiredMode() == Schema.RequiredMode.AUTO || schemaAnnotation.required();
 		}
 
-		var nullableAnnotation = parameter.getAnnotation(Nullable.class);
-		if (nullableAnnotation != null) {
+		if (parameter.getAnnotation(Nullable.class) != null
+				|| parameter.getAnnotatedType().getAnnotation(Nullable.class) != null) {
 			return false;
 		}
 
