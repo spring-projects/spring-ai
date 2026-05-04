@@ -206,5 +206,99 @@ public class MistralAiStreamFunctionCallingHelper {
 		return choice.finishReason() == ChatCompletionFinishReason.TOOL_CALLS;
 	}
 
+	/**
+	 * Expand a tool-call SSE window into per-chunk delta frames followed by a single
+	 * authoritative merged frame. See
+	 * {@code DeepSeekStreamFunctionCallingHelper#expandToolCallWindow} for the rationale
+	 * — Mistral's window shape is identical to DeepSeek's: the first chunk carries
+	 * id/name with empty arguments, subsequent chunks carry only argument fragments, and
+	 * the closing chunk has empty delta + finish_reason = TOOL_CALLS.
+	 *
+	 * <p>
+	 * Pre-merge frames preserve their own argument fragments and adopt the cumulative
+	 * tool-call identity stamped from earlier chunks; finish_reason stays unset.
+	 * Empty-delta marker chunks are dropped. The final element is the fully merged chunk
+	 * used by tool-execution.
+	 */
+	public List<ChatCompletionChunk> expandToolCallWindow(List<ChatCompletionChunk> windowChunks) {
+		if (CollectionUtils.isEmpty(windowChunks)) {
+			return List.of();
+		}
+		if (windowChunks.size() == 1) {
+			return List.of(windowChunks.get(0));
+		}
+
+		List<ChatCompletionChunk> out = new ArrayList<>(windowChunks.size() + 1);
+		ChatCompletionChunk cumulative = null;
+		for (ChatCompletionChunk chunk : windowChunks) {
+			cumulative = (cumulative == null) ? chunk : merge(cumulative, chunk);
+			if (carriesToolCallDelta(chunk)) {
+				out.add(stampToolCallIdentity(chunk, cumulative));
+			}
+		}
+		if (cumulative != null) {
+			out.add(cumulative);
+		}
+		return out;
+	}
+
+	private static boolean carriesToolCallDelta(ChatCompletionChunk chunk) {
+		if (CollectionUtils.isEmpty(chunk.choices())) {
+			return false;
+		}
+		ChunkChoice choice = chunk.choices().get(0);
+		return choice != null && choice.delta() != null && !CollectionUtils.isEmpty(choice.delta().toolCalls());
+	}
+
+	/**
+	 * Build a chunk that preserves {@code source}'s own arguments fragment but adopts the
+	 * {@code identitySource}'s id/type/name and clears finish_reason.
+	 */
+	private static ChatCompletionChunk stampToolCallIdentity(ChatCompletionChunk source,
+			ChatCompletionChunk identitySource) {
+		if (CollectionUtils.isEmpty(source.choices()) || CollectionUtils.isEmpty(identitySource.choices())) {
+			return source;
+		}
+		ChunkChoice srcChoice = source.choices().get(0);
+		ChunkChoice idChoice = identitySource.choices().get(0);
+		if (srcChoice == null || srcChoice.delta() == null || idChoice == null || idChoice.delta() == null) {
+			return source;
+		}
+
+		List<ToolCall> srcToolCalls = srcChoice.delta().toolCalls();
+		List<ToolCall> idToolCalls = idChoice.delta().toolCalls();
+		if (CollectionUtils.isEmpty(srcToolCalls) || CollectionUtils.isEmpty(idToolCalls)) {
+			return source;
+		}
+
+		List<ToolCall> stamped = new ArrayList<>(srcToolCalls.size());
+		for (int i = 0; i < srcToolCalls.size(); i++) {
+			ToolCall src = srcToolCalls.get(i);
+			ToolCall identity = i < idToolCalls.size() ? idToolCalls.get(i) : src;
+			ChatCompletionFunction srcFn = src.function();
+			ChatCompletionFunction idFn = identity.function();
+			String stampedName = (srcFn != null && srcFn.name() != null) ? srcFn.name()
+					: (idFn != null && idFn.name() != null) ? idFn.name() : "";
+			String args = (srcFn != null && srcFn.arguments() != null) ? srcFn.arguments() : "";
+			ChatCompletionFunction fn = new ChatCompletionFunction(stampedName, args);
+			String stampedId = (src.id() != null) ? src.id() : identity.id();
+			String stampedType = (src.type() != null) ? src.type() : identity.type();
+			Integer stampedIndex = (src.index() != null) ? src.index() : identity.index();
+			stamped.add(new ToolCall(stampedId, stampedType, fn, stampedIndex));
+		}
+
+		ChatCompletionMessage delta = srcChoice.delta();
+		ChatCompletionMessage stampedDelta = new ChatCompletionMessage(delta.rawContent(), delta.role(), delta.name(),
+				stamped, delta.toolCallId());
+		// Preserve src finish_reason — for the partial frames that reach this method
+		// (those carrying tool_calls), Mistral's SSE never sets finish_reason, so this
+		// is null in practice. The terminal merged frame keeps its own finish_reason
+		// because expandToolCallWindow appends `cumulative` directly without stamping.
+		ChunkChoice stampedChoice = new ChunkChoice(srcChoice.index(), stampedDelta, srcChoice.finishReason(),
+				srcChoice.logprobs());
+		return new ChatCompletionChunk(source.id(), source.object(), source.created(), source.model(),
+				List.of(stampedChoice), source.usage());
+	}
+
 }
 // ---

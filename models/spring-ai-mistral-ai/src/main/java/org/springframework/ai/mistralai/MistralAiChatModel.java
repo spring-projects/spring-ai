@@ -358,12 +358,20 @@ public class MistralAiChatModel implements ChatModel {
 	}
 
 	private Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
+		// Tool-call deltas streamed from MistralAiApi#chatCompletionStream arrive with
+		// finish_reason unset; only the terminal merged frame produced by the chunk
+		// window expansion carries finish_reason = TOOL_CALLS. Use that signal to mark
+		// partial frames so AssistantMessage.hasToolCalls() (and hence
+		// ToolExecutionEligibilityPredicate, advisor routing, persistence) only fires
+		// on the authoritative merged frame.
+		boolean isPartialToolCall = choice.message().toolCalls() != null && !choice.message().toolCalls().isEmpty()
+				&& choice.finishReason() == null;
 		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
 				: choice.message()
 					.toolCalls()
 					.stream()
 					.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
-							toolCall.function().name(), toolCall.function().arguments()))
+							toolCall.function().name(), toolCall.function().arguments(), isPartialToolCall))
 					.toList();
 
 		var content = choice.message().content();
