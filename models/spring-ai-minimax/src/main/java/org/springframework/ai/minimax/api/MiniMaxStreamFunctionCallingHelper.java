@@ -175,6 +175,91 @@ public class MiniMaxStreamFunctionCallingHelper {
 	}
 
 	/**
+	 * Expand a tool-call SSE window into per-chunk delta frames followed by a single
+	 * authoritative merged frame. Mirrors the same contract used by DeepSeek and Mistral
+	 * helpers so {@code MessageAggregator} can stitch partials by id.
+	 *
+	 * <p>
+	 * Pre-merge frames preserve their own argument fragments and adopt the cumulative
+	 * tool-call identity (id, type, function name) stamped from earlier chunks;
+	 * finish_reason stays unset. Empty-delta marker chunks are dropped. The final element
+	 * is the fully merged chunk used by tool execution.
+	 */
+	public List<ChatCompletionChunk> expandToolCallWindow(List<ChatCompletionChunk> windowChunks) {
+		if (CollectionUtils.isEmpty(windowChunks)) {
+			return List.of();
+		}
+		if (windowChunks.size() == 1) {
+			return List.of(windowChunks.get(0));
+		}
+
+		List<ChatCompletionChunk> out = new ArrayList<>(windowChunks.size() + 1);
+		ChatCompletionChunk cumulative = null;
+		for (ChatCompletionChunk chunk : windowChunks) {
+			cumulative = (cumulative == null) ? chunk : merge(cumulative, chunk);
+			if (carriesToolCallDelta(chunk)) {
+				out.add(stampToolCallIdentity(chunk, cumulative));
+			}
+		}
+		if (cumulative != null) {
+			out.add(cumulative);
+		}
+		return out;
+	}
+
+	private static boolean carriesToolCallDelta(ChatCompletionChunk chunk) {
+		if (CollectionUtils.isEmpty(chunk.choices())) {
+			return false;
+		}
+		ChunkChoice choice = chunk.choices().get(0);
+		return choice != null && choice.delta() != null && !CollectionUtils.isEmpty(choice.delta().toolCalls());
+	}
+
+	private static ChatCompletionChunk stampToolCallIdentity(ChatCompletionChunk source,
+			ChatCompletionChunk identitySource) {
+		if (CollectionUtils.isEmpty(source.choices()) || CollectionUtils.isEmpty(identitySource.choices())) {
+			return source;
+		}
+		ChunkChoice srcChoice = source.choices().get(0);
+		ChunkChoice idChoice = identitySource.choices().get(0);
+		if (srcChoice == null || srcChoice.delta() == null || idChoice == null || idChoice.delta() == null) {
+			return source;
+		}
+
+		List<ToolCall> srcToolCalls = srcChoice.delta().toolCalls();
+		List<ToolCall> idToolCalls = idChoice.delta().toolCalls();
+		if (CollectionUtils.isEmpty(srcToolCalls) || CollectionUtils.isEmpty(idToolCalls)) {
+			return source;
+		}
+
+		List<ToolCall> stamped = new ArrayList<>(srcToolCalls.size());
+		for (int i = 0; i < srcToolCalls.size(); i++) {
+			ToolCall src = srcToolCalls.get(i);
+			ToolCall identity = i < idToolCalls.size() ? idToolCalls.get(i) : src;
+			ChatCompletionFunction srcFn = src.function();
+			ChatCompletionFunction idFn = identity.function();
+			String stampedName = (srcFn != null && StringUtils.hasText(srcFn.name())) ? srcFn.name()
+					: (idFn != null && idFn.name() != null) ? idFn.name() : "";
+			String args = (srcFn != null && srcFn.arguments() != null) ? srcFn.arguments() : "";
+			ChatCompletionFunction fn = new ChatCompletionFunction(stampedName, args);
+			String stampedId = (StringUtils.hasText(src.id())) ? src.id() : identity.id();
+			String stampedType = (src.type() != null) ? src.type() : identity.type();
+			stamped.add(new ToolCall(stampedId, stampedType, fn));
+		}
+
+		ChatCompletionMessage delta = srcChoice.delta();
+		ChatCompletionMessage stampedDelta = new ChatCompletionMessage(delta.rawContent(), delta.role(), delta.name(),
+				delta.toolCallId(), stamped);
+		// Pre-merge frames carry no finish_reason from the source SSE; preserve that.
+		// The terminal merged frame keeps its own finish_reason because
+		// expandToolCallWindow appends `cumulative` directly without stamping.
+		ChunkChoice stampedChoice = new ChunkChoice(srcChoice.finishReason(), srcChoice.index(), stampedDelta,
+				srcChoice.logprobs());
+		return new ChatCompletionChunk(source.id(), List.of(stampedChoice), source.created(), source.model(),
+				source.systemFingerprint(), source.object());
+	}
+
+	/**
 	 * Convert the ChatCompletionChunk into a ChatCompletion. The Usage is set to null.
 	 * @param chunk the ChatCompletionChunk to convert
 	 * @return the ChatCompletion

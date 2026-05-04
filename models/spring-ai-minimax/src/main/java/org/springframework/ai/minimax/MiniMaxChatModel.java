@@ -199,6 +199,13 @@ public class MiniMaxChatModel implements ChatModel {
 	}
 
 	private static Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
+		// Tool-call deltas streamed from MiniMaxApi#chatCompletionStream arrive with
+		// finish_reason unset; only the terminal merged frame produced by the chunk
+		// window expansion carries finish_reason = TOOL_CALLS. Mark intermediate
+		// frames partial so AssistantMessage.hasToolCalls() — and the tool-execution
+		// gate, advisor routing, persistence — only fires on the authoritative frame.
+		boolean isPartialToolCall = choice.message().toolCalls() != null && !choice.message().toolCalls().isEmpty()
+				&& choice.finishReason() == null;
 		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
 				: choice.message()
 					.toolCalls()
@@ -214,11 +221,12 @@ public class MiniMaxChatModel implements ChatModel {
 						if (!acc.isEmpty() && current.id().isEmpty()) {
 							AssistantMessage.ToolCall prev = acc.get(acc.size() - 1);
 							acc.set(acc.size() - 1, new AssistantMessage.ToolCall(prev.id(), prev.type(), prev.name(),
-									current.function().arguments()));
+									current.function().arguments(), isPartialToolCall));
 						}
 						else {
 							AssistantMessage.ToolCall currentToolCall = new AssistantMessage.ToolCall(current.id(),
-									current.type(), current.function().name(), current.function().arguments());
+									current.type(), current.function().name(), current.function().arguments(),
+									isPartialToolCall);
 							acc.add(currentToolCall);
 						}
 						return acc;

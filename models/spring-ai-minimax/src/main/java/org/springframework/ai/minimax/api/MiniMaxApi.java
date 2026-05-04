@@ -181,13 +181,10 @@ public class MiniMaxApi {
 					}
 					return !isInsideTool.get();
 				})
-				.concatMapIterable(window -> {
-					Mono<ChatCompletionChunk> monoChunk = window.reduce(
-							new ChatCompletionChunk(null, null, null, null, null, null),
-							(previous, current) -> this.chunkMerger.merge(previous, current));
-					return List.of(monoChunk);
-				})
-				.flatMap(mono -> mono);
+				// Expand tool-call windows into per-token delta frames + a single
+				// authoritative merged frame (single-chunk windows pass through
+				// unchanged so plain text streaming is preserved).
+				.concatMap(window -> window.collectList().flatMapIterable(this.chunkMerger::expandToolCallWindow));
 	}
 
 	/**
