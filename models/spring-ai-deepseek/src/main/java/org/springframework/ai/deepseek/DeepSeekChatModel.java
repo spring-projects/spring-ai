@@ -397,12 +397,19 @@ public class DeepSeekChatModel implements ChatModel {
 	}
 
 	private Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
+		// Tool-call deltas streamed from DeepSeekApi#chatCompletionStream arrive without
+		// finish_reason; only the terminal merged frame produced by the chunk-window
+		// expansion carries finish_reason = TOOL_CALLS. We use that to mark partial
+		// frames so the downstream tool-execution and aggregation paths only act on the
+		// authoritative merged frame.
+		boolean isPartialToolCall = choice.message().toolCalls() != null && !choice.message().toolCalls().isEmpty()
+				&& choice.finishReason() == null;
 		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
 				: choice.message()
 					.toolCalls()
 					.stream()
 					.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
-							toolCall.function().name(), toolCall.function().arguments()))
+							toolCall.function().name(), toolCall.function().arguments(), isPartialToolCall))
 					.toList();
 
 		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
