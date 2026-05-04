@@ -53,12 +53,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate");
 
-	public OllamaChatOptions() {
-		// Temporary constructor to maintain compat with ModelOptionUtils
-		this.toolNames = new HashSet<String>();
-		this.toolContext = new HashMap<>();
-	}
-
 	protected OllamaChatOptions(@Nullable Boolean useNUMA, @Nullable Integer numCtx, @Nullable Integer numBatch,
 			@Nullable Integer numGPU, @Nullable Integer mainGPU, @Nullable Boolean lowVRAM, @Nullable Boolean f16KV,
 			@Nullable Boolean logitsAll, @Nullable Boolean vocabOnly, @Nullable Boolean useMMap,
