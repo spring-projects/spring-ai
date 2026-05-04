@@ -88,7 +88,7 @@ public class OpenAiImageModelObservationIT {
 					ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.IMAGE.value())
 			.hasLowCardinalityKeyValue(ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(),
-					AiProvider.OPENAI_SDK.value())
+					AiProvider.OPENAI.value())
 			.hasLowCardinalityKeyValue(
 					ImageModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL.asString(),
 					ImageModel.DALL_E_3.asString())
