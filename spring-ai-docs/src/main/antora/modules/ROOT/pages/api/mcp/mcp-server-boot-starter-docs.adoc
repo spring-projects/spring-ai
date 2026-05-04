@@ -38,7 +38,7 @@ Use the dedicated starter and the correct `spring.ai.mcp.server.protocol` proper
 | xref:api/mcp/mcp-stateless-server-boot-starter-docs.adoc#_stateless_webmvc_server[Stateless WebMVC] | `spring-ai-starter-mcp-server-webmvc` | `spring.ai.mcp.server.protocol=STATELESS`
 |===
 
-=== WebMVC (Reactive)
+=== WebFlux (Reactive)
 |===
 |Server Type | Dependency | Property
 | xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc#_sse_webflux_server[SSE WebFlux] | `spring-ai-starter-mcp-server-webflux` | `spring.ai.mcp.server.protocol=SSE` or empty
