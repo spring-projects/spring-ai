@@ -126,7 +126,7 @@ The `plainText(...)`, `pdf(...)`, and `customContent(...)` factory methods still
 * Streaming as a Reactor `Flux<ChatResponse>` rather than the SDK's callback-based `AsyncStreamResponse`.
 * Prompt caching with strategy modeling, TTL controls, and 4-breakpoint enforcement (`AnthropicCacheOptions`).
 * `Citation` with four location variants surfaced under `ChatResponseMetadata`.
-* Skills, built-in web search, service tier, inference geo, and structured output as `AnthropicChatOptions` fields, all bindable from `spring.ai.anthropic.chat.options.*`.
+* Skills, built-in web search, service tier, inference geo, and structured output as `AnthropicChatOptions` fields, all bindable from `spring.ai.anthropic.chat.*`.
 * Spring Boot auto-config and Micrometer observation.
 * The `ChatClient` pipeline above the model (advisors, message templates, RAG, conversation memory, structured-output converter).
 * Provider portability: the same `ChatClient` code runs against OpenAI, Bedrock, Google GenAI, and others.
@@ -266,7 +266,7 @@ If you relied on `500` to bound costs, set it explicitly:
 
 [source,properties]
 ----
-spring.ai.anthropic.chat.options.max-tokens=500
+spring.ai.anthropic.chat.max-tokens=500
 ----
 
 [[retry-behavior]]

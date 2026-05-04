@@ -55,19 +55,26 @@ Use the `spring.ai.anthropic.*` properties to configure the Anthropic connection
 
 | `spring.ai.anthropic.api-key` | Anthropic API key | -
 | `spring.ai.anthropic.base-url` | API base URL | `https://api.anthropic.com`
-| `spring.ai.anthropic.chat.options.model` | Model name | `claude-haiku-4-5`
-| `spring.ai.anthropic.chat.options.max-tokens` | Maximum tokens | `4096`
-| `spring.ai.anthropic.chat.options.temperature` | Sampling temperature | -
-| `spring.ai.anthropic.chat.options.top-p` | Top-p sampling | -
-| `spring.ai.anthropic.chat.options.top-k` | Top-k sampling | -
-| `spring.ai.anthropic.chat.options.web-search-tool.max-uses` | Maximum number of web searches per request | -
-| `spring.ai.anthropic.chat.options.web-search-tool.allowed-domains` | Comma-separated list of domains to restrict search results to | -
-| `spring.ai.anthropic.chat.options.web-search-tool.blocked-domains` | Comma-separated list of domains to exclude from search results | -
-| `spring.ai.anthropic.chat.options.web-search-tool.user-location.city` | City for localizing search results | -
-| `spring.ai.anthropic.chat.options.web-search-tool.user-location.country` | ISO 3166-1 alpha-2 country code | -
-| `spring.ai.anthropic.chat.options.web-search-tool.user-location.region` | Region or state | -
-| `spring.ai.anthropic.chat.options.web-search-tool.user-location.timezone` | IANA timezone identifier | -
-| `spring.ai.anthropic.chat.options.service-tier` | Capacity routing: `auto` (use priority if available) or `standard_only` (always standard). See https://docs.claude.com/en/api/service-tiers[Service Tiers]. | -
+| `spring.ai.anthropic.timeout` | Request timeout for the Anthropic client | `60s`
+| `spring.ai.anthropic.max-retries` | Maximum number of retries for failed requests | `2`
+| `spring.ai.anthropic.custom-headers.*` | Custom HTTP headers to add to all Anthropic client requests | -
+| `spring.ai.anthropic.chat.model` | Model name | `claude-haiku-4-5`
+| `spring.ai.anthropic.chat.max-tokens` | Maximum tokens | `4096`
+| `spring.ai.anthropic.chat.temperature` | Sampling temperature | -
+| `spring.ai.anthropic.chat.top-p` | Top-p sampling | -
+| `spring.ai.anthropic.chat.top-k` | Top-k sampling | -
+| `spring.ai.anthropic.chat.cache-options.strategy` | Caching strategy to use | `NONE`
+| `spring.ai.anthropic.chat.cache-options.multi-block-system-caching` | Use separate blocks for each system message | `false`
+| `spring.ai.anthropic.chat.http-headers` | Per-request HTTP headers to pass to individual API calls. | -
+| `spring.ai.anthropic.chat.inference-geo` | Geographic region where the request is processed (`us` or `eu`) | -
+| `spring.ai.anthropic.chat.web-search-tool.max-uses` | Maximum number of web searches per request | -
+| `spring.ai.anthropic.chat.web-search-tool.allowed-domains` | Comma-separated list of domains to restrict search results to | -
+| `spring.ai.anthropic.chat.web-search-tool.blocked-domains` | Comma-separated list of domains to exclude from search results | -
+| `spring.ai.anthropic.chat.web-search-tool.user-location.city` | City for localizing search results | -
+| `spring.ai.anthropic.chat.web-search-tool.user-location.country` | ISO 3166-1 alpha-2 country code | -
+| `spring.ai.anthropic.chat.web-search-tool.user-location.region` | Region or state | -
+| `spring.ai.anthropic.chat.web-search-tool.user-location.timezone` | IANA timezone identifier | -
+| `spring.ai.anthropic.chat.service-tier` | Capacity routing: `auto` (use priority if available) or `standard_only` (always standard). See https://docs.claude.com/en/api/service-tiers[Service Tiers]. | -
 |====
 
 == Manual Configuration
@@ -186,9 +193,10 @@ ChatResponse response = chatModel.call(
 | proxy | Proxy settings for the HTTP client. | -
 | customHeaders | Custom HTTP headers to include on all requests (client-level). | -
 | httpHeaders | Per-request HTTP headers. These are added to individual API calls via `MessageCreateParams.putAdditionalHeader()`. Useful for request-level tracking, beta API headers, or routing. | -
+| cacheOptions | Options for configuring prompt caching behavior. Includes caching strategy, multi-block caching, TTL, and content length requirements. | -
 | thinking | Thinking configuration. Use the convenience builders `thinkingEnabled(budgetTokens)`, `thinkingEnabled(budgetTokens, display)`, `thinkingAdaptive()`, `thinkingAdaptive(display)`, or `thinkingDisabled()`, or pass a raw `ThinkingConfigParam`. The `display` parameter controls how thinking content appears in the response: `SUMMARIZED` (condensed summary) or `OMITTED` (redacted, signature only). | -
 | outputConfig | Output configuration for structured output (JSON schema) and effort control. Use `outputConfig(OutputConfig)` for full control, or the convenience methods `outputSchema(String)` and `effort(OutputConfig.Effort)`. Requires `claude-sonnet-4-6` or newer. | -
-| inferenceGeo | Controls the geographic region where the request is processed. Supported values: `us`, `eu`. Used for data residency compliance. Configurable via `spring.ai.anthropic.chat.options.inference-geo`. | -
+| inferenceGeo | Controls the geographic region where the request is processed. Supported values: `us`, `eu`. Used for data residency compliance. Configurable via `spring.ai.anthropic.chat.inference-geo`. | -
 | serviceTier | Controls capacity routing for the request. Use `MessageCreateParams.ServiceTier.AUTO` to opportunistically use priority capacity, or `STANDARD_ONLY` to always use standard capacity. See https://docs.claude.com/en/api/service-tiers[Service Tiers]. | -
 |====
 
@@ -944,6 +952,16 @@ ChatResponse response = chatModel.call(
             .build()));
 ----
 
+=== Spring Boot Configuration
+
+Configure prompt caching via `application.properties` or `application.yml`:
+
+[source,properties]
+----
+spring.ai.anthropic.chat.cache-options.strategy=SYSTEM_AND_TOOLS
+spring.ai.anthropic.chat.cache-options.multi-block-system-caching=true
+----
+
 === Accessing Cache Token Usage
 
 Cache token metrics are available through the native SDK `Usage` object:
@@ -1128,7 +1146,7 @@ Via Spring Boot properties:
 
 [source,properties]
 ----
-spring.ai.anthropic.chat.options.service-tier=auto
+spring.ai.anthropic.chat.service-tier=auto
 ----
 
 Or programmatically per-request:
@@ -1581,10 +1599,10 @@ Configure web search via `application.properties` or `application.yml`:
 
 [source,properties]
 ----
-spring.ai.anthropic.chat.options.web-search-tool.max-uses=5
-spring.ai.anthropic.chat.options.web-search-tool.allowed-domains=docs.spring.io,github.com
-spring.ai.anthropic.chat.options.web-search-tool.user-location.city=San Francisco
-spring.ai.anthropic.chat.options.web-search-tool.user-location.country=US
+spring.ai.anthropic.chat.web-search-tool.max-uses=5
+spring.ai.anthropic.chat.web-search-tool.allowed-domains=docs.spring.io,github.com
+spring.ai.anthropic.chat.web-search-tool.user-location.city=San Francisco
+spring.ai.anthropic.chat.web-search-tool.user-location.country=US
 ----
 
 == Observability
