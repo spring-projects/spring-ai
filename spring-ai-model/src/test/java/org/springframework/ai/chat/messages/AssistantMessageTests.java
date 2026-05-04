@@ -18,6 +18,7 @@ package org.springframework.ai.chat.messages;
 
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
@@ -46,6 +47,26 @@ class AssistantMessageTests {
 		assertThatThrownBy(() -> AssistantMessage.builder().toolCalls(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Tool calls must not be null");
+	}
+
+	@Test
+	void fourArgToolCallConstructorDefaultsPartialFalse() {
+		AssistantMessage.ToolCall tc = new AssistantMessage.ToolCall("id-1", "function", "doIt", "{\"k\":\"v\"}");
+		assertThat(tc.id()).isEqualTo("id-1");
+		assertThat(tc.type()).isEqualTo("function");
+		assertThat(tc.name()).isEqualTo("doIt");
+		assertThat(tc.arguments()).isEqualTo("{\"k\":\"v\"}");
+		assertThat(tc.partial()).isFalse();
+	}
+
+	@Test
+	void fiveArgToolCallConstructorPreservesPartialFlag() {
+		AssistantMessage.ToolCall partial = new AssistantMessage.ToolCall("id-1", "function", "doIt", "{\"k\":", true);
+		AssistantMessage.ToolCall complete = new AssistantMessage.ToolCall("id-1", "function", "doIt", "{\"k\":\"v\"}",
+				false);
+		assertThat(partial.partial()).isTrue();
+		assertThat(complete.partial()).isFalse();
+		assertThat(partial).isNotEqualTo(complete);
 	}
 
 }

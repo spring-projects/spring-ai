@@ -61,8 +61,22 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 		return this.toolCalls;
 	}
 
+	/**
+	 * @return {@code true} if the message carries at least one finalized (non-partial)
+	 * tool call. Streaming partial deltas do not count: the model has not yet committed
+	 * to executing them, so callers gating tool execution, persistence, or advisor
+	 * routing on this method are insulated from intermediate streaming frames.
+	 */
 	public boolean hasToolCalls() {
-		return !CollectionUtils.isEmpty(this.toolCalls);
+		if (CollectionUtils.isEmpty(this.toolCalls)) {
+			return false;
+		}
+		for (ToolCall toolCall : this.toolCalls) {
+			if (!toolCall.partial()) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Override
@@ -99,7 +113,24 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 		return new Builder();
 	}
 
-	public record ToolCall(String id, String type, String name, String arguments) {
+	/**
+	 * Represents a tool call requested by the assistant.
+	 *
+	 * @param id the tool call identifier
+	 * @param type the tool type (typically {@code "function"})
+	 * @param name the tool / function name
+	 * @param arguments the tool arguments. When {@code partial} is {@code true} this
+	 * carries only the incremental fragment produced by the latest streaming chunk,
+	 * otherwise it carries the complete arguments string.
+	 * @param partial when {@code true} this {@code ToolCall} is a streaming delta and
+	 * must not be executed as-is — downstream tool execution should only run on the
+	 * non-partial {@code ToolCall} that the model emits once arguments are complete
+	 */
+	public record ToolCall(String id, String type, String name, String arguments, boolean partial) {
+
+		public ToolCall(String id, String type, String name, String arguments) {
+			this(id, type, name, arguments, false);
+		}
 
 	}
 
