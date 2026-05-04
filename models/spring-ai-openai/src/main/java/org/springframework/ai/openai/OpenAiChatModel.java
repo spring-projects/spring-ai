@@ -64,6 +64,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
@@ -117,6 +118,8 @@ public final class OpenAiChatModel implements ChatModel {
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
 	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
+
+	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	private final Logger logger = LoggerFactory.getLogger(OpenAiChatModel.class);
 
@@ -554,21 +557,37 @@ public final class OpenAiChatModel implements ChatModel {
 		Assert.notNull(result, "OpenAI ChatCompletion must not be null");
 		result.model();
 		result.id();
-		return ChatResponseMetadata.builder()
+		ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder()
 			.id(result.id())
 			.usage(usage)
 			.model(result.model())
-			.keyValue("created", result.created())
-			.build();
+			.keyValue("created", result.created());
+
+		result._additionalProperties().forEach((key, jsonValue) -> {
+			try {
+				String jsonValueString = objectMapper.writeValueAsString(jsonValue);
+				Object value = ModelOptionsUtils.JSON_MAPPER.readValue(jsonValueString, Object.class);
+				metadataBuilder.keyValue(key, value);
+			}
+			catch (Exception e) {
+				logger.error("Error parsing JSON value for key '{}': {}", key, jsonValue, e);
+				metadataBuilder.keyValue(key, jsonValue);
+			}
+		});
+
+		return metadataBuilder.build();
 	}
 
 	private ChatResponseMetadata from(ChatResponseMetadata chatResponseMetadata, Usage usage) {
 		Assert.notNull(chatResponseMetadata, "OpenAI ChatResponseMetadata must not be null");
-		return ChatResponseMetadata.builder()
+		ChatResponseMetadata.Builder builder = ChatResponseMetadata.builder()
 			.id(chatResponseMetadata.getId())
 			.usage(usage)
-			.model(chatResponseMetadata.getModel())
-			.build();
+			.model(chatResponseMetadata.getModel());
+
+		chatResponseMetadata.entrySet().forEach(e -> builder.keyValue(e.getKey(), e.getValue()));
+
+		return builder.build();
 	}
 
 	/**
@@ -620,6 +639,7 @@ public final class OpenAiChatModel implements ChatModel {
 			.model(chunk.model())
 			.usage(chunk.usage()
 				.orElse(CompletionUsage.builder().promptTokens(0).completionTokens(0).totalTokens(0).build()))
+			.putAllAdditionalProperties(chunk._additionalProperties())
 			.build();
 	}
 
