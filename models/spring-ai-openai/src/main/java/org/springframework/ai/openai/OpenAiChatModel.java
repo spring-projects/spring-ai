@@ -19,11 +19,14 @@ package org.springframework.ai.openai;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import com.openai.client.OpenAIClient;
@@ -62,6 +65,7 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import tools.jackson.databind.JsonNode;
 
@@ -355,112 +359,112 @@ public final class OpenAiChatModel implements ChatModel {
 			Flux<ChatResponse> flux = chatResponses
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
-			return flux.collectList().flatMapMany(list -> {
-				if (list.isEmpty()) {
-					return Flux.empty();
+			// Per-chunk frames stream out as they arrive (preserving streaming UX),
+			// while we accumulate state on the side. After the SSE stream completes we
+			// emit a single non-partial aggregated frame iff tool calls were seen —
+			// that frame is what triggers tool execution and the recursive next round.
+			// Per-chunk frames carry partial=true tool calls and so do not match
+			// AssistantMessage.hasToolCalls(), keeping the eligibility predicate from
+			// firing on intermediate frames.
+			Map<String, ToolCallBuilder> builders = new LinkedHashMap<>();
+			StringBuilder aggregatedText = new StringBuilder();
+			Map<String, Object> aggregatedProps = new HashMap<>();
+			AtomicReference<ChatResponseMetadata> aggregatedResponseMetaRef = new AtomicReference<>();
+			AtomicReference<ChatGenerationMetadata> aggregatedGenMetaRef = new AtomicReference<>(
+					ChatGenerationMetadata.NULL);
+			AtomicBoolean sawToolCalls = new AtomicBoolean(false);
+
+			Flux<ChatResponse> perChunkAndAggregated = flux.doOnNext(chatResponse -> {
+				AssistantMessage am = safeAssistantMessage(chatResponse);
+				if (am == null) {
+					if (chatResponse.getMetadata() != null) {
+						aggregatedResponseMetaRef.set(chatResponse.getMetadata());
+					}
+					return;
 				}
-				boolean hasToolCalls = list.stream()
-					.map(this::safeAssistantMessage)
-					.filter(Objects::nonNull)
-					.anyMatch(am -> !CollectionUtils.isEmpty(am.getToolCalls()));
-				if (!hasToolCalls) {
-					if (list.size() > 2) {
-						ChatResponse penultimateResponse = list.get(list.size() - 2); // Get
-																						// the
-																						// finish
-																						// reason
-						ChatResponse lastResponse = list.get(list.size() - 1); // Get the
-																				// usage
-						Usage usage = lastResponse.getMetadata().getUsage();
-						observationContext.setResponse(new ChatResponse(penultimateResponse.getResults(),
-								from(penultimateResponse.getMetadata(), usage)));
-					}
-					return Flux.fromIterable(list);
+				if (am.getText() != null) {
+					aggregatedText.append(am.getText());
 				}
-				Map<String, ToolCallBuilder> builders = new HashMap<>();
-				StringBuilder text = new StringBuilder();
-				ChatResponseMetadata finalMetadata = null;
-				ChatGenerationMetadata finalGenMetadata = null;
-				Map<String, Object> props = new HashMap<>();
-				for (ChatResponse chatResponse : list) {
-					AssistantMessage am = safeAssistantMessage(chatResponse);
-					if (am == null) {
-						continue;
-					}
-					if (am.getText() != null) {
-						text.append(am.getText());
-					}
-					props.putAll(am.getMetadata());
-					if (!CollectionUtils.isEmpty(am.getToolCalls())) {
-						Object ccObj = am.getMetadata().get("chunkChoice");
-						if (ccObj instanceof ChatCompletionChunk.Choice chunkChoice
-								&& chunkChoice.delta().toolCalls().isPresent()) {
-							List<ChatCompletionChunk.Choice.Delta.ToolCall> deltaCalls = chunkChoice.delta()
-								.toolCalls()
-								.get();
-							for (int i = 0; i < am.getToolCalls().size() && i < deltaCalls.size(); i++) {
-								AssistantMessage.ToolCall tc = am.getToolCalls().get(i);
-								ChatCompletionChunk.Choice.Delta.ToolCall dtc = deltaCalls.get(i);
-								String key = chunkChoice.index() + "-" + dtc.index();
-								ToolCallBuilder toolCallBuilder = builders.computeIfAbsent(key,
-										k -> new ToolCallBuilder());
-								toolCallBuilder.merge(tc);
-							}
-						}
-						else {
-							for (AssistantMessage.ToolCall tc : am.getToolCalls()) {
-								ToolCallBuilder toolCallBuilder = builders.computeIfAbsent(tc.id(),
-										k -> new ToolCallBuilder());
-								toolCallBuilder.merge(tc);
-							}
+				aggregatedProps.putAll(am.getMetadata());
+				if (!CollectionUtils.isEmpty(am.getToolCalls())) {
+					sawToolCalls.set(true);
+					Object ccObj = am.getMetadata().get("chunkChoice");
+					if (ccObj instanceof ChatCompletionChunk.Choice chunkChoice
+							&& chunkChoice.delta().toolCalls().isPresent()) {
+						List<ChatCompletionChunk.Choice.Delta.ToolCall> deltaCalls = chunkChoice.delta()
+							.toolCalls()
+							.get();
+						for (int i = 0; i < am.getToolCalls().size() && i < deltaCalls.size(); i++) {
+							AssistantMessage.ToolCall tc = am.getToolCalls().get(i);
+							ChatCompletionChunk.Choice.Delta.ToolCall dtc = deltaCalls.get(i);
+							String key = chunkChoice.index() + "-" + dtc.index();
+							builders.computeIfAbsent(key, k -> new ToolCallBuilder()).merge(tc);
 						}
 					}
-					Generation generation = chatResponse.getResult();
-					if (generation != null && generation.getMetadata() != ChatGenerationMetadata.NULL) {
-						finalGenMetadata = generation.getMetadata();
+					else {
+						for (AssistantMessage.ToolCall tc : am.getToolCalls()) {
+							builders.computeIfAbsent(tc.id(), k -> new ToolCallBuilder()).merge(tc);
+						}
 					}
-					finalMetadata = chatResponse.getMetadata();
 				}
-				List<AssistantMessage.ToolCall> merged = builders.values()
+				Generation generation = chatResponse.getResult();
+				if (generation != null && generation.getMetadata() != ChatGenerationMetadata.NULL) {
+					aggregatedGenMetaRef.set(generation.getMetadata());
+				}
+				if (chatResponse.getMetadata() != null) {
+					aggregatedResponseMetaRef.set(chatResponse.getMetadata());
+				}
+			}).concatWith(Mono.fromSupplier(() -> {
+				// Build the authoritative aggregated frame. Returns null when there is
+				// nothing to emit; the surrounding flatMap handles that.
+				if (!sawToolCalls.get()) {
+					return null;
+				}
+				List<AssistantMessage.ToolCall> mergedCalls = builders.values()
 					.stream()
 					.map(ToolCallBuilder::build)
 					.filter(tc -> StringUtils.hasText(tc.name()))
 					.toList();
-				AssistantMessage.Builder assistantMessageBuilder = AssistantMessage.builder()
-					.content(text.toString())
-					.properties(props);
-				if (!merged.isEmpty()) {
-					assistantMessageBuilder.toolCalls(merged);
+				AssistantMessage.Builder amBuilder = AssistantMessage.builder()
+					.content(aggregatedText.toString())
+					.properties(aggregatedProps);
+				if (!mergedCalls.isEmpty()) {
+					amBuilder.toolCalls(mergedCalls);
 				}
-				AssistantMessage assistantMessage = assistantMessageBuilder.build();
-				Generation finalGen = new Generation(assistantMessage,
-						finalGenMetadata != null ? finalGenMetadata : ChatGenerationMetadata.NULL);
-				ChatResponse aggregated = new ChatResponse(List.of(finalGen),
-						finalMetadata != null ? finalMetadata : ChatResponseMetadata.builder().build());
+				ChatGenerationMetadata genMeta = aggregatedGenMetaRef.get();
+				ChatResponseMetadata respMeta = aggregatedResponseMetaRef.get();
+				ChatResponse aggregated = new ChatResponse(List.of(new Generation(amBuilder.build(), genMeta)),
+						respMeta != null ? respMeta : ChatResponseMetadata.builder().build());
 				observationContext.setResponse(aggregated);
+				return aggregated;
+			}).flux());
+
+			return perChunkAndAggregated.flatMap(response -> {
 				Assert.state(prompt.getOptions() != null, "ChatOptions must not be null");
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), aggregated)) {
+				// hasToolCalls() filters partial frames, so per-chunk deltas pass
+				// through unchanged. Only the aggregated frame (non-partial tool
+				// calls) drives tool execution and the recursive next round.
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult tetoolExecutionResult;
 						try {
 							ToolCallReactiveContextHolder.setContext(ctx);
-							tetoolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, aggregated);
+							tetoolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 						}
 						finally {
 							ToolCallReactiveContextHolder.clearContext();
 						}
 						if (tetoolExecutionResult.returnDirect()) {
 							return Flux.just(ChatResponse.builder()
-								.from(aggregated)
+								.from(response)
 								.generations(ToolExecutionResult.buildGenerations(tetoolExecutionResult))
 								.build());
 						}
 						return this.internalStream(
-								new Prompt(tetoolExecutionResult.conversationHistory(), prompt.getOptions()),
-								aggregated);
+								new Prompt(tetoolExecutionResult.conversationHistory(), prompt.getOptions()), response);
 					}).subscribeOn(Schedulers.boundedElastic());
 				}
-				return Flux.just(aggregated);
+				return Flux.just(response);
 			}).doOnError(observation::error).doFinally(s -> observation.stop());
 		});
 	}
@@ -474,6 +478,11 @@ public final class OpenAiChatModel implements ChatModel {
 			Object chunkChoiceObj = metadata.get("chunkChoice");
 			if (chunkChoiceObj instanceof ChatCompletionChunk.Choice chunkChoice) {
 				if (chunkChoice.delta().toolCalls().isPresent()) {
+					// Streaming chunk: each frame's `arguments` is only the delta
+					// fragment from this SSE event. Mark partial so downstream tool
+					// execution and message aggregation know not to act on it;
+					// internalStream emits the authoritative non-partial frame after
+					// the SSE stream completes.
 					toolCalls = chunkChoice.delta()
 						.toolCalls()
 						.get()
@@ -488,7 +497,7 @@ public final class OpenAiChatModel implements ChatModel {
 							String id = tc.id().orElse("");
 							String name = func.name().orElse("");
 							String arguments = func.arguments().orElse("");
-							return new AssistantMessage.ToolCall(id, "function", name, arguments);
+							return new AssistantMessage.ToolCall(id, "function", name, arguments, true);
 						})
 						.filter(Objects::nonNull)
 						.toList();
