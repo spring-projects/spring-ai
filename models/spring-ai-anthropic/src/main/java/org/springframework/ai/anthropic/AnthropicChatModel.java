@@ -430,10 +430,23 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				return new ChatResponse(List.of(generation));
 			}
 
-			// Tool argument JSON chunk — accumulate for later
+			// Tool argument JSON chunk — accumulate for the final message_delta frame
+			// AND emit a partial ToolCall so subscribers see argument tokens in real
+			// time. The partial=true flag keeps the tool-execution gate, advisor
+			// routing, and persistence silent until the authoritative non-partial
+			// frame arrives via message_delta.
 			if (delta.inputJson().isPresent()) {
 				String partialJson = delta.asInputJson().partialJson();
 				streamingState.appendToolJson(partialJson);
+				String toolId = streamingState.getCurrentToolId();
+				String toolName = streamingState.getCurrentToolName();
+				if (!toolId.isEmpty() && !toolName.isEmpty()) {
+					ToolCall partialCall = new ToolCall(toolId, "function", toolName, partialJson, true);
+					AssistantMessage assistantMessage = AssistantMessage.builder()
+						.toolCalls(List.of(partialCall))
+						.build();
+					return new ChatResponse(List.of(new Generation(assistantMessage)));
+				}
 				return null;
 			}
 
@@ -1532,6 +1545,14 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		 */
 		boolean isTrackingToolUse() {
 			return !this.currentToolId.get().isEmpty();
+		}
+
+		String getCurrentToolId() {
+			return this.currentToolId.get();
+		}
+
+		String getCurrentToolName() {
+			return this.currentToolName.get();
 		}
 
 		/**
