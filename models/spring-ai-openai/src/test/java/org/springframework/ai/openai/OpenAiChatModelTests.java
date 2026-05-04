@@ -16,18 +16,34 @@
 
 package org.springframework.ai.openai;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
+import com.openai.core.JsonValue;
+import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
+import com.openai.models.chat.completions.ChatCompletionMessage;
+import com.openai.models.completions.CompletionUsage;
+import com.openai.services.blocking.ChatService;
+import com.openai.services.blocking.chat.ChatCompletionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link OpenAiChatModel}.
@@ -40,6 +56,59 @@ class OpenAiChatModelTests {
 
 	@Mock
 	OpenAIClientAsync openAiClientAsync;
+
+	@Test
+	void preserveUnmappedRootResponseMetadata() {
+		Map<String, JsonValue> additionalProperties = new HashMap<>();
+		additionalProperties.put("string_field", JsonValue.from("abc"));
+		additionalProperties.put("number_field", JsonValue.from(123));
+		additionalProperties.put("boolean_field", JsonValue.from(true));
+		additionalProperties.put("list_field", JsonValue.from(List.of("abc", 123)));
+		additionalProperties.put("object_field", JsonValue.from(Map.of("key1", 1, "key2", 2)));
+		additionalProperties.put("null_field", null);
+
+		ChatService chatService = mock(ChatService.class);
+		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
+		when(this.openAiClient.chat()).thenReturn(chatService);
+		when(chatService.completions()).thenReturn(chatCompletionService);
+		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
+			.id("gen-1888888888-XYZabc123NewId")
+			.created(1777799928)
+			.model("moonshotai/kimi-k2.5-0127")
+			.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
+			.addChoice(ChatCompletion.Choice.builder()
+				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+				.index(0)
+				.logprobs(Optional.empty())
+				.message(ChatCompletionMessage.builder()
+					.content("hello")
+					.refusal(Optional.empty())
+					.role(JsonValue.from("assistant"))
+					.annotations(List.of())
+					.toolCalls(List.of())
+					.build())
+				.build())
+			.additionalProperties(additionalProperties)
+			.build());
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.call(new Prompt("hi", options));
+
+		ChatResponseMetadata metadata = response.getMetadata();
+		assertThat((Object) metadata.get("created")).isEqualTo(1777799928L);
+		assertThat((Object) metadata.get("string_field")).isEqualTo("abc");
+		assertThat((Object) metadata.get("number_field")).isEqualTo(123);
+		assertThat((Object) metadata.get("boolean_field")).isEqualTo(true);
+		assertThat((Object) metadata.get("list_field")).isEqualTo(List.of("abc", 123));
+		assertThat(metadata.<Map<String, Object>>get("object_field")).containsEntry("key1", 1).containsEntry("key2", 2);
+		assertThat(metadata.containsKey("null_field")).isFalse();
+	}
 
 	@Test
 	void toolChoiceAuto() {
