@@ -1,6 +1,19 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-2-0-0-M6]]
+== Upgrading to 2.0.0-M6
+
+=== Observability
+
+==== Tool Calling
+
+The observations produced for tool calling operations have changed as follows:
+
+* the span name is `execute_tool <tool-name>` instead of `tool_call <tool-name>`.
+* the metric/span attribute `gen_ai.operation.name` has value `execute_tool` instead of `framework`.
+* a new `spring.ai.tool.type` metric/span attribute has been introduced to capture the tool type (e.g. `function`).
+* a new `spring.ai.tool.call.id` span attribute has been introduced to capture the tool call ID, as identified by the chat model.
 
 [[upgrading-to-2-0-0-M5]]
 == Upgrading to 2.0.0-M5
