@@ -78,7 +78,7 @@ public class BedrockConverseProxyChatAutoConfiguration {
 			.asyncReadTimeout(connectionProperties.getAsyncReadTimeout())
 			.connectionAcquisitionTimeout(connectionProperties.getConnectionAcquisitionTimeout())
 			.socketTimeout(connectionProperties.getSocketTimeout())
-			.defaultOptions(chatProperties.getOptions())
+			.defaultOptions(chatProperties.toOptions())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.toolCallingManager(toolCallingManager)
 			.toolExecutionEligibilityPredicate(
