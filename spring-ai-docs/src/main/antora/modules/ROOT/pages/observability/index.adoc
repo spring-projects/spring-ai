@@ -141,6 +141,16 @@ NOTE: Observability features are currently supported only for `ChatModel` implem
 providers: Anthropic, Mistral AI, Ollama, OpenAI, Google GenAI, MiniMax, Moonshot, QianFan.
 Additional AI model providers will be supported in a future release.
 
+[IMPORTANT]
+====
+**Anthropic and OpenAI: HTTP layer is not instrumented**
+
+The Anthropic (since `2.0.0-M3`) and OpenAI (since `2.0.0-M5`) chat models go through vendor-provided Java SDKs.
+Each SDK builds its own `OkHttpClient` and doesn't expose an interceptor hook on it, so Spring AI can't wire in the Micrometer or OpenTelemetry interceptors that would instrument the HTTP call.
+Only the model-level observations covered below are emitted, and traces won't connect end to end through proxies, AI gateways, or OpenAI-compatible inference servers like vLLM and Ollama.
+See the xref:api/chat/anthropic-chat.adoc#_observability[Anthropic] and xref:api/chat/openai-chat.adoc#_observability[OpenAI] chat docs for details.
+====
+
 The `gen_ai.client.operation` observations are recorded when calling the ChatModel `call` or `stream` methods. 
 They measure the time spent on method completion and propagate the related tracing information.
 

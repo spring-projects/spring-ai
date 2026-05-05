@@ -1607,8 +1607,30 @@ spring.ai.anthropic.chat.web-search-tool.user-location.country=US
 
 == Observability
 
-The Anthropic SDK implementation supports Spring AI's observability features through Micrometer.
-All chat model operations are instrumented for monitoring and tracing.
+Spring AI emits Micrometer metrics and tracing spans at the chat model layer for every Anthropic call.
+Each span wraps the SDK invocation and carries request parameters, response metadata, and token usage.
+See the xref:observability/index.adoc[observability reference] for the full set.
+
+[IMPORTANT]
+====
+**HTTP layer is not instrumented**
+
+Since `2.0.0-M3`, Anthropic chat goes through the official `anthropic-java` SDK.
+The SDK builds its own `OkHttpClient` and doesn't expose an interceptor hook on it, so Spring AI has no way to attach the Micrometer or OpenTelemetry interceptors that would instrument the HTTP request.
+You won't see:
+
+* HTTP client metrics (per-endpoint latency, status codes, retries)
+* A span for the HTTP call itself, between Spring AI and the Anthropic API
+* Outbound `traceparent` propagation to the API or any intermediary (proxy, AI gateway, OpenAI-compatible inference service)
+
+Before `2.0.0-M3` the `RestClient` based code picked up HTTP instrumentation from Spring's HTTP stack for free.
+The switch to the SDK removed that side effect.
+
+For users with strict HTTP observability requirements, the SDK supports plugging in a custom HTTP client.
+See the https://platform.claude.com/docs/en/api/sdks/java#custom-http-client[Anthropic Java SDK custom HTTP client docs] for the recommended approach.
+Wire your custom-built `AnthropicClient` and `AnthropicClientAsync` into Spring AI via `AnthropicChatModel.builder().anthropicClient(...).anthropicClientAsync(...)`.
+Built-in HTTP-level observability is being explored for a future release.
+====
 
 == Logging
 

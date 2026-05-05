@@ -767,6 +767,35 @@ This is useful when you need to:
 * Rotate API keys dynamically
 * Implement custom API key selection logic
 
+== Observability
+
+Spring AI emits Micrometer metrics and tracing spans at the chat model layer for every OpenAI call.
+Each span wraps the SDK invocation and carries request parameters, response metadata, and token usage.
+See the xref:observability/index.adoc[observability reference] for the full set.
+
+[IMPORTANT]
+====
+**HTTP layer is not instrumented**
+
+Since `2.0.0-M5`, OpenAI chat goes through the official `openai-java` SDK.
+The SDK builds its own `OkHttpClient` and doesn't expose an interceptor hook on it, so Spring AI has no way to attach the Micrometer or OpenTelemetry interceptors that would instrument the HTTP request.
+You won't see:
+
+* HTTP client metrics (per-endpoint latency, status codes, retries)
+* A span for the HTTP call between Spring AI and the OpenAI endpoint
+* Outbound `traceparent` propagation to the API or any intermediary (proxy, AI gateway, OpenAI-compatible inference server)
+
+Before `2.0.0-M5` the `RestClient`-based code picked up HTTP instrumentation from Spring's HTTP stack for free.
+The switch to the SDK removed that side effect.
+This is most painful when you're behind an AI gateway or hitting an OpenAI-compatible server like vLLM or Ollama.
+Traces stop at the SDK boundary.
+
+For users with strict HTTP observability requirements, the SDK supports plugging in a custom HTTP client.
+See the https://github.com/openai/openai-java#customized-okhttpclient[openai-java custom HTTP client docs] for the recommended approach.
+Wire your custom-built `OpenAIClient` and `OpenAIClientAsync` into Spring AI via `OpenAiChatModel.builder().openAiClient(...).openAiClientAsync(...)`.
+Built-in HTTP-level observability is being explored for a future release.
+====
+
 == Using Extra Parameters with OpenAI-Compatible Servers [[openai-compatible-servers]]
 
 OpenAI-compatible inference servers like vLLM, Ollama, and others often support additional parameters beyond those defined in OpenAI's standard API.
