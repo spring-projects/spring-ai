@@ -32,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Geng Rong
  * @author Hyunsang Han
  * @author Issam El-atif
+ * @author Sebastien Deleuze
  */
 public class DeepSeekPropertiesTests {
 
@@ -42,8 +43,8 @@ public class DeepSeekPropertiesTests {
 		// @formatter:off
 				"spring.ai.deepseek.base-url=TEST_BASE_URL",
 				"spring.ai.deepseek.api-key=abc123",
-				"spring.ai.deepseek.chat.options.model=MODEL_XYZ",
-				"spring.ai.deepseek.chat.options.temperature=0.55")
+				"spring.ai.deepseek.chat.model=MODEL_XYZ",
+				"spring.ai.deepseek.chat.temperature=0.55")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(DeepSeekChatAutoConfiguration.class,
 					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
@@ -58,8 +59,8 @@ public class DeepSeekPropertiesTests {
 				assertThat(chatProperties.getApiKey()).isNull();
 				assertThat(chatProperties.getBaseUrl()).isNull();
 
-				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
+				assertThat(chatProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(chatProperties.getTemperature()).isEqualTo(0.55);
 			});
 	}
 
@@ -72,8 +73,8 @@ public class DeepSeekPropertiesTests {
 				"spring.ai.deepseek.api-key=abc123",
 				"spring.ai.deepseek.chat.base-url=TEST_BASE_URL2",
 				"spring.ai.deepseek.chat.api-key=456",
-				"spring.ai.deepseek.chat.options.model=MODEL_XYZ",
-				"spring.ai.deepseek.chat.options.temperature=0.55")
+				"spring.ai.deepseek.chat.model=MODEL_XYZ",
+				"spring.ai.deepseek.chat.temperature=0.55")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(DeepSeekChatAutoConfiguration.class,
 					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
@@ -88,8 +89,8 @@ public class DeepSeekPropertiesTests {
 				assertThat(chatProperties.getApiKey()).isEqualTo("456");
 				assertThat(chatProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
 
-				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
+				assertThat(chatProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(chatProperties.getTemperature()).isEqualTo(0.55);
 			});
 	}
 
@@ -101,17 +102,17 @@ public class DeepSeekPropertiesTests {
 				"spring.ai.deepseek.api-key=API_KEY",
 				"spring.ai.deepseek.base-url=TEST_BASE_URL",
 
-				"spring.ai.deepseek.chat.options.model=MODEL_XYZ",
-				"spring.ai.deepseek.chat.options.frequencyPenalty=-1.5",
-				"spring.ai.deepseek.chat.options.logitBias.myTokenId=-5",
-				"spring.ai.deepseek.chat.options.maxTokens=123",
-				"spring.ai.deepseek.chat.options.presencePenalty=0",
-				"spring.ai.deepseek.chat.options.responseFormat.type=json_object",
-				"spring.ai.deepseek.chat.options.seed=66",
-				"spring.ai.deepseek.chat.options.stop=boza,koza",
-				"spring.ai.deepseek.chat.options.temperature=0.55",
-				"spring.ai.deepseek.chat.options.topP=0.56",
-				"spring.ai.deepseek.chat.options.user=userXYZ"
+				"spring.ai.deepseek.chat.model=MODEL_XYZ",
+				"spring.ai.deepseek.chat.frequencyPenalty=-1.5",
+				"spring.ai.deepseek.chat.logitBias.myTokenId=-5",
+				"spring.ai.deepseek.chat.maxTokens=123",
+				"spring.ai.deepseek.chat.presencePenalty=0",
+				"spring.ai.deepseek.chat.responseFormat.type=json_object",
+				"spring.ai.deepseek.chat.seed=66",
+				"spring.ai.deepseek.chat.stop=boza,koza",
+				"spring.ai.deepseek.chat.temperature=0.55",
+				"spring.ai.deepseek.chat.topP=0.56",
+				"spring.ai.deepseek.chat.user=userXYZ"
 				)
 			// @formatter:on
 			.withConfiguration(AutoConfigurations.of(DeepSeekChatAutoConfiguration.class,
@@ -124,13 +125,13 @@ public class DeepSeekPropertiesTests {
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
 
-				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getFrequencyPenalty()).isEqualTo(-1.5);
-				assertThat(chatProperties.getOptions().getMaxTokens()).isEqualTo(123);
-				assertThat(chatProperties.getOptions().getPresencePenalty()).isEqualTo(0);
-				assertThat(chatProperties.getOptions().getStop()).contains("boza", "koza");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
-				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56);
+				assertThat(chatProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(chatProperties.getFrequencyPenalty()).isEqualTo(-1.5);
+				assertThat(chatProperties.getMaxTokens()).isEqualTo(123);
+				assertThat(chatProperties.getPresencePenalty()).isEqualTo(0);
+				assertThat(chatProperties.getStop()).contains("boza", "koza");
+				assertThat(chatProperties.getTemperature()).isEqualTo(0.55);
+				assertThat(chatProperties.getTopP()).isEqualTo(0.56);
 			});
 	}
 
