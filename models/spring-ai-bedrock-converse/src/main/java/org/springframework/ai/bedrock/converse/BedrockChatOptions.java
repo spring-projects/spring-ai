@@ -38,6 +38,7 @@ import org.springframework.util.Assert;
  * The options to be used when sending a chat request to the Bedrock API.
  *
  * @author Sun Yuhan
+ * @author Sebastien Deleuze
  */
 public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
@@ -112,17 +113,9 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		return this.model;
 	}
 
-	public void setModel(@Nullable String model) {
-		this.model = model;
-	}
-
 	@Override
 	public @Nullable Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
-	}
-
-	public void setFrequencyPenalty(@Nullable Double frequencyPenalty) {
-		this.frequencyPenalty = frequencyPenalty;
 	}
 
 	@Override
@@ -130,16 +123,8 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		return this.maxTokens;
 	}
 
-	public void setMaxTokens(@Nullable Integer maxTokens) {
-		this.maxTokens = maxTokens;
-	}
-
 	public Map<String, String> getRequestParameters() {
 		return this.requestParameters;
-	}
-
-	public void setRequestParameters(Map<String, String> requestParameters) {
-		this.requestParameters = requestParameters;
 	}
 
 	@Override
@@ -147,17 +132,9 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		return this.presencePenalty;
 	}
 
-	public void setPresencePenalty(@Nullable Double presencePenalty) {
-		this.presencePenalty = presencePenalty;
-	}
-
 	@Override
 	public @Nullable List<String> getStopSequences() {
 		return this.stopSequences;
-	}
-
-	public void setStopSequences(@Nullable List<String> stopSequences) {
-		this.stopSequences = stopSequences;
 	}
 
 	@Override
@@ -165,26 +142,14 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		return this.temperature;
 	}
 
-	public void setTemperature(@Nullable Double temperature) {
-		this.temperature = temperature;
-	}
-
 	@Override
 	public @Nullable Integer getTopK() {
 		return this.topK;
 	}
 
-	public void setTopK(@Nullable Integer topK) {
-		this.topK = topK;
-	}
-
 	@Override
 	public @Nullable Double getTopP() {
 		return this.topP;
-	}
-
-	public void setTopP(@Nullable Double topP) {
-		this.topP = topP;
 	}
 
 	@Override
@@ -234,10 +199,6 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 
 	public @Nullable BedrockCacheOptions getCacheOptions() {
 		return this.cacheOptions;
-	}
-
-	public void setCacheOptions(@Nullable BedrockCacheOptions cacheOptions) {
-		this.cacheOptions = cacheOptions;
 	}
 
 	@Override

@@ -105,18 +105,18 @@ The prefix `spring.ai.bedrock.converse.chat` is the property prefix that configu
 
 | spring.ai.bedrock.converse.chat.enabled (Removed and no longer valid) | Enable Bedrock Converse chat model. | true
 | spring.ai.model.chat | Enable Bedrock Converse chat model. | bedrock-converse
-| spring.ai.bedrock.converse.chat.options.model | The model ID to use. You can use the https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-supported-models-features.html[Supported models and model features]  | None. Select your https://us-east-1.console.aws.amazon.com/bedrock/home?region=us-east-1#/models[modelId] from the AWS Bedrock console.
-| spring.ai.bedrock.converse.chat.options.temperature | Controls the randomness of the output. Values can range over [0.0,1.0] | 0.8
-| spring.ai.bedrock.converse.chat.options.top-p | The maximum cumulative probability of tokens to consider when sampling. | AWS Bedrock default
-| spring.ai.bedrock.converse.chat.options.top-k | Number of token choices for generating the next token. | AWS Bedrock default
-| spring.ai.bedrock.converse.chat.options.max-tokens | Maximum number of tokens in the generated response. | 500
+| spring.ai.bedrock.converse.chat.model | The model ID to use. You can use the https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-supported-models-features.html[Supported models and model features]  | None. Select your https://us-east-1.console.aws.amazon.com/bedrock/home?region=us-east-1#/models[modelId] from the AWS Bedrock console.
+| spring.ai.bedrock.converse.chat.temperature | Controls the randomness of the output. Values can range over [0.0,1.0] | 0.8
+| spring.ai.bedrock.converse.chat.top-p | The maximum cumulative probability of tokens to consider when sampling. | AWS Bedrock default
+| spring.ai.bedrock.converse.chat.top-k | Number of token choices for generating the next token. | AWS Bedrock default
+| spring.ai.bedrock.converse.chat.max-tokens | Maximum number of tokens in the generated response. | 500
 |====
 
 == Runtime Options [[chat-options]]
 
 Use the portable `ChatOptions` or `BedrockChatOptions` portable builders to create model configurations, such as temperature, maxToken, topP, etc.
 
-On start-up, the default options can be configured with the `BedrockConverseProxyChatModel(api, options)` constructor or the `spring.ai.bedrock.converse.chat.options.*` properties.
+On start-up, the default options can be configured with the `BedrockConverseProxyChatModel(api, options)` constructor or the `spring.ai.bedrock.converse.chat.*` properties.
 
 At run-time you can override the default options by adding new, request specific, options to the `Prompt` call:
 
@@ -989,8 +989,8 @@ spring.ai.bedrock.aws.secret-key=${AWS_SECRET_ACCESS_KEY}
 # session token is only required for temporary credentials
 spring.ai.bedrock.aws.session-token=${AWS_SESSION_TOKEN}
 
-spring.ai.bedrock.converse.chat.options.temperature=0.8
-spring.ai.bedrock.converse.chat.options.top-k=15
+spring.ai.bedrock.converse.chat.temperature=0.8
+spring.ai.bedrock.converse.chat.top-k=15
 ----
 
 Here's an example controller using the chat model:
