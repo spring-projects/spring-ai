@@ -68,7 +68,6 @@
 		<module>vector-stores/spring-ai-couchbase-store</module>
 		<module>vector-stores/spring-ai-elasticsearch-store</module>
 		<module>vector-stores/spring-ai-gemfire-store</module>
-		<module>vector-stores/spring-ai-hanadb-store</module>
 		<module>vector-stores/spring-ai-infinispan-store</module>
 		<module>vector-stores/spring-ai-mariadb-store</module>
 		<module>vector-stores/spring-ai-milvus-store</module>
@@ -304,7 +303,6 @@
 		<!-- readers/writer/stores dependencies-->
 		<pdfbox.version>3.0.7</pdfbox.version>
 		<pgvector.version>0.1.6</pgvector.version>
-		<sap.hanadb.version>2.20.11</sap.hanadb.version>
 		<coherence.version>24.09</coherence.version>
 		<milvus.version>2.5.8</milvus.version>
 		<gemfire.testcontainers.version>2.3.3</gemfire.testcontainers.version>
@@ -869,8 +867,6 @@
 								<exclude>org.springframework.ai.vectorstore**/Coherence**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Elasticsearch**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/GemFire**IT.java</exclude>
-								<exclude>org.springframework.ai.vectorstore**/Hana**IT.java</exclude>
-								<exclude>org.springframework.ai.vectorstore**/Hana**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Milvus**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/MariaDB**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Mongo**IT.java</exclude>
