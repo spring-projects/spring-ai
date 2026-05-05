@@ -46,7 +46,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *       sse-endpoint: /mcp-hub/sse/cf9ec4527e3c4a2cbb149a85ea45ab01
  *     custom-server:
  *       url: http://api.example.com
- *       sse-endpoint: /v1/mcp/events?token=abc123&format=json
+ *       sse-endpoint: /v1/mcp/events?token=abc123&amp;format=json
  *
  * # How to split a full URL:
  * # Full URL: http://localhost:3000/mcp-hub/sse/token123
