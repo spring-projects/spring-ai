@@ -254,7 +254,7 @@ class SyncMcpToolCallbackProviderBuilderTest {
 		Tool tool = Mockito.mock(Tool.class);
 		when(tool.name()).thenReturn(toolName);
 		when(tool.description()).thenReturn("Test tool description");
-		when(tool.inputSchema()).thenReturn(Mockito.mock(Map.class));
+		when(tool.inputSchema()).thenReturn(Map.of());
 
 		// Mock list tools response
 		McpSchema.ListToolsResult listToolsResult = Mockito.mock(McpSchema.ListToolsResult.class);
