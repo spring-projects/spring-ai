@@ -71,9 +71,11 @@ To clone it you have to either:
 
 ## Building
 
-The project targets and build artifacts compatible with Java 17+.
-We encourage using Java 21 to build (especially if you switch back and forth between 
-the main branch and the 1.1.x branch), but the project can be built with Java 17.
+The project targets and builds artifacts compatible with Java 17+.
+
+The recommended JDK is specified in the `.sdkmanrc` file, which can be installed and configured with the [SDKMAN!](https://sdkman.io/) tool:
+ - `sdk env install` to install the related JDK locally
+ - `sdk env` to use the related JDK
 
 **NOTE:** Building Spring AI requires components that depend on your specific CPU architecture (PyTorch for example). MacOS can seamlessly run x86 Java applications on ARM processors using Rosetta, but this will fail when building this project because it tries to download architecture-specific native dependencies. (Note: this is only an issue for building the project, not for consuming the libraries). If you are unsure if you have the correct JDK distribution for your CPU, run the command `java -XshowSettings:properties -version 2>&1 | grep os.arch` from a fresh terminal to validate that it matches your machine.
 
