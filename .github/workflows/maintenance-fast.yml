@@ -54,7 +54,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
+          distribution: 'liberica'
           # cache: 'maven'  # Disabled for fast workflow - reduces post-job noise
 
       - name: Set up Python

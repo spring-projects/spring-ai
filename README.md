@@ -64,7 +64,11 @@ To clone it you have to either:
 
 ## Building
 
-Build using Java 17.
+The project targets and builds artifacts compatible with Java 17+.
+
+The recommended JDK is specified in the `.sdkmanrc` file, which can be installed and configured with the [SDKMAN!](https://sdkman.io/) tool:
+- `sdk env install` to install the related JDK locally
+- `sdk env` to use the related JDK
 
 To build with running unit tests
 
