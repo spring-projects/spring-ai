@@ -34,6 +34,7 @@ import org.springframework.ai.ollama.api.OllamaApi.Message;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
 import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCall;
 import org.springframework.ai.ollama.api.OllamaModel;
+import org.springframework.ai.ollama.api.tool.MockWeatherService.Unit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -111,8 +112,9 @@ public class OllamaApiToolFunctionCallIT extends BaseOllamaIT {
 			var functionName = toolCall.function().name();
 			if ("getCurrentWeather".equals(functionName)) {
 				Map<String, Object> responseMap = toolCall.function().arguments();
-				MockWeatherService.Request weatherRequest = ModelOptionsUtils.mapToClass(responseMap,
-						MockWeatherService.Request.class);
+
+				var weatherRequest = new MockWeatherService.Request((String) responseMap.get("location"),
+						Unit.valueOf((String) responseMap.get("unit")));
 
 				MockWeatherService.Response weatherResponse = this.weatherService.apply(weatherRequest);
 

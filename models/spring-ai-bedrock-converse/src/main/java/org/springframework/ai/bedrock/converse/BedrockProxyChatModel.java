@@ -481,8 +481,10 @@ public class BedrockProxyChatModel implements ChatModel {
 			.topP(updatedRuntimeOptions.getTopP() != null ? updatedRuntimeOptions.getTopP().floatValue() : null)
 			.build();
 
+		BedrockChatOptions bedrockOptions = (BedrockChatOptions) prompt.getOptions();
+		Assert.notNull(bedrockOptions, "options can't be null here");
 		Document additionalModelRequestFields = ConverseApiUtils
-			.getChatOptionsAdditionalModelRequestFields(this.defaultOptions, prompt.getOptions());
+			.convertObjectToDocument(bedrockOptions.getRequestParameters());
 
 		Map<String, String> requestMetadata = ConverseApiUtils
 			.getRequestMetadata(prompt.getUserMessage().getMetadata());

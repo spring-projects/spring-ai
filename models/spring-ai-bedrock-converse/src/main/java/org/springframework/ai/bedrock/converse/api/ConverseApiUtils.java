@@ -23,12 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.jspecify.annotations.Nullable;
 import software.amazon.awssdk.core.document.Document;
-
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.model.ModelOptions;
-import org.springframework.ai.model.ModelOptionsUtils;
 
 /**
  * Amazon Bedrock Converse API utils.
@@ -41,63 +36,6 @@ import org.springframework.ai.model.ModelOptionsUtils;
 public final class ConverseApiUtils {
 
 	private ConverseApiUtils() {
-	}
-
-	public static @Nullable Document getChatOptionsAdditionalModelRequestFields(@Nullable ChatOptions defaultOptions,
-			@Nullable ModelOptions promptOptions) {
-		if (defaultOptions == null && promptOptions == null) {
-			return null;
-		}
-
-		Map<String, Object> attributes = new HashMap<>();
-
-		if (defaultOptions != null) {
-			attributes.putAll(ModelOptionsUtils.objectToMap(defaultOptions));
-		}
-
-		if (promptOptions != null) {
-			if (promptOptions instanceof ChatOptions runtimeOptions) {
-				attributes.putAll(ModelOptionsUtils.objectToMap(runtimeOptions));
-			}
-			else {
-				throw new IllegalArgumentException(
-						"Prompt options are not of type ChatOptions:" + promptOptions.getClass().getSimpleName());
-			}
-		}
-
-		attributes.remove("model");
-		attributes.remove("proxyToolCalls");
-		attributes.remove("functions");
-		attributes.remove("toolContext");
-		attributes.remove("toolCallbacks");
-
-		attributes.remove("toolCallbacks");
-		attributes.remove("toolNames");
-		attributes.remove("internalToolExecutionEnabled");
-
-		attributes.remove("temperature");
-		attributes.remove("topK");
-		attributes.remove("stopSequences");
-		attributes.remove("maxTokens");
-		attributes.remove("topP");
-
-		attributes.remove("frequencyPenalty");
-		attributes.remove("presencePenalty");
-		attributes.remove("cacheOptions");
-		attributes.remove("outputSchema");
-
-		if (attributes.containsKey("requestParameters")) {
-			Object reqMap = attributes.remove("requestParameters");
-			if (reqMap instanceof Map map) {
-				attributes.putAll(map);
-			}
-		}
-
-		if (attributes.isEmpty()) {
-			return null;
-		}
-
-		return convertObjectToDocument(attributes);
 	}
 
 	@SuppressWarnings("unchecked")

@@ -29,19 +29,6 @@ class KotlinModelOptionsUtilsTests {
 	private val jsonMapper = JsonMapper()
 
 	@Test
-	fun `test ModelOptionsUtils with Kotlin data class`() {
-		val portableOptions = Foo("John", "Doe")
-
-		val optionsMap = ModelOptionsUtils.objectToMap(portableOptions)
-		assertThat(optionsMap).containsEntry("bar", "John")
-		assertThat(optionsMap).containsEntry("baz", "Doe")
-
-		val newPortableOptions = ModelOptionsUtils.mapToClass(optionsMap, Foo::class.java)
-		assertThat(newPortableOptions.bar).isEqualTo("John")
-		assertThat(newPortableOptions.baz).isEqualTo("Doe")
-	}
-
-	@Test
 	fun `test Kotlin data class schema generation using getJsonSchema`() {
 		val inputType: Type = Foo::class.java
 

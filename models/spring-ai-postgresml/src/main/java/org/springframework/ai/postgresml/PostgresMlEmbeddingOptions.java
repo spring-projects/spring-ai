@@ -22,7 +22,6 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingOptions;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.postgresml.PostgresMlEmbeddingModel.VectorType;
 
 /**
@@ -118,11 +117,6 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 
 		public Builder vectorType(VectorType vectorType) {
 			this.options.setVectorType(vectorType);
-			return this;
-		}
-
-		public Builder kwargs(String kwargs) {
-			this.options.setKwargs(ModelOptionsUtils.objectToMap(kwargs));
 			return this;
 		}
 
