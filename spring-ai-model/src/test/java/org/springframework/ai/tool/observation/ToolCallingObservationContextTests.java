@@ -61,7 +61,7 @@ class ToolCallingObservationContextTests {
 	@Test
 	void whenToolDefinitionIsNullThenThrow() {
 		assertThatThrownBy(() -> ToolCallingObservationContext.builder().toolCallArguments("lizard").build())
-			.isInstanceOf(IllegalStateException.class)
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("toolDefinition cannot be null");
 	}
 
@@ -75,13 +75,13 @@ class ToolCallingObservationContextTests {
 	}
 
 	@Test
-	void whenToolArgumentsIsEmptyStringThenReturnEmptyString() {
+	void whenToolArgumentsIsEmptyStringThenReturnEmptyJsonObjectString() {
 		var observationContext = ToolCallingObservationContext.builder()
 			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
 			.toolCallArguments("")
 			.build();
 		assertThat(observationContext).isNotNull();
-		assertThat(observationContext.getToolCallArguments()).isEqualTo("");
+		assertThat(observationContext.getToolCallArguments()).isEqualTo("{}");
 	}
 
 	@Test
@@ -118,6 +118,58 @@ class ToolCallingObservationContextTests {
 		assertThat(observationContext.getToolDefinition().name()).isEqualTo("testTool");
 		assertThat(observationContext.getToolDefinition().description()).isEqualTo("Test description");
 		assertThat(observationContext.getToolDefinition().inputSchema()).isEqualTo("{\"type\": \"object\"}");
+	}
+
+	@Test
+	void whenToolTypeIsNullThenReturnDefaultFunction() {
+		var observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.build();
+		assertThat(observationContext.getToolType()).isEqualTo("function");
+	}
+
+	@Test
+	void whenToolTypeIsEmptyStringThenReturnDefaultFunction() {
+		var observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.toolType("")
+			.build();
+		assertThat(observationContext.getToolType()).isEqualTo("function");
+	}
+
+	@Test
+	void whenToolTypeIsSetThenReturnIt() {
+		var observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.toolType("mcp")
+			.build();
+		assertThat(observationContext.getToolType()).isEqualTo("mcp");
+	}
+
+	@Test
+	void whenToolCallIdIsNullThenReturnEmpty() {
+		var observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.build();
+		assertThat(observationContext.getToolCallId()).isEqualTo("");
+	}
+
+	@Test
+	void whenToolCallIdIsEmptyStringThenReturnEmpty() {
+		var observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.toolCallId("")
+			.build();
+		assertThat(observationContext.getToolCallId()).isEqualTo("");
+	}
+
+	@Test
+	void whenToolCallIdIsSetThenReturnIt() {
+		var observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.toolCallId("call_abc123")
+			.build();
+		assertThat(observationContext.getToolCallId()).isEqualTo("call_abc123");
 	}
 
 }

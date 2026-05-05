@@ -222,6 +222,8 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
 				.toolDefinition(toolCallback.getToolDefinition())
 				.toolMetadata(toolCallback.getToolMetadata())
+				.toolCallId(toolCall.id())
+				.toolType(toolCall.type())
 				.toolCallArguments(finalToolInputArguments)
 				.build();
 

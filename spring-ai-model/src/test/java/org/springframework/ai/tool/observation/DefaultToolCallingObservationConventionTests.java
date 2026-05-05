@@ -48,7 +48,7 @@ class DefaultToolCallingObservationConventionTests {
 			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
 			.toolCallArguments("input")
 			.build();
-		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("tool_call toolA");
+		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("execute_tool toolA");
 	}
 
 	@Test
@@ -65,17 +65,20 @@ class DefaultToolCallingObservationConventionTests {
 	void shouldHaveLowCardinalityKeyValues() {
 		ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
 			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.toolType("function")
 			.toolCallArguments("input")
 			.build();
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
 				KeyValue.of(ToolCallingObservationDocumentation.LowCardinalityKeyNames.TOOL_DEFINITION_NAME.asString(),
 						"toolA"),
 				KeyValue.of(ToolCallingObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
-						AiOperationType.FRAMEWORK.value()),
+						AiOperationType.EXECUTE_TOOL.value()),
 				KeyValue.of(ToolCallingObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(),
 						AiProvider.SPRING_AI.value()),
 				KeyValue.of(ToolCallingObservationDocumentation.LowCardinalityKeyNames.SPRING_AI_KIND,
-						SpringAiKind.TOOL_CALL.value()));
+						SpringAiKind.TOOL_CALL.value()),
+				KeyValue.of(ToolCallingObservationDocumentation.LowCardinalityKeyNames.TOOL_TYPE.asString(),
+						"function"));
 	}
 
 	@Test
@@ -87,6 +90,8 @@ class DefaultToolCallingObservationConventionTests {
 				""";
 		ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
 			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.toolType("function")
+			.toolCallId("call_abc123")
 			.toolCallArguments(toolCallInput)
 			.toolCallResult("Mission accomplished!")
 			.build();
@@ -95,13 +100,16 @@ class DefaultToolCallingObservationConventionTests {
 					.asString(), "description"),
 				KeyValue.of(
 						ToolCallingObservationDocumentation.HighCardinalityKeyNames.TOOL_DEFINITION_SCHEMA.asString(),
-						"{}"));
+						"{}"),
+				KeyValue.of(ToolCallingObservationDocumentation.HighCardinalityKeyNames.TOOL_CALL_ID.asString(),
+						"call_abc123"));
 	}
 
 	@Test
 	void shouldHaveAllStandardLowCardinalityKeys() {
 		ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
 			.toolDefinition(ToolDefinition.builder().name("tool").description("Tool").inputSchema("{}").build())
+			.toolType("function")
 			.toolCallArguments("args")
 			.build();
 
@@ -112,7 +120,8 @@ class DefaultToolCallingObservationConventionTests {
 			.contains(ToolCallingObservationDocumentation.LowCardinalityKeyNames.TOOL_DEFINITION_NAME.asString(),
 					ToolCallingObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					ToolCallingObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(),
-					ToolCallingObservationDocumentation.LowCardinalityKeyNames.SPRING_AI_KIND.asString());
+					ToolCallingObservationDocumentation.LowCardinalityKeyNames.SPRING_AI_KIND.asString(),
+					ToolCallingObservationDocumentation.LowCardinalityKeyNames.TOOL_TYPE.asString());
 	}
 
 	@Test

@@ -211,10 +211,11 @@ The `spring.ai.tool` observations are recorded when performing tool calling in t
 |===
 |Name | Description
 
-|`gen_ai.operation.name` | The name of the operation being performed. It's always `framework`.
+|`gen_ai.operation.name` | The name of the operation being performed. It's always `execute_tool`.
 |`gen_ai.system` | The provider responsible for the operation. It's always `spring_ai`.
 |`spring.ai.kind` | The kind of operation performed by Spring AI. It's always `tool_call`.
 |`spring.ai.tool.definition.name` | The name of the tool.
+|`spring.ai.tool.type` | The type of the tool. By default, it's `function`.
 |===
 
 .High Cardinality Keys
@@ -223,8 +224,9 @@ The `spring.ai.tool` observations are recorded when performing tool calling in t
 |Name | Description
 |`spring.ai.tool.definition.description` | Description of the tool.
 |`spring.ai.tool.definition.schema` | Schema of the parameters used to call the tool.
+|`spring.ai.tool.call.id` | The ID of the tool call, as identified by the chat model.
 |`spring.ai.tool.call.arguments` | The input arguments to the tool call. (Only when enabled)
-|`spring.ai.tool.call.result` | Schema of the parameters used to call the tool. (Only when enabled)
+|`spring.ai.tool.call.result` | The result of the tool call execution. (Only when enabled)
 |===
 
 === Tool Call Arguments and Result Data
