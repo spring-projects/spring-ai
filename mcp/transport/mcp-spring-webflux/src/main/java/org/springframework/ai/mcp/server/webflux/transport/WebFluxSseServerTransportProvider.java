@@ -459,7 +459,7 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 		private final FluxSink<ServerSentEvent<?>> sink;
 
 		@Nullable
-		private String sessionId;
+		private volatile String sessionId;
 
 		WebFluxMcpSessionTransport(FluxSink<ServerSentEvent<?>> sink) {
 			this.sink = sink;
