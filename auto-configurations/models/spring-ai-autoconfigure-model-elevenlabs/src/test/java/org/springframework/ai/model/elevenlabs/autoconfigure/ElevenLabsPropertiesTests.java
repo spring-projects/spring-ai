@@ -34,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Alexandros Pappas
  * @author Issam El-atif
+ * @author Sebastien Deleuze
  */
 public class ElevenLabsPropertiesTests {
 
@@ -43,13 +44,13 @@ public class ElevenLabsPropertiesTests {
 		// @formatter:off
 				"spring.ai.elevenlabs.api-key=YOUR_API_KEY",
 				"spring.ai.elevenlabs.base-url=https://custom.api.elevenlabs.io",
-				"spring.ai.elevenlabs.tts.options.model-id=custom-model",
-				"spring.ai.elevenlabs.tts.options.voice=custom-voice",
-				"spring.ai.elevenlabs.tts.options.voice-settings.stability=0.6",
-				"spring.ai.elevenlabs.tts.options.voice-settings.similarity-boost=0.8",
-				"spring.ai.elevenlabs.tts.options.voice-settings.style=0.2",
-				"spring.ai.elevenlabs.tts.options.voice-settings.use-speaker-boost=false",
-				"spring.ai.elevenlabs.tts.options.voice-settings.speed=1.5"
+				"spring.ai.elevenlabs.tts.model-id=custom-model",
+				"spring.ai.elevenlabs.tts.voice=custom-voice",
+				"spring.ai.elevenlabs.tts.voice-settings.stability=0.6",
+				"spring.ai.elevenlabs.tts.voice-settings.similarity-boost=0.8",
+				"spring.ai.elevenlabs.tts.voice-settings.style=0.2",
+				"spring.ai.elevenlabs.tts.voice-settings.use-speaker-boost=false",
+				"spring.ai.elevenlabs.tts.voice-settings.speed=1.5"
 				// @formatter:on
 		)
 			.withConfiguration(
@@ -62,13 +63,14 @@ public class ElevenLabsPropertiesTests {
 				assertThat(connectionProperties.getApiKey()).isEqualTo("YOUR_API_KEY");
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("https://custom.api.elevenlabs.io");
 
-				assertThat(speechProperties.getOptions().getModelId()).isEqualTo("custom-model");
-				assertThat(speechProperties.getOptions().getVoice()).isEqualTo("custom-voice");
-				assertThat(speechProperties.getOptions().getVoiceSettings().stability()).isEqualTo(0.6);
-				assertThat(speechProperties.getOptions().getVoiceSettings().similarityBoost()).isEqualTo(0.8);
-				assertThat(speechProperties.getOptions().getVoiceSettings().style()).isEqualTo(0.2);
-				assertThat(speechProperties.getOptions().getVoiceSettings().useSpeakerBoost()).isFalse();
-				assertThat(speechProperties.getOptions().getSpeed()).isEqualTo(1.5f);
+				var options = speechProperties.toOptions();
+				assertThat(options.getModelId()).isEqualTo("custom-model");
+				assertThat(options.getVoice()).isEqualTo("custom-voice");
+				assertThat(options.getVoiceSettings().stability()).isEqualTo(0.6);
+				assertThat(options.getVoiceSettings().similarityBoost()).isEqualTo(0.8);
+				assertThat(options.getVoiceSettings().style()).isEqualTo(0.2);
+				assertThat(options.getVoiceSettings().useSpeakerBoost()).isFalse();
+				assertThat(options.getSpeed()).isEqualTo(1.5f);
 			});
 	}
 
@@ -77,20 +79,20 @@ public class ElevenLabsPropertiesTests {
 		new ApplicationContextRunner().withPropertyValues(
 		// @formatter:off
 				"spring.ai.elevenlabs.api-key=YOUR_API_KEY",
-				"spring.ai.elevenlabs.tts.options.model-id=custom-model",
-				"spring.ai.elevenlabs.tts.options.voice=custom-voice",
-				"spring.ai.elevenlabs.tts.options.format=pcm_44100",
-				"spring.ai.elevenlabs.tts.options.voice-settings.stability=0.6",
-				"spring.ai.elevenlabs.tts.options.voice-settings.similarity-boost=0.8",
-				"spring.ai.elevenlabs.tts.options.voice-settings.style=0.2",
-				"spring.ai.elevenlabs.tts.options.voice-settings.use-speaker-boost=false",
-				"spring.ai.elevenlabs.tts.options.voice-settings.speed=1.2",
-				"spring.ai.elevenlabs.tts.options.language-code=en",
-				"spring.ai.elevenlabs.tts.options.seed=12345",
-				"spring.ai.elevenlabs.tts.options.previous-text=previous",
-				"spring.ai.elevenlabs.tts.options.next-text=next",
-				"spring.ai.elevenlabs.tts.options.apply-text-normalization=ON",
-				"spring.ai.elevenlabs.tts.options.apply-language-text-normalization=true"
+				"spring.ai.elevenlabs.tts.model-id=custom-model",
+				"spring.ai.elevenlabs.tts.voice=custom-voice",
+				"spring.ai.elevenlabs.tts.format=pcm_44100",
+				"spring.ai.elevenlabs.tts.voice-settings.stability=0.6",
+				"spring.ai.elevenlabs.tts.voice-settings.similarity-boost=0.8",
+				"spring.ai.elevenlabs.tts.voice-settings.style=0.2",
+				"spring.ai.elevenlabs.tts.voice-settings.use-speaker-boost=false",
+				"spring.ai.elevenlabs.tts.voice-settings.speed=1.2",
+				"spring.ai.elevenlabs.tts.language-code=en",
+				"spring.ai.elevenlabs.tts.seed=12345",
+				"spring.ai.elevenlabs.tts.previous-text=previous",
+				"spring.ai.elevenlabs.tts.next-text=next",
+				"spring.ai.elevenlabs.tts.apply-text-normalization=ON",
+				"spring.ai.elevenlabs.tts.apply-language-text-normalization=true"
 				// @formatter:on
 		)
 			.withConfiguration(
@@ -98,23 +100,23 @@ public class ElevenLabsPropertiesTests {
 							SpringAiRetryAutoConfiguration.class, WebClientAutoConfiguration.class))
 			.run(context -> {
 				var speechProperties = context.getBean(ElevenLabsSpeechProperties.class);
-
-				assertThat(speechProperties.getOptions().getModelId()).isEqualTo("custom-model");
-				assertThat(speechProperties.getOptions().getVoice()).isEqualTo("custom-voice");
-				assertThat(speechProperties.getOptions().getFormat()).isEqualTo("pcm_44100");
-				assertThat(speechProperties.getOptions().getVoiceSettings().stability()).isEqualTo(0.6);
-				assertThat(speechProperties.getOptions().getVoiceSettings().similarityBoost()).isEqualTo(0.8);
-				assertThat(speechProperties.getOptions().getVoiceSettings().style()).isEqualTo(0.2);
-				assertThat(speechProperties.getOptions().getVoiceSettings().useSpeakerBoost()).isFalse();
-				assertThat(speechProperties.getOptions().getVoiceSettings().speed()).isEqualTo(1.2);
-				assertThat(speechProperties.getOptions().getSpeed()).isEqualTo(1.2);
-				assertThat(speechProperties.getOptions().getLanguageCode()).isEqualTo("en");
-				assertThat(speechProperties.getOptions().getSeed()).isEqualTo(12345);
-				assertThat(speechProperties.getOptions().getPreviousText()).isEqualTo("previous");
-				assertThat(speechProperties.getOptions().getNextText()).isEqualTo("next");
-				assertThat(speechProperties.getOptions().getApplyTextNormalization())
+				var options = speechProperties.toOptions();
+				assertThat(options.getModelId()).isEqualTo("custom-model");
+				assertThat(options.getVoice()).isEqualTo("custom-voice");
+				assertThat(options.getFormat()).isEqualTo("pcm_44100");
+				assertThat(options.getVoiceSettings().stability()).isEqualTo(0.6);
+				assertThat(options.getVoiceSettings().similarityBoost()).isEqualTo(0.8);
+				assertThat(options.getVoiceSettings().style()).isEqualTo(0.2);
+				assertThat(options.getVoiceSettings().useSpeakerBoost()).isFalse();
+				assertThat(options.getVoiceSettings().speed()).isEqualTo(1.2);
+				assertThat(options.getSpeed()).isEqualTo(1.2);
+				assertThat(options.getLanguageCode()).isEqualTo("en");
+				assertThat(options.getSeed()).isEqualTo(12345);
+				assertThat(options.getPreviousText()).isEqualTo("previous");
+				assertThat(options.getNextText()).isEqualTo("next");
+				assertThat(options.getApplyTextNormalization())
 					.isEqualTo(ElevenLabsApi.SpeechRequest.TextNormalizationMode.ON);
-				assertThat(speechProperties.getOptions().getApplyLanguageTextNormalization()).isTrue();
+				assertThat(options.getApplyLanguageTextNormalization()).isTrue();
 			});
 	}
 
