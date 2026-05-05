@@ -25,7 +25,7 @@ import io.modelcontextprotocol.spec.McpSchema.ProgressNotification;
 /**
  * Specification for synchronous progress handlers.
  *
- * @param clientId The client ID for the progress handler
+ * @param clients The client IDs for the progress handler
  * @param progressHandler The consumer that handles progress notifications
  * @author Christian Tzolov
  */

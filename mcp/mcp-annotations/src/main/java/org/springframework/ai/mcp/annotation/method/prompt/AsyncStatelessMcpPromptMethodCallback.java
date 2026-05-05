@@ -94,7 +94,7 @@ public final class AsyncStatelessMcpPromptMethodCallback extends AbstractMcpProm
 	 * @param context The transport context, may be null if the method doesn't require it
 	 * @param request The prompt request, must not be null
 	 * @return A Mono that emits the prompt result
-	 * @throws McpPromptMethodException if there is an error invoking the prompt method
+	 * @throws McpError if there is an error invoking the prompt method
 	 * @throws IllegalArgumentException if the request is null
 	 */
 	@Override
