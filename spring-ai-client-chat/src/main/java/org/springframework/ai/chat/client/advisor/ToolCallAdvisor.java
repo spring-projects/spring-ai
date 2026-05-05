@@ -33,8 +33,10 @@ import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.core.Ordered;
@@ -68,6 +70,8 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 
 	private final boolean streamToolCallResponses;
 
+	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+
 	protected ToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder) {
 		this(toolCallingManager, advisorOrder, true, true);
 	}
@@ -79,14 +83,23 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 
 	protected ToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder,
 			boolean conversationHistoryEnabled, boolean streamToolCallResponses) {
+		this(toolCallingManager, advisorOrder, conversationHistoryEnabled, streamToolCallResponses,
+				new DefaultToolExecutionEligibilityPredicate());
+	}
+
+	protected ToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder,
+			boolean conversationHistoryEnabled, boolean streamToolCallResponses,
+			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 		Assert.notNull(toolCallingManager, "toolCallingManager must not be null");
 		Assert.isTrue(advisorOrder > BaseAdvisor.HIGHEST_PRECEDENCE && advisorOrder < BaseAdvisor.LOWEST_PRECEDENCE,
 				"advisorOrder must be between HIGHEST_PRECEDENCE and LOWEST_PRECEDENCE");
+		Assert.notNull(toolExecutionEligibilityPredicate, "toolExecutionEligibilityPredicate must not be null");
 
 		this.toolCallingManager = toolCallingManager;
 		this.advisorOrder = advisorOrder;
 		this.conversationHistoryEnabled = conversationHistoryEnabled;
 		this.streamToolCallResponses = streamToolCallResponses;
+		this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
 	}
 
 	@Override
@@ -143,12 +156,10 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 			chatClientResponse = this.doAfterCall(chatClientResponse, callAdvisorChain);
 
 			// After Call
-
-			// TODO: check that this tool call detection is sufficient for all chat models
-			// that support tool calls. (e.g. Anthropic and Bedrock are checking for
-			// finish status as well)
 			ChatResponse chatResponse = chatClientResponse.chatResponse();
-			isToolCall = chatResponse != null && chatResponse.hasToolCalls();
+			var promptOptions = processedChatClientRequest.prompt().getOptions();
+			isToolCall = chatResponse != null && promptOptions != null
+					&& this.toolExecutionEligibilityPredicate.isToolExecutionRequired(promptOptions, chatResponse);
 
 			if (isToolCall) {
 				Assert.notNull(chatResponse, "redundant check that should never fail, but here to help NullAway");
@@ -307,7 +318,9 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		aggregatedResponse = this.doAfterStream(aggregatedResponse, streamAdvisorChain);
 
 		ChatResponse chatResponse = aggregatedResponse.chatResponse();
-		boolean isToolCall = chatResponse != null && chatResponse.hasToolCalls();
+		var promptOptions = finalRequest.prompt().getOptions();
+		boolean isToolCall = chatResponse != null && promptOptions != null
+				&& this.toolExecutionEligibilityPredicate.isToolExecutionRequired(promptOptions, chatResponse);
 
 		if (!isToolCall) {
 			// No tool call - streaming already happened, nothing more to emit
@@ -440,6 +453,8 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 
 		private boolean streamToolCallResponses = false;
 
+		private ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate = new DefaultToolExecutionEligibilityPredicate();
+
 		protected Builder() {
 		}
 
@@ -532,6 +547,18 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		}
 
 		/**
+		 * Sets the predicate to determine if tool execution is required.
+		 * @param toolExecutionEligibilityPredicate the predicate. Must not be null.
+		 * @return this Builder instance for method chaining
+		 */
+		public T toolExecutionEligibilityPredicate(
+				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
+			Assert.notNull(toolExecutionEligibilityPredicate, "toolExecutionEligibilityPredicate must not be null");
+			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
+			return self();
+		}
+
+		/**
 		 * Returns the configured ToolCallingManager.
 		 * @return the ToolCallingManager instance
 		 */
@@ -572,7 +599,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		 */
 		public ToolCallAdvisor build() {
 			return new ToolCallAdvisor(this.toolCallingManager, this.advisorOrder, this.conversationHistoryEnabled,
-					this.streamToolCallResponses);
+					this.streamToolCallResponses, this.toolExecutionEligibilityPredicate);
 		}
 
 	}

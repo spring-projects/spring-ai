@@ -334,6 +334,8 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 					.create(sessionTransport);
 				String sessionId = session.getId();
 
+				sessionTransport.setSessionId(sessionId);
+
 				logger.debug("Created new SSE connection for session: {}", sessionId);
 				this.sessions.put(sessionId, session);
 
@@ -442,8 +444,15 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 
 		private final FluxSink<ServerSentEvent<?>> sink;
 
+		@Nullable
+		private String sessionId;
+
 		WebFluxMcpSessionTransport(FluxSink<ServerSentEvent<?>> sink) {
 			this.sink = sink;
+		}
+
+		void setSessionId(@Nullable String sessionId) {
+			this.sessionId = sessionId;
 		}
 
 		@Override
@@ -462,7 +471,7 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 					.build();
 				this.sink.next(event);
 			}).doOnError(e -> {
-				// TODO log with sessionid
+				logger.error("Error sending message for session {}: {}", this.sessionId, e.getMessage());
 				Throwable exception = Exceptions.unwrap(e);
 				this.sink.error(exception);
 			}).then();
