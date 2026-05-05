@@ -36,15 +36,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class SyncMcpResourceListChangedMethodCallbackTests {
 
 	private static final List<McpSchema.Resource> TEST_RESOURCES = List.of(
-			McpSchema.Resource.builder()
-				.uri("file:///test1.txt")
-				.name("test-resource-1")
+			McpSchema.Resource.builder("file:///test1.txt", "test-resource-1")
 				.description("Test Resource 1")
 				.mimeType("text/plain")
 				.build(),
-			McpSchema.Resource.builder()
-				.uri("file:///test2.txt")
-				.name("test-resource-2")
+			McpSchema.Resource.builder("file:///test2.txt", "test-resource-2")
 				.description("Test Resource 2")
 				.mimeType("text/plain")
 				.build());

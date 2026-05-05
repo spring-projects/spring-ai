@@ -47,6 +47,7 @@ public final class SamplingTestHelper {
 			.modelPreferences(ModelPreferences.builder().addHint("claude-3-haiku").build())
 			.systemPrompt("You are a helpful assistant.")
 			.temperature(0.7)
+			.maxTokens(100)
 			.build();
 	}
 

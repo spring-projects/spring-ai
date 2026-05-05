@@ -312,7 +312,7 @@
 		<rest-assured-bom.version>5.5.6</rest-assured-bom.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>2.0.0-M2</mcp.sdk.version>
+		<mcp.sdk.version>2.0.0-M3</mcp.sdk.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>

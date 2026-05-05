@@ -266,12 +266,11 @@ public class StreamableWebClientWebFluxServerIT {
 						assertThat(mcpClient.listResources()).isNotNull();
 						assertThat(mcpClient.listResources().resources()).hasSize(1);
 						assertThat(mcpClient.listResources().resources().get(0))
-							.isEqualToComparingFieldByFieldRecursively(Resource.builder()
-								.uri("file://resource")
-								.name("Test Resource")
-								.mimeType("text/plain")
-								.description("Test resource description")
-								.build());
+							.isEqualToComparingFieldByFieldRecursively(
+									Resource.builder("file://resource", "Test Resource")
+										.mimeType("text/plain")
+										.description("Test resource description")
+										.build());
 
 					});
 
@@ -434,9 +433,7 @@ public class StreamableWebClientWebFluxServerIT {
 		@Bean
 		public List<McpServerFeatures.SyncResourceSpecification> myResources() {
 
-			var systemInfoResource = Resource.builder()
-				.uri("file://resource")
-				.name("Test Resource")
+			var systemInfoResource = Resource.builder("file://resource", "Test Resource")
 				.mimeType("text/plain")
 				.description("Test resource description")
 				.build();
