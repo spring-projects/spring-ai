@@ -72,7 +72,7 @@ public class DeepSeekChatAutoConfiguration {
 
 		var chatModel = DeepSeekChatModel.builder()
 			.deepSeekApi(deepSeekApi)
-			.defaultOptions(chatProperties.getOptions())
+			.defaultOptions(chatProperties.toOptions())
 			.toolCallingManager(toolCallingManager)
 			.toolExecutionEligibilityPredicate(deepseekToolExecutionEligibilityPredicate
 				.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
