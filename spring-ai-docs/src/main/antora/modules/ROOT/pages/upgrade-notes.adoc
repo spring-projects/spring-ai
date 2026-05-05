@@ -15,6 +15,15 @@ The observations produced for tool calling operations have changed as follows:
 * a new `spring.ai.tool.type` metric/span attribute has been introduced to capture the tool type (e.g. `function`).
 * a new `spring.ai.tool.call.id` span attribute has been introduced to capture the tool call ID, as identified by the chat model.
 
+[[upgrading-to-2-0-0-M6]]
+== Upgrading to 2.0.0-M6
+
+=== Removed Modules
+
+==== `spring-ai-hanadb-store` module removal
+
+The `spring-ai-hanadb-store` module has been **removed** from Spring AI as of version `2.0.0-M6`.
+
 [[upgrading-to-2-0-0-M5]]
 == Upgrading to 2.0.0-M5
 
@@ -1704,9 +1713,8 @@ Not all vector stores support this property.
 See the corresponding vector store documentation for more details.
 The following are the vector stores that currently don't support the `initialize-schema` property.
 
-1. Hana
-2. Pinecone
-3. Weaviate
+1. Pinecone
+2. Weaviate
 
 * In Bedrock Jurassic 2, the chat options `countPenalty`, `frequencyPenalty`, and `presencePenalty`
 have been renamed to `countPenaltyOptions`, `frequencyPenaltyOptions`, and `presencePenaltyOptions`.

@@ -349,7 +349,7 @@ They measure the time spent on the `query`, `add` and `remove` operations and pr
 |Name | Description
 
 |`db.operation.name` | The name of the operation or command being executed. One of `add`, `delete`, or `query`.
-|`db.system` | The database management system (DBMS) product as identified by the client instrumentation. One of `pg_vector`, `azure`, `cassandra`, `chroma`, `elasticsearch`, `milvus`, `neo4j`, `opensearch`, `qdrant`, `redis`, `typesense`, `weaviate`, `pinecone`, `oracle`, `mongodb`, `gemfire`, `hana`, `simple`.
+|`db.system` | The database management system (DBMS) product as identified by the client instrumentation. One of `pg_vector`, `azure`, `cassandra`, `chroma`, `elasticsearch`, `milvus`, `neo4j`, `opensearch`, `qdrant`, `redis`, `typesense`, `weaviate`, `pinecone`, `oracle`, `mongodb`, `gemfire`, `simple`.
 |`spring.ai.kind` | The kind of framework API in Spring AI: `vector_store`.
 |===
 

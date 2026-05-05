@@ -51,7 +51,6 @@
 	<suppress files="CouchbaseSearchVectorStore.java" checks="FinalClass"/>
 	<suppress files="GemFireVectorStore.java" checks="FinalClass"/>
 	<suppress files="MilvusVectorStore.java" checks="FinalClass"/>
-	<suppress files="HanaCloudVectorStore.java" checks="FinalClass"/>
 	<suppress files="MongoDBAtlasVectorStore.java" checks="FinalClass"/>
 	<suppress files="Neo4jVectorStore.java" checks="FinalClass"/>
 	<suppress files="OpenSearchVectorStore.java" checks="FinalClass"/>
