@@ -47,7 +47,7 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-Use the `spring.ai.postgresml.embedding.options.*` properties to configure your `PostgresMlEmbeddingModel`. links
+Use the `spring.ai.postgresml.embedding.*` properties to configure your `PostgresMlEmbeddingModel`. links
 
 === Embedding Properties
 
@@ -70,14 +70,14 @@ The prefix `spring.ai.postgresml.embedding` is property prefix that configures t
 | spring.ai.postgresml.embedding.enabled (Removed and no longer valid) | Enable PostgresML embedding model.  | true
 | spring.ai.model.embedding | Enable PostgresML embedding model.  | postgresml
 | spring.ai.postgresml.embedding.create-extension | Execute the SQL 'CREATE EXTENSION IF NOT EXISTS pgml' to enable the extension | false
-| spring.ai.postgresml.embedding.options.transformer  | The Hugging Face transformer model to use for the embedding.  | distilbert-base-uncased
-| spring.ai.postgresml.embedding.options.kwargs   | Additional transformer specific options.  | empty map
-| spring.ai.postgresml.embedding.options.vectorType   | PostgresML vector type to use for the embedding. Two options are supported: `PG_ARRAY` and `PG_VECTOR`. | PG_ARRAY
-| spring.ai.postgresml.embedding.options.metadataMode   | Document metadata aggregation mode  | EMBED
+| spring.ai.postgresml.embedding.transformer  | The Hugging Face transformer model to use for the embedding.  | distilbert-base-uncased
+| spring.ai.postgresml.embedding.kwargs   | Additional transformer specific options.  | empty map
+| spring.ai.postgresml.embedding.vector-type   | PostgresML vector type to use for the embedding. Two options are supported: `PG_ARRAY` and `PG_VECTOR`. | PG_ARRAY
+| spring.ai.postgresml.embedding.metadata-mode   | Document metadata aggregation mode  | EMBED
 |====
 
 
-TIP: All properties prefixed with `spring.ai.postgresml.embedding.options` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.
+TIP: All properties prefixed with `spring.ai.postgresml.embedding` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.
 
 == Runtime Options [[embedding-options]]
 
@@ -109,10 +109,10 @@ Here is an example of a simple `@Controller` class that uses the `EmbeddingModel
 
 [source,application.properties]
 ----
-spring.ai.postgresml.embedding.options.transformer=distilbert-base-uncased
-spring.ai.postgresml.embedding.options.vectorType=PG_ARRAY
-spring.ai.postgresml.embedding.options.metadataMode=EMBED
-spring.ai.postgresml.embedding.options.kwargs.device=cpu
+spring.ai.postgresml.embedding.transformer=distilbert-base-uncased
+spring.ai.postgresml.embedding.vector-type=PG_ARRAY
+spring.ai.postgresml.embedding.metadata-mode=EMBED
+spring.ai.postgresml.embedding.kwargs.device=cpu
 ----
 
 [source,java]
