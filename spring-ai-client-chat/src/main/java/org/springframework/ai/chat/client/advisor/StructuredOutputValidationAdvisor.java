@@ -180,20 +180,28 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 	@SuppressWarnings("null")
 	private SchemaValidation validateOutputSchema(ChatClientResponse chatClientResponse) {
 
-		if (chatClientResponse.chatResponse() == null || chatClientResponse.chatResponse().getResult() == null
-				|| chatClientResponse.chatResponse().getResult().getOutput() == null
-				|| chatClientResponse.chatResponse().getResult().getOutput().getText() == null) {
+		if (chatClientResponse.chatResponse() == null || chatClientResponse.chatResponse().getResults() == null
+				|| chatClientResponse.chatResponse().getResults().isEmpty()) {
 
 			logger.warn("ChatClientResponse is missing required json output for validation.");
 			return SchemaValidation.failed("Missing required json output for validation.");
 		}
 
-		// TODO: should we consider validation for multiple results?
-		String json = chatClientResponse.chatResponse().getResult().getOutput().getText();
+		for (var result : chatClientResponse.chatResponse().getResults()) {
+			if (result == null || result.getOutput() == null || result.getOutput().getText() == null) {
+				logger.warn("ChatClientResponse result is missing required json output for validation.");
+				return SchemaValidation.failed("Missing required json output for validation.");
+			}
 
-		logger.debug("Validating JSON output against schema. Attempts left: {}", this.maxRepeatAttempts);
+			logger.debug("Validating JSON output against schema. Attempts left: {}", this.maxRepeatAttempts);
 
-		return validateJsonText(json);
+			SchemaValidation validation = validateJsonText(result.getOutput().getText());
+			if (!validation.success()) {
+				return validation;
+			}
+		}
+
+		return SchemaValidation.passed();
 	}
 
 	private SchemaValidation validateJsonText(String json) {
