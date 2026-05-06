@@ -494,9 +494,9 @@ Spring AI provides a few built-in Advisors that you can use to configure the mem
 
 WARNING: Currently, the intermediate messages exchanged with a large-language model when performing tool calls are not stored in the memory. This is a limitation of the current implementation and will be addressed in future releases. If you need to store these messages, refer to the instructions for the xref:api/tools.adoc#_user_controlled_tool_execution[User Controlled Tool Execution].
 
-* `MessageChatMemoryAdvisor`. This advisor manages the conversation memory using the provided `ChatMemory` implementation. On each interaction, it retrieves the conversation history from the memory and includes it in the prompt as a collection of messages.
-* `PromptChatMemoryAdvisor`. This advisor manages the conversation memory using the provided `ChatMemory` implementation. On each interaction, it retrieves the conversation history from the memory and appends it to the system prompt as plain text.
-* `VectorStoreChatMemoryAdvisor`. This advisor manages the conversation memory using the provided `VectorStore` implementation. On each interaction, it retrieves the conversation history from the vector store and appends it to the system message as plain text.
+* `MessageChatMemoryAdvisor`. This advisor manages the conversation memory using the provided `ChatMemory` implementation. On each interaction, it retrieves the conversation history from the memory and includes it in the prompt as a collection of messages. This is the recommended advisor for managing conversation memory.
+* `PromptChatMemoryAdvisor` _(deprecated since 1.1.3; use `MessageChatMemoryAdvisor` instead)_. This advisor retrieves the conversation history and appends it to the system prompt as XML-tagged, HTML-entity-escaped blocks. Custom system prompt templates are no longer supported.
+* `VectorStoreChatMemoryAdvisor`. This advisor manages the conversation memory using the provided `VectorStore` implementation. On each interaction, it retrieves the conversation history from the vector store and appends it to the system message. Retrieved documents are wrapped in typed `<memory-entry>` XML elements with their content XML-escaped to reduce prompt-injection risk.
 
 For example, if you want to use `MessageWindowChatMemory` with the `MessageChatMemoryAdvisor`, you can configure it as follows:
 
@@ -526,18 +526,48 @@ chatClient.prompt()
 
 === PromptChatMemoryAdvisor
 
+IMPORTANT: `PromptChatMemoryAdvisor` is deprecated since 1.1.3 and will be removed in a future release.
+Migrate to `MessageChatMemoryAdvisor`, which passes conversation history as typed message objects rather than embedding it in the system prompt, and does not have the limitations described below.
+
+[source,java]
+----
+// Before (deprecated)
+PromptChatMemoryAdvisor advisor = PromptChatMemoryAdvisor.builder(chatMemory).build();
+
+// After (recommended)
+MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
+----
+
+`PromptChatMemoryAdvisor` embeds the conversation history into the system prompt.
+Each message is wrapped in an XML tag with its role as the tag name, and the message content is HTML-entity-escaped:
+
+[source,text]
+----
+<user>user message text</user>
+<assistant>assistant response text</assistant>
+----
+
 ==== Custom Template
 
-The `PromptChatMemoryAdvisor` uses a default template to augment the system message with the retrieved conversation memory. You can customize this behavior by providing your own `PromptTemplate` object via the `.promptTemplate()` builder method.
-
-NOTE: The `PromptTemplate` provided here customizes how the advisor merges retrieved memory with the system message. This is distinct from configuring a `TemplateRenderer` on the `ChatClient` itself (using `.templateRenderer()`), which affects the rendering of the initial user/system prompt content *before* the advisor runs. See xref:api/chatclient.adoc#_prompt_templates[ChatClient Prompt Templates] for more details on client-level template rendering.
-
-The custom `PromptTemplate` can use any `TemplateRenderer` implementation (by default, it uses `StPromptTemplate` based on the https://www.stringtemplate.org/[StringTemplate] engine). The important requirement is that the template must contain the following two placeholders:
-
-* an `instructions` placeholder to receive the original system message.
-* a `memory` placeholder to receive the retrieved conversation memory.
+Custom system prompt templates are not supported.
+The `systemPromptTemplate()` builder method throws `UnsupportedOperationException` to prevent accidental use of templates that omit the built-in encoding.
+If you previously relied on a custom template, migrate to `MessageChatMemoryAdvisor`.
 
 === VectorStoreChatMemoryAdvisor
+
+==== Security Considerations
+
+Retrieved document content is XML-escaped and wrapped in typed `<memory-entry>` XML elements before being interpolated into the system prompt:
+
+[source,text]
+----
+<memory-entry type="user">user message text</memory-entry>
+<memory-entry type="assistant">assistant response text</memory-entry>
+----
+
+The default system prompt template also instructs the model to treat the `LONG_TERM_MEMORY` section as historical data only, not as instructions.
+This is a convention-level control that reduces, but does not eliminate, the risk of prompt injection from user-sourced content embedded in the system prompt.
+For agent configurations with tool access, prefer architectures that keep user-sourced content in typed `Message` objects by using `MessageChatMemoryAdvisor` instead.
 
 ==== Custom Template
 
