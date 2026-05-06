@@ -46,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Soby Chacko
+ * @author Thomas Vitale
  */
 @SpringBootTest(classes = AzureOpenAiChatModelObservationIT.TestConfiguration.class)
 @EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+"),
@@ -78,12 +79,13 @@ class AzureOpenAiChatModelObservationIT {
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
+		assertThat(chatResponse.getResult()).isNotNull();
 		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata, true);
+		validate(responseMetadata, true, false);
 	}
 
 	@Test
@@ -118,10 +120,10 @@ class AzureOpenAiChatModelObservationIT {
 		ChatResponseMetadata responseMetadata = lastChatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata, false);
+		validate(responseMetadata, false, true);
 	}
 
-	private void validate(ChatResponseMetadata responseMetadata, boolean checkModel) {
+	private void validate(ChatResponseMetadata responseMetadata, boolean checkModel, boolean streaming) {
 
 		TestObservationRegistryAssert.That that = TestObservationRegistryAssert.assertThat(this.observationRegistry)
 			.doesNotHaveAnyRemainingCurrentObservation()
@@ -135,7 +137,7 @@ class AzureOpenAiChatModelObservationIT {
 						responseMetadata.getModel());
 		}
 
-		that.that()
+		var observationAssert = that.that()
 			.hasLowCardinalityKeyValue(
 					ChatModelObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.CHAT.value())
@@ -175,6 +177,14 @@ class AzureOpenAiChatModelObservationIT {
 					String.valueOf(responseMetadata.getUsage().getTotalTokens()))
 			.hasBeenStarted()
 			.hasBeenStopped();
+		if (streaming) {
+			observationAssert.hasHighCardinalityKeyValue(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STREAM.asString(), "true");
+		}
+		else {
+			observationAssert.doesNotHaveHighCardinalityKeyValueWithKey(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STREAM.asString());
+		}
 	}
 
 	@SpringBootConfiguration
