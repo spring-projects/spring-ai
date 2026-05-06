@@ -50,6 +50,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author Yanming Zhou
+ * @author Sebastien Deleuze
  * @since 0.8.1
  */
 @AutoConfiguration
@@ -76,7 +77,7 @@ public class MistralAiChatAutoConfiguration {
 
 		var chatModel = MistralAiChatModel.builder()
 			.mistralAiApi(mistralAiApi)
-			.defaultOptions(chatProperties.getOptions())
+			.defaultOptions(chatProperties.toOptions())
 			.toolCallingManager(toolCallingManager)
 			.toolExecutionEligibilityPredicate(mistralAiToolExecutionEligibilityPredicate
 				.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
