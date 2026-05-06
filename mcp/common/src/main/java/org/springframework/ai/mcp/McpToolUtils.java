@@ -169,8 +169,12 @@ public final class McpToolUtils {
 	public static McpServerFeatures.SyncToolSpecification toSyncToolSpecification(ToolCallback toolCallback,
 			MimeType mimeType) {
 
-		var tool = new McpSchema.Tool(toolCallback.getToolDefinition().name(),
-				toolCallback.getToolDefinition().description(), toolCallback.getToolDefinition().inputSchema());
+		var tool = McpSchema.Tool.builder()
+			.name(toolCallback.getToolDefinition().name())
+			.description(toolCallback.getToolDefinition().description())
+			.inputSchema(ModelOptionsUtils.jsonToObject(toolCallback.getToolDefinition().inputSchema(),
+					McpSchema.JsonSchema.class))
+			.build();
 
 		return new McpServerFeatures.SyncToolSpecification(tool, (exchange, request) -> {
 			try {

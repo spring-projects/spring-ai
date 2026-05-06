@@ -22,6 +22,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 
 import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.client.autoconfigure.properties.McpSseClientProperties;
@@ -94,7 +95,7 @@ public class SseWebFluxTransportAutoConfiguration {
 					? serverParameters.getValue().sseEndpoint() : "/sse";
 			var transport = WebFluxSseClientTransport.builder(webClientBuilder)
 				.sseEndpoint(sseEndpoint)
-				.objectMapper(objectMapper)
+				.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
 				.build();
 			sseTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
 		}

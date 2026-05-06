@@ -24,6 +24,7 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.spec.McpSchema;
 
 import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
@@ -100,7 +101,7 @@ public class SseHttpClientTransportAutoConfiguration {
 			var transport = HttpClientSseClientTransport.builder(baseUrl)
 				.sseEndpoint(sseEndpoint)
 				.clientBuilder(HttpClient.newBuilder())
-				.objectMapper(objectMapper)
+				.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
 				.build();
 			sseTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
 		}
