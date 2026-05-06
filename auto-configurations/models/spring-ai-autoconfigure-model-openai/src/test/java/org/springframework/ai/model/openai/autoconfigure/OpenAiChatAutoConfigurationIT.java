@@ -78,7 +78,7 @@ public class OpenAiChatAutoConfigurationIT {
 
 	@Test
 	void streamingWithTokenUsage() {
-		this.contextRunner.withPropertyValues("spring.ai.openai.chat.options.stream-usage=true")
+		this.contextRunner.withPropertyValues("spring.ai.openai.chat.stream-usage=true")
 			.withConfiguration(
 					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {

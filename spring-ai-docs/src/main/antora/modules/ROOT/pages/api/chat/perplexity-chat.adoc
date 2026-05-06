@@ -173,21 +173,21 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 | spring.ai.openai.chat.model      | One of the supported https://docs.perplexity.ai/guides/model-cards[Perplexity models]. Example: `llama-3.1-sonar-small-128k-online`. | -
 | spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url. Must be set to `+https://api.perplexity.ai+` |  -
 | spring.ai.openai.chat.completions-path | Must be set to `/chat/completions` | `/v1/chat/completions`
-| spring.ai.openai.chat.options.temperature | The amount of randomness in the response, valued between 0 inclusive and 2 exclusive. Higher values are more random, and lower values are more deterministic. Required range: `0 < x < 2`. | 0.2
-| spring.ai.openai.chat.options.frequencyPenalty | A multiplicative penalty greater than 0. Values greater than 1.0 penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. A value of 1.0 means no penalty. Incompatible with presence_penalty. Required range: `x > 0`. | 1
-| spring.ai.openai.chat.options.maxTokens | The maximum number of completion tokens returned by the API. The total number of tokens requested in max_tokens plus the number of prompt tokens sent in messages must not exceed the context window token limit of model requested. If left unspecified, then the model will generate tokens until either it reaches its stop token or the end of its context window. | -
-| spring.ai.openai.chat.options.presencePenalty | A value between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. Incompatible with `frequency_penalty`. Required range: `-2 < x < 2` | 0
-| spring.ai.openai.chat.options.topP | The nucleus sampling threshold, valued between 0 and 1 inclusive. For each subsequent token, the model considers the results of the tokens with top_p probability mass. We recommend either altering top_k or top_p, but not both. Required range: `0 < x < 1` | 0.9
-| spring.ai.openai.chat.options.stream-usage | (For streaming only) Set to add an additional chunk with token usage statistics for the entire request. The `choices` field for this chunk is an empty array and all other chunks will also include a usage field, but with a null value. | false
+| spring.ai.openai.chat.temperature | The amount of randomness in the response, valued between 0 inclusive and 2 exclusive. Higher values are more random, and lower values are more deterministic. Required range: `0 < x < 2`. | 0.2
+| spring.ai.openai.chat.frequencyPenalty | A multiplicative penalty greater than 0. Values greater than 1.0 penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. A value of 1.0 means no penalty. Incompatible with presence_penalty. Required range: `x > 0`. | 1
+| spring.ai.openai.chat.maxTokens | The maximum number of completion tokens returned by the API. The total number of tokens requested in max_tokens plus the number of prompt tokens sent in messages must not exceed the context window token limit of model requested. If left unspecified, then the model will generate tokens until either it reaches its stop token or the end of its context window. | -
+| spring.ai.openai.chat.presencePenalty | A value between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. Incompatible with `frequency_penalty`. Required range: `-2 < x < 2` | 0
+| spring.ai.openai.chat.topP | The nucleus sampling threshold, valued between 0 and 1 inclusive. For each subsequent token, the model considers the results of the tokens with top_p probability mass. We recommend either altering top_k or top_p, but not both. Required range: `0 < x < 1` | 0.9
+| spring.ai.openai.chat.stream-usage | (For streaming only) Set to add an additional chunk with token usage statistics for the entire request. The `choices` field for this chunk is an empty array and all other chunks will also include a usage field, but with a null value. | false
 |====
 
-TIP: All properties prefixed with `spring.ai.openai.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
+TIP: All properties prefixed with `spring.ai.openai.chat` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
 
 == Runtime Options [[chat-options]]
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
 
-On start-up, the default options can be configured with the `OpenAiChatModel(api, options)` constructor or the `spring.ai.openai.chat.options.*` properties.
+On start-up, the default options can be configured with the `OpenAiChatModel(api, options)` constructor or the `spring.ai.openai.chat.*` properties.
 
 At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
 For example to override the default model and temperature for a specific request:
@@ -226,8 +226,8 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 spring.ai.openai.api-key=<PERPLEXITY_API_KEY>
 spring.ai.openai.base-url=https://api.perplexity.ai
 spring.ai.openai.chat.completions-path=/chat/completions
-spring.ai.openai.chat.options.model=llama-3.1-sonar-small-128k-online
-spring.ai.openai.chat.options.temperature=0.7
+spring.ai.openai.chat.model=llama-3.1-sonar-small-128k-online
+spring.ai.openai.chat.temperature=0.7
 
 # The Perplexity API doesn't support embeddings, so we need to disable it.
 spring.ai.openai.embedding.enabled=false

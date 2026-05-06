@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@link OpenAiEmbeddingProperties}.
  *
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 public class OpenAiChatPropertiesTests {
 
@@ -43,8 +44,8 @@ public class OpenAiChatPropertiesTests {
 		// @formatter:off
 				"spring.ai.openai.base-url=http://TEST.BASE.URL",
 				"spring.ai.openai.api-key=abc123",
-				"spring.ai.openai.chat.options.model=MODEL_XYZ",
-				"spring.ai.openai.chat.options.temperature=0.55")
+				"spring.ai.openai.chat.model=MODEL_XYZ",
+				"spring.ai.openai.chat.temperature=0.55")
 				// @formatter:on
 			.withConfiguration(
 					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
@@ -58,8 +59,9 @@ public class OpenAiChatPropertiesTests {
 				assertThat(chatProperties.getApiKey()).isNull();
 				assertThat(chatProperties.getBaseUrl()).isNull();
 
-				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
+				var options = chatProperties.toOptions();
+				assertThat(options.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(options.getTemperature()).isEqualTo(0.55);
 			});
 	}
 
@@ -72,8 +74,8 @@ public class OpenAiChatPropertiesTests {
 				"spring.ai.openai.api-key=abc123",
 				"spring.ai.openai.chat.base-url=http://TEST.BASE.URL2",
 				"spring.ai.openai.chat.api-key=456",
-				"spring.ai.openai.chat.options.model=MODEL_XYZ",
-				"spring.ai.openai.chat.options.temperature=0.55")
+				"spring.ai.openai.chat.model=MODEL_XYZ",
+				"spring.ai.openai.chat.temperature=0.55")
 				// @formatter:on
 			.withConfiguration(
 					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
@@ -87,8 +89,9 @@ public class OpenAiChatPropertiesTests {
 				assertThat(chatProperties.getApiKey()).isEqualTo("456");
 				assertThat(chatProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL2");
 
-				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
+				var options = chatProperties.toOptions();
+				assertThat(options.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(options.getTemperature()).isEqualTo(0.55);
 			});
 	}
 
@@ -100,21 +103,21 @@ public class OpenAiChatPropertiesTests {
 				"spring.ai.openai.api-key=API_KEY",
 				"spring.ai.openai.base-url=http://TEST.BASE.URL",
 
-				"spring.ai.openai.chat.options.model=MODEL_XYZ",
-				"spring.ai.openai.chat.options.frequencyPenalty=-1.5",
-				"spring.ai.openai.chat.options.logitBias.myTokenId=-5",
-				"spring.ai.openai.chat.options.maxTokens=123",
-				"spring.ai.openai.chat.options.n=10",
-				"spring.ai.openai.chat.options.presencePenalty=0",
-				"spring.ai.openai.chat.options.seed=66",
-				"spring.ai.openai.chat.options.stop=boza,koza",
-				"spring.ai.openai.chat.options.temperature=0.55",
-				"spring.ai.openai.chat.options.topP=0.56",
-				"spring.ai.openai.chat.options.user=userXYZ",
-				"spring.ai.openai.chat.options.toolChoice={\"type\":\"function\",\"function\":{\"name\":\"toolChoiceFunctionName\"}}",
-				"spring.ai.openai.chat.options.streamOptions.includeUsage=true",
-				"spring.ai.openai.chat.options.streamOptions.includeObfuscation=true",
-				"spring.ai.openai.chat.options.streamOptions.additionalProperties.foo=bar"
+				"spring.ai.openai.chat.model=MODEL_XYZ",
+				"spring.ai.openai.chat.frequencyPenalty=-1.5",
+				"spring.ai.openai.chat.logitBias.myTokenId=-5",
+				"spring.ai.openai.chat.maxTokens=123",
+				"spring.ai.openai.chat.n=10",
+				"spring.ai.openai.chat.presencePenalty=0",
+				"spring.ai.openai.chat.seed=66",
+				"spring.ai.openai.chat.stop=boza,koza",
+				"spring.ai.openai.chat.temperature=0.55",
+				"spring.ai.openai.chat.topP=0.56",
+				"spring.ai.openai.chat.user=userXYZ",
+				"spring.ai.openai.chat.toolChoice={\"type\":\"function\",\"function\":{\"name\":\"toolChoiceFunctionName\"}}",
+				"spring.ai.openai.chat.streamOptions.includeUsage=true",
+				"spring.ai.openai.chat.streamOptions.includeObfuscation=true",
+				"spring.ai.openai.chat.streamOptions.additionalProperties.foo=bar"
 
 			)
 			// @formatter:on
@@ -127,26 +130,26 @@ public class OpenAiChatPropertiesTests {
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
 				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
 
-				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getFrequencyPenalty()).isEqualTo(-1.5);
-				assertThat(chatProperties.getOptions().getLogitBias().get("myTokenId")).isEqualTo(-5);
-				assertThat(chatProperties.getOptions().getMaxTokens()).isEqualTo(123);
-				assertThat(chatProperties.getOptions().getN()).isEqualTo(10);
-				assertThat(chatProperties.getOptions().getPresencePenalty()).isEqualTo(0);
-				assertThat(chatProperties.getOptions().getSeed()).isEqualTo(66);
-				assertThat(chatProperties.getOptions().getStop()).contains("boza", "koza");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
-				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56);
+				var options = chatProperties.toOptions();
+				assertThat(options.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(options.getFrequencyPenalty()).isEqualTo(-1.5);
+				assertThat(options.getLogitBias().get("myTokenId")).isEqualTo(-5);
+				assertThat(options.getMaxTokens()).isEqualTo(123);
+				assertThat(options.getN()).isEqualTo(10);
+				assertThat(options.getPresencePenalty()).isEqualTo(0);
+				assertThat(options.getSeed()).isEqualTo(66);
+				assertThat(options.getStop()).contains("boza", "koza");
+				assertThat(options.getTemperature()).isEqualTo(0.55);
+				assertThat(options.getTopP()).isEqualTo(0.56);
 
 				JSONAssert.assertEquals("{\"type\":\"function\",\"function\":{\"name\":\"toolChoiceFunctionName\"}}",
-						"" + chatProperties.getOptions().getToolChoice(), JSONCompareMode.LENIENT);
+						"" + options.getToolChoice(), JSONCompareMode.LENIENT);
 
-				assertThat(chatProperties.getOptions().getUser()).isEqualTo("userXYZ");
+				assertThat(options.getUser()).isEqualTo("userXYZ");
 
-				assertThat(chatProperties.getOptions().getStreamOptions()).isNotNull();
-				assertThat(chatProperties.getOptions().getStreamOptions().includeObfuscation()).isTrue();
-				assertThat(chatProperties.getOptions().getStreamOptions().additionalProperties().get("foo"))
-					.isEqualTo("bar");
+				assertThat(options.getStreamOptions()).isNotNull();
+				assertThat(options.getStreamOptions().includeObfuscation()).isTrue();
+				assertThat(options.getStreamOptions().additionalProperties().get("foo")).isEqualTo("bar");
 			});
 	}
 

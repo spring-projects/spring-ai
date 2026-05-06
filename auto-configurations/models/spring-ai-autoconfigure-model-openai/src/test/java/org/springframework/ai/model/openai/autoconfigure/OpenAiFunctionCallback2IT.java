@@ -37,6 +37,9 @@ import org.springframework.context.annotation.Configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+/**
+ * @author Sebastien Deleuze
+ */
 public class OpenAiFunctionCallback2IT {
 
 	private final Logger logger = LoggerFactory.getLogger(OpenAiFunctionCallback2IT.class);
@@ -49,8 +52,8 @@ public class OpenAiFunctionCallback2IT {
 	@Test
 	void functionCallTest() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.openai.chat.options.temperature=0.1",
-					"spring.ai.openai.chat.options.model=" + ChatModel.GPT_4O_MINI.asString())
+			.withPropertyValues("spring.ai.openai.chat.temperature=0.1",
+					"spring.ai.openai.chat.model=" + ChatModel.GPT_4O_MINI.asString())
 			.run(context -> {
 
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
@@ -75,8 +78,8 @@ public class OpenAiFunctionCallback2IT {
 	@Test
 	void streamFunctionCallTest() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.openai.chat.options.temperature=0.2",
-					"spring.ai.openai.chat.options.model=" + ChatModel.GPT_4O_MINI.asString())
+			.withPropertyValues("spring.ai.openai.chat.temperature=0.2",
+					"spring.ai.openai.chat.model=" + ChatModel.GPT_4O_MINI.asString())
 			.run(context -> {
 
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);

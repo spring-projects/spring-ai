@@ -851,7 +851,7 @@ If you want to maintain the previous behavior, explicitly set the temperature in
 [source,properties]
 ----
 # Example for OpenAI
-spring.ai.openai.chat.options.temperature=0.7
+spring.ai.openai.chat.temperature=0.7
 
 # Example for Anthropic
 spring.ai.anthropic.chat.options.temperature=0.7
@@ -1813,8 +1813,8 @@ to
 
 The following OpenAi Autoconfiguration chat properties have changed
 
-* from `spring.ai.openai.model` to `spring.ai.openai.chat.options.model`.
-* from `spring.ai.openai.temperature` to `spring.ai.openai.chat.options.temperature`.
+* from `spring.ai.openai.model` to `spring.ai.openai.chat.model`.
+* from `spring.ai.openai.temperature` to `spring.ai.openai.chat.temperature`.
 
 Find updated documentation about the OpenAi properties: https://docs.spring.io/spring-ai/reference/api/chat/openai-chat.html
 

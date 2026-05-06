@@ -52,8 +52,7 @@ public class FunctionCallbackInPromptIT {
 	@Test
 	void functionCallTest() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.openai.chat.options.model=" + "gpt-4o-mini",
-					"spring.ai.openai.chat.options.temperature=0.1")
+			.withPropertyValues("spring.ai.openai.chat.model=" + "gpt-4o-mini", "spring.ai.openai.chat.temperature=0.1")
 			.run(context -> {
 
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
@@ -81,8 +80,7 @@ public class FunctionCallbackInPromptIT {
 	void streamingFunctionCallTest() {
 
 		this.contextRunner
-			.withPropertyValues("spring.ai.openai.chat.options.model=" + "gpt-4o-mini",
-					"spring.ai.openai.chat.options.temperature=0.5")
+			.withPropertyValues("spring.ai.openai.chat.model=" + "gpt-4o-mini", "spring.ai.openai.chat.temperature=0.5")
 			.run(context -> {
 
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);

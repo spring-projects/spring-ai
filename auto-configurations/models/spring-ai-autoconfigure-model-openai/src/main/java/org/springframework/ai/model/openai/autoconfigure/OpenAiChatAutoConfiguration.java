@@ -46,6 +46,7 @@ import org.springframework.context.annotation.Bean;
  * @author Yanming Zhou
  * @author Issam El-atif
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 @AutoConfiguration
 @EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class })
@@ -71,7 +72,7 @@ public class OpenAiChatAutoConfiguration {
 		var chatModel = OpenAiChatModel.builder()
 			.openAiClient(openAIClient)
 			.openAiClientAsync(openAIClientAsync)
-			.options(chatProperties.getOptions())
+			.options(chatProperties.toOptions())
 			.toolCallingManager(toolCallingManager)
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.toolExecutionEligibilityPredicate(
