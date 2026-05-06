@@ -48,6 +48,7 @@ import org.springframework.web.client.RestClient;
  * @author Ilayaperumal Gopinathan
  * @author Issam El-atif
  * @author Yanming Zhou
+ * @author Sebastien Deleuze
  */
 @AutoConfiguration
 @ConditionalOnClass(MiniMaxApi.class)
@@ -70,7 +71,7 @@ public class MiniMaxChatAutoConfiguration {
 				chatProperties.getApiKey(), commonProperties.getApiKey(),
 				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
 
-		var chatModel = new MiniMaxChatModel(miniMaxApi, chatProperties.getOptions(), toolCallingManager,
+		var chatModel = new MiniMaxChatModel(miniMaxApi, chatProperties.toOptions(), toolCallingManager,
 				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE),
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
 				openAiToolExecutionEligibilityPredicate.getIfUnique(DefaultToolExecutionEligibilityPredicate::new));

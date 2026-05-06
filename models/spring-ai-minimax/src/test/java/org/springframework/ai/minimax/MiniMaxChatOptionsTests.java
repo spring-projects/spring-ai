@@ -110,21 +110,22 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 
 	@Test
 	void testSettersWithNulls() {
-		MiniMaxChatOptions options = new MiniMaxChatOptions();
-		options.setModel(null);
-		options.setFrequencyPenalty(null);
-		options.setMaxTokens(null);
-		options.setN(null);
-		options.setPresencePenalty(null);
-		options.setResponseFormat(null);
-		options.setSeed(null);
-		options.setStop(null);
-		options.setTemperature(null);
-		options.setTopP(null);
-		options.setMaskSensitiveInfo(null);
-		options.setTools(null);
-		options.setToolChoice(null);
-		options.setInternalToolExecutionEnabled(null);
+		MiniMaxChatOptions options = MiniMaxChatOptions.builder()
+			.model(null)
+			.frequencyPenalty(null)
+			.maxTokens(null)
+			.N(null)
+			.presencePenalty(null)
+			.responseFormat(null)
+			.seed(null)
+			.stopSequences(null)
+			.temperature(null)
+			.topP(null)
+			.maskSensitiveInfo(null)
+			.tools(null)
+			.toolChoice(null)
+			.internalToolExecutionEnabled(null)
+			.build();
 
 		assertThat(options.getModel()).isNull();
 		assertThat(options.getFrequencyPenalty()).isNull();
@@ -165,21 +166,22 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 
 	@Test
 	void testSetters() {
-		MiniMaxChatOptions options = new MiniMaxChatOptions();
-		options.setModel("test-model");
-		options.setFrequencyPenalty(0.5);
-		options.setMaxTokens(10);
-		options.setN(1);
-		options.setPresencePenalty(0.5);
-		options.setResponseFormat(new MiniMaxApi.ChatCompletionRequest.ResponseFormat("text"));
-		options.setSeed(1);
-		options.setStop(List.of("test"));
-		options.setTemperature(0.6);
-		options.setTopP(0.6);
-		options.setMaskSensitiveInfo(false);
-		options.setToolChoice("test");
-		options.setInternalToolExecutionEnabled(true);
-		options.setToolContext(Map.of("key1", "value1"));
+		MiniMaxChatOptions options = MiniMaxChatOptions.builder()
+			.model("test-model")
+			.frequencyPenalty(0.5)
+			.maxTokens(10)
+			.N(1)
+			.presencePenalty(0.5)
+			.responseFormat(new MiniMaxApi.ChatCompletionRequest.ResponseFormat("text"))
+			.seed(1)
+			.stopSequences(List.of("test"))
+			.temperature(0.6)
+			.topP(0.6)
+			.maskSensitiveInfo(false)
+			.toolChoice("test")
+			.internalToolExecutionEnabled(true)
+			.toolContext(Map.of("key1", "value1"))
+			.build();
 
 		assertThat(options.getModel()).isEqualTo("test-model");
 		assertThat(options.getFrequencyPenalty()).isEqualTo(0.5);

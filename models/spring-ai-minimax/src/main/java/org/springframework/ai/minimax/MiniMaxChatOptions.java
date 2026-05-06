@@ -44,6 +44,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author Alexandros Pappas
+ * @author Sebastien Deleuze
  * @since 1.0.0 M1
  */
 public class MiniMaxChatOptions implements ToolCallingChatOptions {
@@ -193,17 +194,9 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		return this.model;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
-	}
-
 	@Override
 	public @Nullable Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
-	}
-
-	public void setFrequencyPenalty(@Nullable Double frequencyPenalty) {
-		this.frequencyPenalty = frequencyPenalty;
 	}
 
 	@Override
@@ -211,16 +204,8 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		return this.maxTokens;
 	}
 
-	public void setMaxTokens(@Nullable Integer maxTokens) {
-		this.maxTokens = maxTokens;
-	}
-
 	public @Nullable Integer getN() {
 		return this.n;
-	}
-
-	public void setN(@Nullable Integer n) {
-		this.n = n;
 	}
 
 	@Override
@@ -228,24 +213,12 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		return this.presencePenalty;
 	}
 
-	public void setPresencePenalty(@Nullable Double presencePenalty) {
-		this.presencePenalty = presencePenalty;
-	}
-
 	public MiniMaxApi.ChatCompletionRequest.@Nullable ResponseFormat getResponseFormat() {
 		return this.responseFormat;
 	}
 
-	public void setResponseFormat(MiniMaxApi.ChatCompletionRequest.@Nullable ResponseFormat responseFormat) {
-		this.responseFormat = responseFormat;
-	}
-
 	public @Nullable Integer getSeed() {
 		return this.seed;
-	}
-
-	public void setSeed(@Nullable Integer seed) {
-		this.seed = seed;
 	}
 
 	@Override
@@ -253,16 +226,8 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		return getStop();
 	}
 
-	public void setStopSequences(@Nullable List<String> stopSequences) {
-		setStop(stopSequences);
-	}
-
 	public @Nullable List<String> getStop() {
 		return (this.stop != null) ? Collections.unmodifiableList(this.stop) : null;
-	}
-
-	public void setStop(@Nullable List<String> stop) {
-		this.stop = stop;
 	}
 
 	@Override
@@ -270,41 +235,21 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		return this.temperature;
 	}
 
-	public void setTemperature(@Nullable Double temperature) {
-		this.temperature = temperature;
-	}
-
 	@Override
 	public @Nullable Double getTopP() {
 		return this.topP;
-	}
-
-	public void setTopP(@Nullable Double topP) {
-		this.topP = topP;
 	}
 
 	public @Nullable Boolean getMaskSensitiveInfo() {
 		return this.maskSensitiveInfo;
 	}
 
-	public void setMaskSensitiveInfo(@Nullable Boolean maskSensitiveInfo) {
-		this.maskSensitiveInfo = maskSensitiveInfo;
-	}
-
 	public @Nullable List<MiniMaxApi.FunctionTool> getTools() {
 		return (this.tools != null) ? Collections.unmodifiableList(this.tools) : null;
 	}
 
-	public void setTools(@Nullable List<MiniMaxApi.FunctionTool> tools) {
-		this.tools = tools;
-	}
-
 	public @Nullable String getToolChoice() {
 		return this.toolChoice;
-	}
-
-	public void setToolChoice(@Nullable String toolChoice) {
-		this.toolChoice = toolChoice;
 	}
 
 	@Override
