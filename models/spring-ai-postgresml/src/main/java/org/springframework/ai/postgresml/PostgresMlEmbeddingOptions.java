@@ -30,66 +30,53 @@ import org.springframework.ai.postgresml.PostgresMlEmbeddingModel.VectorType;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Sébastien Deleuze
  */
 public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 
-	// @formatter:off
 	/**
 	 * The Huggingface transformer model to use for the embedding.
 	 */
-	private String transformer = PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL;
+	private final String transformer;
 
 	/**
-	 * PostgresML vector type to use for the embedding.
-	 * Two options are supported: PG_ARRAY and PG_VECTOR.
+	 * PostgresML vector type to use for the embedding. Two options are supported:
+	 * PG_ARRAY and PG_VECTOR.
 	 */
-	private VectorType vectorType = VectorType.PG_ARRAY;
+	private final VectorType vectorType;
 
 	/**
 	 * Additional transformer specific options.
 	 */
-	private Map<String, Object> kwargs = Map.of();
+	private final Map<String, Object> kwargs;
 
 	/**
 	 * The Document metadata aggregation mode.
 	 */
-	private MetadataMode metadataMode = MetadataMode.EMBED;
-	// @formatter:on
+	private final MetadataMode metadataMode;
 
-	public static Builder builder() {
-		return new Builder();
+	protected PostgresMlEmbeddingOptions(String transformer, VectorType vectorType, Map<String, Object> kwargs,
+			MetadataMode metadataMode) {
+		this.transformer = transformer;
+		this.vectorType = vectorType;
+		this.kwargs = kwargs;
+		this.metadataMode = metadataMode;
 	}
 
 	public String getTransformer() {
 		return this.transformer;
 	}
 
-	public void setTransformer(String transformer) {
-		this.transformer = transformer;
-	}
-
 	public VectorType getVectorType() {
 		return this.vectorType;
-	}
-
-	public void setVectorType(VectorType vectorType) {
-		this.vectorType = vectorType;
 	}
 
 	public Map<String, Object> getKwargs() {
 		return this.kwargs;
 	}
 
-	public void setKwargs(Map<String, Object> kwargs) {
-		this.kwargs = kwargs;
-	}
-
 	public MetadataMode getMetadataMode() {
 		return this.metadataMode;
-	}
-
-	public void setMetadataMode(MetadataMode metadataMode) {
-		this.metadataMode = metadataMode;
 	}
 
 	@Override
@@ -102,36 +89,44 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 		return null;
 	}
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	public static final class Builder {
 
-		protected PostgresMlEmbeddingOptions options;
+		private String transformer = PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL;
 
-		public Builder() {
-			this.options = new PostgresMlEmbeddingOptions();
-		}
+		private VectorType vectorType = VectorType.PG_ARRAY;
+
+		private Map<String, Object> kwargs = Map.of();
+
+		private MetadataMode metadataMode = MetadataMode.EMBED;
 
 		public Builder transformer(String transformer) {
-			this.options.setTransformer(transformer);
+			this.transformer = transformer;
 			return this;
 		}
 
 		public Builder vectorType(VectorType vectorType) {
-			this.options.setVectorType(vectorType);
+			this.vectorType = vectorType;
 			return this;
 		}
 
-		public Builder kwargs(Map<String, Object> kwargs) {
-			this.options.setKwargs(kwargs);
+		public Builder kwargs(@Nullable Map<String, Object> kwargs) {
+			if (kwargs != null) {
+				this.kwargs = kwargs;
+			}
 			return this;
 		}
 
 		public Builder metadataMode(MetadataMode metadataMode) {
-			this.options.setMetadataMode(metadataMode);
+			this.metadataMode = metadataMode;
 			return this;
 		}
 
 		public PostgresMlEmbeddingOptions build() {
-			return this.options;
+			return new PostgresMlEmbeddingOptions(this.transformer, this.vectorType, this.kwargs, this.metadataMode);
 		}
 
 	}
