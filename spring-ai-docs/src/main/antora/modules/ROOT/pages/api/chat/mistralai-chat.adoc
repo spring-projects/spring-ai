@@ -317,7 +317,7 @@ view of the fruit inside.
 == OpenAI API Compatibility
 
 Mistral is OpenAI API-compatible and you can use the xref:api/chat/openai-chat.adoc[Spring AI OpenAI] client to talk to Mistrial.
-For this, you need to configure the OpenAI base URL to the Mistral AI platform: `spring.ai.openai.chat.base-url=https://api.mistral.ai`, and select a Mistral model: `spring.ai.openai.chat.options.model=mistral-small-latest` and set the Mistral AI API key: `spring.ai.openai.chat.api-key=<YOUR MISTRAL API KEY`.
+For this, you need to configure the OpenAI base URL to the Mistral AI platform: `spring.ai.openai.chat.base-url=https://api.mistral.ai`, and select a Mistral model: `spring.ai.openai.chat.model=mistral-small-latest` and set the Mistral AI API key: `spring.ai.openai.chat.api-key=<YOUR MISTRAL API KEY`.
 
 Check the link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/proxy/MistralWithOpenAiChatModelIT.java[MistralWithOpenAiChatModelIT.java] tests for examples of using Mistral over Spring AI OpenAI.
 

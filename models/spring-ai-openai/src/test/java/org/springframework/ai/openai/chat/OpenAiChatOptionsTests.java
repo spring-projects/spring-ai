@@ -175,31 +175,31 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 		List<String> stop = List.of("stop1", "stop2");
 		Map<String, String> metadata = Map.of("key2", "value2");
 
-		OpenAiChatOptions options = new OpenAiChatOptions();
-		options.setModel("test-model");
-		options.setDeploymentName("test-deployment");
-		options.setFrequencyPenalty(0.5);
-		options.setLogitBias(logitBias);
-		options.setLogprobs(true);
-		options.setTopLogprobs(5);
-		options.setMaxTokens(100);
-		options.setMaxCompletionTokens(50);
-		options.setN(2);
-		options.setPresencePenalty(0.8);
-		options.setStreamOptions(StreamOptions.builder().includeUsage(true).build());
-		options.setSeed(12345);
-		options.setStop(stop);
-		options.setTemperature(0.7);
-		options.setTopP(0.9);
-		options.setUser("test-user");
-		options.setParallelToolCalls(true);
-		options.setStore(false);
-		options.setMetadata(metadata);
-		options.setReasoningEffort("high");
-		options.setVerbosity("medium");
-		options.setServiceTier("auto");
-		options.setInternalToolExecutionEnabled(false);
-		options.setCustomHeaders(Map.of("header2", "value2"));
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("test-model")
+			.deploymentName("test-deployment")
+			.frequencyPenalty(0.5)
+			.logitBias(logitBias)
+			.logprobs(true)
+			.topLogprobs(5)
+			.maxCompletionTokens(50)
+			.n(2)
+			.presencePenalty(0.8)
+			.streamOptions(StreamOptions.builder().includeUsage(true).build())
+			.seed(12345)
+			.stopSequences(stop)
+			.temperature(0.7)
+			.topP(0.9)
+			.user("test-user")
+			.parallelToolCalls(true)
+			.store(false)
+			.metadata(metadata)
+			.reasoningEffort("high")
+			.verbosity("medium")
+			.serviceTier("auto")
+			.internalToolExecutionEnabled(false)
+			.customHeaders(Map.of("header2", "value2"))
+			.build();
 
 		assertThat(options.getModel()).isEqualTo("test-model");
 		assertThat(options.getDeploymentName()).isEqualTo("test-deployment");
@@ -207,7 +207,6 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 		assertThat(options.getLogitBias()).isEqualTo(logitBias);
 		assertThat(options.getLogprobs()).isTrue();
 		assertThat(options.getTopLogprobs()).isEqualTo(5);
-		assertThat(options.getMaxTokens()).isEqualTo(100);
 		assertThat(options.getMaxCompletionTokens()).isEqualTo(50);
 		assertThat(options.getN()).isEqualTo(2);
 		assertThat(options.getPresencePenalty()).isEqualTo(0.8);
@@ -229,7 +228,7 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 
 	@Test
 	void testDefaultValues() {
-		OpenAiChatOptions options = new OpenAiChatOptions();
+		OpenAiChatOptions options = OpenAiChatOptions.builder().build();
 
 		assertThat(options.getModel()).isNull();
 		assertThat(options.getDeploymentName()).isNull();
@@ -328,29 +327,28 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 		OpenAiChatOptions options = result.build();
 		assertThat(options.getModel()).isEqualTo("test-model");
 		assertThat(options.getTemperature()).isEqualTo(0.7);
-		assertThat(options.getMaxTokens()).isEqualTo(100);
 	}
 
 	@Test
 	void testNullAndEmptyCollections() {
-		OpenAiChatOptions options = new OpenAiChatOptions();
-
 		// Test setting null collections
-		options.setLogitBias(null);
-		options.setStop(null);
-		options.setMetadata(null);
-		options.setCustomHeaders(null);
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.logitBias(null)
+			.stopSequences(null)
+			.metadata(null)
+			.build();
 
 		assertThat(options.getLogitBias()).isNull();
 		assertThat(options.getStop()).isNull();
 		assertThat(options.getMetadata()).isNull();
-		assertThat(options.getCustomHeaders()).isNull();
 
 		// Test setting empty collections
-		options.setLogitBias(new HashMap<>());
-		options.setStop(new ArrayList<>());
-		options.setMetadata(new HashMap<>());
-		options.setCustomHeaders(new HashMap<>());
+		options = options.mutate()
+			.logitBias(new java.util.HashMap<>())
+			.stopSequences(new java.util.ArrayList<>())
+			.metadata(new java.util.HashMap<>())
+			.customHeaders(new java.util.HashMap<>())
+			.build();
 
 		assertThat(options.getLogitBias()).isEmpty();
 		assertThat(options.getStop()).isEmpty();
@@ -360,17 +358,16 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 
 	@Test
 	void testStopSequencesAlias() {
-		OpenAiChatOptions options = new OpenAiChatOptions();
 		List<String> stopSequences = List.of("stop1", "stop2");
 
 		// Setting stopSequences should also set stop
-		options.setStopSequences(stopSequences);
+		OpenAiChatOptions options = OpenAiChatOptions.builder().stopSequences(stopSequences).build();
 		assertThat(options.getStopSequences()).isEqualTo(stopSequences);
 		assertThat(options.getStop()).isEqualTo(stopSequences);
 
 		// Setting stop should also update stopSequences
 		List<String> newStop = List.of("stop3", "stop4");
-		options.setStop(newStop);
+		options = options.mutate().stopSequences(newStop).build();
 		assertThat(options.getStop()).isEqualTo(newStop);
 		assertThat(options.getStopSequences()).isEqualTo(newStop);
 	}
@@ -382,8 +379,7 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 		OpenAiChatOptions copied = original.copy();
 
 		// Modify original
-		original.setModel("modified-model");
-		original.setTemperature(0.9);
+		original = original.mutate().model("modified-model").temperature(0.9).build();
 
 		// Verify copy is unchanged
 		assertThat(copied.getModel()).isEqualTo("original-model");
@@ -431,7 +427,6 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 	void testBuilderCanSetOnlyMaxTokens() {
 		OpenAiChatOptions options = OpenAiChatOptions.builder().maxTokens(100).build();
 
-		assertThat(options.getMaxTokens()).isEqualTo(100);
 		assertThat(options.getMaxCompletionTokens()).isNull();
 	}
 
@@ -441,18 +436,6 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 
 		assertThat(options.getMaxTokens()).isNull();
 		assertThat(options.getMaxCompletionTokens()).isEqualTo(150);
-	}
-
-	@Test
-	void testSettersMutualExclusivityNotEnforced() {
-		// Test that direct setters do NOT enforce mutual exclusivity (only builder does)
-		OpenAiChatOptions options = new OpenAiChatOptions();
-		options.setMaxTokens(50);
-		options.setMaxCompletionTokens(100);
-
-		// Both should be set when using setters directly
-		assertThat(options.getMaxTokens()).isEqualTo(50);
-		assertThat(options.getMaxCompletionTokens()).isEqualTo(100);
 	}
 
 	@Test
@@ -534,7 +517,7 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 	@Test
 	@SuppressWarnings("DataFlowIssue")
 	void testSetToolCallbacksValidation() {
-		OpenAiChatOptions options = new OpenAiChatOptions();
+		OpenAiChatOptions options = OpenAiChatOptions.builder().build();
 
 		// Test null validation
 		assertThatThrownBy(() -> options.setToolCallbacks(null)).isInstanceOf(IllegalArgumentException.class)
@@ -551,7 +534,7 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 	@Test
 	@SuppressWarnings("DataFlowIssue")
 	void testSetToolNamesValidation() {
-		OpenAiChatOptions options = new OpenAiChatOptions();
+		OpenAiChatOptions options = OpenAiChatOptions.builder().build();
 
 		// Test null validation
 		assertThatThrownBy(() -> options.setToolNames(null)).isInstanceOf(IllegalArgumentException.class)
@@ -674,14 +657,14 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 
 	@Test
 	void testTopKReturnsNull() {
-		OpenAiChatOptions options = new OpenAiChatOptions();
+		OpenAiChatOptions options = OpenAiChatOptions.builder().build();
 		// TopK is not supported by OpenAI, should always return null
 		assertThat(options.getTopK()).isNull();
 	}
 
 	@Test
 	void testSetOutputSchema() {
-		OpenAiChatOptions options = new OpenAiChatOptions();
+		OpenAiChatOptions options = OpenAiChatOptions.builder().build();
 		// language=JSON
 		String schema = """
 				{
@@ -694,7 +677,7 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 				}
 				""";
 
-		options.setOutputSchema(schema);
+		options = options.mutate().outputSchema(schema).build();
 
 		assertThat(options.getResponseFormat()).isNotNull();
 		assertThat(options.getResponseFormat().getType()).isEqualTo(ResponseFormat.Type.JSON_SCHEMA);

@@ -607,7 +607,7 @@ The `.format(Map)` approach is also supported but requires manual JSON parsing.
 == OpenAI API Compatibility
 
 Ollama is OpenAI API-compatible and you can use the xref:api/chat/openai-chat.adoc[Spring AI OpenAI] client to talk to Ollama and use tools.
-For this, you need to configure the OpenAI base URL to your Ollama instance: `spring.ai.openai.chat.base-url=http://localhost:11434` and select one of the provided Ollama models: `spring.ai.openai.chat.options.model=mistral`.
+For this, you need to configure the OpenAI base URL to your Ollama instance: `spring.ai.openai.chat.base-url=http://localhost:11434` and select one of the provided Ollama models: `spring.ai.openai.chat.model=mistral`.
 
 TIP: When using the OpenAI client with Ollama, you can pass Ollama-specific parameters (like `top_k`, `repeat_penalty`, `num_predict`) using the xref:api/chat/openai-chat.adoc#openai-compatible-servers[`extraBody` option].
 This allows you to leverage Ollama's full capabilities while using the OpenAI client.
