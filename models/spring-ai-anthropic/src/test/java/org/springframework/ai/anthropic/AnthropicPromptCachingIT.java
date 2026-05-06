@@ -201,9 +201,7 @@ public class AnthropicPromptCachingIT {
 			.chatMemoryRepository(new InMemoryChatMemoryRepository())
 			.build();
 
-		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory)
-			.conversationId(conversationId)
-			.build();
+		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
 
 		ChatClient chatClient = ChatClient.builder(this.chatModel)
 			.defaultAdvisors(advisor)
