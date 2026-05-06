@@ -56,6 +56,7 @@ import org.springframework.util.StringUtils;
  * @author Mark Pollack
  * @author Ilayaperumal Gopinathan
  * @author Yanming Zhou
+ * @author Sebastien Deleuze
  * @since 1.1.0
  */
 @AutoConfiguration
@@ -140,7 +141,7 @@ public class GoogleGenAiChatAutoConfiguration {
 
 		GoogleGenAiChatModel chatModel = GoogleGenAiChatModel.builder()
 			.genAiClient(googleGenAiClient)
-			.defaultOptions(chatProperties.getOptions())
+			.defaultOptions(chatProperties.toOptions())
 			.toolCallingManager(toolCallingManager)
 			.toolExecutionEligibilityPredicate(
 					toolExecutionEligibilityPredicate.getIfUnique(() -> new DefaultToolExecutionEligibilityPredicate()))
