@@ -342,6 +342,7 @@ public class MiniMaxChatModel implements ChatModel {
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(requestPrompt)
 				.provider(MiniMaxApiConstants.PROVIDER_NAME)
+				.streaming(true)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(

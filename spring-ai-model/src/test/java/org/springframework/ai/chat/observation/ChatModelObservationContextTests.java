@@ -40,6 +40,38 @@ class ChatModelObservationContextTests {
 		assertThat(observationContext).isNotNull();
 	}
 
+	@Test
+	void whenStreamingNotSetThenDefaultToFalse() {
+		var observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("supermodel").build()))
+			.provider("superprovider")
+			.build();
+
+		assertThat(observationContext.isStreaming()).isFalse();
+	}
+
+	@Test
+	void whenStreamingTrueThenReturn() {
+		var observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("supermodel").build()))
+			.provider("superprovider")
+			.streaming(true)
+			.build();
+
+		assertThat(observationContext.isStreaming()).isTrue();
+	}
+
+	@Test
+	void whenStreamingFalseThenReturn() {
+		var observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("supermodel").build()))
+			.provider("superprovider")
+			.streaming(false)
+			.build();
+
+		assertThat(observationContext.isStreaming()).isFalse();
+	}
+
 	private Prompt generatePrompt(ChatOptions chatOptions) {
 		return new Prompt("hello", chatOptions);
 	}

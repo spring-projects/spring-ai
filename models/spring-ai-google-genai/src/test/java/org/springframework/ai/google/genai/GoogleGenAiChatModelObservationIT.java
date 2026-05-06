@@ -43,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Soby Chacko
+ * @author Thomas Vitale
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
@@ -74,12 +75,13 @@ public class GoogleGenAiChatModelObservationIT {
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
+		assertThat(chatResponse.getResult()).isNotNull();
 		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata);
+		validate(responseMetadata, false);
 	}
 
 	@Test
@@ -111,11 +113,11 @@ public class GoogleGenAiChatModelObservationIT {
 		ChatResponseMetadata responseMetadata = lastChatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata);
+		validate(responseMetadata, true);
 	}
 
-	private void validate(ChatResponseMetadata responseMetadata) {
-		TestObservationRegistryAssert.assertThat(this.observationRegistry)
+	private void validate(ChatResponseMetadata responseMetadata, boolean streaming) {
+		var observationAssert = TestObservationRegistryAssert.assertThat(this.observationRegistry)
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
 			.that()
@@ -152,6 +154,14 @@ public class GoogleGenAiChatModelObservationIT {
 					String.valueOf(responseMetadata.getUsage().getTotalTokens()))
 			.hasBeenStarted()
 			.hasBeenStopped();
+		if (streaming) {
+			observationAssert.hasHighCardinalityKeyValue(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STREAM.asString(), "true");
+		}
+		else {
+			observationAssert.doesNotHaveHighCardinalityKeyValueWithKey(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STREAM.asString());
+		}
 	}
 
 	@SpringBootConfiguration

@@ -82,12 +82,13 @@ public class MistralAiChatModelObservationIT {
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
+		assertThat(chatResponse.getResult()).isNotNull();
 		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata);
+		validate(responseMetadata, false);
 	}
 
 	@Test
@@ -121,11 +122,11 @@ public class MistralAiChatModelObservationIT {
 		ChatResponseMetadata responseMetadata = lastChatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata);
+		validate(responseMetadata, true);
 	}
 
-	private void validate(ChatResponseMetadata responseMetadata) {
-		TestObservationRegistryAssert.assertThat(this.observationRegistry)
+	private void validate(ChatResponseMetadata responseMetadata, boolean streaming) {
+		var observationAssert = TestObservationRegistryAssert.assertThat(this.observationRegistry)
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
 			.that()
@@ -167,6 +168,13 @@ public class MistralAiChatModelObservationIT {
 					String.valueOf(responseMetadata.getUsage().getTotalTokens()))
 			.hasBeenStarted()
 			.hasBeenStopped();
+		if (streaming) {
+			observationAssert.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_STREAM.asString(), "true");
+		}
+		else {
+			observationAssert
+				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_STREAM.asString());
+		}
 	}
 
 	@SpringBootConfiguration

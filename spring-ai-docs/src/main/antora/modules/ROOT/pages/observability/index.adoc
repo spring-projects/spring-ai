@@ -1,45 +1,12 @@
 [[introduction]]
 = Observability
 
-Spring AI builds upon the observability features in the Spring ecosystem to provide insights into AI-related operations.
+Spring AI builds upon the observability features in the Spring ecosystem to provide insights into AI-related operations. It provides metrics and tracing capabilities for its core components: `ChatClient` (including `Advisor`), `ChatModel`, `EmbeddingModel`, `ImageModel`, and `VectorStore`.
 
-The spring-boot-actuator module is required for enabling observability.
-Add the Spring Boot Actuator dependency to your project's Maven `pom.xml` build file:
+Refer to the https://docs.spring.io/spring-boot/reference/actuator/metrics.html[Spring Boot Metrics] and
+https://docs.spring.io/spring-boot/reference/actuator/tracing.html[Spring Boot Tracing] documentation to enable metrics and tracing support in your application.
 
-[source,xml]
-----
-<dependency>
- <groupId>org.springframework.boot</groupId>
- <artifactId>spring-boot-starter-actuator</artifactId>
-</dependency>
-----
-
-or to your Gradle `build.gradle` build file.
-
-[source,groovy]
-----
-dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-}
-----
-
-Spring AI provides metrics and tracing capabilities for its core components: `ChatClient` (including `Advisor`),
-`ChatModel`, `EmbeddingModel`, `ImageModel`, and `VectorStore`.
-
-NOTE: Low cardinality keys will be added to metrics and traces, while high cardinality keys will only be added to traces.
-
-[WARNING]
-====
-**1.0.0-RC1 Breaking Changes** 
-
-Following configuration properties have been renamed to better reflect their purpose:
-
-* `spring.ai.chat.client.observations.include-prompt` → `spring.ai.chat.client.observations.log-prompt`
-* `spring.ai.chat.observations.include-prompt` → `spring.ai.chat.observations.log-prompt`
-* `spring.ai.chat.observations.include-completion` → `spring.ai.chat.observations.log-completion`
-* `spring.ai.image.observations.include-prompt` → `spring.ai.image.observations.log-prompt`
-* `spring.ai.vectorstore.observations.include-query-response` → `spring.ai.vectorstore.observations.log-query-response`
-====
+NOTE: Low-cardinality keys will be added to metrics and traces, while high-cardinality keys will only be added to traces.
 
 == Chat Client
 
@@ -61,18 +28,9 @@ They measure the time spent performing the invocation and propagate the related 
 [cols="a,a", stripes=even]
 |===
 |Name | Description
-
-|`gen_ai.prompt` | The content of the prompt sent via the chat client. Optional.
-|`spring.ai.chat.client.advisor.params` (deprecated) | Map of advisor parameters. The conversation ID is now included in `spring.ai.chat.client.conversation.id`.
 |`spring.ai.chat.client.advisors` | List of configured chat client advisors.
 |`spring.ai.chat.client.conversation.id` | Identifier of the conversation when using the chat memory.
-|`spring.ai.chat.client.system.params` (deprecated) |Chat client system parameters. Optional. Superseded by `gen_ai.prompt`.
-|`spring.ai.chat.client.system.text` (deprecated) |Chat client system text. Optional. Superseded by `gen_ai.prompt`.
-|`spring.ai.chat.client.tool.function.names` (deprecated) | Enabled tool function names. Superseded by `spring.ai.chat.client.tool.names`.
-|`spring.ai.chat.client.tool.function.callbacks` (deprecated) |List of configured chat client function callbacks. Superseded by `spring.ai.chat.client.tool.names`.
 |`spring.ai.chat.client.tool.names` | Names of the tools passed to the chat client.
-|`spring.ai.chat.client.user.params` (deprecated) | Chat client user parameters. Optional. Superseded by `gen_ai.prompt`.
-|`spring.ai.chat.client.user.text` (deprecated) | Chat client user text. Optional. Superseded by `gen_ai.prompt`.
 |===
 
 === Prompt and Completion Data
@@ -92,28 +50,10 @@ Spring AI supports logging the prompt and completion data to help with debugging
 
 WARNING: If you enable logging of the chat client prompt and completion data, there's a risk of exposing sensitive or private information. Please, be careful!
 
-=== Input Data (Deprecated)
-
-WARNING: The `spring.ai.chat.client.observations.include-input` property is deprecated, replaced by `spring.ai.chat.client.observations.log-prompt`. See xref:_prompt_content[Prompt Content].
-
-The `ChatClient` input data is typically big and possibly containing sensitive information.
-For those reasons, it is not exported by default.
-
-Spring AI supports logging input data to help with debugging and troubleshooting.
-
-[cols="6,3,1", stripes=even]
-|====
-| Property | Description | Default
-
-| `spring.ai.chat.client.observations.include-input` |  Whether to include the input content in the observations. | `false`
-|====
-
-WARNING: If you enable the inclusion of the input content in the observations, there's a risk of exposing sensitive or private information. Please, be careful!
-
 === Chat Client Advisors
 
 The `spring.ai.advisor` observations are recorded when an advisor is executed.
-They measure the time spent in the advisor (including the time spend on the inner advisors) and propagate the related tracing information.
+They measure the time spent in the advisor (including the time spent on the inner advisors) and propagate the related tracing information.
 
 .Low Cardinality Keys
 [cols="a,a", stripes=even]
@@ -122,7 +62,7 @@ They measure the time spent in the advisor (including the time spend on the inne
 
 |`gen_ai.operation.name` | Always `framework`.
 |`gen_ai.system` | Always `spring_ai`.
-|`spring.ai.advisor.type` (deprecated) | Where the advisor applies it's logic in the request processing, one of `BEFORE`, `AFTER`, or `AROUND`. This distinction doesn't apply anymore since all Advisors are always of the same type.
+|`spring.ai.advisor.name` | Name of the advisor.
 |`spring.ai.kind` | The kind of framework API in Spring AI: `advisor`.
 |===
 
@@ -131,15 +71,10 @@ They measure the time spent in the advisor (including the time spend on the inne
 |===
 |Name | Description
 
-|`spring.ai.advisor.name`| Name of the advisor.
 |`spring.ai.advisor.order`| Advisor order in the advisor chain.
 |===
 
 == Chat Model
-
-NOTE: Observability features are currently supported only for `ChatModel` implementations from the following AI model
-providers: Anthropic, Mistral AI, Ollama, OpenAI, Google GenAI, MiniMax, Moonshot, QianFan.
-Additional AI model providers will be supported in a future release.
 
 [IMPORTANT]
 ====
@@ -155,7 +90,6 @@ The `gen_ai.client.operation` observations are recorded when calling the ChatMod
 They measure the time spent on method completion and propagate the related tracing information.
 
 IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and output tokens used by a single model call.
-
 
 .Low Cardinality Keys
 [cols="a,a", stripes=even]
@@ -177,22 +111,22 @@ IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and 
 |`gen_ai.request.max_tokens` | The maximum number of tokens the model generates for a request.
 |`gen_ai.request.presence_penalty` | The presence penalty setting for the model request.
 |`gen_ai.request.stop_sequences` | List of sequences that the model will use to stop generating further tokens.
+|`gen_ai.request.stream` | Whether the request was made in streaming mode. Only present when `true`.
 |`gen_ai.request.temperature` | The temperature setting for the model request.
 |`gen_ai.request.top_k` | The top_k sampling setting for the model request.
 |`gen_ai.request.top_p` | The top_p sampling setting for the model request.
 |`gen_ai.response.finish_reasons` | Reasons the model stopped generating tokens, corresponding to each generation received.
 |`gen_ai.response.id` | The unique identifier for the AI response.
+|`gen_ai.usage.cache_creation.input_tokens` | The number of input tokens written to a provider-managed cache.
+|`gen_ai.usage.cache_read.input_tokens` | The number of input tokens served from a provider-managed cache.
 |`gen_ai.usage.input_tokens` | The number of tokens used in the model input (prompt).
 |`gen_ai.usage.output_tokens` | The number of tokens used in the model output (completion).
 |`gen_ai.usage.total_tokens` | The total number of tokens used in the model exchange.
-|`gen_ai.prompt` | The full prompt sent to the model. Optional.
-|`gen_ai.completion` | The full response received from the model. Optional.
 |`spring.ai.model.request.tool.names` | List of tool definitions provided to the model in the request.
 |===
 
 NOTE: For measuring user tokens, the previous table lists the values present in an observation trace.
 Use the metric name `gen_ai.client.token.usage` that is provided by the `ChatModel`.
-
 
 === Chat Prompt and Completion Data
 
@@ -214,7 +148,7 @@ WARNING: If you enable logging of the chat prompt and completion data, there's a
 
 == Tool Calling
 
-The `spring.ai.tool` observations are recorded when performing tool calling in the context of a chat model interaction. They measure the time spent on toll call completion and propagate the related tracing information.
+The `spring.ai.tool` observations are recorded when performing tool calling in the context of a chat model interaction. They measure the time spent on tool call completion and propagate the related tracing information.
 
 .Low Cardinality Keys
 [cols="a,a", stripes=even]
@@ -291,15 +225,10 @@ Use the metric name `gen_ai.client.token.usage` that is provided by the `Embeddi
 
 == Image Model
 
-NOTE: Observability features are currently supported only for `ImageModel` implementations from the following AI model
-providers: OpenAI.
-Additional AI model providers will be supported in a future release.
+NOTE: Observability features are currently supported only for `ImageModel` implementations from the following AI model providers: OpenAI. Additional AI model providers will be supported in a future release.
 
-The `gen_ai.client.operation` observations are recorded on image model method calls. 
+The `gen_ai.client.operation` observations are recorded on image model method calls.
 They measure the time spent on method completion and propagate the related tracing information.
-
-IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and output tokens used by a single model call.
-
 
 .Low Cardinality Keys
 [cols="a,a", stripes=even]
@@ -312,23 +241,14 @@ IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and 
 |===
 
 .High Cardinality Keys
+[cols="a,a", stripes=even]
 |===
 |Name | Description
 
 |`gen_ai.request.image.response_format` | The format in which the generated image is returned.
-|`gen_ai.request.image.size` | The size of the image to generate.
+|`gen_ai.request.image.size` | The size of the image to generate (e.g. `1024x1024`).
 |`gen_ai.request.image.style` | The style of the image to generate.
-|`gen_ai.response.id` | The unique identifier for the AI response.
-|`gen_ai.response.model` | The name of the model that generated the response.
-|`gen_ai.usage.input_tokens` | The number of tokens used in the model input (prompt).
-|`gen_ai.usage.output_tokens` | The number of tokens used in the model output (generation).
-|`gen_ai.usage.total_tokens` | The total number of tokens used in the model exchange.
-|`gen_ai.prompt` | The full prompt sent to the model. Optional.
 |===
-
-NOTE: For measuring user tokens, the previous table lists the values present in an observation trace.
-Use the metric name `gen_ai.client.token.usage` that is provided by the `ImageModel`.
-
 
 === Image Prompt Data
 
@@ -370,7 +290,6 @@ They measure the time spent on the `query`, `add` and `remove` operations and pr
 
 |`db.collection.name` | The name of a collection (table, container) within the database.
 |`db.namespace` | The name of the database, fully qualified within the server address and port.
-|`db.record.id` | The record identifier if present.
 |`db.search.similarity_metric` | The metric used in similarity search.
 |`db.vector.dimension_count` | The dimension of the vector.
 |`db.vector.field_name` | The name field as of the vector (e.g. a field name).
@@ -380,7 +299,6 @@ They measure the time spent on the `query`, `add` and `remove` operations and pr
 |`db.vector.query.similarity_threshold` | Similarity threshold that accepts all search scores. A threshold value of 0.0 means any similarity is accepted or disable the similarity threshold filtering. A threshold value of 1.0 means an exact match is required.
 |`db.vector.query.top_k` | The top-k most similar vectors returned by a query.
 |===
-
 
 === Response Data
 
