@@ -136,32 +136,32 @@ The prefix `spring.ai.mistralai.chat` is the property prefix that lets you confi
 | spring.ai.model.chat | Enable Mistral AI chat model.  | mistral
 | spring.ai.mistralai.chat.base-url   | Optional override for the `spring.ai.mistralai.base-url` property to provide chat-specific URL. |  -
 | spring.ai.mistralai.chat.api-key   | Optional override for the `spring.ai.mistralai.api-key` to provide chat-specific API Key. |  -
-| spring.ai.mistralai.chat.options.model | This is the Mistral AI Chat model to use | `open-mistral-7b`, `open-mixtral-8x7b`, `open-mixtral-8x22b`, `mistral-small-latest`, `mistral-large-latest`
-| spring.ai.mistralai.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify `temperature` and `top_p` for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
-| spring.ai.mistralai.chat.options.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
-| spring.ai.mistralai.chat.options.safePrompt | Indicates whether to inject a security prompt before all conversations. | false
-| spring.ai.mistralai.chat.options.randomSeed | This feature is in Beta. If specified, our system will make a best effort to sample deterministically, such that repeated requests with the same seed and parameters should return the same result. | -
-| spring.ai.mistralai.chat.options.stop | Stop generation if this token is detected. Or if one of these tokens is detected when providing an array. | -
-| spring.ai.mistralai.chat.options.topP | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or `temperature` but not both. | -
-| spring.ai.mistralai.chat.options.responseFormat | An object specifying the format that the model must output. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON. Setting to `{ "type": "json_schema" }` with a supplied schema enables native structured outputs, which guarantees the model will match your supplied JSON schema. See the <<structured-output>> section for more details.| -
-| spring.ai.mistralai.chat.options.tools | A list of tools the model may call. Currently, only functions are supported as a tool. Use this to provide a list of functions the model may generate JSON inputs for. | -
-| spring.ai.mistralai.chat.options.toolChoice | Controls which (if any) function is called by the model. `none` means the model will not call a function and instead generates a message. `auto` means the model can pick between generating a message or calling a function. Specifying a particular function via `{"type: "function", "function": {"name": "my_function"}}` forces the model to call that function. `none` is the default when no functions are present. `auto` is the default if functions are present. | -
-| spring.ai.mistralai.chat.options.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
-| spring.ai.mistralai.chat.options.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
-| spring.ai.mistralai.chat.options.internal-tool-execution-enabled | If false, the Spring AI will not handle the tool calls internally, but will proxy them to the client. Then it is the client's responsibility to handle the tool calls, dispatch them to the appropriate function, and return the results. If true (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | true
+| spring.ai.mistralai.chat.model | This is the Mistral AI Chat model to use | `open-mistral-7b`, `open-mixtral-8x7b`, `open-mixtral-8x22b`, `mistral-small-latest`, `mistral-large-latest`
+| spring.ai.mistralai.chat.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify `temperature` and `top_p` for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
+| spring.ai.mistralai.chat.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
+| spring.ai.mistralai.chat.safePrompt | Indicates whether to inject a security prompt before all conversations. | false
+| spring.ai.mistralai.chat.randomSeed | This feature is in Beta. If specified, our system will make a best effort to sample deterministically, such that repeated requests with the same seed and parameters should return the same result. | -
+| spring.ai.mistralai.chat.stop | Stop generation if this token is detected. Or if one of these tokens is detected when providing an array. | -
+| spring.ai.mistralai.chat.topP | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or `temperature` but not both. | -
+| spring.ai.mistralai.chat.responseFormat | An object specifying the format that the model must output. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON. Setting to `{ "type": "json_schema" }` with a supplied schema enables native structured outputs, which guarantees the model will match your supplied JSON schema. See the <<structured-output>> section for more details.| -
+| spring.ai.mistralai.chat.tools | A list of tools the model may call. Currently, only functions are supported as a tool. Use this to provide a list of functions the model may generate JSON inputs for. | -
+| spring.ai.mistralai.chat.toolChoice | Controls which (if any) function is called by the model. `none` means the model will not call a function and instead generates a message. `auto` means the model can pick between generating a message or calling a function. Specifying a particular function via `{"type: "function", "function": {"name": "my_function"}}` forces the model to call that function. `none` is the default when no functions are present. `auto` is the default if functions are present. | -
+| spring.ai.mistralai.chat.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
+| spring.ai.mistralai.chat.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
+| spring.ai.mistralai.chat.internal-tool-execution-enabled | If false, the Spring AI will not handle the tool calls internally, but will proxy them to the client. Then it is the client's responsibility to handle the tool calls, dispatch them to the appropriate function, and return the results. If true (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | true
 |====
 
 NOTE: You can override the common `spring.ai.mistralai.base-url` and `spring.ai.mistralai.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
 The `spring.ai.mistralai.chat.base-url` and `spring.ai.mistralai.chat.api-key` properties, if set, take precedence over the common properties.
 This is useful if you want to use different Mistral AI accounts for different models and different model endpoints.
 
-TIP: All properties prefixed with `spring.ai.mistralai.chat.options` can be overridden at runtime by adding request-specific <<chat-options>> to the `Prompt` call.
+TIP: All properties prefixed with `spring.ai.mistralai.chat` can be overridden at runtime by adding request-specific <<chat-options>> to the `Prompt` call.
 
 == Runtime Options [[chat-options]]
 
 The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/MistralAiChatOptions.java[MistralAiChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
 
-On start-up, the default options can be configured with the `MistralAiChatModel(api, options)` constructor or the `spring.ai.mistralai.chat.options.*` properties.
+On start-up, the default options can be configured with the `MistralAiChatModel(api, options)` constructor or the `spring.ai.mistralai.chat.*` properties.
 
 At run-time, you can override the default options by adding new, request-specific options to the `Prompt` call.
 For example, to override the default model and temperature for a specific request:
@@ -330,8 +330,8 @@ Add a `application.properties` file under the `src/main/resources` directory to 
 [source,application.properties]
 ----
 spring.ai.mistralai.api-key=YOUR_API_KEY
-spring.ai.mistralai.chat.options.model=mistral-small
-spring.ai.mistralai.chat.options.temperature=0.7
+spring.ai.mistralai.chat.model=mistral-small
+spring.ai.mistralai.chat.temperature=0.7
 ----
 
 TIP: Replace the `api-key` with your Mistral AI credentials.

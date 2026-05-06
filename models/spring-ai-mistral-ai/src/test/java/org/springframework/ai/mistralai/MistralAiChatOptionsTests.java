@@ -98,15 +98,16 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 	@Test
 	void testSetters() {
 		ResponseFormat responseFormat = new ResponseFormat("json_object");
-		MistralAiChatOptions options = new MistralAiChatOptions();
-		options.setModel("test-model");
-		options.setTemperature(0.7);
-		options.setTopP(0.9);
-		options.setMaxTokens(100);
-		options.setSafePrompt(true);
-		options.setRandomSeed(123);
-		options.setResponseFormat(responseFormat);
-		options.setStopSequences(List.of("stop1", "stop2"));
+		MistralAiChatOptions options = MistralAiChatOptions.builder()
+			.model("test-model")
+			.temperature(0.7)
+			.topP(0.9)
+			.maxTokens(100)
+			.safePrompt(true)
+			.randomSeed(123)
+			.responseFormat(responseFormat)
+			.stop(List.of("stop1", "stop2"))
+			.build();
 
 		assertThat(options.getModel()).isEqualTo("test-model");
 		assertThat(options.getTemperature()).isEqualTo(0.7);
@@ -188,9 +189,12 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 			.toolContext(Map.of("original", "value"))
 			.build();
 
-		MistralAiChatOptions copy = original.copy();
-		copy.setModel("modified-model");
-		copy.setTemperature(0.8);
+		MistralAiChatOptions copy = MistralAiChatOptions.builder()
+			.model("modified-model")
+			.temperature(0.8)
+			.stop(original.getStop())
+			.toolContext(original.getToolContext())
+			.build();
 
 		// Original should remain unchanged
 		assertThat(original.getModel()).isEqualTo("original-model");
@@ -276,12 +280,13 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 			.maxTokens(100)
 			.build();
 
-		// Create equivalent object using setters
-		MistralAiChatOptions setterOptions = new MistralAiChatOptions();
-		setterOptions.setModel("test-model");
-		setterOptions.setTemperature(0.7);
-		setterOptions.setTopP(0.9);
-		setterOptions.setMaxTokens(100);
+		// Create equivalent object using builder (formerly setters)
+		MistralAiChatOptions setterOptions = MistralAiChatOptions.builder()
+			.model("test-model")
+			.temperature(0.7)
+			.topP(0.9)
+			.maxTokens(100)
+			.build();
 
 		assertThat(builderOptions).isEqualTo(setterOptions);
 	}
