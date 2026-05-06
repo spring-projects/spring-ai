@@ -45,19 +45,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
-	public void testThinkingBudgetGetterSetter() {
-		GoogleGenAiChatOptions options = new GoogleGenAiChatOptions();
-
-		assertThat(options.getThinkingBudget()).isNull();
-
-		options.setThinkingBudget(12853);
-		assertThat(options.getThinkingBudget()).isEqualTo(12853);
-
-		options.setThinkingBudget(null);
-		assertThat(options.getThinkingBudget()).isNull();
-	}
-
-	@Test
 	public void testThinkingBudgetWithBuilder() {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
 			.model("test-model")
@@ -183,22 +170,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
-	public void testThinkingLevelGetterSetter() {
-		GoogleGenAiChatOptions options = new GoogleGenAiChatOptions();
-
-		assertThat(options.getThinkingLevel()).isNull();
-
-		options.setThinkingLevel(GoogleGenAiThinkingLevel.HIGH);
-		assertThat(options.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.HIGH);
-
-		options.setThinkingLevel(GoogleGenAiThinkingLevel.LOW);
-		assertThat(options.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.LOW);
-
-		options.setThinkingLevel(null);
-		assertThat(options.getThinkingLevel()).isNull();
-	}
-
-	@Test
 	public void testThinkingLevelWithBuilder() {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
 			.model("test-model")
@@ -292,19 +263,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 				.build();
 			assertThat(options.getThinkingLevel()).isEqualTo(level);
 		}
-	}
-
-	@Test
-	public void testIncludeServerSideToolInvocationsGetterSetter() {
-		GoogleGenAiChatOptions options = new GoogleGenAiChatOptions();
-
-		assertThat(options.getIncludeServerSideToolInvocations()).isFalse();
-
-		options.setIncludeServerSideToolInvocations(true);
-		assertThat(options.getIncludeServerSideToolInvocations()).isTrue();
-
-		options.setIncludeServerSideToolInvocations(false);
-		assertThat(options.getIncludeServerSideToolInvocations()).isFalse();
 	}
 
 	@Test

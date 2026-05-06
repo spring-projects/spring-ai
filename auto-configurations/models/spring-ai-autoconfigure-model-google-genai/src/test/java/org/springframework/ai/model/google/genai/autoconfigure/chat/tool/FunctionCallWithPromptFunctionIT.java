@@ -54,8 +54,8 @@ public class FunctionCallWithPromptFunctionIT {
 					SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class));
 
 		contextRunner
-			.withPropertyValues("spring.ai.google.genai.chat.options.model="
-					+ GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
+			.withPropertyValues(
+					"spring.ai.google.genai.chat.model=" + GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
 			.run(context -> {
 
 				GoogleGenAiChatModel chatModel = context.getBean(GoogleGenAiChatModel.class);
@@ -100,8 +100,8 @@ public class FunctionCallWithPromptFunctionIT {
 					SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class));
 
 		contextRunner
-			.withPropertyValues("spring.ai.google.genai.chat.options.model="
-					+ GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
+			.withPropertyValues(
+					"spring.ai.google.genai.chat.model=" + GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
 			.run(context -> {
 
 				GoogleGenAiChatModel chatModel = context.getBean(GoogleGenAiChatModel.class);
