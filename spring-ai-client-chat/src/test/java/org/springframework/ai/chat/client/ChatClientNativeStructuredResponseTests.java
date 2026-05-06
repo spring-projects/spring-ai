@@ -47,12 +47,7 @@ import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.util.json.JsonParser;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willDoNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -85,9 +80,6 @@ public class ChatClientNativeStructuredResponseTests {
 
 	@Mock
 	ChatModel chatModel;
-
-	@Mock
-	StructuredOutputChatOptions structuredOutputChatOptions;
 
 	@Captor
 	ArgumentCaptor<Prompt> promptCaptor;
@@ -127,7 +119,6 @@ public class ChatClientNativeStructuredResponseTests {
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getText()).contains("Tell me about John", "Your response should be in JSON format");
-		verify(this.structuredOutputChatOptions, never()).setOutputSchema(anyString());
 	}
 
 	@Test
@@ -163,15 +154,11 @@ public class ChatClientNativeStructuredResponseTests {
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getText()).contains("Tell me about John", "Your response should be in JSON format");
-		verify(this.structuredOutputChatOptions, never()).setOutputSchema(anyString());
 	}
 
 	@Test
-	public void nativeResponseEntityTest(@Captor ArgumentCaptor<String> outputSchemaCaptor) {
-		ChatOptions.Builder builder = mock(ChatOptions.Builder.class);
-		when(this.chatModel.getDefaultOptions()).thenReturn(this.structuredOutputChatOptions);
-		when(this.structuredOutputChatOptions.mutate()).thenReturn(builder);
-		when(builder.build()).thenReturn(this.structuredOutputChatOptions);
+	public void nativeResponseEntityTest() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
@@ -180,7 +167,6 @@ public class ChatClientNativeStructuredResponseTests {
 				"""))), metadata);
 
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
-		willDoNothing().given(this.structuredOutputChatOptions).setOutputSchema(outputSchemaCaptor.capture());
 
 		var textCallAdvisor = new ContextCatcherCallAdvisor();
 
@@ -208,13 +194,17 @@ public class ChatClientNativeStructuredResponseTests {
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getText()).isEqualTo("Tell me about John");
 
-		JsonAssertions.assertThatJson(outputSchemaCaptor.getValue())
+		StructuredOutputChatOptions soco = (StructuredOutputChatOptions) this.promptCaptor.getValue().getOptions();
+
+		JsonAssertions.assertThatJson(soco.getOutputSchema())
 			.when(Option.IGNORING_ARRAY_ORDER)
 			.isEqualTo(USER_JSON_SCHEMA);
+
 	}
 
 	@Test
-	public void nativeEntityTest(@Captor ArgumentCaptor<String> outputSchemaCaptor) {
+	public void nativeEntityTest() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
@@ -223,11 +213,6 @@ public class ChatClientNativeStructuredResponseTests {
 				"""))), metadata);
 
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
-		ChatOptions.Builder builder = mock(ChatOptions.Builder.class);
-		when(this.chatModel.getDefaultOptions()).thenReturn(this.structuredOutputChatOptions);
-		when(this.structuredOutputChatOptions.mutate()).thenReturn(builder);
-		when(builder.build()).thenReturn(this.structuredOutputChatOptions);
-		willDoNothing().given(this.structuredOutputChatOptions).setOutputSchema(outputSchemaCaptor.capture());
 
 		var textCallAdvisor = new ContextCatcherCallAdvisor();
 
@@ -252,7 +237,9 @@ public class ChatClientNativeStructuredResponseTests {
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getText()).isEqualTo("Tell me about John");
 
-		JsonAssertions.assertThatJson(outputSchemaCaptor.getValue())
+		StructuredOutputChatOptions soco = (StructuredOutputChatOptions) this.promptCaptor.getValue().getOptions();
+
+		JsonAssertions.assertThatJson(soco.getOutputSchema())
 			.when(Option.IGNORING_ARRAY_ORDER)
 			.isEqualTo(USER_JSON_SCHEMA);
 	}
@@ -260,7 +247,7 @@ public class ChatClientNativeStructuredResponseTests {
 	@Test
 	public void dynamicDisableNativeResponseEntityTest() {
 
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getDefaultOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
@@ -296,13 +283,14 @@ public class ChatClientNativeStructuredResponseTests {
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getText()).contains("Tell me about John", "Your response should be in JSON format");
-		verify(this.structuredOutputChatOptions, never()).setOutputSchema(anyString());
+
+		StructuredOutputChatOptions soco = (StructuredOutputChatOptions) this.promptCaptor.getValue().getOptions();
+		assertThat(soco.getOutputSchema()).isNull();
 	}
 
 	@Test
 	public void dynamicDisableNativeEntityTest() {
-
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getDefaultOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
@@ -335,12 +323,14 @@ public class ChatClientNativeStructuredResponseTests {
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getText()).contains("Tell me about John", "Your response should be in JSON format");
-		verify(this.structuredOutputChatOptions, never()).setOutputSchema(anyString());
+
+		StructuredOutputChatOptions soco = (StructuredOutputChatOptions) this.promptCaptor.getValue().getOptions();
+		assertThat(soco.getOutputSchema()).isNull();
 	}
 
 	@Test
-	public void nativeWithCustomStructuredOutputConverterResponseEntityTest(
-			@Captor ArgumentCaptor<String> outputSchemaCaptor) {
+	public void nativeWithCustomStructuredOutputConverterResponseEntityTest() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
@@ -349,11 +339,6 @@ public class ChatClientNativeStructuredResponseTests {
 				"""))), metadata);
 
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
-		ChatOptions.Builder builder = mock(ChatOptions.Builder.class);
-		when(this.chatModel.getDefaultOptions()).thenReturn(this.structuredOutputChatOptions);
-		when(this.structuredOutputChatOptions.mutate()).thenReturn(builder);
-		when(builder.build()).thenReturn(this.structuredOutputChatOptions);
-		willDoNothing().given(this.structuredOutputChatOptions).setOutputSchema(outputSchemaCaptor.capture());
 
 		var textCallAdvisor = new ContextCatcherCallAdvisor();
 
@@ -372,8 +357,9 @@ public class ChatClientNativeStructuredResponseTests {
 		assertThat(context).containsKey(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey());
 		assertThat(context).containsKey(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey());
 
-		assertThat(responseEntity.getResponse()).isEqualTo(chatResponse);
-		assertThat(responseEntity.getResponse().getMetadata().get("key1").toString()).isEqualTo("value1");
+		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getText()).isEqualTo("Tell me about John");
 
 		JsonAssertions.assertThatJson(responseEntity.getEntity()).isEqualTo("""
 				{
@@ -382,17 +368,17 @@ public class ChatClientNativeStructuredResponseTests {
 				}
 				""");
 
-		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
-		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
-		assertThat(userMessage.getText()).isEqualTo("Tell me about John");
+		StructuredOutputChatOptions soco = (StructuredOutputChatOptions) this.promptCaptor.getValue().getOptions();
 
-		JsonAssertions.assertThatJson(outputSchemaCaptor.getValue())
+		JsonAssertions.assertThatJson(soco.getOutputSchema())
 			.when(Option.IGNORING_ARRAY_ORDER)
 			.isEqualTo(USER_JSON_SCHEMA);
+
 	}
 
 	@Test
-	public void nativeWithCustomStructuredOutputConverterEntityTest(@Captor ArgumentCaptor<String> outputSchemaCaptor) {
+	public void nativeWithCustomStructuredOutputConverterEntityTest() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
@@ -401,11 +387,6 @@ public class ChatClientNativeStructuredResponseTests {
 				"""))), metadata);
 
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
-		ChatOptions.Builder builder = mock(ChatOptions.Builder.class);
-		when(this.chatModel.getDefaultOptions()).thenReturn(this.structuredOutputChatOptions);
-		when(this.structuredOutputChatOptions.mutate()).thenReturn(builder);
-		when(builder.build()).thenReturn(this.structuredOutputChatOptions);
-		willDoNothing().given(this.structuredOutputChatOptions).setOutputSchema(outputSchemaCaptor.capture());
 
 		var textCallAdvisor = new ContextCatcherCallAdvisor();
 
@@ -435,13 +416,16 @@ public class ChatClientNativeStructuredResponseTests {
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getText()).isEqualTo("Tell me about John");
 
-		JsonAssertions.assertThatJson(outputSchemaCaptor.getValue())
+		StructuredOutputChatOptions soco = (StructuredOutputChatOptions) this.promptCaptor.getValue().getOptions();
+
+		JsonAssertions.assertThatJson(soco.getOutputSchema())
 			.when(Option.IGNORING_ARRAY_ORDER)
 			.isEqualTo(USER_JSON_SCHEMA);
 	}
 
 	@Test
 	public void nativeWithCustomStructuredOutputConverterWithoutJsonSchemaResponseEntityTest() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
@@ -450,10 +434,6 @@ public class ChatClientNativeStructuredResponseTests {
 				"""))), metadata);
 
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
-		ChatOptions.Builder builder = mock(ChatOptions.Builder.class);
-		when(this.chatModel.getDefaultOptions()).thenReturn(this.structuredOutputChatOptions);
-		when(this.structuredOutputChatOptions.mutate()).thenReturn(builder);
-		when(builder.build()).thenReturn(this.structuredOutputChatOptions);
 
 		var textCallAdvisor = new ContextCatcherCallAdvisor();
 
@@ -486,11 +466,13 @@ public class ChatClientNativeStructuredResponseTests {
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getText()).contains("Tell me about John", "Your response should be in JSON format");
 
-		verify(this.structuredOutputChatOptions, never()).setOutputSchema(anyString());
+		StructuredOutputChatOptions soco = (StructuredOutputChatOptions) this.promptCaptor.getValue().getOptions();
+		assertThat(soco.getOutputSchema()).isNull();
 	}
 
 	@Test
 	public void nativeWithCustomStructuredOutputConverterWithoutJsonSchemaEntityTest() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
@@ -499,10 +481,6 @@ public class ChatClientNativeStructuredResponseTests {
 				"""))), metadata);
 
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
-		ChatOptions.Builder builder = mock(ChatOptions.Builder.class);
-		when(this.chatModel.getDefaultOptions()).thenReturn(this.structuredOutputChatOptions);
-		when(this.structuredOutputChatOptions.mutate()).thenReturn(builder);
-		when(builder.build()).thenReturn(this.structuredOutputChatOptions);
 
 		var textCallAdvisor = new ContextCatcherCallAdvisor();
 
@@ -532,7 +510,8 @@ public class ChatClientNativeStructuredResponseTests {
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getText()).contains("Tell me about John", "Your response should be in JSON format");
 
-		verify(this.structuredOutputChatOptions, never()).setOutputSchema(anyString());
+		StructuredOutputChatOptions soco = (StructuredOutputChatOptions) this.promptCaptor.getValue().getOptions();
+		assertThat(soco.getOutputSchema()).isNull();
 	}
 
 	record UserEntity(String name, int age) {

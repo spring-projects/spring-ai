@@ -48,7 +48,7 @@ public class DefaultChatOptions implements ChatOptions {
 		// TODO remove
 	}
 
-	/* private */ /* TODO move builder as an inner class */ DefaultChatOptions(@Nullable String model,
+	protected /* TODO move builder as an inner class */ DefaultChatOptions(@Nullable String model,
 			@Nullable Double frequencyPenalty, @Nullable Integer maxTokens, @Nullable Double presencePenalty,
 			@Nullable List<String> stopSequences, @Nullable Double temperature, @Nullable Integer topK,
 			@Nullable Double topP) {
