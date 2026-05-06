@@ -1,6 +1,209 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-1-0-8]]
+== Upgrading to 1.0.8
+
+=== Chat Memory Advisors: Conversation ID Is Now Required
+
+The conversation ID is no longer optional for the built-in memory advisors (`MessageChatMemoryAdvisor`, `PromptChatMemoryAdvisor`, and `VectorStoreChatMemoryAdvisor`).
+Every call through these advisors must supply `ChatMemory.CONVERSATION_ID` via the advisor context.
+If the value is absent or `null`, the advisor throws an `IllegalArgumentException` immediately.
+
+==== Removed: `ChatMemory.DEFAULT_CONVERSATION_ID`
+
+The constant `ChatMemory.DEFAULT_CONVERSATION_ID` (value `"default"`) has been removed from the `ChatMemory` interface.
+
+===== Impact
+
+Code that references this constant will fail to compile.
+
+===== Migration
+
+Replace any reference to `ChatMemory.DEFAULT_CONVERSATION_ID` with an explicit conversation ID string or a value derived from your session/user context.
+
+[source,java]
+----
+// Before
+String conversationId = ChatMemory.DEFAULT_CONVERSATION_ID;
+
+// After
+String conversationId = "my-conversation-id";
+----
+
+==== Removed: `.conversationId()` Builder Method on Memory Advisors
+
+The `.conversationId(String)` builder method has been removed from `MessageChatMemoryAdvisor.Builder`, `PromptChatMemoryAdvisor.Builder`, and `VectorStoreChatMemoryAdvisor.Builder`.
+Setting a default conversation ID at construction time is no longer supported.
+
+===== Impact
+
+Code that calls `.conversationId()` on any of these builders will fail to compile.
+
+===== Migration
+
+Remove the `.conversationId()` builder call and always supply the conversation ID at call time via the advisor context using `ChatMemory.CONVERSATION_ID`:
+
+[source,java]
+----
+// Before
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory)
+        .conversationId("my-session")
+        .build())
+    .build();
+
+chatClient.prompt()
+    .user("Hello!")
+    .call()
+    .content();
+
+// After
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+    .build();
+
+chatClient.prompt()
+    .user("Hello!")
+    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "my-session"))
+    .call()
+    .content();
+----
+
+==== Changed: `BaseChatMemoryAdvisor.getConversationId()` Signature
+
+The default method `BaseChatMemoryAdvisor.getConversationId(Map, String)` has been replaced by `getConversationId(Map)`.
+
+===== Impact
+
+Custom advisor implementations that override or call the two-argument form will fail to compile.
+
+===== Migration
+
+Update overrides and call sites to the single-argument form. Ensure the context always contains `ChatMemory.CONVERSATION_ID` before calling the method.
+
+[source,java]
+----
+// Before
+String conversationId = getConversationId(context, this.defaultConversationId);
+
+// After
+String conversationId = getConversationId(context); // throws if CONVERSATION_ID is absent
+----
+
+[[upgrading-to-1-1-3]]
+== Upgrading to 1.1.3
+
+=== Breaking Changes
+
+==== MongoDB Chat Memory Message Ordering Fixed
+
+The `MongoChatMemoryRepository` has been fixed to return messages in the order they were sent (oldest-to-newest), matching all other chat memory repository implementations. Previously, it incorrectly returned messages in reverse order (newest-to-oldest), which broke conversation flow for LLMs.
+
+===== Impact
+
+If your application was using `MongoChatMemoryRepository` and working around the incorrect ordering (e.g., by reversing messages after retrieval), you will need to remove that workaround.
+
+===== Migration
+
+Remove any code that reverses the message order after retrieving from MongoDB chat memory:
+
+[source,java]
+----
+// BEFORE (with workaround for bug):
+List<Message> messages = chatMemoryRepository.findByConversationId(conversationId);
+Collections.reverse(messages); // Remove this workaround
+
+// AFTER (correct ordering):
+List<Message> messages = chatMemoryRepository.findByConversationId(conversationId);
+// Messages are now correctly ordered in the order they were sent
+----
+
+All chat memory repositories now consistently return messages in the order they were sent (oldest-to-newest), which is the expected format for LLM conversation history.
+
+[[upgrading-to-1-1-0-RC1]]
+== Upgrading to 1.1.0-RC1
+
+=== Breaking Changes
+
+==== Text-to-Speech (TTS) API Migration
+
+The OpenAI Text-to-Speech implementation has been migrated from provider-specific classes to shared interfaces. This enables writing portable code that works across multiple TTS providers (OpenAI, ElevenLabs, and future providers).
+
+===== Removed Classes
+
+The following deprecated classes have been removed from the `org.springframework.ai.openai.audio.speech` package:
+
+* `SpeechModel` → Use `TextToSpeechModel` (from `org.springframework.ai.audio.tts`)
+* `StreamingSpeechModel` → Use `StreamingTextToSpeechModel` (from `org.springframework.ai.audio.tts`)
+* `SpeechPrompt` → Use `TextToSpeechPrompt` (from `org.springframework.ai.audio.tts`)
+* `SpeechResponse` → Use `TextToSpeechResponse` (from `org.springframework.ai.audio.tts`)
+* `SpeechMessage` → Use `TextToSpeechMessage` (from `org.springframework.ai.audio.tts`)
+* `Speech` (in `org.springframework.ai.openai.audio.speech`) → Use `Speech` (from `org.springframework.ai.audio.tts`)
+
+Additionally, the `speed` parameter type changed from `Float` to `Double` across all OpenAI TTS components for consistency with other TTS providers.
+
+===== Migration Steps
+
+1. **Update Imports**: Replace all imports from `org.springframework.ai.openai.audio.speech.*` with `org.springframework.ai.audio.tts.*`
+
+2. **Update Type References**: Replace all occurrences of the old class names with the new ones:
++
+[source,text]
+----
+Find:    SpeechModel
+Replace: TextToSpeechModel
+
+Find:    StreamingSpeechModel
+Replace: StreamingTextToSpeechModel
+
+Find:    SpeechPrompt
+Replace: TextToSpeechPrompt
+
+Find:    SpeechResponse
+Replace: TextToSpeechResponse
+
+Find:    SpeechMessage
+Replace: TextToSpeechMessage
+----
+
+3. **Update Speed Parameter**: Change from `Float` to `Double`:
++
+[source,text]
+----
+Find:    .speed(1.0f)
+Replace: .speed(1.0)
+
+Find:    Float speed
+Replace: Double speed
+----
+
+4. **Update Dependency Injection**: If you inject `SpeechModel`, update to `TextToSpeechModel`:
++
+[source,java]
+----
+// Before
+public MyService(SpeechModel speechModel) { ... }
+
+// After
+public MyService(TextToSpeechModel textToSpeechModel) { ... }
+----
+
+===== Benefits
+
+* **Portability**: Write code once, switch between OpenAI, ElevenLabs, or other TTS providers easily
+* **Consistency**: Same patterns as ChatModel and other Spring AI abstractions
+* **Type Safety**: Improved type hierarchy with proper interface implementations
+* **Future-Proof**: New TTS providers will automatically work with your existing code
+
+===== Additional Resources
+
+For a comprehensive migration guide with detailed code examples, see:
+
+* xref:api/audio/speech/openai-speech.adoc#_migration_guide[OpenAI TTS Migration Guide]
+* xref:api/audio/speech.adoc#_writing_provider_agnostic_code[Writing Provider-Agnostic TTS Code]
+
+
 [[upgrading-to-1-0-0-snapshot]]
 == Upgrading to 1.0.0-SNAPSHOT
 

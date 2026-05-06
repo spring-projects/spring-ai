@@ -547,16 +547,20 @@ IMPORTANT: The order in which advisors are added to the chain is crucial, as it 
 ChatClient.builder(chatModel)
     .build()
     .prompt()
-    .advisors(
-        MessageChatMemoryAdvisor.builder(chatMemory).build(),
-        QuestionAnswerAdvisor.builder(vectorStore).build()
-    )
+    .advisors(a -> a
+        .advisors(
+            MessageChatMemoryAdvisor.builder(chatMemory).build(),
+            QuestionAnswerAdvisor.builder(vectorStore).build()
+        )
+        .param(ChatMemory.CONVERSATION_ID, conversationId))
     .user(userText)
     .call()
     .content();
 ----
 
 In this configuration, the `MessageChatMemoryAdvisor` will be executed first, adding the conversation history to the prompt. Then, the `QuestionAnswerAdvisor` will perform its search based on the user's question and the added conversation history, potentially providing more relevant results.
+
+NOTE: `ChatMemory.CONVERSATION_ID` must be supplied via `.param()` on every call that uses a memory advisor. Omitting it throws an `IllegalArgumentException` at runtime.
 
 xref:ROOT:api/retrieval-augmented-generation.adoc#_questionansweradvisor[Learn about Question Answer Advisor]
 
@@ -626,6 +630,8 @@ There is currently one built-in implementation: `MessageWindowChatMemory`.
 `MessageWindowChatMemory` is a chat memory implementation that maintains a window of messages up to a specified maximum size (default: 20 messages). When the number of messages exceeds this limit, older messages are evicted, but system messages are preserved. If a new system message is added, all previous system messages are removed from memory. This ensures that the most recent context is always available for the conversation while keeping memory usage bounded.
 
 The `MessageWindowChatMemory` is backed by the `ChatMemoryRepository` abstraction which provides storage implementations for the chat conversation memory. There are several implementations available, including the `InMemoryChatMemoryRepository`, `JdbcChatMemoryRepository`, `CassandraChatMemoryRepository` and `Neo4jChatMemoryRepository`.
+
+IMPORTANT: The `ChatMemory.CONVERSATION_ID` parameter is *required* for all memory advisors. It must be supplied on every call via `.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))`. Omitting it throws an `IllegalArgumentException`. There is no default conversation ID.
 
 For more details and usage examples, see the xref:api/chat-memory.adoc[Chat Memory] documentation.
 

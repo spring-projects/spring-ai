@@ -17,10 +17,12 @@
 package org.springframework.ai.chat.client.advisor;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import reactor.core.scheduler.Schedulers;
 
+import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
@@ -29,9 +31,11 @@ import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -47,6 +51,10 @@ import static org.mockito.Mockito.when;
  */
 public class PromptChatMemoryAdvisorTests {
 
+	// -------------------------------------------------------------------------
+	// Builder validation
+	// -------------------------------------------------------------------------
+
 	@Test
 	void whenChatMemoryIsNullThenThrow() {
 		assertThatThrownBy(() -> PromptChatMemoryAdvisor.builder(null).build())
@@ -55,27 +63,8 @@ public class PromptChatMemoryAdvisorTests {
 	}
 
 	@Test
-	void whenDefaultConversationIdIsNullThenThrow() {
-		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
-
-		assertThatThrownBy(() -> PromptChatMemoryAdvisor.builder(chatMemory).conversationId(null).build())
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("defaultConversationId cannot be null or empty");
-	}
-
-	@Test
-	void whenDefaultConversationIdIsEmptyThenThrow() {
-		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
-
-		assertThatThrownBy(() -> PromptChatMemoryAdvisor.builder(chatMemory).conversationId(null).build())
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("defaultConversationId cannot be null or empty");
-	}
-
-	@Test
 	void whenSchedulerIsNullThenThrow() {
 		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
-
 		assertThatThrownBy(() -> PromptChatMemoryAdvisor.builder(chatMemory).scheduler(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("scheduler cannot be null");
@@ -84,185 +73,187 @@ public class PromptChatMemoryAdvisorTests {
 	@Test
 	void whenSystemPromptTemplateIsNullThenThrow() {
 		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
-
 		assertThatThrownBy(() -> PromptChatMemoryAdvisor.builder(chatMemory).systemPromptTemplate(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("systemPromptTemplate cannot be null");
 	}
 
 	@Test
-	void testBuilderMethodChaining() {
-		// Create a chat memory
+	void whenBuilderWithDefaultsThenSuccess() {
 		ChatMemory chatMemory = MessageWindowChatMemory.builder()
 			.chatMemoryRepository(new InMemoryChatMemoryRepository())
 			.build();
-
-		// Test builder method chaining with methods from AbstractBuilder and
-		// PromptChatMemoryAdvisor.Builder
-		String customConversationId = "test-conversation-id";
-		int customOrder = 42;
-		String customSystemPrompt = "Custom system prompt with {instructions} and {memory}";
-
-		PromptChatMemoryAdvisor advisor = PromptChatMemoryAdvisor.builder(chatMemory)
-			.conversationId(customConversationId) // From AbstractBuilder
-			.order(customOrder) // From AbstractBuilder
-			.scheduler(Schedulers.immediate()) // From AbstractBuilder
-			.build();
-
-		// Verify the advisor was built with the correct properties
-		assertThat(advisor).isNotNull();
-		assertThat(advisor.getOrder()).isEqualTo(customOrder);
-	}
-
-	@Test
-	void testSystemPromptTemplateChaining() {
-		// Create a chat memory
-		ChatMemory chatMemory = MessageWindowChatMemory.builder()
-			.chatMemoryRepository(new InMemoryChatMemoryRepository())
-			.build();
-
-		// Test chaining with systemPromptTemplate method
-		PromptTemplate customTemplate = new PromptTemplate("Custom template with {instructions} and {memory}");
-
-		PromptChatMemoryAdvisor advisor = PromptChatMemoryAdvisor.builder(chatMemory)
-			.conversationId("custom-id")
-			.systemPromptTemplate(customTemplate)
-			.order(100)
-			.build();
-
-		assertThat(advisor).isNotNull();
-		assertThat(advisor.getOrder()).isEqualTo(100);
-	}
-
-	@Test
-	void testDefaultValues() {
-		// Create a chat memory
-		ChatMemory chatMemory = MessageWindowChatMemory.builder()
-			.chatMemoryRepository(new InMemoryChatMemoryRepository())
-			.build();
-
-		// Create advisor with default values
 		PromptChatMemoryAdvisor advisor = PromptChatMemoryAdvisor.builder(chatMemory).build();
-
-		// Verify default values
-		assertThat(advisor).isNotNull();
 		assertThat(advisor.getOrder()).isEqualTo(Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
 	}
 
 	@Test
-	void testAfterMethodHandlesSingleGeneration() {
-		ChatMemory chatMemory = MessageWindowChatMemory.builder()
-			.chatMemoryRepository(new InMemoryChatMemoryRepository())
-			.build();
-
+	void whenCustomOrderIsSetThenGetOrderReturnsIt() {
+		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
 		PromptChatMemoryAdvisor advisor = PromptChatMemoryAdvisor.builder(chatMemory)
-			.conversationId("test-conversation")
+			.order(42)
+			.scheduler(Schedulers.immediate())
 			.build();
+		assertThat(advisor.getOrder()).isEqualTo(42);
+	}
 
-		ChatClientResponse mockResponse = mock(ChatClientResponse.class);
-		ChatResponse mockChatResponse = mock(ChatResponse.class);
-		Generation mockGeneration = mock(Generation.class);
-		AdvisorChain mockChain = mock(AdvisorChain.class);
+	// -------------------------------------------------------------------------
+	// Conversation ID resolution from request context
+	// -------------------------------------------------------------------------
 
-		when(mockResponse.chatResponse()).thenReturn(mockChatResponse);
-		when(mockChatResponse.getResults()).thenReturn(List.of(mockGeneration)); // Single
-																					// result
-		when(mockGeneration.getOutput()).thenReturn(new AssistantMessage("Single response"));
+	@Test
+	void whenConversationIdAbsentFromContextThenThrow() {
+		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
+		PromptChatMemoryAdvisor advisor = PromptChatMemoryAdvisor.builder(chatMemory).build();
 
-		ChatClientResponse result = advisor.after(mockResponse, mockChain);
-
-		assertThat(result).isEqualTo(mockResponse); // Should return the same response
-
-		// Verify single message stored in memory
-		List<Message> messages = chatMemory.get("test-conversation");
-		assertThat(messages).hasSize(1);
-		assertThat(messages.get(0).getText()).isEqualTo("Single response");
+		assertThatThrownBy(() -> advisor.getConversationId(Map.of())).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("conversationId cannot be null");
 	}
 
 	@Test
-	void testAfterMethodHandlesMultipleGenerations() {
+	void whenConversationIdPresentInContextThenReturn() {
+		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
+		PromptChatMemoryAdvisor advisor = PromptChatMemoryAdvisor.builder(chatMemory).build();
+
+		String result = advisor.getConversationId(Map.of(ChatMemory.CONVERSATION_ID, "session-42"));
+
+		assertThat(result).isEqualTo("session-42");
+	}
+
+	// -------------------------------------------------------------------------
+	// after() behavior
+	// -------------------------------------------------------------------------
+
+	@Test
+	void whenAfterWithNullChatResponseThenReturnWithoutStoringMemory() {
 		ChatMemory chatMemory = MessageWindowChatMemory.builder()
 			.chatMemoryRepository(new InMemoryChatMemoryRepository())
 			.build();
-
-		PromptChatMemoryAdvisor advisor = PromptChatMemoryAdvisor.builder(chatMemory)
-			.conversationId("test-conversation")
-			.build();
-
+		PromptChatMemoryAdvisor advisor = PromptChatMemoryAdvisor.builder(chatMemory).build();
 		ChatClientResponse mockResponse = mock(ChatClientResponse.class);
-		ChatResponse mockChatResponse = mock(ChatResponse.class);
-		Generation mockGen1 = mock(Generation.class);
-		Generation mockGen2 = mock(Generation.class);
-		Generation mockGen3 = mock(Generation.class);
 		AdvisorChain mockChain = mock(AdvisorChain.class);
-
-		when(mockResponse.chatResponse()).thenReturn(mockChatResponse);
-		when(mockChatResponse.getResults()).thenReturn(List.of(mockGen1, mockGen2, mockGen3)); // Multiple
-																								// results
-		when(mockGen1.getOutput()).thenReturn(new AssistantMessage("Response 1"));
-		when(mockGen2.getOutput()).thenReturn(new AssistantMessage("Response 2"));
-		when(mockGen3.getOutput()).thenReturn(new AssistantMessage("Response 3"));
+		when(mockResponse.chatResponse()).thenReturn(null);
 
 		ChatClientResponse result = advisor.after(mockResponse, mockChain);
 
-		assertThat(result).isEqualTo(mockResponse); // Should return the same response
-
-		// Verify all messages were stored in memory
-		List<Message> messages = chatMemory.get("test-conversation");
-		assertThat(messages).hasSize(3);
-		assertThat(messages.get(0).getText()).isEqualTo("Response 1");
-		assertThat(messages.get(1).getText()).isEqualTo("Response 2");
-		assertThat(messages.get(2).getText()).isEqualTo("Response 3");
+		assertThat(result).isEqualTo(mockResponse);
+		assertThat(chatMemory.get("any-conversation")).isEmpty();
 	}
 
 	@Test
-	void testAfterMethodHandlesEmptyResults() {
+	void whenAfterWithEmptyResultsThenReturnWithoutStoringMemory() {
 		ChatMemory chatMemory = MessageWindowChatMemory.builder()
 			.chatMemoryRepository(new InMemoryChatMemoryRepository())
 			.build();
-
-		PromptChatMemoryAdvisor advisor = PromptChatMemoryAdvisor.builder(chatMemory)
-			.conversationId("test-conversation")
-			.build();
-
+		PromptChatMemoryAdvisor advisor = PromptChatMemoryAdvisor.builder(chatMemory).build();
 		ChatClientResponse mockResponse = mock(ChatClientResponse.class);
 		ChatResponse mockChatResponse = mock(ChatResponse.class);
 		AdvisorChain mockChain = mock(AdvisorChain.class);
-
 		when(mockResponse.chatResponse()).thenReturn(mockChatResponse);
 		when(mockChatResponse.getResults()).thenReturn(List.of());
 
 		ChatClientResponse result = advisor.after(mockResponse, mockChain);
 
 		assertThat(result).isEqualTo(mockResponse);
-
-		// Verify no messages were stored in memory
-		List<Message> messages = chatMemory.get("test-conversation");
-		assertThat(messages).isEmpty();
+		assertThat(chatMemory.get("any-conversation")).isEmpty();
 	}
 
 	@Test
-	void testAfterMethodHandlesNullChatResponse() {
+	void whenAfterWithSingleGenerationThenStoreInMemory() {
 		ChatMemory chatMemory = MessageWindowChatMemory.builder()
 			.chatMemoryRepository(new InMemoryChatMemoryRepository())
 			.build();
-
-		PromptChatMemoryAdvisor advisor = PromptChatMemoryAdvisor.builder(chatMemory)
-			.conversationId("test-conversation")
-			.build();
-
+		PromptChatMemoryAdvisor advisor = PromptChatMemoryAdvisor.builder(chatMemory).build();
 		ChatClientResponse mockResponse = mock(ChatClientResponse.class);
+		ChatResponse mockChatResponse = mock(ChatResponse.class);
+		Generation mockGeneration = mock(Generation.class);
 		AdvisorChain mockChain = mock(AdvisorChain.class);
-
-		when(mockResponse.chatResponse()).thenReturn(null);
+		when(mockResponse.chatResponse()).thenReturn(mockChatResponse);
+		when(mockResponse.context()).thenReturn(Map.of(ChatMemory.CONVERSATION_ID, "test-conversation"));
+		when(mockChatResponse.getResults()).thenReturn(List.of(mockGeneration));
+		when(mockGeneration.getOutput()).thenReturn(new AssistantMessage("Hello"));
 
 		ChatClientResponse result = advisor.after(mockResponse, mockChain);
 
 		assertThat(result).isEqualTo(mockResponse);
-
-		// Verify no messages were stored in memory
 		List<Message> messages = chatMemory.get("test-conversation");
-		assertThat(messages).isEmpty();
+		assertThat(messages).hasSize(1);
+		assertThat(messages.get(0).getText()).isEqualTo("Hello");
+	}
+
+	@Test
+	void whenAfterWithMultipleGenerationsThenStoreAllInMemory() {
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+			.chatMemoryRepository(new InMemoryChatMemoryRepository())
+			.build();
+		PromptChatMemoryAdvisor advisor = PromptChatMemoryAdvisor.builder(chatMemory).build();
+		ChatClientResponse mockResponse = mock(ChatClientResponse.class);
+		ChatResponse mockChatResponse = mock(ChatResponse.class);
+		Generation mockGen1 = mock(Generation.class);
+		Generation mockGen2 = mock(Generation.class);
+		AdvisorChain mockChain = mock(AdvisorChain.class);
+		when(mockResponse.chatResponse()).thenReturn(mockChatResponse);
+		when(mockResponse.context()).thenReturn(Map.of(ChatMemory.CONVERSATION_ID, "test-conversation"));
+		when(mockChatResponse.getResults()).thenReturn(List.of(mockGen1, mockGen2));
+		when(mockGen1.getOutput()).thenReturn(new AssistantMessage("Response 1"));
+		when(mockGen2.getOutput()).thenReturn(new AssistantMessage("Response 2"));
+
+		ChatClientResponse result = advisor.after(mockResponse, mockChain);
+
+		assertThat(result).isEqualTo(mockResponse);
+		List<Message> messages = chatMemory.get("test-conversation");
+		assertThat(messages).hasSize(2);
+		assertThat(messages.get(0).getText()).isEqualTo("Response 1");
+		assertThat(messages.get(1).getText()).isEqualTo("Response 2");
+	}
+
+	// -------------------------------------------------------------------------
+	// before() behavior
+	// -------------------------------------------------------------------------
+
+	@Test
+	void whenBeforeWithUserMessageThenStoreInMemory() {
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+			.chatMemoryRepository(new InMemoryChatMemoryRepository())
+			.build();
+		PromptChatMemoryAdvisor advisor = PromptChatMemoryAdvisor.builder(chatMemory).build();
+		Prompt prompt = Prompt.builder().messages(new UserMessage("Hello")).build();
+		ChatClientRequest request = ChatClientRequest.builder()
+			.prompt(prompt)
+			.context(ChatMemory.CONVERSATION_ID, "test-conversation")
+			.build();
+		AdvisorChain chain = mock(AdvisorChain.class);
+
+		advisor.before(request, chain);
+
+		List<Message> messages = chatMemory.get("test-conversation");
+		assertThat(messages).hasSize(1);
+		assertThat(messages.get(0)).isInstanceOf(UserMessage.class);
+		assertThat(messages.get(0).getText()).isEqualTo("Hello");
+	}
+
+	@Test
+	void whenBeforeWithToolResponseMessageThenStoreInMemory() {
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+			.chatMemoryRepository(new InMemoryChatMemoryRepository())
+			.build();
+		PromptChatMemoryAdvisor advisor = PromptChatMemoryAdvisor.builder(chatMemory).build();
+		ToolResponseMessage toolResponse = new ToolResponseMessage(
+				List.of(new ToolResponseMessage.ToolResponse("weatherTool", "getWeather", "Sunny, 72°F")));
+		Prompt prompt = Prompt.builder()
+			.messages(new UserMessage("What's the weather?"), new AssistantMessage("Let me check..."), toolResponse)
+			.build();
+		ChatClientRequest request = ChatClientRequest.builder()
+			.prompt(prompt)
+			.context(ChatMemory.CONVERSATION_ID, "test-conversation")
+			.build();
+		AdvisorChain chain = mock(AdvisorChain.class);
+
+		advisor.before(request, chain);
+
+		List<Message> messages = chatMemory.get("test-conversation");
+		assertThat(messages).hasSize(1);
+		assertThat(messages.get(0)).isInstanceOf(ToolResponseMessage.class);
 	}
 
 }

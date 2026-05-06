@@ -16,7 +16,6 @@
 
 package org.springframework.ai.openai.chat.client.advisor;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.Disabled;
@@ -31,8 +30,6 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -78,62 +75,6 @@ public class MessageChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 	}
 
 	@Test
-	@Disabled
-	void shouldHandleMultipleUserMessagesInPrompt() {
-		// Arrange
-		String conversationId = "multi-user-messages-" + System.currentTimeMillis();
-		ChatMemory chatMemory = MessageWindowChatMemory.builder()
-			.chatMemoryRepository(new InMemoryChatMemoryRepository())
-			.build();
-
-		// Create MessageChatMemoryAdvisor with the conversation ID
-		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory)
-			.conversationId(conversationId)
-			.build();
-
-		ChatClient chatClient = ChatClient.builder(this.chatModel).defaultAdvisors(advisor).build();
-
-		// Create a prompt with multiple user messages
-		List<Message> messages = new ArrayList<>();
-		messages.add(new UserMessage("My name is David."));
-		messages.add(new UserMessage("I work as a software engineer."));
-		messages.add(new UserMessage("What is my profession?"));
-
-		// Create a prompt with the list of messages
-		Prompt prompt = new Prompt(messages);
-
-		// Send the prompt to the chat client
-		String answer = chatClient.prompt(prompt)
-			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
-			.call()
-			.content();
-
-		logger.info("Answer: {}", answer);
-
-		// Assert response is relevant
-		assertThat(answer).containsIgnoringCase("software engineer");
-
-		// Verify memory contains all user messages
-		List<Message> memoryMessages = chatMemory.get(conversationId);
-		assertThat(memoryMessages).hasSize(4); // 3 user messages + 1 assistant response
-		assertThat(memoryMessages.get(0).getText()).isEqualTo("My name is David.");
-		assertThat(memoryMessages.get(1).getText()).isEqualTo("I work as a software engineer.");
-		assertThat(memoryMessages.get(2).getText()).isEqualTo("What is my profession?");
-
-		// Send a follow-up question
-		String followUpAnswer = chatClient.prompt()
-			.user("What is my name?")
-			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
-			.call()
-			.content();
-
-		logger.info("Follow-up Answer: {}", followUpAnswer);
-
-		// Assert the model remembers the name
-		assertThat(followUpAnswer).containsIgnoringCase("David");
-	}
-
-	@Test
 	void shouldHandleNonExistentConversation() {
 		testHandleNonExistentConversation();
 	}
@@ -147,9 +88,7 @@ public class MessageChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 			.build();
 
 		// Create MessageChatMemoryAdvisor with the conversation ID
-		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory)
-			.conversationId(conversationId)
-			.build();
+		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
 
 		ChatClient chatClient = ChatClient.builder(this.chatModel).defaultAdvisors(advisor).build();
 
@@ -157,7 +96,6 @@ public class MessageChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 		String userInput = "Tell me a short joke about programming";
 
 		// Collect the streaming responses
-		List<String> streamedResponses = new ArrayList<>();
 		chatClient.prompt()
 			.user(userInput)
 			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))

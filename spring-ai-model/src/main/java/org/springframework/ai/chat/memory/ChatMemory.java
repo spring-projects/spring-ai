@@ -30,8 +30,6 @@ import org.springframework.util.Assert;
  */
 public interface ChatMemory {
 
-	String DEFAULT_CONVERSATION_ID = "default";
-
 	/**
 	 * The key to retrieve the chat memory conversation id from the context.
 	 */
