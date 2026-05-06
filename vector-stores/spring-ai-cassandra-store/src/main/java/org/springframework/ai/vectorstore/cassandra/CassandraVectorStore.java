@@ -507,6 +507,9 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 	@Override
 	public void close() throws Exception {
+		if (this.executor != null) {
+			this.executor.shutdown();
+		}
 		if (this.closeSessionOnClose) {
 			this.session.close();
 		}
