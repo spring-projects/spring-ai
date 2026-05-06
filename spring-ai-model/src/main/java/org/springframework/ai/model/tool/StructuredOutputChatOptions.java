@@ -32,7 +32,14 @@ public interface StructuredOutputChatOptions extends ChatOptions {
 
 	void setOutputSchema(String outputSchema);
 
-	interface Builder<B extends Builder<B>> extends ChatOptions.Builder<B> {
+	/**
+	 * A builder to create a new {@link StructuredOutputChatOptions} instance.
+	 */
+	static StructuredOutputChatOptions.Builder<?> builder() {
+		return new DefaultStructuredOutputChatOptions.Builder<>();
+	}
+
+	interface Builder<B extends StructuredOutputChatOptions.Builder<B>> extends ChatOptions.Builder<B> {
 
 		B outputSchema(@Nullable String outputSchema);
 
