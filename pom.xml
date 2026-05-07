@@ -274,7 +274,7 @@
 		<ST4.version>4.3.4</ST4.version>
 		<azure-identity.version>1.18.2</azure-identity.version>
 		<openai-sdk.version>4.28.0</openai-sdk.version>
-		<anthropic-sdk.version>2.27.0</anthropic-sdk.version>
+		<anthropic-sdk.version>2.30.0</anthropic-sdk.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
 		<kotlin.version>2.3.20</kotlin.version>
 
