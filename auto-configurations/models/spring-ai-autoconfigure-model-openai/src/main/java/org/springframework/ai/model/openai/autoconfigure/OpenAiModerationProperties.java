@@ -16,8 +16,6 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
-import org.jspecify.annotations.Nullable;
-
 import org.springframework.ai.openai.OpenAiModerationOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;

@@ -90,7 +90,6 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 	 */
 	private final @Nullable String user;
 
-
 	protected OpenAiImageOptions(@Nullable String baseUrl, @Nullable String apiKey, @Nullable Credential credential,
 			@Nullable String model, @Nullable String microsoftDeploymentName,
 			@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion, @Nullable String organizationId,
@@ -218,33 +217,7 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 		return builder.build();
 	}
 
-	public static final class Builder {
-
-		private @Nullable String baseUrl;
-
-		private @Nullable String apiKey;
-
-		private @Nullable Credential credential;
-
-		private @Nullable String model;
-
-		private @Nullable String deploymentName;
-
-		private @Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion;
-
-		private @Nullable String organizationId;
-
-		private @Nullable Boolean microsoftFoundry;
-
-		private @Nullable Boolean gitHubModels;
-
-		private @Nullable Duration timeout;
-
-		private @Nullable Integer maxRetries;
-
-		private @Nullable Proxy proxy;
-
-		private @Nullable Map<String, String> customHeaders;
+	public static final class Builder extends AbstractBuilder<OpenAiImageOptions, Builder> {
 
 		private @Nullable Integer n;
 
@@ -271,11 +244,11 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 			this.apiKey = fromOptions.getApiKey();
 			this.credential = fromOptions.getCredential();
 			this.model = fromOptions.getModel();
-			this.deploymentName = fromOptions.getDeploymentName();
+			this.microsoftDeploymentName = fromOptions.getDeploymentName();
 			this.microsoftFoundryServiceVersion = fromOptions.getMicrosoftFoundryServiceVersion();
 			this.organizationId = fromOptions.getOrganizationId();
-			this.microsoftFoundry = fromOptions.isMicrosoftFoundry();
-			this.gitHubModels = fromOptions.isGitHubModels();
+			this.isMicrosoftFoundry = fromOptions.isMicrosoftFoundry();
+			this.isGitHubModels = fromOptions.isGitHubModels();
 			this.timeout = fromOptions.getTimeout();
 			this.maxRetries = fromOptions.getMaxRetries();
 			this.proxy = fromOptions.getProxy();
@@ -311,7 +284,7 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 					this.model = castFrom.getModel();
 				}
 				if (castFrom.getDeploymentName() != null) {
-					this.deploymentName = castFrom.getDeploymentName();
+					this.microsoftDeploymentName = castFrom.getDeploymentName();
 				}
 				if (castFrom.getMicrosoftFoundryServiceVersion() != null) {
 					this.microsoftFoundryServiceVersion = castFrom.getMicrosoftFoundryServiceVersion();
@@ -319,9 +292,11 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 				if (castFrom.getOrganizationId() != null) {
 					this.organizationId = castFrom.getOrganizationId();
 				}
-				this.microsoftFoundry = castFrom.isMicrosoftFoundry();
-				this.gitHubModels = castFrom.isGitHubModels();
-				this.timeout = castFrom.getTimeout();
+				this.isMicrosoftFoundry = castFrom.isMicrosoftFoundry();
+				this.isGitHubModels = castFrom.isGitHubModels();
+				if (castFrom.getTimeout() != null) {
+					this.timeout = castFrom.getTimeout();
+				}
 				this.maxRetries = castFrom.getMaxRetries();
 				if (castFrom.getProxy() != null) {
 					this.proxy = castFrom.getProxy();
@@ -360,71 +335,6 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 
 		public Builder N(Integer n) {
 			this.n = n;
-			return this;
-		}
-
-		public Builder model(String model) {
-			this.model = model;
-			return this;
-		}
-
-		public Builder deploymentName(String deploymentName) {
-			this.deploymentName = deploymentName;
-			return this;
-		}
-
-		public Builder baseUrl(String baseUrl) {
-			this.baseUrl = baseUrl;
-			return this;
-		}
-
-		public Builder apiKey(String apiKey) {
-			this.apiKey = apiKey;
-			return this;
-		}
-
-		public Builder credential(com.openai.credential.Credential credential) {
-			this.credential = credential;
-			return this;
-		}
-
-		public Builder azureOpenAIServiceVersion(com.openai.azure.AzureOpenAIServiceVersion azureOpenAIServiceVersion) {
-			this.microsoftFoundryServiceVersion = azureOpenAIServiceVersion;
-			return this;
-		}
-
-		public Builder organizationId(String organizationId) {
-			this.organizationId = organizationId;
-			return this;
-		}
-
-		public Builder azure(boolean azure) {
-			this.microsoftFoundry = azure;
-			return this;
-		}
-
-		public Builder gitHubModels(boolean gitHubModels) {
-			this.gitHubModels = gitHubModels;
-			return this;
-		}
-
-		public Builder timeout(java.time.Duration timeout) {
-			this.timeout = timeout;
-			return this;
-		}
-
-		public Builder maxRetries(Integer maxRetries) {
-			this.maxRetries = maxRetries;
-			return this;
-		}
-
-		public Builder proxy(java.net.Proxy proxy) {
-			this.proxy = proxy;
-			return this;
-		}
-
-		public Builder customHeaders(java.util.Map<String, String> customHeaders) {
-			this.customHeaders = customHeaders;
 			return this;
 		}
 
@@ -469,11 +379,13 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 			return this;
 		}
 
+		@Override
 		public OpenAiImageOptions build() {
-			return new OpenAiImageOptions(this.baseUrl, this.apiKey, this.credential, this.model, this.deploymentName,
-					this.microsoftFoundryServiceVersion, this.organizationId, this.microsoftFoundry, this.gitHubModels,
-					this.timeout, this.maxRetries, this.proxy, this.customHeaders, this.n, this.width, this.height,
-					this.quality, this.responseFormat, this.size, this.style, this.user);
+			return new OpenAiImageOptions(this.baseUrl, this.apiKey, this.credential, this.model,
+					this.microsoftDeploymentName, this.microsoftFoundryServiceVersion, this.organizationId,
+					this.isMicrosoftFoundry, this.isGitHubModels, this.timeout, this.maxRetries, this.proxy,
+					this.customHeaders, this.n, this.width, this.height, this.quality, this.responseFormat, this.size,
+					this.style, this.user);
 		}
 
 	}
