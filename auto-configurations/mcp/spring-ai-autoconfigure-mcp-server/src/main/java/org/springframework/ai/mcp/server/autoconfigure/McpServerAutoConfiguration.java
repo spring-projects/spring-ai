@@ -51,7 +51,6 @@ import org.springframework.ai.mcp.McpToolUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -123,9 +122,9 @@ public class McpServerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public McpServerTransportProviderBase stdioServerTransport(
-			@Qualifier("mcpServerObjectMapper") ObjectMapper mcpServerObjectMapper) {
-		return new StdioServerTransportProvider(new JacksonMcpJsonMapper(mcpServerObjectMapper));
+	public McpServerTransportProviderBase stdioServerTransport(ObjectProvider<ObjectMapper> objectMapperProvider) {
+		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+		return new StdioServerTransportProvider(new JacksonMcpJsonMapper(objectMapper));
 	}
 
 	@Bean
