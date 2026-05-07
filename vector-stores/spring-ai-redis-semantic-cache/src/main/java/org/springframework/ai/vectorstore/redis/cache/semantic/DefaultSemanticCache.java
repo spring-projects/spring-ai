@@ -54,6 +54,8 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore.MetadataField;
 import org.springframework.util.Assert;
@@ -400,9 +402,9 @@ public final class DefaultSemanticCache implements SemanticCache {
 		}
 
 		// Build filter expression for context hash if provided
-		String filterExpression = null;
+		Filter.Expression filterExpression = null;
 		if (contextHash != null) {
-			filterExpression = "context_hash == '" + contextHash + "'";
+			filterExpression = new FilterExpressionBuilder().eq("context_hash", contextHash).build();
 		}
 
 		if (this.vectorStore instanceof RedisVectorStore redisVectorStore) {
