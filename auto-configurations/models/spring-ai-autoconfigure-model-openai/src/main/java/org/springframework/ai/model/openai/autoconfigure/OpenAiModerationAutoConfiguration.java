@@ -54,7 +54,7 @@ public class OpenAiModerationAutoConfiguration {
 
 		return OpenAiModerationModel.builder()
 			.openAiClient(openAIClient)
-			.options(moderationProperties.getOptions())
+			.options(moderationProperties.toOptions())
 			.build();
 	}
 

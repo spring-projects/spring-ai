@@ -53,7 +53,7 @@ public class OpenAiAudioTranscriptionAutoConfiguration {
 		OpenAIClient client = openAiClient(commonProperties);
 		return OpenAiAudioTranscriptionModel.builder()
 			.openAiClient(client)
-			.options(transcriptionProperties.getOptions())
+			.options(transcriptionProperties.toOptions())
 			.build();
 	}
 
