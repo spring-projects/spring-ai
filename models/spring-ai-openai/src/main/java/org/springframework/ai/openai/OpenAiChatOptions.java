@@ -26,11 +26,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openai.azure.AzureOpenAIServiceVersion;
 import com.openai.credential.Credential;
 import com.openai.models.ChatModel;
@@ -119,8 +114,6 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 	 * vLLM, Ollama, Groq, etc. that support custom parameters such as top_k,
 	 * repetition_penalty, etc.
 	 */
-	@JsonInclude(JsonInclude.Include.NON_EMPTY)
-	@JsonProperty(value = "extra_body", access = JsonProperty.Access.WRITE_ONLY)
 	private @Nullable Map<String, Object> extraBody;
 
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
@@ -584,7 +577,6 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 		this.serviceTier = serviceTier;
 	}
 
-	@JsonAnyGetter
 	public @Nullable Map<String, Object> getExtraBody() {
 		return this.extraBody;
 	}
@@ -593,7 +585,6 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 		this.extraBody = extraBody;
 	}
 
-	@JsonAnySetter
 	public void addExtraBodyProperty(String key, Object value) {
 		if (this.extraBody == null) {
 			this.extraBody = new HashMap<>();
@@ -652,14 +643,12 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 	}
 
 	@Override
-	@JsonIgnore
 	public @Nullable String getOutputSchema() {
 		OpenAiChatModel.ResponseFormat format = this.getResponseFormat();
 		return format != null ? format.getJsonSchema() : null;
 	}
 
 	@Override
-	@JsonIgnore
 	public void setOutputSchema(@Nullable String outputSchema) {
 		if (outputSchema != null) {
 			this.setResponseFormat(

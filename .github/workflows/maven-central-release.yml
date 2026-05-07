@@ -16,8 +16,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
-          distribution: 'temurin'
-          java-version: 25
+          distribution: 'liberica'
+          java-version: '17'
           cache: 'maven'
 
       - name: Install GPG key

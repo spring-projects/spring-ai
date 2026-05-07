@@ -15,11 +15,11 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v6
 
-      - name: Set up JDK 21
+      - name: Set up JDK
         uses: actions/setup-java@v5
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: '17'
+          distribution: 'liberica'
           cache: 'maven'
 
       - name: Setup Node.js
@@ -29,7 +29,7 @@ jobs:
 
       - name: Build with Maven and run mcp/common and mcp/mcp-annotations integration tests
         run: |
-          ./mvnw clean verify -Pintegration-tests -pl "mcp/common,mcp/mcp-annotations"
+          ./mvnw clean verify -am -Pintegration-tests -pl "mcp/common,mcp/mcp-annotations"
 
   mcp-transport:
     name: MCP transport integration tests
@@ -38,11 +38,11 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v6
 
-      - name: Set up JDK 21
+      - name: Set up JDK
         uses: actions/setup-java@v5
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: '17'
+          distribution: 'liberica'
           cache: 'maven'
 
       - name: Setup Node.js
@@ -52,6 +52,6 @@ jobs:
 
       - name: Build with Maven and run MCP transport integration tests
         run: |
-          ./mvnw clean verify -Pintegration-tests -pl "mcp/transport/mcp-spring-webflux,mcp/transport/mcp-spring-webmvc"
+          ./mvnw clean verify -am -Pintegration-tests -pl "mcp/transport/mcp-spring-webflux,mcp/transport/mcp-spring-webmvc"
 
           

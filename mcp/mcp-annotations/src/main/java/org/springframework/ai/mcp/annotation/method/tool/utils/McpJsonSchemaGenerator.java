@@ -53,6 +53,7 @@ import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator.SchemaOption;
+import org.springframework.core.Nullness;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ConcurrentReferenceHashMap;
 
@@ -63,7 +64,7 @@ public final class McpJsonSchemaGenerator {
 	/**
 	 * Schema generator for method parameter types. Used by
 	 * {@link #generateForMethodInput} to produce per-parameter schema nodes. Configured
-	 * with {@link SpringAiSchemaModule} so that {@code @McpToolParam} annotations on
+	 * with {@link McpSpringAiSchemaModule} so that {@code @McpToolParam} annotations on
 	 * method parameters are honoured, and without the schema-version indicator so that
 	 * each node does not carry a redundant {@code $schema} field.
 	 */
@@ -81,8 +82,8 @@ public final class McpJsonSchemaGenerator {
 	static {
 		Module jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
 		Module openApiModule = new Swagger2Module();
-		Module springAiSchemaModule = PROPERTY_REQUIRED_BY_DEFAULT ? new SpringAiSchemaModule()
-				: new SpringAiSchemaModule(SpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
+		Module springAiSchemaModule = PROPERTY_REQUIRED_BY_DEFAULT ? new McpSpringAiSchemaModule()
+				: new McpSpringAiSchemaModule(McpSpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
 
 		SchemaGeneratorConfig subtypeConfig = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12,
 				OptionPreset.PLAIN_JSON)
@@ -239,8 +240,7 @@ public final class McpJsonSchemaGenerator {
 					|| schemaAnnotation.requiredMode() == Schema.RequiredMode.AUTO || schemaAnnotation.required();
 		}
 
-		var nullableAnnotation = parameter.getAnnotation(Nullable.class);
-		if (nullableAnnotation != null) {
+		if (Nullness.forParameter(parameter) == Nullness.NULLABLE) {
 			return false;
 		}
 

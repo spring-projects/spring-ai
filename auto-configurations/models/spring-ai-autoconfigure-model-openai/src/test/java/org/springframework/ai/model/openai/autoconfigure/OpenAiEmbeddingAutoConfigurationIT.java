@@ -23,6 +23,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
+import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -91,7 +92,7 @@ public class OpenAiEmbeddingAutoConfigurationIT {
 				"spring.ai.openai.base-url=http://TEST.BASE.URL",
 
 				"spring.ai.openai.embedding.options.model=MODEL_XYZ",
-				"spring.ai.openai.embedding.options.encodingFormat=MyEncodingFormat",
+				"spring.ai.openai.embedding.options.encodingFormat=float",
 				"spring.ai.openai.embedding.options.user=userXYZ"
 				)
 			// @formatter:on
@@ -105,6 +106,8 @@ public class OpenAiEmbeddingAutoConfigurationIT {
 
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(embeddingProperties.getOptions().getUser()).isEqualTo("userXYZ");
+				assertThat(embeddingProperties.getOptions().getEncodingFormat())
+					.isEqualTo(OpenAiEmbeddingOptions.EncodingFormat.FLOAT);
 			});
 	}
 

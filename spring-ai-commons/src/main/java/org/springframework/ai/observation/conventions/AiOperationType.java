@@ -17,21 +17,20 @@
 package org.springframework.ai.observation.conventions;
 
 /**
- * Types of operations performed by AI systems. Based on the OpenTelemetry Semantic
- * Conventions for AI Systems.
+ * Types of operations performed by AI systems. Inspired by the OpenTelemetry Semantic
+ * Conventions for Generative AI.
  *
  * @author Thomas Vitale
  * @since 1.0.0
- * @see <a href=
- * "https://github.com/open-telemetry/semantic-conventions/tree/main/docs/gen-ai">OTel
- * Semantic Conventions</a>.
+ * @see <a href="https://opentelemetry.io/docs/specs/semconv/gen-ai">OpenTelemetry
+ * Semantic Conventions for Generative AI</a>.
  */
 public enum AiOperationType {
 
 	// @formatter:off
 
 	/**
-	 * AI operation type for chat.
+	 * AI operation type for chat completion.
 	 */
 	CHAT("chat"),
 
@@ -39,6 +38,11 @@ public enum AiOperationType {
 	 * AI operation type for embedding.
 	 */
 	EMBEDDING("embedding"),
+
+	/**
+	 * AI operation type for tool execution.
+	 */
+	EXECUTE_TOOL("execute_tool"),
 
 	/**
 	 * AI operation type for framework.

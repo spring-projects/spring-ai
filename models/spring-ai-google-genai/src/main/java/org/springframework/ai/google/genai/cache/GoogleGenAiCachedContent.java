@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.genai.types.CachedContent;
 import com.google.genai.types.CachedContentUsageMetadata;
 import com.google.genai.types.Content;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
 
@@ -39,34 +40,34 @@ import org.springframework.util.Assert;
 public final class GoogleGenAiCachedContent {
 
 	@JsonProperty("name")
-	private final String name;
+	@Nullable private final String name;
 
 	@JsonProperty("model")
-	private final String model;
+	@Nullable private final String model;
 
 	@JsonProperty("display_name")
-	private final String displayName;
+	@Nullable private final String displayName;
 
 	@JsonProperty("create_time")
-	private final Instant createTime;
+	@Nullable private final Instant createTime;
 
 	@JsonProperty("update_time")
-	private final Instant updateTime;
+	@Nullable private final Instant updateTime;
 
 	@JsonProperty("expire_time")
-	private final Instant expireTime;
+	@Nullable private final Instant expireTime;
 
 	@JsonProperty("ttl")
-	private final Duration ttl;
+	@Nullable private final Duration ttl;
 
 	@JsonProperty("contents")
-	private final List<Content> contents;
+	@Nullable private final List<Content> contents;
 
 	@JsonProperty("system_instruction")
-	private final Content systemInstruction;
+	@Nullable private final Content systemInstruction;
 
 	@JsonProperty("usage_metadata")
-	private final CachedContentUsageMetadata usageMetadata;
+	@Nullable private final CachedContentUsageMetadata usageMetadata;
 
 	private GoogleGenAiCachedContent(Builder builder) {
 		this.name = builder.name;
@@ -86,7 +87,7 @@ public final class GoogleGenAiCachedContent {
 	 * @param cachedContent the SDK cached content
 	 * @return a new GoogleGenAiCachedContent instance
 	 */
-	public static GoogleGenAiCachedContent from(CachedContent cachedContent) {
+	public static @Nullable GoogleGenAiCachedContent from(@Nullable CachedContent cachedContent) {
 		if (cachedContent == null) {
 			return null;
 		}
@@ -106,43 +107,43 @@ public final class GoogleGenAiCachedContent {
 		return builder.build();
 	}
 
-	public String getName() {
+	public @Nullable String getName() {
 		return this.name;
 	}
 
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public String getDisplayName() {
+	public @Nullable String getDisplayName() {
 		return this.displayName;
 	}
 
-	public Instant getCreateTime() {
+	public @Nullable Instant getCreateTime() {
 		return this.createTime;
 	}
 
-	public Instant getUpdateTime() {
+	public @Nullable Instant getUpdateTime() {
 		return this.updateTime;
 	}
 
-	public Instant getExpireTime() {
+	public @Nullable Instant getExpireTime() {
 		return this.expireTime;
 	}
 
-	public Duration getTtl() {
+	public @Nullable Duration getTtl() {
 		return this.ttl;
 	}
 
-	public List<Content> getContents() {
+	public @Nullable List<Content> getContents() {
 		return this.contents;
 	}
 
-	public Content getSystemInstruction() {
+	public @Nullable Content getSystemInstruction() {
 		return this.systemInstruction;
 	}
 
-	public CachedContentUsageMetadata getUsageMetadata() {
+	public @Nullable CachedContentUsageMetadata getUsageMetadata() {
 		return this.usageMetadata;
 	}
 
@@ -161,7 +162,7 @@ public final class GoogleGenAiCachedContent {
 	 * Gets the remaining time to live for the cached content.
 	 * @return the remaining TTL, or null if no expiration
 	 */
-	public Duration getRemainingTtl() {
+	public @Nullable Duration getRemainingTtl() {
 		if (this.expireTime == null) {
 			return null;
 		}
@@ -182,75 +183,75 @@ public final class GoogleGenAiCachedContent {
 
 	public static final class Builder {
 
-		private String name;
+		@Nullable private String name;
 
-		private String model;
+		@Nullable private String model;
 
-		private String displayName;
+		@Nullable private String displayName;
 
-		private Instant createTime;
+		@Nullable private Instant createTime;
 
-		private Instant updateTime;
+		@Nullable private Instant updateTime;
 
-		private Instant expireTime;
+		@Nullable private Instant expireTime;
 
-		private Duration ttl;
+		@Nullable private Duration ttl;
 
-		private List<Content> contents;
+		@Nullable private List<Content> contents;
 
-		private Content systemInstruction;
+		@Nullable private Content systemInstruction;
 
-		private CachedContentUsageMetadata usageMetadata;
+		@Nullable private CachedContentUsageMetadata usageMetadata;
 
 		private Builder() {
 		}
 
-		public Builder name(String name) {
+		public Builder name(@Nullable String name) {
 			this.name = name;
 			return this;
 		}
 
-		public Builder model(String model) {
+		public Builder model(@Nullable String model) {
 			this.model = model;
 			return this;
 		}
 
-		public Builder displayName(String displayName) {
+		public Builder displayName(@Nullable String displayName) {
 			this.displayName = displayName;
 			return this;
 		}
 
-		public Builder createTime(Instant createTime) {
+		public Builder createTime(@Nullable Instant createTime) {
 			this.createTime = createTime;
 			return this;
 		}
 
-		public Builder updateTime(Instant updateTime) {
+		public Builder updateTime(@Nullable Instant updateTime) {
 			this.updateTime = updateTime;
 			return this;
 		}
 
-		public Builder expireTime(Instant expireTime) {
+		public Builder expireTime(@Nullable Instant expireTime) {
 			this.expireTime = expireTime;
 			return this;
 		}
 
-		public Builder ttl(Duration ttl) {
+		public Builder ttl(@Nullable Duration ttl) {
 			this.ttl = ttl;
 			return this;
 		}
 
-		public Builder contents(List<Content> contents) {
+		public Builder contents(@Nullable List<Content> contents) {
 			this.contents = contents;
 			return this;
 		}
 
-		public Builder systemInstruction(Content systemInstruction) {
+		public Builder systemInstruction(@Nullable Content systemInstruction) {
 			this.systemInstruction = systemInstruction;
 			return this;
 		}
 
-		public Builder usageMetadata(CachedContentUsageMetadata usageMetadata) {
+		public Builder usageMetadata(@Nullable CachedContentUsageMetadata usageMetadata) {
 			this.usageMetadata = usageMetadata;
 			return this;
 		}

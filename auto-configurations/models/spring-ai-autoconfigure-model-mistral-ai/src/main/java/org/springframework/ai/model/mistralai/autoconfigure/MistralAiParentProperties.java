@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.mistralai.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Parent properties for Mistral AI.
  *
@@ -24,23 +26,23 @@ package org.springframework.ai.model.mistralai.autoconfigure;
  */
 public class MistralAiParentProperties {
 
-	private String apiKey;
+	private @Nullable String apiKey;
 
-	private String baseUrl;
+	private @Nullable String baseUrl;
 
-	public String getApiKey() {
+	public @Nullable String getApiKey() {
 		return this.apiKey;
 	}
 
-	public void setApiKey(String apiKey) {
+	public void setApiKey(@Nullable String apiKey) {
 		this.apiKey = apiKey;
 	}
 
-	public String getBaseUrl() {
+	public @Nullable String getBaseUrl() {
 		return this.baseUrl;
 	}
 
-	public void setBaseUrl(String baseUrl) {
+	public void setBaseUrl(@Nullable String baseUrl) {
 		this.baseUrl = baseUrl;
 	}
 

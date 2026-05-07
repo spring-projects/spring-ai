@@ -61,7 +61,6 @@ import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest;
 import org.springframework.ai.deepseek.api.common.DeepSeekConstants;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -466,14 +465,6 @@ public class DeepSeekChatModel implements ChatModel {
 
 	private DefaultUsage getDefaultUsage(DeepSeekApi.Usage usage) {
 		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
-	}
-
-	Prompt buildRequestPrompt(Prompt prompt) {
-		DeepSeekChatOptions runtimeOptions = (DeepSeekChatOptions) prompt.getOptions();
-		runtimeOptions = runtimeOptions == null ? this.defaultOptions : runtimeOptions;
-		ToolCallingChatOptions.validateToolCallbacks(runtimeOptions.getToolCallbacks());
-
-		return prompt.mutate().chatOptions(runtimeOptions).build();
 	}
 
 	/**

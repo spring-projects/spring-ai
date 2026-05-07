@@ -34,6 +34,11 @@ public class CachedContentServiceCondition extends SpringBootCondition {
 	@Override
 	public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
 		try {
+			if (context.getBeanFactory() == null) {
+				return ConditionOutcome.noMatch(
+						ConditionMessage.forCondition("CachedContentService").because("BeanFactory is not available"));
+			}
+
 			// Check if GoogleGenAiChatModel bean exists
 			if (!context.getBeanFactory().containsBean("googleGenAiChatModel")) {
 				return ConditionOutcome.noMatch(ConditionMessage.forCondition("CachedContentService")

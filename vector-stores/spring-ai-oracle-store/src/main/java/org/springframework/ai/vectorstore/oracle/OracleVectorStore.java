@@ -81,6 +81,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Soby Chacko
  * @author Thomas Vitale
+ * @author chabinhwang
  */
 public class OracleVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -177,7 +178,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 				final Document document = documents.get(i);
 				final String content = document.getText();
 				final byte[] json = toJson(document.getMetadata());
-				final VECTOR embeddingVector = toVECTOR(embeddings.get(documents.indexOf(document)));
+				final VECTOR embeddingVector = toVECTOR(embeddings.get(i));
 
 				org.springframework.jdbc.core.StatementCreatorUtils.setParameterValue(ps, 1, Types.VARCHAR,
 						document.getId());

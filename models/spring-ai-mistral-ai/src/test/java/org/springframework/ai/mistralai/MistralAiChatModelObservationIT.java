@@ -77,7 +77,6 @@ public class MistralAiChatModelObservationIT {
 			.topP(1.0)
 			.presencePenalty(0.0)
 			.frequencyPenalty(0.0)
-			.n(2)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -101,7 +100,6 @@ public class MistralAiChatModelObservationIT {
 			.topP(1.0)
 			.presencePenalty(0.0)
 			.frequencyPenalty(0.0)
-			.n(2)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);

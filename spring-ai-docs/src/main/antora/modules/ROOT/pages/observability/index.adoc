@@ -141,6 +141,16 @@ NOTE: Observability features are currently supported only for `ChatModel` implem
 providers: Anthropic, Mistral AI, Ollama, OpenAI, Google GenAI, MiniMax, Moonshot, QianFan.
 Additional AI model providers will be supported in a future release.
 
+[IMPORTANT]
+====
+**Anthropic and OpenAI: HTTP layer is not instrumented**
+
+The Anthropic (since `2.0.0-M3`) and OpenAI (since `2.0.0-M5`) chat models go through vendor-provided Java SDKs.
+Each SDK builds its own `OkHttpClient` and doesn't expose an interceptor hook on it, so Spring AI can't wire in the Micrometer or OpenTelemetry interceptors that would instrument the HTTP call.
+Only the model-level observations covered below are emitted, and traces won't connect end to end through proxies, AI gateways, or OpenAI-compatible inference servers like vLLM and Ollama.
+See the xref:api/chat/anthropic-chat.adoc#_observability[Anthropic] and xref:api/chat/openai-chat.adoc#_observability[OpenAI] chat docs for details.
+====
+
 The `gen_ai.client.operation` observations are recorded when calling the ChatModel `call` or `stream` methods. 
 They measure the time spent on method completion and propagate the related tracing information.
 
@@ -211,10 +221,11 @@ The `spring.ai.tool` observations are recorded when performing tool calling in t
 |===
 |Name | Description
 
-|`gen_ai.operation.name` | The name of the operation being performed. It's always `framework`.
+|`gen_ai.operation.name` | The name of the operation being performed. It's always `execute_tool`.
 |`gen_ai.system` | The provider responsible for the operation. It's always `spring_ai`.
 |`spring.ai.kind` | The kind of operation performed by Spring AI. It's always `tool_call`.
 |`spring.ai.tool.definition.name` | The name of the tool.
+|`spring.ai.tool.type` | The type of the tool. By default, it's `function`.
 |===
 
 .High Cardinality Keys
@@ -223,8 +234,9 @@ The `spring.ai.tool` observations are recorded when performing tool calling in t
 |Name | Description
 |`spring.ai.tool.definition.description` | Description of the tool.
 |`spring.ai.tool.definition.schema` | Schema of the parameters used to call the tool.
+|`spring.ai.tool.call.id` | The ID of the tool call, as identified by the chat model.
 |`spring.ai.tool.call.arguments` | The input arguments to the tool call. (Only when enabled)
-|`spring.ai.tool.call.result` | Schema of the parameters used to call the tool. (Only when enabled)
+|`spring.ai.tool.call.result` | The result of the tool call execution. (Only when enabled)
 |===
 
 === Tool Call Arguments and Result Data
@@ -347,7 +359,7 @@ They measure the time spent on the `query`, `add` and `remove` operations and pr
 |Name | Description
 
 |`db.operation.name` | The name of the operation or command being executed. One of `add`, `delete`, or `query`.
-|`db.system` | The database management system (DBMS) product as identified by the client instrumentation. One of `pg_vector`, `azure`, `cassandra`, `chroma`, `elasticsearch`, `milvus`, `neo4j`, `opensearch`, `qdrant`, `redis`, `typesense`, `weaviate`, `pinecone`, `oracle`, `mongodb`, `gemfire`, `hana`, `simple`.
+|`db.system` | The database management system (DBMS) product as identified by the client instrumentation. One of `pg_vector`, `azure`, `cassandra`, `chroma`, `elasticsearch`, `milvus`, `neo4j`, `opensearch`, `qdrant`, `redis`, `typesense`, `weaviate`, `pinecone`, `oracle`, `mongodb`, `gemfire`, `simple`.
 |`spring.ai.kind` | The kind of framework API in Spring AI: `vector_store`.
 |===
 

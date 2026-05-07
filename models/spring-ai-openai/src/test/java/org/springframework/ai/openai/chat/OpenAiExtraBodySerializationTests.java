@@ -77,31 +77,6 @@ class OpenAiExtraBodySerializationTests {
 	}
 
 	@Test
-	void testDeserializationPopulatesExtraBody() throws Exception {
-		// Arrange: Create JSON string with unknown top-level parameters
-		String json = """
-				{
-					"model" : "gpt-4",
-					"temperature" : 0.7,
-					"top_k" : 50,
-					"min_p" : 0.05,
-					"stop_token_ids" : [128001, 128009]
-				}
-				""";
-
-		// Act: Deserialize JSON string to OpenAiChatOptions
-		OpenAiChatOptions options = JsonMapper.shared().readValue(json, OpenAiChatOptions.class);
-
-		// Assert: All extraBody fields should survive round trip
-		assertThat(options.getExtraBody()).isNotNull();
-		assertThat(options.getExtraBody()).containsEntry("top_k", 50);
-		assertThat(options.getExtraBody()).containsEntry("min_p", 0.05);
-		assertThat(options.getExtraBody()).containsKey("stop_token_ids");
-		assertThat(options.getModel()).isEqualTo("gpt-4");
-		assertThat(options.getTemperature()).isEqualTo(0.7);
-	}
-
-	@Test
 	void testMergeWithExtraBody() {
 		// Arrange: Create options with extraBody
 		OpenAiChatOptions defaultOptions = OpenAiChatOptions.builder()

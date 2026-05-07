@@ -26,7 +26,7 @@ import reactor.core.publisher.Mono;
 /**
  * Specification for asynchronous progress handlers.
  *
- * @param clientId The client ID for the progress handler
+ * @param clients The client IDs for the progress handler
  * @param progressHandler The function that handles progress notifications asynchronously
  * @author Christian Tzolov
  */

@@ -22,6 +22,7 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.audio.tts.TextToSpeechOptions;
 import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
@@ -35,52 +36,52 @@ import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
 public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 
 	@JsonProperty("model_id")
-	private String modelId;
+	private @Nullable String modelId;
 
 	// Path Params
 	@JsonProperty("voice_id")
-	private String voiceId;
+	private @Nullable String voiceId;
 
 	// End Path Params
 
 	// Query Params
 	@JsonProperty("enable_logging")
-	private Boolean enableLogging;
+	private @Nullable Boolean enableLogging;
 
 	@JsonProperty("output_format")
-	private String outputFormat;
+	private @Nullable String outputFormat;
 
 	// End Query Params
 
 	@JsonProperty("voice_settings")
-	private ElevenLabsApi.SpeechRequest.VoiceSettings voiceSettings;
+	private ElevenLabsApi.SpeechRequest.@Nullable VoiceSettings voiceSettings;
 
 	@JsonProperty("language_code")
-	private String languageCode;
+	private @Nullable String languageCode;
 
 	@JsonProperty("pronunciation_dictionary_locators")
-	private List<ElevenLabsApi.SpeechRequest.PronunciationDictionaryLocator> pronunciationDictionaryLocators;
+	private @Nullable List<ElevenLabsApi.SpeechRequest.PronunciationDictionaryLocator> pronunciationDictionaryLocators;
 
 	@JsonProperty("seed")
-	private Integer seed;
+	private @Nullable Integer seed;
 
 	@JsonProperty("previous_text")
-	private String previousText;
+	private @Nullable String previousText;
 
 	@JsonProperty("next_text")
-	private String nextText;
+	private @Nullable String nextText;
 
 	@JsonProperty("previous_request_ids")
-	private List<String> previousRequestIds;
+	private @Nullable List<String> previousRequestIds;
 
 	@JsonProperty("next_request_ids")
-	private List<String> nextRequestIds;
+	private @Nullable List<String> nextRequestIds;
 
 	@JsonProperty("apply_text_normalization")
-	private ElevenLabsApi.SpeechRequest.TextNormalizationMode applyTextNormalization;
+	private ElevenLabsApi.SpeechRequest.@Nullable TextNormalizationMode applyTextNormalization;
 
 	@JsonProperty("apply_language_text_normalization")
-	private Boolean applyLanguageTextNormalization;
+	private @Nullable Boolean applyLanguageTextNormalization;
 
 	public static Builder builder() {
 		return new ElevenLabsTextToSpeechOptions.Builder();
@@ -88,72 +89,72 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 
 	@Override
 	@JsonIgnore
-	public String getModel() {
+	public @Nullable String getModel() {
 		return getModelId();
 	}
 
 	@JsonIgnore
-	public void setModel(String model) {
+	public void setModel(@Nullable String model) {
 		setModelId(model);
 	}
 
-	public String getModelId() {
+	public @Nullable String getModelId() {
 		return this.modelId;
 	}
 
-	public void setModelId(String modelId) {
+	public void setModelId(@Nullable String modelId) {
 		this.modelId = modelId;
 	}
 
 	@Override
 	@JsonIgnore
-	public String getVoice() {
+	public @Nullable String getVoice() {
 		return getVoiceId();
 	}
 
 	@JsonIgnore
-	public void setVoice(String voice) {
+	public void setVoice(@Nullable String voice) {
 		setVoiceId(voice);
 	}
 
-	public String getVoiceId() {
+	public @Nullable String getVoiceId() {
 		return this.voiceId;
 	}
 
-	public void setVoiceId(String voiceId) {
+	public void setVoiceId(@Nullable String voiceId) {
 		this.voiceId = voiceId;
 	}
 
-	public Boolean getEnableLogging() {
+	public @Nullable Boolean getEnableLogging() {
 		return this.enableLogging;
 	}
 
-	public void setEnableLogging(Boolean enableLogging) {
+	public void setEnableLogging(@Nullable Boolean enableLogging) {
 		this.enableLogging = enableLogging;
 	}
 
 	@Override
 	@JsonIgnore
-	public String getFormat() {
+	public @Nullable String getFormat() {
 		return getOutputFormat();
 	}
 
 	@JsonIgnore
-	public void setFormat(String format) {
+	public void setFormat(@Nullable String format) {
 		setOutputFormat(format);
 	}
 
-	public String getOutputFormat() {
+	public @Nullable String getOutputFormat() {
 		return this.outputFormat;
 	}
 
-	public void setOutputFormat(String outputFormat) {
+	public void setOutputFormat(@Nullable String outputFormat) {
 		this.outputFormat = outputFormat;
 	}
 
 	@Override
 	@JsonIgnore
-	public Double getSpeed() {
+	public @Nullable Double getSpeed() {
 		if (this.getVoiceSettings() != null) {
 			return this.getVoiceSettings().speed();
 		}
@@ -161,7 +162,7 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 	}
 
 	@JsonIgnore
-	public void setSpeed(Double speed) {
+	public void setSpeed(@Nullable Double speed) {
 		if (speed != null) {
 			if (this.getVoiceSettings() == null) {
 				this.setVoiceSettings(new ElevenLabsApi.SpeechRequest.VoiceSettings(null, null, null, null, speed));
@@ -181,84 +182,85 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 		}
 	}
 
-	public ElevenLabsApi.SpeechRequest.VoiceSettings getVoiceSettings() {
+	public ElevenLabsApi.SpeechRequest.@Nullable VoiceSettings getVoiceSettings() {
 		return this.voiceSettings;
 	}
 
-	public void setVoiceSettings(ElevenLabsApi.SpeechRequest.VoiceSettings voiceSettings) {
+	public void setVoiceSettings(ElevenLabsApi.SpeechRequest.@Nullable VoiceSettings voiceSettings) {
 		this.voiceSettings = voiceSettings;
 	}
 
-	public String getLanguageCode() {
+	public @Nullable String getLanguageCode() {
 		return this.languageCode;
 	}
 
-	public void setLanguageCode(String languageCode) {
+	public void setLanguageCode(@Nullable String languageCode) {
 		this.languageCode = languageCode;
 	}
 
-	public List<ElevenLabsApi.SpeechRequest.PronunciationDictionaryLocator> getPronunciationDictionaryLocators() {
+	public @Nullable List<ElevenLabsApi.SpeechRequest.PronunciationDictionaryLocator> getPronunciationDictionaryLocators() {
 		return this.pronunciationDictionaryLocators;
 	}
 
 	public void setPronunciationDictionaryLocators(
-			List<ElevenLabsApi.SpeechRequest.PronunciationDictionaryLocator> pronunciationDictionaryLocators) {
+			@Nullable List<ElevenLabsApi.SpeechRequest.PronunciationDictionaryLocator> pronunciationDictionaryLocators) {
 		this.pronunciationDictionaryLocators = pronunciationDictionaryLocators;
 	}
 
-	public Integer getSeed() {
+	public @Nullable Integer getSeed() {
 		return this.seed;
 	}
 
-	public void setSeed(Integer seed) {
+	public void setSeed(@Nullable Integer seed) {
 		this.seed = seed;
 	}
 
-	public String getPreviousText() {
+	public @Nullable String getPreviousText() {
 		return this.previousText;
 	}
 
-	public void setPreviousText(String previousText) {
+	public void setPreviousText(@Nullable String previousText) {
 		this.previousText = previousText;
 	}
 
-	public String getNextText() {
+	public @Nullable String getNextText() {
 		return this.nextText;
 	}
 
-	public void setNextText(String nextText) {
+	public void setNextText(@Nullable String nextText) {
 		this.nextText = nextText;
 	}
 
-	public List<String> getPreviousRequestIds() {
+	public @Nullable List<String> getPreviousRequestIds() {
 		return this.previousRequestIds;
 	}
 
-	public void setPreviousRequestIds(List<String> previousRequestIds) {
+	public void setPreviousRequestIds(@Nullable List<String> previousRequestIds) {
 		this.previousRequestIds = previousRequestIds;
 	}
 
-	public List<String> getNextRequestIds() {
+	public @Nullable List<String> getNextRequestIds() {
 		return this.nextRequestIds;
 	}
 
-	public void setNextRequestIds(List<String> nextRequestIds) {
+	public void setNextRequestIds(@Nullable List<String> nextRequestIds) {
 		this.nextRequestIds = nextRequestIds;
 	}
 
-	public ElevenLabsApi.SpeechRequest.TextNormalizationMode getApplyTextNormalization() {
+	public ElevenLabsApi.SpeechRequest.@Nullable TextNormalizationMode getApplyTextNormalization() {
 		return this.applyTextNormalization;
 	}
 
-	public void setApplyTextNormalization(ElevenLabsApi.SpeechRequest.TextNormalizationMode applyTextNormalization) {
+	public void setApplyTextNormalization(
+			ElevenLabsApi.SpeechRequest.@Nullable TextNormalizationMode applyTextNormalization) {
 		this.applyTextNormalization = applyTextNormalization;
 	}
 
-	public Boolean getApplyLanguageTextNormalization() {
+	public @Nullable Boolean getApplyLanguageTextNormalization() {
 		return this.applyLanguageTextNormalization;
 	}
 
-	public void setApplyLanguageTextNormalization(Boolean applyLanguageTextNormalization) {
+	public void setApplyLanguageTextNormalization(@Nullable Boolean applyLanguageTextNormalization) {
 		this.applyLanguageTextNormalization = applyLanguageTextNormalization;
 	}
 
@@ -334,7 +336,7 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 		 * @param model The model ID to use.
 		 * @return this builder.
 		 */
-		public Builder model(String model) {
+		public Builder model(@Nullable String model) {
 			this.options.setModel(model);
 			return this;
 		}
@@ -345,7 +347,7 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 		 * @param modelId The model ID to use.
 		 * @return this builder.
 		 */
-		public Builder modelId(String modelId) {
+		public Builder modelId(@Nullable String modelId) {
 			this.options.setModelId(modelId);
 			return this;
 		}
@@ -356,7 +358,7 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 		 * @param voice The voice ID to use.
 		 * @return this builder.
 		 */
-		public Builder voice(String voice) {
+		public Builder voice(@Nullable String voice) {
 			this.options.setVoice(voice);
 			return this;
 		}
@@ -367,69 +369,69 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 		 * @param voiceId The voice ID to use.
 		 * @return this builder.
 		 */
-		public Builder voiceId(String voiceId) {
+		public Builder voiceId(@Nullable String voiceId) {
 			this.options.setVoiceId(voiceId);
 			return this;
 		}
 
-		public Builder format(String format) {
+		public Builder format(@Nullable String format) {
 			this.options.setFormat(format);
 			return this;
 		}
 
-		public Builder outputFormat(String outputFormat) {
+		public Builder outputFormat(@Nullable String outputFormat) {
 			this.options.setOutputFormat(outputFormat);
 			return this;
 		}
 
-		public Builder voiceSettings(ElevenLabsApi.SpeechRequest.VoiceSettings voiceSettings) {
+		public Builder voiceSettings(ElevenLabsApi.SpeechRequest.@Nullable VoiceSettings voiceSettings) {
 			this.options.setVoiceSettings(voiceSettings);
 			return this;
 		}
 
-		public Builder languageCode(String languageCode) {
+		public Builder languageCode(@Nullable String languageCode) {
 			this.options.setLanguageCode(languageCode);
 			return this;
 		}
 
 		public Builder pronunciationDictionaryLocators(
-				List<ElevenLabsApi.SpeechRequest.PronunciationDictionaryLocator> pronunciationDictionaryLocators) {
+				@Nullable List<ElevenLabsApi.SpeechRequest.PronunciationDictionaryLocator> pronunciationDictionaryLocators) {
 			this.options.setPronunciationDictionaryLocators(pronunciationDictionaryLocators);
 			return this;
 		}
 
-		public Builder seed(Integer seed) {
+		public Builder seed(@Nullable Integer seed) {
 			this.options.setSeed(seed);
 			return this;
 		}
 
-		public Builder previousText(String previousText) {
+		public Builder previousText(@Nullable String previousText) {
 			this.options.setPreviousText(previousText);
 			return this;
 		}
 
-		public Builder nextText(String nextText) {
+		public Builder nextText(@Nullable String nextText) {
 			this.options.setNextText(nextText);
 			return this;
 		}
 
-		public Builder previousRequestIds(List<String> previousRequestIds) {
+		public Builder previousRequestIds(@Nullable List<String> previousRequestIds) {
 			this.options.setPreviousRequestIds(previousRequestIds);
 			return this;
 		}
 
-		public Builder nextRequestIds(List<String> nextRequestIds) {
+		public Builder nextRequestIds(@Nullable List<String> nextRequestIds) {
 			this.options.setNextRequestIds(nextRequestIds);
 			return this;
 		}
 
 		public Builder applyTextNormalization(
-				ElevenLabsApi.SpeechRequest.TextNormalizationMode applyTextNormalization) {
+				ElevenLabsApi.SpeechRequest.@Nullable TextNormalizationMode applyTextNormalization) {
 			this.options.setApplyTextNormalization(applyTextNormalization);
 			return this;
 		}
 
-		public Builder applyLanguageTextNormalization(Boolean applyLanguageTextNormalization) {
+		public Builder applyLanguageTextNormalization(@Nullable Boolean applyLanguageTextNormalization) {
 			this.options.setApplyLanguageTextNormalization(applyLanguageTextNormalization);
 			return this;
 		}

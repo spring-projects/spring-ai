@@ -62,8 +62,7 @@ public class PaymentStatusPromptIT {
 	@Test
 	void functionCallTest() {
 		this.contextRunner
-			.withPropertyValues(
-					"spring.ai.mistralai.chat.options.model=" + MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
+			.withPropertyValues("spring.ai.mistralai.chat.model=" + MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
 			.run(context -> {
 
 				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);

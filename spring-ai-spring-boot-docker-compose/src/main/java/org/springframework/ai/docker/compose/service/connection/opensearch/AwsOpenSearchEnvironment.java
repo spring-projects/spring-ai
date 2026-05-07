@@ -17,6 +17,9 @@
 package org.springframework.ai.docker.compose.service.connection.opensearch;
 
 import java.util.Map;
+import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
 
 class AwsOpenSearchEnvironment {
 
@@ -26,10 +29,10 @@ class AwsOpenSearchEnvironment {
 
 	private final String secretKey;
 
-	AwsOpenSearchEnvironment(Map<String, String> env) {
-		this.region = env.getOrDefault("DEFAULT_REGION", "us-east-1");
-		this.accessKey = env.getOrDefault("AWS_ACCESS_KEY_ID", "test");
-		this.secretKey = env.getOrDefault("AWS_SECRET_ACCESS_KEY", "test");
+	AwsOpenSearchEnvironment(Map<String, @Nullable String> env) {
+		this.region = Objects.requireNonNull(env.getOrDefault("DEFAULT_REGION", "us-east-1"));
+		this.accessKey = Objects.requireNonNull(env.getOrDefault("AWS_ACCESS_KEY_ID", "test"));
+		this.secretKey = Objects.requireNonNull(env.getOrDefault("AWS_SECRET_ACCESS_KEY", "test"));
 	}
 
 	public String getRegion() {

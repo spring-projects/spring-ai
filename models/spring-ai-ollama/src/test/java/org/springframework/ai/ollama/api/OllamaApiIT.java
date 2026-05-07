@@ -17,6 +17,7 @@
 package org.springframework.ai.ollama.api;
 
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import net.javacrumbs.jsonunit.assertj.JsonAssertions;
@@ -122,10 +123,7 @@ class OllamaApiIT extends BaseOllamaIT {
 		System.out.println(responses);
 
 		assertThat(responses).isNotNull();
-		assertThat(responses.stream()
-			.filter(r -> r.message() != null)
-			.map(r -> r.message().content())
-			.collect(Collectors.joining(System.lineSeparator()))).contains("Sofia");
+		assertThat(extractChatResponsesContent(responses)).contains("Sofia");
 
 		ChatResponse lastResponse = responses.get(responses.size() - 1);
 		assertThat(lastResponse.message().content()).isEmpty();
@@ -193,10 +191,7 @@ class OllamaApiIT extends BaseOllamaIT {
 		System.out.println(responses);
 
 		assertThat(responses).isNotNull();
-		assertThat(responses.stream()
-			.filter(r -> r.message() != null)
-			.map(r -> r.message().thinking())
-			.collect(Collectors.joining(System.lineSeparator()))).contains("Sofia");
+		assertThat(extractChatResponsesThinking(responses)).contains("Sofia");
 
 		ChatResponse lastResponse = responses.get(responses.size() - 1);
 		assertThat(lastResponse.message().content()).isEmpty();
@@ -219,10 +214,7 @@ class OllamaApiIT extends BaseOllamaIT {
 		System.out.println(responses);
 
 		assertThat(responses).isNotNull();
-		assertThat(responses.stream()
-			.filter(r -> r.message() != null)
-			.map(r -> r.message().thinking())
-			.collect(Collectors.joining(System.lineSeparator()))).contains("solar");
+		assertThat(extractChatResponsesThinking(responses)).contains("solar");
 
 		ChatResponse lastResponse = responses.get(responses.size() - 1);
 		assertThat(lastResponse.message().content()).isEmpty();
@@ -245,19 +237,30 @@ class OllamaApiIT extends BaseOllamaIT {
 		System.out.println(responses);
 
 		assertThat(responses).isNotNull();
+		assertThat(extractChatResponsesContent(responses)).contains("Earth");
 
-		assertThat(responses.stream()
-			.filter(r -> r.message() != null)
-			.map(r -> r.message().content())
-			.collect(Collectors.joining(System.lineSeparator()))).contains("Earth");
-
-		assertThat(responses.stream().filter(r -> r.message() != null).allMatch(r -> r.message().thinking() == null))
-			.isTrue();
+		assertThat(responses.stream().allMatch(r -> r.message().thinking() == null)).isTrue();
 
 		ChatResponse lastResponse = responses.get(responses.size() - 1);
 		assertThat(lastResponse.message().content()).isEmpty();
 		assertNull(lastResponse.message().thinking());
 		assertThat(lastResponse.done()).isTrue();
+	}
+
+	private static String extractChatResponsesContent(List<ChatResponse> chatResponses) {
+		return extractChatResponsesText(chatResponses, Message::content);
+	}
+
+	private static String extractChatResponsesThinking(List<ChatResponse> chatResponses) {
+		return extractChatResponsesText(chatResponses, Message::thinking);
+	}
+
+	private static String extractChatResponsesText(List<ChatResponse> chatResponses,
+			Function<Message, String> messageToStringFunction) {
+		return chatResponses.stream()
+			.map(ChatResponse::message)
+			.map(messageToStringFunction)
+			.collect(Collectors.joining(System.lineSeparator()));
 	}
 
 }

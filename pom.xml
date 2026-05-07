@@ -68,8 +68,6 @@
 		<module>vector-stores/spring-ai-couchbase-store</module>
 		<module>vector-stores/spring-ai-elasticsearch-store</module>
 		<module>vector-stores/spring-ai-gemfire-store</module>
-		<module>vector-stores/spring-ai-hanadb-store</module>
-		<module>vector-stores/spring-ai-infinispan-store</module>
 		<module>vector-stores/spring-ai-mariadb-store</module>
 		<module>vector-stores/spring-ai-milvus-store</module>
 		<module>vector-stores/spring-ai-mongodb-atlas-store</module>
@@ -135,7 +133,6 @@
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-couchbase</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-elasticsearch</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-gemfire</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-infinispan</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mariadb</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-milvus</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mongodb-atlas</module>
@@ -153,28 +150,28 @@
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-bedrock-knowledgebase</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-s3</module>
 
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-aws-opensearch</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-azure</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-azure-cosmos-db</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-cassandra</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-chroma</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-couchbase</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-elasticsearch</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-gemfire</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-mariadb</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-milvus</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-mongodb-atlas</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-neo4j</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-opensearch</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-oracle</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-pgvector</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-pinecone</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-qdrant</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-redis</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-typesense</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-weaviate</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-bedrock-knowledgebase</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-s3</module>
+		<module>starters/spring-ai-starter-vector-store-aws-opensearch</module>
+		<module>starters/spring-ai-starter-vector-store-azure</module>
+		<module>starters/spring-ai-starter-vector-store-azure-cosmos-db</module>
+		<module>starters/spring-ai-starter-vector-store-cassandra</module>
+		<module>starters/spring-ai-starter-vector-store-chroma</module>
+		<module>starters/spring-ai-starter-vector-store-couchbase</module>
+		<module>starters/spring-ai-starter-vector-store-elasticsearch</module>
+		<module>starters/spring-ai-starter-vector-store-gemfire</module>
+		<module>starters/spring-ai-starter-vector-store-mariadb</module>
+		<module>starters/spring-ai-starter-vector-store-milvus</module>
+		<module>starters/spring-ai-starter-vector-store-mongodb-atlas</module>
+		<module>starters/spring-ai-starter-vector-store-neo4j</module>
+		<module>starters/spring-ai-starter-vector-store-opensearch</module>
+		<module>starters/spring-ai-starter-vector-store-oracle</module>
+		<module>starters/spring-ai-starter-vector-store-pgvector</module>
+		<module>starters/spring-ai-starter-vector-store-pinecone</module>
+		<module>starters/spring-ai-starter-vector-store-qdrant</module>
+		<module>starters/spring-ai-starter-vector-store-redis</module>
+		<module>starters/spring-ai-starter-vector-store-typesense</module>
+		<module>starters/spring-ai-starter-vector-store-weaviate</module>
+		<module>starters/spring-ai-starter-vector-store-bedrock-knowledgebase</module>
+		<module>starters/spring-ai-starter-vector-store-s3</module>
 
 		<module>models/spring-ai-anthropic</module>
 		<module>models/spring-ai-bedrock</module>
@@ -192,35 +189,35 @@
 		<module>models/spring-ai-google-genai-embedding</module>
 		<module>models/spring-ai-deepseek</module>
 
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-anthropic</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock-converse</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-google-genai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-google-genai-embedding</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-elevenlabs</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-minimax</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-mistral-ai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-ollama</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-openai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-postgresml-embedding</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-stability-ai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-transformers</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-embedding</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-deepseek</module>
+		<module>starters/spring-ai-starter-model-anthropic</module>
+		<module>starters/spring-ai-starter-model-bedrock</module>
+		<module>starters/spring-ai-starter-model-bedrock-converse</module>
+		<module>starters/spring-ai-starter-model-google-genai</module>
+		<module>starters/spring-ai-starter-model-google-genai-embedding</module>
+		<module>starters/spring-ai-starter-model-elevenlabs</module>
+		<module>starters/spring-ai-starter-model-minimax</module>
+		<module>starters/spring-ai-starter-model-mistral-ai</module>
+		<module>starters/spring-ai-starter-model-ollama</module>
+		<module>starters/spring-ai-starter-model-openai</module>
+		<module>starters/spring-ai-starter-model-postgresml-embedding</module>
+		<module>starters/spring-ai-starter-model-stability-ai</module>
+		<module>starters/spring-ai-starter-model-transformers</module>
+		<module>starters/spring-ai-starter-model-vertex-ai-embedding</module>
+		<module>starters/spring-ai-starter-model-deepseek</module>
 
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-cassandra</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-cosmos-db</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-jdbc</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-mongodb</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-neo4j</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-redis</module>
+		<module>starters/spring-ai-starter-model-chat-memory</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-cassandra</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-cosmos-db</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-jdbc</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-mongodb</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-neo4j</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-redis</module>
 
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client-webflux</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webflux</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webmvc</module>
+		<module>starters/spring-ai-starter-mcp-client</module>
+		<module>starters/spring-ai-starter-mcp-server</module>
+		<module>starters/spring-ai-starter-mcp-client-webflux</module>
+		<module>starters/spring-ai-starter-mcp-server-webflux</module>
+		<module>starters/spring-ai-starter-mcp-server-webmvc</module>
 
 		<module>spring-ai-integration-tests</module>
 
@@ -277,7 +274,7 @@
 		<ST4.version>4.3.4</ST4.version>
 		<azure-identity.version>1.18.2</azure-identity.version>
 		<openai-sdk.version>4.28.0</openai-sdk.version>
-		<anthropic-sdk.version>2.24.0</anthropic-sdk.version>
+		<anthropic-sdk.version>2.30.0</anthropic-sdk.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
 		<kotlin.version>2.3.20</kotlin.version>
 
@@ -286,10 +283,8 @@
 		<awssdk.version>2.41.22</awssdk.version>
 
 		<djl.version>0.32.0</djl.version>
-		<onnxruntime.version>1.19.2</onnxruntime.version>
 		<com.google.cloud.version>26.72.0</com.google.cloud.version>
 		<com.google.genai.version>1.44.0</com.google.genai.version>
-		<ibm.sdk.version>9.20.0</ibm.sdk.version>
 		<jsonschema.version>5.0.0</jsonschema.version>
 		<swagger-annotations.version>2.2.38</swagger-annotations.version>
 		<mockk-jvm.version>1.13.13</mockk-jvm.version>
@@ -319,18 +314,12 @@
 		<azure-json.version>1.5.1</azure-json.version>
 		<azure-search.version>11.7.6</azure-search.version>
 		<azure-cosmos.version>5.22.0</azure-cosmos.version>
-		<elasticsearch-java.version>8.18.1</elasticsearch-java.version>
 		<weaviate-client.version>5.2.0</weaviate-client.version>
-		<qdrant.version>1.13.0</qdrant.version>
+		<qdrant.version>1.17.0</qdrant.version>
 		<typesense.version>1.3.0</typesense.version>
 		<opensearch-client.version>3.6.0</opensearch-client.version>
 		<opensearch-testcontainers.version>4.1.0</opensearch-testcontainers.version>
-		<postgresql.version>42.7.7</postgresql.version>
-		<mariadb.version>3.5.3</mariadb.version>
-		<mysql.version>9.2.0</mysql.version>
 		<commonmark.version>0.22.0</commonmark.version>
-		<infinispan.version>16.0.9</infinispan.version>
-		<version.protostream>6.0.6</version.protostream>
 
 		<couchbase.version>3.9.1</couchbase.version>
 		<neo4j-cypher-dsl-bom.version>2024.5.1</neo4j-cypher-dsl-bom.version>
@@ -348,9 +337,8 @@
 		<antlr.version>4.13.1</antlr.version>
 		<maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
 		<maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
-		<!-- The version (range) of the JDK we want to use to compile.
-			This is different from ${java.version} which we use as -release target. -->
-		<compiler.jdk.version>[21.0.8,)</compiler.jdk.version>
+		<!-- The version (range) of the JDK we want to use to compile -->
+		<compiler.jdk.version>[17.0.19,)</compiler.jdk.version>
 		<maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
 		<maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
 		<maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
@@ -358,11 +346,8 @@
 		<jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
 		<flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
 		<maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
-		<asciidoctor-maven-plugin.version>2.2.3</asciidoctor-maven-plugin.version>
 		<maven-assembly-plugin.version>3.7.0</maven-assembly-plugin.version>
-		<maven-dependency-plugin.version>3.5.0</maven-dependency-plugin.version>
 		<maven-site-plugin.version>4.0.0-M13</maven-site-plugin.version>
-		<maven-project-info-reports-plugin.version>3.4.5</maven-project-info-reports-plugin.version>
 		<maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
 		<spring-javaformat-maven-plugin.version>0.0.47</spring-javaformat-maven-plugin.version>
 		<antora-maven-plugin.version>1.0.0-alpha.5</antora-maven-plugin.version>
@@ -374,8 +359,8 @@
 		<spring-javaformat-checkstyle.version>0.0.47</spring-javaformat-checkstyle.version>
 		<maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
 
-		<error-prone.version>2.46.0</error-prone.version>
-		<nullaway.version>0.13.0</nullaway.version>
+		<error-prone.version>2.42.0</error-prone.version>
+		<nullaway.version>0.13.4</nullaway.version>
 
 		<disable.checks>false</disable.checks>
 

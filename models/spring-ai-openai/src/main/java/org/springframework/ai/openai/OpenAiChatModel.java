@@ -90,7 +90,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -186,6 +185,7 @@ public final class OpenAiChatModel implements ChatModel {
 	@Override
 	public ChatResponse call(Prompt prompt) {
 		Prompt requestPrompt = buildRequestPrompt(prompt);
+		verifyPromptChatOptions(requestPrompt);
 		return this.internalCall(requestPrompt, null);
 	}
 
@@ -201,7 +201,7 @@ public final class OpenAiChatModel implements ChatModel {
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
-			.provider(AiProvider.OPENAI_SDK.value())
+			.provider(AiProvider.OPENAI.value())
 			.build();
 
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
@@ -267,6 +267,7 @@ public final class OpenAiChatModel implements ChatModel {
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 		Prompt requestPrompt = buildRequestPrompt(prompt);
+		verifyPromptChatOptions(requestPrompt);
 		return internalStream(requestPrompt, null);
 	}
 
@@ -299,7 +300,7 @@ public final class OpenAiChatModel implements ChatModel {
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
-				.provider(AiProvider.OPENAI_SDK.value())
+				.provider(AiProvider.OPENAI.value())
 				.build();
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
 					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
@@ -635,26 +636,12 @@ public final class OpenAiChatModel implements ChatModel {
 				Math.toIntExact(usage.totalTokens()), usage, cacheRead, null);
 	}
 
-	/**
-	 * Builds the request prompt by merging runtime options with default options.
-	 * @param prompt the original prompt
-	 * @return the prompt with merged options
-	 */
-	Prompt buildRequestPrompt(Prompt prompt) {
-		OpenAiChatOptions.Builder requestBuilder = this.options.mutate();
+	private void verifyPromptChatOptions(Prompt prompt) {
+		var chatOptions = prompt.getOptions();
 
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions().getTopK() != null) {
-				logger.warn("The topK option is not supported by OpenAI chat models. Ignoring.");
-			}
-			requestBuilder.combineWith(prompt.getOptions().mutate());
+		if (chatOptions != null && chatOptions.getTopK() != null) {
+			logger.warn("The topK option is not supported by OpenAI chat models. Ignoring.");
 		}
-
-		OpenAiChatOptions requestOptions = requestBuilder.build();
-
-		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
-
-		return new Prompt(prompt.getInstructions(), requestOptions);
 	}
 
 	/**
