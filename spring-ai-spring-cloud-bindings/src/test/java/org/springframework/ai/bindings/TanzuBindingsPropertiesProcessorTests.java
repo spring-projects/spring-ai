@@ -72,11 +72,11 @@ class TanzuBindingsPropertiesProcessorTests {
 		new TanzuBindingsPropertiesProcessor().process(this.environment, this.bindings, this.properties);
 		assertThat(this.properties).containsEntry("spring.ai.openai.chat.api-key", "demo");
 		assertThat(this.properties).containsEntry("spring.ai.openai.chat.base-url", "https://my.openai.example.net");
-		assertThat(this.properties).containsEntry("spring.ai.openai.chat.options.model", "llava1.6");
+		assertThat(this.properties).containsEntry("spring.ai.openai.chat.model", "llava1.6");
 		assertThat(this.properties).containsEntry("spring.ai.openai.embedding.api-key", "demo2");
 		assertThat(this.properties).containsEntry("spring.ai.openai.embedding.base-url",
 				"https://my.openai2.example.net");
-		assertThat(this.properties).containsEntry("spring.ai.openai.embedding.options.model", "text-embed-large");
+		assertThat(this.properties).containsEntry("spring.ai.openai.embedding.model", "text-embed-large");
 	}
 
 	@Test
