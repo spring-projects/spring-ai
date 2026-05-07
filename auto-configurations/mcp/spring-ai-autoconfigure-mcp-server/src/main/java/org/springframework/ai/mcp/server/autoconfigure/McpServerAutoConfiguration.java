@@ -22,6 +22,8 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpServer;
@@ -42,12 +44,14 @@ import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpServerTransportProvider;
+import io.modelcontextprotocol.spec.McpServerTransportProviderBase;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.McpToolUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -119,8 +123,9 @@ public class McpServerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public McpServerTransportProvider stdioServerTransport() {
-		return new StdioServerTransportProvider();
+	public McpServerTransportProviderBase stdioServerTransport(
+			@Qualifier("mcpServerObjectMapper") ObjectMapper mcpServerObjectMapper) {
+		return new StdioServerTransportProvider(new JacksonMcpJsonMapper(mcpServerObjectMapper));
 	}
 
 	@Bean
@@ -248,7 +253,9 @@ public class McpServerAutoConfiguration {
 		}
 
 		rootsChangeConsumers.ifAvailable(consumer -> {
-			serverBuilder.rootsChangeHandler((exchange, roots) -> consumer.accept(exchange, roots));
+			BiConsumer<McpSyncServerExchange, List<McpSchema.Root>> syncConsumer = (exchange, roots) -> consumer
+				.accept(exchange, roots);
+			serverBuilder.rootsChangeHandler(syncConsumer);
 			logger.info("Registered roots change consumer");
 		});
 
