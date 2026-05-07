@@ -31,13 +31,13 @@ import org.springframework.boot.context.properties.DeprecatedConfigurationProper
  * @author lambochen
  */
 @ConfigurationProperties(OpenAiImageProperties.CONFIG_PREFIX)
-public class OpenAiImageProperties {
+public class OpenAiImageProperties extends AbstractOpenAiProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.image";
 
 	public static final String DEFAULT_IMAGE_MODEL = ImageModel.DALL_E_3.toString();
 
-	private String model = DEFAULT_IMAGE_MODEL;
+	private @Nullable String model = DEFAULT_IMAGE_MODEL;
 
 	private @Nullable Integer n;
 
@@ -55,11 +55,11 @@ public class OpenAiImageProperties {
 
 	private @Nullable String user;
 
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
+	public void setModel(@Nullable String model) {
 		this.model = model;
 	}
 
@@ -175,11 +175,11 @@ public class OpenAiImageProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.image.model")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public String getModel() {
+		public @Nullable String getModel() {
 			return OpenAiImageProperties.this.getModel();
 		}
 
-		public void setModel(String model) {
+		public void setModel(@Nullable String model) {
 			OpenAiImageProperties.this.setModel(model);
 		}
 

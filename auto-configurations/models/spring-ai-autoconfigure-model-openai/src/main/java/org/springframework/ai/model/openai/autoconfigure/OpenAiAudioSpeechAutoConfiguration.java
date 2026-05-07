@@ -50,7 +50,10 @@ public class OpenAiAudioSpeechAutoConfiguration {
 	public OpenAiAudioSpeechModel openAiSdkAudioSpeechModel(OpenAiCommonProperties commonProperties,
 			OpenAiAudioSpeechProperties speechProperties) {
 
-		OpenAIClient openAIClient = this.openAiClient(commonProperties);
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
+				speechProperties);
+
+		OpenAIClient openAIClient = this.openAiClient(resolvedProperties);
 
 		return OpenAiAudioSpeechModel.builder()
 			.openAiClient(openAIClient)

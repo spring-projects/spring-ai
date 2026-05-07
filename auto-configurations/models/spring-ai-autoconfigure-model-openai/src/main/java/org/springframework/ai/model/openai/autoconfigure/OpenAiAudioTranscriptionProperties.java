@@ -35,11 +35,11 @@ import org.springframework.boot.context.properties.DeprecatedConfigurationProper
  * @author Ilayaperumal Gopinathan
  */
 @ConfigurationProperties(OpenAiAudioTranscriptionProperties.CONFIG_PREFIX)
-public class OpenAiAudioTranscriptionProperties {
+public class OpenAiAudioTranscriptionProperties extends AbstractOpenAiProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.audio.transcription";
 
-	private String model = OpenAiAudioTranscriptionOptions.DEFAULT_TRANSCRIPTION_MODEL;
+	private @Nullable String model = OpenAiAudioTranscriptionOptions.DEFAULT_TRANSCRIPTION_MODEL;
 
 	private AudioResponseFormat responseFormat = OpenAiAudioTranscriptionOptions.DEFAULT_RESPONSE_FORMAT;
 
@@ -51,11 +51,11 @@ public class OpenAiAudioTranscriptionProperties {
 
 	private @Nullable List<TimestampGranularity> timestampGranularities;
 
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
+	public void setModel(@Nullable String model) {
 		this.model = model;
 	}
 
@@ -136,11 +136,11 @@ public class OpenAiAudioTranscriptionProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.audio.transcription.model")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public String getModel() {
+		public @Nullable String getModel() {
 			return OpenAiAudioTranscriptionProperties.this.getModel();
 		}
 
-		public void setModel(String model) {
+		public void setModel(@Nullable String model) {
 			OpenAiAudioTranscriptionProperties.this.setModel(model);
 		}
 

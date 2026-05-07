@@ -50,7 +50,9 @@ public class OpenAiAudioTranscriptionAutoConfiguration {
 	@ConditionalOnMissingBean
 	public OpenAiAudioTranscriptionModel openAiSdkAudioTranscriptionModel(OpenAiCommonProperties commonProperties,
 			OpenAiAudioTranscriptionProperties transcriptionProperties) {
-		OpenAIClient client = openAiClient(commonProperties);
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
+				transcriptionProperties);
+		OpenAIClient client = openAiClient(resolvedProperties);
 		return OpenAiAudioTranscriptionModel.builder()
 			.openAiClient(client)
 			.options(transcriptionProperties.toOptions())

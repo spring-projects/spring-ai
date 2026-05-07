@@ -50,7 +50,10 @@ public class OpenAiModerationAutoConfiguration {
 	public OpenAiModerationModel openAiSdkModerationModel(OpenAiCommonProperties commonProperties,
 			OpenAiModerationProperties moderationProperties) {
 
-		OpenAIClient openAIClient = this.openAiClient(commonProperties);
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
+				moderationProperties);
+
+		OpenAIClient openAIClient = this.openAiClient(resolvedProperties);
 
 		return OpenAiModerationModel.builder()
 			.openAiClient(openAIClient)

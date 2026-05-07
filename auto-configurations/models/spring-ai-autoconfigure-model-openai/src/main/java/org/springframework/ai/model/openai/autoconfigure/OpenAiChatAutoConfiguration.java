@@ -60,9 +60,11 @@ public class OpenAiChatAutoConfiguration {
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
 			ObjectProvider<ToolExecutionEligibilityPredicate> openAiToolExecutionEligibilityPredicate) {
 
-		OpenAIClient openAIClient = this.openAiClient(commonProperties);
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties, chatProperties);
 
-		OpenAIClientAsync openAIClientAsync = this.openAiClientAsync(commonProperties);
+		OpenAIClient openAIClient = this.openAiClient(resolvedProperties);
+
+		OpenAIClientAsync openAIClientAsync = this.openAiClientAsync(resolvedProperties);
 
 		var chatModel = OpenAiChatModel.builder()
 			.openAiClient(openAIClient)
