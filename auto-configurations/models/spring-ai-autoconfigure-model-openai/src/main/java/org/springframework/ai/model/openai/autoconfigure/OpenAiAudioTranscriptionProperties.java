@@ -16,7 +16,6 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
-import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -30,7 +29,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * @author Ilayaperumal Gopinathan
  */
 @ConfigurationProperties(OpenAiAudioTranscriptionProperties.CONFIG_PREFIX)
-public class OpenAiAudioTranscriptionProperties extends AbstractOpenAiOptions {
+public class OpenAiAudioTranscriptionProperties {
 
 	/**
 	 * Configuration prefix for OpenAI SDK audio transcription.

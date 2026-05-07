@@ -52,37 +52,6 @@ public class OpenAiEmbeddingPropertiesTests {
 				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
 
-				assertThat(embeddingProperties.getApiKey()).isNull();
-				assertThat(embeddingProperties.getBaseUrl()).isNull();
-
-				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(embeddingProperties.getOptions().getDimensions()).isEqualTo(512);
-			});
-	}
-
-	@Test
-	public void embeddingOverrideConnectionProperties() {
-
-		this.contextRunner.withPropertyValues(
-		// @formatter:off
-				"spring.ai.openai.base-url=http://TEST.BASE.URL",
-				"spring.ai.openai.api-key=abc123",
-				"spring.ai.openai.embedding.base-url=http://TEST.BASE.URL2",
-				"spring.ai.openai.embedding.api-key=456",
-				"spring.ai.openai.embedding.options.model=MODEL_XYZ",
-				"spring.ai.openai.embedding.options.dimensions=512")
-				// @formatter:on
-			.withConfiguration(AutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
-			.run(context -> {
-				var embeddingProperties = context.getBean(OpenAiEmbeddingProperties.class);
-				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
-
-				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
-				assertThat(connectionProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
-
-				assertThat(embeddingProperties.getApiKey()).isEqualTo("456");
-				assertThat(embeddingProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL2");
-
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(embeddingProperties.getOptions().getDimensions()).isEqualTo(512);
 			});

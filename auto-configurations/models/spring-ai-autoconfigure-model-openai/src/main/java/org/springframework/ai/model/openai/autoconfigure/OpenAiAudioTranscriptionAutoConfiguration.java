@@ -50,17 +50,14 @@ public class OpenAiAudioTranscriptionAutoConfiguration {
 	public OpenAiAudioTranscriptionModel openAiSdkAudioTranscriptionModel(
 			OpenAiConnectionProperties connectionProperties,
 			OpenAiAudioTranscriptionProperties transcriptionProperties) {
-		OpenAIClient client = openAiClient(connectionProperties, transcriptionProperties);
+		OpenAIClient client = openAiClient(connectionProperties);
 		return OpenAiAudioTranscriptionModel.builder()
 			.openAiClient(client)
 			.options(transcriptionProperties.getOptions())
 			.build();
 	}
 
-	private OpenAIClient openAiClient(OpenAiConnectionProperties connectionProperties,
-			OpenAiAudioTranscriptionProperties transcriptionProperties) {
-		OpenAiAutoConfigurationUtil.ResolvedConnectionProperties resolved = OpenAiAutoConfigurationUtil
-			.resolveConnectionProperties(connectionProperties, transcriptionProperties);
+	private OpenAIClient openAiClient(OpenAiConnectionProperties resolved) {
 		return OpenAiSetup.setupSyncClient(resolved.getBaseUrl(), resolved.getApiKey(), resolved.getCredential(),
 				resolved.getMicrosoftDeploymentName(), resolved.getMicrosoftFoundryServiceVersion(),
 				resolved.getOrganizationId(), resolved.isMicrosoftFoundry(), resolved.isGitHubModels(),

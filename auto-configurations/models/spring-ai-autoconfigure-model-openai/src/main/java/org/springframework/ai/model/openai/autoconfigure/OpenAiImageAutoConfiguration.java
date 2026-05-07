@@ -54,19 +54,15 @@ public class OpenAiImageAutoConfiguration {
 			OpenAiImageProperties imageProperties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ImageModelObservationConvention> observationConvention) {
 
-		var imageModel = new OpenAiImageModel(openAiClient(commonProperties, imageProperties),
-				imageProperties.getOptions(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		var imageModel = new OpenAiImageModel(openAiClient(commonProperties), imageProperties.getOptions(),
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(imageModel::setObservationConvention);
 
 		return imageModel;
 	}
 
-	private OpenAIClient openAiClient(OpenAiConnectionProperties commonProperties,
-			OpenAiImageProperties imageProperties) {
-
-		OpenAiAutoConfigurationUtil.ResolvedConnectionProperties resolved = OpenAiAutoConfigurationUtil
-			.resolveConnectionProperties(commonProperties, imageProperties);
+	private OpenAIClient openAiClient(OpenAiConnectionProperties resolved) {
 
 		return OpenAiSetup.setupSyncClient(resolved.getBaseUrl(), resolved.getApiKey(), resolved.getCredential(),
 				resolved.getMicrosoftDeploymentName(), resolved.getMicrosoftFoundryServiceVersion(),

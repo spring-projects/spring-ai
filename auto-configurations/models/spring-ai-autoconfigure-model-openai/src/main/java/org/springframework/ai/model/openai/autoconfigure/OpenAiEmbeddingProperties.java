@@ -17,13 +17,12 @@
 package org.springframework.ai.model.openai.autoconfigure;
 
 import org.springframework.ai.document.MetadataMode;
-import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 @ConfigurationProperties(OpenAiEmbeddingProperties.CONFIG_PREFIX)
-public class OpenAiEmbeddingProperties extends AbstractOpenAiOptions {
+public class OpenAiEmbeddingProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.embedding";
 

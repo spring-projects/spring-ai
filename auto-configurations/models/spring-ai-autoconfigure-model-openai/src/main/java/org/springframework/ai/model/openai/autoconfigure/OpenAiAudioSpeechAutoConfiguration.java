@@ -20,7 +20,6 @@ import com.openai.client.OpenAIClient;
 
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
-import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -50,10 +49,7 @@ public class OpenAiAudioSpeechAutoConfiguration {
 	public OpenAiAudioSpeechModel openAiSdkAudioSpeechModel(OpenAiConnectionProperties commonProperties,
 			OpenAiAudioSpeechProperties speechProperties) {
 
-		OpenAiAutoConfigurationUtil.ResolvedConnectionProperties resolvedConnectionProperties = OpenAiAutoConfigurationUtil
-			.resolveConnectionProperties(commonProperties, speechProperties);
-
-		OpenAIClient openAIClient = this.openAiClient(resolvedConnectionProperties);
+		OpenAIClient openAIClient = this.openAiClient(commonProperties);
 
 		return OpenAiAudioSpeechModel.builder()
 			.openAiClient(openAIClient)
@@ -61,7 +57,7 @@ public class OpenAiAudioSpeechAutoConfiguration {
 			.build();
 	}
 
-	private OpenAIClient openAiClient(AbstractOpenAiOptions resolved) {
+	private OpenAIClient openAiClient(OpenAiConnectionProperties resolved) {
 
 		return OpenAiSetup.setupSyncClient(resolved.getBaseUrl(), resolved.getApiKey(), resolved.getCredential(),
 				resolved.getMicrosoftDeploymentName(), resolved.getMicrosoftFoundryServiceVersion(),

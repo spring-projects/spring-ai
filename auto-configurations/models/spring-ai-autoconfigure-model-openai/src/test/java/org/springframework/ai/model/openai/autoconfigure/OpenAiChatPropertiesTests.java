@@ -56,39 +56,6 @@ public class OpenAiChatPropertiesTests {
 				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
 
-				assertThat(chatProperties.getApiKey()).isNull();
-				assertThat(chatProperties.getBaseUrl()).isNull();
-
-				var options = chatProperties.toOptions();
-				assertThat(options.getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(options.getTemperature()).isEqualTo(0.55);
-			});
-	}
-
-	@Test
-	public void chatOverrideConnectionProperties() {
-
-		this.contextRunner.withPropertyValues(
-		// @formatter:off
-				"spring.ai.openai.base-url=http://TEST.BASE.URL",
-				"spring.ai.openai.api-key=abc123",
-				"spring.ai.openai.chat.base-url=http://TEST.BASE.URL2",
-				"spring.ai.openai.chat.api-key=456",
-				"spring.ai.openai.chat.model=MODEL_XYZ",
-				"spring.ai.openai.chat.temperature=0.55")
-				// @formatter:on
-			.withConfiguration(
-					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
-			.run(context -> {
-				var chatProperties = context.getBean(OpenAiChatProperties.class);
-				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
-
-				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
-				assertThat(connectionProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
-
-				assertThat(chatProperties.getApiKey()).isEqualTo("456");
-				assertThat(chatProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL2");
-
 				var options = chatProperties.toOptions();
 				assertThat(options.getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(options.getTemperature()).isEqualTo(0.55);
