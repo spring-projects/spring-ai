@@ -16,9 +16,13 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import java.net.Proxy;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+import com.openai.azure.AzureOpenAIServiceVersion;
+import com.openai.credential.Credential;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.openai.OpenAiChatModel.ResponseFormat;
@@ -41,15 +45,7 @@ public class OpenAiChatProperties {
 
 	public static final String DEFAULT_CHAT_MODEL = OpenAiChatOptions.DEFAULT_CHAT_MODEL;
 
-	private @Nullable String model = DEFAULT_CHAT_MODEL;
-
-	public @Nullable String getModel() {
-		return this.model;
-	}
-
-	public void setModel(@Nullable String model) {
-		this.model = model;
-	}
+	private String model = DEFAULT_CHAT_MODEL;
 
 	private @Nullable Double frequencyPenalty;
 
@@ -102,6 +98,14 @@ public class OpenAiChatProperties {
 	private @Nullable Map<String, Object> extraBody;
 
 	private @Nullable Boolean internalToolExecutionEnabled;
+
+	public String getModel() {
+		return this.model;
+	}
+
+	public void setModel(String model) {
+		this.model = model;
+	}
 
 	public @Nullable Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
@@ -409,13 +413,168 @@ public class OpenAiChatProperties {
 
 	public class Options {
 
+		private @Nullable String baseUrl;
+
+		private @Nullable String apiKey;
+
+		private @Nullable Credential credential;
+
+		private @Nullable String microsoftDeploymentName;
+
+		private @Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion;
+
+		private @Nullable String organizationId;
+
+		private @Nullable Boolean microsoftFoundry;
+
+		private @Nullable Boolean gitHubModels;
+
+		private @Nullable Duration timeout;
+
+		private @Nullable Integer maxRetries;
+
+		private @Nullable Proxy proxy;
+
+		private @Nullable Map<String, String> customHeaders;
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.base-url")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable String getBaseUrl() {
+			return this.baseUrl;
+		}
+
+		public void setBaseUrl(@Nullable String baseUrl) {
+			this.baseUrl = baseUrl;
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.api-key")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable String getApiKey() {
+			return this.apiKey;
+		}
+
+		public void setApiKey(@Nullable String apiKey) {
+			this.apiKey = apiKey;
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.credential")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable Credential getCredential() {
+			return this.credential;
+		}
+
+		public void setCredential(@Nullable Credential credential) {
+			this.credential = credential;
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.microsoft-deployment-name")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable String getMicrosoftDeploymentName() {
+			return this.microsoftDeploymentName;
+		}
+
+		public void setMicrosoftDeploymentName(@Nullable String microsoftDeploymentName) {
+			this.microsoftDeploymentName = microsoftDeploymentName;
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.deployment-name")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable String getDeploymentName() {
+			return this.microsoftDeploymentName;
+		}
+
+		public void setDeploymentName(@Nullable String azureDeploymentName) {
+			this.microsoftDeploymentName = azureDeploymentName;
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.microsoft-foundry-service-version")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable AzureOpenAIServiceVersion getMicrosoftFoundryServiceVersion() {
+			return this.microsoftFoundryServiceVersion;
+		}
+
+		public void setMicrosoftFoundryServiceVersion(
+				@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion) {
+			this.microsoftFoundryServiceVersion = microsoftFoundryServiceVersion;
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.organization-id")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable String getOrganizationId() {
+			return this.organizationId;
+		}
+
+		public void setOrganizationId(@Nullable String organizationId) {
+			this.organizationId = organizationId;
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.microsoft-foundry")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable Boolean getMicrosoftFoundry() {
+			return this.microsoftFoundry;
+		}
+
+		public void setMicrosoftFoundry(@Nullable Boolean microsoftFoundry) {
+			this.microsoftFoundry = microsoftFoundry;
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.git-hub-models")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable Boolean getGitHubModels() {
+			return this.gitHubModels;
+		}
+
+		public void setGitHubModels(@Nullable Boolean gitHubModels) {
+			this.gitHubModels = gitHubModels;
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.timeout")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable Duration getTimeout() {
+			return this.timeout;
+		}
+
+		public void setTimeout(@Nullable Duration timeout) {
+			this.timeout = timeout;
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.max-retries")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable Integer getMaxRetries() {
+			return this.maxRetries;
+		}
+
+		public void setMaxRetries(@Nullable Integer maxRetries) {
+			this.maxRetries = maxRetries;
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.proxy")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable Proxy getProxy() {
+			return this.proxy;
+		}
+
+		public void setProxy(@Nullable Proxy proxy) {
+			this.proxy = proxy;
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.custom-headers")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable Map<String, String> getCustomHeaders() {
+			return this.customHeaders;
+		}
+
+		public void setCustomHeaders(@Nullable Map<String, String> customHeaders) {
+			this.customHeaders = customHeaders;
+		}
+
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.chat.model")
 		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable String getModel() {
 			return OpenAiChatProperties.this.getModel();
 		}
 
-		public void setModel(@Nullable String model) {
+		public void setModel(String model) {
 			OpenAiChatProperties.this.setModel(model);
 		}
 
