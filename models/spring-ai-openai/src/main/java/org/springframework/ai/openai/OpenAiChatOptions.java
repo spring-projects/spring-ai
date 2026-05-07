@@ -30,13 +30,11 @@ import com.openai.azure.AzureOpenAIServiceVersion;
 import com.openai.credential.Credential;
 import com.openai.models.ChatModel;
 import com.openai.models.chat.completions.ChatCompletionAudioParam;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.openai.OpenAiChatModel.ResponseFormat.Type;
@@ -650,51 +648,57 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 
 	// public Builder class exposed to users. Avoids having to deal with noisy generic
 	// parameters.
-	@NullMarked // TODO: move at package level
 	public static class Builder extends AbstractBuilder<Builder> {
 
 	}
 
-	@NullMarked // TODO: move at package level
 	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
-			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
+			extends AbstractOpenAiOptions.AbstractBuilder<OpenAiChatOptions, B>
+			implements ToolCallingChatOptions.Builder<B>, StructuredOutputChatOptions.Builder<B> {
 
 		@Override
 		public B clone() {
-			B copy = super.clone();
-			if (!this.customHeaders.isEmpty()) {
-				copy.customHeaders = new HashMap<>(this.customHeaders);
+			try {
+				@SuppressWarnings("unchecked")
+				B copy = (B) super.clone();
+				if (this.customHeaders != null && !this.customHeaders.isEmpty()) {
+					copy.customHeaders = new HashMap<>(this.customHeaders);
+				}
+				copy.logitBias = this.logitBias == null ? null : new HashMap<>(this.logitBias);
+				copy.outputModalities = this.outputModalities == null ? null : new ArrayList<>(this.outputModalities);
+				copy.metadata = this.metadata == null ? null : new HashMap<>(this.metadata);
+				copy.toolCallbacks = this.toolCallbacks == null ? null : new ArrayList<>(this.toolCallbacks);
+				copy.toolNames = this.toolNames == null ? null : new HashSet<>(this.toolNames);
+				copy.toolContext = this.toolContext == null ? null : new HashMap<>(this.toolContext);
+				return copy;
 			}
-			copy.logitBias = this.logitBias == null ? null : new HashMap<>(this.logitBias);
-			copy.outputModalities = this.outputModalities == null ? null : new ArrayList<>(this.outputModalities);
-			copy.metadata = this.metadata == null ? null : new HashMap<>(this.metadata);
-			return copy;
+			catch (CloneNotSupportedException e) {
+				throw new RuntimeException(e);
+			}
 		}
 
-		// AbstractOpenAiOptions fields
-		protected @Nullable String baseUrl;
+		// ToolCallingChatOptions fields
+		protected @Nullable List<ToolCallback> toolCallbacks;
 
-		protected @Nullable String apiKey;
+		protected @Nullable Set<String> toolNames;
 
-		protected @Nullable Credential credential;
+		protected @Nullable Map<String, Object> toolContext;
 
-		protected @Nullable String microsoftDeploymentName;
+		protected @Nullable Boolean internalToolExecutionEnabled;
 
-		protected @Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion;
+		protected @Nullable Double frequencyPenalty;
 
-		protected @Nullable String organizationId;
+		protected @Nullable Integer maxTokens;
 
-		protected @Nullable Boolean isMicrosoftFoundry;
+		protected @Nullable Double presencePenalty;
 
-		protected @Nullable Boolean isGitHubModels;
+		protected @Nullable List<String> stopSequences;
 
-		protected @Nullable Duration timeout;
+		protected @Nullable Double temperature;
 
-		protected @Nullable Integer maxRetries;
+		protected @Nullable Integer topK;
 
-		protected @Nullable Proxy proxy;
-
-		protected Map<String, String> customHeaders = new HashMap<>();
+		protected @Nullable Double topP;
 
 		// OpenAI SDK specific fields
 		protected @Nullable Map<String, Integer> logitBias;
@@ -735,73 +739,112 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 
 		protected @Nullable Map<String, Object> extraBody;
 
-		public B baseUrl(@Nullable String baseUrl) {
-			this.baseUrl = baseUrl;
+		@Override
+		public B toolCallbacks(@Nullable List<ToolCallback> toolCallbacks) {
+			this.toolCallbacks = toolCallbacks != null ? new ArrayList<>(toolCallbacks) : null;
 			return self();
 		}
 
-		public B apiKey(@Nullable String apiKey) {
-			this.apiKey = apiKey;
+		@Override
+		public B toolCallbacks(ToolCallback... toolCallbacks) {
+			if (this.toolCallbacks == null) {
+				this.toolCallbacks = new ArrayList<>();
+			}
+			this.toolCallbacks.addAll(java.util.Arrays.asList(toolCallbacks));
 			return self();
 		}
 
-		public B credential(@Nullable Credential credential) {
-			this.credential = credential;
+		@Override
+		public B toolNames(@Nullable Set<String> toolNames) {
+			this.toolNames = toolNames != null ? new HashSet<>(toolNames) : null;
 			return self();
 		}
 
-		public B deploymentName(@Nullable String deploymentName) {
-			this.microsoftDeploymentName = deploymentName;
+		@Override
+		public B toolNames(String... toolNames) {
+			if (this.toolNames == null) {
+				this.toolNames = new HashSet<>();
+			}
+			this.toolNames.addAll(Set.of(toolNames));
 			return self();
 		}
 
-		public B microsoftFoundryServiceVersion(@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion) {
-			this.microsoftFoundryServiceVersion = microsoftFoundryServiceVersion;
+		@Override
+		public B toolContext(@Nullable Map<String, Object> context) {
+			if (context != null) {
+				if (this.toolContext == null) {
+					this.toolContext = new HashMap<>();
+				}
+				this.toolContext.putAll(context);
+			}
+			else {
+				this.toolContext = null;
+			}
 			return self();
 		}
 
-		public B azureOpenAIServiceVersion(@Nullable AzureOpenAIServiceVersion azureOpenAIServiceVersion) {
-			this.microsoftFoundryServiceVersion = azureOpenAIServiceVersion;
+		@Override
+		public B toolContext(String key, Object value) {
+			if (this.toolContext == null) {
+				this.toolContext = new HashMap<>();
+			}
+			this.toolContext.put(key, value);
 			return self();
 		}
 
-		public B organizationId(@Nullable String organizationId) {
-			this.organizationId = organizationId;
+		@Override
+		public B internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+			this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 			return self();
 		}
 
-		public B microsoftFoundry(@Nullable Boolean microsoftFoundry) {
-			this.isMicrosoftFoundry = microsoftFoundry;
+		@Override
+		public B frequencyPenalty(@Nullable Double frequencyPenalty) {
+			this.frequencyPenalty = frequencyPenalty;
 			return self();
 		}
 
-		public B azure(@Nullable Boolean azure) {
-			this.isMicrosoftFoundry = azure;
+		@Override
+		public B maxTokens(@Nullable Integer maxTokens) {
+			if (this.maxCompletionTokens != null) {
+				logger.warn(
+						"Both maxTokens and maxCompletionTokens are set. OpenAI API does not support setting both parameters simultaneously. "
+								+ "As maxToken is deprecated, we will ignore it and use maxCompletionToken ({}).",
+						this.maxCompletionTokens);
+			}
+			else {
+				this.maxTokens = maxTokens;
+			}
 			return self();
 		}
 
-		public B gitHubModels(@Nullable Boolean gitHubModels) {
-			this.isGitHubModels = gitHubModels;
+		@Override
+		public B presencePenalty(@Nullable Double presencePenalty) {
+			this.presencePenalty = presencePenalty;
 			return self();
 		}
 
-		public B timeout(@Nullable Duration timeout) {
-			this.timeout = timeout;
+		@Override
+		public B stopSequences(@Nullable List<String> stopSequences) {
+			this.stopSequences = stopSequences;
 			return self();
 		}
 
-		public B maxRetries(@Nullable Integer maxRetries) {
-			this.maxRetries = maxRetries;
+		@Override
+		public B temperature(@Nullable Double temperature) {
+			this.temperature = temperature;
 			return self();
 		}
 
-		public B proxy(@Nullable Proxy proxy) {
-			this.proxy = proxy;
+		@Override
+		public B topK(@Nullable Integer topK) {
+			this.topK = topK;
 			return self();
 		}
 
-		public B customHeaders(Map<String, String> customHeaders) {
-			this.customHeaders = customHeaders != null ? new HashMap<>(customHeaders) : new HashMap<>();
+		@Override
+		public B topP(@Nullable Double topP) {
+			this.topP = topP;
 			return self();
 		}
 
@@ -820,27 +863,13 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 			return self();
 		}
 
-		@Override
-		public B maxTokens(@Nullable Integer maxTokens) {
-			if (this.maxCompletionTokens != null) {
-				logger.warn(
-						"Both maxTokens and maxCompletionTokens are set. OpenAI API does not support setting both parameters simultaneously. "
-								+ "As maxToken is deprecated, we will ignore it and use maxCompletionToken ({}).",
-						this.maxCompletionTokens);
-			}
-			else {
-				super.maxTokens(maxTokens);
-			}
-			return self();
-		}
-
 		public B maxCompletionTokens(@Nullable Integer maxCompletionTokens) {
 			if (maxCompletionTokens != null && this.maxTokens != null) {
 				logger.warn(
 						"Both maxTokens and maxCompletionTokens are set. OpenAI API does not support setting both parameters simultaneously. "
 								+ "As maxToken is deprecated, we will use maxCompletionToken ({}).",
 						maxCompletionTokens);
-				super.maxTokens(null);
+				this.maxTokens(null);
 			}
 			this.maxCompletionTokens = maxCompletionTokens;
 			return self();
@@ -951,7 +980,6 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 
 		@Override
 		public B combineWith(ChatOptions.Builder<?> other) {
-			super.combineWith(other);
 			if (other instanceof AbstractBuilder<?> that) {
 				if (that.baseUrl != null) {
 					this.baseUrl = that.baseUrl;
@@ -1048,6 +1076,45 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 				}
 				if (that.maxRetries != null) {
 					this.maxRetries = that.maxRetries;
+				}
+				if (that.model != null) {
+					this.model = that.model;
+				}
+				if (that.frequencyPenalty != null) {
+					this.frequencyPenalty = that.frequencyPenalty;
+				}
+				if (that.maxTokens != null) {
+					this.maxTokens = that.maxTokens;
+				}
+				if (that.presencePenalty != null) {
+					this.presencePenalty = that.presencePenalty;
+				}
+				if (that.stopSequences != null) {
+					this.stopSequences = that.stopSequences;
+				}
+				if (that.temperature != null) {
+					this.temperature = that.temperature;
+				}
+				if (that.topK != null) {
+					this.topK = that.topK;
+				}
+				if (that.topP != null) {
+					this.topP = that.topP;
+				}
+				if (that.toolCallbacks != null) {
+					this.toolCallbacks = new ArrayList<>(that.toolCallbacks);
+				}
+				if (that.toolNames != null) {
+					this.toolNames = new HashSet<>(that.toolNames);
+				}
+				if (that.toolContext != null) {
+					if (this.toolContext == null) {
+						this.toolContext = new HashMap<>();
+					}
+					this.toolContext.putAll(that.toolContext);
+				}
+				if (that.internalToolExecutionEnabled != null) {
+					this.internalToolExecutionEnabled = that.internalToolExecutionEnabled;
 				}
 			}
 			return self();
