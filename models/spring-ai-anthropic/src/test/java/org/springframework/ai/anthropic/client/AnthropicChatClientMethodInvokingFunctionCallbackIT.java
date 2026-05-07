@@ -33,7 +33,6 @@ import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.annotation.Tool;
@@ -43,8 +42,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.ReflectionUtils;
-
-import reactor.core.publisher.Flux;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -276,18 +273,15 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
 
-		Flux<ChatResponse> responses = chatClient.prompt()
+		String content = chatClient.prompt()
 			.options(ToolCallingChatOptions.builder().model(modelName).build())
 			.tools(new ParameterLessTools())
 			.user("Get current weather in Amsterdam")
 			.stream()
-			.chatResponse();
-
-		String content = responses.collectList()
+			.content()
+			.collectList()
 			.block()
 			.stream()
-			.filter(cr -> cr.getResult() != null)
-			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
 		assertThat(content).contains("20");
