@@ -38,31 +38,32 @@ import org.springframework.context.annotation.Bean;
  * @author Yanming Zhou
  * @author Issam El-atif
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 @AutoConfiguration
 @ConditionalOnProperty(name = SpringAIModelProperties.AUDIO_TRANSCRIPTION_MODEL, havingValue = SpringAIModels.OPENAI,
 		matchIfMissing = true)
-@EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiAudioTranscriptionProperties.class })
+@EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiAudioTranscriptionProperties.class })
 public class OpenAiAudioTranscriptionAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiAudioTranscriptionModel openAiSdkAudioTranscriptionModel(
-			OpenAiConnectionProperties connectionProperties,
+	public OpenAiAudioTranscriptionModel openAiSdkAudioTranscriptionModel(OpenAiCommonProperties commonProperties,
 			OpenAiAudioTranscriptionProperties transcriptionProperties) {
-		OpenAIClient client = openAiClient(connectionProperties);
+		OpenAIClient client = openAiClient(commonProperties);
 		return OpenAiAudioTranscriptionModel.builder()
 			.openAiClient(client)
 			.options(transcriptionProperties.getOptions())
 			.build();
 	}
 
-	private OpenAIClient openAiClient(OpenAiConnectionProperties resolved) {
-		return OpenAiSetup.setupSyncClient(resolved.getBaseUrl(), resolved.getApiKey(), resolved.getCredential(),
-				resolved.getMicrosoftDeploymentName(), resolved.getMicrosoftFoundryServiceVersion(),
-				resolved.getOrganizationId(), resolved.isMicrosoftFoundry(), resolved.isGitHubModels(),
-				resolved.getModel(), resolved.getTimeout(), resolved.getMaxRetries(), resolved.getProxy(),
-				resolved.getCustomHeaders());
+	private OpenAIClient openAiClient(OpenAiCommonProperties commonProperties) {
+		return OpenAiSetup.setupSyncClient(commonProperties.getBaseUrl(), commonProperties.getApiKey(),
+				commonProperties.getCredential(), commonProperties.getMicrosoftDeploymentName(),
+				commonProperties.getMicrosoftFoundryServiceVersion(), commonProperties.getOrganizationId(),
+				commonProperties.isMicrosoftFoundry(), commonProperties.isGitHubModels(), commonProperties.getModel(),
+				commonProperties.getTimeout(), commonProperties.getMaxRetries(), commonProperties.getProxy(),
+				commonProperties.getCustomHeaders());
 	}
 
 }

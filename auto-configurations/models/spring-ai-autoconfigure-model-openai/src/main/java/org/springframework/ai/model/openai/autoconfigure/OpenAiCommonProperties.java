@@ -27,8 +27,11 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(OpenAiConnectionProperties.CONFIG_PREFIX)
-public class OpenAiConnectionProperties {
+/**
+ * @author Sebastien Deleuze
+ */
+@ConfigurationProperties(OpenAiCommonProperties.CONFIG_PREFIX)
+public class OpenAiCommonProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai";
 

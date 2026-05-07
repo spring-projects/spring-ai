@@ -29,6 +29,9 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * @author Sebastien Deleuze
+ */
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiEmbeddingAutoConfigurationIT {
 
@@ -98,11 +101,11 @@ public class OpenAiEmbeddingAutoConfigurationIT {
 			// @formatter:on
 			.withConfiguration(AutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
-				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+				var commonProperties = context.getBean(OpenAiCommonProperties.class);
 				var embeddingProperties = context.getBean(OpenAiEmbeddingProperties.class);
 
-				assertThat(connectionProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
-				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
+				assertThat(commonProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
+				assertThat(commonProperties.getApiKey()).isEqualTo("API_KEY");
 
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(embeddingProperties.getOptions().getUser()).isEqualTo("userXYZ");
