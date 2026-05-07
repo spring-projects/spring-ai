@@ -6,7 +6,7 @@
 
 === Options and Properties
 
-The configuration properties do not use anymore `.options`, so for example the former `spring.ai.openai.chat.options.model` is now `spring.ai.openai.chat.model`.
+The configuration properties do not use `.options` anymore, so for example the former `spring.ai.openai.chat.options.model` is now `spring.ai.openai.chat.model`.
 Deprecated configuration properties are provided for the `.options` ones in order to provide a smoother migration experience.
 
 The setters have been removed from the options classes, builder should now be used instead.

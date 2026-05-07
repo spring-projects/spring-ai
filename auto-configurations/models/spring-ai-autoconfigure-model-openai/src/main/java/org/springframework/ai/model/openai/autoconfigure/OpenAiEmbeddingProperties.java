@@ -25,7 +25,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 @ConfigurationProperties(OpenAiEmbeddingProperties.CONFIG_PREFIX)
-public class OpenAiEmbeddingProperties {
+public class OpenAiEmbeddingProperties extends AbstractOpenAiProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.embedding";
 
@@ -33,7 +33,7 @@ public class OpenAiEmbeddingProperties {
 
 	private MetadataMode metadataMode = MetadataMode.EMBED;
 
-	private String model = DEFAULT_EMBEDDING_MODEL;
+	private @Nullable String model = DEFAULT_EMBEDDING_MODEL;
 
 	private @Nullable String user;
 
@@ -49,11 +49,11 @@ public class OpenAiEmbeddingProperties {
 		this.metadataMode = metadataMode;
 	}
 
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
+	public void setModel(@Nullable String model) {
 		this.model = model;
 	}
 
@@ -114,11 +114,11 @@ public class OpenAiEmbeddingProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.embedding.model")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public String getModel() {
+		public @Nullable String getModel() {
 			return OpenAiEmbeddingProperties.this.getModel();
 		}
 
-		public void setModel(String model) {
+		public void setModel(@Nullable String model) {
 			OpenAiEmbeddingProperties.this.setModel(model);
 		}
 

@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.openai.OpenAiModerationOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
@@ -27,17 +29,17 @@ import org.springframework.boot.context.properties.DeprecatedConfigurationProper
  * @author Ilayaperumal Gopinathan
  */
 @ConfigurationProperties(OpenAiModerationProperties.CONFIG_PREFIX)
-public class OpenAiModerationProperties {
+public class OpenAiModerationProperties extends AbstractOpenAiProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.moderation";
 
-	private String model = OpenAiModerationOptions.DEFAULT_MODERATION_MODEL;
+	private @Nullable String model = OpenAiModerationOptions.DEFAULT_MODERATION_MODEL;
 
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
+	public void setModel(@Nullable String model) {
 		this.model = model;
 	}
 
@@ -65,11 +67,11 @@ public class OpenAiModerationProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.moderation.model")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public String getModel() {
+		public @Nullable String getModel() {
 			return OpenAiModerationProperties.this.getModel();
 		}
 
-		public void setModel(String model) {
+		public void setModel(@Nullable String model) {
 			OpenAiModerationProperties.this.setModel(model);
 		}
 

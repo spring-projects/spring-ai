@@ -39,13 +39,13 @@ import org.springframework.boot.context.properties.DeprecatedConfigurationProper
  * @author Sebastien Deleuze
  */
 @ConfigurationProperties(OpenAiChatProperties.CONFIG_PREFIX)
-public class OpenAiChatProperties {
+public class OpenAiChatProperties extends AbstractOpenAiProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.chat";
 
 	public static final String DEFAULT_CHAT_MODEL = OpenAiChatOptions.DEFAULT_CHAT_MODEL;
 
-	private String model = DEFAULT_CHAT_MODEL;
+	private @Nullable String model = DEFAULT_CHAT_MODEL;
 
 	private @Nullable Double frequencyPenalty;
 
@@ -99,11 +99,11 @@ public class OpenAiChatProperties {
 
 	private @Nullable Boolean internalToolExecutionEnabled;
 
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
+	public void setModel(@Nullable String model) {
 		this.model = model;
 	}
 
@@ -574,7 +574,7 @@ public class OpenAiChatProperties {
 			return OpenAiChatProperties.this.getModel();
 		}
 
-		public void setModel(String model) {
+		public void setModel(@Nullable String model) {
 			OpenAiChatProperties.this.setModel(model);
 		}
 

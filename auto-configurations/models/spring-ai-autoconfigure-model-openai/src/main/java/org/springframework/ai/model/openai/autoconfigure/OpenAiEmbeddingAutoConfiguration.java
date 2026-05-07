@@ -54,7 +54,10 @@ public class OpenAiEmbeddingAutoConfiguration {
 			OpenAiEmbeddingProperties embeddingProperties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
-		var embeddingModel = new OpenAiEmbeddingModel(this.openAiClient(commonProperties),
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
+				embeddingProperties);
+
+		var embeddingModel = new OpenAiEmbeddingModel(this.openAiClient(resolvedProperties),
 				embeddingProperties.getMetadataMode(), embeddingProperties.toOptions(),
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 

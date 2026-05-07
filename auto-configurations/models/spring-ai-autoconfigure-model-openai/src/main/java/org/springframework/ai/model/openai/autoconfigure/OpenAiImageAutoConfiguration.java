@@ -55,7 +55,9 @@ public class OpenAiImageAutoConfiguration {
 			OpenAiImageProperties imageProperties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ImageModelObservationConvention> observationConvention) {
 
-		var imageModel = new OpenAiImageModel(openAiClient(commonProperties), imageProperties.toOptions(),
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties, imageProperties);
+
+		var imageModel = new OpenAiImageModel(openAiClient(resolvedProperties), imageProperties.toOptions(),
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(imageModel::setObservationConvention);

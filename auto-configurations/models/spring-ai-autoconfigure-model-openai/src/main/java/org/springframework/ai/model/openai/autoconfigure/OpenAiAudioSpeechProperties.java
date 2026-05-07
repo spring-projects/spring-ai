@@ -31,13 +31,13 @@ import org.springframework.boot.context.properties.DeprecatedConfigurationProper
  * @author Ilayaperumal Gopinathan
  */
 @ConfigurationProperties(OpenAiAudioSpeechProperties.CONFIG_PREFIX)
-public class OpenAiAudioSpeechProperties {
+public class OpenAiAudioSpeechProperties extends AbstractOpenAiProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.audio.speech";
 
 	public static final String DEFAULT_SPEECH_MODEL = OpenAiAudioSpeechOptions.DEFAULT_SPEECH_MODEL;
 
-	private String model = DEFAULT_SPEECH_MODEL;
+	private @Nullable String model = DEFAULT_SPEECH_MODEL;
 
 	private @Nullable String input;
 
@@ -47,11 +47,11 @@ public class OpenAiAudioSpeechProperties {
 
 	private Double speed = OpenAiAudioSpeechOptions.DEFAULT_SPEED;
 
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
+	public void setModel(@Nullable String model) {
 		this.model = model;
 	}
 
@@ -121,11 +121,11 @@ public class OpenAiAudioSpeechProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.audio.speech.model")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public String getModel() {
+		public @Nullable String getModel() {
 			return OpenAiAudioSpeechProperties.this.getModel();
 		}
 
-		public void setModel(String model) {
+		public void setModel(@Nullable String model) {
 			OpenAiAudioSpeechProperties.this.setModel(model);
 		}
 
