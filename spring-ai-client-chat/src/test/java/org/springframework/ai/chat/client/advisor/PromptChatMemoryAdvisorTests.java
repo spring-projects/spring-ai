@@ -374,4 +374,48 @@ public class PromptChatMemoryAdvisorTests {
 		assertThat(messages.get(1)).isInstanceOf(ToolResponseMessage.class);
 	}
 
+	@Test
+	void beforeMethodIncludesToolResponseMessagesInMemoryPrompt() {
+		// Verify that ToolResponseMessages in memory are included in the system
+		// prompt, not filtered out.
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+			.chatMemoryRepository(new InMemoryChatMemoryRepository())
+			.build();
+
+		// Pre-populate memory with a conversation that includes tool calls
+		chatMemory.add("test-conversation", List.of(
+				new org.springframework.ai.chat.messages.UserMessage("What's the weather?"),
+				AssistantMessage.builder()
+					.content("Let me check the weather.")
+					.toolCalls(List
+						.of(new AssistantMessage.ToolCall("call-1", "function", "getWeather", "{\"city\":\"Paris\"}")))
+					.build(),
+				ToolResponseMessage.builder()
+					.responses(List.of(new ToolResponseMessage.ToolResponse("call-1", "getWeather", "Sunny, 22°C")))
+					.build(),
+				new AssistantMessage("It's sunny and 22°C in Paris.")));
+
+		PromptChatMemoryAdvisor advisor = PromptChatMemoryAdvisor.builder(chatMemory)
+			.conversationId("test-conversation")
+			.build();
+
+		// New turn
+		org.springframework.ai.chat.prompt.Prompt prompt = org.springframework.ai.chat.prompt.Prompt.builder()
+			.messages(new org.springframework.ai.chat.messages.SystemMessage("You are helpful"),
+					new org.springframework.ai.chat.messages.UserMessage("And in London?"))
+			.build();
+		org.springframework.ai.chat.client.ChatClientRequest request = org.springframework.ai.chat.client.ChatClientRequest
+			.builder()
+			.prompt(prompt)
+			.build();
+		AdvisorChain chain = mock(AdvisorChain.class);
+
+		org.springframework.ai.chat.client.ChatClientRequest processedRequest = advisor.before(request, chain);
+
+		// Verify that the system message now contains TOOL messages in the memory section
+		String systemText = processedRequest.prompt().getSystemMessage().getText();
+		assertThat(systemText).contains("TOOL:");
+		assertThat(systemText).contains("Sunny, 22°C");
+	}
+
 }
