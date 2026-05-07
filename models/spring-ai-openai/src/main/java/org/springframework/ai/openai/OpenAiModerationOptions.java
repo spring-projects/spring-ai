@@ -40,20 +40,20 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 	 */
 	public static final String DEFAULT_MODERATION_MODEL = "omni-moderation-latest";
 
-	private @Nullable String model;
+
+	protected OpenAiModerationOptions(@Nullable String baseUrl, @Nullable String apiKey,
+			@Nullable Credential credential, @Nullable String model, @Nullable String microsoftDeploymentName,
+			@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion, @Nullable String organizationId,
+			@Nullable Boolean isMicrosoftFoundry, @Nullable Boolean isGitHubModels, @Nullable Duration timeout,
+			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders) {
+		super(baseUrl, apiKey, credential, model != null ? model : DEFAULT_MODERATION_MODEL, microsoftDeploymentName,
+				microsoftFoundryServiceVersion, organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries, proxy, customHeaders);
+	}
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	@Override
-	public String getModel() {
-		return this.model != null ? this.model : DEFAULT_MODERATION_MODEL;
-	}
-
-	public void setModel(@Nullable String model) {
-		this.model = model;
-	}
 
 	public OpenAiModerationOptions copy() {
 		return builder().from(this).build();
@@ -67,7 +67,7 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 		if (!(o instanceof OpenAiModerationOptions that)) {
 			return false;
 		}
-		return Objects.equals(this.model, that.model) && Objects.equals(getBaseUrl(), that.getBaseUrl())
+		return Objects.equals(getModel(), that.getModel()) && Objects.equals(getBaseUrl(), that.getBaseUrl())
 				&& Objects.equals(getApiKey(), that.getApiKey())
 				&& Objects.equals(getCredential(), that.getCredential())
 				&& Objects.equals(getMicrosoftDeploymentName(), that.getMicrosoftDeploymentName())
@@ -81,14 +81,14 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.model, getBaseUrl(), getApiKey(), getCredential(), getMicrosoftDeploymentName(),
+		return Objects.hash(getModel(), getBaseUrl(), getApiKey(), getCredential(), getMicrosoftDeploymentName(),
 				getMicrosoftFoundryServiceVersion(), getOrganizationId(), isMicrosoftFoundry(), isGitHubModels(),
 				getTimeout(), getMaxRetries(), getProxy(), getCustomHeaders());
 	}
 
 	@Override
 	public String toString() {
-		return "OpenAiModerationOptions{" + "model='" + this.model + '\'' + ", baseUrl='" + getBaseUrl() + '\''
+		return "OpenAiModerationOptions{" + "model='" + getModel() + '\'' + ", baseUrl='" + getBaseUrl() + '\''
 				+ ", organizationId='" + getOrganizationId() + '\'' + ", microsoftDeploymentName='"
 				+ getMicrosoftDeploymentName() + '\'' + ", timeout=" + getTimeout() + ", maxRetries=" + getMaxRetries()
 				+ '}';
@@ -252,27 +252,10 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 		}
 
 		public OpenAiModerationOptions build() {
-			OpenAiModerationOptions options = new OpenAiModerationOptions();
-			options.setModel(this.model);
-			options.setBaseUrl(this.baseUrl);
-			options.setApiKey(this.apiKey);
-			options.setCredential(this.credential);
-			options.setDeploymentName(this.deploymentName);
-			options.setMicrosoftFoundryServiceVersion(this.microsoftFoundryServiceVersion);
-			options.setOrganizationId(this.organizationId);
-			options.setMicrosoftFoundry(this.microsoftFoundry);
-			options.setGitHubModels(this.gitHubModels);
-			if (this.timeout != null) {
-				options.setTimeout(this.timeout);
-			}
-			if (this.maxRetries != null) {
-				options.setMaxRetries(this.maxRetries);
-			}
-			options.setProxy(this.proxy);
-			if (this.customHeaders != null) {
-				options.setCustomHeaders(this.customHeaders);
-			}
-			return options;
+			return new OpenAiModerationOptions(this.baseUrl, this.apiKey, this.credential, this.model,
+					this.deploymentName, this.microsoftFoundryServiceVersion, this.organizationId,
+					this.microsoftFoundry, this.gitHubModels, this.timeout, this.maxRetries, this.proxy,
+					this.customHeaders);
 		}
 
 	}

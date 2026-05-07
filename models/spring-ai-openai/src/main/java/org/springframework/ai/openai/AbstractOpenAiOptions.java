@@ -105,44 +105,47 @@ public class AbstractOpenAiOptions {
 	 */
 	private Map<String, String> customHeaders = new HashMap<>();
 
-	public @Nullable String getBaseUrl() {
-		return this.baseUrl;
+	protected AbstractOpenAiOptions() {
 	}
 
-	public void setBaseUrl(@Nullable String baseUrl) {
+	protected AbstractOpenAiOptions(@Nullable String baseUrl, @Nullable String apiKey, @Nullable Credential credential,
+			@Nullable String model, @Nullable String microsoftDeploymentName,
+			@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion, @Nullable String organizationId,
+			@Nullable Boolean isMicrosoftFoundry, @Nullable Boolean isGitHubModels, @Nullable Duration timeout,
+			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders) {
 		this.baseUrl = baseUrl;
+		this.apiKey = apiKey;
+		this.credential = credential;
+		this.model = model;
+		this.microsoftDeploymentName = microsoftDeploymentName;
+		this.microsoftFoundryServiceVersion = microsoftFoundryServiceVersion;
+		this.organizationId = organizationId;
+		this.isMicrosoftFoundry = isMicrosoftFoundry != null ? isMicrosoftFoundry : false;
+		this.isGitHubModels = isGitHubModels != null ? isGitHubModels : false;
+		this.timeout = timeout != null ? timeout : DEFAULT_TIMEOUT;
+		this.maxRetries = maxRetries != null ? maxRetries : DEFAULT_MAX_RETRIES;
+		this.proxy = proxy;
+		this.customHeaders = customHeaders != null ? new HashMap<>(customHeaders) : new HashMap<>();
+	}
+
+	public @Nullable String getBaseUrl() {
+		return this.baseUrl;
 	}
 
 	public @Nullable String getApiKey() {
 		return this.apiKey;
 	}
 
-	public void setApiKey(@Nullable String apiKey) {
-		this.apiKey = apiKey;
-	}
-
 	public @Nullable Credential getCredential() {
 		return this.credential;
-	}
-
-	public void setCredential(@Nullable Credential credential) {
-		this.credential = credential;
 	}
 
 	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(@Nullable String model) {
-		this.model = model;
-	}
-
 	public @Nullable String getMicrosoftDeploymentName() {
 		return this.microsoftDeploymentName;
-	}
-
-	public void setMicrosoftDeploymentName(@Nullable String microsoftDeploymentName) {
-		this.microsoftDeploymentName = microsoftDeploymentName;
 	}
 
 	/**
@@ -152,75 +155,36 @@ public class AbstractOpenAiOptions {
 		return this.microsoftDeploymentName;
 	}
 
-	/**
-	 * Alias for setAzureDeploymentName()
-	 */
-	public void setDeploymentName(@Nullable String azureDeploymentName) {
-		this.microsoftDeploymentName = azureDeploymentName;
-	}
-
 	public @Nullable AzureOpenAIServiceVersion getMicrosoftFoundryServiceVersion() {
 		return this.microsoftFoundryServiceVersion;
-	}
-
-	public void setMicrosoftFoundryServiceVersion(@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion) {
-		this.microsoftFoundryServiceVersion = microsoftFoundryServiceVersion;
 	}
 
 	public @Nullable String getOrganizationId() {
 		return this.organizationId;
 	}
 
-	public void setOrganizationId(@Nullable String organizationId) {
-		this.organizationId = organizationId;
-	}
-
 	public boolean isMicrosoftFoundry() {
 		return this.isMicrosoftFoundry;
-	}
-
-	public void setMicrosoftFoundry(boolean microsoftFoundry) {
-		this.isMicrosoftFoundry = microsoftFoundry;
 	}
 
 	public boolean isGitHubModels() {
 		return this.isGitHubModels;
 	}
 
-	public void setGitHubModels(boolean gitHubModels) {
-		this.isGitHubModels = gitHubModels;
-	}
-
 	public Duration getTimeout() {
 		return this.timeout;
-	}
-
-	public void setTimeout(Duration timeout) {
-		this.timeout = timeout;
 	}
 
 	public int getMaxRetries() {
 		return this.maxRetries;
 	}
 
-	public void setMaxRetries(int maxRetries) {
-		this.maxRetries = maxRetries;
-	}
-
 	public @Nullable Proxy getProxy() {
 		return this.proxy;
 	}
 
-	public void setProxy(@Nullable Proxy proxy) {
-		this.proxy = proxy;
-	}
-
 	public Map<String, String> getCustomHeaders() {
 		return this.customHeaders;
-	}
-
-	public void setCustomHeaders(Map<String, String> customHeaders) {
-		this.customHeaders = customHeaders;
 	}
 
 }

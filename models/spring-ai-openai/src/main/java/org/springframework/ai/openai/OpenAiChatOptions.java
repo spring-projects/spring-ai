@@ -144,20 +144,8 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 			@Nullable String user, @Nullable Boolean parallelToolCalls, @Nullable Boolean store,
 			@Nullable Map<String, String> metadata, @Nullable String reasoningEffort, @Nullable String verbosity,
 			@Nullable String serviceTier, @Nullable Map<String, Object> extraBody) {
-		// AbstractOpenAiOptions
-		this.setBaseUrl(baseUrl);
-		this.setApiKey(apiKey);
-		this.setCredential(credential);
-		this.setModel(model);
-		this.setMicrosoftDeploymentName(microsoftDeploymentName);
-		this.setMicrosoftFoundryServiceVersion(microsoftFoundryServiceVersion);
-		this.setOrganizationId(organizationId);
-		this.setMicrosoftFoundry(isMicrosoftFoundry);
-		this.setGitHubModels(isGitHubModels);
-		this.setTimeout(timeout);
-		this.setMaxRetries(maxRetries);
-		this.setProxy(proxy);
-		this.setCustomHeaders(customHeaders);
+		super(baseUrl, apiKey, credential, model, microsoftDeploymentName, microsoftFoundryServiceVersion,
+				organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries, proxy, customHeaders);
 		// ChatOptions
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;

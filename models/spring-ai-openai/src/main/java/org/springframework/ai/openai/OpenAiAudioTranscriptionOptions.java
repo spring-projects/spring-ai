@@ -51,17 +51,36 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 	 */
 	public static final AudioResponseFormat DEFAULT_RESPONSE_FORMAT = AudioResponseFormat.TEXT;
 
-	private @Nullable String model;
+	private final @Nullable String model;
 
-	private AudioResponseFormat responseFormat = DEFAULT_RESPONSE_FORMAT;
+	private final AudioResponseFormat responseFormat;
 
-	private @Nullable String prompt;
+	private final @Nullable String prompt;
 
-	private @Nullable String language;
+	private final @Nullable String language;
 
-	private @Nullable Float temperature;
+	private final @Nullable Float temperature;
 
-	private @Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities;
+	private final @Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities;
+
+
+	protected OpenAiAudioTranscriptionOptions(@Nullable String baseUrl, @Nullable String apiKey,
+			@Nullable Credential credential, @Nullable String model, @Nullable String microsoftDeploymentName,
+			@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion, @Nullable String organizationId,
+			@Nullable Boolean isMicrosoftFoundry, @Nullable Boolean isGitHubModels, @Nullable Duration timeout,
+			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
+			@Nullable AudioResponseFormat responseFormat, @Nullable String prompt, @Nullable String language,
+			@Nullable Float temperature,
+			@Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities) {
+		super(baseUrl, apiKey, credential, model, microsoftDeploymentName, microsoftFoundryServiceVersion,
+				organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries, proxy, customHeaders);
+		this.model = model;
+		this.responseFormat = responseFormat != null ? responseFormat : DEFAULT_RESPONSE_FORMAT;
+		this.prompt = prompt;
+		this.language = language;
+		this.temperature = temperature;
+		this.timestampGranularities = timestampGranularities;
+	}
 
 	public static Builder builder() {
 		return new Builder();
@@ -72,49 +91,24 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 		return this.model != null ? this.model : DEFAULT_TRANSCRIPTION_MODEL;
 	}
 
-	public void setModel(@Nullable String model) {
-		this.model = model;
-	}
-
 	public AudioResponseFormat getResponseFormat() {
 		return this.responseFormat;
-	}
-
-	public void setResponseFormat(AudioResponseFormat responseFormat) {
-		this.responseFormat = responseFormat;
 	}
 
 	public @Nullable String getPrompt() {
 		return this.prompt;
 	}
 
-	public void setPrompt(@Nullable String prompt) {
-		this.prompt = prompt;
-	}
-
 	public @Nullable String getLanguage() {
 		return this.language;
-	}
-
-	public void setLanguage(@Nullable String language) {
-		this.language = language;
 	}
 
 	public @Nullable Float getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(@Nullable Float temperature) {
-		this.temperature = temperature;
-	}
-
 	public @Nullable List<TranscriptionCreateParams.TimestampGranularity> getTimestampGranularities() {
 		return this.timestampGranularities;
-	}
-
-	public void setTimestampGranularities(
-			@Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities) {
-		this.timestampGranularities = timestampGranularities;
 	}
 
 	public OpenAiAudioTranscriptionOptions copy() {
@@ -379,34 +373,11 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 		}
 
 		public OpenAiAudioTranscriptionOptions build() {
-			OpenAiAudioTranscriptionOptions options = new OpenAiAudioTranscriptionOptions();
-			options.setBaseUrl(this.baseUrl);
-			options.setApiKey(this.apiKey);
-			options.setCredential(this.credential);
-			options.setModel(this.model);
-			options.setDeploymentName(this.deploymentName);
-			options.setMicrosoftFoundryServiceVersion(this.microsoftFoundryServiceVersion);
-			options.setOrganizationId(this.organizationId);
-			options.setMicrosoftFoundry(this.microsoftFoundry);
-			options.setGitHubModels(this.gitHubModels);
-			if (this.timeout != null) {
-				options.setTimeout(this.timeout);
-			}
-			if (this.maxRetries != null) {
-				options.setMaxRetries(this.maxRetries);
-			}
-			options.setProxy(this.proxy);
-			if (this.customHeaders != null) {
-				options.setCustomHeaders(this.customHeaders);
-			}
-			if (this.responseFormat != null) {
-				options.setResponseFormat(this.responseFormat);
-			}
-			options.setPrompt(this.prompt);
-			options.setLanguage(this.language);
-			options.setTemperature(this.temperature);
-			options.setTimestampGranularities(this.timestampGranularities);
-			return options;
+			return new OpenAiAudioTranscriptionOptions(this.baseUrl, this.apiKey, this.credential, this.model,
+					this.deploymentName, this.microsoftFoundryServiceVersion, this.organizationId,
+					this.microsoftFoundry, this.gitHubModels, this.timeout, this.maxRetries, this.proxy,
+					this.customHeaders, this.responseFormat, this.prompt, this.language, this.temperature,
+					this.timestampGranularities);
 		}
 
 	}
