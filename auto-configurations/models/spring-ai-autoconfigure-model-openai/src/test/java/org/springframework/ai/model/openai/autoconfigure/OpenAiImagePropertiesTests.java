@@ -24,9 +24,10 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit Tests for {@link OpenAiConnectionProperties} and {@link OpenAiImageProperties}.
+ * Unit Tests for {@link OpenAiCommonProperties} and {@link OpenAiImageProperties}.
  *
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 public class OpenAiImagePropertiesTests {
 
@@ -45,10 +46,10 @@ public class OpenAiImagePropertiesTests {
 			.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class))
 			.run(context -> {
 				var imageProperties = context.getBean(OpenAiImageProperties.class);
-				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+				var commonProperties = context.getBean(OpenAiCommonProperties.class);
 
-				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
-				assertThat(connectionProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
+				assertThat(commonProperties.getApiKey()).isEqualTo("abc123");
+				assertThat(commonProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
 
 				assertThat(imageProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(imageProperties.getOptions().getN()).isEqualTo(2);
@@ -77,10 +78,10 @@ public class OpenAiImagePropertiesTests {
 			.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class))
 			.run(context -> {
 				var imageProperties = context.getBean(OpenAiImageProperties.class);
-				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+				var commonProperties = context.getBean(OpenAiCommonProperties.class);
 
-				assertThat(connectionProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
-				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
+				assertThat(commonProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
+				assertThat(commonProperties.getApiKey()).isEqualTo("API_KEY");
 
 				assertThat(imageProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(imageProperties.getOptions().getN()).isEqualTo(3);
