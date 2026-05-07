@@ -35,6 +35,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.deepseek.DeepSeekAssistantMessage;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.deepseek.DeepSeekTestConfiguration;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
@@ -178,6 +179,34 @@ class DeepSeekChatModelFunctionCallingIT {
 		assertThat(chatResponse).isNotNull();
 		assertThat(chatResponse.getMetadata()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
+	}
+
+	@Test
+	void reasonerFunctionCallTest() {
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco? Return the temperature in Celsius.");
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = DeepSeekChatOptions.builder()
+			.model("deepseek-v4-pro")
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResult()).isNotNull();
+		assertThat(response.getResult().getOutput()).isNotNull();
+		assertThat(response.getResult().getOutput()).isInstanceOf(DeepSeekAssistantMessage.class);
+		DeepSeekAssistantMessage assistantMessage = (DeepSeekAssistantMessage) response.getResult().getOutput();
+		assertThat(assistantMessage.getReasoningContent()).isNotEmpty();
+		assertThat(assistantMessage.getText()).isNotEmpty();
+		assertThat(assistantMessage.getText()).contains("30");
 	}
 
 }
