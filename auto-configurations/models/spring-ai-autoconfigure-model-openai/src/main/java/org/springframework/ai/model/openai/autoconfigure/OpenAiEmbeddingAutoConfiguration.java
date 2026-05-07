@@ -53,7 +53,7 @@ public class OpenAiEmbeddingAutoConfiguration {
 			OpenAiEmbeddingProperties embeddingProperties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
-		var embeddingModel = new OpenAiEmbeddingModel(this.openAiClient(commonProperties, embeddingProperties),
+		var embeddingModel = new OpenAiEmbeddingModel(this.openAiClient(commonProperties),
 				embeddingProperties.getMetadataMode(), embeddingProperties.getOptions(),
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
@@ -62,11 +62,7 @@ public class OpenAiEmbeddingAutoConfiguration {
 		return embeddingModel;
 	}
 
-	private OpenAIClient openAiClient(OpenAiConnectionProperties commonProperties,
-			OpenAiEmbeddingProperties embeddingProperties) {
-
-		OpenAiAutoConfigurationUtil.ResolvedConnectionProperties resolved = OpenAiAutoConfigurationUtil
-			.resolveConnectionProperties(commonProperties, embeddingProperties);
+	private OpenAIClient openAiClient(OpenAiConnectionProperties resolved) {
 
 		return OpenAiSetup.setupSyncClient(resolved.getBaseUrl(), resolved.getApiKey(), resolved.getCredential(),
 				resolved.getMicrosoftDeploymentName(), resolved.getMicrosoftFoundryServiceVersion(),

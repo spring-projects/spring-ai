@@ -18,7 +18,6 @@ package org.springframework.ai.model.openai.autoconfigure;
 
 import com.openai.models.images.ImageModel;
 
-import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.ai.openai.OpenAiImageOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -31,7 +30,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * @author lambochen
  */
 @ConfigurationProperties(OpenAiImageProperties.CONFIG_PREFIX)
-public class OpenAiImageProperties extends AbstractOpenAiOptions {
+public class OpenAiImageProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.image";
 

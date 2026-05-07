@@ -21,7 +21,6 @@ import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.ai.openai.OpenAiChatModel.ResponseFormat;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiChatOptions.AudioParameters;
@@ -36,14 +35,20 @@ import org.springframework.boot.context.properties.DeprecatedConfigurationProper
  * @author Sebastien Deleuze
  */
 @ConfigurationProperties(OpenAiChatProperties.CONFIG_PREFIX)
-public class OpenAiChatProperties extends AbstractOpenAiOptions {
+public class OpenAiChatProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.chat";
 
 	public static final String DEFAULT_CHAT_MODEL = OpenAiChatOptions.DEFAULT_CHAT_MODEL;
 
-	public OpenAiChatProperties() {
-		super.setModel(DEFAULT_CHAT_MODEL);
+	private @Nullable String model = DEFAULT_CHAT_MODEL;
+
+	public @Nullable String getModel() {
+		return this.model;
+	}
+
+	public void setModel(@Nullable String model) {
+		this.model = model;
 	}
 
 	private @Nullable Double frequencyPenalty;

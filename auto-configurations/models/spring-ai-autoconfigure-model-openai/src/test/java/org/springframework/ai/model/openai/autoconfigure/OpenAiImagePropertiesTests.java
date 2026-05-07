@@ -50,37 +50,6 @@ public class OpenAiImagePropertiesTests {
 				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
 
-				assertThat(imageProperties.getApiKey()).isNull();
-				assertThat(imageProperties.getBaseUrl()).isNull();
-
-				assertThat(imageProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(imageProperties.getOptions().getN()).isEqualTo(2);
-			});
-	}
-
-	@Test
-	public void imageOverrideConnectionProperties() {
-
-		this.contextRunner.withPropertyValues(
-		// @formatter:off
-				"spring.ai.openai.base-url=http://TEST.BASE.URL",
-				"spring.ai.openai.api-key=abc123",
-				"spring.ai.openai.image.base-url=http://TEST.BASE.URL2",
-				"spring.ai.openai.image.api-key=456",
-				"spring.ai.openai.image.options.model=MODEL_XYZ",
-				"spring.ai.openai.image.options.n=2")
-				// @formatter:on
-			.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class))
-			.run(context -> {
-				var imageProperties = context.getBean(OpenAiImageProperties.class);
-				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
-
-				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
-				assertThat(connectionProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
-
-				assertThat(imageProperties.getApiKey()).isEqualTo("456");
-				assertThat(imageProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL2");
-
 				assertThat(imageProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(imageProperties.getOptions().getN()).isEqualTo(2);
 			});

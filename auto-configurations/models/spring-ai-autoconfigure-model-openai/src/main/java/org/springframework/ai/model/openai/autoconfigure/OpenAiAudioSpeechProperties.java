@@ -16,7 +16,6 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
-import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.ai.openai.OpenAiAudioSpeechOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -30,7 +29,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * @author Ilayaperumal Gopinathan
  */
 @ConfigurationProperties(OpenAiAudioSpeechProperties.CONFIG_PREFIX)
-public class OpenAiAudioSpeechProperties extends AbstractOpenAiOptions {
+public class OpenAiAudioSpeechProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.audio.speech";
 

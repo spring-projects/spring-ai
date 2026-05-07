@@ -26,7 +26,6 @@ import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
-import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.beans.factory.ObjectProvider;
@@ -62,12 +61,9 @@ public class OpenAiChatAutoConfiguration {
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
 			ObjectProvider<ToolExecutionEligibilityPredicate> openAiToolExecutionEligibilityPredicate) {
 
-		OpenAiAutoConfigurationUtil.ResolvedConnectionProperties resolvedConnectionProperties = OpenAiAutoConfigurationUtil
-			.resolveConnectionProperties(commonProperties, chatProperties);
+		OpenAIClient openAIClient = this.openAiClient(commonProperties);
 
-		OpenAIClient openAIClient = this.openAiClient(resolvedConnectionProperties);
-
-		OpenAIClientAsync openAIClientAsync = this.openAiClientAsync(resolvedConnectionProperties);
+		OpenAIClientAsync openAIClientAsync = this.openAiClientAsync(commonProperties);
 
 		var chatModel = OpenAiChatModel.builder()
 			.openAiClient(openAIClient)
@@ -84,7 +80,7 @@ public class OpenAiChatAutoConfiguration {
 		return chatModel;
 	}
 
-	private OpenAIClient openAiClient(AbstractOpenAiOptions resolved) {
+	private OpenAIClient openAiClient(OpenAiConnectionProperties resolved) {
 
 		return OpenAiSetup.setupSyncClient(resolved.getBaseUrl(), resolved.getApiKey(), resolved.getCredential(),
 				resolved.getMicrosoftDeploymentName(), resolved.getMicrosoftFoundryServiceVersion(),
@@ -93,7 +89,7 @@ public class OpenAiChatAutoConfiguration {
 				resolved.getCustomHeaders());
 	}
 
-	private OpenAIClientAsync openAiClientAsync(AbstractOpenAiOptions resolved) {
+	private OpenAIClientAsync openAiClientAsync(OpenAiConnectionProperties resolved) {
 
 		return OpenAiSetup.setupAsyncClient(resolved.getBaseUrl(), resolved.getApiKey(), resolved.getCredential(),
 				resolved.getMicrosoftDeploymentName(), resolved.getMicrosoftFoundryServiceVersion(),

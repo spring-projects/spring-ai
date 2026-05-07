@@ -16,7 +16,6 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
-import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.ai.openai.OpenAiModerationOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -28,7 +27,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * @author Ilayaperumal Gopinathan
  */
 @ConfigurationProperties(OpenAiModerationProperties.CONFIG_PREFIX)
-public class OpenAiModerationProperties extends AbstractOpenAiOptions {
+public class OpenAiModerationProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.moderation";
 
