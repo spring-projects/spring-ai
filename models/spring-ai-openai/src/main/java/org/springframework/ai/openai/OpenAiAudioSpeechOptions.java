@@ -16,11 +16,13 @@
 
 package org.springframework.ai.openai;
 
+import java.net.Proxy;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.openai.azure.AzureOpenAIServiceVersion;
+import com.openai.credential.Credential;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.audio.tts.TextToSpeechOptions;
@@ -33,7 +35,6 @@ import org.springframework.ai.audio.tts.TextToSpeechOptions;
  * @author Jonghoon Park
  * @author Ilayaperumal Gopinathan
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements TextToSpeechOptions {
 
 	public static final String DEFAULT_SPEECH_MODEL = "gpt-4o-mini-tts";
@@ -106,40 +107,35 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 
 	}
 
-	@JsonProperty("model")
-	private @Nullable String model;
+	private final @Nullable String input;
 
-	@JsonProperty("input")
-	private @Nullable String input;
+	private final @Nullable String voice;
 
-	@JsonProperty("voice")
-	private @Nullable String voice;
+	private final @Nullable String responseFormat;
 
-	@JsonProperty("response_format")
-	private @Nullable String responseFormat;
+	private final @Nullable Double speed;
 
-	@JsonProperty("speed")
-	private @Nullable Double speed;
+
+	protected OpenAiAudioSpeechOptions(@Nullable String baseUrl, @Nullable String apiKey,
+			@Nullable Credential credential, @Nullable String model, @Nullable String microsoftDeploymentName,
+			@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion, @Nullable String organizationId,
+			@Nullable Boolean isMicrosoftFoundry, @Nullable Boolean isGitHubModels, @Nullable Duration timeout,
+			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
+			@Nullable String input, @Nullable String voice, @Nullable String responseFormat, @Nullable Double speed) {
+		super(baseUrl, apiKey, credential, model, microsoftDeploymentName, microsoftFoundryServiceVersion,
+				organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries, proxy, customHeaders);
+		this.input = input;
+		this.voice = voice;
+		this.responseFormat = responseFormat;
+		this.speed = speed;
+	}
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	@Override
-	public @Nullable String getModel() {
-		return this.model;
-	}
-
-	public void setModel(@Nullable String model) {
-		this.model = model;
-	}
-
 	public @Nullable String getInput() {
 		return this.input;
-	}
-
-	public void setInput(@Nullable String input) {
-		this.input = input;
 	}
 
 	@Override
@@ -147,33 +143,13 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 		return this.voice;
 	}
 
-	public void setVoice(@Nullable String voice) {
-		this.voice = voice;
-	}
-
-	public void setVoice(@Nullable Voice voice) {
-		this.voice = (voice != null) ? voice.getValue() : null;
-	}
-
 	public @Nullable String getResponseFormat() {
 		return this.responseFormat;
-	}
-
-	public void setResponseFormat(@Nullable String responseFormat) {
-		this.responseFormat = responseFormat;
-	}
-
-	public void setResponseFormat(@Nullable AudioResponseFormat responseFormat) {
-		this.responseFormat = (responseFormat != null) ? responseFormat.getValue() : null;
 	}
 
 	@Override
 	public @Nullable Double getSpeed() {
 		return this.speed;
-	}
-
-	public void setSpeed(@Nullable Double speed) {
-		this.speed = speed;
 	}
 
 	@Override
@@ -185,7 +161,7 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 	@SuppressWarnings("unchecked")
 	public OpenAiAudioSpeechOptions copy() {
 		return OpenAiAudioSpeechOptions.builder()
-			.model(this.model)
+			.model(this.getModel())
 			.input(this.input)
 			.voice(this.voice)
 			.responseFormat(this.responseFormat)
@@ -214,52 +190,83 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 			return false;
 		}
 		OpenAiAudioSpeechOptions that = (OpenAiAudioSpeechOptions) o;
-		return Objects.equals(this.model, that.model) && Objects.equals(this.input, that.input)
+		return Objects.equals(getModel(), that.getModel()) && Objects.equals(this.input, that.input)
 				&& Objects.equals(this.voice, that.voice) && Objects.equals(this.responseFormat, that.responseFormat)
 				&& Objects.equals(this.speed, that.speed);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.model, this.input, this.voice, this.responseFormat, this.speed);
+		return Objects.hash(getModel(), this.input, this.voice, this.responseFormat, this.speed);
 	}
 
 	@Override
 	public String toString() {
-		return "OpenAiAudioSpeechOptions{" + "model='" + this.model + '\'' + ", input='" + this.input + '\''
+		return "OpenAiAudioSpeechOptions{" + "model='" + getModel() + '\'' + ", input='" + this.input + '\''
 				+ ", voice='" + this.voice + '\'' + ", responseFormat='" + this.responseFormat + '\'' + ", speed="
 				+ this.speed + '}';
 	}
 
 	public static final class Builder {
 
-		private final OpenAiAudioSpeechOptions options;
+		private @Nullable String baseUrl;
+
+		private @Nullable String apiKey;
+
+		private @Nullable Credential credential;
+
+		private @Nullable String model;
+
+		private @Nullable String deploymentName;
+
+		private @Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion;
+
+		private @Nullable String organizationId;
+
+		private @Nullable Boolean microsoftFoundry;
+
+		private @Nullable Boolean gitHubModels;
+
+		private @Nullable Duration timeout;
+
+		private @Nullable Integer maxRetries;
+
+		private @Nullable Proxy proxy;
+
+		private @Nullable Map<String, String> customHeaders;
+
+		private @Nullable String input;
+
+		private @Nullable String voice;
+
+		private @Nullable String responseFormat;
+
+		private @Nullable Double speed;
 
 		private Builder() {
-			this.options = new OpenAiAudioSpeechOptions();
 		}
 
 		public Builder from(OpenAiAudioSpeechOptions fromOptions) {
 			// Parent class fields
-			this.options.setBaseUrl(fromOptions.getBaseUrl());
-			this.options.setApiKey(fromOptions.getApiKey());
-			this.options.setCredential(fromOptions.getCredential());
-			this.options.setModel(fromOptions.getModel());
-			this.options.setDeploymentName(fromOptions.getDeploymentName());
-			this.options.setMicrosoftFoundryServiceVersion(fromOptions.getMicrosoftFoundryServiceVersion());
-			this.options.setOrganizationId(fromOptions.getOrganizationId());
-			this.options.setMicrosoftFoundry(fromOptions.isMicrosoftFoundry());
-			this.options.setGitHubModels(fromOptions.isGitHubModels());
-			this.options.setTimeout(fromOptions.getTimeout());
-			this.options.setMaxRetries(fromOptions.getMaxRetries());
-			this.options.setProxy(fromOptions.getProxy());
-			this.options.setCustomHeaders(fromOptions.getCustomHeaders());
+			this.baseUrl = fromOptions.getBaseUrl();
+			this.apiKey = fromOptions.getApiKey();
+			this.credential = fromOptions.getCredential();
+			this.model = fromOptions.getModel();
+			this.deploymentName = fromOptions.getDeploymentName();
+			this.microsoftFoundryServiceVersion = fromOptions.getMicrosoftFoundryServiceVersion();
+			this.organizationId = fromOptions.getOrganizationId();
+			this.microsoftFoundry = fromOptions.isMicrosoftFoundry();
+			this.gitHubModels = fromOptions.isGitHubModels();
+			this.timeout = fromOptions.getTimeout();
+			this.maxRetries = fromOptions.getMaxRetries();
+			this.proxy = fromOptions.getProxy();
+			this.customHeaders = fromOptions.getCustomHeaders();
 			// Child class fields
-			this.options.setModel(fromOptions.getModel());
-			this.options.setInput(fromOptions.getInput());
-			this.options.setVoice(fromOptions.getVoice());
-			this.options.setResponseFormat(fromOptions.getResponseFormat());
-			this.options.setSpeed(fromOptions.getSpeed());
+			this.model = fromOptions.getModel();
+			this.input = fromOptions.getInput();
+			this.voice = fromOptions.getVoice();
+			this.responseFormat = fromOptions.getResponseFormat();
+			this.speed = fromOptions.getSpeed();
 			return this;
 		}
 
@@ -270,149 +277,152 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 			if (from instanceof OpenAiAudioSpeechOptions castFrom) {
 				// Parent class fields
 				if (castFrom.getBaseUrl() != null) {
-					this.options.setBaseUrl(castFrom.getBaseUrl());
+					this.baseUrl = castFrom.getBaseUrl();
 				}
 				if (castFrom.getApiKey() != null) {
-					this.options.setApiKey(castFrom.getApiKey());
+					this.apiKey = castFrom.getApiKey();
 				}
 				if (castFrom.getCredential() != null) {
-					this.options.setCredential(castFrom.getCredential());
+					this.credential = castFrom.getCredential();
 				}
 				if (castFrom.getModel() != null) {
-					this.options.setModel(castFrom.getModel());
+					this.model = castFrom.getModel();
 				}
 				if (castFrom.getDeploymentName() != null) {
-					this.options.setDeploymentName(castFrom.getDeploymentName());
+					this.deploymentName = castFrom.getDeploymentName();
 				}
 				if (castFrom.getMicrosoftFoundryServiceVersion() != null) {
-					this.options.setMicrosoftFoundryServiceVersion(castFrom.getMicrosoftFoundryServiceVersion());
+					this.microsoftFoundryServiceVersion = castFrom.getMicrosoftFoundryServiceVersion();
 				}
 				if (castFrom.getOrganizationId() != null) {
-					this.options.setOrganizationId(castFrom.getOrganizationId());
+					this.organizationId = castFrom.getOrganizationId();
 				}
-				this.options.setMicrosoftFoundry(castFrom.isMicrosoftFoundry());
-				this.options.setGitHubModels(castFrom.isGitHubModels());
-				this.options.setTimeout(castFrom.getTimeout());
-				this.options.setMaxRetries(castFrom.getMaxRetries());
+				this.microsoftFoundry = castFrom.isMicrosoftFoundry();
+				this.gitHubModels = castFrom.isGitHubModels();
+				this.timeout = castFrom.getTimeout();
+				this.maxRetries = castFrom.getMaxRetries();
 				if (castFrom.getProxy() != null) {
-					this.options.setProxy(castFrom.getProxy());
+					this.proxy = castFrom.getProxy();
 				}
-				this.options.setCustomHeaders(castFrom.getCustomHeaders());
+				this.customHeaders = castFrom.getCustomHeaders();
 				// Child class fields
 				if (castFrom.getInput() != null) {
-					this.options.setInput(castFrom.getInput());
+					this.input = castFrom.getInput();
 				}
 				if (castFrom.getVoice() != null) {
-					this.options.setVoice(castFrom.getVoice());
+					this.voice = castFrom.getVoice();
 				}
 				if (castFrom.getResponseFormat() != null) {
-					this.options.setResponseFormat(castFrom.getResponseFormat());
+					this.responseFormat = castFrom.getResponseFormat();
 				}
 				if (castFrom.getSpeed() != null) {
-					this.options.setSpeed(castFrom.getSpeed());
+					this.speed = castFrom.getSpeed();
 				}
 			}
 			return this;
 		}
 
 		public Builder model(@Nullable String model) {
-			this.options.setModel(model);
+			this.model = model;
 			return this;
 		}
 
 		public Builder input(@Nullable String input) {
-			this.options.setInput(input);
+			this.input = input;
 			return this;
 		}
 
 		public Builder voice(@Nullable String voice) {
-			this.options.setVoice(voice);
+			this.voice = voice;
 			return this;
 		}
 
 		public Builder voice(@Nullable Voice voice) {
-			this.options.setVoice(voice);
+			this.voice = (voice != null) ? voice.getValue() : null;
 			return this;
 		}
 
 		public Builder responseFormat(@Nullable String responseFormat) {
-			this.options.setResponseFormat(responseFormat);
+			this.responseFormat = responseFormat;
 			return this;
 		}
 
 		public Builder responseFormat(@Nullable AudioResponseFormat responseFormat) {
-			this.options.setResponseFormat(responseFormat);
+			this.responseFormat = (responseFormat != null) ? responseFormat.getValue() : null;
 			return this;
 		}
 
 		public Builder speed(@Nullable Double speed) {
-			this.options.setSpeed(speed);
+			this.speed = speed;
 			return this;
 		}
 
 		public Builder deploymentName(@Nullable String deploymentName) {
-			this.options.setDeploymentName(deploymentName);
+			this.deploymentName = deploymentName;
 			return this;
 		}
 
 		public Builder baseUrl(@Nullable String baseUrl) {
-			this.options.setBaseUrl(baseUrl);
+			this.baseUrl = baseUrl;
 			return this;
 		}
 
 		public Builder apiKey(@Nullable String apiKey) {
-			this.options.setApiKey(apiKey);
+			this.apiKey = apiKey;
 			return this;
 		}
 
 		public Builder credential(com.openai.credential.@Nullable Credential credential) {
-			this.options.setCredential(credential);
+			this.credential = credential;
 			return this;
 		}
 
 		public Builder microsoftFoundryServiceVersion(
 				com.openai.azure.@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion) {
-			this.options.setMicrosoftFoundryServiceVersion(microsoftFoundryServiceVersion);
+			this.microsoftFoundryServiceVersion = microsoftFoundryServiceVersion;
 			return this;
 		}
 
 		public Builder organizationId(@Nullable String organizationId) {
-			this.options.setOrganizationId(organizationId);
+			this.organizationId = organizationId;
 			return this;
 		}
 
 		public Builder microsoftFoundry(boolean microsoftFoundry) {
-			this.options.setMicrosoftFoundry(microsoftFoundry);
+			this.microsoftFoundry = microsoftFoundry;
 			return this;
 		}
 
 		public Builder gitHubModels(boolean gitHubModels) {
-			this.options.setGitHubModels(gitHubModels);
+			this.gitHubModels = gitHubModels;
 			return this;
 		}
 
 		public Builder timeout(java.time.Duration timeout) {
-			this.options.setTimeout(timeout);
+			this.timeout = timeout;
 			return this;
 		}
 
 		public Builder maxRetries(int maxRetries) {
-			this.options.setMaxRetries(maxRetries);
+			this.maxRetries = maxRetries;
 			return this;
 		}
 
 		public Builder proxy(java.net.@Nullable Proxy proxy) {
-			this.options.setProxy(proxy);
+			this.proxy = proxy;
 			return this;
 		}
 
 		public Builder customHeaders(Map<String, String> customHeaders) {
-			this.options.setCustomHeaders(customHeaders);
+			this.customHeaders = customHeaders;
 			return this;
 		}
 
 		public OpenAiAudioSpeechOptions build() {
-			return this.options;
+			return new OpenAiAudioSpeechOptions(this.baseUrl, this.apiKey, this.credential, this.model,
+					this.deploymentName, this.microsoftFoundryServiceVersion, this.organizationId,
+					this.microsoftFoundry, this.gitHubModels, this.timeout, this.maxRetries, this.proxy,
+					this.customHeaders, this.input, this.voice, this.responseFormat, this.speed);
 		}
 
 	}

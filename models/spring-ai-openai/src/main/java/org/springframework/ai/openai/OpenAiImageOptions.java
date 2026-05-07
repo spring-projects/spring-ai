@@ -16,8 +16,13 @@
 
 package org.springframework.ai.openai;
 
+import java.net.Proxy;
+import java.time.Duration;
+import java.util.Map;
 import java.util.Objects;
 
+import com.openai.azure.AzureOpenAIServiceVersion;
+import com.openai.credential.Credential;
 import com.openai.models.images.ImageGenerateParams;
 import com.openai.models.images.ImageModel;
 import org.jspecify.annotations.Nullable;
@@ -40,36 +45,36 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 	 * The number of images to generate. Must be between 1 and 10. For dall-e-3, only n=1
 	 * is supported.
 	 */
-	private @Nullable Integer n;
+	private final @Nullable Integer n;
 
 	/**
 	 * The width of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.
 	 */
-	private @Nullable Integer width;
+	private final @Nullable Integer width;
 
 	/**
 	 * The height of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.
 	 */
-	private @Nullable Integer height;
+	private final @Nullable Integer height;
 
 	/**
 	 * The quality of the image that will be generated. hd creates images with finer
 	 * details and greater consistency across the image. This param is only supported for
 	 * dall-e-3. standard or hd
 	 */
-	private @Nullable String quality;
+	private final @Nullable String quality;
 
 	/**
 	 * The format in which the generated images are returned. Must be one of url or
 	 * b64_json.
 	 */
-	private @Nullable String responseFormat;
+	private final @Nullable String responseFormat;
 
 	/**
 	 * The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024 for
 	 * dall-e-2. Must be one of 1024x1024, 1792x1024, or 1024x1792 for dall-e-3 models.
 	 */
-	private @Nullable String size;
+	private final @Nullable String size;
 
 	/**
 	 * The style of the generated images. Must be one of vivid or natural. Vivid causes
@@ -77,13 +82,33 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 	 * the model to produce more natural, less hyper-real looking images. This param is
 	 * only supported for dall-e-3. natural or vivid
 	 */
-	private @Nullable String style;
+	private final @Nullable String style;
 
 	/**
 	 * A unique identifier representing your end-user, which can help OpenAI to monitor
 	 * and detect abuse.
 	 */
-	private @Nullable String user;
+	private final @Nullable String user;
+
+
+	protected OpenAiImageOptions(@Nullable String baseUrl, @Nullable String apiKey, @Nullable Credential credential,
+			@Nullable String model, @Nullable String microsoftDeploymentName,
+			@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion, @Nullable String organizationId,
+			@Nullable Boolean isMicrosoftFoundry, @Nullable Boolean isGitHubModels, @Nullable Duration timeout,
+			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
+			@Nullable Integer n, @Nullable Integer width, @Nullable Integer height, @Nullable String quality,
+			@Nullable String responseFormat, @Nullable String size, @Nullable String style, @Nullable String user) {
+		super(baseUrl, apiKey, credential, model, microsoftDeploymentName, microsoftFoundryServiceVersion,
+				organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries, proxy, customHeaders);
+		this.n = n;
+		this.width = width;
+		this.height = height;
+		this.quality = quality;
+		this.responseFormat = responseFormat;
+		this.size = size;
+		this.style = style;
+		this.user = user;
+	}
 
 	public static Builder builder() {
 		return new Builder();
@@ -94,20 +119,9 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 		return this.n;
 	}
 
-	public void setN(@Nullable Integer n) {
-		this.n = n;
-	}
-
 	@Override
 	public @Nullable Integer getWidth() {
 		return this.width;
-	}
-
-	public void setWidth(@Nullable Integer width) {
-		this.width = width;
-		if (this.width != null && this.height != null) {
-			this.size = this.width + "x" + this.height;
-		}
 	}
 
 	@Override
@@ -115,20 +129,9 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 		return this.height;
 	}
 
-	public void setHeight(@Nullable Integer height) {
-		this.height = height;
-		if (this.width != null && this.height != null) {
-			this.size = this.width + "x" + this.height;
-		}
-	}
-
 	@Override
 	public @Nullable String getResponseFormat() {
 		return this.responseFormat;
-	}
-
-	public void setResponseFormat(@Nullable String responseFormat) {
-		this.responseFormat = responseFormat;
 	}
 
 	public @Nullable String getSize() {
@@ -138,33 +141,17 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 		return (this.width != null && this.height != null) ? this.width + "x" + this.height : null;
 	}
 
-	public void setSize(@Nullable String size) {
-		this.size = size;
-	}
-
 	public @Nullable String getUser() {
 		return this.user;
-	}
-
-	public void setUser(@Nullable String user) {
-		this.user = user;
 	}
 
 	public @Nullable String getQuality() {
 		return this.quality;
 	}
 
-	public void setQuality(@Nullable String quality) {
-		this.quality = quality;
-	}
-
 	@Override
 	public @Nullable String getStyle() {
 		return this.style;
-	}
-
-	public void setStyle(@Nullable String style) {
-		this.style = style;
 	}
 
 	@Override
@@ -233,36 +220,75 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 
 	public static final class Builder {
 
-		private final OpenAiImageOptions options;
+		private @Nullable String baseUrl;
+
+		private @Nullable String apiKey;
+
+		private @Nullable Credential credential;
+
+		private @Nullable String model;
+
+		private @Nullable String deploymentName;
+
+		private @Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion;
+
+		private @Nullable String organizationId;
+
+		private @Nullable Boolean microsoftFoundry;
+
+		private @Nullable Boolean gitHubModels;
+
+		private @Nullable Duration timeout;
+
+		private @Nullable Integer maxRetries;
+
+		private @Nullable Proxy proxy;
+
+		private @Nullable Map<String, String> customHeaders;
+
+		private @Nullable Integer n;
+
+		private @Nullable Integer width;
+
+		private @Nullable Integer height;
+
+		private @Nullable String quality;
+
+		private @Nullable String responseFormat;
+
+		private @Nullable String size;
+
+		private @Nullable String style;
+
+		private @Nullable String user;
 
 		private Builder() {
-			this.options = new OpenAiImageOptions();
 		}
 
 		public Builder from(OpenAiImageOptions fromOptions) {
 			// Parent class fields
-			this.options.setBaseUrl(fromOptions.getBaseUrl());
-			this.options.setApiKey(fromOptions.getApiKey());
-			this.options.setCredential(fromOptions.getCredential());
-			this.options.setModel(fromOptions.getModel());
-			this.options.setDeploymentName(fromOptions.getDeploymentName());
-			this.options.setMicrosoftFoundryServiceVersion(fromOptions.getMicrosoftFoundryServiceVersion());
-			this.options.setOrganizationId(fromOptions.getOrganizationId());
-			this.options.setMicrosoftFoundry(fromOptions.isMicrosoftFoundry());
-			this.options.setGitHubModels(fromOptions.isGitHubModels());
-			this.options.setTimeout(fromOptions.getTimeout());
-			this.options.setMaxRetries(fromOptions.getMaxRetries());
-			this.options.setProxy(fromOptions.getProxy());
-			this.options.setCustomHeaders(fromOptions.getCustomHeaders());
+			this.baseUrl = fromOptions.getBaseUrl();
+			this.apiKey = fromOptions.getApiKey();
+			this.credential = fromOptions.getCredential();
+			this.model = fromOptions.getModel();
+			this.deploymentName = fromOptions.getDeploymentName();
+			this.microsoftFoundryServiceVersion = fromOptions.getMicrosoftFoundryServiceVersion();
+			this.organizationId = fromOptions.getOrganizationId();
+			this.microsoftFoundry = fromOptions.isMicrosoftFoundry();
+			this.gitHubModels = fromOptions.isGitHubModels();
+			this.timeout = fromOptions.getTimeout();
+			this.maxRetries = fromOptions.getMaxRetries();
+			this.proxy = fromOptions.getProxy();
+			this.customHeaders = fromOptions.getCustomHeaders();
 			// Child class fields
-			this.options.setN(fromOptions.getN());
-			this.options.setWidth(fromOptions.getWidth());
-			this.options.setHeight(fromOptions.getHeight());
-			this.options.setQuality(fromOptions.getQuality());
-			this.options.setResponseFormat(fromOptions.getResponseFormat());
-			this.options.setSize(fromOptions.getSize());
-			this.options.setStyle(fromOptions.getStyle());
-			this.options.setUser(fromOptions.getUser());
+			this.n = fromOptions.getN();
+			this.width = fromOptions.getWidth();
+			this.height = fromOptions.getHeight();
+			this.quality = fromOptions.getQuality();
+			this.responseFormat = fromOptions.getResponseFormat();
+			this.size = fromOptions.getSize();
+			this.style = fromOptions.getStyle();
+			this.user = fromOptions.getUser();
 			return this;
 		}
 
@@ -273,162 +299,181 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 			if (from instanceof OpenAiImageOptions castFrom) {
 				// Parent class fields
 				if (castFrom.getBaseUrl() != null) {
-					this.options.setBaseUrl(castFrom.getBaseUrl());
+					this.baseUrl = castFrom.getBaseUrl();
 				}
 				if (castFrom.getApiKey() != null) {
-					this.options.setApiKey(castFrom.getApiKey());
+					this.apiKey = castFrom.getApiKey();
 				}
 				if (castFrom.getCredential() != null) {
-					this.options.setCredential(castFrom.getCredential());
+					this.credential = castFrom.getCredential();
 				}
 				if (castFrom.getModel() != null) {
-					this.options.setModel(castFrom.getModel());
+					this.model = castFrom.getModel();
 				}
 				if (castFrom.getDeploymentName() != null) {
-					this.options.setDeploymentName(castFrom.getDeploymentName());
+					this.deploymentName = castFrom.getDeploymentName();
 				}
 				if (castFrom.getMicrosoftFoundryServiceVersion() != null) {
-					this.options.setMicrosoftFoundryServiceVersion(castFrom.getMicrosoftFoundryServiceVersion());
+					this.microsoftFoundryServiceVersion = castFrom.getMicrosoftFoundryServiceVersion();
 				}
 				if (castFrom.getOrganizationId() != null) {
-					this.options.setOrganizationId(castFrom.getOrganizationId());
+					this.organizationId = castFrom.getOrganizationId();
 				}
-				this.options.setMicrosoftFoundry(castFrom.isMicrosoftFoundry());
-				this.options.setGitHubModels(castFrom.isGitHubModels());
-				this.options.setTimeout(castFrom.getTimeout());
-				this.options.setMaxRetries(castFrom.getMaxRetries());
+				this.microsoftFoundry = castFrom.isMicrosoftFoundry();
+				this.gitHubModels = castFrom.isGitHubModels();
+				this.timeout = castFrom.getTimeout();
+				this.maxRetries = castFrom.getMaxRetries();
 				if (castFrom.getProxy() != null) {
-					this.options.setProxy(castFrom.getProxy());
+					this.proxy = castFrom.getProxy();
 				}
 				if (castFrom.getCustomHeaders() != null) {
-					this.options.setCustomHeaders(castFrom.getCustomHeaders());
+					this.customHeaders = castFrom.getCustomHeaders();
 				}
 				// Child class fields
 				if (castFrom.getN() != null) {
-					this.options.setN(castFrom.getN());
+					this.n = castFrom.getN();
 				}
 				if (castFrom.getWidth() != null) {
-					this.options.setWidth(castFrom.getWidth());
+					this.width = castFrom.getWidth();
 				}
 				if (castFrom.getHeight() != null) {
-					this.options.setHeight(castFrom.getHeight());
+					this.height = castFrom.getHeight();
 				}
 				if (castFrom.getQuality() != null) {
-					this.options.setQuality(castFrom.getQuality());
+					this.quality = castFrom.getQuality();
 				}
 				if (castFrom.getResponseFormat() != null) {
-					this.options.setResponseFormat(castFrom.getResponseFormat());
+					this.responseFormat = castFrom.getResponseFormat();
 				}
 				if (castFrom.getSize() != null) {
-					this.options.setSize(castFrom.getSize());
+					this.size = castFrom.getSize();
 				}
 				if (castFrom.getStyle() != null) {
-					this.options.setStyle(castFrom.getStyle());
+					this.style = castFrom.getStyle();
 				}
 				if (castFrom.getUser() != null) {
-					this.options.setUser(castFrom.getUser());
+					this.user = castFrom.getUser();
 				}
 			}
 			return this;
 		}
 
 		public Builder N(Integer n) {
-			this.options.setN(n);
+			this.n = n;
 			return this;
 		}
 
 		public Builder model(String model) {
-			this.options.setModel(model);
+			this.model = model;
 			return this;
 		}
 
 		public Builder deploymentName(String deploymentName) {
-			this.options.setDeploymentName(deploymentName);
+			this.deploymentName = deploymentName;
 			return this;
 		}
 
 		public Builder baseUrl(String baseUrl) {
-			this.options.setBaseUrl(baseUrl);
+			this.baseUrl = baseUrl;
 			return this;
 		}
 
 		public Builder apiKey(String apiKey) {
-			this.options.setApiKey(apiKey);
+			this.apiKey = apiKey;
 			return this;
 		}
 
 		public Builder credential(com.openai.credential.Credential credential) {
-			this.options.setCredential(credential);
+			this.credential = credential;
 			return this;
 		}
 
 		public Builder azureOpenAIServiceVersion(com.openai.azure.AzureOpenAIServiceVersion azureOpenAIServiceVersion) {
-			this.options.setMicrosoftFoundryServiceVersion(azureOpenAIServiceVersion);
+			this.microsoftFoundryServiceVersion = azureOpenAIServiceVersion;
 			return this;
 		}
 
 		public Builder organizationId(String organizationId) {
-			this.options.setOrganizationId(organizationId);
+			this.organizationId = organizationId;
 			return this;
 		}
 
 		public Builder azure(boolean azure) {
-			this.options.setMicrosoftFoundry(azure);
+			this.microsoftFoundry = azure;
 			return this;
 		}
 
 		public Builder gitHubModels(boolean gitHubModels) {
-			this.options.setGitHubModels(gitHubModels);
+			this.gitHubModels = gitHubModels;
 			return this;
 		}
 
 		public Builder timeout(java.time.Duration timeout) {
-			this.options.setTimeout(timeout);
+			this.timeout = timeout;
 			return this;
 		}
 
 		public Builder maxRetries(Integer maxRetries) {
-			this.options.setMaxRetries(maxRetries);
+			this.maxRetries = maxRetries;
 			return this;
 		}
 
 		public Builder proxy(java.net.Proxy proxy) {
-			this.options.setProxy(proxy);
+			this.proxy = proxy;
 			return this;
 		}
 
 		public Builder customHeaders(java.util.Map<String, String> customHeaders) {
-			this.options.setCustomHeaders(customHeaders);
+			this.customHeaders = customHeaders;
 			return this;
 		}
 
 		public Builder responseFormat(String responseFormat) {
-			this.options.setResponseFormat(responseFormat);
+			this.responseFormat = responseFormat;
 			return this;
 		}
 
 		public Builder width(Integer width) {
-			this.options.setWidth(width);
+			this.width = width;
+			if (this.width != null && this.height != null) {
+				this.size = this.width + "x" + this.height;
+			}
 			return this;
 		}
 
 		public Builder height(Integer height) {
-			this.options.setHeight(height);
+			this.height = height;
+			if (this.width != null && this.height != null) {
+				this.size = this.width + "x" + this.height;
+			}
 			return this;
 		}
 
 		public Builder user(String user) {
-			this.options.setUser(user);
+			this.user = user;
 			return this;
 		}
 
 		public Builder style(String style) {
-			this.options.setStyle(style);
+			this.style = style;
+			return this;
+		}
+
+		public Builder quality(String quality) {
+			this.quality = quality;
+			return this;
+		}
+
+		public Builder size(String size) {
+			this.size = size;
 			return this;
 		}
 
 		public OpenAiImageOptions build() {
-			return this.options;
+			return new OpenAiImageOptions(this.baseUrl, this.apiKey, this.credential, this.model, this.deploymentName,
+					this.microsoftFoundryServiceVersion, this.organizationId, this.microsoftFoundry, this.gitHubModels,
+					this.timeout, this.maxRetries, this.proxy, this.customHeaders, this.n, this.width, this.height,
+					this.quality, this.responseFormat, this.size, this.style, this.user);
 		}
 
 	}

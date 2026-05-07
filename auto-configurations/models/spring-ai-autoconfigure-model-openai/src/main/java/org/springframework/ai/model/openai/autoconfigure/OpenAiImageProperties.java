@@ -150,14 +150,13 @@ public class OpenAiImageProperties {
 		if (this.user != null) {
 			builder.user(this.user);
 		}
-		OpenAiImageOptions options = builder.build();
 		if (this.quality != null) {
-			options.setQuality(this.quality);
+			builder.quality(this.quality);
 		}
 		if (this.size != null) {
-			options.setSize(this.size);
+			builder.size(this.size);
 		}
-		return options;
+		return builder.build();
 	}
 
 	private Options options = new Options();
