@@ -4,6 +4,13 @@
 [[upgrading-to-2-0-0-M6]]
 == Upgrading to 2.0.0-M6
 
+=== Options and Properties
+
+The configuration properties do not use anymore `.options`, so for example the former `spring.ai.openai.chat.options.model` is now `spring.ai.openai.chat.model`.
+Deprecated configuration properties are provided for the `.options` ones in order to provide a smoother migration experience.
+
+The setters have been removed from the options classes, builder should now be used instead.
+
 === Observability
 
 ==== Tool Calling
@@ -14,9 +21,6 @@ The observations produced for tool calling operations have changed as follows:
 * the metric/span attribute `gen_ai.operation.name` has value `execute_tool` instead of `framework`.
 * a new `spring.ai.tool.type` metric/span attribute has been introduced to capture the tool type (e.g. `function`).
 * a new `spring.ai.tool.call.id` span attribute has been introduced to capture the tool call ID, as identified by the chat model.
-
-[[upgrading-to-2-0-0-M6]]
-== Upgrading to 2.0.0-M6
 
 === Removed Modules
 
