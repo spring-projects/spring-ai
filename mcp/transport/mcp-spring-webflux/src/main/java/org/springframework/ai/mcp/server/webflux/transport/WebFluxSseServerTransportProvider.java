@@ -90,8 +90,13 @@ import org.springframework.web.util.UriComponentsBuilder;
  * @author Dariusz Jędrzejczyk
  * @see McpServerTransport
  * @see ServerSentEvent
+ * @deprecated The SSE transport has been deprecated in the 2025-03-26 version of the
+ * spec, and should not be used anymore. We keep it for backwards compatibility.
+ * @see <a href=
+ * "https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#backwards-compatibility">Transports
+ * backwards compatibility</a>
  */
-
+@Deprecated(since = "2.0.0", forRemoval = true)
 public final class WebFluxSseServerTransportProvider implements McpServerTransportProvider {
 
 	private static final Logger logger = LoggerFactory.getLogger(WebFluxSseServerTransportProvider.class);

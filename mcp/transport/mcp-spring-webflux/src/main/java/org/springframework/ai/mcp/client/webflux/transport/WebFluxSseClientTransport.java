@@ -74,7 +74,13 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @see <a href=
  * "https://spec.modelcontextprotocol.io/specification/basic/transports/#http-with-sse">MCP
  * HTTP with SSE Transport Specification</a>
+ * @deprecated The SSE transport has been deprecated in the 2025-03-26 version of the
+ * spec, and should not be used anymore. We keep it for backwards compatibility.
+ * @see <a href=
+ * "https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#backwards-compatibility">Transports
+ * backwards compatibility</a>
  */
+@Deprecated(since = "2.0.0", forRemoval = true)
 public class WebFluxSseClientTransport implements McpClientTransport {
 
 	private static final Logger logger = LoggerFactory.getLogger(WebFluxSseClientTransport.class);

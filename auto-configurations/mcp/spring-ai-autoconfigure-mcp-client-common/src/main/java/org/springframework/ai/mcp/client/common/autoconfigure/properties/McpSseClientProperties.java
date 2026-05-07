@@ -59,6 +59,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @see SseParameters
  */
 @ConfigurationProperties(McpSseClientProperties.CONFIG_PREFIX)
+@Deprecated(since = "2.0.0", forRemoval = true)
 public class McpSseClientProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.mcp.client.sse";
