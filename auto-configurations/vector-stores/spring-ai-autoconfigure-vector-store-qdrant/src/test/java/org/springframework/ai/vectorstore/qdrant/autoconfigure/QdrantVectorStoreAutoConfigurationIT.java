@@ -55,7 +55,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class QdrantVectorStoreAutoConfigurationIT {
 
 	@Container
-	static QdrantContainer qdrantContainer = new QdrantContainer("qdrant/qdrant:v1.9.2");
+	static QdrantContainer qdrantContainer = new QdrantContainer("qdrant/qdrant:v1.13.0");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(QdrantVectorStoreAutoConfiguration.class))
