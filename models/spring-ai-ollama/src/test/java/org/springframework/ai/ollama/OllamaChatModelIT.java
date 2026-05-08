@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientAttributes;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
@@ -49,6 +50,7 @@ import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -322,20 +324,25 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		// Generate expected JSON schema as map for testing purpose
 		var expectedOutputSchemaMap = new BeanOutputConverter<>(ActorsFilmsRecord.class).getJsonSchemaMap();
 
-		// Advisor to verify that native structured output is being used
+		// Advisor to verify that native structured output is being used.
+		// The schema is passed via context to ChatModelCallAdvisor which applies it
+		// to a new ChatClientRequest - so we verify the context attributes here,
+		// not the prompt options (which are only modified inside ChatModelCallAdvisor).
 		var nativeStructuredOutputUsed = new AtomicBoolean(false);
 		var verifyNativeStructuredOutputAdvisor = new CallAdvisor() {
 			@Override
 			public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
-				var response = chain.nextCall(request);
-				var chatOptions = request.prompt().getOptions();
+				var nativeFlag = request.context().get(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey());
+				var schemaString = (String) request.context()
+					.get(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey());
 
-				if (chatOptions instanceof OllamaChatOptions ollamaChatOptions
-						&& ollamaChatOptions.getFormat() instanceof Map<?, ?> format
-						&& expectedOutputSchemaMap.equals(format)) {
-					nativeStructuredOutputUsed.set(true);
+				if (Boolean.TRUE.equals(nativeFlag) && schemaString != null) {
+					var actualSchemaMap = ModelOptionsUtils.jsonToMap(schemaString);
+					if (expectedOutputSchemaMap.equals(actualSchemaMap)) {
+						nativeStructuredOutputUsed.set(true);
+					}
 				}
-				return response;
+				return chain.nextCall(request);
 			}
 
 			@Override
