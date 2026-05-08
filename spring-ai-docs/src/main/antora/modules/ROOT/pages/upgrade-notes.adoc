@@ -28,7 +28,7 @@ The observations produced for tool calling operations have changed as follows:
 
 The `spring-ai-hanadb-store` module has been **removed** from Spring AI as of version `2.0.0-M6`.
 
-[[upgrading-to-2-0-0-M6]]
+[[upgrading-to-2-0-0-M6-chat-memory]]
 == Upgrading to 2.0.0-M6
 
 === Chat Memory Advisors: Conversation ID Is Now Required
