@@ -126,13 +126,27 @@ public class OpenAiStreamFunctionCallingHelper {
 				throw new IllegalStateException("Currently only one tool call is supported per message!");
 			}
 			var currentToolCall = current.toolCalls().iterator().next();
-			if (StringUtils.hasText(currentToolCall.id())) {
+
+			// Determine if this is the same tool call being continued (based on index
+			// field).
+			// OpenAI streaming sends the same index for all chunks of the same tool call.
+			// This handles the case where each chunk contains the same id (some
+			// implementations
+			// send id in every chunk), which should still be merged as it's the same tool
+			// call.
+			boolean isSameToolCall = lastPreviousTooCall != null && currentToolCall.index() != null
+					&& currentToolCall.index().equals(lastPreviousTooCall.index());
+
+			if (StringUtils.hasText(currentToolCall.id()) && !isSameToolCall) {
+				// This is a genuinely new tool call with a different index
 				if (lastPreviousTooCall != null) {
 					toolCalls.add(lastPreviousTooCall);
 				}
 				toolCalls.add(currentToolCall);
 			}
 			else {
+				// Same tool call (same index) or continuation without id - merge the
+				// arguments
 				toolCalls.add(merge(lastPreviousTooCall, currentToolCall));
 			}
 		}
@@ -149,10 +163,12 @@ public class OpenAiStreamFunctionCallingHelper {
 		if (previous == null) {
 			return current;
 		}
+		// Preserve the index field from either current or previous
+		Integer index = (current.index() != null ? current.index() : previous.index());
 		String id = (StringUtils.hasText(current.id()) ? current.id() : previous.id());
 		String type = (current.type() != null ? current.type() : previous.type());
 		ChatCompletionFunction function = merge(previous.function(), current.function());
-		return new ToolCall(id, type, function);
+		return new ToolCall(index, id, type, function);
 	}
 
 	private ChatCompletionFunction merge(ChatCompletionFunction previous, ChatCompletionFunction current) {
