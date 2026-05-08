@@ -32,8 +32,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class McpWebFluxServerAutoConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(McpWebFluxServerAutoConfiguration.class,
-				JacksonAutoConfiguration.class, TestConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(McpServerObjectMapperAutoConfiguration.class,
+				McpWebFluxServerAutoConfiguration.class, JacksonAutoConfiguration.class, TestConfiguration.class));
 
 	@Test
 	void shouldConfigureWebFluxTransportWithCustomObjectMapper() {

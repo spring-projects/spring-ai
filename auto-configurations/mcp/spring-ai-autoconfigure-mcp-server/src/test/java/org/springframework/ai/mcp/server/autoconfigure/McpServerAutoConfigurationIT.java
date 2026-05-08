@@ -54,8 +54,8 @@ import static org.mockito.Mockito.when;
 
 public class McpServerAutoConfigurationIT {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class));
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withConfiguration(
+			AutoConfigurations.of(McpServerObjectMapperAutoConfiguration.class, McpServerAutoConfiguration.class));
 
 	@Test
 	void defaultConfiguration() {
@@ -422,7 +422,7 @@ public class McpServerAutoConfigurationIT {
 							new McpSchema.CompleteResult.CompleteCompletion(List.of(), 0, false));
 
 			return List.of(new McpServerFeatures.SyncCompletionSpecification(
-					new McpSchema.PromptReference("ref/prompt", "code_review"), completionHandler));
+					new McpSchema.PromptReference("ref/prompt", "code_review", "Code review"), completionHandler));
 		}
 
 	}
@@ -437,7 +437,7 @@ public class McpServerAutoConfigurationIT {
 							new McpSchema.CompleteResult.CompleteCompletion(List.of(), 0, false)));
 
 			return List.of(new McpServerFeatures.AsyncCompletionSpecification(
-					new McpSchema.PromptReference("ref/prompt", "code_review"), completionHandler));
+					new McpSchema.PromptReference("ref/prompt", "code_review", "Code review"), completionHandler));
 		}
 
 	}

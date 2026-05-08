@@ -23,7 +23,7 @@ import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
 import io.modelcontextprotocol.spec.McpServerTransportProvider;
 
-import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -77,9 +77,8 @@ public class McpWebFluxServerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public WebFluxSseServerTransportProvider webFluxTransport(ObjectProvider<ObjectMapper> objectMapperProvider,
-			McpServerProperties serverProperties) {
-		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+	public WebFluxSseServerTransportProvider webFluxTransport(
+			@Qualifier("mcpServerObjectMapper") ObjectMapper objectMapper, McpServerProperties serverProperties) {
 
 		return WebFluxSseServerTransportProvider.builder()
 			.jsonMapper(new JacksonMcpJsonMapper(objectMapper))

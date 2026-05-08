@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+org.springframework.ai.mcp.server.autoconfigure.McpServerObjectMapperAutoConfiguration
 org.springframework.ai.mcp.server.autoconfigure.McpServerAutoConfiguration
 org.springframework.ai.mcp.server.autoconfigure.McpWebFluxServerAutoConfiguration
 org.springframework.ai.mcp.server.autoconfigure.McpWebMvcServerAutoConfiguration
