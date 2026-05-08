@@ -338,7 +338,7 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 	@Test
 	void testGetOutputSchemaHandlesAllFormatTypes() {
 		var nullFormatOptions = OllamaChatOptions.builder().build();
-		assertThatThrownBy(nullFormatOptions::getOutputSchema).isInstanceOf(IllegalStateException.class);
+		assertThat(nullFormatOptions.getOutputSchema()).isNull();
 
 		var stringFormatOptions = OllamaChatOptions.builder().format("json").build();
 		assertThat(stringFormatOptions.getOutputSchema()).isEqualTo("json");

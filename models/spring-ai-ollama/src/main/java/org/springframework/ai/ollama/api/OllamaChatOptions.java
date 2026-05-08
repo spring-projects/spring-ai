@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.type.TypeReference;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -34,6 +35,7 @@ import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.util.json.JsonParser;
 import org.springframework.util.Assert;
 
 /**
@@ -643,19 +645,24 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	public String getOutputSchema() {
-		Assert.state(this.format != null, "format must not be null");
+	public @Nullable String getOutputSchema() {
+		if (this.format == null) {
+			return null;
+		}
 		// If format is a simple string (e.g., "json"), return it as-is
 		if (this.format instanceof String) {
 			return (String) this.format;
 		}
 		// Otherwise, serialize the Map/Object to JSON string (JSON Schema case)
-		return ModelOptionsUtils.toJsonString(this.format);
+		return JsonParser.toJson(this.format);
 	}
 
 	@Override
-	public void setOutputSchema(String outputSchema) {
-		this.format = ModelOptionsUtils.jsonToMap(outputSchema);
+	public void setOutputSchema(@Nullable String outputSchema) {
+		if (outputSchema != null) {
+			this.format = JsonParser.fromJson(outputSchema, new TypeReference<Map<String, Object>>() {
+			});
+		}
 	}
 
 	/**
