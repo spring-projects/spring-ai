@@ -182,7 +182,7 @@ public final class JsonSchemaGenerator {
 	private static void processSchemaOptions(SchemaOption[] schemaOptions, ObjectNode schema) {
 		if (Stream.of(schemaOptions)
 			.noneMatch(option -> option == SchemaOption.ALLOW_ADDITIONAL_PROPERTIES_BY_DEFAULT)) {
-			schema.put("additionalProperties", false);
+			forbidAdditionalProperties(schema);
 		}
 		if (Stream.of(schemaOptions).anyMatch(option -> option == SchemaOption.UPPER_CASE_TYPE_VALUES)) {
 			convertTypeValuesToUpperCase(schema);
@@ -262,6 +262,31 @@ public final class JsonSchemaGenerator {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Recursively adds {@code "additionalProperties": false} to all object schemas (nodes
+	 * with a {@code "properties"} key) that do not already define
+	 * {@code "additionalProperties"}. The guard preserves {@code Map<K,V>} schemas where
+	 * {@code "additionalProperties"} is a type reference rather than a boolean.
+	 */
+	private static void forbidAdditionalProperties(ObjectNode node) {
+		if (node.has("properties") && !node.has("additionalProperties")) {
+			node.put("additionalProperties", false);
+		}
+		node.properties().forEach(entry -> {
+			JsonNode value = entry.getValue();
+			if (value.isObject()) {
+				forbidAdditionalProperties((ObjectNode) value);
+			}
+			else if (value.isArray()) {
+				value.forEach(element -> {
+					if (element.isObject()) {
+						forbidAdditionalProperties((ObjectNode) element);
+					}
+				});
+			}
+		});
 	}
 
 	// Based on the method in ModelOptionsUtils.

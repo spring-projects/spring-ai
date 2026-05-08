@@ -451,9 +451,9 @@ class BeanOutputConverterTest {
 								        "type" : "string"
 								      }
 								    },
-								    "required" : [ "someString" ]
-								  },
-								  "additionalProperties" : false
+								    "required" : [ "someString" ],
+								    "additionalProperties" : false
+								  }
 								}```
 								""");
 		}
