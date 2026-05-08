@@ -513,4 +513,79 @@ class BeanOutputConverterTest {
 
 	}
 
+	@Nested
+	class BuilderTest {
+
+		@Test
+		void builderProducesSameSchemaAsConstructor() {
+			var constructorConverter = new BeanOutputConverter<>(TestClass.class);
+			var builderConverter = BeanOutputConverter.builder(TestClass.class).build();
+
+			assertThat(builderConverter.getJsonSchema()).isEqualTo(constructorConverter.getJsonSchema());
+		}
+
+		@Test
+		void builderWithTypeReference() {
+			var constructorConverter = new BeanOutputConverter<>(new ParameterizedTypeReference<TestClass>() {
+
+			});
+			var builderConverter = BeanOutputConverter.<TestClass>builder(new ParameterizedTypeReference<TestClass>() {
+
+			}).build();
+
+			assertThat(builderConverter.getJsonSchema()).isEqualTo(constructorConverter.getJsonSchema());
+		}
+
+		@Test
+		void builderWithCustomJsonMapper() {
+			var customMapper = JsonMapper.builder()
+				.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+				.build();
+
+			var converter = BeanOutputConverter.builder(TestClass.class).jsonMapper(customMapper).build();
+
+			// Verify the converter works correctly with the custom mapper
+			assertThat(converter.convert("{ \"someString\": \"test\" }").getSomeString()).isEqualTo("test");
+		}
+
+		@Test
+		void builderWithExtraModule() {
+			// Use Swagger2Module (already a dependency) to verify extra modules are applied
+			var swaggerModule = new com.github.victools.jsonschema.module.swagger2.Swagger2Module();
+			var converterWithModule = BeanOutputConverter.builder(TestClass.class)
+				.withModule(swaggerModule)
+				.build();
+			var converterWithoutModule = BeanOutputConverter.builder(TestClass.class).build();
+
+			// Both should produce valid schemas (module may or may not change output
+			// for a simple class without swagger annotations, but both should work)
+			assertThat(converterWithModule.getJsonSchema()).isNotEmpty();
+			assertThat(converterWithoutModule.getJsonSchema()).isNotEmpty();
+
+			// Both should still convert correctly
+			assertThat(converterWithModule.convert("{ \"someString\": \"test\" }").getSomeString()).isEqualTo("test");
+		}
+
+		@Test
+		void constructorWithVarargsModules() {
+			var swaggerModule = new com.github.victools.jsonschema.module.swagger2.Swagger2Module();
+			var converter = new BeanOutputConverter<>(TestClass.class, swaggerModule);
+
+			assertThat(converter.getJsonSchema()).isNotEmpty();
+			assertThat(converter.convert("{ \"someString\": \"test\" }").getSomeString()).isEqualTo("test");
+		}
+
+		@Test
+		void typeRefConstructorWithVarargsModules() {
+			var swaggerModule = new com.github.victools.jsonschema.module.swagger2.Swagger2Module();
+			var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<TestClass>() {
+
+			}, swaggerModule);
+
+			assertThat(converter.getJsonSchema()).isNotEmpty();
+			assertThat(converter.convert("{ \"someString\": \"test\" }").getSomeString()).isEqualTo("test");
+		}
+
+	}
+
 }

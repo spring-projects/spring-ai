@@ -17,9 +17,13 @@
 package org.springframework.ai.converter;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.generator.Option;
 import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
@@ -80,12 +84,26 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	/** The text cleaner used to preprocess LLM responses before parsing. */
 	private final ResponseTextCleaner textCleaner;
 
+	/** Additional jsonschema-generator modules to apply during schema generation. */
+	private final List<Module> extraModules;
+
 	/**
 	 * Constructor to initialize with the target type's class.
 	 * @param clazz The target type's class.
 	 */
 	public BeanOutputConverter(Class<T> clazz) {
-		this(clazz, null, null);
+		this(clazz, null, null, Collections.emptyList());
+	}
+
+	/**
+	 * Constructor to initialize with the target type's class and extra modules for JSON
+	 * schema generation.
+	 * @param clazz The target type's class.
+	 * @param extraModules Additional {@link Module} instances (e.g.
+	 * {@code JakartaValidationModule}) to apply during schema generation.
+	 */
+	public BeanOutputConverter(Class<T> clazz, Module... extraModules) {
+		this(clazz, null, null, List.of(extraModules));
 	}
 
 	/**
@@ -95,7 +113,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param jsonMapper Custom JSON mapper for JSON operations. endings.
 	 */
 	public BeanOutputConverter(Class<T> clazz, @Nullable JsonMapper jsonMapper) {
-		this(clazz, jsonMapper, null);
+		this(clazz, jsonMapper, null, Collections.emptyList());
 	}
 
 	/**
@@ -107,7 +125,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 */
 	public BeanOutputConverter(Class<T> clazz, @Nullable JsonMapper jsonMapper,
 			@Nullable ResponseTextCleaner textCleaner) {
-		this(ParameterizedTypeReference.forType(clazz), jsonMapper, textCleaner);
+		this(clazz, jsonMapper, textCleaner, Collections.emptyList());
 	}
 
 	/**
@@ -115,7 +133,18 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param typeRef The target class type reference.
 	 */
 	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef) {
-		this(typeRef, null, null);
+		this(typeRef.getType(), null, null, Collections.emptyList());
+	}
+
+	/**
+	 * Constructor to initialize with the target class type reference and extra modules
+	 * for JSON schema generation.
+	 * @param typeRef The target class type reference.
+	 * @param extraModules Additional {@link Module} instances (e.g.
+	 * {@code JakartaValidationModule}) to apply during schema generation.
+	 */
+	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef, Module... extraModules) {
+		this(typeRef.getType(), null, null, List.of(extraModules));
 	}
 
 	/**
@@ -126,7 +155,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param jsonMapper Custom JSON mapper for JSON operations. endings.
 	 */
 	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef, @Nullable JsonMapper jsonMapper) {
-		this(typeRef, jsonMapper, null);
+		this(typeRef.getType(), jsonMapper, null, Collections.emptyList());
 	}
 
 	/**
@@ -138,23 +167,136 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 */
 	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef, @Nullable JsonMapper jsonMapper,
 			@Nullable ResponseTextCleaner textCleaner) {
-		this(typeRef.getType(), jsonMapper, textCleaner);
+		this(typeRef.getType(), jsonMapper, textCleaner, Collections.emptyList());
 	}
 
 	/**
 	 * Constructor to initialize with the target class type reference, a custom JSON
-	 * mapper, and a line endings normalizer to ensure consistent line endings on any
-	 * platform.
-	 * @param type The target class type.
-	 * @param jsonMapper Custom JSON mapper for JSON operations. endings.
+	 * mapper, a custom text cleaner, and extra modules for JSON schema generation.
+	 * @param typeRef The target class type reference.
+	 * @param jsonMapper Custom JSON mapper for JSON operations.
 	 * @param textCleaner Custom text cleaner for preprocessing responses.
+	 * @param extraModules Additional {@link Module} instances to apply during schema
+	 * generation.
 	 */
-	private BeanOutputConverter(Type type, @Nullable JsonMapper jsonMapper, @Nullable ResponseTextCleaner textCleaner) {
+	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef, @Nullable JsonMapper jsonMapper,
+			@Nullable ResponseTextCleaner textCleaner, Module... extraModules) {
+		this(typeRef.getType(), jsonMapper, textCleaner, List.of(extraModules));
+	}
+
+	/**
+	 * Core constructor. All other constructors delegate to this one.
+	 * @param type The target class type.
+	 * @param jsonMapper Custom JSON mapper for JSON operations.
+	 * @param textCleaner Custom text cleaner for preprocessing responses.
+	 * @param extraModules Additional {@link Module} instances to apply during schema
+	 * generation.
+	 */
+	private BeanOutputConverter(Type type, @Nullable JsonMapper jsonMapper,
+			@Nullable ResponseTextCleaner textCleaner, List<Module> extraModules) {
 		Objects.requireNonNull(type, "Type cannot be null;");
 		this.type = type;
 		this.jsonMapper = jsonMapper != null ? jsonMapper : getJsonMapper();
 		this.textCleaner = textCleaner != null ? textCleaner : createDefaultTextCleaner();
+		this.extraModules = extraModules != null ? new ArrayList<>(extraModules) : new ArrayList<>();
 		generateSchema();
+	}
+
+	/**
+	 * Creates a new {@link Builder} for constructing a {@code BeanOutputConverter} with
+	 * fine-grained control over configuration.
+	 * @param clazz the target type's class
+	 * @return a new builder instance
+	 * @param <T> the target type
+	 */
+	public static <T> Builder<T> builder(Class<T> clazz) {
+		return new Builder<>(clazz);
+	}
+
+	/**
+	 * Creates a new {@link Builder} for constructing a {@code BeanOutputConverter} with
+	 * fine-grained control over configuration.
+	 * @param typeRef the target class type reference
+	 * @return a new builder instance
+	 * @param <T> the target type
+	 */
+	public static <T> Builder<T> builder(ParameterizedTypeReference<T> typeRef) {
+		return new Builder<>(typeRef.getType());
+	}
+
+	/**
+	 * Builder for creating {@link BeanOutputConverter} instances with custom
+	 * configuration. This is the recommended way to configure extra
+	 * {@link Module} instances (e.g. Jakarta Validation support) and other options.
+	 *
+	 * <p>
+	 * Usage example:
+	 * <pre>{@code
+	 * BeanOutputConverter<MyBean> converter = BeanOutputConverter.builder(MyBean.class)
+	 *     .withModule(new JakartaValidationModule())
+	 *     .build();
+	 * }</pre>
+	 *
+	 * @param <T> the target type to which the output will be converted
+	 */
+	public static class Builder<T> {
+
+		private final Type type;
+
+		private @Nullable JsonMapper jsonMapper;
+
+		private @Nullable ResponseTextCleaner textCleaner;
+
+		private final List<Module> modules = new ArrayList<>();
+
+		private Builder(Type type) {
+			this.type = type;
+		}
+
+		/**
+		 * Sets a custom JSON mapper for JSON operations.
+		 * @param jsonMapper the JSON mapper to use
+		 * @return this builder for chaining
+		 */
+		public Builder<T> jsonMapper(JsonMapper jsonMapper) {
+			this.jsonMapper = jsonMapper;
+			return this;
+		}
+
+		/**
+		 * Sets a custom text cleaner for preprocessing LLM responses.
+		 * @param textCleaner the text cleaner to use
+		 * @return this builder for chaining
+		 */
+		public Builder<T> textCleaner(ResponseTextCleaner textCleaner) {
+			this.textCleaner = textCleaner;
+			return this;
+		}
+
+		/**
+		 * Adds a {@link Module} to be applied during JSON schema generation. This allows
+		 * registering additional modules such as
+		 * {@code JakartaValidationModule} to derive schema constraints
+		 * from Jakarta Validation annotations.
+		 * <p>
+		 * Multiple modules can be added by calling this method repeatedly.
+		 * @param module the jsonschema-generator module to add
+		 * @return this builder for chaining
+		 */
+		public Builder<T> withModule(Module module) {
+			Objects.requireNonNull(module, "Module cannot be null");
+			this.modules.add(module);
+			return this;
+		}
+
+		/**
+		 * Builds the {@link BeanOutputConverter} with the configured options.
+		 * @return a new converter instance
+		 */
+		public BeanOutputConverter<T> build() {
+			return new BeanOutputConverter<>(this.type, this.jsonMapper, this.textCleaner, this.modules);
+		}
+
 	}
 
 	/**
@@ -184,7 +326,9 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	}
 
 	/**
-	 * Generates the JSON schema for the target type.
+	 * Generates the JSON schema for the target type. Extra modules registered via the
+	 * constructor or {@link Builder} are applied here, allowing users to extend schema
+	 * generation with modules such as {@code JakartaValidationModule}.
 	 */
 	private void generateSchema() {
 		JacksonSchemaModule jacksonModule = new JacksonSchemaModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
@@ -194,6 +338,10 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 				com.github.victools.jsonschema.generator.OptionPreset.PLAIN_JSON)
 			.with(jacksonModule)
 			.with(Option.FORBIDDEN_ADDITIONAL_PROPERTIES_BY_DEFAULT);
+
+		for (Module extraModule : this.extraModules) {
+			configBuilder.with(extraModule);
+		}
 
 		configBuilder.forFields().withRequiredCheck(f -> true);
 
