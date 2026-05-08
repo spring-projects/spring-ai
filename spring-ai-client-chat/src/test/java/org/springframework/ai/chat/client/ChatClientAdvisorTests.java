@@ -87,7 +87,11 @@ public class ChatClientAdvisorTests {
 			.build();
 
 		// Turn 1: no memory yet — only system + user message sent to model
-		ChatResponse chatResponse = chatClient.prompt().user("my name is John").call().chatResponse();
+		ChatResponse chatResponse = chatClient.prompt()
+			.user("my name is John")
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "dumy-conversation-id"))
+			.call()
+			.chatResponse();
 
 		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("Hello John");
 
@@ -102,7 +106,11 @@ public class ChatClientAdvisorTests {
 
 		// Turn 2: memory from turn 1 is prepended as typed messages before the new user
 		// message
-		String content = chatClient.prompt().user("What is my name?").call().content();
+		String content = chatClient.prompt()
+			.user("What is my name?")
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "dumy-conversation-id"))
+			.call()
+			.content();
 
 		assertThat(content).isEqualTo("Your name is John");
 
@@ -149,7 +157,11 @@ public class ChatClientAdvisorTests {
 			.build();
 
 		// Turn 1: no memory yet — only system + user message sent to model
-		var content = join(chatClient.prompt().user("my name is John").stream().content());
+		var content = join(chatClient.prompt()
+			.user("my name is John")
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "dumy-conversation-id"))
+			.stream()
+			.content());
 
 		assertThat(content).isEqualTo("Hello John");
 
@@ -163,7 +175,11 @@ public class ChatClientAdvisorTests {
 		assertThat(instructions.get(1).getText()).isEqualTo("my name is John");
 		// Turn 2: memory from turn 1 is prepended as typed messages before the new user
 		// message
-		content = join(chatClient.prompt().user("What is my name?").stream().content());
+		content = join(chatClient.prompt()
+			.user("What is my name?")
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "dumy-conversation-id"))
+			.stream()
+			.content());
 
 		assertThat(content).isEqualTo("Your name is John");
 
