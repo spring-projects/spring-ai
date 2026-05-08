@@ -34,6 +34,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 
 /**
  * Embedding {@link AutoConfiguration Auto-configuration} for OpenAI SDK.
@@ -54,6 +55,7 @@ import org.springframework.context.annotation.Bean;
 public class OpenAiEmbeddingAutoConfiguration {
 
 	@Bean
+	@Conditional(OpenAiConnectionCondition.Embedding.class)
 	@ConditionalOnMissingBean
 	public OpenAiEmbeddingModel openAiEmbeddingModel(OpenAiCommonProperties commonProperties,
 			OpenAiEmbeddingProperties embeddingProperties, ObjectProvider<ObservationRegistry> observationRegistry,

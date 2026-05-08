@@ -34,6 +34,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 
 /**
  * Image {@link AutoConfiguration Auto-configuration} for OpenAI.
@@ -55,6 +56,7 @@ import org.springframework.context.annotation.Bean;
 public class OpenAiImageAutoConfiguration {
 
 	@Bean
+	@Conditional(OpenAiConnectionCondition.Image.class)
 	@ConditionalOnMissingBean
 	public OpenAiImageModel openAiImageModel(OpenAiCommonProperties commonProperties,
 			OpenAiImageProperties imageProperties, ObjectProvider<ObservationRegistry> observationRegistry,
