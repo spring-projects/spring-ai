@@ -76,7 +76,7 @@ class OllamaWithOpenAiChatModelIT {
 	private static final String MULTIMODAL_MODEL = "gemma3:4b";
 
 	private static final boolean SKIP_CONTAINER_CREATION = Boolean
-		.parseBoolean(System.getenv().getOrDefault("OLLAMA_WITH_REUSE", "false"));
+		.parseBoolean(System.getenv().getOrDefault("OLLAMA_WITH_REUSE", "true"));
 
 	static OllamaContainer ollamaContainer;
 

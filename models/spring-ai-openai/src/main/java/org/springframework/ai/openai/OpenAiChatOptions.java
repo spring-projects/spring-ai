@@ -1117,6 +1117,24 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 					this.internalToolExecutionEnabled = that.internalToolExecutionEnabled;
 				}
 			}
+			else if (other instanceof ToolCallingChatOptions.Builder<?> that) {
+				ToolCallingChatOptions thatOptions = that.build();
+				if (!thatOptions.getToolCallbacks().isEmpty()) {
+					this.toolCallbacks = new ArrayList<>(thatOptions.getToolCallbacks());
+				}
+				if (!thatOptions.getToolNames().isEmpty()) {
+					this.toolNames = new HashSet<>(thatOptions.getToolNames());
+				}
+				if (!thatOptions.getToolContext().isEmpty()) {
+					if (this.toolContext == null) {
+						this.toolContext = new HashMap<>();
+					}
+					this.toolContext.putAll(thatOptions.getToolContext());
+				}
+				if (thatOptions.getInternalToolExecutionEnabled() != null) {
+					this.internalToolExecutionEnabled = thatOptions.getInternalToolExecutionEnabled();
+				}
+			}
 			return self();
 		}
 
