@@ -582,6 +582,80 @@ class ZhiPuAiChatModelIT {
 		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
+	@Test
+	void chatUsageTest() {
+		UserMessage userMessage = new UserMessage("Hello, how are you?");
+		Prompt prompt = new Prompt(userMessage, DEFAULT_CHAT_OPTIONS);
+
+		ChatResponse response = this.chatModel.call(prompt);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getMetadata()).isNotNull();
+		assertThat(response.getMetadata().getUsage()).isNotNull();
+
+		// Verify usage details are present
+		assertThat(response.getMetadata().getUsage().getPromptTokens()).isGreaterThan(0);
+		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isGreaterThanOrEqualTo(0);
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isGreaterThan(0);
+
+		logger.info("Chat usage - Prompt tokens: {}, Completion tokens: {}, Total tokens: {}",
+				response.getMetadata().getUsage().getPromptTokens(),
+				response.getMetadata().getUsage().getCompletionTokens(),
+				response.getMetadata().getUsage().getTotalTokens());
+
+		// Verify native usage is accessible
+		Object nativeUsage = response.getMetadata().getUsage().getNativeUsage();
+		assertThat(nativeUsage).isNotNull();
+		assertThat(nativeUsage).isInstanceOf(ZhiPuAiApi.Usage.class);
+
+		ZhiPuAiApi.Usage zhiPuUsage = (ZhiPuAiApi.Usage) nativeUsage;
+		assertThat(zhiPuUsage.promptTokens()).isGreaterThan(0);
+		assertThat(zhiPuUsage.completionTokens()).isGreaterThanOrEqualTo(0);
+		assertThat(zhiPuUsage.totalTokens()).isGreaterThan(0);
+	}
+
+	@Test
+	void streamingUsageTest() {
+		UserMessage userMessage = new UserMessage("Hello, how are you?");
+		Prompt prompt = new Prompt(userMessage, DEFAULT_CHAT_OPTIONS);
+
+		Flux<ChatResponse> responseFlux = this.streamingChatModel.stream(prompt);
+		List<ChatResponse> responses = responseFlux.collectList().block();
+
+		assertThat(responses).isNotEmpty();
+
+		// Check if any response in the stream contains usage information
+		// In streaming mode, usage information is typically provided in the final chunk
+		boolean hasUsageInfo = responses.stream()
+			.anyMatch(response -> response.getMetadata() != null && response.getMetadata().getUsage() != null
+					&& !(response.getMetadata().getUsage() instanceof org.springframework.ai.chat.metadata.EmptyUsage));
+
+		if (hasUsageInfo) {
+			// Verify usage details are present
+			ChatResponse lastResponseWithUsage = responses.stream()
+				.filter(response -> response.getMetadata() != null && response.getMetadata().getUsage() != null
+						&& !(response.getMetadata()
+							.getUsage() instanceof org.springframework.ai.chat.metadata.EmptyUsage))
+				.reduce((first, second) -> second) // Get the last one
+				.orElse(null);
+
+			assertThat(lastResponseWithUsage).isNotNull();
+			assertThat(lastResponseWithUsage.getMetadata().getUsage().getPromptTokens()).isGreaterThan(0);
+			assertThat(lastResponseWithUsage.getMetadata().getUsage().getCompletionTokens()).isGreaterThanOrEqualTo(0);
+			assertThat(lastResponseWithUsage.getMetadata().getUsage().getTotalTokens()).isGreaterThan(0);
+
+			logger.info("Streaming usage - Prompt tokens: {}, Completion tokens: {}, Total tokens: {}",
+					lastResponseWithUsage.getMetadata().getUsage().getPromptTokens(),
+					lastResponseWithUsage.getMetadata().getUsage().getCompletionTokens(),
+					lastResponseWithUsage.getMetadata().getUsage().getTotalTokens());
+
+			// Verify native usage is accessible
+			Object nativeUsage = lastResponseWithUsage.getMetadata().getUsage().getNativeUsage();
+			assertThat(nativeUsage).isNotNull();
+			assertThat(nativeUsage).isInstanceOf(ZhiPuAiApi.Usage.class);
+		}
+	}
+
 	record ActorsFilmsRecord(String actor, List<String> movies) {
 
 	}
