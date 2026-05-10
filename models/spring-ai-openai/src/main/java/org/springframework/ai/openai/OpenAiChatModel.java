@@ -77,6 +77,7 @@ import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
@@ -357,6 +358,12 @@ public final class OpenAiChatModel implements ChatModel {
 
 			Flux<ChatResponse> flux = chatResponses
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+
+			if (request.tools().isEmpty()) {
+				return new MessageAggregator().aggregate(flux, observationContext::setResponse)
+					.doOnError(observation::error)
+					.doFinally(s -> observation.stop());
+			}
 
 			return flux.collectList().flatMapMany(list -> {
 				if (list.isEmpty()) {
