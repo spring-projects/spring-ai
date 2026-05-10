@@ -390,6 +390,26 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 				McpSchema.InitializeRequest initializeRequest = this.jsonMapper.convertValue(jsonrpcRequest.params(),
 						new TypeRef<McpSchema.InitializeRequest>() {
 						});
+				String invalidInitializeRequestMessage = null;
+				if (initializeRequest == null) {
+					invalidInitializeRequestMessage = "initialize.params is required";
+				}
+				else if (initializeRequest.protocolVersion() == null || initializeRequest.protocolVersion().isBlank()) {
+					invalidInitializeRequestMessage = "initialize.params.protocolVersion is required";
+				}
+				else if (initializeRequest.capabilities() == null) {
+					invalidInitializeRequestMessage = "initialize.params.capabilities is required";
+				}
+				else if (initializeRequest.clientInfo() == null) {
+					invalidInitializeRequestMessage = "initialize.params.clientInfo is required";
+				}
+				if (invalidInitializeRequestMessage != null) {
+					return ServerResponse.badRequest()
+						.contentType(MediaType.APPLICATION_JSON)
+						.body(new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, jsonrpcRequest.id(), null,
+								new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INVALID_PARAMS,
+										invalidInitializeRequestMessage, null)));
+				}
 				var sf = this.sessionFactory;
 				if (sf == null) {
 					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
