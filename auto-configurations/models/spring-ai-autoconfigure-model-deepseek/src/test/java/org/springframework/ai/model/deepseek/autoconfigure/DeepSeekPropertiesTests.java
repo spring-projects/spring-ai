@@ -170,4 +170,18 @@ public class DeepSeekPropertiesTests {
 			});
 	}
 
+	@Test
+	void chatDisabledViaEnabledProperty() {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.deepseek.api-key=API_KEY", "spring.ai.deepseek.base-url=TEST_BASE_URL",
+					"spring.ai.deepseek.chat.enabled=false")
+			.withConfiguration(AutoConfigurations.of(DeepSeekChatAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+					ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(DeepSeekChatProperties.class)).isEmpty();
+				assertThat(context.getBeansOfType(DeepSeekChatModel.class)).isEmpty();
+			});
+	}
+
 }

@@ -55,6 +55,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 @EnableConfigurationProperties({ DeepSeekConnectionProperties.class, DeepSeekChatProperties.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.DEEPSEEK,
 		matchIfMissing = true)
+@ConditionalOnProperty(prefix = DeepSeekChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class DeepSeekChatAutoConfiguration {
 
 	@Bean
