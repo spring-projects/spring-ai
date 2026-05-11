@@ -307,6 +307,29 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@Test
+	void deleteByFilterShouldDeleteAll() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			int docCount = 1500;
+			List<Document> docs = java.util.stream.IntStream.range(0, docCount)
+				.mapToObj(i -> new Document("Content " + i, Map.of("type", "test", "priority", i)))
+				.toList();
+
+			vectorStore.add(docs);
+
+			Filter.Expression typeFilter = new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("type"),
+					new Filter.Value("test"));
+			vectorStore.delete(typeFilter);
+
+			var results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Content").topK(100).similarityThresholdAll().build());
+
+			assertThat(results.stream().filter(d -> "test".equals(d.getMetadata().get("type")))).isEmpty();
+		});
+	}
+
+	@Test
 	void getNativeClientTest() {
 		this.contextRunner.run(context -> {
 			RedisVectorStore vectorStore = context.getBean(RedisVectorStore.class);
