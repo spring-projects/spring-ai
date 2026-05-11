@@ -104,6 +104,13 @@ image::etl-class-diagram.jpg[align="center"]
 
 == DocumentReaders
 
+[WARNING]
+====
+Most `DocumentReader` and `DocumentWriter` implementations described below
+are constructed using a `Resource` or resource pattern and internally use a
+`DefaultResourceLoader` or variation of it to access storage. Care should be taken not to construct such instances using directly user supplied URLs, as there are security implications to this.
+====
+
 === JSON
 
 The `JsonReader` processes JSON documents, converting them into a list of `Document` objects.
