@@ -51,8 +51,10 @@ import org.springframework.ai.mcp.annotation.McpProgressToken;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
+import org.springframework.ai.model.KotlinModule;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator.SchemaOption;
+import org.springframework.core.KotlinDetector;
 import org.springframework.core.Nullness;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ConcurrentReferenceHashMap;
@@ -85,16 +87,21 @@ public final class McpJsonSchemaGenerator {
 		Module springAiSchemaModule = PROPERTY_REQUIRED_BY_DEFAULT ? new McpSpringAiSchemaModule()
 				: new McpSpringAiSchemaModule(McpSpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
 
-		SchemaGeneratorConfig subtypeConfig = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12,
-				OptionPreset.PLAIN_JSON)
+		SchemaGeneratorConfigBuilder subtypeConfigBuilder = new SchemaGeneratorConfigBuilder(
+				SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
 			.with(jacksonModule)
 			.with(openApiModule)
 			.with(springAiSchemaModule)
 			.with(Option.EXTRA_OPEN_API_FORMAT_VALUES)
 			.with(Option.STANDARD_FORMATS)
 			.with(Option.PLAIN_DEFINITION_KEYS)
-			.without(Option.SCHEMA_VERSION_INDICATOR)
-			.build();
+			.without(Option.SCHEMA_VERSION_INDICATOR);
+
+		if (KotlinDetector.isKotlinReflectPresent()) {
+			subtypeConfigBuilder.with(new KotlinModule());
+		}
+
+		SchemaGeneratorConfig subtypeConfig = subtypeConfigBuilder.build();
 
 		SUBTYPE_SCHEMA_GENERATOR = new SchemaGenerator(subtypeConfig);
 	}
