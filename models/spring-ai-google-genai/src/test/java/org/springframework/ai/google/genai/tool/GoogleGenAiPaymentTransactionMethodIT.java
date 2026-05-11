@@ -172,7 +172,7 @@ public class GoogleGenAiPaymentTransactionMethodIT {
 				.genAiClient(genAiClient)
 				.toolCallingManager(toolCallingManager)
 				.defaultOptions(GoogleGenAiChatOptions.builder()
-					.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
+					.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
 					.temperature(0.1)
 					.build())
 				.build();

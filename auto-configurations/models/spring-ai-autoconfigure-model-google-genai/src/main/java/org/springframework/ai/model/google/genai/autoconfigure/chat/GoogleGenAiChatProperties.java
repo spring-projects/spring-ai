@@ -43,7 +43,7 @@ public class GoogleGenAiChatProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.google.genai.chat";
 
-	public static final String DEFAULT_MODEL = GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue();
+	public static final String DEFAULT_MODEL = GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue();
 
 	private @Nullable List<String> stopSequences;
 
