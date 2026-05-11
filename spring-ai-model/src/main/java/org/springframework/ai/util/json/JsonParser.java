@@ -176,8 +176,11 @@ public final class JsonParser {
 			try {
 				result = JsonParser.fromJson(jsonString, javaType);
 			}
-			catch (JacksonException e) {
-				// ignore
+			catch (IllegalStateException e) {
+				// If the type is a raw string that should read as JSON String,
+				// parsing will fail but pass the following toJson -> fromJson cycle.
+				// Example: LocalDate, with jsonString = "2026-04-22", which is not valid
+				// JSON. Instead, it should be "\"2026-04-22\"".
 			}
 		}
 

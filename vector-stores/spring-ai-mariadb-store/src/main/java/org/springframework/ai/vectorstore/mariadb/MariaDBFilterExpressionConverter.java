@@ -147,7 +147,23 @@ public class MariaDBFilterExpressionConverter extends AbstractFilterExpressionCo
 
 	@Override
 	protected void doKey(Key key, StringBuilder context) {
-		context.append("JSON_VALUE(" + this.metadataFieldName + ", '$." + key.key() + "')");
+		// metadataFieldName could contain a malicious character and hence we treat it as
+		// a MariaDB SQL identifier.
+		context.append("JSON_VALUE(").append(quoteIdentifier(this.metadataFieldName)).append(", ");
+
+		StringBuilder jsonKey = new StringBuilder();
+		emitJsonValue(key.key(), jsonKey);
+		// Now, the whole JSONPath is emitted as a SQL string
+		emitSqlString("$." + jsonKey.toString(), context);
+		context.append(")");
+	}
+
+	/**
+	 * Quote a SQL identifier using backticks (MySQL/MariaDB standard). Identifiers
+	 * containing backticks are escaped by doubling them.
+	 */
+	private static String quoteIdentifier(String identifier) {
+		return "`" + identifier.replace("`", "``") + "`";
 	}
 
 	protected void doStartValueRange(Filter.Value listValue, StringBuilder context) {

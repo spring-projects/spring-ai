@@ -88,9 +88,9 @@ public class OpenSearchAiSearchFilterExpressionConverter extends AbstractFilterE
 
 	@Override
 	public void doKey(Key key, StringBuilder context) {
-		var identifier = hasOuterQuotes(key.key()) ? removeOuterQuotes(key.key()) : key.key();
-		var prefixedIdentifier = withMetaPrefix(identifier);
-		context.append(prefixedIdentifier.trim()).append(":");
+		var fieldPath = withMetaPrefix(key.key().trim());
+		emitLuceneString(fieldPath, context);
+		context.append(':');
 	}
 
 	public String withMetaPrefix(String identifier) {

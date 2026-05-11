@@ -30,6 +30,7 @@ import java.util.Set;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -104,7 +105,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -142,6 +142,7 @@ import org.springframework.web.client.RestClientException;
  * @author Jihoon Kim
  * @author Soby Chacko
  * @author Sun Yuhan
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class BedrockProxyChatModel implements ChatModel {
@@ -174,7 +175,7 @@ public class BedrockProxyChatModel implements ChatModel {
 	/**
 	 * Conventions to use for generating observations.
 	 */
-	private ChatModelObservationConvention observationConvention;
+	private @Nullable ChatModelObservationConvention observationConvention;
 
 	private final MediaFetcher mediaFetcher;
 
@@ -237,7 +238,7 @@ public class BedrockProxyChatModel implements ChatModel {
 		return this.internalCall(requestPrompt, null);
 	}
 
-	private ChatResponse internalCall(Prompt prompt, ChatResponse perviousChatResponse) {
+	private ChatResponse internalCall(Prompt prompt, @Nullable ChatResponse perviousChatResponse) {
 
 		ConverseRequest converseRequest = this.createRequest(prompt);
 
@@ -262,7 +263,10 @@ public class BedrockProxyChatModel implements ChatModel {
 				return response;
 			});
 
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)
+		ChatOptions options = prompt.getOptions();
+		Assert.state(options != null, "Prompt options must not be null");
+
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(options, chatResponse)
 				&& chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
 			if (toolExecutionResult.returnDirect()) {
@@ -274,8 +278,7 @@ public class BedrockProxyChatModel implements ChatModel {
 			}
 			else {
 				// Send the tool execution result back to the model.
-				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						chatResponse);
+				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), options), chatResponse);
 			}
 		}
 		return chatResponse;
@@ -286,17 +289,11 @@ public class BedrockProxyChatModel implements ChatModel {
 		return this.defaultOptions;
 	}
 
-	Prompt buildRequestPrompt(Prompt prompt) {
-		BedrockChatOptions runtimeOptions = (BedrockChatOptions) prompt.getOptions();
-		runtimeOptions = runtimeOptions == null ? this.defaultOptions : runtimeOptions;
-		ToolCallingChatOptions.validateToolCallbacks(runtimeOptions.getToolCallbacks());
-
-		return prompt.mutate().chatOptions(runtimeOptions).build();
-	}
-
 	ConverseRequest createRequest(Prompt prompt) {
 
-		BedrockChatOptions updatedRuntimeOptions = prompt.getOptions().copy();
+		ChatOptions options = prompt.getOptions();
+		Assert.state(options != null, "Prompt options must not be null");
+		BedrockChatOptions updatedRuntimeOptions = options.copy();
 
 		// Get cache options to determine strategy
 		BedrockCacheOptions cacheOptions = updatedRuntimeOptions.getCacheOptions();
@@ -485,8 +482,10 @@ public class BedrockProxyChatModel implements ChatModel {
 			.topP(updatedRuntimeOptions.getTopP() != null ? updatedRuntimeOptions.getTopP().floatValue() : null)
 			.build();
 
+		BedrockChatOptions bedrockOptions = (BedrockChatOptions) prompt.getOptions();
+		Assert.notNull(bedrockOptions, "options can't be null here");
 		Document additionalModelRequestFields = ConverseApiUtils
-			.getChatOptionsAdditionalModelRequestFields(this.defaultOptions, prompt.getOptions());
+			.convertObjectToDocument(bedrockOptions.getRequestParameters());
 
 		Map<String, String> requestMetadata = ConverseApiUtils
 			.getRequestMetadata(prompt.getUserMessage().getMetadata());
@@ -503,7 +502,7 @@ public class BedrockProxyChatModel implements ChatModel {
 			.build();
 	}
 
-	private OutputConfig buildOutputConfig(BedrockChatOptions options) {
+	private @Nullable OutputConfig buildOutputConfig(BedrockChatOptions options) {
 		String schema = options.getOutputSchema();
 		if (schema == null) {
 			return null;
@@ -634,7 +633,7 @@ public class BedrockProxyChatModel implements ChatModel {
 	 * @param response The Bedrock Converse response.
 	 * @return The ChatResponse entity.
 	 */
-	private ChatResponse toChatResponse(ConverseResponse response, ChatResponse perviousChatResponse) {
+	private ChatResponse toChatResponse(ConverseResponse response, @Nullable ChatResponse perviousChatResponse) {
 
 		Assert.notNull(response, "'response' must not be null.");
 
@@ -728,7 +727,9 @@ public class BedrockProxyChatModel implements ChatModel {
 			.cacheWriteInputTokens(cacheWriteInputTokens)
 			.build();
 
-		DefaultUsage usage = new DefaultUsage(promptTokens, generationTokens, totalTokens, nativeTokenUsage);
+		DefaultUsage usage = new DefaultUsage(promptTokens, generationTokens, totalTokens, nativeTokenUsage,
+				cacheReadInputTokens != null ? cacheReadInputTokens.longValue() : null,
+				cacheWriteInputTokens != null ? cacheWriteInputTokens.longValue() : null);
 
 		Document modelResponseFields = response.additionalModelResponseFields();
 
@@ -767,7 +768,7 @@ public class BedrockProxyChatModel implements ChatModel {
 		return this.internalStream(requestPrompt, null);
 	}
 
-	private Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse perviousChatResponse) {
+	private Flux<ChatResponse> internalStream(Prompt prompt, @Nullable ChatResponse perviousChatResponse) {
 		Assert.notNull(prompt, "'prompt' must not be null");
 
 		return Flux.deferContextual(contextView -> {
@@ -777,6 +778,7 @@ public class BedrockProxyChatModel implements ChatModel {
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(AiProvider.BEDROCK_CONVERSE.value())
+				.streaming(true)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
@@ -805,9 +807,12 @@ public class BedrockProxyChatModel implements ChatModel {
 					converseStreamRequest, accumulatedUsage)
 				.stream();
 
+			ChatOptions options = prompt.getOptions();
+			Assert.state(options != null, "Prompt options must not be null");
+
 			Flux<ChatResponse> chatResponseFlux = chatResponses.switchMap(chatResponse -> {
 
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(options, chatResponse)
 						&& chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
 
 					// FIXME: bounded elastic needs to be used since tool calling
@@ -831,8 +836,7 @@ public class BedrockProxyChatModel implements ChatModel {
 						}
 						else {
 							// Send the tool execution result back to the model.
-							return this.internalStream(
-									new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), options),
 									chatResponse);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
@@ -865,7 +869,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 	public static final class Builder {
 
-		private AwsCredentialsProvider credentialsProvider;
+		private @Nullable AwsCredentialsProvider credentialsProvider;
 
 		private Region region = Region.US_EAST_1;
 
@@ -879,7 +883,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		private Duration socketTimeout = Duration.ofSeconds(30L);
 
-		private ToolCallingManager toolCallingManager;
+		private @Nullable ToolCallingManager toolCallingManager;
 
 		private ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate = new DefaultToolExecutionEligibilityPredicate();
 
@@ -887,11 +891,11 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
-		private ChatModelObservationConvention customObservationConvention;
+		private @Nullable ChatModelObservationConvention customObservationConvention;
 
-		private BedrockRuntimeClient bedrockRuntimeClient;
+		private @Nullable BedrockRuntimeClient bedrockRuntimeClient;
 
-		private BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
+		private @Nullable BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
 
 		private Builder() {
 			try {
@@ -973,12 +977,12 @@ public class BedrockProxyChatModel implements ChatModel {
 			return this;
 		}
 
-		public Builder bedrockRuntimeClient(BedrockRuntimeClient bedrockRuntimeClient) {
+		public Builder bedrockRuntimeClient(@Nullable BedrockRuntimeClient bedrockRuntimeClient) {
 			this.bedrockRuntimeClient = bedrockRuntimeClient;
 			return this;
 		}
 
-		public Builder bedrockRuntimeAsyncClient(BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient) {
+		public Builder bedrockRuntimeAsyncClient(@Nullable BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient) {
 			this.bedrockRuntimeAsyncClient = bedrockRuntimeAsyncClient;
 			return this;
 		}

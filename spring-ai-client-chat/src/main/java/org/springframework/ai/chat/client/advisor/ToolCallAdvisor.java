@@ -230,8 +230,9 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		// Overwrite the ToolCallingChatOptions to disable internal tool execution.
 		// Use the validated options from the original request to satisfy NullAway,
 		// as doInitializeLoopStream should preserve the options contract.
-		var optionsCopy = (ToolCallingChatOptions) chatClientRequest.prompt().getOptions().copy();
-		optionsCopy.setInternalToolExecutionEnabled(false);
+		var optionsCopy = ((ToolCallingChatOptions.Builder<?>) chatClientRequest.prompt().getOptions().mutate())
+			.internalToolExecutionEnabled(false)
+			.build();
 
 		return this.internalStream(streamAdvisorChain, initializedRequest, optionsCopy,
 				initializedRequest.prompt().getInstructions());
@@ -553,6 +554,14 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		 */
 		protected boolean isStreamToolCallResponses() {
 			return this.streamToolCallResponses;
+		}
+
+		/**
+		 * Returns whether internal conversation history is enabled.
+		 * @return true if internal conversation history is enabled, false if disabled
+		 */
+		protected boolean isConversationHistoryEnabled() {
+			return this.conversationHistoryEnabled;
 		}
 
 		/**

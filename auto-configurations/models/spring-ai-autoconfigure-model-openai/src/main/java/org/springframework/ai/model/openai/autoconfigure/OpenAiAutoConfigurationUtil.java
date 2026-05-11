@@ -16,7 +16,6 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
-import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.util.StringUtils;
 
 public final class OpenAiAutoConfigurationUtil {
@@ -25,8 +24,8 @@ public final class OpenAiAutoConfigurationUtil {
 		// Avoids instantiation
 	}
 
-	public static ResolvedConnectionProperties resolveConnectionProperties(AbstractOpenAiOptions commonProperties,
-			AbstractOpenAiOptions modelProperties) {
+	public static ResolvedConnectionProperties resolveCommonProperties(AbstractOpenAiProperties commonProperties,
+			AbstractOpenAiProperties modelProperties) {
 
 		var resolved = new ResolvedConnectionProperties();
 
@@ -43,7 +42,7 @@ public final class OpenAiAutoConfigurationUtil {
 		resolved.setCredential(modelProperties.getCredential() != null ? modelProperties.getCredential()
 				: commonProperties.getCredential());
 
-		resolved.setTimeout(!modelProperties.getTimeout().equals(AbstractOpenAiOptions.DEFAULT_TIMEOUT)
+		resolved.setTimeout(!modelProperties.getTimeout().equals(OpenAiCommonProperties.DEFAULT_TIMEOUT)
 				? modelProperties.getTimeout() : commonProperties.getTimeout());
 
 		resolved.setModel(StringUtils.hasText(modelProperties.getModel()) ? modelProperties.getModel()
@@ -62,7 +61,7 @@ public final class OpenAiAutoConfigurationUtil {
 
 		resolved.setGitHubModels(modelProperties.isGitHubModels() || commonProperties.isGitHubModels());
 
-		resolved.setMaxRetries(modelProperties.getMaxRetries() != AbstractOpenAiOptions.DEFAULT_MAX_RETRIES
+		resolved.setMaxRetries(modelProperties.getMaxRetries() != OpenAiCommonProperties.DEFAULT_MAX_RETRIES
 				? modelProperties.getMaxRetries() : commonProperties.getMaxRetries());
 
 		resolved
@@ -74,7 +73,7 @@ public final class OpenAiAutoConfigurationUtil {
 		return resolved;
 	}
 
-	public static class ResolvedConnectionProperties extends AbstractOpenAiOptions {
+	public static class ResolvedConnectionProperties extends OpenAiCommonProperties {
 
 	}
 

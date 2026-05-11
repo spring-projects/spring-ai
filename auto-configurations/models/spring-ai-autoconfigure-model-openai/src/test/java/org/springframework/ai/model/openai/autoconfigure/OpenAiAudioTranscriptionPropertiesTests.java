@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Piotr Olaszewski
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 class OpenAiAudioTranscriptionPropertiesTests {
 
@@ -46,11 +47,11 @@ class OpenAiAudioTranscriptionPropertiesTests {
 					"spring.ai.openai.audio.transcription.options.temperature=0.5")
 			.withConfiguration(AutoConfigurations.of(OpenAiAudioTranscriptionAutoConfiguration.class))
 			.run(context -> {
-				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+				var commonProperties = context.getBean(OpenAiCommonProperties.class);
 				var transcriptionProperties = context.getBean(OpenAiAudioTranscriptionProperties.class);
 
-				assertThat(connectionProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
-				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
+				assertThat(commonProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
+				assertThat(commonProperties.getApiKey()).isEqualTo("API_KEY");
 
 				assertThat(transcriptionProperties.getOptions().getModel()).isEqualTo("whisper-1");
 				assertThat(transcriptionProperties.getOptions().getLanguage()).isEqualTo("en");

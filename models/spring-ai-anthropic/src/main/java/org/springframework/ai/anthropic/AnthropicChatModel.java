@@ -93,7 +93,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -256,6 +255,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(AiProvider.ANTHROPIC.value())
+				.streaming(true)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
@@ -497,8 +497,12 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			// message_delta
 			long inputTokens = streamingState.getInputTokens();
 			long outputTokens = deltaEvent.usage().outputTokens();
-			Usage usage = new DefaultUsage(Math.toIntExact(inputTokens), Math.toIntExact(outputTokens),
-					Math.toIntExact(inputTokens + outputTokens), deltaEvent.usage());
+			Long cacheRead = deltaEvent.usage().cacheReadInputTokens().orElse(null);
+			Long cacheWrite = deltaEvent.usage().cacheCreationInputTokens().orElse(null);
+			Usage usage = new DefaultUsage(Integer.valueOf(Math.toIntExact(inputTokens)),
+					Integer.valueOf(Math.toIntExact(outputTokens)),
+					Integer.valueOf(Math.toIntExact(inputTokens + outputTokens)), deltaEvent.usage(), cacheRead,
+					cacheWrite);
 
 			Usage accumulatedUsage = previousChatResponse != null
 					? UsageCalculator.getCumulativeUsage(usage, previousChatResponse) : usage;
@@ -595,15 +599,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		return response;
-	}
-
-	Prompt buildRequestPrompt(Prompt prompt) {
-		var requestOptions = (AnthropicChatOptions) prompt.getOptions();
-		requestOptions = requestOptions == null ? this.options : requestOptions;
-
-		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
-
-		return prompt.mutate().chatOptions(requestOptions).build();
 	}
 
 	/**
@@ -1054,8 +1049,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 		long inputTokens = usage.inputTokens();
 		long outputTokens = usage.outputTokens();
-		return new DefaultUsage(Math.toIntExact(inputTokens), Math.toIntExact(outputTokens),
-				Math.toIntExact(inputTokens + outputTokens), usage);
+		Long cacheRead = usage.cacheReadInputTokens().orElse(null);
+		Long cacheWrite = usage.cacheCreationInputTokens().orElse(null);
+		return new DefaultUsage(Integer.valueOf(Math.toIntExact(inputTokens)),
+				Integer.valueOf(Math.toIntExact(outputTokens)),
+				Integer.valueOf(Math.toIntExact(inputTokens + outputTokens)), usage, cacheRead, cacheWrite);
 	}
 
 	private @Nullable Citation convertTextCitation(TextCitation textCitation) {

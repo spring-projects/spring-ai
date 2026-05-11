@@ -20,7 +20,6 @@ import com.openai.client.OpenAIClient;
 
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
-import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.ai.openai.OpenAiModerationModel;
 import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -38,35 +37,37 @@ import org.springframework.context.annotation.Bean;
  * @author Yanming Zhou
  * @author Issam El-atif
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 @AutoConfiguration
-@EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiModerationProperties.class })
+@EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiModerationProperties.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.MODERATION_MODEL, havingValue = SpringAIModels.OPENAI,
 		matchIfMissing = true)
 public class OpenAiModerationAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiModerationModel openAiSdkModerationModel(OpenAiConnectionProperties commonProperties,
+	public OpenAiModerationModel openAiSdkModerationModel(OpenAiCommonProperties commonProperties,
 			OpenAiModerationProperties moderationProperties) {
 
-		OpenAiAutoConfigurationUtil.ResolvedConnectionProperties resolvedConnectionProperties = OpenAiAutoConfigurationUtil
-			.resolveConnectionProperties(commonProperties, moderationProperties);
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
+				moderationProperties);
 
-		OpenAIClient openAIClient = this.openAiClient(resolvedConnectionProperties);
+		OpenAIClient openAIClient = this.openAiClient(resolvedProperties);
 
 		return OpenAiModerationModel.builder()
 			.openAiClient(openAIClient)
-			.options(moderationProperties.getOptions())
+			.options(moderationProperties.toOptions())
 			.build();
 	}
 
-	private OpenAIClient openAiClient(AbstractOpenAiOptions resolved) {
-		return OpenAiSetup.setupSyncClient(resolved.getBaseUrl(), resolved.getApiKey(), resolved.getCredential(),
-				resolved.getMicrosoftDeploymentName(), resolved.getMicrosoftFoundryServiceVersion(),
-				resolved.getOrganizationId(), resolved.isMicrosoftFoundry(), resolved.isGitHubModels(),
-				resolved.getModel(), resolved.getTimeout(), resolved.getMaxRetries(), resolved.getProxy(),
-				resolved.getCustomHeaders());
+	private OpenAIClient openAiClient(OpenAiCommonProperties commonProperties) {
+		return OpenAiSetup.setupSyncClient(commonProperties.getBaseUrl(), commonProperties.getApiKey(),
+				commonProperties.getCredential(), commonProperties.getMicrosoftDeploymentName(),
+				commonProperties.getMicrosoftFoundryServiceVersion(), commonProperties.getOrganizationId(),
+				commonProperties.isMicrosoftFoundry(), commonProperties.isGitHubModels(), commonProperties.getModel(),
+				commonProperties.getTimeout(), commonProperties.getMaxRetries(), commonProperties.getProxy(),
+				commonProperties.getCustomHeaders());
 	}
 
 }

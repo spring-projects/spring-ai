@@ -29,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Pawel Potaczala
  * @author Issam El-atif
+ * @author Sebastien Deleuze
  *
  * Unit Tests for {@link BedrockConverseProxyChatProperties}.
  */
@@ -39,15 +40,14 @@ public class BedrockConverseProxyChatPropertiesTests {
 
 		new ApplicationContextRunner().withPropertyValues(
 		// @formatter:off
-				"spring.ai.bedrock.converse.chat.options.model=MODEL_XYZ",
+				"spring.ai.bedrock.converse.chat.model=MODEL_XYZ",
 
-				"spring.ai.bedrock.converse.chat.options.max-tokens=123",
-				"spring.ai.bedrock.converse.chat.options.metadata.user-id=MyUserId",
-				"spring.ai.bedrock.converse.chat.options.stop_sequences=boza,koza",
+				"spring.ai.bedrock.converse.chat.max-tokens=123",
+				"spring.ai.bedrock.converse.chat.stop-sequences=boza,koza",
 
-				"spring.ai.bedrock.converse.chat.options.temperature=0.55",
-				"spring.ai.bedrock.converse.chat.options.top-p=0.56",
-				"spring.ai.bedrock.converse.chat.options.top-k=100"
+				"spring.ai.bedrock.converse.chat.temperature=0.55",
+				"spring.ai.bedrock.converse.chat.top-p=0.56",
+				"spring.ai.bedrock.converse.chat.top-k=100"
 				)
 			// @formatter:on
 			.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class,
@@ -55,12 +55,12 @@ public class BedrockConverseProxyChatPropertiesTests {
 			.run(context -> {
 				var chatProperties = context.getBean(BedrockConverseProxyChatProperties.class);
 
-				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getMaxTokens()).isEqualTo(123);
-				assertThat(chatProperties.getOptions().getStopSequences()).contains("boza", "koza");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
-				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56);
-				assertThat(chatProperties.getOptions().getTopK()).isEqualTo(100);
+				assertThat(chatProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(chatProperties.getMaxTokens()).isEqualTo(123);
+				assertThat(chatProperties.getStopSequences()).contains("boza", "koza");
+				assertThat(chatProperties.getTemperature()).isEqualTo(0.55);
+				assertThat(chatProperties.getTopP()).isEqualTo(0.56);
+				assertThat(chatProperties.getTopK()).isEqualTo(100);
 
 			});
 	}

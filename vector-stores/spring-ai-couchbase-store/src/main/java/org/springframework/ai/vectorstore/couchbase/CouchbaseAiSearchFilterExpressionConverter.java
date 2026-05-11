@@ -61,7 +61,21 @@ public class CouchbaseAiSearchFilterExpressionConverter extends AbstractFilterEx
 	@Override
 	protected void doKey(Key key, StringBuilder context) {
 		context.append("metadata.");
-		context.append(key.key());
+		var identifier = key.key();
+		// Couchbase N1QL/SQL++ uses backtick-quoted identifiers.
+		// Within backticks, the only character needing escaping is the backtick
+		// itself (doubled as ``).
+		context.append('`');
+		for (int i = 0; i < identifier.length(); i++) {
+			char c = identifier.charAt(i);
+			if (c == '`') {
+				context.append("``");
+			}
+			else {
+				context.append(c);
+			}
+		}
+		context.append('`');
 	}
 
 	@Override

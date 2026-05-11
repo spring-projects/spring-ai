@@ -63,12 +63,12 @@ import org.springframework.util.Assert;
  * @author Ilayaperumal Gopinathan
  * @author Soby Chacko
  * @author Austin Dase
+ * @author Sebastien Deleuze
  * @since 1.0.0
  * @see AnthropicChatModel
  * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
  */
-public class AnthropicChatOptions extends AbstractAnthropicOptions
-		implements ToolCallingChatOptions, StructuredOutputChatOptions {
+public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
 	/**
 	 * Default model to use for chat completions.
@@ -79,6 +79,45 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	 * Default max tokens for chat completions.
 	 */
 	public static final Integer DEFAULT_MAX_TOKENS = 4096;
+
+	private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
+
+	/**
+	 * The base URL to connect to the Anthropic API. Defaults to
+	 * "https://api.anthropic.com" if not specified.
+	 */
+	private @Nullable String baseUrl;
+
+	/**
+	 * The API key to authenticate with the Anthropic API. Can also be set via the
+	 * ANTHROPIC_API_KEY environment variable.
+	 */
+	private @Nullable String apiKey;
+
+	/**
+	 * The model name to use for requests.
+	 */
+	private @Nullable String model;
+
+	/**
+	 * Request timeout for the Anthropic client. Defaults to 60 seconds if not specified.
+	 */
+	private @Nullable Duration timeout;
+
+	/**
+	 * Maximum number of retries for failed requests. Defaults to 2 if not specified.
+	 */
+	private @Nullable Integer maxRetries;
+
+	/**
+	 * Proxy settings for the Anthropic client.
+	 */
+	private @Nullable Proxy proxy;
+
+	/**
+	 * Custom HTTP headers to add to Anthropic client requests.
+	 */
+	private Map<String, String> customHeaders = new HashMap<>();
 
 	/**
 	 * Maximum number of tokens to generate in the response.
@@ -193,8 +232,6 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	 */
 	private @Nullable AnthropicServiceTier serviceTier;
 
-	private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
-
 	/**
 	 * Creates a new builder for AnthropicChatOptions.
 	 * @return a new builder instance
@@ -203,21 +240,42 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		return new Builder();
 	}
 
+	public @Nullable String getBaseUrl() {
+		return this.baseUrl;
+	}
+
+	public @Nullable String getApiKey() {
+		return this.apiKey;
+	}
+
+	@Override
+	public @Nullable String getModel() {
+		return this.model;
+	}
+
+	public @Nullable Duration getTimeout() {
+		return this.timeout;
+	}
+
+	public @Nullable Integer getMaxRetries() {
+		return this.maxRetries;
+	}
+
+	public @Nullable Proxy getProxy() {
+		return this.proxy;
+	}
+
+	public Map<String, String> getCustomHeaders() {
+		return this.customHeaders;
+	}
+
 	@Override
 	public @Nullable Integer getMaxTokens() {
 		return this.maxTokens;
 	}
 
-	public void setMaxTokens(@Nullable Integer maxTokens) {
-		this.maxTokens = maxTokens;
-	}
-
 	public @Nullable Metadata getMetadata() {
 		return this.metadata;
-	}
-
-	public void setMetadata(@Nullable Metadata metadata) {
-		this.metadata = metadata;
 	}
 
 	@Override
@@ -225,17 +283,9 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		return this.stopSequences;
 	}
 
-	public void setStopSequences(@Nullable List<String> stopSequences) {
-		this.stopSequences = stopSequences;
-	}
-
 	@Override
 	public @Nullable Double getTemperature() {
 		return this.temperature;
-	}
-
-	public void setTemperature(@Nullable Double temperature) {
-		this.temperature = temperature;
 	}
 
 	@Override
@@ -243,41 +293,21 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		return this.topP;
 	}
 
-	public void setTopP(@Nullable Double topP) {
-		this.topP = topP;
-	}
-
 	@Override
 	public @Nullable Integer getTopK() {
 		return this.topK;
-	}
-
-	public void setTopK(@Nullable Integer topK) {
-		this.topK = topK;
 	}
 
 	public @Nullable ToolChoice getToolChoice() {
 		return this.toolChoice;
 	}
 
-	public void setToolChoice(@Nullable ToolChoice toolChoice) {
-		this.toolChoice = toolChoice;
-	}
-
 	public @Nullable ThinkingConfigParam getThinking() {
 		return this.thinking;
 	}
 
-	public void setThinking(@Nullable ThinkingConfigParam thinking) {
-		this.thinking = thinking;
-	}
-
 	public @Nullable Boolean getDisableParallelToolUse() {
 		return this.disableParallelToolUse;
-	}
-
-	public void setDisableParallelToolUse(@Nullable Boolean disableParallelToolUse) {
-		this.disableParallelToolUse = disableParallelToolUse;
 	}
 
 	@Override
@@ -329,11 +359,6 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		return this.citationDocuments;
 	}
 
-	public void setCitationDocuments(List<AnthropicCitationDocument> citationDocuments) {
-		Assert.notNull(citationDocuments, "citationDocuments cannot be null");
-		this.citationDocuments = citationDocuments;
-	}
-
 	/**
 	 * Validate that all citation documents have consistent citation settings. Anthropic
 	 * requires all documents to have citations enabled if any do.
@@ -358,57 +383,28 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		return this.cacheOptions;
 	}
 
-	public void setCacheOptions(AnthropicCacheOptions cacheOptions) {
-		Assert.notNull(cacheOptions, "cacheOptions cannot be null");
-		this.cacheOptions = cacheOptions;
-	}
-
 	public @Nullable OutputConfig getOutputConfig() {
 		return this.outputConfig;
-	}
-
-	public void setOutputConfig(@Nullable OutputConfig outputConfig) {
-		this.outputConfig = outputConfig;
 	}
 
 	public Map<String, String> getHttpHeaders() {
 		return this.httpHeaders;
 	}
 
-	public void setHttpHeaders(Map<String, String> httpHeaders) {
-		this.httpHeaders = httpHeaders;
-	}
-
 	public @Nullable AnthropicSkillContainer getSkillContainer() {
 		return this.skillContainer;
-	}
-
-	public void setSkillContainer(@Nullable AnthropicSkillContainer skillContainer) {
-		this.skillContainer = skillContainer;
 	}
 
 	public @Nullable String getInferenceGeo() {
 		return this.inferenceGeo;
 	}
 
-	public void setInferenceGeo(@Nullable String inferenceGeo) {
-		this.inferenceGeo = inferenceGeo;
-	}
-
 	public @Nullable AnthropicWebSearchTool getWebSearchTool() {
 		return this.webSearchTool;
 	}
 
-	public void setWebSearchTool(@Nullable AnthropicWebSearchTool webSearchTool) {
-		this.webSearchTool = webSearchTool;
-	}
-
 	public @Nullable AnthropicServiceTier getServiceTier() {
 		return this.serviceTier;
-	}
-
-	public void setServiceTier(@Nullable AnthropicServiceTier serviceTier) {
-		this.serviceTier = serviceTier;
 	}
 
 	@Override
@@ -1014,13 +1010,13 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		public AnthropicChatOptions build() {
 			AnthropicChatOptions options = new AnthropicChatOptions();
 			// AbstractAnthropicOptions fields
-			options.setModel(this.model);
-			options.setBaseUrl(this.baseUrl);
-			options.setApiKey(this.apiKey);
-			options.setTimeout(this.timeout);
-			options.setMaxRetries(this.maxRetries);
-			options.setProxy(this.proxy);
-			options.setCustomHeaders(this.customHeaders);
+			options.model = this.model;
+			options.baseUrl = this.baseUrl;
+			options.apiKey = this.apiKey;
+			options.timeout = this.timeout;
+			options.maxRetries = this.maxRetries;
+			options.proxy = this.proxy;
+			options.customHeaders = this.customHeaders;
 			// ChatOptions fields
 			options.maxTokens = this.maxTokens;
 			options.stopSequences = this.stopSequences;

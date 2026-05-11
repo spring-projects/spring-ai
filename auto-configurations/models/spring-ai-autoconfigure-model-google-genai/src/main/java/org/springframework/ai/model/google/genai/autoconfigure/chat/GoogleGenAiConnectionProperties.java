@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.google.genai.autoconfigure.chat;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.io.Resource;
 
@@ -33,22 +35,22 @@ public class GoogleGenAiConnectionProperties {
 	/**
 	 * Google GenAI API Key (for Gemini Developer API mode).
 	 */
-	private String apiKey;
+	private @Nullable String apiKey;
 
 	/**
 	 * Google Cloud project ID (for Vertex AI mode).
 	 */
-	private String projectId;
+	private @Nullable String projectId;
 
 	/**
 	 * Google Cloud location (for Vertex AI mode).
 	 */
-	private String location;
+	private @Nullable String location;
 
 	/**
 	 * URI to Google Cloud credentials (optional, for Vertex AI mode).
 	 */
-	private Resource credentialsUri;
+	private @Nullable Resource credentialsUri;
 
 	/**
 	 * Whether to use Vertex AI mode. If false, uses Gemini Developer API mode. This is
@@ -56,35 +58,35 @@ public class GoogleGenAiConnectionProperties {
 	 */
 	private boolean vertexAi;
 
-	public String getApiKey() {
+	public @Nullable String getApiKey() {
 		return this.apiKey;
 	}
 
-	public void setApiKey(String apiKey) {
+	public void setApiKey(@Nullable String apiKey) {
 		this.apiKey = apiKey;
 	}
 
-	public String getProjectId() {
+	public @Nullable String getProjectId() {
 		return this.projectId;
 	}
 
-	public void setProjectId(String projectId) {
+	public void setProjectId(@Nullable String projectId) {
 		this.projectId = projectId;
 	}
 
-	public String getLocation() {
+	public @Nullable String getLocation() {
 		return this.location;
 	}
 
-	public void setLocation(String location) {
+	public void setLocation(@Nullable String location) {
 		this.location = location;
 	}
 
-	public Resource getCredentialsUri() {
+	public @Nullable Resource getCredentialsUri() {
 		return this.credentialsUri;
 	}
 
-	public void setCredentialsUri(Resource credentialsUri) {
+	public void setCredentialsUri(@Nullable Resource credentialsUri) {
 		this.credentialsUri = credentialsUri;
 	}
 

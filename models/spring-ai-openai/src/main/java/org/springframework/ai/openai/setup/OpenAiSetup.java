@@ -242,12 +242,6 @@ public final class OpenAiSetup {
 			if (baseUrl.endsWith("/") || baseUrl.endsWith("?")) {
 				tmpUrl = baseUrl.substring(0, baseUrl.length() - 1);
 			}
-			// If the Azure deployment name is not configured, the model name will be used
-			// by default by the OpenAI Java
-			// SDK
-			if (azureDeploymentName != null && !azureDeploymentName.equals(modelName)) {
-				tmpUrl += "/openai/deployments/" + azureDeploymentName;
-			}
 			return tmpUrl;
 		}
 		else {

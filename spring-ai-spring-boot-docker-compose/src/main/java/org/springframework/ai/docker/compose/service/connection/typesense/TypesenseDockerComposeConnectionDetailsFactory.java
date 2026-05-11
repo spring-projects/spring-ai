@@ -16,6 +16,8 @@
 
 package org.springframework.ai.docker.compose.service.connection.typesense;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.vectorstore.typesense.autoconfigure.TypesenseConnectionDetails;
 import org.springframework.boot.docker.compose.core.RunningService;
 import org.springframework.boot.docker.compose.service.connection.DockerComposeConnectionDetailsFactory;
@@ -76,7 +78,7 @@ public class TypesenseDockerComposeConnectionDetailsFactory
 		}
 
 		@Override
-		public String getApiKey() {
+		public @Nullable String getApiKey() {
 			return this.environment.getApiKey();
 		}
 

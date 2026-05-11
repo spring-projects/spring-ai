@@ -43,10 +43,12 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 		this.prefix = prefix;
 	}
 
+	@Deprecated(forRemoval = true, since = "2.0.0")
 	public static DeepSeekAssistantMessage prefixAssistantMessage(@Nullable String content) {
 		return prefixAssistantMessage(content, null);
 	}
 
+	@Deprecated(forRemoval = true, since = "2.0.0")
 	public static DeepSeekAssistantMessage prefixAssistantMessage(@Nullable String content,
 			@Nullable String reasoningContent) {
 		return new Builder().content(content).prefix(true).reasoningContent(reasoningContent).build();
@@ -94,50 +96,33 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 				+ this.prefix + ", metadata=" + this.metadata + "]";
 	}
 
-	public static final class Builder {
+	public static Builder builder() {
+		return new Builder();
+	}
 
-		private @Nullable String content;
+	// public Builder class exposed to users. Avoids having to deal with noisy generic
+	// parameters.
+	public static class Builder extends AbstractBuilder<Builder> {
 
-		private Map<String, Object> properties = Map.of();
+	}
 
-		private List<ToolCall> toolCalls = List.of();
+	public static class AbstractBuilder<B extends AbstractBuilder<B>> extends AssistantMessage.Builder<B> {
 
-		private List<Media> media = List.of();
+		protected @Nullable Boolean prefix;
 
-		private @Nullable Boolean prefix;
+		protected @Nullable String reasoningContent;
 
-		private @Nullable String reasoningContent;
-
-		public Builder content(@Nullable String content) {
-			this.content = content;
-			return this;
-		}
-
-		public Builder properties(Map<String, Object> properties) {
-			this.properties = properties;
-			return this;
-		}
-
-		public Builder toolCalls(List<ToolCall> toolCalls) {
-			this.toolCalls = toolCalls;
-			return this;
-		}
-
-		public Builder media(List<Media> media) {
-			this.media = media;
-			return this;
-		}
-
-		public Builder prefix(@Nullable Boolean prefix) {
+		public B prefix(@Nullable Boolean prefix) {
 			this.prefix = prefix;
-			return this;
+			return self();
 		}
 
-		public Builder reasoningContent(@Nullable String reasoningContent) {
+		public B reasoningContent(@Nullable String reasoningContent) {
 			this.reasoningContent = reasoningContent;
-			return this;
+			return self();
 		}
 
+		@Override
 		public DeepSeekAssistantMessage build() {
 			return new DeepSeekAssistantMessage(this.content, this.reasoningContent, this.prefix, this.properties,
 					this.toolCalls, this.media);

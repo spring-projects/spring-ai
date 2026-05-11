@@ -23,6 +23,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
 import com.google.protobuf.util.JsonFormat;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
 import org.springframework.util.MimeType;
@@ -75,9 +76,9 @@ public abstract class VertexAiEmbeddingUtils {
 	//////////////////////////////////////////////////////
 	public static class TextParametersBuilder {
 
-		public Integer outputDimensionality;
+		public @Nullable Integer outputDimensionality;
 
-		public Boolean autoTruncate;
+		public @Nullable Boolean autoTruncate;
 
 		public static TextParametersBuilder of() {
 			return new TextParametersBuilder();
@@ -111,11 +112,12 @@ public abstract class VertexAiEmbeddingUtils {
 
 	public static class TextInstanceBuilder {
 
+		@SuppressWarnings("NullAway.Init")
 		public String content;
 
-		public String taskType;
+		public @Nullable String taskType;
 
-		public String title;
+		public @Nullable String title;
 
 		public static TextInstanceBuilder of(String content) {
 			Assert.hasText(content, "Content must not be empty");
@@ -158,23 +160,23 @@ public abstract class VertexAiEmbeddingUtils {
 		/**
 		 * The text to generate embeddings for.
 		 */
-		private String text;
+		private @Nullable String text;
 
 		/**
 		 * The dimension of the embedding, included in the response. Only applies to text
 		 * and image input. Accepted values: 128, 256, 512, or 1408.
 		 */
-		private Integer dimension;
+		private @Nullable Integer dimension;
 
 		/**
 		 * The image to generate embeddings for.
 		 */
-		private Struct image;
+		private @Nullable Struct image;
 
 		/**
 		 * The video segment to generate embeddings for.
 		 */
-		private Struct video;
+		private @Nullable Struct video;
 
 		public static MultimodalInstanceBuilder of() {
 			return new MultimodalInstanceBuilder();
@@ -235,18 +237,19 @@ public abstract class VertexAiEmbeddingUtils {
 		/**
 		 * Image bytes to be encoded in a base64 string.
 		 */
-		public byte[] imageBytes;
+		public byte @Nullable [] imageBytes;
 
 		/**
 		 * The Cloud Storage location of the image to perform the embedding. One of
 		 * bytesBase64Encoded or gcsUri.
 		 */
-		public String gcsUri;
+		public @Nullable String gcsUri;
 
 		/**
 		 * The MIME type of the content of the image. Supported values: image/jpeg and
 		 * image/png.
 		 */
+		@SuppressWarnings("NullAway.Init")
 		public MimeType mimeType;
 
 		public static ImageBuilder of(MimeType mimeType) {
@@ -309,24 +312,25 @@ public abstract class VertexAiEmbeddingUtils {
 		/**
 		 * Video bytes to be encoded in base64 string. One of videoBytes or gcsUri.
 		 */
-		public byte[] videoBytes;
+		public byte @Nullable [] videoBytes;
 
 		/**
 		 * The Cloud Storage location of the video on which to perform the embedding. One
 		 * of videoBytes or gcsUri.
 		 */
-		public String gcsUri;
+		public @Nullable String gcsUri;
 
 		/**
 		 *
 		 */
+		@SuppressWarnings("NullAway.Init")
 		public MimeType mimeType;
 
 		/**
 		 * The start offset of the video segment in seconds. If not specified, it's
 		 * calculated with max(0, endOffsetSec - 120).
 		 */
-		public Integer startOffsetSec;
+		public @Nullable Integer startOffsetSec;
 
 		/**
 		 * The end offset of the video segment in seconds. If not specified, it's
@@ -334,7 +338,7 @@ public abstract class VertexAiEmbeddingUtils {
 		 * endOffSec are specified, endOffsetSec is adjusted to min(startOffsetSec+120,
 		 * endOffsetSec).
 		 */
-		public Integer endOffsetSec;
+		public @Nullable Integer endOffsetSec;
 
 		/**
 		 * The interval of the video the embedding will be generated. The minimum value
@@ -343,7 +347,7 @@ public abstract class VertexAiEmbeddingUtils {
 		 * However, if the interval is larger than min(video length, 120s), it impacts the
 		 * quality of the generated embeddings. Default value: 16.
 		 */
-		public Integer intervalSec;
+		public @Nullable Integer intervalSec;
 
 		public static VideoBuilder of(MimeType mimeType) {
 			Assert.notNull(mimeType, "MimeType must not be null");
@@ -377,14 +381,14 @@ public abstract class VertexAiEmbeddingUtils {
 			return this;
 		}
 
-		public VideoBuilder startOffsetSec(Integer startOffsetSec) {
+		public VideoBuilder startOffsetSec(@Nullable Integer startOffsetSec) {
 			if (startOffsetSec != null) {
 				this.startOffsetSec = startOffsetSec;
 			}
 			return this;
 		}
 
-		public VideoBuilder endOffsetSec(Integer endOffsetSec) {
+		public VideoBuilder endOffsetSec(@Nullable Integer endOffsetSec) {
 			if (endOffsetSec != null) {
 				this.endOffsetSec = endOffsetSec;
 			}
@@ -392,7 +396,7 @@ public abstract class VertexAiEmbeddingUtils {
 
 		}
 
-		public VideoBuilder intervalSec(Integer intervalSec) {
+		public VideoBuilder intervalSec(@Nullable Integer intervalSec) {
 			if (intervalSec != null) {
 				this.intervalSec = intervalSec;
 			}

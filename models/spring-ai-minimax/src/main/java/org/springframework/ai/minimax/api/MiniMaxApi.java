@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -339,7 +340,7 @@ public class MiniMaxApi {
 		/**
 		 * The function definition.
 		 */
-		private Function function;
+		private @Nullable Function function;
 
 		public FunctionTool() {
 
@@ -352,7 +353,7 @@ public class MiniMaxApi {
 		 */
 		public FunctionTool(
 				@JsonProperty("type") Type type,
-				@JsonProperty("function") Function function) {
+				@JsonProperty("function") @Nullable Function function) {
 			this.type = type;
 			this.function = function;
 		}
@@ -371,7 +372,7 @@ public class MiniMaxApi {
 		}
 
 		@JsonProperty("function")
-		public Function getFunction() {
+		public @Nullable Function getFunction() {
 			return this.function;
 		}
 
@@ -379,7 +380,7 @@ public class MiniMaxApi {
 			this.type = type;
 		}
 
-		public void setFunction(Function function) {
+		public void setFunction(@Nullable Function function) {
 			this.function = function;
 		}
 
@@ -408,16 +409,19 @@ public class MiniMaxApi {
 		public static class Function {
 
 			@JsonProperty("description")
+			@SuppressWarnings("NullAway.Init")
 			private String description;
 
 			@JsonProperty("name")
+			@SuppressWarnings("NullAway.Init")
 			private String name;
 
 			@JsonProperty("parameters")
+			@SuppressWarnings("NullAway.Init")
 			private Map<String, Object> parameters;
 
 			@JsonIgnore
-			private String jsonSchema;
+			private @Nullable String jsonSchema;
 
 			private Function() {
 
@@ -480,11 +484,11 @@ public class MiniMaxApi {
 				this.parameters = parameters;
 			}
 
-			public String getJsonSchema() {
+			public @Nullable String getJsonSchema() {
 				return this.jsonSchema;
 			}
 
-			public void setJsonSchema(String jsonSchema) {
+			public void setJsonSchema(@Nullable String jsonSchema) {
 				this.jsonSchema = jsonSchema;
 				if (jsonSchema != null) {
 					this.parameters = ModelOptionsUtils.jsonToMap(jsonSchema);
@@ -536,20 +540,20 @@ public class MiniMaxApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
-			@JsonProperty("model") String model,
-			@JsonProperty("frequency_penalty") Double frequencyPenalty,
-			@JsonProperty("max_tokens") Integer maxTokens,
-			@JsonProperty("n") Integer n,
-			@JsonProperty("presence_penalty") Double presencePenalty,
-			@JsonProperty("response_format") ResponseFormat responseFormat,
-			@JsonProperty("seed") Integer seed,
-			@JsonProperty("stop") List<String> stop,
+			@JsonProperty("model") @Nullable String model,
+			@JsonProperty("frequency_penalty") @Nullable Double frequencyPenalty,
+			@JsonProperty("max_tokens") @Nullable Integer maxTokens,
+			@JsonProperty("n") @Nullable Integer n,
+			@JsonProperty("presence_penalty") @Nullable Double presencePenalty,
+			@JsonProperty("response_format") @Nullable ResponseFormat responseFormat,
+			@JsonProperty("seed") @Nullable Integer seed,
+			@JsonProperty("stop") @Nullable List<String> stop,
 			@JsonProperty("stream") Boolean stream,
-			@JsonProperty("temperature") Double temperature,
-			@JsonProperty("top_p") Double topP,
-			@JsonProperty("mask_sensitive_info") Boolean maskSensitiveInfo,
-			@JsonProperty("tools") List<FunctionTool> tools,
-			@JsonProperty("tool_choice") Object toolChoice) {
+			@JsonProperty("temperature") @Nullable Double temperature,
+			@JsonProperty("top_p") @Nullable Double topP,
+			@JsonProperty("mask_sensitive_info") @Nullable Boolean maskSensitiveInfo,
+			@JsonProperty("tools") @Nullable List<FunctionTool> tools,
+			@JsonProperty("tool_choice") @Nullable Object toolChoice) {
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages and model.
@@ -657,11 +661,11 @@ public class MiniMaxApi {
 	@JsonInclude(Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionMessage(
-			@JsonProperty("content") Object rawContent,
+			@JsonProperty("content") @Nullable Object rawContent,
 			@JsonProperty("role") Role role,
-			@JsonProperty("name") String name,
-			@JsonProperty("tool_call_id") String toolCallId,
-			@JsonProperty("tool_calls") List<ToolCall> toolCalls) {
+			@JsonProperty("name") @Nullable String name,
+			@JsonProperty("tool_call_id") @Nullable String toolCallId,
+			@JsonProperty("tool_calls") @Nullable List<ToolCall> toolCalls) {
 
 		/**
 		 * Create a chat completion message with the given content and role. All other fields are null.
@@ -675,7 +679,7 @@ public class MiniMaxApi {
 		/**
 		 * Get message content as String.
 		 */
-		public String content() {
+		public @Nullable String content() {
 			if (this.rawContent == null) {
 				return null;
 			}
@@ -724,8 +728,8 @@ public class MiniMaxApi {
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record MediaContent(
 			@JsonProperty("type") String type,
-			@JsonProperty("text") String text,
-			@JsonProperty("image_url") ImageUrl imageUrl) {
+			@JsonProperty("text") @Nullable String text,
+			@JsonProperty("image_url") @Nullable ImageUrl imageUrl) {
 
 			/**
 			 * Shortcut constructor for a text content.
@@ -754,7 +758,7 @@ public class MiniMaxApi {
 			@JsonIgnoreProperties(ignoreUnknown = true)
 			public record ImageUrl(
 				@JsonProperty("url") String url,
-				@JsonProperty("detail") String detail) {
+				@JsonProperty("detail") @Nullable String detail) {
 
 				public ImageUrl(String url) {
 					this(url, null);
@@ -808,15 +812,15 @@ public class MiniMaxApi {
 	@JsonInclude(Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletion(
-			@JsonProperty("id") String id,
-			@JsonProperty("choices") List<Choice> choices,
-			@JsonProperty("created") Long created,
-			@JsonProperty("model") String model,
-			@JsonProperty("system_fingerprint") String systemFingerprint,
-			@JsonProperty("object") String object,
+			@JsonProperty("id") @Nullable String id,
+			@JsonProperty("choices") @Nullable List<Choice> choices,
+			@JsonProperty("created") @Nullable Long created,
+			@JsonProperty("model") @Nullable String model,
+			@JsonProperty("system_fingerprint") @Nullable String systemFingerprint,
+			@JsonProperty("object") @Nullable String object,
 
-			@JsonProperty("base_resp") BaseResponse baseResponse,
-			@JsonProperty("usage") Usage usage) {
+			@JsonProperty("base_resp") @Nullable BaseResponse baseResponse,
+			@JsonProperty("usage") @Nullable Usage usage) {
 
 		/**
 		 * Chat completion choice.
@@ -830,18 +834,18 @@ public class MiniMaxApi {
 		@JsonInclude(Include.NON_NULL)
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record Choice(
-				@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
-				@JsonProperty("index") Integer index,
-				@JsonProperty("message") ChatCompletionMessage message,
-				@JsonProperty("messages") List<ChatCompletionMessage> messages,
-				@JsonProperty("logprobs") LogProbs logprobs) {
+				@JsonProperty("finish_reason") @Nullable ChatCompletionFinishReason finishReason,
+				@JsonProperty("index") @Nullable Integer index,
+				@JsonProperty("message") @Nullable ChatCompletionMessage message,
+				@JsonProperty("messages") @Nullable List<ChatCompletionMessage> messages,
+				@JsonProperty("logprobs") @Nullable LogProbs logprobs) {
 		}
 
 		@JsonInclude(Include.NON_NULL)
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record BaseResponse(
-				@JsonProperty("status_code") Long statusCode,
-				@JsonProperty("status_msg") String message
+				@JsonProperty("status_code") @Nullable Long statusCode,
+				@JsonProperty("status_msg") @Nullable String message
 		) { }
 	}
 
@@ -928,12 +932,12 @@ public class MiniMaxApi {
 	@JsonInclude(Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionChunk(
-			@JsonProperty("id") String id,
-			@JsonProperty("choices") List<ChunkChoice> choices,
-			@JsonProperty("created") Long created,
-			@JsonProperty("model") String model,
-			@JsonProperty("system_fingerprint") String systemFingerprint,
-			@JsonProperty("object") String object) {
+			@JsonProperty("id") @Nullable String id,
+			@JsonProperty("choices") @Nullable List<ChunkChoice> choices,
+			@JsonProperty("created") @Nullable Long created,
+			@JsonProperty("model") @Nullable String model,
+			@JsonProperty("system_fingerprint") @Nullable String systemFingerprint,
+			@JsonProperty("object") @Nullable String object) {
 
 		/**
 		 * Chat completion choice.
@@ -946,10 +950,10 @@ public class MiniMaxApi {
 		@JsonInclude(Include.NON_NULL)
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ChunkChoice(
-				@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
-				@JsonProperty("index") Integer index,
-				@JsonProperty("delta") ChatCompletionMessage delta,
-				@JsonProperty("logprobs") LogProbs logprobs) {
+				@JsonProperty("finish_reason") @Nullable ChatCompletionFinishReason finishReason,
+				@JsonProperty("index") @Nullable Integer index,
+				@JsonProperty("delta") @Nullable ChatCompletionMessage delta,
+				@JsonProperty("logprobs") @Nullable LogProbs logprobs) {
 		}
 	}
 

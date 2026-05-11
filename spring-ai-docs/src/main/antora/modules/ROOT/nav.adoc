@@ -110,7 +110,6 @@
 *** xref:api/vectordbs/pinecone.adoc[]
 *** xref:api/vectordbs/qdrant.adoc[]
 *** xref:api/vectordbs/redis.adoc[]
-*** xref:api/vectordbs/hana.adoc[SAP Hana]
 *** xref:api/vectordbs/typesense.adoc[]
 *** xref:api/vectordbs/weaviate.adoc[]
 *** xref:api/vectordbs/s3-vector-store.adoc[]
@@ -135,3 +134,4 @@
 
 * xref:upgrade-notes.adoc[]
 ** xref:api/tools-migration.adoc[Migrating FunctionCallback to ToolCallback API]
+** xref:api/chat/anthropic-migration.adoc[Migrating the Anthropic Module to the Official Java SDK]

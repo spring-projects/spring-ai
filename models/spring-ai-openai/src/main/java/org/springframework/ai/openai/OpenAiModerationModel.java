@@ -35,6 +35,7 @@ import org.springframework.ai.moderation.ModerationOptions;
 import org.springframework.ai.moderation.ModerationPrompt;
 import org.springframework.ai.moderation.ModerationResponse;
 import org.springframework.ai.moderation.ModerationResult;
+import org.springframework.util.Assert;
 
 /**
  * OpenAI SDK Moderation Model implementation.
@@ -91,10 +92,15 @@ public final class OpenAiModerationModel implements ModerationModel {
 		ModerationCreateParams.Builder builder = ModerationCreateParams.builder()
 			.input(ModerationCreateParams.Input.ofString(text));
 
-		String model = options.getModel();
-		if (model != null) {
-			builder.model(com.openai.models.moderations.ModerationModel.of(model));
+		String model;
+		if (options.getDeploymentName() != null) {
+			model = options.getDeploymentName();
 		}
+		else {
+			model = options.getModel();
+		}
+		Assert.notNull(model, "Model must not be null");
+		builder.model(com.openai.models.moderations.ModerationModel.of(model));
 
 		ModerationCreateParams params = builder.build();
 

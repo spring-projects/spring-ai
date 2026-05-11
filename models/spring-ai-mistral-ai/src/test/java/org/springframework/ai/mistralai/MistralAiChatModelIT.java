@@ -33,6 +33,7 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientAttributes;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
@@ -57,6 +58,7 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -487,24 +489,26 @@ class MistralAiChatModelIT {
 
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
 
-		// Advisor to verify that native structured output is being used
+		// Advisor to verify that native structured output is being used.
+		// The schema is passed via context to ChatModelCallAdvisor which applies it
+		// to a new ChatClientRequest - so we verify the context attributes here,
+		// not the prompt options (which are only modified inside ChatModelCallAdvisor).
+		var expectedOutputSchemaMap = new BeanOutputConverter<>(ActorsFilmsRecord.class).getJsonSchemaMap();
 		AtomicBoolean nativeStructuredOutputUsed = new AtomicBoolean(false);
 		CallAdvisor verifyNativeStructuredOutputAdvisor = new CallAdvisor() {
 			@Override
 			public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
-				ChatClientResponse response = chain.nextCall(request);
-				ChatOptions chatOptions = request.prompt().getOptions();
+				var nativeFlag = request.context().get(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey());
+				var schemaString = (String) request.context()
+					.get(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey());
 
-				if (chatOptions instanceof MistralAiChatOptions mistralAiChatOptions) {
-					ResponseFormat responseFormat = mistralAiChatOptions.getResponseFormat();
-					if (responseFormat != null && responseFormat.getType() == ResponseFormat.Type.JSON_SCHEMA) {
+				if (Boolean.TRUE.equals(nativeFlag) && schemaString != null) {
+					var actualSchemaMap = ModelOptionsUtils.jsonToMap(schemaString);
+					if (expectedOutputSchemaMap.equals(actualSchemaMap)) {
 						nativeStructuredOutputUsed.set(true);
-						logger.info("Native structured output verified - ResponseFormat type: {}",
-								responseFormat.getType());
 					}
 				}
-
-				return response;
+				return chain.nextCall(request);
 			}
 
 			@Override

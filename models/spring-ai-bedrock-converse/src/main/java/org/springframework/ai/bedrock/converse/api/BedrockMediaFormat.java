@@ -87,13 +87,13 @@ public abstract class BedrockMediaFormat {
 
 	public static String getFormatAsString(MimeType mimeType) {
 		if (isSupportedDocumentFormat(mimeType)) {
-			return DOCUMENT_MAP.get(mimeType).toString();
+			return getDocumentFormat(mimeType).toString();
 		}
 		else if (isSupportedImageFormat(mimeType)) {
-			return IMAGE_MAP.get(mimeType).toString();
+			return getImageFormat(mimeType).toString();
 		}
 		else if (isSupportedVideoFormat(mimeType)) {
-			return VIDEO_MAP.get(mimeType).toString();
+			return getVideoFormat(mimeType).toString();
 		}
 		throw new IllegalArgumentException("Unsupported media format: " + mimeType);
 	}
@@ -103,10 +103,11 @@ public abstract class BedrockMediaFormat {
 	}
 
 	public static DocumentFormat getDocumentFormat(MimeType mimeType) {
-		if (!isSupportedDocumentFormat(mimeType)) {
+		DocumentFormat format = DOCUMENT_MAP.get(mimeType);
+		if (format == null) {
 			throw new IllegalArgumentException("Unsupported document format: " + mimeType);
 		}
-		return DOCUMENT_MAP.get(mimeType);
+		return format;
 	}
 
 	public static Boolean isSupportedImageFormat(MimeType mimeType) {
@@ -114,10 +115,11 @@ public abstract class BedrockMediaFormat {
 	}
 
 	public static ImageFormat getImageFormat(MimeType mimeType) {
-		if (!isSupportedImageFormat(mimeType)) {
+		ImageFormat format = IMAGE_MAP.get(mimeType);
+		if (format == null) {
 			throw new IllegalArgumentException("Unsupported image format: " + mimeType);
 		}
-		return IMAGE_MAP.get(mimeType);
+		return format;
 	}
 
 	public static Boolean isSupportedVideoFormat(MimeType mimeType) {
@@ -125,10 +127,11 @@ public abstract class BedrockMediaFormat {
 	}
 
 	public static VideoFormat getVideoFormat(MimeType mimeType) {
-		if (!isSupportedVideoFormat(mimeType)) {
+		VideoFormat format = VIDEO_MAP.get(mimeType);
+		if (format == null) {
 			throw new IllegalArgumentException("Unsupported video format: " + mimeType);
 		}
-		return VIDEO_MAP.get(mimeType);
+		return format;
 	}
 
 }

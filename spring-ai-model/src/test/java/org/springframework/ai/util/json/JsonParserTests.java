@@ -17,6 +17,7 @@
 package org.springframework.ai.util.json;
 
 import java.lang.reflect.Type;
+import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.Test;
 import tools.jackson.core.type.TypeReference;
@@ -276,6 +277,13 @@ class JsonParserTests {
 		String input = "[1,2,3]";
 		String result = JsonParser.toJson(input);
 		assertThat(input).isEqualTo(result);
+	}
+
+	@Test
+	void localDateTime() {
+		String input = "2026-04-19T07:12:00";
+		LocalDateTime result = (LocalDateTime) JsonParser.toTypedObject(input, LocalDateTime.class);
+		assertThat(result.getYear()).isEqualTo(2026);
 	}
 
 	record TestRecord(String name, Integer age) {

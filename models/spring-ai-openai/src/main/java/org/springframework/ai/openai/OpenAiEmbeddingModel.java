@@ -211,7 +211,7 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(embeddingRequestWithMergedOptions)
-			.provider(AiProvider.OPENAI_SDK.value())
+			.provider(AiProvider.OPENAI.value())
 			.build();
 
 		return Objects.requireNonNull(

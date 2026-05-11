@@ -66,16 +66,6 @@ public enum VectorStoreProvider {
 	GEMFIRE("gemfire"),
 
 	/**
-	 * Vector store provided by HANA.
-	 */
-	HANA("hana"),
-
-	/**
-	 * Vector store provided by Infinispan.
-	 */
-	INFINISPAN("infinispan"),
-
-	/**
 	 * Vector store provided by MariaDB.
 	 */
 	MARIADB("mariadb"),

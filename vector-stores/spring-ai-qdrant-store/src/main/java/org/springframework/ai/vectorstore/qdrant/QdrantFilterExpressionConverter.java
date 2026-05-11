@@ -19,9 +19,9 @@ package org.springframework.ai.vectorstore.qdrant;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.qdrant.client.grpc.Points.Condition;
-import io.qdrant.client.grpc.Points.Filter;
-import io.qdrant.client.grpc.Points.Range;
+import io.qdrant.client.grpc.Common.Condition;
+import io.qdrant.client.grpc.Common.Filter;
+import io.qdrant.client.grpc.Common.Range;
 
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;

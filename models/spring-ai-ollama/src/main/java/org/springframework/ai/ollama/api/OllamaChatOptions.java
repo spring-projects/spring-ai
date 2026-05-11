@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.type.TypeReference;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -34,6 +35,7 @@ import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.util.json.JsonParser;
 import org.springframework.util.Assert;
 
 /**
@@ -52,12 +54,6 @@ import org.springframework.util.Assert;
 public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
 	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate");
-
-	public OllamaChatOptions() {
-		// Temporary constructor to maintain compat with ModelOptionUtils
-		this.toolNames = new HashSet<String>();
-		this.toolContext = new HashMap<>();
-	}
 
 	protected OllamaChatOptions(@Nullable Boolean useNUMA, @Nullable Integer numCtx, @Nullable Integer numBatch,
 			@Nullable Integer numGPU, @Nullable Integer mainGPU, @Nullable Boolean lowVRAM, @Nullable Boolean f16KV,
@@ -415,304 +411,193 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		return this.model;
 	}
 
-	public void setModel(@Nullable String model) {
-		this.model = model;
-	}
 
 	public @Nullable Object getFormat() {
 		return this.format;
 	}
 
-	public void setFormat(@Nullable Object format) {
-		this.format = format;
-	}
 
 	public @Nullable String getKeepAlive() {
 		return this.keepAlive;
 	}
 
-	public void setKeepAlive(@Nullable String keepAlive) {
-		this.keepAlive = keepAlive;
-	}
 
 	public @Nullable Boolean getUseNUMA() {
 		return this.useNUMA;
 	}
 
-	public void setUseNUMA(@Nullable Boolean useNUMA) {
-		this.useNUMA = useNUMA;
-	}
 
 	public @Nullable Integer getNumCtx() {
 		return this.numCtx;
 	}
 
-	public void setNumCtx(@Nullable Integer numCtx) {
-		this.numCtx = numCtx;
-	}
 
 	public @Nullable Integer getNumBatch() {
 		return this.numBatch;
 	}
 
-	public void setNumBatch(@Nullable Integer numBatch) {
-		this.numBatch = numBatch;
-	}
 
 	public @Nullable Integer getNumGPU() {
 		return this.numGPU;
 	}
 
-	public void setNumGPU(@Nullable Integer numGPU) {
-		this.numGPU = numGPU;
-	}
 
 	public @Nullable Integer getMainGPU() {
 		return this.mainGPU;
 	}
 
-	public void setMainGPU(@Nullable Integer mainGPU) {
-		this.mainGPU = mainGPU;
-	}
 
 	public @Nullable Boolean getLowVRAM() {
 		return this.lowVRAM;
 	}
 
-	public void setLowVRAM(@Nullable Boolean lowVRAM) {
-		this.lowVRAM = lowVRAM;
-	}
 
 	public @Nullable Boolean getF16KV() {
 		return this.f16KV;
 	}
 
-	public void setF16KV(@Nullable Boolean f16KV) {
-		this.f16KV = f16KV;
-	}
 
 	public @Nullable Boolean getLogitsAll() {
 		return this.logitsAll;
 	}
 
-	public void setLogitsAll(@Nullable Boolean logitsAll) {
-		this.logitsAll = logitsAll;
-	}
 
 	public @Nullable Boolean getVocabOnly() {
 		return this.vocabOnly;
 	}
 
-	public void setVocabOnly(@Nullable Boolean vocabOnly) {
-		this.vocabOnly = vocabOnly;
-	}
 
 	public @Nullable Boolean getUseMMap() {
 		return this.useMMap;
 	}
 
-	public void setUseMMap(@Nullable Boolean useMMap) {
-		this.useMMap = useMMap;
-	}
 
 	public @Nullable Boolean getUseMLock() {
 		return this.useMLock;
 	}
 
-	public void setUseMLock(@Nullable Boolean useMLock) {
-		this.useMLock = useMLock;
-	}
 
 	public @Nullable Integer getNumThread() {
 		return this.numThread;
 	}
 
-	public void setNumThread(@Nullable Integer numThread) {
-		this.numThread = numThread;
-	}
 
 	public @Nullable Integer getNumKeep() {
 		return this.numKeep;
 	}
 
-	public void setNumKeep(@Nullable Integer numKeep) {
-		this.numKeep = numKeep;
-	}
 
 	public @Nullable Integer getSeed() {
 		return this.seed;
 	}
 
-	public void setSeed(@Nullable Integer seed) {
-		this.seed = seed;
-	}
 
 	@Override
 	public @Nullable Integer getMaxTokens() {
 		return getNumPredict();
 	}
 
-	public void setMaxTokens(@Nullable Integer maxTokens) {
-		setNumPredict(maxTokens);
-	}
 
 	public @Nullable Integer getNumPredict() {
 		return this.numPredict;
 	}
 
-	public void setNumPredict(@Nullable Integer numPredict) {
-		this.numPredict = numPredict;
-	}
 
 	@Override
 	public @Nullable Integer getTopK() {
 		return this.topK;
 	}
 
-	public void setTopK(@Nullable Integer topK) {
-		this.topK = topK;
-	}
 
 	@Override
 	public @Nullable Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(@Nullable Double topP) {
-		this.topP = topP;
-	}
 
 	public @Nullable Double getMinP() {
 		return this.minP;
 	}
 
-	public void setMinP(@Nullable Double minP) {
-		this.minP = minP;
-	}
 
 	public @Nullable Float getTfsZ() {
 		return this.tfsZ;
 	}
 
-	public void setTfsZ(@Nullable Float tfsZ) {
-		this.tfsZ = tfsZ;
-	}
 
 	public @Nullable Float getTypicalP() {
 		return this.typicalP;
 	}
 
-	public void setTypicalP(@Nullable Float typicalP) {
-		this.typicalP = typicalP;
-	}
 
 	public @Nullable Integer getRepeatLastN() {
 		return this.repeatLastN;
 	}
 
-	public void setRepeatLastN(@Nullable Integer repeatLastN) {
-		this.repeatLastN = repeatLastN;
-	}
 
 	@Override
 	public @Nullable Double getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(@Nullable Double temperature) {
-		this.temperature = temperature;
-	}
 
 	public @Nullable Double getRepeatPenalty() {
 		return this.repeatPenalty;
 	}
 
-	public void setRepeatPenalty(@Nullable Double repeatPenalty) {
-		this.repeatPenalty = repeatPenalty;
-	}
 
 	@Override
 	public @Nullable Double getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
-	public void setPresencePenalty(@Nullable Double presencePenalty) {
-		this.presencePenalty = presencePenalty;
-	}
 
 	@Override
 	public @Nullable Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
 
-	public void setFrequencyPenalty(@Nullable Double frequencyPenalty) {
-		this.frequencyPenalty = frequencyPenalty;
-	}
 
 	public @Nullable Integer getMirostat() {
 		return this.mirostat;
 	}
 
-	public void setMirostat(@Nullable Integer mirostat) {
-		this.mirostat = mirostat;
-	}
 
 	public @Nullable Float getMirostatTau() {
 		return this.mirostatTau;
 	}
 
-	public void setMirostatTau(@Nullable Float mirostatTau) {
-		this.mirostatTau = mirostatTau;
-	}
 
 	public @Nullable Float getMirostatEta() {
 		return this.mirostatEta;
 	}
 
-	public void setMirostatEta(@Nullable Float mirostatEta) {
-		this.mirostatEta = mirostatEta;
-	}
 
 	public @Nullable Boolean getPenalizeNewline() {
 		return this.penalizeNewline;
 	}
 
-	public void setPenalizeNewline(@Nullable Boolean penalizeNewline) {
-		this.penalizeNewline = penalizeNewline;
-	}
 
 	@Override
 	public @Nullable List<String> getStopSequences() {
 		return getStop();
 	}
 
-	public void setStopSequences(@Nullable List<String> stopSequences) {
-		setStop(stopSequences);
-	}
 
 	public @Nullable List<String> getStop() {
 		return this.stop;
 	}
 
-	public void setStop(@Nullable List<String> stop) {
-		this.stop = stop;
-	}
 
 	public @Nullable Boolean getTruncate() {
 		return this.truncate;
 	}
 
-	public void setTruncate(@Nullable Boolean truncate) {
-		this.truncate = truncate;
-	}
 
 	public @Nullable ThinkOption getThinkOption() {
 		return this.thinkOption;
 	}
 
-	public void setThinkOption(@Nullable ThinkOption thinkOption) {
-		this.thinkOption = thinkOption;
-	}
 
 	@Override
 	public List<ToolCallback> getToolCallbacks() {
@@ -760,19 +645,24 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	public String getOutputSchema() {
-		Assert.state(this.format != null, "format must not be null");
+	public @Nullable String getOutputSchema() {
+		if (this.format == null) {
+			return null;
+		}
 		// If format is a simple string (e.g., "json"), return it as-is
 		if (this.format instanceof String) {
 			return (String) this.format;
 		}
 		// Otherwise, serialize the Map/Object to JSON string (JSON Schema case)
-		return ModelOptionsUtils.toJsonString(this.format);
+		return JsonParser.toJson(this.format);
 	}
 
 	@Override
-	public void setOutputSchema(String outputSchema) {
-		this.format = ModelOptionsUtils.jsonToMap(outputSchema);
+	public void setOutputSchema(@Nullable String outputSchema) {
+		if (outputSchema != null) {
+			this.format = JsonParser.fromJson(outputSchema, new TypeReference<Map<String, Object>>() {
+			});
+		}
 	}
 
 	/**

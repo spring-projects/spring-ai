@@ -26,22 +26,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openai.azure.AzureOpenAIServiceVersion;
 import com.openai.credential.Credential;
 import com.openai.models.ChatModel;
 import com.openai.models.chat.completions.ChatCompletionAudioParam;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.openai.OpenAiChatModel.ResponseFormat.Type;
@@ -57,6 +50,7 @@ import org.springframework.util.Assert;
  * @author Mariusz Bernacki
  * @author lambochen
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 public class OpenAiChatOptions extends AbstractOpenAiOptions
 		implements ToolCallingChatOptions, StructuredOutputChatOptions {
@@ -119,8 +113,6 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 	 * vLLM, Ollama, Groq, etc. that support custom parameters such as top_k,
 	 * repetition_penalty, etc.
 	 */
-	@JsonInclude(JsonInclude.Include.NON_EMPTY)
-	@JsonProperty(value = "extra_body", access = JsonProperty.Access.WRITE_ONLY)
 	private @Nullable Map<String, Object> extraBody;
 
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
@@ -150,20 +142,8 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 			@Nullable String user, @Nullable Boolean parallelToolCalls, @Nullable Boolean store,
 			@Nullable Map<String, String> metadata, @Nullable String reasoningEffort, @Nullable String verbosity,
 			@Nullable String serviceTier, @Nullable Map<String, Object> extraBody) {
-		// AbstractOpenAiOptions
-		this.setBaseUrl(baseUrl);
-		this.setApiKey(apiKey);
-		this.setCredential(credential);
-		this.setModel(model);
-		this.setMicrosoftDeploymentName(microsoftDeploymentName);
-		this.setMicrosoftFoundryServiceVersion(microsoftFoundryServiceVersion);
-		this.setOrganizationId(organizationId);
-		this.setMicrosoftFoundry(isMicrosoftFoundry);
-		this.setGitHubModels(isGitHubModels);
-		this.setTimeout(timeout);
-		this.setMaxRetries(maxRetries);
-		this.setProxy(proxy);
-		this.setCustomHeaders(customHeaders);
+		super(baseUrl, apiKey, credential, model, microsoftDeploymentName, microsoftFoundryServiceVersion,
+				organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries, proxy, customHeaders);
 		// ChatOptions
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
@@ -208,27 +188,11 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 	}
 
 	/**
-	 * Sets the frequency penalty parameter.
-	 * @param frequencyPenalty the frequency penalty to set
-	 */
-	public void setFrequencyPenalty(@Nullable Double frequencyPenalty) {
-		this.frequencyPenalty = frequencyPenalty;
-	}
-
-	/**
 	 * Gets the logit bias map.
 	 * @return the logit bias map
 	 */
 	public @Nullable Map<String, Integer> getLogitBias() {
 		return this.logitBias;
-	}
-
-	/**
-	 * Sets the logit bias map.
-	 * @param logitBias the logit bias map to set
-	 */
-	public void setLogitBias(@Nullable Map<String, Integer> logitBias) {
-		this.logitBias = logitBias;
 	}
 
 	/**
@@ -240,14 +204,6 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 	}
 
 	/**
-	 * Sets whether to return log probabilities.
-	 * @param logprobs whether to return log probabilities
-	 */
-	public void setLogprobs(@Nullable Boolean logprobs) {
-		this.logprobs = logprobs;
-	}
-
-	/**
 	 * Gets the number of top log probabilities to return.
 	 * @return the number of top log probabilities
 	 */
@@ -255,25 +211,9 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 		return this.topLogprobs;
 	}
 
-	/**
-	 * Sets the number of top log probabilities to return.
-	 * @param topLogprobs the number of top log probabilities
-	 */
-	public void setTopLogprobs(@Nullable Integer topLogprobs) {
-		this.topLogprobs = topLogprobs;
-	}
-
 	@Override
 	public @Nullable Integer getMaxTokens() {
 		return this.maxTokens;
-	}
-
-	/**
-	 * Sets the maximum number of tokens to generate.
-	 * @param maxTokens the maximum number of tokens
-	 */
-	public void setMaxTokens(@Nullable Integer maxTokens) {
-		this.maxTokens = maxTokens;
 	}
 
 	/**
@@ -285,27 +225,11 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 	}
 
 	/**
-	 * Sets the maximum number of completion tokens.
-	 * @param maxCompletionTokens the maximum number of completion tokens
-	 */
-	public void setMaxCompletionTokens(@Nullable Integer maxCompletionTokens) {
-		this.maxCompletionTokens = maxCompletionTokens;
-	}
-
-	/**
 	 * Gets the number of completions to generate.
 	 * @return the number of completions
 	 */
 	public @Nullable Integer getN() {
 		return this.n;
-	}
-
-	/**
-	 * Sets the number of completions to generate.
-	 * @param n the number of completions
-	 */
-	public void setN(@Nullable Integer n) {
-		this.n = n;
 	}
 
 	/**
@@ -317,14 +241,6 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 	}
 
 	/**
-	 * Sets the output modalities.
-	 * @param outputModalities the output modalities
-	 */
-	public void setOutputModalities(@Nullable List<String> outputModalities) {
-		this.outputModalities = outputModalities;
-	}
-
-	/**
 	 * Gets the output audio parameters.
 	 * @return the output audio parameters
 	 */
@@ -332,25 +248,9 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 		return this.outputAudio;
 	}
 
-	/**
-	 * Sets the output audio parameters.
-	 * @param outputAudio the output audio parameters
-	 */
-	public void setOutputAudio(@Nullable AudioParameters outputAudio) {
-		this.outputAudio = outputAudio;
-	}
-
 	@Override
 	public @Nullable Double getPresencePenalty() {
 		return this.presencePenalty;
-	}
-
-	/**
-	 * Sets the presence penalty parameter.
-	 * @param presencePenalty the presence penalty to set
-	 */
-	public void setPresencePenalty(@Nullable Double presencePenalty) {
-		this.presencePenalty = presencePenalty;
 	}
 
 	/**
@@ -362,27 +262,11 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 	}
 
 	/**
-	 * Sets the response format configuration.
-	 * @param responseFormat the response format to set
-	 */
-	public void setResponseFormat(OpenAiChatModel.@Nullable ResponseFormat responseFormat) {
-		this.responseFormat = responseFormat;
-	}
-
-	/**
 	 * Gets the stream options.
 	 * @return the stream options
 	 */
 	public @Nullable StreamOptions getStreamOptions() {
 		return this.streamOptions;
-	}
-
-	/**
-	 * Sets the stream options.
-	 * @param streamOptions the stream options to set
-	 */
-	public void setStreamOptions(@Nullable StreamOptions streamOptions) {
-		this.streamOptions = streamOptions;
 	}
 
 	/**
@@ -394,14 +278,6 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 	}
 
 	/**
-	 * Sets the random seed for deterministic generation.
-	 * @param seed the random seed
-	 */
-	public void setSeed(@Nullable Integer seed) {
-		this.seed = seed;
-	}
-
-	/**
 	 * Gets the stop sequences.
 	 * @return the list of stop sequences
 	 */
@@ -409,25 +285,9 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 		return this.stop;
 	}
 
-	/**
-	 * Sets the stop sequences.
-	 * @param stop the list of stop sequences
-	 */
-	public void setStop(@Nullable List<String> stop) {
-		this.stop = stop;
-	}
-
 	@Override
 	public @Nullable List<String> getStopSequences() {
 		return getStop();
-	}
-
-	/**
-	 * Sets the stop sequences.
-	 * @param stopSequences the list of stop sequences
-	 */
-	public void setStopSequences(@Nullable List<String> stopSequences) {
-		setStop(stopSequences);
 	}
 
 	@Override
@@ -435,25 +295,9 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 		return this.temperature;
 	}
 
-	/**
-	 * Sets the temperature for sampling.
-	 * @param temperature the temperature value
-	 */
-	public void setTemperature(@Nullable Double temperature) {
-		this.temperature = temperature;
-	}
-
 	@Override
 	public @Nullable Double getTopP() {
 		return this.topP;
-	}
-
-	/**
-	 * Sets the top-p nucleus sampling parameter.
-	 * @param topP the top-p value
-	 */
-	public void setTopP(@Nullable Double topP) {
-		this.topP = topP;
 	}
 
 	/**
@@ -465,27 +309,11 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 	}
 
 	/**
-	 * Sets the tool choice configuration.
-	 * @param toolChoice the tool choice option
-	 */
-	public void setToolChoice(@Nullable Object toolChoice) {
-		this.toolChoice = toolChoice;
-	}
-
-	/**
 	 * Gets the user identifier.
 	 * @return the user identifier
 	 */
 	public @Nullable String getUser() {
 		return this.user;
-	}
-
-	/**
-	 * Sets the user identifier.
-	 * @param user the user identifier
-	 */
-	public void setUser(@Nullable String user) {
-		this.user = user;
 	}
 
 	/**
@@ -497,27 +325,11 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 	}
 
 	/**
-	 * Sets whether to enable parallel tool calls.
-	 * @param parallelToolCalls whether to enable parallel tool calls
-	 */
-	public void setParallelToolCalls(@Nullable Boolean parallelToolCalls) {
-		this.parallelToolCalls = parallelToolCalls;
-	}
-
-	/**
 	 * Gets whether to store the conversation.
 	 * @return true if the conversation should be stored
 	 */
 	public @Nullable Boolean getStore() {
 		return this.store;
-	}
-
-	/**
-	 * Sets whether to store the conversation.
-	 * @param store whether to store the conversation
-	 */
-	public void setStore(@Nullable Boolean store) {
-		this.store = store;
 	}
 
 	/**
@@ -529,27 +341,11 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 	}
 
 	/**
-	 * Sets the metadata map.
-	 * @param metadata the metadata map
-	 */
-	public void setMetadata(@Nullable Map<String, String> metadata) {
-		this.metadata = metadata;
-	}
-
-	/**
 	 * Gets the reasoning effort level.
 	 * @return the reasoning effort level
 	 */
 	public @Nullable String getReasoningEffort() {
 		return this.reasoningEffort;
-	}
-
-	/**
-	 * Sets the reasoning effort level.
-	 * @param reasoningEffort the reasoning effort level
-	 */
-	public void setReasoningEffort(@Nullable String reasoningEffort) {
-		this.reasoningEffort = reasoningEffort;
 	}
 
 	/**
@@ -561,14 +357,6 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 	}
 
 	/**
-	 * Sets the verbosity level.
-	 * @param verbosity the verbosity level
-	 */
-	public void setVerbosity(@Nullable String verbosity) {
-		this.verbosity = verbosity;
-	}
-
-	/**
 	 * Gets the service tier.
 	 * @return the service tier
 	 */
@@ -576,29 +364,8 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 		return this.serviceTier;
 	}
 
-	/**
-	 * Sets the service tier.
-	 * @param serviceTier the service tier
-	 */
-	public void setServiceTier(@Nullable String serviceTier) {
-		this.serviceTier = serviceTier;
-	}
-
-	@JsonAnyGetter
 	public @Nullable Map<String, Object> getExtraBody() {
 		return this.extraBody;
-	}
-
-	public void setExtraBody(@Nullable Map<String, Object> extraBody) {
-		this.extraBody = extraBody;
-	}
-
-	@JsonAnySetter
-	public void addExtraBodyProperty(String key, Object value) {
-		if (this.extraBody == null) {
-			this.extraBody = new HashMap<>();
-		}
-		this.extraBody.put(key, value);
 	}
 
 	@Override
@@ -652,18 +419,18 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 	}
 
 	@Override
-	@JsonIgnore
 	public @Nullable String getOutputSchema() {
 		OpenAiChatModel.ResponseFormat format = this.getResponseFormat();
 		return format != null ? format.getJsonSchema() : null;
 	}
 
 	@Override
-	@JsonIgnore
 	public void setOutputSchema(@Nullable String outputSchema) {
 		if (outputSchema != null) {
-			this.setResponseFormat(
-					OpenAiChatModel.ResponseFormat.builder().type(Type.JSON_SCHEMA).jsonSchema(outputSchema).build());
+			this.responseFormat = OpenAiChatModel.ResponseFormat.builder()
+				.type(Type.JSON_SCHEMA)
+				.jsonSchema(outputSchema)
+				.build();
 		}
 	}
 
@@ -881,51 +648,57 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 
 	// public Builder class exposed to users. Avoids having to deal with noisy generic
 	// parameters.
-	@NullMarked // TODO: move at package level
 	public static class Builder extends AbstractBuilder<Builder> {
 
 	}
 
-	@NullMarked // TODO: move at package level
 	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
-			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
+			extends AbstractOpenAiOptions.AbstractBuilder<OpenAiChatOptions, B>
+			implements ToolCallingChatOptions.Builder<B>, StructuredOutputChatOptions.Builder<B> {
 
 		@Override
 		public B clone() {
-			B copy = super.clone();
-			if (!this.customHeaders.isEmpty()) {
-				copy.customHeaders = new HashMap<>(this.customHeaders);
+			try {
+				@SuppressWarnings("unchecked")
+				B copy = (B) super.clone();
+				if (this.customHeaders != null && !this.customHeaders.isEmpty()) {
+					copy.customHeaders = new HashMap<>(this.customHeaders);
+				}
+				copy.logitBias = this.logitBias == null ? null : new HashMap<>(this.logitBias);
+				copy.outputModalities = this.outputModalities == null ? null : new ArrayList<>(this.outputModalities);
+				copy.metadata = this.metadata == null ? null : new HashMap<>(this.metadata);
+				copy.toolCallbacks = this.toolCallbacks == null ? null : new ArrayList<>(this.toolCallbacks);
+				copy.toolNames = this.toolNames == null ? null : new HashSet<>(this.toolNames);
+				copy.toolContext = this.toolContext == null ? null : new HashMap<>(this.toolContext);
+				return copy;
 			}
-			copy.logitBias = this.logitBias == null ? null : new HashMap<>(this.logitBias);
-			copy.outputModalities = this.outputModalities == null ? null : new ArrayList<>(this.outputModalities);
-			copy.metadata = this.metadata == null ? null : new HashMap<>(this.metadata);
-			return copy;
+			catch (CloneNotSupportedException e) {
+				throw new RuntimeException(e);
+			}
 		}
 
-		// AbstractOpenAiOptions fields
-		protected @Nullable String baseUrl;
+		// ToolCallingChatOptions fields
+		protected @Nullable List<ToolCallback> toolCallbacks;
 
-		protected @Nullable String apiKey;
+		protected @Nullable Set<String> toolNames;
 
-		protected @Nullable Credential credential;
+		protected @Nullable Map<String, Object> toolContext;
 
-		protected @Nullable String microsoftDeploymentName;
+		protected @Nullable Boolean internalToolExecutionEnabled;
 
-		protected @Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion;
+		protected @Nullable Double frequencyPenalty;
 
-		protected @Nullable String organizationId;
+		protected @Nullable Integer maxTokens;
 
-		protected @Nullable Boolean isMicrosoftFoundry;
+		protected @Nullable Double presencePenalty;
 
-		protected @Nullable Boolean isGitHubModels;
+		protected @Nullable List<String> stopSequences;
 
-		protected @Nullable Duration timeout;
+		protected @Nullable Double temperature;
 
-		protected @Nullable Integer maxRetries;
+		protected @Nullable Integer topK;
 
-		protected @Nullable Proxy proxy;
-
-		protected Map<String, String> customHeaders = new HashMap<>();
+		protected @Nullable Double topP;
 
 		// OpenAI SDK specific fields
 		protected @Nullable Map<String, Integer> logitBias;
@@ -966,73 +739,112 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 
 		protected @Nullable Map<String, Object> extraBody;
 
-		public B baseUrl(@Nullable String baseUrl) {
-			this.baseUrl = baseUrl;
+		@Override
+		public B toolCallbacks(@Nullable List<ToolCallback> toolCallbacks) {
+			this.toolCallbacks = toolCallbacks != null ? new ArrayList<>(toolCallbacks) : null;
 			return self();
 		}
 
-		public B apiKey(@Nullable String apiKey) {
-			this.apiKey = apiKey;
+		@Override
+		public B toolCallbacks(ToolCallback... toolCallbacks) {
+			if (this.toolCallbacks == null) {
+				this.toolCallbacks = new ArrayList<>();
+			}
+			this.toolCallbacks.addAll(java.util.Arrays.asList(toolCallbacks));
 			return self();
 		}
 
-		public B credential(@Nullable Credential credential) {
-			this.credential = credential;
+		@Override
+		public B toolNames(@Nullable Set<String> toolNames) {
+			this.toolNames = toolNames != null ? new HashSet<>(toolNames) : null;
 			return self();
 		}
 
-		public B deploymentName(@Nullable String deploymentName) {
-			this.microsoftDeploymentName = deploymentName;
+		@Override
+		public B toolNames(String... toolNames) {
+			if (this.toolNames == null) {
+				this.toolNames = new HashSet<>();
+			}
+			this.toolNames.addAll(Set.of(toolNames));
 			return self();
 		}
 
-		public B microsoftFoundryServiceVersion(@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion) {
-			this.microsoftFoundryServiceVersion = microsoftFoundryServiceVersion;
+		@Override
+		public B toolContext(@Nullable Map<String, Object> context) {
+			if (context != null) {
+				if (this.toolContext == null) {
+					this.toolContext = new HashMap<>();
+				}
+				this.toolContext.putAll(context);
+			}
+			else {
+				this.toolContext = null;
+			}
 			return self();
 		}
 
-		public B azureOpenAIServiceVersion(@Nullable AzureOpenAIServiceVersion azureOpenAIServiceVersion) {
-			this.microsoftFoundryServiceVersion = azureOpenAIServiceVersion;
+		@Override
+		public B toolContext(String key, Object value) {
+			if (this.toolContext == null) {
+				this.toolContext = new HashMap<>();
+			}
+			this.toolContext.put(key, value);
 			return self();
 		}
 
-		public B organizationId(@Nullable String organizationId) {
-			this.organizationId = organizationId;
+		@Override
+		public B internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+			this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 			return self();
 		}
 
-		public B microsoftFoundry(@Nullable Boolean microsoftFoundry) {
-			this.isMicrosoftFoundry = microsoftFoundry;
+		@Override
+		public B frequencyPenalty(@Nullable Double frequencyPenalty) {
+			this.frequencyPenalty = frequencyPenalty;
 			return self();
 		}
 
-		public B azure(@Nullable Boolean azure) {
-			this.isMicrosoftFoundry = azure;
+		@Override
+		public B maxTokens(@Nullable Integer maxTokens) {
+			if (this.maxCompletionTokens != null) {
+				logger.warn(
+						"Both maxTokens and maxCompletionTokens are set. OpenAI API does not support setting both parameters simultaneously. "
+								+ "As maxToken is deprecated, we will ignore it and use maxCompletionToken ({}).",
+						this.maxCompletionTokens);
+			}
+			else {
+				this.maxTokens = maxTokens;
+			}
 			return self();
 		}
 
-		public B gitHubModels(@Nullable Boolean gitHubModels) {
-			this.isGitHubModels = gitHubModels;
+		@Override
+		public B presencePenalty(@Nullable Double presencePenalty) {
+			this.presencePenalty = presencePenalty;
 			return self();
 		}
 
-		public B timeout(@Nullable Duration timeout) {
-			this.timeout = timeout;
+		@Override
+		public B stopSequences(@Nullable List<String> stopSequences) {
+			this.stopSequences = stopSequences;
 			return self();
 		}
 
-		public B maxRetries(@Nullable Integer maxRetries) {
-			this.maxRetries = maxRetries;
+		@Override
+		public B temperature(@Nullable Double temperature) {
+			this.temperature = temperature;
 			return self();
 		}
 
-		public B proxy(@Nullable Proxy proxy) {
-			this.proxy = proxy;
+		@Override
+		public B topK(@Nullable Integer topK) {
+			this.topK = topK;
 			return self();
 		}
 
-		public B customHeaders(Map<String, String> customHeaders) {
-			this.customHeaders = customHeaders != null ? new HashMap<>(customHeaders) : new HashMap<>();
+		@Override
+		public B topP(@Nullable Double topP) {
+			this.topP = topP;
 			return self();
 		}
 
@@ -1051,27 +863,13 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 			return self();
 		}
 
-		@Override
-		public B maxTokens(@Nullable Integer maxTokens) {
-			if (this.maxCompletionTokens != null) {
-				logger.warn(
-						"Both maxTokens and maxCompletionTokens are set. OpenAI API does not support setting both parameters simultaneously. "
-								+ "As maxToken is deprecated, we will ignore it and use maxCompletionToken ({}).",
-						this.maxCompletionTokens);
-			}
-			else {
-				super.maxTokens(maxTokens);
-			}
-			return self();
-		}
-
 		public B maxCompletionTokens(@Nullable Integer maxCompletionTokens) {
 			if (maxCompletionTokens != null && this.maxTokens != null) {
 				logger.warn(
 						"Both maxTokens and maxCompletionTokens are set. OpenAI API does not support setting both parameters simultaneously. "
 								+ "As maxToken is deprecated, we will use maxCompletionToken ({}).",
 						maxCompletionTokens);
-				super.maxTokens(null);
+				this.maxTokens(null);
 			}
 			this.maxCompletionTokens = maxCompletionTokens;
 			return self();
@@ -1182,7 +980,6 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 
 		@Override
 		public B combineWith(ChatOptions.Builder<?> other) {
-			super.combineWith(other);
 			if (other instanceof AbstractBuilder<?> that) {
 				if (that.baseUrl != null) {
 					this.baseUrl = that.baseUrl;
@@ -1279,6 +1076,63 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 				}
 				if (that.maxRetries != null) {
 					this.maxRetries = that.maxRetries;
+				}
+				if (that.model != null) {
+					this.model = that.model;
+				}
+				if (that.frequencyPenalty != null) {
+					this.frequencyPenalty = that.frequencyPenalty;
+				}
+				if (that.maxTokens != null) {
+					this.maxTokens = that.maxTokens;
+				}
+				if (that.presencePenalty != null) {
+					this.presencePenalty = that.presencePenalty;
+				}
+				if (that.stopSequences != null) {
+					this.stopSequences = that.stopSequences;
+				}
+				if (that.temperature != null) {
+					this.temperature = that.temperature;
+				}
+				if (that.topK != null) {
+					this.topK = that.topK;
+				}
+				if (that.topP != null) {
+					this.topP = that.topP;
+				}
+				if (that.toolCallbacks != null) {
+					this.toolCallbacks = new ArrayList<>(that.toolCallbacks);
+				}
+				if (that.toolNames != null) {
+					this.toolNames = new HashSet<>(that.toolNames);
+				}
+				if (that.toolContext != null) {
+					if (this.toolContext == null) {
+						this.toolContext = new HashMap<>();
+					}
+					this.toolContext.putAll(that.toolContext);
+				}
+				if (that.internalToolExecutionEnabled != null) {
+					this.internalToolExecutionEnabled = that.internalToolExecutionEnabled;
+				}
+			}
+			else if (other instanceof ToolCallingChatOptions.Builder<?> that) {
+				ToolCallingChatOptions thatOptions = that.build();
+				if (!thatOptions.getToolCallbacks().isEmpty()) {
+					this.toolCallbacks = new ArrayList<>(thatOptions.getToolCallbacks());
+				}
+				if (!thatOptions.getToolNames().isEmpty()) {
+					this.toolNames = new HashSet<>(thatOptions.getToolNames());
+				}
+				if (!thatOptions.getToolContext().isEmpty()) {
+					if (this.toolContext == null) {
+						this.toolContext = new HashMap<>();
+					}
+					this.toolContext.putAll(thatOptions.getToolContext());
+				}
+				if (thatOptions.getInternalToolExecutionEnabled() != null) {
+					this.internalToolExecutionEnabled = thatOptions.getInternalToolExecutionEnabled();
 				}
 			}
 			return self();

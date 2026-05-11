@@ -142,6 +142,7 @@ import org.springframework.util.StringUtils;
  * @author Soby Chacko
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author chabinhwang
  * @see org.springframework.ai.vectorstore.VectorStore
  * @see io.milvus.client.MilvusServiceClient
  */
@@ -246,7 +247,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
-		for (Document document : documents) {
+		for (int i = 0; i < documents.size(); i++) {
+			Document document = documents.get(i);
 			docIdArray.add(document.getId());
 			// Use a (future) DocumentTextLayoutFormatter instance to extract
 			// the content used to compute the embeddings
@@ -254,7 +256,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			Gson gson = new Gson();
 			String jsonString = gson.toJson(document.getMetadata());
 			metadataArray.add(gson.fromJson(jsonString, JsonObject.class));
-			embeddingArray.add(EmbeddingUtils.toList(embeddings.get(documents.indexOf(document))));
+			embeddingArray.add(EmbeddingUtils.toList(embeddings.get(i)));
 		}
 
 		List<InsertParam.Field> fields = new ArrayList<>();
@@ -282,8 +284,14 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	public void doDelete(List<String> idList) {
 		Assert.notNull(idList, "Document id list must not be null");
 
+		// Ids are user-supplied strings that get inlined into a Milvus filter
+		// expression. Delegate escaping to the same Jackson-based JSON serialization
+		// used by MilvusFilterExpressionConverter so quotes, backslashes and control
+		// chars cannot break out of the string literal and inject filter syntax.
 		String deleteExpression = String.format("%s in [%s]", this.idFieldName,
-				idList.stream().map(id -> "'" + id + "'").collect(Collectors.joining(",")));
+				idList.stream()
+					.map(MilvusFilterExpressionConverter::toFilterExpressionLiteral)
+					.collect(Collectors.joining(",")));
 
 		R<MutationResult> status = this.milvusClient.delete(DeleteParam.newBuilder()
 			.withDatabaseName(this.databaseName)

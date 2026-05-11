@@ -160,7 +160,6 @@ public class ImageGeneration implements ModelResult<Image> {
 `ImageModel` implementations are provided for the following Model providers:
 
 * xref:api/image/openai-image.adoc[OpenAI Image Generation]
-* xref:api/image/azure-openai-image.adoc[Azure OpenAI Image Generation]
 * xref:api/image/qianfan-image.adoc[QianFan Image Generation]
 * xref:api/image/stabilityai-image.adoc[StabilityAI Image Generation]
 

@@ -68,7 +68,7 @@ public class FunctionCallWithFunctionWrapperIT {
 				.build());
 
 			var options = GoogleGenAiChatOptions.builder()
-				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
+				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue())
 				.toolCallbacks(toolCallbacks)
 				.build();
 
@@ -106,7 +106,7 @@ public class FunctionCallWithFunctionWrapperIT {
 				.build());
 
 			var options = GoogleGenAiChatOptions.builder()
-				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
+				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue())
 				.toolCallbacks(toolCallbacks)
 				.build();
 

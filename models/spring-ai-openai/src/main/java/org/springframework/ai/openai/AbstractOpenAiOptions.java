@@ -105,44 +105,47 @@ public class AbstractOpenAiOptions {
 	 */
 	private Map<String, String> customHeaders = new HashMap<>();
 
-	public @Nullable String getBaseUrl() {
-		return this.baseUrl;
+	protected AbstractOpenAiOptions() {
 	}
 
-	public void setBaseUrl(@Nullable String baseUrl) {
+	protected AbstractOpenAiOptions(@Nullable String baseUrl, @Nullable String apiKey, @Nullable Credential credential,
+			@Nullable String model, @Nullable String microsoftDeploymentName,
+			@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion, @Nullable String organizationId,
+			@Nullable Boolean isMicrosoftFoundry, @Nullable Boolean isGitHubModels, @Nullable Duration timeout,
+			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders) {
 		this.baseUrl = baseUrl;
+		this.apiKey = apiKey;
+		this.credential = credential;
+		this.model = model;
+		this.microsoftDeploymentName = microsoftDeploymentName;
+		this.microsoftFoundryServiceVersion = microsoftFoundryServiceVersion;
+		this.organizationId = organizationId;
+		this.isMicrosoftFoundry = isMicrosoftFoundry != null ? isMicrosoftFoundry : false;
+		this.isGitHubModels = isGitHubModels != null ? isGitHubModels : false;
+		this.timeout = timeout != null ? timeout : DEFAULT_TIMEOUT;
+		this.maxRetries = maxRetries != null ? maxRetries : DEFAULT_MAX_RETRIES;
+		this.proxy = proxy;
+		this.customHeaders = customHeaders != null ? new HashMap<>(customHeaders) : new HashMap<>();
+	}
+
+	public @Nullable String getBaseUrl() {
+		return this.baseUrl;
 	}
 
 	public @Nullable String getApiKey() {
 		return this.apiKey;
 	}
 
-	public void setApiKey(@Nullable String apiKey) {
-		this.apiKey = apiKey;
-	}
-
 	public @Nullable Credential getCredential() {
 		return this.credential;
-	}
-
-	public void setCredential(@Nullable Credential credential) {
-		this.credential = credential;
 	}
 
 	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(@Nullable String model) {
-		this.model = model;
-	}
-
 	public @Nullable String getMicrosoftDeploymentName() {
 		return this.microsoftDeploymentName;
-	}
-
-	public void setMicrosoftDeploymentName(@Nullable String microsoftDeploymentName) {
-		this.microsoftDeploymentName = microsoftDeploymentName;
 	}
 
 	/**
@@ -152,75 +155,148 @@ public class AbstractOpenAiOptions {
 		return this.microsoftDeploymentName;
 	}
 
-	/**
-	 * Alias for setAzureDeploymentName()
-	 */
-	public void setDeploymentName(@Nullable String azureDeploymentName) {
-		this.microsoftDeploymentName = azureDeploymentName;
-	}
-
 	public @Nullable AzureOpenAIServiceVersion getMicrosoftFoundryServiceVersion() {
 		return this.microsoftFoundryServiceVersion;
-	}
-
-	public void setMicrosoftFoundryServiceVersion(@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion) {
-		this.microsoftFoundryServiceVersion = microsoftFoundryServiceVersion;
 	}
 
 	public @Nullable String getOrganizationId() {
 		return this.organizationId;
 	}
 
-	public void setOrganizationId(@Nullable String organizationId) {
-		this.organizationId = organizationId;
-	}
-
 	public boolean isMicrosoftFoundry() {
 		return this.isMicrosoftFoundry;
-	}
-
-	public void setMicrosoftFoundry(boolean microsoftFoundry) {
-		this.isMicrosoftFoundry = microsoftFoundry;
 	}
 
 	public boolean isGitHubModels() {
 		return this.isGitHubModels;
 	}
 
-	public void setGitHubModels(boolean gitHubModels) {
-		this.isGitHubModels = gitHubModels;
-	}
-
 	public Duration getTimeout() {
 		return this.timeout;
-	}
-
-	public void setTimeout(Duration timeout) {
-		this.timeout = timeout;
 	}
 
 	public int getMaxRetries() {
 		return this.maxRetries;
 	}
 
-	public void setMaxRetries(int maxRetries) {
-		this.maxRetries = maxRetries;
-	}
-
 	public @Nullable Proxy getProxy() {
 		return this.proxy;
-	}
-
-	public void setProxy(@Nullable Proxy proxy) {
-		this.proxy = proxy;
 	}
 
 	public Map<String, String> getCustomHeaders() {
 		return this.customHeaders;
 	}
 
-	public void setCustomHeaders(Map<String, String> customHeaders) {
-		this.customHeaders = customHeaders;
+	protected abstract static class AbstractBuilder<O extends AbstractOpenAiOptions, B extends AbstractBuilder<O, B>> {
+
+		protected @Nullable String baseUrl;
+
+		protected @Nullable String apiKey;
+
+		protected @Nullable Credential credential;
+
+		protected @Nullable String model;
+
+		protected @Nullable String microsoftDeploymentName;
+
+		protected @Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion;
+
+		protected @Nullable String organizationId;
+
+		protected @Nullable Boolean isMicrosoftFoundry;
+
+		protected @Nullable Boolean isGitHubModels;
+
+		protected @Nullable Duration timeout;
+
+		protected @Nullable Integer maxRetries;
+
+		protected @Nullable Proxy proxy;
+
+		protected Map<String, String> customHeaders = new HashMap<>();
+
+		@SuppressWarnings("unchecked")
+		protected B self() {
+			return (B) this;
+		}
+
+		public B baseUrl(@Nullable String baseUrl) {
+			this.baseUrl = baseUrl;
+			return self();
+		}
+
+		public B apiKey(@Nullable String apiKey) {
+			this.apiKey = apiKey;
+			return self();
+		}
+
+		public B credential(@Nullable Credential credential) {
+			this.credential = credential;
+			return self();
+		}
+
+		public B model(@Nullable String model) {
+			this.model = model;
+			return self();
+		}
+
+		public B deploymentName(@Nullable String deploymentName) {
+			this.microsoftDeploymentName = deploymentName;
+			return self();
+		}
+
+		public B microsoftFoundryServiceVersion(@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion) {
+			this.microsoftFoundryServiceVersion = microsoftFoundryServiceVersion;
+			return self();
+		}
+
+		public B azureOpenAIServiceVersion(@Nullable AzureOpenAIServiceVersion azureOpenAIServiceVersion) {
+			this.microsoftFoundryServiceVersion = azureOpenAIServiceVersion;
+			return self();
+		}
+
+		public B organizationId(@Nullable String organizationId) {
+			this.organizationId = organizationId;
+			return self();
+		}
+
+		public B microsoftFoundry(@Nullable Boolean microsoftFoundry) {
+			this.isMicrosoftFoundry = microsoftFoundry;
+			return self();
+		}
+
+		public B azure(@Nullable Boolean azure) {
+			this.isMicrosoftFoundry = azure;
+			return self();
+		}
+
+		public B gitHubModels(@Nullable Boolean gitHubModels) {
+			this.isGitHubModels = gitHubModels;
+			return self();
+		}
+
+		public B timeout(@Nullable Duration timeout) {
+			this.timeout = timeout;
+			return self();
+		}
+
+		public B maxRetries(@Nullable Integer maxRetries) {
+			this.maxRetries = maxRetries;
+			return self();
+		}
+
+		public B proxy(@Nullable Proxy proxy) {
+			this.proxy = proxy;
+			return self();
+		}
+
+		public B customHeaders(Map<String, String> customHeaders) {
+			this.customHeaders = customHeaders != null ? new HashMap<>(customHeaders) : new HashMap<>();
+			return self();
+		}
+
+		public abstract O build();
+
 	}
 
 }

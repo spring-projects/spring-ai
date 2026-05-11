@@ -116,10 +116,18 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 					mergedOptions.getSpeed());
 		}
 
-		Assert.notNull(mergedOptions.getModel(), "Model must not be null");
+		String model;
+		if (mergedOptions.getDeploymentName() != null) {
+			model = mergedOptions.getDeploymentName();
+		}
+		else {
+			model = mergedOptions.getModel();
+		}
+
+		Assert.notNull(model, "Model must not be null");
 		Assert.notNull(mergedOptions.getVoice(), "Voice must not be null");
 		SpeechCreateParams.Builder paramsBuilder = SpeechCreateParams.builder()
-			.model(SpeechModel.of(mergedOptions.getModel()))
+			.model(SpeechModel.of(model))
 			.input(inputText)
 			.voice(SpeechCreateParams.Voice.ofString(mergedOptions.getVoice()));
 

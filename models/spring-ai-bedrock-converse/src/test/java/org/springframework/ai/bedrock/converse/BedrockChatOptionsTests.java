@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for {@link BedrockChatOptions}.
  *
  * @author Sun Yuhan
+ * @author Sebastien Deleuze
  */
 class BedrockChatOptionsTests extends AbstractChatOptionsTests<BedrockChatOptions, Builder> {
 
@@ -89,30 +90,6 @@ class BedrockChatOptionsTests extends AbstractChatOptionsTests<BedrockChatOption
 		assertThat(copied.getStopSequences()).isNotSameAs(original.getStopSequences());
 		assertThat(copied.getToolContext()).isNotSameAs(original.getToolContext());
 		assertThat(copied.getOutputSchema()).isEqualTo(original.getOutputSchema());
-	}
-
-	@Test
-	void testSetters() {
-		BedrockChatOptions options = new BedrockChatOptions();
-		options.setModel("test-model");
-		options.setFrequencyPenalty(0.0);
-		options.setMaxTokens(100);
-		options.setPresencePenalty(0.0);
-		options.setTemperature(0.7);
-		options.setTopK(50);
-		options.setTopP(0.8);
-		options.setStopSequences(List.of("stop1", "stop2"));
-		options.setOutputSchema("{\"type\":\"object\"}");
-
-		assertThat(options.getModel()).isEqualTo("test-model");
-		assertThat(options.getFrequencyPenalty()).isEqualTo(0.0);
-		assertThat(options.getMaxTokens()).isEqualTo(100);
-		assertThat(options.getPresencePenalty()).isEqualTo(0.0);
-		assertThat(options.getTemperature()).isEqualTo(0.7);
-		assertThat(options.getTopK()).isEqualTo(50);
-		assertThat(options.getTopP()).isEqualTo(0.8);
-		assertThat(options.getStopSequences()).isEqualTo(List.of("stop1", "stop2"));
-		assertThat(options.getOutputSchema()).isEqualTo("{\"type\":\"object\"}");
 	}
 
 	@Test

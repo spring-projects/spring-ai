@@ -115,6 +115,18 @@ class AnthropicPromptCachingIT {
 					cacheCreation, cacheRead)
 			.isTrue();
 
+		// Verify unified Usage interface reports the same cache metrics
+		org.springframework.ai.chat.metadata.Usage springUsage = response.getMetadata().getUsage();
+		assertThat(springUsage.getCacheWriteInputTokens() != null || springUsage.getCacheReadInputTokens() != null)
+			.withFailMessage("Expected cache metrics on Usage interface")
+			.isTrue();
+		if (cacheCreation > 0) {
+			assertThat(springUsage.getCacheWriteInputTokens()).isEqualTo(cacheCreation);
+		}
+		if (cacheRead > 0) {
+			assertThat(springUsage.getCacheReadInputTokens()).isEqualTo(cacheRead);
+		}
+
 		logger.info("Cache creation tokens: {}, Cache read tokens: {}", cacheCreation, cacheRead);
 	}
 

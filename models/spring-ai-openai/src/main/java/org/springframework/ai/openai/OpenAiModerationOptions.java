@@ -40,19 +40,18 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 	 */
 	public static final String DEFAULT_MODERATION_MODEL = "omni-moderation-latest";
 
-	private @Nullable String model;
+	protected OpenAiModerationOptions(@Nullable String baseUrl, @Nullable String apiKey,
+			@Nullable Credential credential, @Nullable String model, @Nullable String microsoftDeploymentName,
+			@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion, @Nullable String organizationId,
+			@Nullable Boolean isMicrosoftFoundry, @Nullable Boolean isGitHubModels, @Nullable Duration timeout,
+			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders) {
+		super(baseUrl, apiKey, credential, model != null ? model : DEFAULT_MODERATION_MODEL, microsoftDeploymentName,
+				microsoftFoundryServiceVersion, organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries,
+				proxy, customHeaders);
+	}
 
 	public static Builder builder() {
 		return new Builder();
-	}
-
-	@Override
-	public String getModel() {
-		return this.model != null ? this.model : DEFAULT_MODERATION_MODEL;
-	}
-
-	public void setModel(@Nullable String model) {
-		this.model = model;
 	}
 
 	public OpenAiModerationOptions copy() {
@@ -67,7 +66,7 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 		if (!(o instanceof OpenAiModerationOptions that)) {
 			return false;
 		}
-		return Objects.equals(this.model, that.model) && Objects.equals(getBaseUrl(), that.getBaseUrl())
+		return Objects.equals(getModel(), that.getModel()) && Objects.equals(getBaseUrl(), that.getBaseUrl())
 				&& Objects.equals(getApiKey(), that.getApiKey())
 				&& Objects.equals(getCredential(), that.getCredential())
 				&& Objects.equals(getMicrosoftDeploymentName(), that.getMicrosoftDeploymentName())
@@ -81,113 +80,22 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.model, getBaseUrl(), getApiKey(), getCredential(), getMicrosoftDeploymentName(),
+		return Objects.hash(getModel(), getBaseUrl(), getApiKey(), getCredential(), getMicrosoftDeploymentName(),
 				getMicrosoftFoundryServiceVersion(), getOrganizationId(), isMicrosoftFoundry(), isGitHubModels(),
 				getTimeout(), getMaxRetries(), getProxy(), getCustomHeaders());
 	}
 
 	@Override
 	public String toString() {
-		return "OpenAiModerationOptions{" + "model='" + this.model + '\'' + ", baseUrl='" + getBaseUrl() + '\''
+		return "OpenAiModerationOptions{" + "model='" + getModel() + '\'' + ", baseUrl='" + getBaseUrl() + '\''
 				+ ", organizationId='" + getOrganizationId() + '\'' + ", microsoftDeploymentName='"
 				+ getMicrosoftDeploymentName() + '\'' + ", timeout=" + getTimeout() + ", maxRetries=" + getMaxRetries()
 				+ '}';
 	}
 
-	public static final class Builder {
-
-		private @Nullable String model;
-
-		private @Nullable String baseUrl;
-
-		private @Nullable String apiKey;
-
-		private @Nullable Credential credential;
-
-		private @Nullable String deploymentName;
-
-		private @Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion;
-
-		private @Nullable String organizationId;
-
-		private boolean microsoftFoundry;
-
-		private boolean gitHubModels;
-
-		private @Nullable Duration timeout;
-
-		private @Nullable Integer maxRetries;
-
-		private @Nullable Proxy proxy;
-
-		private @Nullable Map<String, String> customHeaders;
+	public static final class Builder extends AbstractBuilder<OpenAiModerationOptions, Builder> {
 
 		private Builder() {
-		}
-
-		public Builder model(String model) {
-			this.model = model;
-			return this;
-		}
-
-		public Builder baseUrl(String baseUrl) {
-			this.baseUrl = baseUrl;
-			return this;
-		}
-
-		public Builder apiKey(String apiKey) {
-			this.apiKey = apiKey;
-			return this;
-		}
-
-		public Builder credential(Credential credential) {
-			this.credential = credential;
-			return this;
-		}
-
-		public Builder deploymentName(String deploymentName) {
-			this.deploymentName = deploymentName;
-			return this;
-		}
-
-		public Builder organizationId(String organizationId) {
-			this.organizationId = organizationId;
-			return this;
-		}
-
-		public Builder microsoftFoundryServiceVersion(AzureOpenAIServiceVersion serviceVersion) {
-			this.microsoftFoundryServiceVersion = serviceVersion;
-			return this;
-		}
-
-		public Builder microsoftFoundry(boolean isMicrosoftFoundry) {
-			this.microsoftFoundry = isMicrosoftFoundry;
-			return this;
-		}
-
-		public Builder gitHubModels(boolean isGitHubModels) {
-			this.gitHubModels = isGitHubModels;
-			return this;
-		}
-
-		public Builder timeout(Duration timeout) {
-			this.timeout = timeout;
-			return this;
-		}
-
-		public Builder maxRetries(int maxRetries) {
-			this.maxRetries = maxRetries;
-			return this;
-		}
-
-		public Builder proxy(Proxy proxy) {
-			this.proxy = proxy;
-			return this;
-		}
-
-		public Builder customHeaders(Map<String, String> customHeaders) {
-			this.customHeaders = customHeaders;
-			return this;
 		}
 
 		public Builder from(OpenAiModerationOptions options) {
@@ -195,11 +103,11 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 			this.baseUrl = options.getBaseUrl();
 			this.apiKey = options.getApiKey();
 			this.credential = options.getCredential();
-			this.deploymentName = options.getMicrosoftDeploymentName();
+			this.microsoftDeploymentName = options.getMicrosoftDeploymentName();
 			this.microsoftFoundryServiceVersion = options.getMicrosoftFoundryServiceVersion();
 			this.organizationId = options.getOrganizationId();
-			this.microsoftFoundry = options.isMicrosoftFoundry();
-			this.gitHubModels = options.isGitHubModels();
+			this.isMicrosoftFoundry = options.isMicrosoftFoundry();
+			this.isGitHubModels = options.isGitHubModels();
 			this.timeout = options.getTimeout();
 			this.maxRetries = options.getMaxRetries();
 			this.proxy = options.getProxy();
@@ -227,7 +135,7 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 					this.credential = castFrom.getCredential();
 				}
 				if (castFrom.getMicrosoftDeploymentName() != null) {
-					this.deploymentName = castFrom.getMicrosoftDeploymentName();
+					this.microsoftDeploymentName = castFrom.getMicrosoftDeploymentName();
 				}
 				if (castFrom.getMicrosoftFoundryServiceVersion() != null) {
 					this.microsoftFoundryServiceVersion = castFrom.getMicrosoftFoundryServiceVersion();
@@ -235,8 +143,8 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 				if (castFrom.getOrganizationId() != null) {
 					this.organizationId = castFrom.getOrganizationId();
 				}
-				this.microsoftFoundry = castFrom.isMicrosoftFoundry();
-				this.gitHubModels = castFrom.isGitHubModels();
+				this.isMicrosoftFoundry = castFrom.isMicrosoftFoundry();
+				this.isGitHubModels = castFrom.isGitHubModels();
 				if (castFrom.getTimeout() != null) {
 					this.timeout = castFrom.getTimeout();
 				}
@@ -251,28 +159,12 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 			return this;
 		}
 
+		@Override
 		public OpenAiModerationOptions build() {
-			OpenAiModerationOptions options = new OpenAiModerationOptions();
-			options.setModel(this.model);
-			options.setBaseUrl(this.baseUrl);
-			options.setApiKey(this.apiKey);
-			options.setCredential(this.credential);
-			options.setDeploymentName(this.deploymentName);
-			options.setMicrosoftFoundryServiceVersion(this.microsoftFoundryServiceVersion);
-			options.setOrganizationId(this.organizationId);
-			options.setMicrosoftFoundry(this.microsoftFoundry);
-			options.setGitHubModels(this.gitHubModels);
-			if (this.timeout != null) {
-				options.setTimeout(this.timeout);
-			}
-			if (this.maxRetries != null) {
-				options.setMaxRetries(this.maxRetries);
-			}
-			options.setProxy(this.proxy);
-			if (this.customHeaders != null) {
-				options.setCustomHeaders(this.customHeaders);
-			}
-			return options;
+			return new OpenAiModerationOptions(this.baseUrl, this.apiKey, this.credential, this.model,
+					this.microsoftDeploymentName, this.microsoftFoundryServiceVersion, this.organizationId,
+					this.isMicrosoftFoundry, this.isGitHubModels, this.timeout, this.maxRetries, this.proxy,
+					this.customHeaders);
 		}
 
 	}

@@ -115,7 +115,7 @@ class PgVectorSchemaValidator {
 
 			// Check each column against expected fields
 			List<String> availableColumns = new ArrayList<>();
-			for (Map<String, Object> column : columns) {
+			for (Map<String, @Nullable Object> column : columns) {
 				String columnName = (String) column.get("column_name");
 				availableColumns.add(columnName);
 

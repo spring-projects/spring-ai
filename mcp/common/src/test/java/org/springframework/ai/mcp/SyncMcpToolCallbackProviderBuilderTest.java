@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp;
 
 import java.util.List;
+import java.util.Map;
 
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -253,7 +254,7 @@ class SyncMcpToolCallbackProviderBuilderTest {
 		Tool tool = Mockito.mock(Tool.class);
 		when(tool.name()).thenReturn(toolName);
 		when(tool.description()).thenReturn("Test tool description");
-		when(tool.inputSchema()).thenReturn(Mockito.mock(McpSchema.JsonSchema.class));
+		when(tool.inputSchema()).thenReturn(Mockito.mock(Map.class));
 
 		// Mock list tools response
 		McpSchema.ListToolsResult listToolsResult = Mockito.mock(McpSchema.ListToolsResult.class);

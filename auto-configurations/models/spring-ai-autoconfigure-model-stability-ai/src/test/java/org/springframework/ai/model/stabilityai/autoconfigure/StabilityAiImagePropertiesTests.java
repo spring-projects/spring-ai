@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  * @since 0.8.0
  */
 public class StabilityAiImagePropertiesTests {
@@ -37,18 +38,18 @@ public class StabilityAiImagePropertiesTests {
 		// @formatter:off
 		"spring.ai.stabilityai.image.api-key=API_KEY",
 				"spring.ai.stabilityai.image.base-url=ENDPOINT",
-				"spring.ai.stabilityai.image.options.n=10",
-				"spring.ai.stabilityai.image.options.model=MODEL_XYZ",
-				"spring.ai.stabilityai.image.options.width=512",
-				"spring.ai.stabilityai.image.options.height=256",
-				"spring.ai.stabilityai.image.options.response-format=application/json",
-				"spring.ai.stabilityai.image.options.n=4",
-				"spring.ai.stabilityai.image.options.cfg-scale=7",
-				"spring.ai.stabilityai.image.options.clip-guidance-preset=SIMPLE",
-				"spring.ai.stabilityai.image.options.sampler=K_EULER",
-				"spring.ai.stabilityai.image.options.seed=0",
-				"spring.ai.stabilityai.image.options.steps=30",
-				"spring.ai.stabilityai.image.options.style-preset=neon-punk"
+				"spring.ai.stabilityai.image.n=10",
+				"spring.ai.stabilityai.image.model=MODEL_XYZ",
+				"spring.ai.stabilityai.image.width=512",
+				"spring.ai.stabilityai.image.height=256",
+				"spring.ai.stabilityai.image.response-format=application/json",
+				"spring.ai.stabilityai.image.n=4",
+				"spring.ai.stabilityai.image.cfg-scale=7",
+				"spring.ai.stabilityai.image.clip-guidance-preset=SIMPLE",
+				"spring.ai.stabilityai.image.sampler=K_EULER",
+				"spring.ai.stabilityai.image.seed=0",
+				"spring.ai.stabilityai.image.steps=30",
+				"spring.ai.stabilityai.image.style-preset=neon-punk"
 				)
 			// @formatter:on
 			.withConfiguration(AutoConfigurations.of(StabilityAiImageAutoConfiguration.class))
@@ -57,18 +58,18 @@ public class StabilityAiImagePropertiesTests {
 
 				assertThat(chatProperties.getBaseUrl()).isEqualTo("ENDPOINT");
 				assertThat(chatProperties.getApiKey()).isEqualTo("API_KEY");
-				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(chatProperties.toOptions().getModel()).isEqualTo("MODEL_XYZ");
 
-				assertThat(chatProperties.getOptions().getWidth()).isEqualTo(512);
-				assertThat(chatProperties.getOptions().getHeight()).isEqualTo(256);
-				assertThat(chatProperties.getOptions().getResponseFormat()).isEqualTo("application/json");
-				assertThat(chatProperties.getOptions().getN()).isEqualTo(4);
-				assertThat(chatProperties.getOptions().getCfgScale()).isEqualTo(7);
-				assertThat(chatProperties.getOptions().getClipGuidancePreset()).isEqualTo("SIMPLE");
-				assertThat(chatProperties.getOptions().getSampler()).isEqualTo("K_EULER");
-				assertThat(chatProperties.getOptions().getSeed()).isEqualTo(0);
-				assertThat(chatProperties.getOptions().getSteps()).isEqualTo(30);
-				assertThat(chatProperties.getOptions().getStylePreset()).isEqualTo("neon-punk");
+				assertThat(chatProperties.toOptions().getWidth()).isEqualTo(512);
+				assertThat(chatProperties.toOptions().getHeight()).isEqualTo(256);
+				assertThat(chatProperties.toOptions().getResponseFormat()).isEqualTo("application/json");
+				assertThat(chatProperties.toOptions().getN()).isEqualTo(4);
+				assertThat(chatProperties.toOptions().getCfgScale()).isEqualTo(7);
+				assertThat(chatProperties.toOptions().getClipGuidancePreset()).isEqualTo("SIMPLE");
+				assertThat(chatProperties.toOptions().getSampler()).isEqualTo("K_EULER");
+				assertThat(chatProperties.toOptions().getSeed()).isEqualTo(0L);
+				assertThat(chatProperties.toOptions().getSteps()).isEqualTo(30);
+				assertThat(chatProperties.toOptions().getStylePreset()).isEqualTo("neon-punk");
 			});
 	}
 

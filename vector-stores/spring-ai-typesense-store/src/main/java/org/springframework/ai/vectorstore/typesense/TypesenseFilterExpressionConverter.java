@@ -61,7 +61,17 @@ public class TypesenseFilterExpressionConverter extends AbstractFilterExpression
 
 	@Override
 	protected void doKey(Filter.Key key, StringBuilder context) {
-		context.append("metadata." + key.key() + ":");
+		var identifier = (hasOuterQuotes(key.key())) ? removeOuterQuotes(key.key()) : key.key();
+		// Typesense field names are bare identifiers in filter_by syntax
+		// (field_name:value) with no escaping mechanism. Validate that the
+		// identifier contains only safe characters to prevent filter injection.
+		for (int i = 0; i < identifier.length(); i++) {
+			char c = identifier.charAt(i);
+			if (!Character.isLetterOrDigit(c) && c != '_' && c != '.' && c != '-') {
+				throw new IllegalArgumentException("Not allowed filter identifier name: " + identifier);
+			}
+		}
+		context.append("metadata.").append(identifier).append(":");
 	}
 
 	/**

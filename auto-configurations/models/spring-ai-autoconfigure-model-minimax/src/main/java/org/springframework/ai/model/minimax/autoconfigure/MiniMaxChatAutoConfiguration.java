@@ -17,6 +17,7 @@
 package org.springframework.ai.model.minimax.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.minimax.MiniMaxChatModel;
@@ -47,6 +48,7 @@ import org.springframework.web.client.RestClient;
  * @author Ilayaperumal Gopinathan
  * @author Issam El-atif
  * @author Yanming Zhou
+ * @author Sebastien Deleuze
  */
 @AutoConfiguration
 @ConditionalOnClass(MiniMaxApi.class)
@@ -69,7 +71,7 @@ public class MiniMaxChatAutoConfiguration {
 				chatProperties.getApiKey(), commonProperties.getApiKey(),
 				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
 
-		var chatModel = new MiniMaxChatModel(miniMaxApi, chatProperties.getOptions(), toolCallingManager,
+		var chatModel = new MiniMaxChatModel(miniMaxApi, chatProperties.toOptions(), toolCallingManager,
 				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE),
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
 				openAiToolExecutionEligibilityPredicate.getIfUnique(DefaultToolExecutionEligibilityPredicate::new));
@@ -78,8 +80,9 @@ public class MiniMaxChatAutoConfiguration {
 		return chatModel;
 	}
 
-	private MiniMaxApi miniMaxApi(String baseUrl, String commonBaseUrl, String apiKey, String commonApiKey,
-			RestClient.Builder restClientBuilder, ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
+	private MiniMaxApi miniMaxApi(@Nullable String baseUrl, @Nullable String commonBaseUrl, @Nullable String apiKey,
+			@Nullable String commonApiKey, RestClient.Builder restClientBuilder,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		String resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
 		Assert.hasText(resolvedBaseUrl, "MiniMax base URL must be set");

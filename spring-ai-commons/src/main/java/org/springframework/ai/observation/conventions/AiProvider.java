@@ -17,14 +17,13 @@
 package org.springframework.ai.observation.conventions;
 
 /**
- * Collection of systems providing AI functionality. Based on the OpenTelemetry Semantic
- * Conventions for AI Systems.
+ * Collection of systems providing AI functionality. Inspired by the OpenTelemetry
+ * Semantic Conventions for Generative AI.
  *
  * @author Thomas Vitale
  * @since 1.0.0
- * @see <a href=
- * "https://github.com/open-telemetry/semantic-conventions/tree/main/docs/gen-ai">OTel
- * Semantic Conventions</a>.
+ * @see <a href="https://opentelemetry.io/docs/specs/semconv/gen-ai">OpenTelemetry
+ * Semantic Conventions for Generative AI</a>.
  */
 public enum AiProvider {
 
@@ -34,11 +33,6 @@ public enum AiProvider {
 	 * AI system provided by Anthropic.
 	 */
 	ANTHROPIC("anthropic"),
-
-	/**
-	 * AI system provided by Azure.
-	 */
-	AZURE_OPENAI("azure-openai"),
 
 	/**
 	 * AI system provided by Bedrock Converse.
@@ -66,11 +60,6 @@ public enum AiProvider {
 	MISTRAL_AI("mistral_ai"),
 
 	/**
-	 * AI system provided by Oracle OCI.
-	 */
-	OCI_GENAI("oci_genai"),
-
-	/**
 	 * AI system provided by Ollama.
 	 */
 	OLLAMA("ollama"),
@@ -84,11 +73,6 @@ public enum AiProvider {
 	 * AI system provided by OpenAI.
 	 */
 	OPENAI("openai"),
-
-	/**
-	 * AI system provided by the official OpenAI SDK.
-	 */
-	OPENAI_SDK("openai_sdk"),
 
 	/**
 	 * AI system provided by Spring AI.

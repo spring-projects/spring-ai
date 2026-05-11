@@ -59,9 +59,9 @@ public class MistralAiPropertiesTests {
 	public void chatOptionsTest() {
 
 		new ApplicationContextRunner().withPropertyValues("spring.ai.mistralai.base-url=TEST_BASE_URL",
-				"spring.ai.mistralai.chat.options.tools[0].function.name=myFunction1",
-				"spring.ai.mistralai.chat.options.tools[0].function.description=function description",
-				"spring.ai.mistralai.chat.options.tools[0].function.jsonSchema=" + """
+				"spring.ai.mistralai.chat.tools[0].function.name=myFunction1",
+				"spring.ai.mistralai.chat.tools[0].function.description=function description",
+				"spring.ai.mistralai.chat.tools[0].function.jsonSchema=" + """
 						{
 							"type": "object",
 							"properties": {
@@ -95,7 +95,7 @@ public class MistralAiPropertiesTests {
 
 				var chatProperties = context.getBean(MistralAiChatProperties.class);
 
-				var tool = chatProperties.getOptions().getTools().get(0);
+				var tool = chatProperties.toOptions().getTools().get(0);
 				assertThat(tool.getType()).isEqualTo(MistralAiApi.FunctionTool.Type.FUNCTION);
 				var function = tool.getFunction();
 				assertThat(function.getName()).isEqualTo("myFunction1");

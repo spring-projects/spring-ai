@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.bedrock.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Configuration properties for Bedrock AWS connection using profile.
  *
@@ -26,39 +28,39 @@ public class ProfileProperties {
 	/**
 	 * Name of the profile to use.
 	 */
-	private String name;
+	private @Nullable String name;
 
 	/**
 	 * (optional) Path to the credentials file. default: ~/.aws/credentials
 	 */
-	private String credentialsPath;
+	private @Nullable String credentialsPath;
 
 	/**
 	 * (optional) Path to the configuration file. default: ~/.aws/config
 	 */
-	private String configurationPath;
+	private @Nullable String configurationPath;
 
-	public String getName() {
+	public @Nullable String getName() {
 		return this.name;
 	}
 
-	public void setName(String name) {
+	public void setName(@Nullable String name) {
 		this.name = name;
 	}
 
-	public String getCredentialsPath() {
+	public @Nullable String getCredentialsPath() {
 		return this.credentialsPath;
 	}
 
-	public void setCredentialsPath(String credentialsPath) {
+	public void setCredentialsPath(@Nullable String credentialsPath) {
 		this.credentialsPath = credentialsPath;
 	}
 
-	public String getConfigurationPath() {
+	public @Nullable String getConfigurationPath() {
 		return this.configurationPath;
 	}
 
-	public void setConfigurationPath(String configurationPath) {
+	public void setConfigurationPath(@Nullable String configurationPath) {
 		this.configurationPath = configurationPath;
 	}
 
