@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.redis;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import com.redis.testcontainers.RedisStackContainer;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -25,14 +27,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
-import com.redis.testcontainers.RedisStackContainer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import redis.clients.jedis.JedisPooled;
-
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -48,8 +44,9 @@ import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfigurat
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import redis.clients.jedis.JedisPooled;
 
 /**
  * @author Julien Ruaux
@@ -303,6 +300,29 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 			assertThat(results.stream()
 				.map(doc -> Integer.parseInt(doc.getMetadata().get("priority").toString()))
 				.collect(Collectors.toList())).containsExactlyInAnyOrder(1, 1);
+		});
+	}
+
+	@Test
+	void deleteByFilterShouldDeleteAll() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			int docCount = 1500;
+			List<Document> docs = java.util.stream.IntStream.range(0, docCount)
+				.mapToObj(i -> new Document("Content " + i, Map.of("type", "test", "priority", i)))
+				.toList();
+
+			vectorStore.add(docs);
+
+			Filter.Expression typeFilter = new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("type"),
+					new Filter.Value("test"));
+			vectorStore.delete(typeFilter);
+
+			var results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Content").topK(100).similarityThresholdAll().build());
+
+			assertThat(results.stream().filter(d -> "test".equals(d.getMetadata().get("type")))).isEmpty();
 		});
 	}
 

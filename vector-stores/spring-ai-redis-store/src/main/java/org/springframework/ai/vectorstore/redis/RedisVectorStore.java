@@ -28,26 +28,9 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import redis.clients.jedis.JedisPooled;
-import redis.clients.jedis.Pipeline;
-import redis.clients.jedis.json.Path2;
-import redis.clients.jedis.search.FTCreateParams;
-import redis.clients.jedis.search.IndexDataType;
-import redis.clients.jedis.search.Query;
-import redis.clients.jedis.search.RediSearchUtil;
-import redis.clients.jedis.search.Schema.FieldType;
-import redis.clients.jedis.search.SearchResult;
-import redis.clients.jedis.search.schemafields.NumericField;
-import redis.clients.jedis.search.schemafields.SchemaField;
-import redis.clients.jedis.search.schemafields.TagField;
-import redis.clients.jedis.search.schemafields.TextField;
-import redis.clients.jedis.search.schemafields.VectorField;
-import redis.clients.jedis.search.schemafields.VectorField.VectorAlgorithm;
-
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -64,6 +47,21 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.Pipeline;
+import redis.clients.jedis.json.Path2;
+import redis.clients.jedis.search.FTCreateParams;
+import redis.clients.jedis.search.IndexDataType;
+import redis.clients.jedis.search.Query;
+import redis.clients.jedis.search.RediSearchUtil;
+import redis.clients.jedis.search.Schema.FieldType;
+import redis.clients.jedis.search.SearchResult;
+import redis.clients.jedis.search.schemafields.NumericField;
+import redis.clients.jedis.search.schemafields.SchemaField;
+import redis.clients.jedis.search.schemafields.TagField;
+import redis.clients.jedis.search.schemafields.TextField;
+import redis.clients.jedis.search.schemafields.VectorField;
+import redis.clients.jedis.search.schemafields.VectorField.VectorAlgorithm;
 
 /**
  * Redis-based vector store implementation using Redis Stack with Redis Query Engine and
@@ -411,19 +409,23 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		try {
 			String filterStr = this.filterExpressionConverter.convertExpression(filterExpression);
+			// To avoid deleting only the first page, we paginate through all matches.
+			final int pageSize = 1000;
+			int deletedCount = 0;
 
-			List<String> matchingIds = new ArrayList<>();
-			SearchResult searchResult = this.jedis.ftSearch(this.indexName, filterStr);
+			while (true) {
+				SearchResult searchResult = this.jedis.ftSearch(this.indexName,
+						new Query(filterStr).limit(0, pageSize));
+				var docs = searchResult.getDocuments();
+				if (docs == null || docs.isEmpty()) {
+					break;
+				}
 
-			for (redis.clients.jedis.search.Document doc : searchResult.getDocuments()) {
-				String docId = doc.getId();
-				matchingIds.add(docId.replace(key(""), "")); // Remove the key prefix to
-																// get original ID
-			}
-
-			if (!matchingIds.isEmpty()) {
 				try (Pipeline pipeline = this.jedis.pipelined()) {
-					for (String id : matchingIds) {
+					for (redis.clients.jedis.search.Document doc : docs) {
+						String redisKey = doc.getId();
+						String id = redisKey.startsWith(this.prefix) ? redisKey.substring(this.prefix.length())
+								: redisKey;
 						pipeline.jsonDel(key(id));
 					}
 					List<Object> responses = pipeline.syncAndReturnAll();
@@ -435,8 +437,10 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 					}
 				}
 
-				logger.debug("Deleted {} documents matching filter expression", matchingIds.size());
+				deletedCount += docs.size();
 			}
+
+			logger.debug("Deleted {} documents matching filter expression", deletedCount);
 		}
 		catch (Exception e) {
 			logger.error("Failed to delete documents by filter", e);
