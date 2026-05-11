@@ -99,14 +99,27 @@ public class DeepSeekStreamFunctionCallingHelper {
 				throw new IllegalStateException("Currently only one tool call is supported per message!");
 			}
 			var currentToolCall = current.toolCalls().iterator().next();
-			if (StringUtils.hasText(currentToolCall.id())) {
+			// Use index to determine if this is a continuation of the previous tool
+			// call. Some providers (e.g. vLLM) send the id in every chunk, so
+			// checking hasText(id) would incorrectly treat each chunk as a new tool
+			// call. We prefer index when available, and fall back to the id-based
+			// check for providers that don't include index.
+			boolean isSameToolCall;
+			if (lastPreviousTooCall != null && currentToolCall.index() != null
+					&& lastPreviousTooCall.index() != null) {
+				isSameToolCall = currentToolCall.index().equals(lastPreviousTooCall.index());
+			}
+			else {
+				isSameToolCall = lastPreviousTooCall != null && !StringUtils.hasText(currentToolCall.id());
+			}
+			if (isSameToolCall) {
+				toolCalls.add(merge(lastPreviousTooCall, currentToolCall));
+			}
+			else {
 				if (lastPreviousTooCall != null) {
 					toolCalls.add(lastPreviousTooCall);
 				}
 				toolCalls.add(currentToolCall);
-			}
-			else {
-				toolCalls.add(merge(lastPreviousTooCall, currentToolCall));
 			}
 		}
 		else {
