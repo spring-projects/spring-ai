@@ -631,11 +631,12 @@ Here's an example of accessing reasoning content from Ollama through the OpenAI 
 class OllamaConfig {
     @Bean
     OpenAiChatModel ollamaChatModel() {
-        var openAiApi = new OpenAiApi("http://localhost:11434", "ollama");
-        return new OpenAiChatModel(openAiApi,
-            OpenAiChatOptions.builder()
+        return OpenAiChatModel.builder()
+            .options(OpenAiChatOptions.builder()
+                .baseUrl("http://localhost:11434/v1")
                 .model("deepseek-r1")  // or qwen3, deepseek-v3.1, etc.
-                .build());
+                .build())
+            .build();
     }
 }
 
