@@ -39,6 +39,7 @@ import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.openai.OpenAiChatModel.ResponseFormat.Type;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 
 /**
@@ -432,6 +433,11 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 				.jsonSchema(outputSchema)
 				.build();
 		}
+	}
+
+	@Override
+	public void setOutputSchemaResource(Resource outputSchemaResource) {
+		this.setOutputSchema(StructuredOutputChatOptions.extractOutputSchema(outputSchemaResource));
 	}
 
 	public static Builder builder() {

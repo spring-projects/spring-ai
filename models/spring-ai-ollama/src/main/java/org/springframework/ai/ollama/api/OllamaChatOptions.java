@@ -36,6 +36,7 @@ import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.util.json.JsonParser;
+import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 
 /**
@@ -663,6 +664,11 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 			this.format = JsonParser.fromJson(outputSchema, new TypeReference<Map<String, Object>>() {
 			});
 		}
+	}
+
+	@Override
+	public void setOutputSchemaResource(Resource outputSchemaResource) {
+		this.setOutputSchema(StructuredOutputChatOptions.extractOutputSchema(outputSchemaResource));
 	}
 
 	/**

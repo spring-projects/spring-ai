@@ -23,12 +23,14 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.DefaultChatOptions;
 import org.springframework.ai.chat.prompt.DefaultChatOptionsBuilder;
+import org.springframework.core.io.Resource;
 
 /**
  * Default implementation of {@link StructuredOutputChatOptions}.
- *
+ * <p>
  * Mainly to be used in model generic tests, as concrete chat implementations typically
  * use dedicated sub implementations specific to the model.
+ * </p>
  *
  * @author Eric Bottard
  */
@@ -52,6 +54,11 @@ public class DefaultStructuredOutputChatOptions extends DefaultChatOptions imple
 	@Override
 	public void setOutputSchema(String outputSchema) {
 		this.outputSchema = outputSchema;
+	}
+
+	@Override
+	public void setOutputSchemaResource(Resource outputSchemaResource) {
+		this.setOutputSchema(StructuredOutputChatOptions.extractOutputSchema(outputSchemaResource));
 	}
 
 	@Override

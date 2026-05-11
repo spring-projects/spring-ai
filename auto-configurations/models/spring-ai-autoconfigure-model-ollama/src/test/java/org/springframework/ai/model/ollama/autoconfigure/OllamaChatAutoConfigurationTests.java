@@ -19,22 +19,27 @@ package org.springframework.ai.model.ollama.autoconfigure;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.test.json.BasicJsonTester;
+import org.springframework.core.io.ClassPathResource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Nicolas Krier
  * @since 0.8.0
  */
-public class OllamaChatAutoConfigurationTests {
+class OllamaChatAutoConfigurationTests {
 
 	@Test
-	public void propertiesTest() {
+	void propertiesTest() {
+		var outputSchemaResource = new ClassPathResource("schemas/country-json-schema.json");
 
 		new ApplicationContextRunner().withPropertyValues(
 		// @formatter:off
 				"spring.ai.ollama.base-url=TEST_BASE_URL",
 				"spring.ai.ollama.chat.model=MODEL_XYZ",
+				"spring.ai.ollama.chat.output-schema-resource=classpath:schemas/country-json-schema.json",
 				"spring.ai.ollama.chat.temperature=0.55",
 				"spring.ai.ollama.chat.topP=0.56",
 				"spring.ai.ollama.chat.topK=123")
@@ -42,17 +47,19 @@ public class OllamaChatAutoConfigurationTests {
 
 			.withConfiguration(BaseOllamaIT.ollamaAutoConfig(OllamaChatAutoConfiguration.class))
 			.run(context -> {
-				var chatProperties = context.getBean(OllamaChatProperties.class);
 				var connectionProperties = context.getBean(OllamaConnectionProperties.class);
-
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 
+				var chatProperties = context.getBean(OllamaChatProperties.class);
 				assertThat(chatProperties.getModel()).isEqualTo("MODEL_XYZ");
-
-				assertThat(chatProperties.toOptions().getTemperature()).isEqualTo(0.55);
-				assertThat(chatProperties.toOptions().getTopP()).isEqualTo(0.56);
-
-				assertThat(chatProperties.toOptions().getTopK()).isEqualTo(123);
+				var chatOptions = chatProperties.toOptions();
+				assertThat(chatOptions.getTemperature()).isEqualTo(0.55);
+				assertThat(chatOptions.getTopP()).isEqualTo(0.56);
+				assertThat(chatOptions.getTopK()).isEqualTo(123);
+				var outputSchema = chatOptions.getOutputSchema();
+				assertThat(outputSchema).isNotNull();
+				var jsonTester = new BasicJsonTester(getClass());
+				assertThat(jsonTester.from(outputSchema)).isEqualToJson(outputSchemaResource);
 			});
 	}
 

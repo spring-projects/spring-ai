@@ -64,13 +64,13 @@ import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.util.ResourceUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.json.JsonContent;
+import org.springframework.boot.test.json.BasicJsonTester;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.core.io.ClassPathResource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -291,8 +291,13 @@ class OllamaChatModelIT extends BaseOllamaIT {
 	// Example from https://ollama.com/blog/structured-outputs
 	@Test
 	void jsonStructuredOutputWithOutputSchemaOption() {
-		var jsonSchemaAsText = ResourceUtils.getText("classpath:country-json-schema.json");
-		var chatOptions = OllamaChatOptions.builder().outputSchema(jsonSchemaAsText).build();
+		var outputSchemaResource = new ClassPathResource("schemas/country-json-schema.json");
+		// @formatter:off
+		var chatOptions = OllamaChatOptions.builder()
+				.model(MODEL)
+				.outputSchemaResource(outputSchemaResource)
+				.build();
+		// @formatter:on
 		var prompt = new Prompt("Tell me about Canada.", chatOptions);
 
 		var chatResponse = this.chatModel.call(prompt);
@@ -301,9 +306,10 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		assertThat(result).isNotNull();
 		var outputText = result.getOutput().getText();
 		assertThat(outputText).isNotNull();
+		var basicJsonTester = new BasicJsonTester(getClass());
 
 		// @formatter:off
-		assertThat(new JsonContent<>(getClass(), null, outputText))
+		assertThat(basicJsonTester.from(outputText))
 				.extractingJsonPathMapValue("$")
 				.containsOnlyKeys("name", "capital", "languages")
 				.containsEntry("name", "Canada")

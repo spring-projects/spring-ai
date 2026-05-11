@@ -46,6 +46,7 @@ import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 
 /**
@@ -444,6 +445,11 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 			this.outputConfig.effort().ifPresent(configBuilder::effort);
 		}
 		this.outputConfig = configBuilder.build();
+	}
+
+	@Override
+	public void setOutputSchemaResource(Resource outputSchemaResource) {
+		this.setOutputSchema(StructuredOutputChatOptions.extractOutputSchema(outputSchemaResource));
 	}
 
 	/**
