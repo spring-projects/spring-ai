@@ -752,6 +752,70 @@ This allows you to tailor the logged information to your specific needs.
 
 TIP: Be cautious about logging sensitive information in production environments.
 
+=== Tool Calling
+
+When tools are registered on a `ChatClient` call (via `.tools(...)`, `.toolCallbacks(...)`, or defaults set on the builder), the `ChatClient` automatically registers a `ToolCallAdvisor` in the advisor chain to handle the tool execution lifecycle.
+This means you do not need to add a `ToolCallAdvisor` manually for the common case.
+
+[source,java]
+----
+String response = ChatClient.builder(chatModel)
+    .build()
+    .prompt("What day is tomorrow?")
+    .tools(new DateTimeTools())   // ToolCallAdvisor is auto-registered here
+    .call()
+    .content();
+----
+
+The `ToolCallAdvisor` is registered at `Ordered.HIGHEST_PRECEDENCE + 300` by default.
+
+==== Disabling Auto-Registration
+
+You can disable the auto-registration per call using `AdvisorParams.toolCallAdvisorAutoRegister(false)`:
+
+[source,java]
+----
+chatClient.prompt("What day is tomorrow?")
+    .tools(new DateTimeTools())
+    .advisors(AdvisorParams.toolCallAdvisorAutoRegister(false))
+    .call()
+    .content();
+----
+
+Or you can provide your own `ToolCallAdvisor` (or any other advisor implementing `ToolCallHandlingAdvisor`) — in that case auto-registration is suppressed automatically because the chain already contains a `ToolCallHandlingAdvisor`:
+
+[source,java]
+----
+var customAdvisor = ToolCallAdvisor.builder()
+    .toolCallingManager(myToolCallingManager)
+    .build();
+
+chatClient.prompt("What day is tomorrow?")
+    .tools(new DateTimeTools())
+    .advisors(customAdvisor)    // auto-registration suppressed
+    .call()
+    .content();
+----
+
+==== Customizing the Advisor Order
+
+Override the default order using `AdvisorParams.toolCallAdvisorOrder(int)`:
+
+[source,java]
+----
+chatClient.prompt("What day is tomorrow?")
+    .tools(new DateTimeTools())
+    .advisors(AdvisorParams.toolCallAdvisorOrder(Ordered.HIGHEST_PRECEDENCE + 100))
+    .call()
+    .content();
+----
+
+==== ToolCallHandlingAdvisor Marker Interface
+
+`ToolCallHandlingAdvisor` is a marker interface that signals to the `ChatClient` that the advisor chain already handles tool execution. Implementing this interface on a custom advisor prevents the auto-registration of a second `ToolCallAdvisor`.
+
+For more details see xref:api/tools.adoc#_advisor_controlled_tool_execution_with_toolcalladvisor[Advisor-Controlled Tool Execution].
+
 == Chat Memory
 
 The interface `ChatMemory` represents a storage for chat conversation memory.
