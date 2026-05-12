@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -122,6 +123,8 @@ public class MiniMaxChatModel implements ChatModel {
 	 * executed.
 	 */
 	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+
+	private final AtomicBoolean internalToolExecutionWarned = new AtomicBoolean(false);
 
 	/**
 	 * Conventions to use for generating observations.
@@ -302,6 +305,11 @@ public class MiniMaxChatModel implements ChatModel {
 
 		ChatOptions promptOptions = Objects.requireNonNull(requestPrompt.getOptions());
 		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(promptOptions, response)) {
+			if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
+				logger.warn(
+						"Internal tool execution in MiniMaxChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
+								+ "Use ChatClient with ToolCallAdvisor instead.");
+			}
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(requestPrompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -388,6 +396,11 @@ public class MiniMaxChatModel implements ChatModel {
 							return Flux.deferContextual(ctx -> {
 								ToolExecutionResult toolExecutionResult;
 								try {
+									if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
+										logger.warn(
+												"Internal tool execution in MiniMaxChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
+														+ "Use ChatClient with ToolCallAdvisor instead.");
+									}
 									ToolCallReactiveContextHolder.setContext(ctx);
 									toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 								}

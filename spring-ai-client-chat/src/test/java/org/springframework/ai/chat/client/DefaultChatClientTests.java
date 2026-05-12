@@ -34,6 +34,7 @@ import org.mockito.ArgumentCaptor;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
@@ -52,6 +53,7 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -60,6 +62,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -177,6 +180,22 @@ class DefaultChatClientTests {
 		assertThat(mutateSpec.getToolNames()).containsExactly("toolName1", "toolName2");
 		assertThat(mutateSpec.getToolCallbacks()).containsExactly(toolCallback);
 		assertThat(mutateSpec.getToolContext()).isEqualTo(toolContext);
+	}
+
+	@Test
+	void toolCallAdvisorBuilderPreservedAfterMutate() {
+		var manager = mock(ToolCallingManager.class);
+		var advisorBuilder = ToolCallAdvisor.builder().toolCallingManager(manager);
+		ChatClient original = ChatClient.builder(mockChatModel(), ObservationRegistry.NOOP, null, null, advisorBuilder)
+			.build();
+
+		// copy constructor path: each prompt() call copies the spec
+		var originalSpec = (DefaultChatClient.DefaultChatClientRequestSpec) original.prompt();
+		assertThat(ReflectionTestUtils.getField(originalSpec, "toolCallAdvisorBuilder")).isSameAs(advisorBuilder);
+
+		// mutate() path: builder cloned, then prompt() copies again
+		var mutatedSpec = (DefaultChatClient.DefaultChatClientRequestSpec) original.mutate().build().prompt();
+		assertThat(ReflectionTestUtils.getField(mutatedSpec, "toolCallAdvisorBuilder")).isSameAs(advisorBuilder);
 	}
 
 	@Test
