@@ -29,6 +29,7 @@ import org.springframework.ai.chat.client.observation.ChatClientObservationConte
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientPromptContentObservationHandler;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.observation.TracingAwareLoggingObservationHandler;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -91,10 +92,12 @@ public class ChatClientAutoConfiguration {
 	ChatClient.Builder chatClientBuilder(ChatClientBuilderConfigurer chatClientBuilderConfigurer, ChatModel chatModel,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatClientObservationConvention> chatClientObservationConvention,
-			ObjectProvider<AdvisorObservationConvention> advisorObservationConvention) {
+			ObjectProvider<AdvisorObservationConvention> advisorObservationConvention,
+			ToolCallingManager toolCallingManager) {
 		ChatClient.Builder builder = ChatClient.builder(chatModel,
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				chatClientObservationConvention.getIfUnique(), advisorObservationConvention.getIfUnique());
+				chatClientObservationConvention.getIfUnique(), advisorObservationConvention.getIfUnique(),
+				toolCallingManager);
 		return chatClientBuilderConfigurer.configure(builder);
 	}
 

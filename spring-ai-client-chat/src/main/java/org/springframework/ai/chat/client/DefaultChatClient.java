@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -59,6 +60,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.StructuredOutputConverter;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.template.st.StTemplateRenderer;
@@ -664,13 +666,32 @@ public class DefaultChatClient implements ChatClient {
 
 		private ChatOptions.@Nullable Builder<?> optionsCustomizer;
 
+		private final ToolCallingManager toolCallingManager;
+
 		/* copy constructor */
 		DefaultChatClientRequestSpec(DefaultChatClientRequestSpec ccr) {
 			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.userMetadata, ccr.systemText, ccr.systemParams,
 					ccr.systemMetadata, ccr.toolCallbacks, ccr.toolCallbackProviders, ccr.messages, ccr.toolNames,
 					ccr.media, ccr.optionsCustomizer, ccr.advisors, ccr.advisorParams, ccr.observationRegistry,
 					ccr.chatClientObservationConvention, ccr.toolContext, ccr.templateRenderer,
-					ccr.advisorObservationConvention);
+					ccr.advisorObservationConvention, ccr.toolCallingManager);
+		}
+
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
+				Map<String, Object> userParams, Map<String, Object> userMetadata, @Nullable String systemText,
+				Map<String, Object> systemParams, Map<String, Object> systemMetadata, List<ToolCallback> toolCallbacks,
+				List<ToolCallbackProvider> toolCallbackProviders, List<Message> messages, List<String> toolNames,
+				List<Media> media, ChatOptions.@Nullable Builder<?> customizer, List<Advisor> advisors,
+				Map<String, Object> advisorParams, ObservationRegistry observationRegistry,
+				@Nullable ChatClientObservationConvention chatClientObservationConvention,
+				Map<String, Object> toolContext, @Nullable TemplateRenderer templateRenderer,
+				@Nullable AdvisorObservationConvention advisorObservationConvention) {
+
+			this(chatModel, userText, userParams, userMetadata, systemText, systemParams, systemMetadata, toolCallbacks,
+					toolCallbackProviders, messages, toolNames, media, customizer, advisors, advisorParams,
+					observationRegistry, chatClientObservationConvention, toolContext, templateRenderer,
+					advisorObservationConvention, null);
 		}
 
 		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
@@ -681,7 +702,9 @@ public class DefaultChatClient implements ChatClient {
 				Map<String, Object> advisorParams, ObservationRegistry observationRegistry,
 				@Nullable ChatClientObservationConvention chatClientObservationConvention,
 				Map<String, Object> toolContext, @Nullable TemplateRenderer templateRenderer,
-				@Nullable AdvisorObservationConvention advisorObservationConvention) {
+				@Nullable AdvisorObservationConvention advisorObservationConvention,
+				@Nullable ToolCallingManager toolCallingManager) {
+
 			Assert.notNull(chatModel, "chatModel cannot be null");
 			Assert.notNull(userParams, "userParams cannot be null");
 			Assert.notNull(userMetadata, "userMetadata cannot be null");
@@ -698,6 +721,8 @@ public class DefaultChatClient implements ChatClient {
 			Assert.notNull(toolContext, "toolContext cannot be null");
 
 			this.chatModel = chatModel;
+			this.toolCallingManager = Objects.requireNonNullElse(toolCallingManager,
+					ToolCallingManager.builder().build());
 			this.optionsCustomizer = customizer != null ? customizer.clone() : null;
 
 			this.userText = userText;
@@ -799,7 +824,7 @@ public class DefaultChatClient implements ChatClient {
 		public Builder mutate() {
 			DefaultChatClientBuilder builder = (DefaultChatClientBuilder) ChatClient
 				.builder(this.chatModel, this.observationRegistry, this.chatClientObservationConvention,
-						this.advisorObservationConvention)
+						this.advisorObservationConvention, this.toolCallingManager)
 				.defaultTemplateRenderer(this.templateRenderer)
 				.defaultToolCallbacks(this.toolCallbacks)
 				.defaultToolCallbacks(this.toolCallbackProviders.toArray(new ToolCallbackProvider[0]))
@@ -1082,6 +1107,7 @@ public class DefaultChatClient implements ChatClient {
 				.anyMatch(a -> a instanceof BaseChatMemoryAdvisor && a.getOrder() > configuredOrder);
 
 			this.advisors.add(ToolCallAdvisor.builder()
+				.toolCallingManager(this.toolCallingManager)
 				.advisorOrder(configuredOrder)
 				.conversationHistoryEnabled(!hasDownstreamMemoryAdvisor)
 				.streamToolCallResponses(streaming)

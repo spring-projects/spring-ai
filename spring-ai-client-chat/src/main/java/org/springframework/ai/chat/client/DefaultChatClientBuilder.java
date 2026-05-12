@@ -35,6 +35,7 @@ import org.springframework.ai.chat.client.observation.ChatClientObservationConve
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -61,14 +62,24 @@ public class DefaultChatClientBuilder implements Builder {
 		this(chatModel, ObservationRegistry.NOOP, null, null);
 	}
 
+	@Deprecated(since = "2.0.0", forRemoval = true)
 	public DefaultChatClientBuilder(ChatModel chatModel, ObservationRegistry observationRegistry,
 			@Nullable ChatClientObservationConvention chatClientObservationConvention,
 			@Nullable AdvisorObservationConvention advisorObservationConvention) {
+		this(chatModel, observationRegistry, chatClientObservationConvention, advisorObservationConvention, null);
+	}
+
+	public DefaultChatClientBuilder(ChatModel chatModel, ObservationRegistry observationRegistry,
+			@Nullable ChatClientObservationConvention chatClientObservationConvention,
+			@Nullable AdvisorObservationConvention advisorObservationConvention,
+			@Nullable ToolCallingManager toolCallingManager) {
 		Assert.notNull(chatModel, "the " + ChatModel.class.getName() + " must be non-null");
 		Assert.notNull(observationRegistry, "the " + ObservationRegistry.class.getName() + " must be non-null");
+
 		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, null, Map.of(), Map.of(), null, Map.of(),
 				Map.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(),
-				observationRegistry, chatClientObservationConvention, Map.of(), null, advisorObservationConvention);
+				observationRegistry, chatClientObservationConvention, Map.of(), null, advisorObservationConvention,
+				toolCallingManager);
 	}
 
 	public ChatClient build() {

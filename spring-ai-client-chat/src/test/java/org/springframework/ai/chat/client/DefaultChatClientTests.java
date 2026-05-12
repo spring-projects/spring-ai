@@ -52,6 +52,7 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -60,6 +61,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -177,6 +179,21 @@ class DefaultChatClientTests {
 		assertThat(mutateSpec.getToolNames()).containsExactly("toolName1", "toolName2");
 		assertThat(mutateSpec.getToolCallbacks()).containsExactly(toolCallback);
 		assertThat(mutateSpec.getToolContext()).isEqualTo(toolContext);
+	}
+
+	@Test
+	void toolCallingManagerPreservedAfterMutate() {
+		var manager = mock(ToolCallingManager.class);
+		ChatClient original = ChatClient.builder(mockChatModel(), ObservationRegistry.NOOP, null, null, manager)
+			.build();
+
+		// copy constructor path: each prompt() call copies the spec
+		var originalSpec = (DefaultChatClient.DefaultChatClientRequestSpec) original.prompt();
+		assertThat(ReflectionTestUtils.getField(originalSpec, "toolCallingManager")).isSameAs(manager);
+
+		// mutate() path: builder cloned, then prompt() copies again
+		var mutatedSpec = (DefaultChatClient.DefaultChatClientRequestSpec) original.mutate().build().prompt();
+		assertThat(ReflectionTestUtils.getField(mutatedSpec, "toolCallingManager")).isSameAs(manager);
 	}
 
 	@Test

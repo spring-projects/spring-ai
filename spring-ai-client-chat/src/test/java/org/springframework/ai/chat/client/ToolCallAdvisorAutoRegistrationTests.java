@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -42,12 +43,15 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
+import org.springframework.ai.model.tool.DefaultToolExecutionResult;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -235,6 +239,29 @@ class ToolCallAdvisorAutoRegistrationTests {
 
 			assertThat(counterBefore.getCallCount()).isEqualTo(1);
 			assertThat(counterAfter.getCallCount()).isGreaterThanOrEqualTo(2);
+		}
+
+		@Test
+		void autoRegisteredAdvisorUsesInjectedToolCallingManager() {
+			ChatResponse first = toolCallChatResponse();
+			ChatResponse second = finalChatResponse();
+			when(chatModel.call(any(Prompt.class))).thenReturn(first).thenReturn(second);
+
+			var customManager = mock(ToolCallingManager.class);
+			when(customManager.executeToolCalls(any(), any())).thenReturn(
+					DefaultToolExecutionResult.builder().conversationHistory(List.of()).returnDirect(false).build());
+
+			ChatClient.builder(chatModel, ObservationRegistry.NOOP, null, null, customManager)
+				.build()
+				.prompt()
+				.user("weather?")
+				.toolCallbacks(weatherTool)
+				.call()
+				.content();
+
+			// The injected manager — not the default — handled the tool call
+			verify(customManager).executeToolCalls(any(), any());
+			verify(chatModel, times(2)).call(any(Prompt.class));
 		}
 
 		@Test
