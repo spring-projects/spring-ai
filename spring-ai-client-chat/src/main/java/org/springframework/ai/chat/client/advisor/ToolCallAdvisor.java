@@ -78,15 +78,6 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolCallHand
 
 	private final boolean streamToolCallResponses;
 
-	protected ToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder) {
-		this(toolCallingManager, advisorOrder, true, true);
-	}
-
-	protected ToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder,
-			boolean conversationHistoryEnabled) {
-		this(toolCallingManager, advisorOrder, conversationHistoryEnabled, true);
-	}
-
 	protected ToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder,
 			boolean conversationHistoryEnabled, boolean streamToolCallResponses) {
 		Assert.notNull(toolCallingManager, "toolCallingManager must not be null");
