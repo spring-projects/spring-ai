@@ -243,7 +243,8 @@ public class OpenAiChatModelIT {
 			.build();
 
 		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
-		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
+		var streamingResponse = this.chatModel.stream(prompt).blockLast();
+		var streamingTokenUsage = streamingResponse.getMetadata().getUsage();
 		var referenceTokenUsage = this.chatModel.call(prompt).getMetadata().getUsage();
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
@@ -257,6 +258,9 @@ public class OpenAiChatModelIT {
 		assertThat(streamingTokenUsage.getTotalTokens()).isCloseTo(referenceTokenUsage.getTotalTokens(),
 				Percentage.withPercentage(25));
 
+		// Verify metadata fields are preserved during chunk aggregation
+		assertThat(streamingResponse.getMetadata().getRateLimit()).isNotNull();
+		assertThat(streamingResponse.getMetadata().getPromptMetadata()).isNotNull();
 	}
 
 	@Test

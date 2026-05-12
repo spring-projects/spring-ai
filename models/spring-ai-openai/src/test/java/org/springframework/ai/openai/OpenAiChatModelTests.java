@@ -16,6 +16,7 @@
 
 package org.springframework.ai.openai;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.PromptMetadata;
+import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 
@@ -187,6 +191,39 @@ class OpenAiChatModelTests {
 		assertThatThrownBy(() -> chatModel.createRequest(new Prompt("test", options), false))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Failed to parse toolChoice JSON");
+	}
+
+	@Test
+	void preserveRateLimitAndPromptMetadataInAggregation() throws Exception {
+		RateLimit rateLimit = mock(RateLimit.class);
+		PromptMetadata promptMetadata = mock(PromptMetadata.class);
+		Usage usage = mock(Usage.class);
+
+		ChatResponseMetadata originalMetadata = ChatResponseMetadata.builder()
+			.id("test-id")
+			.model("test-model")
+			.rateLimit(rateLimit)
+			.promptMetadata(promptMetadata)
+			.keyValue("custom-key", "custom-value")
+			.build();
+
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.build();
+
+		Method fromMethod = OpenAiChatModel.class.getDeclaredMethod("from", ChatResponseMetadata.class, Usage.class);
+		fromMethod.setAccessible(true);
+
+		ChatResponseMetadata aggregatedMetadata = (ChatResponseMetadata) fromMethod.invoke(chatModel, originalMetadata,
+				usage);
+
+		assertThat(aggregatedMetadata.getId()).isEqualTo("test-id");
+		assertThat(aggregatedMetadata.getModel()).isEqualTo("test-model");
+		assertThat(aggregatedMetadata.getUsage()).isSameAs(usage);
+		assertThat(aggregatedMetadata.getRateLimit()).isSameAs(rateLimit);
+		assertThat(aggregatedMetadata.getPromptMetadata()).isSameAs(promptMetadata);
+		assertThat((String) aggregatedMetadata.get("custom-key")).isEqualTo("custom-value");
 	}
 
 }

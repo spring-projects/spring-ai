@@ -579,7 +579,9 @@ public final class OpenAiChatModel implements ChatModel {
 		ChatResponseMetadata.Builder builder = ChatResponseMetadata.builder()
 			.id(chatResponseMetadata.getId())
 			.usage(usage)
-			.model(chatResponseMetadata.getModel());
+			.model(chatResponseMetadata.getModel())
+			.promptMetadata(chatResponseMetadata.getPromptMetadata())
+			.rateLimit(chatResponseMetadata.getRateLimit());
 
 		chatResponseMetadata.entrySet().forEach(e -> builder.keyValue(e.getKey(), e.getValue()));
 
