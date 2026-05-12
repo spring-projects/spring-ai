@@ -64,7 +64,6 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
@@ -118,8 +117,6 @@ public final class OpenAiChatModel implements ChatModel {
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
 	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
-
-	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	private final Logger logger = LoggerFactory.getLogger(OpenAiChatModel.class);
 
@@ -565,8 +562,7 @@ public final class OpenAiChatModel implements ChatModel {
 
 		result._additionalProperties().forEach((key, jsonValue) -> {
 			try {
-				String jsonValueString = objectMapper.writeValueAsString(jsonValue);
-				Object value = ModelOptionsUtils.JSON_MAPPER.readValue(jsonValueString, Object.class);
+				Object value = ModelOptionsUtils.JSON_MAPPER.convertValue(jsonValue, Object.class);
 				metadataBuilder.keyValue(key, value);
 			}
 			catch (Exception e) {
