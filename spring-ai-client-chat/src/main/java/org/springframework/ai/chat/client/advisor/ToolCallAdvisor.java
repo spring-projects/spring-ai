@@ -30,6 +30,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.ToolCallHandlingAdvisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -51,7 +52,16 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  */
-public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
+public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolCallHandlingAdvisor {
+
+	/**
+	 * Default advisor order. Placed early in the chain so that all downstream advisors
+	 * (e.g. {@link org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor})
+	 * participate in every tool-call iteration.
+	 *
+	 * @see org.springframework.ai.chat.client.advisor.api.Advisor#DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER
+	 */
+	public static final int DEFAULT_ORDER = Ordered.HIGHEST_PRECEDENCE + 300;
 
 	protected final ToolCallingManager toolCallingManager;
 
@@ -435,7 +445,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 
 		private ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
 
-		private int advisorOrder = BaseAdvisor.HIGHEST_PRECEDENCE + 300;
+		private int advisorOrder = DEFAULT_ORDER;
 
 		private boolean conversationHistoryEnabled = true;
 

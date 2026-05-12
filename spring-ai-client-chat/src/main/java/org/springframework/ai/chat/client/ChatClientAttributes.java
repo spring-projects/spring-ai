@@ -30,7 +30,11 @@ public enum ChatClientAttributes {
 
 	STRUCTURED_OUTPUT_SCHEMA("spring.ai.chat.client.structured.output.schema"),
 
-	STRUCTURED_OUTPUT_NATIVE("spring.ai.chat.client.structured.output.native");
+	STRUCTURED_OUTPUT_NATIVE("spring.ai.chat.client.structured.output.native"),
+
+	TOOL_CALL_ADVISOR_AUTO_REGISTER("spring.ai.chat.client.tool.call.advisor.auto-register"),
+
+	TOOL_CALL_ADVISOR_ORDER("spring.ai.chat.client.tool.call.advisor.order");
 
 	//@formatter:on
 
