@@ -1,0 +1,79 @@
+= Threat Detection for Spring AI Applications
+
+Spring AI applications that build agentic pipelines on top of LLMs, vector stores, and tool calls are exposed to a runtime threat surface that traditional application security tooling does not cover. This page describes the threat model and points at open-source detection-rule infrastructure that downstream consumers can plug into their Spring AI deployments.
+
+== Threat surface
+
+Three categories of runtime threats are particularly relevant to Spring AI components:
+
+* **Filter-expression and query injection** against `VectorStore` implementations (e.g. https://spring.io/security/cve-2026-41705[CVE-2026-41705] in `MilvusVectorStore.delete()` and `.similaritySearch()`). User-controlled fragments of filter DSL can interpolate into evaluated expressions, with consequences ranging from data exposure to evaluation-context manipulation.
+* **Cross-conversation memory leakage** in `PromptChatMemoryAdvisor` when used with shared `ChatMemory` without per-session `conversation_id` discipline (e.g. https://spring.io/security/cve-2026-41712[CVE-2026-41712]). Memory from one user is retrieved during another user's call when both share scope.
+* **Memory poisoning via persisted user input** in `PromptChatMemoryAdvisor` flows (e.g. https://spring.io/security/cve-2026-41713[CVE-2026-41713]). Adversary input persists into `ChatMemory` and later injects attacker-controlled context into future LLM calls.
+
+All three CVE families are patched in Spring AI 1.0.0 and above. The threat detection layer described below provides defence-in-depth for unpatched deployments and detects similar exploit shapes that may emerge against future components.
+
+== Open-source detection-rule layer
+
+Several open-source projects ship MIT-licensed detection-rule corpora that can be wired into Spring AI applications via observability callbacks or `Advisor` pre-processing hooks:
+
+* https://github.com/Agent-Threat-Rule/agent-threat-rules[Agent Threat Rules (ATR)] — 349+ rules across 10 categories. In production at Microsoft Agent Governance Toolkit, Cisco AI Defense, MISP/CIRCL Luxembourg, and OWASP Agent-Security-Regression-Harness. The Spring AI 5/8 CVE family is covered by rules `ATR-2026-00448` (Milvus filter injection), `ATR-2026-00449` (ChatMemory cross-user leak), and `ATR-2026-00450` (memory poisoning).
+* https://github.com/NVIDIA/garak[NVIDIA garak] — adversarial-input probe runner with built-in scorers for prompt injection and tool misuse.
+* https://github.com/centerforaisafety/HarmBench[HarmBench] — behavior-category benchmark for adversarial LLM evaluation.
+* https://github.com/OWASP/Agent-Security-Regression-Harness[OWASP Agent Security Regression Harness] — regression-test scenarios for agentic threats.
+
+These are plural and complementary. Spring AI does not endorse any single corpus; the references above are starting points for builders implementing threat detection in their own deployments.
+
+== Integration pattern
+
+Detection rules are content-layer patterns that match against three surfaces in a Spring AI flow:
+
+. **Inbound `Prompt` content** — match user input or RAG-retrieved context against rules before passing to the model.
+. **Outbound `ChatResponse` content** — match model output against rules before persisting to `ChatMemory` or returning to the caller.
+. **Tool-call arguments and responses** — match `Tool` and MCP-server inputs/outputs against rules at advisor entry.
+
+A minimal integration is a custom `Advisor` that loads rules at startup, evaluates them against `AdvisedRequest.userText()` and `ChatResponse.content()`, and emits structured events for downstream observability (Micrometer, OpenTelemetry, structured logs).
+
+[source,java]
+----
+public class ThreatDetectionAdvisor implements CallAroundAdvisor {
+
+    private final List<DetectionRule> rules;
+
+    public ThreatDetectionAdvisor(RuleSource source) {
+        this.rules = source.loadRules();
+    }
+
+    @Override
+    public AdvisedResponse aroundCall(AdvisedRequest request, CallAroundAdvisorChain chain) {
+        List<RuleMatch> matches = match(request.userText());
+        if (matches.stream().anyMatch(m -> m.severity() == Severity.CRITICAL)) {
+            return AdvisedResponse.builder()
+                    .response(ChatResponse.empty())
+                    .adviseContext(request.adviseContext())
+                    .build();
+        }
+        AdvisedResponse response = chain.nextAroundCall(request);
+        match(response.response().getResult().getOutput().getContent()).forEach(this::publish);
+        return response;
+    }
+    // ... match() + publish() implementations
+}
+----
+
+Rule loading is corpus-specific. ATR rules are YAML files with structured metadata; reference loaders in TypeScript (canonical) and Python (community wrapper) exist at the ATR repo.
+
+== Honest scope limits
+
+Detection rules are a fast-moving floor, not a complete defence. Specific limitations:
+
+* Regex-based pattern detection does not catch paraphrase bypasses — attackers rewriting a canonical attack payload into semantically equivalent novel phrasing will not match.
+* Configuration and authentication issues with no runtime payload to pattern-match are out of scope. Use Spring Security and standard AuthN/Z controls for those.
+* Multilingual coverage in existing corpora is predominantly English. Detection rate on non-English attack payloads will be near zero until multilingual variants exist.
+
+Detection rules complement, but do not replace, framework-level patches (upgrade to Spring AI >= 1.0.0 for the May 2026 CVE family), input validation at boundaries, and architectural controls (least-privilege scoping, isolation between agent components).
+
+== References
+
+* https://spring.io/security/[Spring Security Advisories] — authoritative source for Spring AI CVE disclosures.
+* https://media.defense.gov/2026/Apr/30/2003922823/-1/-1/0/CAREFUL%20ADOPTION%20OF%20AGENTIC%20AI%20SERVICES_FINAL.PDF[Five Eyes "Careful Adoption of Agentic AI Services" (2026-04-30)] — joint guidance from CISA + NSA + ASD ACSC + CCCS + UK NCSC + NZ NCSC, with risk categories that map onto the threat detection layer described above.
+* https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/[Microsoft MSRC — "When prompts become shells" (2026-05-07)] — discusses RCE in AI agent frameworks (Semantic Kernel) and outlines the operational response pattern that applies equally to Spring AI components.

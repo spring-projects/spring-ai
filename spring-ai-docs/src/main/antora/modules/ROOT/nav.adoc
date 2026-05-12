@@ -115,6 +115,7 @@
 *** xref:api/vectordbs/s3-vector-store.adoc[]
 
 ** xref:observability/index.adoc[]
+*** xref:observability/threat-detection.adoc[Threat Detection]
 
 ** xref:api/docker-compose.adoc[Development-time Services]
 
