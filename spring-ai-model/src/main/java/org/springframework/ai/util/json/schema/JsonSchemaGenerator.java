@@ -41,8 +41,10 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.model.KotlinModule;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.util.json.JsonParser;
+import org.springframework.core.KotlinDetector;
 import org.springframework.core.Nullness;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
@@ -70,6 +72,7 @@ import org.springframework.util.StringUtils;
  * <p>
  *
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public final class JsonSchemaGenerator {
@@ -102,6 +105,10 @@ public final class JsonSchemaGenerator {
 			.with(springAiSchemaModule)
 			.with(Option.EXTRA_OPEN_API_FORMAT_VALUES)
 			.with(Option.PLAIN_DEFINITION_KEYS);
+
+		if (KotlinDetector.isKotlinReflectPresent()) {
+			schemaGeneratorConfigBuilder.with(new KotlinModule());
+		}
 
 		SchemaGeneratorConfig typeSchemaGeneratorConfig = schemaGeneratorConfigBuilder.build();
 		TYPE_SCHEMA_GENERATOR = new SchemaGenerator(typeSchemaGeneratorConfig);

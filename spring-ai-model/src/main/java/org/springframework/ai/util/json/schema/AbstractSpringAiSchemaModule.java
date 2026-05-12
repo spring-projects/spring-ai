@@ -28,6 +28,7 @@ import com.github.victools.jsonschema.generator.SchemaGeneratorConfigPart;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.core.KotlinDetector;
 import org.springframework.core.Nullness;
 
 /**
@@ -121,6 +122,11 @@ public abstract class AbstractSpringAiSchemaModule implements Module {
 			throw new IllegalStateException("Unsupported member type: " + member);
 		}
 		if (nullness == Nullness.NULLABLE) {
+			return false;
+		}
+		if (KotlinDetector.isKotlinReflectPresent()
+				&& KotlinDetector.isKotlinType(member.getDeclaringType().getErasedType())) {
+			// Defer to KotlinModule for additional checks like default values
 			return false;
 		}
 
