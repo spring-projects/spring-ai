@@ -935,7 +935,7 @@ public class ToolCallAdvisorTests {
 		private final int[] hookCallCounts;
 
 		TestableToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder, int[] hookCallCounts) {
-			super(toolCallingManager, advisorOrder, true);
+			super(toolCallingManager, advisorOrder, true, true);
 			this.hookCallCounts = hookCallCounts;
 		}
 

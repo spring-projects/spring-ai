@@ -35,4 +35,23 @@ public final class AdvisorParams {
 	public static final Consumer<ChatClient.AdvisorSpec> ENABLE_NATIVE_STRUCTURED_OUTPUT = a -> a
 		.param(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey(), true);
 
+	/**
+	 * Controls whether a
+	 * {@link org.springframework.ai.chat.client.advisor.ToolCallAdvisor} is automatically
+	 * added to the chain when tools are configured on the {@code ChatClient} and no
+	 * explicit {@link org.springframework.ai.chat.client.advisor.api.ToolAdvisor} is
+	 * already present. Auto-registration is enabled by default; pass {@code false} to opt
+	 * out:
+	 *
+	 * <pre>{@code
+	 * client.prompt()
+	 *     .tools(myTool)
+	 *     .advisors(AdvisorParams.toolCallAdvisorAutoRegister(false))
+	 *     .call();
+	 * }</pre>
+	 */
+	public static Consumer<ChatClient.AdvisorSpec> toolCallAdvisorAutoRegister(boolean enabled) {
+		return a -> a.param(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey(), enabled);
+	}
+
 }

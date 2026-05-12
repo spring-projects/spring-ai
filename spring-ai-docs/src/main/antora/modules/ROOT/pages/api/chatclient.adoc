@@ -752,6 +752,111 @@ This allows you to tailor the logged information to your specific needs.
 
 TIP: Be cautious about logging sensitive information in production environments.
 
+=== Tool Calling
+
+When tools are registered on a `ChatClient` call — via `.tools(...)`, `.toolCallbacks(...)`, `.toolNames(...)`, defaults set on the builder, tools pre-configured in the `ChatModel`'s default options, or tools passed through `.options(...)` — the `ChatClient` automatically registers a `ToolCallAdvisor` in the advisor chain to handle the tool execution lifecycle.
+This means you do not need to add a `ToolCallAdvisor` manually for the common case.
+
+[source,java]
+----
+String response = ChatClient.builder(chatModel)
+    .build()
+    .prompt("What day is tomorrow?")
+    .tools(new DateTimeTools())   // ToolCallAdvisor is auto-registered here
+    .call()
+    .content();
+----
+
+The `ToolCallAdvisor` is registered at `Ordered.HIGHEST_PRECEDENCE + 300` by default.
+
+==== Disabling Auto-Registration
+
+You can disable the auto-registration per call using `AdvisorParams.toolCallAdvisorAutoRegister(false)`:
+
+[source,java]
+----
+chatClient.prompt("What day is tomorrow?")
+    .tools(new DateTimeTools())
+    .advisors(AdvisorParams.toolCallAdvisorAutoRegister(false))
+    .call()
+    .content();
+----
+
+Or you can provide your own `ToolCallAdvisor` (or any other advisor implementing `ToolAdvisor`) — in that case auto-registration is suppressed automatically because the chain already contains a `ToolAdvisor`:
+
+[source,java]
+----
+var customAdvisor = ToolCallAdvisor.builder()
+    .toolCallingManager(myToolCallingManager)
+    .build();
+
+chatClient.prompt("What day is tomorrow?")
+    .tools(new DateTimeTools())
+    .advisors(customAdvisor)    // auto-registration suppressed
+    .call()
+    .content();
+----
+
+==== Customizing the Default ToolCallAdvisor
+
+===== Spring Boot: advisor order property
+
+The simplest way to tune the auto-registered advisor is through the `spring.ai.chat.client.tool-calling.advisor-order` property.
+It controls where in the advisor chain the `ToolCallAdvisor` is inserted:
+
+[source,properties]
+----
+spring.ai.chat.client.tool-calling.advisor-order=0
+----
+
+The value must be lower than the order of any advisor that should run _inside_ the tool-call loop (i.e., repeated on every iteration), and higher than any advisor that should run _outside_ it (i.e., executed only once per user request).
+The default is `ToolCallAdvisor.DEFAULT_ORDER`.
+
+===== Spring Boot: custom `ToolCallAdvisor.Builder` bean
+
+For deeper customisation — for example to supply a custom `ToolCallingManager` — declare a `ToolCallAdvisor.Builder<?>` bean.
+Spring Boot's `@ConditionalOnMissingBean` on the auto-configured bean means your bean takes precedence:
+
+[source,java]
+----
+@Bean
+ToolCallAdvisor.Builder<?> toolCallAdvisorBuilder(ToolCallingManager myToolCallingManager) {
+    return ToolCallAdvisor.builder()
+        .toolCallingManager(myToolCallingManager)
+        .advisorOrder(Ordered.LOWEST_PRECEDENCE);
+}
+----
+
+The `ChatClient.Builder` bean is then automatically wired with this custom builder.
+
+===== Without Spring Boot
+
+When not using Spring Boot auto-configuration, pass a pre-configured `ToolCallAdvisor.Builder` directly to `ChatClient.builder()`:
+
+[source,java]
+----
+ToolCallingManager customManager = ToolCallingManager.builder()
+    // custom resolver, exception processor, etc.
+    .build();
+
+ChatClient chatClient = ChatClient
+    .builder(chatModel, observationRegistry, null, null,
+            ToolCallAdvisor.builder().toolCallingManager(customManager))
+    .build();
+
+// Every prompt that registers tools will use customManager in the auto-registered advisor
+chatClient.prompt("What day is tomorrow?")
+    .tools(new DateTimeTools())
+    .call()
+    .content();
+----
+
+==== ToolAdvisor Marker Interface
+
+`ToolAdvisor` is a marker interface that signals to the `ChatClient` that the advisor chain already handles tool execution. Implementing this interface on a custom advisor prevents the auto-registration of a second `ToolCallAdvisor`.
+
+For more details see xref:api/tools.adoc#_advisor_controlled_tool_execution_with_toolcalladvisor[Advisor-Controlled Tool Execution].
+
 == Chat Memory
 
 The interface `ChatMemory` represents a storage for chat conversation memory.
@@ -770,6 +875,14 @@ There are several implementations available, including the `InMemoryChatMemoryRe
 IMPORTANT: The `ChatMemory.CONVERSATION_ID` parameter is *required* for all memory advisors. It must be supplied on every call via `.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))`. Omitting it throws an `IllegalArgumentException`. There is no default conversation ID.
 
 For more details and usage examples, see the xref:api/chat-memory.adoc[Chat Memory] documentation.
+
+
+=== MemoryAdvisor Marker Interface
+
+`MemoryAdvisor` is a marker interface extended by `BaseChatMemoryAdvisor`.
+`DefaultChatClient` uses this marker to detect downstream memory advisors in the auto-registration logic.
+
+Custom memory advisors that do not extend `BaseChatMemoryAdvisor` but should participate in this detection should implement `MemoryAdvisor`.
 
 == Implementation Notes
 

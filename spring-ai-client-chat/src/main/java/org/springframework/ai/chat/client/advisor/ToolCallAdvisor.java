@@ -30,6 +30,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.ToolAdvisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -51,7 +52,16 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  */
-public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
+public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor {
+
+	/**
+	 * Default advisor order. Placed early in the chain so that all downstream advisors
+	 * (e.g. {@link org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor})
+	 * participate in every tool-call iteration.
+	 *
+	 * @see org.springframework.ai.chat.client.advisor.api.Advisor#DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER
+	 */
+	public static final int DEFAULT_ORDER = Ordered.HIGHEST_PRECEDENCE + 300;
 
 	protected final ToolCallingManager toolCallingManager;
 
@@ -67,15 +77,6 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 	private final boolean conversationHistoryEnabled;
 
 	private final boolean streamToolCallResponses;
-
-	protected ToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder) {
-		this(toolCallingManager, advisorOrder, true, true);
-	}
-
-	protected ToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder,
-			boolean conversationHistoryEnabled) {
-		this(toolCallingManager, advisorOrder, conversationHistoryEnabled, true);
-	}
 
 	protected ToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder,
 			boolean conversationHistoryEnabled, boolean streamToolCallResponses) {
@@ -435,7 +436,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 
 		private ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
 
-		private int advisorOrder = BaseAdvisor.HIGHEST_PRECEDENCE + 300;
+		private int advisorOrder = DEFAULT_ORDER;
 
 		private boolean conversationHistoryEnabled = true;
 
@@ -544,8 +545,22 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		 * Returns the configured advisor order.
 		 * @return the advisor order value
 		 */
-		protected int getAdvisorOrder() {
+		public int getAdvisorOrder() {
 			return this.advisorOrder;
+		}
+
+		/**
+		 * Creates a shallow copy of this builder with all current settings. The copy can
+		 * be used as a template from which per-call overrides (e.g.
+		 * {@code conversationHistoryEnabled}, {@code streamToolCallResponses}) are
+		 * applied without mutating the original.
+		 * @return a new {@link Builder} with the same configuration
+		 */
+		public Builder<?> copy() {
+			return new Builder<>().toolCallingManager(this.toolCallingManager)
+				.advisorOrder(this.advisorOrder)
+				.conversationHistoryEnabled(this.conversationHistoryEnabled)
+				.streamToolCallResponses(this.streamToolCallResponses);
 		}
 
 		/**
