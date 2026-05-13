@@ -28,8 +28,9 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -191,6 +192,8 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 	public static final int DEFAULT_ADD_CONCURRENCY = 16;
 
+	static final int DEFAULT_EXECUTOR_SHUTDOWN_TIMEOUT_SECONDS = 30;
+
 	public static final String DRIVER_PROFILE_UPDATES = "spring-ai-updates";
 
 	public static final String DRIVER_PROFILE_SEARCH = "spring-ai-search";
@@ -213,7 +216,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 	private final PrimaryKeyTranslator primaryKeyTranslator;
 
-	private final Executor executor;
+	private final ExecutorService executor;
 
 	private final boolean closeSessionOnClose;
 
@@ -508,8 +511,26 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 	@Override
 	public void close() throws Exception {
+		if (this.executor.isShutdown()) {
+			return;
+		}
+		this.executor.shutdown();
+		try {
+			if (!this.executor.awaitTermination(DEFAULT_EXECUTOR_SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+				logger.warn(
+						"Executor did not terminate within {} seconds; forcing shutdown. Some in-flight writes may be lost.",
+						DEFAULT_EXECUTOR_SHUTDOWN_TIMEOUT_SECONDS);
+				this.executor.shutdownNow();
+			}
+		}
+		catch (InterruptedException ex) {
+			this.executor.shutdownNow();
+		}
 		if (this.closeSessionOnClose) {
 			this.session.close();
+		}
+		if (Thread.interrupted()) {
+			Thread.currentThread().interrupt();
 		}
 	}
 
