@@ -16,7 +16,6 @@
 
 package org.springframework.ai.openai.chat;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,7 +32,6 @@ import org.springframework.ai.test.options.AbstractChatOptionsTests;
 import org.springframework.ai.tool.ToolCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Tests for {@link OpenAiChatOptions}.
@@ -515,49 +513,17 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 	}
 
 	@Test
-	@SuppressWarnings("DataFlowIssue")
-	void testSetToolCallbacksValidation() {
-		OpenAiChatOptions options = OpenAiChatOptions.builder().build();
-
+	void testToolCallbacksBuilderValidation() {
 		// Test null validation
-		assertThatThrownBy(() -> options.setToolCallbacks(null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("toolCallbacks cannot be null");
-
-		// Test null elements validation
-		List<ToolCallback> callbacksWithNull = new ArrayList<>();
-		callbacksWithNull.add(null);
-		assertThatThrownBy(() -> options.setToolCallbacks(callbacksWithNull))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("toolCallbacks cannot contain null elements");
+		OpenAiChatOptions options1 = OpenAiChatOptions.builder().toolCallbacks((List<ToolCallback>) null).build();
+		assertThat(options1.getToolCallbacks()).isEmpty();
 	}
 
 	@Test
-	@SuppressWarnings("DataFlowIssue")
-	void testSetToolNamesValidation() {
-		OpenAiChatOptions options = OpenAiChatOptions.builder().build();
-
+	void testToolNamesBuilderValidation() {
 		// Test null validation
-		assertThatThrownBy(() -> options.setToolNames(null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("toolNames cannot be null");
-
-		// Test null elements validation
-		Set<String> toolNamesWithNull = new HashSet<>();
-		toolNamesWithNull.add(null);
-		assertThatThrownBy(() -> options.setToolNames(toolNamesWithNull)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("toolNames cannot contain null elements");
-
-		// Test empty string validation
-		Set<String> toolNamesWithEmpty = new HashSet<>();
-		toolNamesWithEmpty.add("");
-		assertThatThrownBy(() -> options.setToolNames(toolNamesWithEmpty)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("toolNames cannot contain empty elements");
-
-		// Test whitespace string validation
-		Set<String> toolNamesWithWhitespace = new HashSet<>();
-		toolNamesWithWhitespace.add("   ");
-		assertThatThrownBy(() -> options.setToolNames(toolNamesWithWhitespace))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("toolNames cannot contain empty elements");
+		OpenAiChatOptions options1 = OpenAiChatOptions.builder().toolNames((Set<String>) null).build();
+		assertThat(options1.getToolNames()).isEmpty();
 	}
 
 	@Test

@@ -316,23 +316,8 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	}
 
 	@Override
-	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
-		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-		this.toolCallbacks = toolCallbacks;
-	}
-
-	@Override
 	public Set<String> getToolNames() {
 		return this.toolNames;
-	}
-
-	@Override
-	public void setToolNames(Set<String> toolNames) {
-		Assert.notNull(toolNames, "toolNames cannot be null");
-		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
-		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
-		this.toolNames = toolNames;
 	}
 
 	@Override
@@ -341,18 +326,8 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	}
 
 	@Override
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
-	@Override
 	public Map<String, Object> getToolContext() {
 		return this.toolContext;
-	}
-
-	@Override
-	public void setToolContext(Map<String, Object> toolContext) {
-		this.toolContext = toolContext;
 	}
 
 	public List<AnthropicCitationDocument> getCitationDocuments() {
@@ -420,30 +395,6 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 			}
 			return JSON_MAPPER.writeValueAsString(nativeMap);
 		}).orElse(null);
-	}
-
-	@Override
-	public void setOutputSchema(@Nullable String outputSchema) {
-		if (outputSchema == null) {
-			this.outputConfig = null;
-			return;
-		}
-		Map<String, Object> schemaMap = JSON_MAPPER.readValue(outputSchema, new TypeReference<Map<String, Object>>() {
-		});
-		JsonOutputFormat.Schema.Builder schemaBuilder = JsonOutputFormat.Schema.builder();
-		for (Map.Entry<String, Object> entry : schemaMap.entrySet()) {
-			// Strip JSON Schema meta-fields not supported by the Anthropic API
-			if ("$schema".equals(entry.getKey()) || "$defs".equals(entry.getKey())) {
-				continue;
-			}
-			schemaBuilder.putAdditionalProperty(entry.getKey(), JsonValue.from(entry.getValue()));
-		}
-		JsonOutputFormat jsonOutputFormat = JsonOutputFormat.builder().schema(schemaBuilder.build()).build();
-		OutputConfig.Builder configBuilder = OutputConfig.builder().format(jsonOutputFormat);
-		if (this.outputConfig != null) {
-			this.outputConfig.effort().ifPresent(configBuilder::effort);
-		}
-		this.outputConfig = configBuilder.build();
 	}
 
 	/**

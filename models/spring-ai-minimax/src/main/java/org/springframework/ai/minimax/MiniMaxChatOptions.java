@@ -32,7 +32,6 @@ import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.util.Assert;
 
 /**
  * MiniMaxChatOptions represents the options for performing chat completion using the
@@ -263,23 +262,8 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
-		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-		this.toolCallbacks = toolCallbacks;
-	}
-
-	@Override
 	public Set<String> getToolNames() {
 		return Collections.unmodifiableSet(this.toolNames);
-	}
-
-	@Override
-	public void setToolNames(Set<String> toolNames) {
-		Assert.notNull(toolNames, "toolNames cannot be null");
-		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
-		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
-		this.toolNames = toolNames;
 	}
 
 	@Override
@@ -288,19 +272,8 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
-	@Override
 	public Map<String, Object> getToolContext() {
 		return Collections.unmodifiableMap(this.toolContext);
-	}
-
-	@Override
-	public void setToolContext(Map<String, Object> toolContext) {
-		Assert.notNull(toolContext, "toolContext cannot be null");
-		this.toolContext = toolContext;
 	}
 
 	@Override

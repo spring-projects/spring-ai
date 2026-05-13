@@ -69,23 +69,8 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
-		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-		this.toolCallbacks = new ArrayList<>(toolCallbacks);
-	}
-
-	@Override
 	public Set<String> getToolNames() {
 		return Set.copyOf(this.toolNames);
-	}
-
-	@Override
-	public void setToolNames(Set<String> toolNames) {
-		Assert.notNull(toolNames, "toolNames cannot be null");
-		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
-		toolNames.forEach(toolName -> Assert.hasText(toolName, "toolNames cannot contain empty elements"));
-		this.toolNames = new HashSet<>(toolNames);
 	}
 
 	@Override
@@ -94,20 +79,8 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public void setToolContext(Map<String, Object> toolContext) {
-		Assert.notNull(toolContext, "toolContext cannot be null");
-		Assert.noNullElements(toolContext.keySet(), "toolContext cannot contain null keys");
-		this.toolContext = new HashMap<>(toolContext);
-	}
-
-	@Override
 	public @Nullable Boolean getInternalToolExecutionEnabled() {
 		return this.internalToolExecutionEnabled;
-	}
-
-	@Override
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
 	@Override
@@ -115,17 +88,9 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		return this.model;
 	}
 
-	public void setModel(@Nullable String model) {
-		this.model = model;
-	}
-
 	@Override
 	public @Nullable Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
-	}
-
-	public void setFrequencyPenalty(@Nullable Double frequencyPenalty) {
-		this.frequencyPenalty = frequencyPenalty;
 	}
 
 	@Override
@@ -133,17 +98,9 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		return this.maxTokens;
 	}
 
-	public void setMaxTokens(@Nullable Integer maxTokens) {
-		this.maxTokens = maxTokens;
-	}
-
 	@Override
 	public @Nullable Double getPresencePenalty() {
 		return this.presencePenalty;
-	}
-
-	public void setPresencePenalty(@Nullable Double presencePenalty) {
-		this.presencePenalty = presencePenalty;
 	}
 
 	@Override
@@ -151,17 +108,9 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		return this.stopSequences;
 	}
 
-	public void setStopSequences(@Nullable List<String> stopSequences) {
-		this.stopSequences = stopSequences;
-	}
-
 	@Override
 	public @Nullable Double getTemperature() {
 		return this.temperature;
-	}
-
-	public void setTemperature(@Nullable Double temperature) {
-		this.temperature = temperature;
 	}
 
 	@Override
@@ -169,17 +118,9 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		return this.topK;
 	}
 
-	public void setTopK(@Nullable Integer topK) {
-		this.topK = topK;
-	}
-
 	@Override
 	public @Nullable Double getTopP() {
 		return this.topP;
-	}
-
-	public void setTopP(@Nullable Double topP) {
-		this.topP = topP;
 	}
 
 	@Override
@@ -309,24 +250,24 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		public ToolCallingChatOptions build() {
 			DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 			if (this.toolCallbacks != null) {
-				options.setToolCallbacks(this.toolCallbacks);
+				options.toolCallbacks = this.toolCallbacks;
 			}
 			if (this.toolNames != null) {
-				options.setToolNames(this.toolNames);
+				options.toolNames = this.toolNames;
 			}
 			if (this.toolContext != null) {
-				options.setToolContext(this.toolContext);
+				options.toolContext = this.toolContext;
 			}
-			options.setInternalToolExecutionEnabled(this.internalToolExecutionEnabled);
+			options.internalToolExecutionEnabled = this.internalToolExecutionEnabled;
 
-			options.setModel(this.model);
-			options.setFrequencyPenalty(this.frequencyPenalty);
-			options.setMaxTokens(this.maxTokens);
-			options.setPresencePenalty(this.presencePenalty);
-			options.setStopSequences(this.stopSequences);
-			options.setTemperature(this.temperature);
-			options.setTopK(this.topK);
-			options.setTopP(this.topP);
+			options.model = this.model;
+			options.frequencyPenalty = this.frequencyPenalty;
+			options.maxTokens = this.maxTokens;
+			options.presencePenalty = this.presencePenalty;
+			options.stopSequences = this.stopSequences;
+			options.temperature = this.temperature;
+			options.topK = this.topK;
+			options.topP = this.topP;
 			return options;
 		}
 

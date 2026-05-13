@@ -39,7 +39,6 @@ import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.openai.OpenAiChatModel.ResponseFormat.Type;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.util.Assert;
 
 /**
  * Configuration information for the Chat Model implementation using the OpenAI Java SDK.
@@ -374,23 +373,8 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 	}
 
 	@Override
-	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
-		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-		this.toolCallbacks = toolCallbacks;
-	}
-
-	@Override
 	public Set<String> getToolNames() {
 		return this.toolNames;
-	}
-
-	@Override
-	public void setToolNames(Set<String> toolNames) {
-		Assert.notNull(toolNames, "toolNames cannot be null");
-		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
-		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
-		this.toolNames = toolNames;
 	}
 
 	@Override
@@ -399,18 +383,8 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 	}
 
 	@Override
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
-	@Override
 	public Map<String, Object> getToolContext() {
 		return this.toolContext;
-	}
-
-	@Override
-	public void setToolContext(Map<String, Object> toolContext) {
-		this.toolContext = toolContext;
 	}
 
 	@Override
@@ -422,16 +396,6 @@ public class OpenAiChatOptions extends AbstractOpenAiOptions
 	public @Nullable String getOutputSchema() {
 		OpenAiChatModel.ResponseFormat format = this.getResponseFormat();
 		return format != null ? format.getJsonSchema() : null;
-	}
-
-	@Override
-	public void setOutputSchema(@Nullable String outputSchema) {
-		if (outputSchema != null) {
-			this.responseFormat = OpenAiChatModel.ResponseFormat.builder()
-				.type(Type.JSON_SCHEMA)
-				.jsonSchema(outputSchema)
-				.build();
-		}
 	}
 
 	public static Builder builder() {
