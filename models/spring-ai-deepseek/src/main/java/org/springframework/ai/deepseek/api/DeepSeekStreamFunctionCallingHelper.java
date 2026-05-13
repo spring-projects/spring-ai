@@ -86,44 +86,56 @@ public class DeepSeekStreamFunctionCallingHelper {
 		String toolCallId = (current.toolCallId() != null ? current.toolCallId() : previous.toolCallId());
 
 		List<ToolCall> toolCalls = new ArrayList<>();
-		ToolCall lastPreviousTooCall = null;
 		if (!CollectionUtils.isEmpty(previous.toolCalls())) {
-			lastPreviousTooCall = previous.toolCalls().get(previous.toolCalls().size() - 1);
-			if (previous.toolCalls().size() > 1) {
-				toolCalls.addAll(previous.toolCalls().subList(0, previous.toolCalls().size() - 1));
-			}
+			toolCalls.addAll(previous.toolCalls());
 		}
 		if (!CollectionUtils.isEmpty(current.toolCalls())) {
 			if (current.toolCalls().size() > 1) {
 				throw new IllegalStateException("Currently only one tool call is supported per message!");
 			}
 			var currentToolCall = current.toolCalls().iterator().next();
-			if (StringUtils.hasText(currentToolCall.id())) {
-				if (lastPreviousTooCall != null) {
-					toolCalls.add(lastPreviousTooCall);
-				}
-				toolCalls.add(currentToolCall);
+			int mergeIndex = findMergeIndex(toolCalls, currentToolCall);
+			if (mergeIndex >= 0) {
+				toolCalls.set(mergeIndex, merge(toolCalls.get(mergeIndex), currentToolCall));
 			}
 			else {
-				toolCalls.add(merge(lastPreviousTooCall, currentToolCall));
-			}
-		}
-		else {
-			if (lastPreviousTooCall != null) {
-				toolCalls.add(lastPreviousTooCall);
+				toolCalls.add(currentToolCall);
 			}
 		}
 		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls);
+	}
+
+	private int findMergeIndex(List<ToolCall> toolCalls, ToolCall currentToolCall) {
+		Integer currentIndex = currentToolCall.index();
+		if (currentIndex != null) {
+			for (int i = 0; i < toolCalls.size(); i++) {
+				if (currentIndex.equals(toolCalls.get(i).index())) {
+					return i;
+				}
+			}
+		}
+		if (StringUtils.hasText(currentToolCall.id())) {
+			for (int i = 0; i < toolCalls.size(); i++) {
+				ToolCall previousToolCall = toolCalls.get(i);
+				if (currentToolCall.id().equals(previousToolCall.id())
+						&& (currentIndex == null || previousToolCall.index() == null)) {
+					return i;
+				}
+			}
+		}
+		return currentIndex == null && !StringUtils.hasText(currentToolCall.id()) && !toolCalls.isEmpty()
+				? toolCalls.size() - 1 : -1;
 	}
 
 	private ToolCall merge(ToolCall previous, ToolCall current) {
 		if (previous == null) {
 			return current;
 		}
+		Integer index = (current.index() != null ? current.index() : previous.index());
 		String id = (StringUtils.hasText(current.id()) ? current.id() : previous.id());
 		String type = (current.type() != null ? current.type() : previous.type());
 		ChatCompletionFunction function = merge(previous.function(), current.function());
-		return new ToolCall(id, type, function);
+		return new ToolCall(index, id, type, function);
 	}
 
 	private ChatCompletionFunction merge(ChatCompletionFunction previous, ChatCompletionFunction current) {
