@@ -439,10 +439,8 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 
 	@Test
 	void testSetOutputSchema() {
-		MistralAiChatOptions options = new MistralAiChatOptions();
 		String schema = "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}}}";
-
-		options.setOutputSchema(schema);
+		MistralAiChatOptions options = MistralAiChatOptions.builder().outputSchema(schema).build();
 
 		assertThat(options.getResponseFormat()).isNotNull();
 		assertThat(options.getResponseFormat().getType()).isEqualTo(ResponseFormat.Type.JSON_SCHEMA);

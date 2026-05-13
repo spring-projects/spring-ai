@@ -113,13 +113,4 @@ class BedrockChatOptionsTests extends AbstractChatOptionsTests<BedrockChatOption
 		assertThat(options).isInstanceOf(StructuredOutputChatOptions.class);
 	}
 
-	@Test
-	void testOutputSchemaOverwrite() {
-		BedrockChatOptions options = BedrockChatOptions.builder().outputSchema("{\"type\":\"object\"}").build();
-
-		options.setOutputSchema("{\"type\":\"array\"}");
-
-		assertThat(options.getOutputSchema()).isEqualTo("{\"type\":\"array\"}");
-	}
-
 }

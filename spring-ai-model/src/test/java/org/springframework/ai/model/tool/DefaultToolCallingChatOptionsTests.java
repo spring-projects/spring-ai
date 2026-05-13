@@ -16,7 +16,6 @@
 
 package org.springframework.ai.model.tool;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,113 +36,78 @@ import static org.mockito.Mockito.mock;
 class DefaultToolCallingChatOptionsTests {
 
 	@Test
-	void setToolCallbacksShouldStoreToolCallbacks() {
-		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
+	void builderShouldStoreToolCallbacks() {
 		ToolCallback callback1 = mock(ToolCallback.class);
 		ToolCallback callback2 = mock(ToolCallback.class);
 		List<ToolCallback> callbacks = List.of(callback1, callback2);
 
-		options.setToolCallbacks(callbacks);
+		ToolCallingChatOptions options = ToolCallingChatOptions.builder().toolCallbacks(callbacks).build();
 
 		assertThat(options.getToolCallbacks()).hasSize(2).containsExactlyElementsOf(callbacks);
 	}
 
 	@Test
-	void setToolCallbacksWithVarargsShouldStoreToolCallbacks() {
-		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
+	void builderWithVarargsShouldStoreToolCallbacks() {
 		ToolCallback callback1 = mock(ToolCallback.class);
 		ToolCallback callback2 = mock(ToolCallback.class);
 
-		options.setToolCallbacks(List.of(callback1, callback2));
+		ToolCallingChatOptions options = ToolCallingChatOptions.builder().toolCallbacks(callback1, callback2).build();
 
 		assertThat(options.getToolCallbacks()).hasSize(2).containsExactly(callback1, callback2);
 	}
 
 	@Test
-	void setToolCallbacksShouldRejectNullList() {
-		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
-
-		assertThatThrownBy(() -> options.setToolCallbacks(null)).isInstanceOf(IllegalArgumentException.class)
+	void builderShouldRejectNullToolCallbacksVarargs() {
+		assertThatThrownBy(() -> ToolCallingChatOptions.builder().toolCallbacks((ToolCallback[]) null))
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("toolCallbacks cannot be null");
 	}
 
 	@Test
-	void setToolNamesShouldStoreToolNames() {
-		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
+	void builderShouldStoreToolNames() {
 		Set<String> toolNames = Set.of("tool1", "tool2");
 
-		options.setToolNames(toolNames);
+		ToolCallingChatOptions options = ToolCallingChatOptions.builder().toolNames(toolNames).build();
 
 		assertThat(options.getToolNames()).hasSize(2).containsExactlyInAnyOrderElementsOf(toolNames);
 	}
 
 	@Test
-	void setToolNamesWithVarargsShouldStoreToolNames() {
-		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
-
-		options.setToolNames(Set.of("tool1", "tool2"));
+	void builderWithVarargsShouldStoreToolNames() {
+		ToolCallingChatOptions options = ToolCallingChatOptions.builder().toolNames("tool1", "tool2").build();
 
 		assertThat(options.getToolNames()).hasSize(2).containsExactlyInAnyOrder("tool1", "tool2");
 	}
 
 	@Test
-	void setToolNamesShouldRejectNullSet() {
-		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
-
-		assertThatThrownBy(() -> options.setToolNames(null)).isInstanceOf(IllegalArgumentException.class)
+	void builderShouldRejectNullToolNamesVarargs() {
+		assertThatThrownBy(() -> ToolCallingChatOptions.builder().toolNames((String[]) null))
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("toolNames cannot be null");
 	}
 
 	@Test
-	void setToolNamesShouldRejectNullElements() {
-		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
-		Set<String> toolNames = new HashSet<>();
-		toolNames.add(null);
-
-		assertThatThrownBy(() -> options.setToolNames(toolNames)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("toolNames cannot contain null elements");
-	}
-
-	@Test
-	void setToolNamesShouldRejectEmptyElements() {
-		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
-		Set<String> toolNames = new HashSet<>();
-		toolNames.add("");
-
-		assertThatThrownBy(() -> options.setToolNames(toolNames)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("toolNames cannot contain empty elements");
-	}
-
-	@Test
-	void setToolContextShouldStoreContext() {
-		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
+	void builderShouldStoreToolContext() {
 		Map<String, Object> context = Map.of("key1", "value1", "key2", 42);
 
-		options.setToolContext(context);
+		ToolCallingChatOptions options = ToolCallingChatOptions.builder().toolContext(context).build();
 
 		assertThat(options.getToolContext()).hasSize(2).containsAllEntriesOf(context);
 	}
 
 	@Test
-	void setToolContextShouldRejectNullMap() {
-		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
-
-		assertThatThrownBy(() -> options.setToolContext(null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("toolContext cannot be null");
-	}
-
-	@Test
 	void copyShouldCreateNewInstanceWithSameValues() {
-		DefaultToolCallingChatOptions original = new DefaultToolCallingChatOptions();
 		ToolCallback callback = mock(ToolCallback.class);
-		original.setToolCallbacks(List.of(callback));
-		original.setToolNames(Set.of("tool1"));
-		original.setToolContext(Map.of("key", "value"));
-		original.setInternalToolExecutionEnabled(true);
-		original.setModel("gpt-4");
-		original.setTemperature(0.7);
+		ToolCallingChatOptions original = ToolCallingChatOptions.builder()
+			.toolCallbacks(List.of(callback))
+			.toolNames(Set.of("tool1"))
+			.toolContext(Map.of("key", "value"))
+			.internalToolExecutionEnabled(true)
+			.model("gpt-4")
+			.temperature(0.7)
+			.build();
 
-		DefaultToolCallingChatOptions copy = original.copy();
+		ToolCallingChatOptions copy = original.copy();
 
 		assertThat(copy).isNotSameAs(original).satisfies(c -> {
 			assertThat(c.getToolCallbacks()).isEqualTo(original.getToolCallbacks());
@@ -157,11 +121,12 @@ class DefaultToolCallingChatOptionsTests {
 
 	@Test
 	void gettersShouldReturnImmutableCollections() {
-		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 		ToolCallback callback = mock(ToolCallback.class);
-		options.setToolCallbacks(List.of(callback));
-		options.setToolNames(Set.of("tool1"));
-		options.setToolContext(Map.of("key", "value"));
+		ToolCallingChatOptions options = ToolCallingChatOptions.builder()
+			.toolCallbacks(List.of(callback))
+			.toolNames(Set.of("tool1"))
+			.toolContext(Map.of("key", "value"))
+			.build();
 
 		assertThatThrownBy(() -> options.getToolCallbacks().add(mock(ToolCallback.class)))
 			.isInstanceOf(UnsupportedOperationException.class);
@@ -217,25 +182,6 @@ class DefaultToolCallingChatOptionsTests {
 	}
 
 	@Test
-	void deprecatedMethodsShouldWorkCorrectly() {
-		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
-
-		ToolCallback callback1 = mock(ToolCallback.class);
-		ToolCallback callback2 = mock(ToolCallback.class);
-		options.setToolCallbacks(List.of(callback1, callback2));
-		assertThat(options.getToolCallbacks()).hasSize(2);
-
-		options.setToolNames(Set.of("tool1"));
-		assertThat(options.getToolNames()).containsExactly("tool1");
-
-		options.setToolNames(Set.of("function1"));
-		assertThat(options.getToolNames()).containsExactly("function1");
-
-		options.setInternalToolExecutionEnabled(true);
-		assertThat(options.getInternalToolExecutionEnabled()).isTrue();
-	}
-
-	@Test
 	void defaultConstructorShouldInitializeWithEmptyCollections() {
 		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 
@@ -259,14 +205,15 @@ class DefaultToolCallingChatOptionsTests {
 	}
 
 	@Test
-	void setInternalToolExecutionEnabledShouldAcceptNullValue() {
-		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
-		options.setInternalToolExecutionEnabled(true);
+	void builderInternalToolExecutionEnabledShouldAcceptNullValue() {
+		ToolCallingChatOptions options = ToolCallingChatOptions.builder().internalToolExecutionEnabled(true).build();
 		assertThat(options.getInternalToolExecutionEnabled()).isTrue();
 
-		// Should be able to set back to null
-		options.setInternalToolExecutionEnabled(null);
-		assertThat(options.getInternalToolExecutionEnabled()).isNull();
+		// Should be able to set back to null in a new builder
+		ToolCallingChatOptions optionsWithNull = ToolCallingChatOptions.builder()
+			.internalToolExecutionEnabled(null)
+			.build();
+		assertThat(optionsWithNull.getInternalToolExecutionEnabled()).isNull();
 	}
 
 }

@@ -30,8 +30,6 @@ public interface StructuredOutputChatOptions extends ChatOptions {
 
 	@Nullable String getOutputSchema();
 
-	void setOutputSchema(String outputSchema);
-
 	/**
 	 * A builder to create a new {@link StructuredOutputChatOptions} instance.
 	 */
