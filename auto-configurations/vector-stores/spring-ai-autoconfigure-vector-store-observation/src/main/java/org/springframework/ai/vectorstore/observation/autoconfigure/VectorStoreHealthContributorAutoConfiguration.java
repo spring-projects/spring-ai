@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -36,18 +37,24 @@ import org.springframework.context.annotation.Bean;
  * Registers a {@link HealthContributor} named {@code vectorStoreHealthContributor} for
  * every {@link VectorStore} bean present in the application context. When there is a
  * single store the contributor is a plain {@link HealthIndicator}; when multiple stores
- * are present a {@link CompositeHealthContributor} is created, keyed by bean name, so
- * each store is individually visible under
- * {@code /actuator/health/vectorStore/<beanName>}.
+ * are present a {@link CompositeHealthContributor} is created, keyed by Spring bean name,
+ * so each store is individually visible under
+ * {@code /actuator/health/vectorStore/<beanName>}. In the composite case each leaf
+ * indicator also reports the store's {@link VectorStore#getName()} as a detail value,
+ * which may differ from the bean name used as the path segment.
  * <p>
  * The contributor is only registered when the {@code vectorStore} health indicator is
  * enabled (controlled via {@code management.health.vectorStore.enabled=true/false},
  * defaulting to {@code true}).
+ * <p>
+ * To override this auto-configuration, register a bean named
+ * {@code vectorStoreHealthContributor}.
  *
  * @author Surya Teja Gorre
  * @since 2.0.0
  */
 @AutoConfiguration
+@AutoConfigureAfter(VectorStoreObservationAutoConfiguration.class)
 @ConditionalOnClass({ VectorStore.class, HealthIndicator.class })
 @ConditionalOnBean(VectorStore.class)
 @ConditionalOnEnabledHealthIndicator("vectorStore")

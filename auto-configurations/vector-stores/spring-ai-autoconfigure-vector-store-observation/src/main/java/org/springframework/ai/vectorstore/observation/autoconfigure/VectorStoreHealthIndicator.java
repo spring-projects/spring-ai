@@ -25,12 +25,23 @@ import org.springframework.util.StringUtils;
 
 /**
  * {@link org.springframework.boot.health.contributor.HealthIndicator} for a
- * {@link VectorStore}. Performs a lightweight similarity search with {@code topK=0} to
- * verify that the store is reachable and responding without retrieving any results.
+ * {@link VectorStore}. Issues a {@code topK=1} similarity search probe to verify the
+ * store is reachable and responding. The single result is discarded.
  * <p>
- * Note: the probe issues a query through the store's configured embedding pipeline. If
- * the underlying embedding model is unavailable, this indicator will report {@code DOWN}
- * even if the vector store itself is healthy.
+ * <strong>Embedding model dependency:</strong> most {@link VectorStore} implementations
+ * route {@code similaritySearch} through the configured embedding pipeline, which means
+ * every health-check poll issues a remote call to the embedding model (OpenAI, Azure
+ * OpenAI, Bedrock, etc.). Consequences:
+ * <ul>
+ * <li>If the embedding model is unavailable or rate-limited this indicator reports
+ * {@code DOWN} even when the vector store itself is healthy.</li>
+ * <li>Each poll incurs an embedding API call that may be billed and counted against
+ * rate-limit quotas. In a multi-replica deployment with frequent Actuator polling, this
+ * generates significant background API traffic. Adjust
+ * {@code management.health.vectorStore.enabled} and the poll interval accordingly.</li>
+ * </ul>
+ * To suppress health checks for a specific store, set
+ * {@code management.health.vectorStore.enabled=false}.
  *
  * @author Surya Teja Gorre
  * @since 2.0.0
@@ -47,7 +58,7 @@ public class VectorStoreHealthIndicator extends AbstractHealthIndicator {
 
 	@Override
 	protected void doHealthCheck(Health.Builder builder) throws Exception {
-		this.vectorStore.similaritySearch(SearchRequest.builder().query("health").topK(0).build());
+		this.vectorStore.similaritySearch(SearchRequest.builder().query("health").topK(1).build());
 		String name = this.vectorStore.getName();
 		builder.up()
 			.withDetail("vectorStore", StringUtils.hasText(name) ? name : this.vectorStore.getClass().getSimpleName());
