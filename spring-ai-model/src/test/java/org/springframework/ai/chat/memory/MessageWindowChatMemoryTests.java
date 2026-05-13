@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -290,6 +291,83 @@ public class MessageWindowChatMemoryTests {
 		assertThat(result).hasSize(2);
 		assertThat(result).containsExactly(new SystemMessage("System instruction 1"),
 				new SystemMessage("System instruction 2"));
+	}
+
+	// --- tool_use / tool_result pair-awareness tests (GH-5940) ---
+
+	@Test
+	void orphanedToolResponseIsDroppedWhenToolUseEvicted() {
+		// window=4, 6 messages → messagesToRemove=2.
+		// Trim drops [u1, assistantWithTool(t1)], leaving toolResponse(t1) as the new
+		// head. dropOrphanedToolResponses must remove it (its tool_use is gone).
+		int limit = 4;
+		MessageWindowChatMemory mem = MessageWindowChatMemory.builder().maxMessages(limit).build();
+		String id = UUID.randomUUID().toString();
+
+		AssistantMessage assistantWithTool = AssistantMessage.builder()
+			.toolCalls(List.of(new AssistantMessage.ToolCall("t1", "function", "tool_a", "{}")))
+			.build();
+		ToolResponseMessage toolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("t1", "tool_a", "result_a")))
+			.build();
+		AssistantMessage done = new AssistantMessage("done");
+
+		// 6 messages with limit=4 → removes 2: [u1, assistantWithTool]
+		mem.add(id, List.of(new UserMessage("u1"), assistantWithTool, toolResponse, done, new UserMessage("u2"),
+				new UserMessage("u3")));
+
+		List<Message> result = mem.get(id);
+
+		assertThat(result).doesNotContain(toolResponse);
+		assertThat(result.get(0)).isNotInstanceOf(ToolResponseMessage.class);
+		assertThat(result).contains(done);
+	}
+
+	@Test
+	void toolPairPreservedWhenBothFitInWindow() {
+		int limit = 5;
+		MessageWindowChatMemory mem = MessageWindowChatMemory.builder().maxMessages(limit).build();
+		String id = UUID.randomUUID().toString();
+
+		AssistantMessage assistantWithTool = AssistantMessage.builder()
+			.toolCalls(List.of(new AssistantMessage.ToolCall("t1", "function", "tool_a", "{}")))
+			.build();
+		ToolResponseMessage toolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("t1", "tool_a", "result_a")))
+			.build();
+
+		mem.add(id, List.of(new UserMessage("u1"), assistantWithTool, toolResponse, new AssistantMessage("done"),
+				new UserMessage("u2")));
+
+		List<Message> result = mem.get(id);
+
+		assertThat(result).hasSize(limit);
+		assertThat(result).contains(assistantWithTool, toolResponse);
+	}
+
+	@Test
+	void systemMessagePreservedWhenOrphanedToolResponseDropped() {
+		int limit = 4;
+		MessageWindowChatMemory mem = MessageWindowChatMemory.builder().maxMessages(limit).build();
+		String id = UUID.randomUUID().toString();
+
+		SystemMessage sys = new SystemMessage("System instruction");
+		AssistantMessage assistantWithTool = AssistantMessage.builder()
+			.toolCalls(List.of(new AssistantMessage.ToolCall("t1", "function", "tool_a", "{}")))
+			.build();
+		ToolResponseMessage toolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("t1", "tool_a", "result_a")))
+			.build();
+
+		// sys is always preserved; 5 total with limit=4 → removes 1 non-system message.
+		// assistantWithTool (first non-system) is dropped → toolResponse becomes orphan.
+		mem.add(id, List.of(sys, assistantWithTool, toolResponse, new AssistantMessage("done"), new UserMessage("u2")));
+
+		List<Message> result = mem.get(id);
+
+		assertThat(result).contains(sys);
+		assertThat(result).doesNotContain(toolResponse);
+		assertThat(result.stream().filter(ToolResponseMessage.class::isInstance).count()).isZero();
 	}
 
 }

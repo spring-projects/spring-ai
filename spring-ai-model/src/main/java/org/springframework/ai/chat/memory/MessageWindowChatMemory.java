@@ -23,6 +23,7 @@ import java.util.Set;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.util.Assert;
 
 /**
@@ -108,7 +109,36 @@ public final class MessageWindowChatMemory implements ChatMemory {
 			}
 		}
 
-		return trimmedMessages;
+		return dropOrphanedToolResponses(trimmedMessages);
+	}
+
+	/**
+	 * Drop any {@link ToolResponseMessage} instances at the head of the non-system
+	 * portion of the list whose paired {@code AssistantMessage} tool-use was evicted by
+	 * the window trim. Leaving such messages causes providers (e.g. Anthropic) to reject
+	 * the request with a 400 because the {@code tool_result} has no matching
+	 * {@code tool_use} in the preceding turn.
+	 */
+	private static List<Message> dropOrphanedToolResponses(List<Message> messages) {
+		// Find where non-system messages begin
+		int firstNonSystem = 0;
+		while (firstNonSystem < messages.size() && messages.get(firstNonSystem) instanceof SystemMessage) {
+			firstNonSystem++;
+		}
+
+		// Advance past any ToolResponseMessages at the head (their tool_use was evicted)
+		int cutFrom = firstNonSystem;
+		while (cutFrom < messages.size() && messages.get(cutFrom) instanceof ToolResponseMessage) {
+			cutFrom++;
+		}
+
+		if (cutFrom == firstNonSystem) {
+			return messages;
+		}
+
+		List<Message> result = new ArrayList<>(messages.subList(0, firstNonSystem));
+		result.addAll(messages.subList(cutFrom, messages.size()));
+		return result;
 	}
 
 	public static Builder builder() {
