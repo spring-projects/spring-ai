@@ -19,6 +19,7 @@ package org.springframework.ai.mcp.server.common.autoconfigure;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServer.StatelessAsyncSpecification;
 import io.modelcontextprotocol.server.McpServer.StatelessSyncSpecification;
@@ -37,9 +38,11 @@ import io.modelcontextprotocol.server.McpStatelessSyncServer;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpStatelessServerTransport;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.AllNestedConditions;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -80,13 +83,16 @@ public class McpServerStatelessAutoConfiguration {
 			ObjectProvider<List<SyncResourceSpecification>> resources,
 			ObjectProvider<List<SyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
-			ObjectProvider<List<SyncCompletionSpecification>> completions, Environment environment) {
+			ObjectProvider<List<SyncCompletionSpecification>> completions, Environment environment,
+			@Qualifier("mcpServerJsonMapper") JsonMapper mcpServerJsonMapper) {
 
 		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
 				serverProperties.getVersion());
 
 		// Create the server with both tool and resource capabilities
-		StatelessSyncSpecification serverBuilder = McpServer.sync(statelessTransport).serverInfo(serverInfo);
+		StatelessSyncSpecification serverBuilder = McpServer.sync(statelessTransport)
+			.serverInfo(serverInfo)
+			.jsonMapper(new JacksonMcpJsonMapper(mcpServerJsonMapper));
 
 		// Tools
 		if (serverProperties.getCapabilities().isTool()) {
@@ -170,13 +176,16 @@ public class McpServerStatelessAutoConfiguration {
 			ObjectProvider<List<AsyncResourceSpecification>> resources,
 			ObjectProvider<List<AsyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<AsyncPromptSpecification>> prompts,
-			ObjectProvider<List<AsyncCompletionSpecification>> completions) {
+			ObjectProvider<List<AsyncCompletionSpecification>> completions,
+			@Qualifier("mcpServerJsonMapper") JsonMapper mcpServerJsonMapper) {
 
 		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
 				serverProperties.getVersion());
 
 		// Create the server with both tool and resource capabilities
-		StatelessAsyncSpecification serverBuilder = McpServer.async(statelessTransport).serverInfo(serverInfo);
+		StatelessAsyncSpecification serverBuilder = McpServer.async(statelessTransport)
+			.serverInfo(serverInfo)
+			.jsonMapper(new JacksonMcpJsonMapper(mcpServerJsonMapper));
 
 		// Tools
 		if (serverProperties.getCapabilities().isTool()) {
