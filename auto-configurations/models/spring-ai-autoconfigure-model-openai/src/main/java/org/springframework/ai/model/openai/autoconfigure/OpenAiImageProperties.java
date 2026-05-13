@@ -35,7 +35,7 @@ public class OpenAiImageProperties extends AbstractOpenAiProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.image";
 
-	public static final String DEFAULT_IMAGE_MODEL = ImageModel.DALL_E_3.toString();
+	public static final String DEFAULT_IMAGE_MODEL = ImageModel.GPT_IMAGE_1_MINI.toString();
 
 	private @Nullable String model = DEFAULT_IMAGE_MODEL;
 
