@@ -280,6 +280,88 @@ class JsonParserTests {
 	}
 
 	@Test
+	void emptyStringToLongThrowsClearException() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("", Long.class)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Cannot convert blank or empty string to numeric type 'Long'");
+	}
+
+	@Test
+	void emptyStringToIntegerThrowsClearException() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("", Integer.class))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Cannot convert blank or empty string to numeric type 'Integer'");
+	}
+
+	@Test
+	void emptyStringToDoubleThrowsClearException() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("", Double.class))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Cannot convert blank or empty string to numeric type 'Double'");
+	}
+
+	@Test
+	void emptyStringToShortThrowsClearException() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("", Short.class)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Cannot convert blank or empty string to numeric type 'Short'");
+	}
+
+	@Test
+	void emptyStringToByteThrowsClearException() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("", Byte.class)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Cannot convert blank or empty string to numeric type 'Byte'");
+	}
+
+	@Test
+	void emptyStringToFloatThrowsClearException() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("", Float.class)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Cannot convert blank or empty string to numeric type 'Float'");
+	}
+
+	@Test
+	void blankStringToLongThrowsClearException() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("   ", Long.class))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Cannot convert blank or empty string to numeric type 'Long'");
+	}
+
+	@Test
+	void blankStringToIntegerThrowsClearException() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("   ", Integer.class))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Cannot convert blank or empty string to numeric type 'Integer'");
+	}
+
+	@Test
+	void primitiveIntTypeThrowsClearException() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("", int.class)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Cannot convert blank or empty string to numeric type 'Integer'");
+	}
+
+	@Test
+	void primitiveLongTypeThrowsClearException() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("", long.class)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Cannot convert blank or empty string to numeric type 'Long'");
+	}
+
+	@Test
+	void emptyStringToStringIsAllowed() {
+		var value = JsonParser.toTypedObject("", String.class);
+		assertThat(value).isEqualTo("");
+	}
+
+	@Test
+	void emptyStringToBooleanReturnsFalse() {
+		var value = JsonParser.toTypedObject("", Boolean.class);
+		assertThat(value).isEqualTo(false);
+	}
+
+	@Test
+	void emptyStringToEnumThrowsIllegalArgument() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("", TestEnum.class))
+			.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
 	void localDateTime() {
 		String input = "2026-04-19T07:12:00";
 		LocalDateTime result = (LocalDateTime) JsonParser.toTypedObject(input, LocalDateTime.class);

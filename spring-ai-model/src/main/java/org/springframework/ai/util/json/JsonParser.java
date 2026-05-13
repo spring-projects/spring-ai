@@ -130,9 +130,20 @@ public final class JsonParser {
 		}
 	}
 
+	// Byte, Short, Integer, Long, Float, Double all throw NumberFormatException on blank
+	// input. Boolean.parseBoolean("") returns false by contract (no exception needed).
+	// Enum.valueOf already throws IllegalArgumentException with a clear message.
+	private static boolean isStrictNumericType(Class<?> javaType) {
+		return javaType == Byte.class || javaType == Short.class || javaType == Integer.class || javaType == Long.class
+				|| javaType == Float.class || javaType == Double.class;
+	}
+
 	/**
 	 * Convert a Java Object to a typed Object. Based on the implementation in
 	 * MethodToolCallback.
+	 * @throws IllegalArgumentException if {@code value} is a blank or empty string and
+	 * {@code type} is one of {@code Byte}, {@code Short}, {@code Integer}, {@code Long},
+	 * {@code Float}, or {@code Double}
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static Object toTypedObject(Object value, Class<?> type) {
@@ -140,6 +151,11 @@ public final class JsonParser {
 		Assert.notNull(type, "type cannot be null");
 
 		var javaType = ClassUtils.resolvePrimitiveIfNecessary(type);
+
+		if (value instanceof String str && str.isBlank() && isStrictNumericType(javaType)) {
+			throw new IllegalArgumentException(
+					"Cannot convert blank or empty string to numeric type '%s'.".formatted(javaType.getSimpleName()));
+		}
 
 		if (javaType == String.class) {
 			return value.toString();
