@@ -268,27 +268,26 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 
 	/**
 	 * Streams all chunks immediately including intermediate tool call responses. Uses
-	 * publish() to multicast the stream for parallel streaming and aggregation.
+	 * ChatClientMessageAggregator to forward chunks while aggregating in parallel.
 	 */
 	private Flux<ChatClientResponse> streamWithToolCallResponses(Flux<ChatClientResponse> responseFlux,
 			AtomicReference<ChatClientResponse> aggregatedResponseRef, ChatClientRequest finalRequest,
 			StreamAdvisorChain streamAdvisorChain, ChatClientRequest originalRequest,
 			ToolCallingChatOptions optionsCopy) {
 
-		return responseFlux.publish(shared -> {
-			// Branch 1: Stream chunks immediately for real-time streaming UX
-			Flux<ChatClientResponse> streamingBranch = new ChatClientMessageAggregator()
-				.aggregateChatClientResponse(shared, aggregatedResponseRef::set);
+		// Branch 1: Stream chunks immediately for real-time streaming UX while
+		// also aggregating the response for tool call detection.
+		Flux<ChatClientResponse> streamingBranch = new ChatClientMessageAggregator()
+			.aggregateChatClientResponse(responseFlux, aggregatedResponseRef::set);
 
-			// Branch 2: After streaming completes, check for tool calls and
-			// potentially recurse.
-			Flux<ChatClientResponse> recursionBranch = Flux
-				.defer(() -> this.handleToolCallRecursion(aggregatedResponseRef.get(), finalRequest, streamAdvisorChain,
-						originalRequest, optionsCopy));
+		// Branch 2: After streaming completes, check for tool calls and
+		// potentially recurse.
+		Flux<ChatClientResponse> recursionBranch = Flux
+			.defer(() -> this.handleToolCallRecursion(aggregatedResponseRef.get(), finalRequest, streamAdvisorChain,
+					originalRequest, optionsCopy));
 
-			// Emit all streaming chunks first, then append any recursive results
-			return streamingBranch.concatWith(recursionBranch);
-		})
+		// Emit all streaming chunks first, then append any recursive results
+		return streamingBranch.concatWith(recursionBranch)
 			.filter(ccr -> this.streamToolCallResponses
 					|| !(ccr.chatResponse() != null && ccr.chatResponse().hasToolCalls()));
 	}

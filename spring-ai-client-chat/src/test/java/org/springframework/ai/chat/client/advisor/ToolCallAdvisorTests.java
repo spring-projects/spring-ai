@@ -18,6 +18,7 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
 import io.micrometer.observation.ObservationRegistry;
@@ -618,6 +619,51 @@ public class ToolCallAdvisorTests {
 		ToolCallAdvisor.Builder<?> builder = ToolCallAdvisor.builder().suppressToolCallStreaming();
 
 		assertThat(builder.isStreamToolCallResponses()).isFalse();
+	}
+
+	@Test
+	void testAdviseStreamWithSourceSignals() {
+		ToolCallAdvisor advisor = ToolCallAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.streamToolCallResponses(true)
+			.build();
+
+		ChatClientRequest request = createMockRequest(true);
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+		AtomicInteger completeSignals = new AtomicInteger();
+		AtomicInteger cancelSignals = new AtomicInteger();
+
+		int[] callCount = { 0 };
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			callCount[0]++;
+			Flux<ChatClientResponse> source = Flux.just(callCount[0] == 1 ? responseWithToolCall : finalResponse);
+			if (callCount[0] == 1) {
+				source = source.doOnComplete(completeSignals::incrementAndGet)
+					.doOnCancel(cancelSignals::incrementAndGet);
+			}
+			return source;
+		});
+
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		List<ChatClientResponse> results = advisor.adviseStream(request, realChain).collectList().block();
+
+		assertThat(results).isNotNull().hasSize(2);
+		assertThat(callCount[0]).isEqualTo(2);
+		assertThat(completeSignals).hasValue(1);
+		assertThat(cancelSignals).as("source should not be cancelled after normal stream completion").hasValue(0);
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
 	}
 
 	@Test
