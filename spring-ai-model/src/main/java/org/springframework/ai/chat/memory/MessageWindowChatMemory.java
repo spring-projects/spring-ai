@@ -17,9 +17,9 @@
 package org.springframework.ai.chat.memory;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -81,10 +81,17 @@ public final class MessageWindowChatMemory implements ChatMemory {
 	private List<Message> process(List<Message> memoryMessages, List<Message> newMessages) {
 		List<Message> processedMessages = new ArrayList<>();
 
-		Set<Message> memoryMessagesSet = new HashSet<>(memoryMessages);
+		// Compare by text only — AbstractMessage.equals() includes metadata, which
+		// persistence stores (Cassandra, JDBC, MongoDB) may enrich on save, causing a
+		// false "new system message" detection that silently wipes existing system
+		// context.
+		Set<String> memorySystemTexts = memoryMessages.stream()
+			.filter(SystemMessage.class::isInstance)
+			.map(Message::getText)
+			.collect(Collectors.toSet());
 		boolean hasNewSystemMessage = newMessages.stream()
 			.filter(SystemMessage.class::isInstance)
-			.anyMatch(message -> !memoryMessagesSet.contains(message));
+			.anyMatch(message -> !memorySystemTexts.contains(message.getText()));
 
 		memoryMessages.stream()
 			.filter(message -> !(hasNewSystemMessage && message instanceof SystemMessage))
@@ -118,6 +125,11 @@ public final class MessageWindowChatMemory implements ChatMemory {
 	 * the window trim. Leaving such messages causes providers (e.g. Anthropic) to reject
 	 * the request with a 400 because the {@code tool_result} has no matching
 	 * {@code tool_use} in the preceding turn.
+	 * <p>
+	 * <strong>Assumption:</strong> this method is only correct under FIFO (head-first)
+	 * eviction. If a future eviction strategy removes an {@code AssistantMessage} that
+	 * has tool calls from a non-leading position, its corresponding
+	 * {@link ToolResponseMessage} will not be detected as an orphan by this scan.
 	 */
 	private static List<Message> dropOrphanedToolResponses(List<Message> messages) {
 		// Find where non-system messages begin

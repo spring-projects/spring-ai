@@ -370,4 +370,61 @@ public class MessageWindowChatMemoryTests {
 		assertThat(result.stream().filter(ToolResponseMessage.class::isInstance).count()).isZero();
 	}
 
+	@Test
+	void loneOrphanedToolResponseWithMaxMessagesOneResultsInEmptyHistory() {
+		// A ToolResponseMessage stored as the only message (maxMessages=1) whose
+		// AssistantMessage(toolCall) was evicted in the same cycle should be dropped,
+		// leaving an empty history rather than sending an invalid lone tool_result to
+		// the provider.
+		MessageWindowChatMemory mem = MessageWindowChatMemory.builder().maxMessages(1).build();
+		String id = UUID.randomUUID().toString();
+
+		AssistantMessage assistantWithTool = AssistantMessage.builder()
+			.toolCalls(List.of(new AssistantMessage.ToolCall("t1", "function", "tool_a", "{}")))
+			.build();
+		ToolResponseMessage toolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("t1", "tool_a", "result_a")))
+			.build();
+
+		// 2 messages, limit=1 → evicts assistantWithTool, toolResponse becomes lone
+		// orphan
+		mem.add(id, List.of(assistantWithTool, toolResponse));
+
+		List<Message> result = mem.get(id);
+
+		assertThat(result).isEmpty();
+	}
+
+	@Test
+	void systemMessageMetadataDifferenceDoesNotTriggerFalseNewSystemMessageDetection() {
+		// AbstractMessage.equals() includes metadata. A persistence store that enriches
+		// messages on save (e.g. JDBC adding a timestamp) returns a SystemMessage with
+		// extra metadata on reload. Without text-based comparison, every resumed
+		// conversation would incorrectly wipe all SystemMessages.
+		int limit = 5;
+		MessageWindowChatMemory mem = MessageWindowChatMemory.builder().maxMessages(limit).build();
+		String id = UUID.randomUUID().toString();
+
+		mem.add(id, List.of(new SystemMessage("System instruction"), new UserMessage("u1")));
+
+		// Simulate a persistence round-trip: reload the system message with extra
+		// metadata
+		SystemMessage reloadedWithMetadata = SystemMessage.builder()
+			.text("System instruction")
+			.metadata(java.util.Map.of("persisted_at", "2025-01-01T00:00:00Z"))
+			.build();
+		mem.add(id, List.of(reloadedWithMetadata, new UserMessage("u2")));
+
+		List<Message> result = mem.get(id);
+
+		// With text-based detection the reloaded SM has the same text → not treated as
+		// "new", so the original SM is NOT wiped. Both messages are retained (the
+		// original
+		// and the reloaded one) rather than the old code silently discarding the
+		// original.
+		assertThat(result.stream()
+			.filter(SystemMessage.class::isInstance)
+			.anyMatch(m -> "System instruction".equals(m.getText()))).isTrue();
+	}
+
 }
