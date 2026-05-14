@@ -26,6 +26,7 @@ import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema.BlobResourceContents;
+import io.modelcontextprotocol.spec.McpSchema.ErrorCodes;
 import io.modelcontextprotocol.spec.McpSchema.ReadResourceRequest;
 import io.modelcontextprotocol.spec.McpSchema.ReadResourceResult;
 import io.modelcontextprotocol.spec.McpSchema.ResourceContents;
@@ -829,9 +830,10 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 		McpTransportContext context = mock(McpTransportContext.class);
 		ReadResourceRequest request = new ReadResourceRequest("failing-resource://resource");
 
-		// The new error handling should throw McpError instead of custom exceptions
+		// The new error handling should throw McpError with INTERNAL_ERROR code
 		assertThatThrownBy(() -> callback.apply(context, request)).isInstanceOf(McpError.class)
-			.hasMessageContaining("Error invoking resource method");
+			.hasMessageContaining("Error invoking resource method")
+			.satisfies(ex -> assertThat(((McpError) ex).getJsonRpcError().code()).isEqualTo(ErrorCodes.INTERNAL_ERROR));
 	}
 
 	@Test

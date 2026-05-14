@@ -26,6 +26,7 @@ import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema.BlobResourceContents;
+import io.modelcontextprotocol.spec.McpSchema.ErrorCodes;
 import io.modelcontextprotocol.spec.McpSchema.ReadResourceRequest;
 import io.modelcontextprotocol.spec.McpSchema.ReadResourceResult;
 import io.modelcontextprotocol.spec.McpSchema.ResourceContents;
@@ -559,7 +560,8 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 
 		StepVerifier.create(resultMono)
 			.expectErrorMatches(throwable -> throwable instanceof McpError
-					&& throwable.getMessage().contains("Error invoking resource method"))
+					&& throwable.getMessage().contains("Error invoking resource method")
+					&& ((McpError) throwable).getJsonRpcError().code() == ErrorCodes.INTERNAL_ERROR)
 			.verify();
 	}
 
@@ -860,10 +862,11 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 
 		Mono<ReadResourceResult> resultMono = callback.apply(context, request);
 
-		// The new error handling should throw McpError instead of custom exceptions
+		// The new error handling should throw McpError with INTERNAL_ERROR code
 		StepVerifier.create(resultMono)
 			.expectErrorMatches(throwable -> throwable instanceof McpError
-					&& throwable.getMessage().contains("Error invoking resource method"))
+					&& throwable.getMessage().contains("Error invoking resource method")
+					&& ((McpError) throwable).getJsonRpcError().code() == ErrorCodes.INTERNAL_ERROR)
 			.verify();
 	}
 

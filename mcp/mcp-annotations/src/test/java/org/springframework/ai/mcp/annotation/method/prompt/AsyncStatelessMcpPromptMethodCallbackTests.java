@@ -26,6 +26,7 @@ import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpError;
+import io.modelcontextprotocol.spec.McpSchema.ErrorCodes;
 import io.modelcontextprotocol.spec.McpSchema.GetPromptRequest;
 import io.modelcontextprotocol.spec.McpSchema.GetPromptResult;
 import io.modelcontextprotocol.spec.McpSchema.Prompt;
@@ -733,10 +734,11 @@ public class AsyncStatelessMcpPromptMethodCallbackTests {
 
 		Mono<GetPromptResult> resultMono = callback.apply(context, request);
 
-		// The new error handling should throw McpError instead of custom exceptions
+		// The new error handling should throw McpError with INTERNAL_ERROR code
 		StepVerifier.create(resultMono)
 			.expectErrorMatches(throwable -> throwable instanceof McpError
-					&& throwable.getMessage().contains("Error invoking prompt method"))
+					&& throwable.getMessage().contains("Error invoking prompt method")
+					&& ((McpError) throwable).getJsonRpcError().code() == ErrorCodes.INTERNAL_ERROR)
 			.verify();
 	}
 
