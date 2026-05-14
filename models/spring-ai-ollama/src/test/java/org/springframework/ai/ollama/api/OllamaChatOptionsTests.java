@@ -358,7 +358,7 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 	}
 
 	/**
-	 * Tests that setOutputSchema() properly handles JSON Schema strings.
+	 * Tests that outputSchema() properly handles JSON Schema strings.
 	 */
 	@Test
 	void testSetOutputSchemaWithValidJsonSchema() {

@@ -1136,7 +1136,7 @@ ChatResponse response = chatModel.call(new Prompt("Tell me about France.", optio
 
 === StructuredOutputChatOptions Interface
 
-`AnthropicChatOptions` implements the `StructuredOutputChatOptions` interface, which provides portable `getOutputSchema()` and `setOutputSchema(String)` methods. This allows structured output to work with Spring AI's generic structured output infrastructure.
+`AnthropicChatOptions` implements the `StructuredOutputChatOptions` interface, which provides portable `getOutputSchema()` method. This allows structured output to work with Spring AI's generic structured output infrastructure.
 
 == Service Tier
 
