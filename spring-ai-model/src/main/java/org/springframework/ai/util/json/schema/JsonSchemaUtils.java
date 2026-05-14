@@ -16,7 +16,15 @@
 
 package org.springframework.ai.util.json.schema;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.StringUtils;
@@ -31,6 +39,101 @@ import org.springframework.util.StringUtils;
 public final class JsonSchemaUtils {
 
 	private JsonSchemaUtils() {
+	}
+
+	/**
+	 * Moves any {@code $defs} block found on {@code subSchema} into the {@code $defs}
+	 * block of {@code rootSchema}, creating one on the root if needed. On key collisions
+	 * the existing root entry is reused when the two definitions are structurally equal;
+	 * otherwise the incoming entry is renamed with a numeric suffix and every
+	 * {@code "#/$defs/<oldKey>"} reference inside the inlined sub-schema and inside every
+	 * definition inserted by this call is rewritten to point at the new key.
+	 * <p>
+	 * This is needed because victools generates self-contained schemas where
+	 * {@code $defs} and the {@code $ref} pointers into them are rooted at the sub-schema.
+	 * Inlining the sub-schema under {@code properties.<paramName>} re-parents existing
+	 * {@code "#/$defs/<Name>"} refs to the outer root, leaving them unresolvable unless
+	 * {@code $defs} is hoisted first.
+	 * @param rootSchema the wrapper schema that will receive the hoisted definitions
+	 * @param subSchema the per-parameter sub-schema whose {@code $defs} block is consumed
+	 */
+	public static void hoistDefsToRoot(ObjectNode rootSchema, ObjectNode subSchema) {
+		JsonNode nestedDefs = subSchema.remove("$defs");
+		if (nestedDefs == null || !nestedDefs.isObject()) {
+			return;
+		}
+		ObjectNode rootDefs = rootSchema.has("$defs") ? (ObjectNode) rootSchema.get("$defs")
+				: rootSchema.putObject("$defs");
+		// Collect all keys from this batch upfront so uniqueDefsKey can avoid claiming
+		// a suffix that another pending entry in the same batch already occupies.
+		Set<String> batchKeys = new HashSet<>();
+		((ObjectNode) nestedDefs).properties().forEach(e -> batchKeys.add(e.getKey()));
+		Map<String, String> renames = new LinkedHashMap<>();
+		List<String> insertedKeys = new ArrayList<>();
+		((ObjectNode) nestedDefs).properties().forEach(entry -> {
+			String key = entry.getKey();
+			JsonNode value = entry.getValue();
+			if (!rootDefs.has(key)) {
+				rootDefs.set(key, value);
+				insertedKeys.add(key);
+				return;
+			}
+			if (rootDefs.get(key).equals(value)) {
+				return;
+			}
+			String renamed = uniqueDefsKey(rootDefs, key, batchKeys);
+			rootDefs.set(renamed, value);
+			renames.put(key, renamed);
+			insertedKeys.add(renamed);
+		});
+		if (renames.isEmpty()) {
+			return;
+		}
+		rewriteDefsRefs(subSchema, renames);
+		// Only rewrite $refs inside the definitions inserted by THIS call. Entries added
+		// to rootDefs by earlier hoistDefsToRoot calls have already had their own renames
+		// applied; rewriting them again with the current batch's rename map would corrupt
+		// any $refs that legitimately point at the original (pre-rename) keys.
+		for (String insertedKey : insertedKeys) {
+			rewriteDefsRefs(rootDefs.get(insertedKey), renames);
+		}
+	}
+
+	private static String uniqueDefsKey(ObjectNode rootDefs, String base, Set<String> batchKeys) {
+		int suffix = 2;
+		String candidate;
+		do {
+			candidate = base + "_" + suffix++;
+		}
+		while (rootDefs.has(candidate) || batchKeys.contains(candidate));
+		return candidate;
+	}
+
+	private static void rewriteDefsRefs(JsonNode node, Map<String, String> renames) {
+		if (node == null) {
+			return;
+		}
+		if (node.isObject()) {
+			ObjectNode object = (ObjectNode) node;
+			JsonNode refNode = object.get("$ref");
+			if (refNode != null && refNode.isTextual()) {
+				String ref = refNode.asText();
+				String prefix = "#/$defs/";
+				if (ref.startsWith(prefix)) {
+					String rest = ref.substring(prefix.length());
+					int slash = rest.indexOf('/');
+					String key = slash < 0 ? rest : rest.substring(0, slash);
+					String renamed = renames.get(key);
+					if (renamed != null) {
+						object.put("$ref", prefix + renamed + (slash < 0 ? "" : rest.substring(slash)));
+					}
+				}
+			}
+			object.properties().forEach(e -> rewriteDefsRefs(e.getValue(), renames));
+		}
+		else if (node.isArray()) {
+			node.forEach(child -> rewriteDefsRefs(child, renames));
+		}
 	}
 
 	/**
