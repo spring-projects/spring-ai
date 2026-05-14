@@ -130,6 +130,7 @@ public final class JsonSchemaGenerator {
 		ObjectNode schema = JsonParser.getJsonMapper().createObjectNode();
 		schema.put("$schema", SchemaVersion.DRAFT_2020_12.getIdentifier());
 		schema.put("type", "object");
+		ObjectNode defs = schema.putObject("$defs");
 
 		ObjectNode properties = schema.putObject("properties");
 		List<String> required = new ArrayList<>();
@@ -149,6 +150,12 @@ public final class JsonSchemaGenerator {
 				required.add(parameterName);
 			}
 			ObjectNode parameterNode = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
+			// victools generates self-contained schemas where $defs and the $ref
+			// pointers into them are rooted at the sub-schema. Inlining the
+			// sub-schema under properties.<paramName> re-parents existing
+			// "#/$defs/<Name>" refs to the outer root, leaving them unresolvable.
+			// Hoist $defs to the outer root so those refs resolve again.
+			JsonSchemaUtils.hoistDefsToRoot(schema, parameterNode);
 			// Remove OpenAPI format as some LLMs (like Mistral) don't handle them.
 			parameterNode.remove("format");
 			String parameterDescription = getMethodParameterDescription(method, i);
@@ -156,6 +163,10 @@ public final class JsonSchemaGenerator {
 				parameterNode.put("description", parameterDescription);
 			}
 			properties.set(parameterName, parameterNode);
+		}
+
+		if (defs.isEmpty()) {
+			schema.remove("$defs");
 		}
 
 		var requiredArray = schema.putArray("required");
