@@ -54,6 +54,7 @@ import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 import org.springframework.ai.model.KotlinModule;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator.SchemaOption;
+import org.springframework.ai.util.json.schema.JsonSchemaUtils;
 import org.springframework.core.KotlinDetector;
 import org.springframework.core.Nullness;
 import org.springframework.util.ClassUtils;
@@ -145,6 +146,7 @@ public final class McpJsonSchemaGenerator {
 		ObjectNode schema = JsonParser.getJsonMapper().createObjectNode();
 		schema.put("$schema", SchemaVersion.DRAFT_2020_12.getIdentifier());
 		schema.put("type", "object");
+		ObjectNode defs = schema.putObject("$defs");
 
 		ObjectNode properties = schema.putObject("properties");
 		List<String> required = new ArrayList<>();
@@ -179,11 +181,21 @@ public final class McpJsonSchemaGenerator {
 				required.add(parameterName);
 			}
 			ObjectNode parameterNode = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
+			// victools generates self-contained schemas where $defs and the $ref
+			// pointers into them are rooted at the sub-schema. Inlining the
+			// sub-schema under properties.<paramName> re-parents existing
+			// "#/$defs/<Name>" refs to the outer root, leaving them unresolvable.
+			// Hoist $defs to the outer root so those refs resolve again.
+			JsonSchemaUtils.hoistDefsToRoot(schema, parameterNode);
 			String parameterDescription = getMethodParameterDescription(method, i);
 			if (Utils.hasText(parameterDescription)) {
 				parameterNode.put("description", parameterDescription);
 			}
 			properties.set(parameterName, parameterNode);
+		}
+
+		if (defs.isEmpty()) {
+			schema.remove("$defs");
 		}
 
 		var requiredArray = schema.putArray("required");
