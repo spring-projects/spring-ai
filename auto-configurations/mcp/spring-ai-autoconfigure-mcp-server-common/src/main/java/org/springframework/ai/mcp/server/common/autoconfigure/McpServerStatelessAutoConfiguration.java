@@ -48,6 +48,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 import org.springframework.core.log.LogAccessor;
 import org.springframework.util.CollectionUtils;
@@ -72,6 +73,7 @@ public class McpServerStatelessAutoConfiguration {
 	}
 
 	@Bean
+	@Lazy(false)
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
 	public McpStatelessSyncServer mcpStatelessSyncServer(McpStatelessServerTransport statelessTransport,
@@ -163,6 +165,7 @@ public class McpServerStatelessAutoConfiguration {
 	}
 
 	@Bean
+	@Lazy(false)
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	public McpStatelessAsyncServer mcpStatelessAsyncServer(McpStatelessServerTransport statelessTransport,
 			McpSchema.ServerCapabilities.Builder capabilitiesBuilder, McpServerProperties serverProperties,
