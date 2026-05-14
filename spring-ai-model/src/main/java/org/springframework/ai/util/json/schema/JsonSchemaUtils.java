@@ -18,6 +18,7 @@ package org.springframework.ai.util.json.schema;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -188,23 +189,11 @@ public final class JsonSchemaUtils {
 
 		Map<String, Object> schemaMap = jsonHelper.fromJsonToMap(inputSchema);
 
-		if (schemaMap.isEmpty()) {
-			// Create a minimal valid schema
-			schemaMap = new java.util.HashMap<>();
-			schemaMap.put("type", "object");
-			schemaMap.put("properties", new java.util.HashMap<>());
-			return jsonHelper.toJson(schemaMap);
+		if (schemaMap == null || schemaMap.isEmpty()) {
+			schemaMap = new HashMap<>();
 		}
 
-		// Ensure "type" field exists
-		if (!schemaMap.containsKey("type")) {
-			schemaMap.put("type", "object");
-		}
-
-		// Ensure "properties" field exists for object types
-		if ("object".equals(schemaMap.get("type")) && !schemaMap.containsKey("properties")) {
-			schemaMap.put("properties", new java.util.HashMap<>());
-		}
+		normalizeObjectSchema(schemaMap);
 
 		return jsonHelper.toJson(schemaMap);
 	}
@@ -227,6 +216,42 @@ public final class JsonSchemaUtils {
 		}
 
 		return node;
+	}
+
+	private static void normalizeObjectSchema(Map<String, Object> schemaMap) {
+		if (!schemaMap.containsKey("type")) {
+			schemaMap.put("type", "object");
+		}
+
+		if ("object".equals(schemaMap.get("type"))) {
+			schemaMap.computeIfAbsent("properties", key -> new HashMap<>());
+			schemaMap.computeIfAbsent("required", key -> List.of());
+		}
+
+		normalizeSchemaMapValues(schemaMap.get("properties"));
+		normalizeSchemaNode(schemaMap.get("items"));
+		normalizeSchemaMapValues(schemaMap.get("$defs"));
+		normalizeSchemaMapValues(schemaMap.get("definitions"));
+		normalizeSchemaNode(schemaMap.get("additionalProperties"));
+		normalizeSchemaNode(schemaMap.get("allOf"));
+		normalizeSchemaNode(schemaMap.get("anyOf"));
+		normalizeSchemaNode(schemaMap.get("oneOf"));
+	}
+
+	@SuppressWarnings("unchecked")
+	private static void normalizeSchemaNode(@Nullable Object schemaNode) {
+		if (schemaNode instanceof Map<?, ?> schemaMap) {
+			normalizeObjectSchema((Map<String, Object>) schemaMap);
+		}
+		else if (schemaNode instanceof Iterable<?> schemaNodes) {
+			schemaNodes.forEach(JsonSchemaUtils::normalizeSchemaNode);
+		}
+	}
+
+	private static void normalizeSchemaMapValues(@Nullable Object schemaMapNode) {
+		if (schemaMapNode instanceof Map<?, ?> schemaMap) {
+			schemaMap.values().forEach(JsonSchemaUtils::normalizeSchemaNode);
+		}
 	}
 
 }
