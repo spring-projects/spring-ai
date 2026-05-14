@@ -694,6 +694,110 @@ class JsonSchemaGeneratorTests {
 		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
 	}
 
+	// gh-5888: when a method parameter type transitively contains a recursive type,
+	// victools emits $defs nested inside the parameter sub-schema while $ref values
+	// remain root-relative ("#/$defs/<Name>"). Inlining the sub-schema under
+	// properties.<paramName> would otherwise leave those $refs unresolvable.
+	// The generator must hoist $defs to the outer schema root.
+	@Test
+	void generateSchemaForMethodWithTransitivelyRecursiveParameterTypeHoistsDefs() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("searchBooksMethod", SearchRequest.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		JsonNode schemaNode = JsonParser.fromJson(schema, JsonNode.class);
+
+		assertThat(schemaNode.has("$defs")).as("$defs must be hoisted to the outer schema root").isTrue();
+		assertThat(schemaNode.get("$defs").has("RecursiveFilter")).isTrue();
+		assertThat(schemaNode.at("/properties/request").has("$defs"))
+			.as("$defs must not remain nested inside the parameter sub-schema")
+			.isFalse();
+		assertThat(schemaNode.at("/properties/request/properties/filters/items/$ref").asText())
+			.isEqualTo("#/$defs/RecursiveFilter");
+		assertThat(schemaNode.at("/$defs/RecursiveFilter/properties/filters/items/$ref").asText())
+			.isEqualTo("#/$defs/RecursiveFilter");
+	}
+
+	// gh-5888: when two parameters share the same recursive type, the two
+	// generated $defs entries collide on an identical key and value. The hoist
+	// must reuse the single root entry; both parameters' $refs continue to
+	// resolve to it.
+	@Test
+	void generateSchemaForMethodReusesRootDefsWhenColliding$defsValuesAreEqual() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("sameOuterTwoParamsMethod", SearchRequest.class,
+				SearchRequest.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		JsonNode schemaNode = JsonParser.fromJson(schema, JsonNode.class);
+
+		assertThat(schemaNode.at("/$defs").size()).isEqualTo(1);
+		assertThat(schemaNode.at("/$defs").has("RecursiveFilter")).isTrue();
+		assertThat(schemaNode.at("/properties/a/properties/filters/items/$ref").asText())
+			.isEqualTo("#/$defs/RecursiveFilter");
+		assertThat(schemaNode.at("/properties/b/properties/filters/items/$ref").asText())
+			.isEqualTo("#/$defs/RecursiveFilter");
+	}
+
+	// gh-5888: when two parameters carry different recursive types that share
+	// the same simple class name, victools (with Option.PLAIN_DEFINITION_KEYS)
+	// emits the same $defs key for both. First-wins would silently drop the
+	// second definition and leave its $ref pointing at the first definition.
+	// The hoist must rename the colliding entry and rewrite the inlined
+	// sub-schema's $refs to point at the new key.
+	@Test
+	void generateSchemaForMethodRenames$defsAndRewritesRefsOnSimpleNameCollision() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("collidingSimpleNameMethod", OuterA.SearchRequest.class,
+				OuterB.SearchRequest.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		JsonNode schemaNode = JsonParser.fromJson(schema, JsonNode.class);
+
+		assertThat(schemaNode.at("/$defs/Filter").has("properties")).isTrue();
+		assertThat(schemaNode.at("/$defs/Filter_2").has("properties")).isTrue();
+		assertThat(schemaNode.at("/$defs/Filter/properties").has("label"))
+			.as("first colliding entry retains OuterA.Filter shape (label field)")
+			.isTrue();
+		assertThat(schemaNode.at("/$defs/Filter_2/properties").has("code"))
+			.as("second colliding entry retains OuterB.Filter shape (code field)")
+			.isTrue();
+		assertThat(schemaNode.at("/properties/a/properties/filters/items/$ref").asText()).isEqualTo("#/$defs/Filter");
+		assertThat(schemaNode.at("/properties/b/properties/filters/items/$ref").asText())
+			.as("second parameter's $ref must be rewritten to the renamed entry")
+			.isEqualTo("#/$defs/Filter_2");
+		assertThat(schemaNode.at("/$defs/Filter/properties/children/items/$ref").asText()).isEqualTo("#/$defs/Filter");
+		assertThat(schemaNode.at("/$defs/Filter_2/properties/children/items/$ref").asText())
+			.as("self-reference inside the renamed entry must follow the rename")
+			.isEqualTo("#/$defs/Filter_2");
+	}
+
+	// gh-5888: when a sub-schema brings in several $defs entries and one of them
+	// collides while a peer entry references the colliding key, the peer's $ref
+	// must be rewritten too — otherwise the peer would point at the existing
+	// root entry instead of the renamed one.
+	@Test
+	void generateSchemaForMethodRewritesPeerDefinitionRefsAfterRename() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("peerReferenceMethod", PeerA.SearchRequest.class,
+				PeerB.SearchRequest.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		JsonNode schemaNode = JsonParser.fromJson(schema, JsonNode.class);
+
+		assertThat(schemaNode.at("/$defs/Filter/properties").has("label")).as("first definition keeps PeerA shape")
+			.isTrue();
+		assertThat(schemaNode.at("/$defs/Filter_2/properties").has("code"))
+			.as("colliding definition is renamed with PeerB shape")
+			.isTrue();
+		assertThat(schemaNode.at("/$defs/Wrapper").has("properties")).isTrue();
+		assertThat(schemaNode.at("/$defs/Wrapper/properties/filters/items/$ref").asText())
+			.as("peer Wrapper's $ref to the colliding name must be rewritten to the renamed entry")
+			.isEqualTo("#/$defs/Filter_2");
+		assertThat(schemaNode.at("/$defs/Wrapper/properties/nested/items/$ref").asText())
+			.as("peer Wrapper's self-reference must be left alone")
+			.isEqualTo("#/$defs/Wrapper");
+		assertThat(schemaNode.at("/$defs/Filter_2/properties/children/items/$ref").asText())
+			.as("renamed entry's self-reference must follow the rename")
+			.isEqualTo("#/$defs/Filter_2");
+	}
+
 	@Test
 	void throwExceptionWhenTypeIsNull() {
 		assertThatThrownBy(() -> JsonSchemaGenerator.generateForType(null)).isInstanceOf(IllegalArgumentException.class)
@@ -737,6 +841,67 @@ class JsonSchemaGeneratorTests {
 		}
 
 		public void contextMethod(String deliveryStatus, LocalDateTime expectedDelivery, ToolContext toolContext) {
+		}
+
+		public void searchBooksMethod(SearchRequest request) {
+		}
+
+		public void sameOuterTwoParamsMethod(SearchRequest a, SearchRequest b) {
+		}
+
+		public void collidingSimpleNameMethod(OuterA.SearchRequest a, OuterB.SearchRequest b) {
+		}
+
+		public void peerReferenceMethod(PeerA.SearchRequest a, PeerB.SearchRequest b) {
+		}
+
+	}
+
+	record RecursiveFilter(String field, String operator, List<RecursiveFilter> filters) {
+	}
+
+	record SearchRequest(List<RecursiveFilter> filters, int limit) {
+	}
+
+	static class OuterA {
+
+		record Filter(String label, List<Filter> children) {
+		}
+
+		record SearchRequest(List<Filter> filters, int limit) {
+		}
+
+	}
+
+	static class OuterB {
+
+		record Filter(String code, List<Filter> children) {
+		}
+
+		record SearchRequest(List<Filter> filters, int limit) {
+		}
+
+	}
+
+	static class PeerA {
+
+		record Filter(String label, List<Filter> children) {
+		}
+
+		record SearchRequest(List<Filter> filters) {
+		}
+
+	}
+
+	static class PeerB {
+
+		record Filter(String code, List<Filter> children) {
+		}
+
+		record Wrapper(List<Filter> filters, List<Wrapper> nested) {
+		}
+
+		record SearchRequest(Wrapper wrapper) {
 		}
 
 	}

@@ -20,7 +20,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -148,6 +150,12 @@ public final class JsonSchemaGenerator {
 				required.add(parameterName);
 			}
 			ObjectNode parameterNode = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
+			// victools generates self-contained schemas where $defs and the $ref
+			// pointers into them are rooted at the sub-schema. Inlining the
+			// sub-schema under properties.<paramName> re-parents existing
+			// "#/$defs/<Name>" refs to the outer root, leaving them unresolvable.
+			// Hoist $defs to the outer root so those refs resolve again.
+			hoistDefsToRoot(schema, parameterNode);
 			// Remove OpenAPI format as some LLMs (like Mistral) don't handle them.
 			parameterNode.remove("format");
 			String parameterDescription = getMethodParameterDescription(method, i);
@@ -176,6 +184,83 @@ public final class JsonSchemaGenerator {
 		}
 		processSchemaOptions(schemaOptions, schema);
 		return schema.toPrettyString();
+	}
+
+	/**
+	 * Moves any {@code $defs} block found on {@code subSchema} into the {@code $defs}
+	 * block of {@code rootSchema}, creating one on the root if needed. On key collisions
+	 * the existing root entry is reused when the two definitions are structurally equal;
+	 * otherwise the incoming entry is renamed with a numeric suffix and every
+	 * {@code "#/$defs/<oldKey>"} reference in the inlined sub-schema and in every
+	 * definition inserted by this hoist call is rewritten to point at the new key.
+	 */
+	private static void hoistDefsToRoot(ObjectNode rootSchema, ObjectNode subSchema) {
+		JsonNode nestedDefs = subSchema.remove("$defs");
+		if (nestedDefs == null || !nestedDefs.isObject()) {
+			return;
+		}
+		ObjectNode rootDefs = rootSchema.has("$defs") ? (ObjectNode) rootSchema.get("$defs")
+				: rootSchema.putObject("$defs");
+		Map<String, String> renames = new LinkedHashMap<>();
+		List<String> insertedKeys = new ArrayList<>();
+		((ObjectNode) nestedDefs).properties().forEach(entry -> {
+			String key = entry.getKey();
+			JsonNode value = entry.getValue();
+			if (!rootDefs.has(key)) {
+				rootDefs.set(key, value);
+				insertedKeys.add(key);
+				return;
+			}
+			if (rootDefs.get(key).equals(value)) {
+				return;
+			}
+			String renamed = uniqueDefsKey(rootDefs, key);
+			rootDefs.set(renamed, value);
+			renames.put(key, renamed);
+			insertedKeys.add(renamed);
+		});
+		if (renames.isEmpty()) {
+			return;
+		}
+		rewriteDefsRefs(subSchema, renames);
+		for (String insertedKey : insertedKeys) {
+			rewriteDefsRefs(rootDefs.get(insertedKey), renames);
+		}
+	}
+
+	private static String uniqueDefsKey(ObjectNode rootDefs, String base) {
+		int suffix = 2;
+		while (rootDefs.has(base + "_" + suffix)) {
+			suffix++;
+		}
+		return base + "_" + suffix;
+	}
+
+	private static void rewriteDefsRefs(JsonNode node, Map<String, String> renames) {
+		if (node == null) {
+			return;
+		}
+		if (node.isObject()) {
+			ObjectNode object = (ObjectNode) node;
+			JsonNode refNode = object.get("$ref");
+			if (refNode != null && refNode.isTextual()) {
+				String ref = refNode.asText();
+				String prefix = "#/$defs/";
+				if (ref.startsWith(prefix)) {
+					String rest = ref.substring(prefix.length());
+					int slash = rest.indexOf('/');
+					String key = slash < 0 ? rest : rest.substring(0, slash);
+					String renamed = renames.get(key);
+					if (renamed != null) {
+						object.put("$ref", prefix + renamed + (slash < 0 ? "" : rest.substring(slash)));
+					}
+				}
+			}
+			object.properties().forEach(entry -> rewriteDefsRefs(entry.getValue(), renames));
+		}
+		else if (node.isArray()) {
+			node.forEach(child -> rewriteDefsRefs(child, renames));
+		}
 	}
 
 	private static void processSchemaOptions(SchemaOption[] schemaOptions, ObjectNode schema) {
