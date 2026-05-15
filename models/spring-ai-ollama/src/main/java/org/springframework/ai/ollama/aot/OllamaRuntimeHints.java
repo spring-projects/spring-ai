@@ -18,6 +18,7 @@ package org.springframework.ai.ollama.aot;
 
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.ai.ollama.api.ThinkOption;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -40,6 +41,8 @@ public class OllamaRuntimeHints implements RuntimeHintsRegistrar {
 		for (var tr : findJsonAnnotatedClassesInPackage("org.springframework.ai.ollama")) {
 			hints.reflection().registerType(tr, mcs);
 		}
+		hints.reflection().registerType(ThinkOption.ThinkOptionDeserializer.class, mcs);
+		hints.reflection().registerType(ThinkOption.ThinkOptionSerializer.class, mcs);
 	}
 
 }
