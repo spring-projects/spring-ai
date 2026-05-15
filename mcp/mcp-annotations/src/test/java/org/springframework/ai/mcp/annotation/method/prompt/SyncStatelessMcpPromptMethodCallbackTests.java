@@ -26,6 +26,7 @@ import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpError;
+import io.modelcontextprotocol.spec.McpSchema.ErrorCodes;
 import io.modelcontextprotocol.spec.McpSchema.GetPromptRequest;
 import io.modelcontextprotocol.spec.McpSchema.GetPromptResult;
 import io.modelcontextprotocol.spec.McpSchema.Prompt;
@@ -545,9 +546,10 @@ public class SyncStatelessMcpPromptMethodCallbackTests {
 		args.put("name", "John");
 		GetPromptRequest request = new GetPromptRequest("failing-prompt", args);
 
-		// The new error handling should throw McpError instead of the old exception type
+		// The new error handling should throw McpError with INTERNAL_ERROR code
 		assertThatThrownBy(() -> callback.apply(context, request)).isInstanceOf(McpError.class)
-			.hasMessageContaining("Error invoking prompt method");
+			.hasMessageContaining("Error invoking prompt method")
+			.satisfies(ex -> assertThat(((McpError) ex).getJsonRpcError().code()).isEqualTo(ErrorCodes.INTERNAL_ERROR));
 	}
 
 	@Test
