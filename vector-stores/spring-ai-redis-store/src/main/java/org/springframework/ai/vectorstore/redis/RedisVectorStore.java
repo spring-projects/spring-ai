@@ -28,9 +28,26 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.Pipeline;
+import redis.clients.jedis.json.Path2;
+import redis.clients.jedis.search.FTCreateParams;
+import redis.clients.jedis.search.IndexDataType;
+import redis.clients.jedis.search.Query;
+import redis.clients.jedis.search.RediSearchUtil;
+import redis.clients.jedis.search.Schema.FieldType;
+import redis.clients.jedis.search.SearchResult;
+import redis.clients.jedis.search.schemafields.NumericField;
+import redis.clients.jedis.search.schemafields.SchemaField;
+import redis.clients.jedis.search.schemafields.TagField;
+import redis.clients.jedis.search.schemafields.TextField;
+import redis.clients.jedis.search.schemafields.VectorField;
+import redis.clients.jedis.search.schemafields.VectorField.VectorAlgorithm;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -47,21 +64,6 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-import redis.clients.jedis.JedisPooled;
-import redis.clients.jedis.Pipeline;
-import redis.clients.jedis.json.Path2;
-import redis.clients.jedis.search.FTCreateParams;
-import redis.clients.jedis.search.IndexDataType;
-import redis.clients.jedis.search.Query;
-import redis.clients.jedis.search.RediSearchUtil;
-import redis.clients.jedis.search.Schema.FieldType;
-import redis.clients.jedis.search.SearchResult;
-import redis.clients.jedis.search.schemafields.NumericField;
-import redis.clients.jedis.search.schemafields.SchemaField;
-import redis.clients.jedis.search.schemafields.TagField;
-import redis.clients.jedis.search.schemafields.TextField;
-import redis.clients.jedis.search.schemafields.VectorField;
-import redis.clients.jedis.search.schemafields.VectorField.VectorAlgorithm;
 
 /**
  * Redis-based vector store implementation using Redis Stack with Redis Query Engine and
