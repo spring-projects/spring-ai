@@ -177,6 +177,12 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 			if (from == null) {
 				return this;
 			}
+			if (from.getModel() != null) {
+				this.model = from.getModel();
+			}
+			if (from.getDimensions() != null) {
+				this.dimensions = from.getDimensions();
+			}
 			if (from instanceof OpenAiEmbeddingOptions castFrom) {
 				// Parent class fields
 				if (castFrom.getBaseUrl() != null) {
@@ -187,9 +193,6 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 				}
 				if (castFrom.getCredential() != null) {
 					this.credential = castFrom.getCredential();
-				}
-				if (castFrom.getModel() != null) {
-					this.model = castFrom.getModel();
 				}
 				if (castFrom.getDeploymentName() != null) {
 					this.microsoftDeploymentName = castFrom.getDeploymentName();
@@ -218,9 +221,6 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 				}
 				if (castFrom.getEncodingFormat() != null) {
 					this.encodingFormat = castFrom.getEncodingFormat();
-				}
-				if (castFrom.getDimensions() != null) {
-					this.dimensions = castFrom.getDimensions();
 				}
 			}
 			return this;
