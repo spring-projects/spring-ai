@@ -247,8 +247,19 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 			if (from == null) {
 				return this;
 			}
-			if (from instanceof OpenAiAudioSpeechOptions castFrom) {
-				// Parent class fields
+			if (from.getModel() != null) {
+				this.model = from.getModel();
+			}
+			if (from.getVoice() != null) {
+				this.voice = from.getVoice();
+			}
+			if (from.getFormat() != null) {
+				this.responseFormat = from.getFormat();
+			}
+			if (from.getSpeed() != null) {
+				this.speed = from.getSpeed();
+			}
+			if (from instanceof AbstractOpenAiOptions castFrom) {
 				if (castFrom.getBaseUrl() != null) {
 					this.baseUrl = castFrom.getBaseUrl();
 				}
@@ -257,9 +268,6 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 				}
 				if (castFrom.getCredential() != null) {
 					this.credential = castFrom.getCredential();
-				}
-				if (castFrom.getModel() != null) {
-					this.model = castFrom.getModel();
 				}
 				if (castFrom.getDeploymentName() != null) {
 					this.microsoftDeploymentName = castFrom.getDeploymentName();
@@ -282,18 +290,13 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 				if (castFrom.getCustomHeaders() != null) {
 					this.customHeaders = castFrom.getCustomHeaders();
 				}
-				// Child class fields
+			}
+			if (from instanceof OpenAiAudioSpeechOptions castFrom) {
 				if (castFrom.getInput() != null) {
 					this.input = castFrom.getInput();
 				}
-				if (castFrom.getVoice() != null) {
-					this.voice = castFrom.getVoice();
-				}
 				if (castFrom.getResponseFormat() != null) {
 					this.responseFormat = castFrom.getResponseFormat();
-				}
-				if (castFrom.getSpeed() != null) {
-					this.speed = castFrom.getSpeed();
 				}
 			}
 			return this;

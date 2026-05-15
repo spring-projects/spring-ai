@@ -269,8 +269,25 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 			if (from == null) {
 				return this;
 			}
-			if (from instanceof OpenAiImageOptions castFrom) {
-				// Parent class fields
+			if (from.getModel() != null) {
+				this.model = from.getModel();
+			}
+			if (from.getN() != null) {
+				this.n = from.getN();
+			}
+			if (from.getWidth() != null) {
+				this.width = from.getWidth();
+			}
+			if (from.getHeight() != null) {
+				this.height = from.getHeight();
+			}
+			if (from.getResponseFormat() != null) {
+				this.responseFormat = from.getResponseFormat();
+			}
+			if (from.getStyle() != null) {
+				this.style = from.getStyle();
+			}
+			if (from instanceof AbstractOpenAiOptions castFrom) {
 				if (castFrom.getBaseUrl() != null) {
 					this.baseUrl = castFrom.getBaseUrl();
 				}
@@ -279,9 +296,6 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 				}
 				if (castFrom.getCredential() != null) {
 					this.credential = castFrom.getCredential();
-				}
-				if (castFrom.getModel() != null) {
-					this.model = castFrom.getModel();
 				}
 				if (castFrom.getDeploymentName() != null) {
 					this.microsoftDeploymentName = castFrom.getDeploymentName();
@@ -304,27 +318,13 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 				if (castFrom.getCustomHeaders() != null) {
 					this.customHeaders = castFrom.getCustomHeaders();
 				}
-				// Child class fields
-				if (castFrom.getN() != null) {
-					this.n = castFrom.getN();
-				}
-				if (castFrom.getWidth() != null) {
-					this.width = castFrom.getWidth();
-				}
-				if (castFrom.getHeight() != null) {
-					this.height = castFrom.getHeight();
-				}
+			}
+			if (from instanceof OpenAiImageOptions castFrom) {
 				if (castFrom.getQuality() != null) {
 					this.quality = castFrom.getQuality();
 				}
-				if (castFrom.getResponseFormat() != null) {
-					this.responseFormat = castFrom.getResponseFormat();
-				}
 				if (castFrom.getSize() != null) {
 					this.size = castFrom.getSize();
-				}
-				if (castFrom.getStyle() != null) {
-					this.style = castFrom.getStyle();
 				}
 				if (castFrom.getUser() != null) {
 					this.user = castFrom.getUser();
