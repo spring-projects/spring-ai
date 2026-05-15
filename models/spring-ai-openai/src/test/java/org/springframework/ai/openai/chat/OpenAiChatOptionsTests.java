@@ -24,6 +24,8 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.openai.OpenAiChatModel.ResponseFormat;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiChatOptions.Builder;
@@ -37,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for {@link OpenAiChatOptions}.
  *
  * @author Julien Dubois
+ * @author Sebastien Deleuze
  */
 public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatOptions, Builder> {
 
@@ -228,7 +231,7 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 	void testDefaultValues() {
 		OpenAiChatOptions options = OpenAiChatOptions.builder().build();
 
-		assertThat(options.getModel()).isNull();
+		assertThat(options.getModel()).isEqualTo(OpenAiChatOptions.DEFAULT_CHAT_MODEL);
 		assertThat(options.getDeploymentName()).isNull();
 		assertThat(options.getFrequencyPenalty()).isNull();
 		assertThat(options.getLogitBias()).isNull();
@@ -306,7 +309,7 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 			.extraBody(null)
 			.build();
 
-		assertThat(options.getModel()).isNull();
+		assertThat(options.getModel()).isEqualTo(OpenAiChatOptions.DEFAULT_CHAT_MODEL);
 		assertThat(options.getTemperature()).isNull();
 		assertThat(options.getLogitBias()).isNull();
 		assertThat(options.getStop()).isNull();
@@ -527,6 +530,62 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 	}
 
 	@Test
+	void testCombineWithChatOptions() {
+		OpenAiChatOptions merged = OpenAiChatOptions.builder()
+			.combineWith(ChatOptions.builder().model("override-model").temperature(0.9).maxTokens(100))
+			.build();
+
+		assertThat(merged.getModel()).isEqualTo("override-model");
+		assertThat(merged.getTemperature()).isEqualTo(0.9);
+		assertThat(merged.getMaxTokens()).isEqualTo(100);
+	}
+
+	@Test
+	void testCombineWithToolCallingChatOptions() {
+		OpenAiChatOptions merged = OpenAiChatOptions.builder()
+			.combineWith(ToolCallingChatOptions.builder()
+				.model("override-model")
+				.temperature(0.9)
+				.toolNames("tool1")
+				.internalToolExecutionEnabled(true))
+			.build();
+
+		assertThat(merged.getModel()).isEqualTo("override-model");
+		assertThat(merged.getTemperature()).isEqualTo(0.9);
+		assertThat(merged.getToolNames()).containsExactly("tool1");
+		assertThat(merged.getInternalToolExecutionEnabled()).isTrue();
+	}
+
+	@Test
+	void testCombineWithAbstractOpenAiOptions() {
+		Map<String, String> headers = Map.of("header1", "value1");
+
+		OpenAiChatOptions override = OpenAiChatOptions.builder()
+			.baseUrl("https://override.com")
+			.apiKey("override-key")
+			.deploymentName("override-deployment")
+			.organizationId("override-org")
+			.microsoftFoundry(true)
+			.gitHubModels(true)
+			.timeout(java.time.Duration.ofSeconds(10))
+			.maxRetries(5)
+			.customHeaders(headers)
+			.build();
+
+		OpenAiChatOptions merged = OpenAiChatOptions.builder().combineWith(override.mutate()).build();
+
+		assertThat(merged.getBaseUrl()).isEqualTo("https://override.com");
+		assertThat(merged.getApiKey()).isEqualTo("override-key");
+		assertThat(merged.getDeploymentName()).isEqualTo("override-deployment");
+		assertThat(merged.getOrganizationId()).isEqualTo("override-org");
+		assertThat(merged.isMicrosoftFoundry()).isTrue();
+		assertThat(merged.isGitHubModels()).isTrue();
+		assertThat(merged.getTimeout()).isEqualTo(java.time.Duration.ofSeconds(10));
+		assertThat(merged.getMaxRetries()).isEqualTo(5);
+		assertThat(merged.getCustomHeaders()).isEqualTo(headers);
+	}
+
+	@Test
 	void testCombineWith() {
 		OpenAiChatOptions base = OpenAiChatOptions.builder()
 			.model("base-model")
@@ -581,9 +640,9 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 			.maxTokens(100)
 			.build();
 
-		OpenAiChatOptions override = OpenAiChatOptions.builder().model(null).temperature(null).build();
+		OpenAiChatOptions.Builder override = OpenAiChatOptions.builder().model(null).temperature(null);
 
-		OpenAiChatOptions merged = base.mutate().combineWith(override.mutate()).build();
+		OpenAiChatOptions merged = base.mutate().combineWith(override).build();
 
 		// Null values should not override
 		assertThat(merged.getModel()).isEqualTo("base-model");
@@ -599,12 +658,11 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 			.reasoningEffort("medium")
 			.build();
 
-		OpenAiChatOptions override = OpenAiChatOptions.builder()
+		OpenAiChatOptions.Builder override = OpenAiChatOptions.builder()
 			.model("override-model")
-			.reasoningEffort("high")
-			.build();
+			.reasoningEffort("high");
 
-		OpenAiChatOptions merged = base.mutate().combineWith(override.mutate()).build();
+		OpenAiChatOptions merged = base.mutate().combineWith(override).build();
 
 		assertThat(merged.getModel()).isEqualTo("override-model");
 		assertThat(merged.getTemperature()).isEqualTo(0.5);
