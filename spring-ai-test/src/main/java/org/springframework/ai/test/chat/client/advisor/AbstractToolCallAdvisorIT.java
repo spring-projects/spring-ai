@@ -27,11 +27,15 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
@@ -277,6 +281,42 @@ public abstract class AbstractToolCallAdvisorIT {
 			// With returnDirect=true, the raw tool result is returned without LLM
 			// processing
 			assertThat(content).contains("temp");
+		}
+
+		@Test
+		void streamEmitsToolResponseChunkWhenEnabled() {
+			// With streamToolCallResponses(true), the Flux must contain an intermediate
+			// ChatClientResponse that carries the tool execution result, distinguishable
+			// by finishReason == FINISH_REASON and the tool id/name metadata keys.
+			List<ChatClientResponse> events = ChatClient.create(getChatModel())
+				.prompt()
+				.advisors(ToolCallAdvisor.builder().streamToolCallResponses(true).build())
+				.user("What's the weather like in Tokyo in Celsius?")
+				.toolCallbacks(createWeatherToolCallback())
+				.stream()
+				.chatClientResponse()
+				.collectList()
+				.block();
+
+			assertThat(events).isNotNull().isNotEmpty();
+
+			List<Generation> toolResponseGenerations = Objects.requireNonNull(events)
+				.stream()
+				.map(ChatClientResponse::chatResponse)
+				.filter(Objects::nonNull)
+				.map(ChatResponse::getResult)
+				.filter(Objects::nonNull)
+				.filter(generation -> ToolExecutionResult.FINISH_REASON
+					.equals(generation.getMetadata().getFinishReason()))
+				.collect(Collectors.toList());
+
+			assertThat(toolResponseGenerations).as("expected at least one synthetic tool-response chunk in the stream")
+				.isNotEmpty();
+			assertThat(toolResponseGenerations).allSatisfy(generation -> {
+				var metadata = generation.getMetadata();
+				assertThat(metadata.<String>get(ToolExecutionResult.METADATA_TOOL_NAME)).isEqualTo("getCurrentWeather");
+				assertThat(metadata.<String>get(ToolExecutionResult.METADATA_TOOL_ID)).isNotBlank();
+			});
 		}
 
 	}

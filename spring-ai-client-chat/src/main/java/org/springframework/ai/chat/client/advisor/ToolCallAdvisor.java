@@ -342,7 +342,26 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 				// Recursive call with updated conversation history
 				List<Message> nextInstructions = this.doGetNextInstructionsForToolCallStream(finalRequest,
 						finalAggregatedResponse, toolExecutionResult);
-				return this.internalStream(streamAdvisorChain, originalRequest, optionsCopy, nextInstructions);
+				Flux<ChatClientResponse> recursiveStream = this.internalStream(streamAdvisorChain, originalRequest,
+						optionsCopy, nextInstructions);
+
+				// When tool-call streaming is enabled, emit the tool execution result as
+				// an intermediate chunk before the recursive stream of the model's
+				// follow-up answer. This closes the gap in the streamed Flux between
+				// the assistant's tool-call request and the next model turn, giving
+				// downstream consumers visibility into the tool's response data.
+				if (this.streamToolCallResponses) {
+					ChatResponse toolResponseChatResponse = ChatResponse.builder()
+						.from(chatResponse)
+						.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+						.build();
+					ChatClientResponse toolResponseChatClientResponse = finalAggregatedResponse.mutate()
+						.chatResponse(toolResponseChatResponse)
+						.build();
+					return Flux.just(toolResponseChatClientResponse).concatWith(recursiveStream);
+				}
+
+				return recursiveStream;
 			}
 		});
 		return toolCallFlux.subscribeOn(Schedulers.boundedElastic());

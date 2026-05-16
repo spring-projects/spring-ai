@@ -645,8 +645,13 @@ public class ToolCallAdvisorTests {
 			.build();
 
 		// Mock tool execution result
+		ToolResponseMessage.ToolResponse toolResponse = new ToolResponseMessage.ToolResponse("tool-call-1", "testTool",
+				"Tool result data");
+		ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(toolResponse))
+			.build();
 		List<Message> conversationHistory = List.of(new UserMessage("test"),
-				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+				AssistantMessage.builder().content("").build(), toolResponseMessage);
 		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
 			.conversationHistory(conversationHistory)
 			.build();
@@ -655,10 +660,69 @@ public class ToolCallAdvisorTests {
 
 		List<ChatClientResponse> results = advisor.adviseStream(request, realChain).collectList().block();
 
-		// With streamToolCallResponses(true), we get both the intermediate tool call
-		// response (streamed in real-time) and the final response from recursive call
-		assertThat(results).isNotNull().hasSize(2);
-		assertThat(callCount[0]).isEqualTo(2); // Both iterations still happen
+		// With streamToolCallResponses(true), we get three emissions: the assistant
+		// chunk requesting the tool call, the synthetic tool response chunk, and the
+		// final response from the recursive call.
+		assertThat(results).isNotNull().hasSize(3);
+		assertThat(callCount[0]).isEqualTo(2); // Both model iterations still happen
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+
+		ChatResponse toolResponseChunk = results.get(1).chatResponse();
+		assertThat(toolResponseChunk).isNotNull();
+		assertThat(toolResponseChunk.getResults()).hasSize(1);
+		assertThat(toolResponseChunk.getResults().get(0).getOutput().getText()).isEqualTo("Tool result data");
+		assertThat(toolResponseChunk.getResults().get(0).getMetadata().getFinishReason())
+			.isEqualTo(ToolExecutionResult.FINISH_REASON);
+		assertThat(
+				toolResponseChunk.getResults().get(0).getMetadata().<String>get(ToolExecutionResult.METADATA_TOOL_ID))
+			.isEqualTo("tool-call-1");
+		assertThat(
+				toolResponseChunk.getResults().get(0).getMetadata().<String>get(ToolExecutionResult.METADATA_TOOL_NAME))
+			.isEqualTo("testTool");
+	}
+
+	@Test
+	void testAdviseStreamWithToolCallResponsesDisabledDoesNotEmitToolResponse() {
+		// Explicitly disable tool call response streaming. The synthetic tool response
+		// chunk must NOT be emitted and only the final response should be visible.
+		ToolCallAdvisor advisor = ToolCallAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.streamToolCallResponses(false)
+			.build();
+
+		ChatClientRequest request = createMockRequest(true);
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		int[] callCount = { 0 };
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			callCount[0]++;
+			return Flux.just(callCount[0] == 1 ? responseWithToolCall : finalResponse);
+		});
+
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		ToolResponseMessage.ToolResponse toolResponse = new ToolResponseMessage.ToolResponse("tool-call-1", "testTool",
+				"Tool result data");
+		ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(toolResponse))
+			.build();
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), toolResponseMessage);
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		List<ChatClientResponse> results = advisor.adviseStream(request, realChain).collectList().block();
+
+		// Only the final model response is emitted; the tool call request chunk and
+		// the synthetic tool response chunk are both suppressed.
+		assertThat(results).isNotNull().hasSize(1);
+		assertThat(callCount[0]).isEqualTo(2);
 		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
 	}
 

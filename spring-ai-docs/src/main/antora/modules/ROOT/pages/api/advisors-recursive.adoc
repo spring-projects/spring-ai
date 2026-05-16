@@ -86,6 +86,58 @@ var chatClient = ChatClient.builder(chatModel)
     .build();
 ----
 
+==== Streaming Tool Call Responses
+
+When the `ToolCallAdvisor` runs through the streaming API (`ChatClient ... .stream()`), it aggregates the model's chunks, executes any requested tool calls, and then recurses to stream the follow-up turn. By default the intermediate chunks that carry the tool-call request (the ones where `ChatResponse.hasToolCalls()` is `true`) are *filtered out* of the downstream `Flux`, so consumers only observe the final assistant answer.
+
+To see the complete tool-call round-trip in the stream, enable `streamToolCallResponses(true)` on the builder:
+
+[source,java]
+----
+var toolCallAdvisor = ToolCallAdvisor.builder()
+    .toolCallingManager(toolCallingManager)
+    .streamToolCallResponses(true)
+    .build();
+----
+
+With the flag enabled, for each tool-call iteration the `Flux<ChatClientResponse>` now emits, in order:
+
+1. The streamed assistant chunks that contain the model's tool-call request (`ChatResponse.hasToolCalls()` is `true`).
+2. A *synthetic* `ChatClientResponse` carrying the tool execution result. This chunk is built via `ToolExecutionResult.buildGenerations(...)`, so each `Generation` carries:
+   * the tool's raw output as the `AssistantMessage` content,
+   * `finishReason == ToolExecutionResult.FINISH_REASON` (the string `"returnDirect"`),
+   * `ChatGenerationMetadata` entries under the keys `ToolExecutionResult.METADATA_TOOL_ID` and `ToolExecutionResult.METADATA_TOOL_NAME`.
+3. The streamed assistant chunks of the model's follow-up answer.
+
+Consumers that want to react to each phase should subscribe via `stream().chatClientResponse()` and branch on `finishReason` / the tool metadata keys to distinguish the synthetic tool-response chunk from normal model chunks. Example:
+
+[source,java]
+----
+chatClient.prompt()
+    .advisors(ToolCallAdvisor.builder().streamToolCallResponses(true).build())
+    .user("What's the weather in Tokyo?")
+    .toolCallbacks(weatherTool)
+    .stream()
+    .chatClientResponse()
+    .subscribe(event -> {
+        var generation = event.chatResponse().getResult();
+        var metadata = generation.getMetadata();
+        if (ToolExecutionResult.FINISH_REASON.equals(metadata.getFinishReason())) {
+            String toolName = metadata.get(ToolExecutionResult.METADATA_TOOL_NAME);
+            String toolOutput = generation.getOutput().getText();
+            // render tool result in UI, log it, etc.
+        }
+        else if (event.chatResponse().hasToolCalls()) {
+            // model is requesting a tool call
+        }
+        else {
+            // normal assistant chunk of the final answer
+        }
+    });
+----
+
+When `streamToolCallResponses` is left at its default (`false`), both the assistant tool-call chunks and the synthetic tool-response chunk are suppressed and only the model's final answer is streamed — preserving the simplest consumer contract.
+
 ==== Return Direct Functionality
 
 The "return direct" feature allows tools to bypass the LLM and return their results directly to the client application. This is useful when:

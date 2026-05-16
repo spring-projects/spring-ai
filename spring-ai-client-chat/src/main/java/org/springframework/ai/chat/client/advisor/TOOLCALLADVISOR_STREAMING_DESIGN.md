@@ -131,10 +131,23 @@ ToolCallAdvisor advisor = ToolCallAdvisor.builder()
     .build();
 ```
 
-| Configuration | Intermediate Tool Calls | Final Answer |
-|--------------|------------------------|--------------|
-| `streamToolCallResponses(false)` (default) | Filtered out | Streamed |
-| `streamToolCallResponses(true)` | Streamed | Streamed |
+| Configuration | Assistant Tool-Call Chunk | Tool Execution Result Chunk | Final Answer |
+|--------------|---------------------------|-----------------------------|--------------|
+| `streamToolCallResponses(false)` (default) | Filtered out | Not emitted | Streamed |
+| `streamToolCallResponses(true)` | Streamed | Synthetic chunk emitted between iterations | Streamed |
+
+When enabled, the flow for a single tool-call round-trip is:
+
+```
+[assistant chunks + tool_calls] → [synthetic tool-response chunk] → [assistant final-answer chunks]
+```
+
+The synthetic tool-response chunk is built from the `ToolExecutionResult` via
+`ToolExecutionResult.buildGenerations(...)`, matching the shape used by the
+`returnDirect` path. Each generation carries the tool result text as the
+`AssistantMessage` content and the tool's id/name plus a `returnDirect` finish
+reason in `ChatGenerationMetadata`, so downstream consumers can distinguish a
+tool-response chunk from a normal model chunk.
 
 The filtering is implemented as a terminal filter on the stream:
 
