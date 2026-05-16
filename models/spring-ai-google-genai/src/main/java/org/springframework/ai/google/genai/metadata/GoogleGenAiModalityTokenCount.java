@@ -16,6 +16,8 @@
 
 package org.springframework.ai.google.genai.metadata;
 
+import java.util.Locale;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.genai.types.MediaModality;
 import com.google.genai.types.ModalityTokenCount;
@@ -68,7 +70,7 @@ public class GoogleGenAiModalityTokenCount {
 		}
 
 		// MediaModality returns its string value via toString()
-		String modalityStr = modality.toString().toUpperCase();
+		String modalityStr = modality.toString().toUpperCase(Locale.ROOT);
 
 		// Map SDK values to cleaner names
 		return switch (modalityStr) {
