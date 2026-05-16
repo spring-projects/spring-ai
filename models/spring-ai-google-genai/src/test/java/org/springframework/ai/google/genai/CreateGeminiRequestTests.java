@@ -19,6 +19,7 @@ package org.springframework.ai.google.genai;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 import com.google.genai.Client;
 import com.google.genai.types.Content;
@@ -30,6 +31,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
@@ -773,6 +775,44 @@ public class CreateGeminiRequestTests {
 
 		assertThat(request.config().toolConfig()).isPresent();
 		assertThat(request.config().toolConfig().get().includeServerSideToolInvocations().get()).isTrue();
+	}
+
+	@Test
+	public void toolResponseWithPlainTextIsWrappedInResultKey() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.defaultOptions(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build())
+			.build();
+
+		ToolResponseMessage toolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("id1", "myTool", "2026-05-15 10:00:00 (Thursday)")))
+			.build();
+
+		List<com.google.genai.types.Part> parts = client.messageToGeminiParts(toolResponse);
+
+		assertThat(parts).hasSize(1);
+		Map<String, Object> response = parts.get(0).functionResponse().get().response().get();
+		assertThat(response).containsKey("result");
+		assertThat(response.get("result")).isEqualTo("2026-05-15 10:00:00 (Thursday)");
+	}
+
+	@Test
+	public void toolResponseWithPartialJsonIsWrappedInResultKey() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.defaultOptions(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build())
+			.build();
+
+		ToolResponseMessage toolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("id1", "calculator", "3.0 + 5.0 = 8.0")))
+			.build();
+
+		List<com.google.genai.types.Part> parts = client.messageToGeminiParts(toolResponse);
+
+		assertThat(parts).hasSize(1);
+		Map<String, Object> response = parts.get(0).functionResponse().get().response().get();
+		assertThat(response).containsKey("result");
+		assertThat(response.get("result")).isEqualTo("3.0 + 5.0 = 8.0");
 	}
 
 }
