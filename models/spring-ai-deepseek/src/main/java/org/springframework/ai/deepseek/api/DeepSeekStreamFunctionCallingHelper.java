@@ -81,10 +81,14 @@ public class DeepSeekStreamFunctionCallingHelper {
 	private ChatCompletionMessage merge(@Nullable ChatCompletionMessage previous, ChatCompletionMessage current) {
 		String content = (previous != null && previous.content() != null)
 				? previous.content() + (current.content() != null ? current.content() : "") : current.content();
+		String reasoningContent = (previous != null && previous.reasoningContent() != null)
+				? previous.reasoningContent() + (current.reasoningContent() != null ? current.reasoningContent() : "")
+				: current.reasoningContent();
 		Role role = current.role();
 		String name = (current.name() != null ? current.name() : (previous != null ? previous.name() : null));
 		String toolCallId = (current.toolCallId() != null ? current.toolCallId()
 				: (previous != null ? previous.toolCallId() : null));
+		Boolean prefix = (current.prefix() != null ? current.prefix() : (previous != null ? previous.prefix() : null));
 
 		List<ToolCall> toolCalls = new ArrayList<>();
 		ToolCall lastPreviousTooCall = null;
@@ -114,7 +118,7 @@ public class DeepSeekStreamFunctionCallingHelper {
 				toolCalls.add(lastPreviousTooCall);
 			}
 		}
-		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls);
+		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, prefix, reasoningContent);
 	}
 
 	private ToolCall merge(@Nullable ToolCall previous, ToolCall current) {
