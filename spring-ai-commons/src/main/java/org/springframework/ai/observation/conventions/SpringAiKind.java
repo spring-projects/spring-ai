@@ -37,6 +37,12 @@ public enum SpringAiKind {
 	CHAT_CLIENT("chat_client"),
 
 	/**
+	 * Spring AI kind for MCP server tool calling.
+	 * @since 2.0.0
+	 */
+	MCP_SERVER_TOOL_CALL("mcp_server_tool_call"),
+
+	/**
 	 * Spring AI kind for tool calling.
 	 */
 	TOOL_CALL("tool_call"),
