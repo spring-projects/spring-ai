@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
+import io.micrometer.observation.ObservationRegistry;
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
@@ -53,6 +54,8 @@ import org.springframework.ai.mcp.customizer.McpAsyncServerCustomizer;
 import org.springframework.ai.mcp.customizer.McpSyncServerCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerChangeNotificationProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
+import org.springframework.ai.tool.observation.ToolCallingContentObservationFilter;
+import org.springframework.ai.tool.observation.ToolCallingObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -113,6 +116,8 @@ public class McpServerAutoConfiguration {
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
 			ObjectProvider<List<SyncCompletionSpecification>> completions,
 			ObjectProvider<BiConsumer<McpSyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumers,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ToolCallingObservationConvention> observationConvention,
 			Optional<McpSyncServerCustomizer> mcpSyncServerCustomizer) {
 
 		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
@@ -138,6 +143,10 @@ public class McpServerAutoConfiguration {
 					tools.stream().flatMap(List::stream).toList());
 
 			if (!CollectionUtils.isEmpty(toolSpecifications)) {
+				toolSpecifications = new McpServerToolObservationSupport(
+						observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+						observationConvention.getIfAvailable())
+					.wrapStatefulSync(toolSpecifications);
 				serverBuilder.tools(toolSpecifications);
 				logger.info("Registered tools: " + toolSpecifications.size());
 			}
@@ -234,6 +243,8 @@ public class McpServerAutoConfiguration {
 			ObjectProvider<List<AsyncPromptSpecification>> prompts,
 			ObjectProvider<List<AsyncCompletionSpecification>> completions,
 			ObjectProvider<BiConsumer<McpAsyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumer,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ToolCallingObservationConvention> observationConvention,
 			Optional<McpAsyncServerCustomizer> asyncServerCustomizer) {
 
 		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
@@ -259,6 +270,10 @@ public class McpServerAutoConfiguration {
 			capabilitiesBuilder.tools(changeNotificationProperties.isToolChangeNotification());
 
 			if (!CollectionUtils.isEmpty(toolSpecifications)) {
+				toolSpecifications = new McpServerToolObservationSupport(
+						observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+						observationConvention.getIfAvailable())
+					.wrapStatefulAsync(toolSpecifications);
 				serverBuilder.tools(toolSpecifications);
 				logger.info("Registered tools: " + toolSpecifications.size());
 			}
@@ -336,6 +351,15 @@ public class McpServerAutoConfiguration {
 		asyncServerCustomizer.ifPresent(customizer -> customizer.customize(serverBuilder));
 
 		return serverBuilder.build();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = "spring.ai.tools.observations", name = "include-content", havingValue = "true")
+	ToolCallingContentObservationFilter toolCallingContentObservationFilter() {
+		logger.warn(
+				"You have enabled the inclusion of the tool call arguments and result in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
+		return new ToolCallingContentObservationFilter();
 	}
 
 	public static class NonStatelessServerCondition extends AnyNestedCondition {

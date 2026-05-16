@@ -17,12 +17,15 @@
 package org.springframework.ai.mcp.server.common.autoconfigure;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
+import io.micrometer.observation.tck.TestObservationRegistry;
+import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpStatelessAsyncServer;
@@ -393,6 +396,64 @@ public class McpStatelessServerAutoConfigurationIT {
 			});
 	}
 
+	@SuppressWarnings("unchecked")
+	@Test
+	void syncStatelessServerToolCallsAreObserved() {
+		this.contextRunner.withUserConfiguration(ObservedToolConfiguration.class).run(context -> {
+			McpStatelessSyncServer syncServer = context.getBean(McpStatelessSyncServer.class);
+			McpStatelessAsyncServer asyncServer = (McpStatelessAsyncServer) ReflectionTestUtils.getField(syncServer,
+					"asyncServer");
+			CopyOnWriteArrayList<AsyncToolSpecification> tools = (CopyOnWriteArrayList<AsyncToolSpecification>) ReflectionTestUtils
+				.getField(asyncServer, "tools");
+
+			tools.get(0).callHandler().apply(null, request()).block();
+
+			assertObservation(context.getBean(TestObservationRegistry.class), "stateless", "sync");
+		});
+	}
+
+	@SuppressWarnings("unchecked")
+	@Test
+	void asyncStatelessServerToolCallsAreObserved() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
+			.withUserConfiguration(ObservedToolConfiguration.class)
+			.run(context -> {
+				McpStatelessAsyncServer asyncServer = context.getBean(McpStatelessAsyncServer.class);
+				CopyOnWriteArrayList<AsyncToolSpecification> tools = (CopyOnWriteArrayList<AsyncToolSpecification>) ReflectionTestUtils
+					.getField(asyncServer, "tools");
+
+				tools.get(0).callHandler().apply(null, request()).block();
+
+				assertObservation(context.getBean(TestObservationRegistry.class), "stateless", "async");
+			});
+	}
+
+	@Test
+	void toolCallingContentObservationFilterIsConditional() {
+		this.contextRunner.run(context -> assertThat(context).doesNotHaveBean("toolCallingContentObservationFilter"));
+		this.contextRunner.withPropertyValues("spring.ai.tools.observations.include-content=true")
+			.run(context -> assertThat(context).hasBean("toolCallingContentObservationFilter"));
+	}
+
+	private static void assertObservation(TestObservationRegistry observationRegistry, String protocol, String type) {
+		TestObservationRegistryAssert.assertThat(observationRegistry)
+			.hasSingleObservationThat()
+			.hasNameEqualTo("spring.ai.tool")
+			.hasLowCardinalityKeyValue("spring.ai.mcp.server.protocol", protocol)
+			.hasLowCardinalityKeyValue("spring.ai.mcp.server.type", type);
+	}
+
+	private static McpSchema.CallToolRequest request() {
+		return new McpSchema.CallToolRequest("observed", Map.of("input", "test"));
+	}
+
+	private static McpSchema.CallToolResult result() {
+		return McpSchema.CallToolResult.builder()
+			.content(List.of(new McpSchema.TextContent("observed")))
+			.isError(false)
+			.build();
+	}
+
 	@Configuration
 	static class TestResourceConfiguration {
 
@@ -480,6 +541,34 @@ public class McpStatelessServerAutoConfigurationIT {
 
 			return List.of(new McpStatelessServerFeatures.SyncCompletionSpecification(
 					new McpSchema.PromptReference("ref/prompt", "code_review", "Code review"), completionHandler));
+		}
+
+	}
+
+	@Configuration
+	static class ObservedToolConfiguration {
+
+		@Bean
+		TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
+		}
+
+		@Bean
+		List<SyncToolSpecification> observedSyncTools() {
+			return List.of(new SyncToolSpecification(tool(), (context, request) -> result()));
+		}
+
+		@Bean
+		List<AsyncToolSpecification> observedAsyncTools() {
+			return List.of(new AsyncToolSpecification(tool(), (context, request) -> Mono.just(result())));
+		}
+
+		private static McpSchema.Tool tool() {
+			return McpSchema.Tool.builder()
+				.name("observed")
+				.description("Observed tool")
+				.inputSchema(Map.of("type", "object"))
+				.build();
 		}
 
 	}

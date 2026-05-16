@@ -1,7 +1,7 @@
 [[introduction]]
 = Observability
 
-Spring AI builds upon the observability features in the Spring ecosystem to provide insights into AI-related operations. It provides metrics and tracing capabilities for its core components: `ChatClient` (including `Advisor`), `ChatModel`, `EmbeddingModel`, `ImageModel`, and `VectorStore`.
+Spring AI builds upon the observability features in the Spring ecosystem to provide insights into AI-related operations. It provides metrics and tracing capabilities for its core components: `ChatClient` (including `Advisor`), `ChatModel`, `EmbeddingModel`, `ImageModel`, `VectorStore`, and MCP server tool execution.
 
 Refer to the https://docs.spring.io/spring-boot/reference/actuator/metrics.html[Spring Boot Metrics] and
 https://docs.spring.io/spring-boot/reference/actuator/tracing.html[Spring Boot Tracing] documentation to enable metrics and tracing support in your application.
@@ -148,7 +148,9 @@ WARNING: If you enable logging of the chat prompt and completion data, there's a
 
 == Tool Calling
 
-The `spring.ai.tool` observations are recorded when performing tool calling in the context of a chat model interaction. They measure the time spent on tool call completion and propagate the related tracing information.
+The `spring.ai.tool` observations are recorded when performing tool calling in the context of a chat model interaction, and when executing MCP server `tools/call` handlers registered through the Spring Boot MCP server auto-configurations. They measure the time spent on tool call completion and propagate the related tracing information.
+
+For MCP server tool calls, protocol-level error results (`CallToolResult.isError() == true`) are recorded as observation errors. Success and failure can be derived from the observation metric count and its standard `error` tag.
 
 .Low Cardinality Keys
 [cols="a,a", stripes=even]
@@ -160,6 +162,8 @@ The `spring.ai.tool` observations are recorded when performing tool calling in t
 |`spring.ai.kind` | The kind of operation performed by Spring AI. It's always `tool_call`.
 |`spring.ai.tool.definition.name` | The name of the tool.
 |`spring.ai.tool.type` | The type of the tool. By default, it's `function`.
+|`spring.ai.mcp.server.protocol` | MCP server protocol used to handle the tool call. It's `stateful` or `stateless`. Only present for MCP server tool calls.
+|`spring.ai.mcp.server.type` | MCP server execution type used to handle the tool call. It's `sync` or `async`. Only present for MCP server tool calls.
 |===
 
 .High Cardinality Keys

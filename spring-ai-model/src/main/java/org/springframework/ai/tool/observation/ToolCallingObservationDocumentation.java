@@ -107,6 +107,26 @@ public enum ToolCallingObservationDocumentation implements ObservationDocumentat
 			}
 		},
 
+		/**
+		 * MCP server protocol used to handle the tool call.
+		 */
+		MCP_SERVER_PROTOCOL {
+			@Override
+			public String asString() {
+				return "spring.ai.mcp.server.protocol";
+			}
+		},
+
+		/**
+		 * MCP server execution type used to handle the tool call.
+		 */
+		MCP_SERVER_TYPE {
+			@Override
+			public String asString() {
+				return "spring.ai.mcp.server.type";
+			}
+		},
+
 	}
 
 	/**

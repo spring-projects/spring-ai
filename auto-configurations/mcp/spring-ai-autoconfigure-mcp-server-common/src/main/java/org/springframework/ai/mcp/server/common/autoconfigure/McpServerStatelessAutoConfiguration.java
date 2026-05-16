@@ -19,6 +19,7 @@ package org.springframework.ai.mcp.server.common.autoconfigure;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.micrometer.observation.ObservationRegistry;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServer.StatelessAsyncSpecification;
 import io.modelcontextprotocol.server.McpServer.StatelessSyncSpecification;
@@ -39,6 +40,8 @@ import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpStatelessServerTransport;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
+import org.springframework.ai.tool.observation.ToolCallingContentObservationFilter;
+import org.springframework.ai.tool.observation.ToolCallingObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.AllNestedConditions;
@@ -80,7 +83,9 @@ public class McpServerStatelessAutoConfiguration {
 			ObjectProvider<List<SyncResourceSpecification>> resources,
 			ObjectProvider<List<SyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
-			ObjectProvider<List<SyncCompletionSpecification>> completions, Environment environment) {
+			ObjectProvider<List<SyncCompletionSpecification>> completions,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ToolCallingObservationConvention> observationConvention, Environment environment) {
 
 		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
 				serverProperties.getVersion());
@@ -96,6 +101,10 @@ public class McpServerStatelessAutoConfiguration {
 					tools.stream().flatMap(List::stream).toList());
 
 			if (!CollectionUtils.isEmpty(toolSpecifications)) {
+				toolSpecifications = new McpServerToolObservationSupport(
+						observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+						observationConvention.getIfAvailable())
+					.wrapStatelessSync(toolSpecifications);
 				serverBuilder.tools(toolSpecifications);
 				logger.info("Registered tools: " + toolSpecifications.size());
 			}
@@ -170,7 +179,9 @@ public class McpServerStatelessAutoConfiguration {
 			ObjectProvider<List<AsyncResourceSpecification>> resources,
 			ObjectProvider<List<AsyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<AsyncPromptSpecification>> prompts,
-			ObjectProvider<List<AsyncCompletionSpecification>> completions) {
+			ObjectProvider<List<AsyncCompletionSpecification>> completions,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ToolCallingObservationConvention> observationConvention) {
 
 		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
 				serverProperties.getVersion());
@@ -186,6 +197,10 @@ public class McpServerStatelessAutoConfiguration {
 			capabilitiesBuilder.tools(false);
 
 			if (!CollectionUtils.isEmpty(toolSpecifications)) {
+				toolSpecifications = new McpServerToolObservationSupport(
+						observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+						observationConvention.getIfAvailable())
+					.wrapStatelessAsync(toolSpecifications);
 				serverBuilder.tools(toolSpecifications);
 				logger.info("Registered tools: " + toolSpecifications.size());
 			}
@@ -247,6 +262,15 @@ public class McpServerStatelessAutoConfiguration {
 		serverBuilder.requestTimeout(serverProperties.getRequestTimeout());
 
 		return serverBuilder.build();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = "spring.ai.tools.observations", name = "include-content", havingValue = "true")
+	ToolCallingContentObservationFilter toolCallingContentObservationFilter() {
+		logger.warn(
+				"You have enabled the inclusion of the tool call arguments and result in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
+		return new ToolCallingContentObservationFilter();
 	}
 
 	public static class EnabledStatelessServerCondition extends AllNestedConditions {
