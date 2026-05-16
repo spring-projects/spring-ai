@@ -310,6 +310,9 @@ public final class OpenAiChatModel implements ChatModel {
 					try {
 						ChatCompletion chatCompletion = chunkToChatCompletion(chunk);
 						String id = chatCompletion.id();
+						Map<Long, ChatCompletionChunk.Choice> chunkChoiceByIndex = chunk.choices()
+							.stream()
+							.collect(Collectors.toMap(ChatCompletionChunk.Choice::index, c -> c));
 						List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
 							roleMap.putIfAbsent(id, choice.message()._role().asString().isPresent()
 									? choice.message()._role().asStringOrThrow() : "");
@@ -319,7 +322,7 @@ public final class OpenAiChatModel implements ChatModel {
 									choice.message().refusal().isPresent() ? choice.message().refusal() : "",
 									"annotations", choice.message().annotations().isPresent()
 											? choice.message().annotations() : List.of(),
-									"chunkChoice", chunk.choices().get((int) choice.index()));
+									"chunkChoice", chunkChoiceByIndex.get(choice.index()));
 
 							return buildGeneration(choice, metadata, request);
 						}).toList();

@@ -21,20 +21,26 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
+import com.openai.core.http.AsyncStreamResponse;
 import com.openai.models.chat.completions.ChatCompletion;
+import com.openai.models.chat.completions.ChatCompletionChunk;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
 import com.openai.models.chat.completions.ChatCompletionMessage;
 import com.openai.models.completions.CompletionUsage;
+import com.openai.services.async.ChatServiceAsync;
+import com.openai.services.async.chat.ChatCompletionServiceAsync;
 import com.openai.services.blocking.ChatService;
 import com.openai.services.blocking.chat.ChatCompletionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.PromptMetadata;
@@ -44,6 +50,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -224,6 +231,53 @@ class OpenAiChatModelTests {
 		assertThat(aggregatedMetadata.getRateLimit()).isSameAs(rateLimit);
 		assertThat(aggregatedMetadata.getPromptMetadata()).isSameAs(promptMetadata);
 		assertThat((String) aggregatedMetadata.get("custom-key")).isEqualTo("custom-value");
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void streamingDoesNotThrowWhenChoiceIndexIsNonZero() {
+		ChatCompletionChunk.Choice.Delta delta = ChatCompletionChunk.Choice.Delta.builder()
+			.content("hello")
+			.role(ChatCompletionChunk.Choice.Delta.Role.ASSISTANT)
+			.toolCalls(List.of())
+			.build();
+		ChatCompletionChunk.Choice choice = ChatCompletionChunk.Choice.builder()
+			.index(1L)
+			.delta(delta)
+			.finishReason(Optional.empty())
+			.build();
+		ChatCompletionChunk chunk = ChatCompletionChunk.builder()
+			.id("chunk-123")
+			.created(1000L)
+			.model("test-model")
+			.object_(JsonValue.from("chat.completion.chunk"))
+			.addChoice(choice)
+			.build();
+
+		ChatServiceAsync chatServiceAsync = mock(ChatServiceAsync.class);
+		ChatCompletionServiceAsync chatCompletionServiceAsync = mock(ChatCompletionServiceAsync.class);
+		AsyncStreamResponse<ChatCompletionChunk> asyncStreamResponse = mock(AsyncStreamResponse.class);
+
+		when(this.openAiClientAsync.chat()).thenReturn(chatServiceAsync);
+		when(chatServiceAsync.completions()).thenReturn(chatCompletionServiceAsync);
+		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class)))
+			.thenReturn(asyncStreamResponse);
+		when(asyncStreamResponse.subscribe(any())).thenAnswer(invocation -> {
+			AsyncStreamResponse.Handler<ChatCompletionChunk> handler = invocation.getArgument(0);
+			handler.onNext(chunk);
+			return asyncStreamResponse;
+		});
+		when(asyncStreamResponse.onCompleteFuture()).thenReturn(CompletableFuture.completedFuture(null));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		Flux<ChatResponse> stream = chatModel.stream(new Prompt("hi", options));
+		assertThatCode(() -> stream.blockFirst()).doesNotThrowAnyException();
 	}
 
 }
