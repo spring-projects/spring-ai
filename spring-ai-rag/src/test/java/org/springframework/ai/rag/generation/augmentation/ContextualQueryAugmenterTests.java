@@ -107,7 +107,7 @@ class ContextualQueryAugmenterTests {
 
 				Query:
 				test query
-				""");
+				""".replaceAll("\\n", System.lineSeparator()));
 	}
 
 }

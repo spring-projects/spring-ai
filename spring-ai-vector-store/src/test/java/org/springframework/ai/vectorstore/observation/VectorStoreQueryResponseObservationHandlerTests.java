@@ -58,8 +58,7 @@ class VectorStoreQueryResponseObservationHandlerTests {
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
 				INFO  o.s.a.v.o.VectorStoreQueryResponseObservationHandler -- Vector Store Query Response:
-				[]
-				""");
+				[]""");
 	}
 
 	@Test
@@ -69,8 +68,7 @@ class VectorStoreQueryResponseObservationHandlerTests {
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
 				INFO  o.s.a.v.o.VectorStoreQueryResponseObservationHandler -- Vector Store Query Response:
-				["doc1", "doc2"]
-				""");
+				["doc1", "doc2"]""");
 	}
 
 }

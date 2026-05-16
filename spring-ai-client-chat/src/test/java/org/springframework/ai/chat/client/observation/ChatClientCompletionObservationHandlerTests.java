@@ -70,8 +70,7 @@ class ChatClientCompletionObservationHandlerTests {
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
 				INFO  o.s.a.c.c.o.ChatClientCompletionObservationHandler -- Chat Client Completion:
-				[]
-				""");
+				[]""");
 	}
 
 	@Test
@@ -83,8 +82,7 @@ class ChatClientCompletionObservationHandlerTests {
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
 				INFO  o.s.a.c.c.o.ChatClientCompletionObservationHandler -- Chat Client Completion:
-				[]
-				""");
+				[]""");
 	}
 
 	@Test
@@ -102,8 +100,7 @@ class ChatClientCompletionObservationHandlerTests {
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
 				INFO  o.s.a.c.c.o.ChatClientCompletionObservationHandler -- Chat Client Completion:
-				["Test message"]
-				""");
+				["Test message"]""");
 	}
 
 }

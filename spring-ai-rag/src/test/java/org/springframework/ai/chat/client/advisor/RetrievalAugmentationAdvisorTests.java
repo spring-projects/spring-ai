@@ -126,7 +126,7 @@ class RetrievalAugmentationAdvisorTests {
 				Query: What would I get if I added a pinch of Moonstone to a dash of powdered Gold?
 
 				Answer:
-				""");
+				""".replaceAll("\\n", System.lineSeparator()));
 	}
 
 }

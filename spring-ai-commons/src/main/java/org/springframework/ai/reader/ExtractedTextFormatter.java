@@ -228,7 +228,7 @@ public final class ExtractedTextFormatter {
 
 		private int numberOfBottomTextLinesToDelete = 0;
 
-		private String lineSeparator = System.lineSeparator();
+		private String lineSeparator = "\n";
 
 		/**
 		 * Align the document text to the left. Defaults to false.

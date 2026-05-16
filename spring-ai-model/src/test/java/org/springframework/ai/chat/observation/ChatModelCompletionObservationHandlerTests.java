@@ -67,8 +67,7 @@ class ChatModelCompletionObservationHandlerTests {
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
 				INFO  o.s.a.c.o.ChatModelCompletionObservationHandler -- Chat Model Completion:
-				[]
-				""");
+				[]""");
 	}
 
 	@Test
@@ -81,8 +80,7 @@ class ChatModelCompletionObservationHandlerTests {
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
 				INFO  o.s.a.c.o.ChatModelCompletionObservationHandler -- Chat Model Completion:
-				[]
-				""");
+				[]""");
 	}
 
 	@Test
@@ -96,8 +94,7 @@ class ChatModelCompletionObservationHandlerTests {
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
 				INFO  o.s.a.c.o.ChatModelCompletionObservationHandler -- Chat Model Completion:
-				["say please", "seriously, say please"]
-				""");
+				["say please", "seriously, say please"]""");
 	}
 
 	private Prompt generatePrompt(ChatOptions chatOptions) {
