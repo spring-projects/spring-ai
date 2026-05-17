@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.core.JsonValue;
+import com.anthropic.core.http.HttpResponseFor;
 import com.anthropic.models.messages.Base64ImageSource;
 import com.anthropic.models.messages.Base64PdfSource;
 import com.anthropic.models.messages.CacheControlEphemeral;
@@ -75,10 +76,12 @@ import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -553,7 +556,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 					this.observationRegistry)
 			.observe(() -> {
 
-				Message message = this.anthropicClient.messages().create(request);
+				HttpResponseFor<Message> rawResponse = this.anthropicClient.messages()
+					.withRawResponse()
+					.create(request);
+				Message message = rawResponse.parse();
+				RateLimit rateLimit = AnthropicRateLimit.from(rawResponse.headers());
 
 				List<ContentBlock> contentBlocks = message.content();
 				if (contentBlocks.isEmpty()) {
@@ -573,7 +580,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 						: currentChatResponseUsage;
 
 				ChatResponse chatResponse = new ChatResponse(generations,
-						from(message, accumulatedUsage, citations, webSearchResults));
+						from(message, accumulatedUsage, citations, webSearchResults, rateLimit));
 
 				observationContext.setResponse(chatResponse);
 
@@ -1022,12 +1029,13 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @return the chat response metadata
 	 */
 	private ChatResponseMetadata from(Message message, Usage usage, List<Citation> citations,
-			List<AnthropicWebSearchResult> webSearchResults) {
+			List<AnthropicWebSearchResult> webSearchResults, RateLimit rateLimit) {
 		Assert.notNull(message, "Anthropic Message must not be null");
 		ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder()
 			.id(message.id())
 			.usage(usage)
 			.model(message.model().asString())
+			.rateLimit(rateLimit)
 			.keyValue("anthropic-response", message);
 		if (!citations.isEmpty()) {
 			metadataBuilder.keyValue("citations", citations).keyValue("citationCount", citations.size());
