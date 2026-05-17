@@ -16,6 +16,8 @@
 
 package org.springframework.ai.anthropic;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,6 +25,8 @@ import java.util.Optional;
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.core.JsonValue;
+import com.anthropic.core.http.Headers;
+import com.anthropic.core.http.HttpResponseFor;
 import com.anthropic.models.messages.ContentBlock;
 import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
@@ -45,6 +49,8 @@ import org.mockito.quality.Strictness;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 
@@ -73,11 +79,24 @@ class AnthropicChatModelTests {
 	@Mock
 	private MessageService messageService;
 
+	@Mock
+	private MessageService.WithRawResponse messageServiceWithRawResponse;
+
 	private AnthropicChatModel chatModel;
 
 	@BeforeEach
+	@SuppressWarnings("unchecked")
 	void setUp() {
 		given(this.anthropicClient.messages()).willReturn(this.messageService);
+		given(this.messageService.withRawResponse()).willReturn(this.messageServiceWithRawResponse);
+		given(this.messageServiceWithRawResponse.create(any(MessageCreateParams.class))).willAnswer(invocation -> {
+			MessageCreateParams params = invocation.getArgument(0);
+			Message message = this.messageService.create(params);
+			HttpResponseFor<Message> rawResponse = mock(HttpResponseFor.class);
+			given(rawResponse.parse()).willReturn(message);
+			given(rawResponse.headers()).willReturn(Headers.builder().build());
+			return rawResponse;
+		});
 
 		this.chatModel = AnthropicChatModel.builder()
 			.anthropicClient(this.anthropicClient)
@@ -387,6 +406,44 @@ class AnthropicChatModelTests {
 		given(message.usage()).willReturn(usage);
 
 		return message;
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void rateLimitHeadersArePopulatedInMetadata() {
+		Message mockResponse = createMockMessage("OK", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+
+		Instant resetAt = Instant.now().plus(30, ChronoUnit.SECONDS);
+		Headers rateLimitHeaders = Headers.builder()
+			.put("anthropic-ratelimit-requests-limit", "100")
+			.put("anthropic-ratelimit-requests-remaining", "99")
+			.put("anthropic-ratelimit-requests-reset", resetAt.toString())
+			.put("anthropic-ratelimit-tokens-limit", "50000")
+			.put("anthropic-ratelimit-tokens-remaining", "49000")
+			.put("anthropic-ratelimit-tokens-reset", resetAt.toString())
+			.build();
+
+		given(this.messageServiceWithRawResponse.create(any(MessageCreateParams.class))).willAnswer(invocation -> {
+			MessageCreateParams params = invocation.getArgument(0);
+			Message message = this.messageService.create(params);
+			HttpResponseFor<Message> rawResponse = mock(HttpResponseFor.class);
+			given(rawResponse.parse()).willReturn(message);
+			given(rawResponse.headers()).willReturn(rateLimitHeaders);
+			return rawResponse;
+		});
+
+		ChatResponse response = this.chatModel.call(new Prompt("test"));
+
+		ChatResponseMetadata metadata = response.getMetadata();
+		RateLimit rateLimit = metadata.getRateLimit();
+		assertThat(rateLimit).isNotNull();
+		assertThat(rateLimit.getRequestsLimit()).isEqualTo(100L);
+		assertThat(rateLimit.getRequestsRemaining()).isEqualTo(99L);
+		assertThat(rateLimit.getRequestsReset()).isNotNull().isPositive();
+		assertThat(rateLimit.getTokensLimit()).isEqualTo(50000L);
+		assertThat(rateLimit.getTokensRemaining()).isEqualTo(49000L);
+		assertThat(rateLimit.getTokensReset()).isNotNull().isPositive();
 	}
 
 }
