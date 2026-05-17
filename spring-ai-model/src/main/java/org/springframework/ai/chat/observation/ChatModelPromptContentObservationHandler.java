@@ -17,18 +17,22 @@
 package org.springframework.ai.chat.observation;
 
 import java.util.List;
+import java.util.StringJoiner;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
+import io.micrometer.tracing.Span;
+import io.micrometer.tracing.handler.TracingObservationHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.content.Content;
 import org.springframework.ai.observation.ObservabilityHelper;
 import org.springframework.util.CollectionUtils;
 
 /**
- * Handler for emitting the chat prompt content to logs.
+ * Handler for emitting the chat prompt content to logs and as span attributes.
  *
  * @author Thomas Vitale
  * @author Jonatan Ivanov
@@ -38,9 +42,42 @@ public class ChatModelPromptContentObservationHandler implements ObservationHand
 
 	private static final Logger logger = LoggerFactory.getLogger(ChatModelPromptContentObservationHandler.class);
 
+	/**
+	 * Span attribute key for input messages, following the OpenTelemetry GenAI
+	 * semantic conventions.
+	 */
+	static final String GEN_AI_INPUT_MESSAGES = "gen_ai.input.messages";
+
 	@Override
 	public void onStop(ChatModelObservationContext context) {
 		logger.info("Chat Model Prompt Content:\n{}", ObservabilityHelper.concatenateStrings(prompt(context)));
+		sampleSpanTag(context);
+	}
+
+	private void sampleSpanTag(ChatModelObservationContext context) {
+		TracingObservationHandler.TracingContext tracingContext = context.get(TracingObservationHandler.TracingContext.class);
+		if (tracingContext == null) {
+			return;
+		}
+		Span span = tracingContext.getSpan();
+		if (span == null) {
+			return;
+		}
+		List<Message> instructions = context.getRequest().getInstructions();
+		if (CollectionUtils.isEmpty(instructions)) {
+			return;
+		}
+		span.tag(GEN_AI_INPUT_MESSAGES, serializeMessages(instructions));
+	}
+
+	private String serializeMessages(List<Message> messages) {
+		StringJoiner joiner = new StringJoiner(", ", "[", "]");
+		for (Message message : messages) {
+			String role = (message.getMessageType() != null) ? message.getMessageType().getValue() : "unknown";
+			String content = (message.getText() != null) ? message.getText() : "";
+			joiner.add("{\"role\":\"" + role + "\",\"content\":\"" + content + "\"}");
+		}
+		return joiner.toString();
 	}
 
 	private List<String> prompt(ChatModelObservationContext context) {
