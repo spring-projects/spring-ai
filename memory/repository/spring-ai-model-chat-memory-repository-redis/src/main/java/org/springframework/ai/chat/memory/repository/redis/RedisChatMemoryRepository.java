@@ -281,83 +281,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 									toolCallJson.has("arguments") ? toolCallJson.get("arguments").getAsString() : ""));
 						});
 					}
-
-					// Handle media if present
-					List<Media> media = new ArrayList<>();
-					if (json.has("media") && json.get("media").isJsonArray()) {
-						JsonArray mediaArray = json.getAsJsonArray("media");
-						for (JsonElement mediaElement : mediaArray) {
-							JsonObject mediaJson = mediaElement.getAsJsonObject();
-
-							// Extract required media properties
-							String mediaId = mediaJson.has("id") ? mediaJson.get("id").getAsString() : null;
-							String mediaName = mediaJson.has("name") ? mediaJson.get("name").getAsString() : null;
-							String mimeTypeString = mediaJson.has("mimeType") ? mediaJson.get("mimeType").getAsString()
-									: null;
-
-							if (mimeTypeString != null) {
-								MimeType mimeType = MimeType.valueOf(mimeTypeString);
-								Media.Builder mediaBuilder = Media.builder().mimeType(mimeType);
-
-								// Set optional properties if present
-								if (mediaId != null) {
-									mediaBuilder.id(mediaId);
-								}
-
-								if (mediaName != null) {
-									mediaBuilder.name(mediaName);
-								}
-
-								// Handle data based on its type
-								if (mediaJson.has("data")) {
-									JsonElement dataElement = mediaJson.get("data");
-									if (dataElement.isJsonPrimitive() && dataElement.getAsJsonPrimitive().isString()) {
-										String dataString = dataElement.getAsString();
-
-										// Check if data is Base64-encoded
-										if (mediaJson.has("dataType")
-												&& "base64".equals(mediaJson.get("dataType").getAsString())) {
-											// Decode Base64 string to byte array
-											try {
-												byte[] decodedBytes = Base64.getDecoder().decode(dataString);
-												mediaBuilder.data(decodedBytes);
-											}
-
-											catch (IllegalArgumentException e) {
-												logger.warn("Failed to decode Base64 data, storing as string", e);
-												mediaBuilder.data(dataString);
-											}
-										}
-
-										else {
-											// Handle URL/URI data
-											try {
-												mediaBuilder.data(URI.create(dataString));
-											}
-
-											catch (IllegalArgumentException e) {
-												// Not a valid URI, store as string
-												mediaBuilder.data(dataString);
-											}
-										}
-									}
-
-									else if (dataElement.isJsonArray()) {
-										// For backward compatibility - handle byte array
-										// data stored as JSON array
-										JsonArray dataArray = dataElement.getAsJsonArray();
-										byte[] byteArray = new byte[dataArray.size()];
-										for (int i = 0; i < dataArray.size(); i++) {
-											byteArray[i] = dataArray.get(i).getAsByte();
-										}
-										mediaBuilder.data(byteArray);
-									}
-								}
-
-								media.add(mediaBuilder.build());
-							}
-						}
-					}
+					List<Media> media = parseMedia(json);
 
 					AssistantMessage assistantMessage = AssistantMessage.builder()
 						.content(content)
@@ -374,81 +298,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 					}
 
 					// Create a UserMessage with the builder to properly set metadata
-					List<Media> userMedia = new ArrayList<>();
-					if (json.has("media") && json.get("media").isJsonArray()) {
-						JsonArray mediaArray = json.getAsJsonArray("media");
-						for (JsonElement mediaElement : mediaArray) {
-							JsonObject mediaJson = mediaElement.getAsJsonObject();
-
-							// Extract required media properties
-							String mediaId = mediaJson.has("id") ? mediaJson.get("id").getAsString() : null;
-							String mediaName = mediaJson.has("name") ? mediaJson.get("name").getAsString() : null;
-							String mimeTypeString = mediaJson.has("mimeType") ? mediaJson.get("mimeType").getAsString()
-									: null;
-
-							if (mimeTypeString != null) {
-								MimeType mimeType = MimeType.valueOf(mimeTypeString);
-								Media.Builder mediaBuilder = Media.builder().mimeType(mimeType);
-
-								// Set optional properties if present
-								if (mediaId != null) {
-									mediaBuilder.id(mediaId);
-								}
-
-								if (mediaName != null) {
-									mediaBuilder.name(mediaName);
-								}
-
-								// Handle data based on its type and markers
-								if (mediaJson.has("data")) {
-									JsonElement dataElement = mediaJson.get("data");
-									if (dataElement.isJsonPrimitive() && dataElement.getAsJsonPrimitive().isString()) {
-										String dataString = dataElement.getAsString();
-
-										// Check if data is Base64-encoded
-										if (mediaJson.has("dataType")
-												&& "base64".equals(mediaJson.get("dataType").getAsString())) {
-											// Decode Base64 string to byte array
-											try {
-												byte[] decodedBytes = Base64.getDecoder().decode(dataString);
-												mediaBuilder.data(decodedBytes);
-											}
-
-											catch (IllegalArgumentException e) {
-												logger.warn("Failed to decode Base64 data, storing as string", e);
-												mediaBuilder.data(dataString);
-											}
-										}
-
-										else {
-											// Handle URL/URI data
-											try {
-												mediaBuilder.data(URI.create(dataString));
-											}
-
-											catch (IllegalArgumentException e) {
-												// Not a valid URI, store as string
-												mediaBuilder.data(dataString);
-											}
-										}
-									}
-
-									else if (dataElement.isJsonArray()) {
-										// For backward compatibility - handle byte array
-										// data stored as JSON array
-										JsonArray dataArray = dataElement.getAsJsonArray();
-										byte[] byteArray = new byte[dataArray.size()];
-										for (int i = 0; i < dataArray.size(); i++) {
-											byteArray[i] = dataArray.get(i).getAsByte();
-										}
-										mediaBuilder.data(byteArray);
-									}
-								}
-
-								userMedia.add(mediaBuilder.build());
-							}
-						}
-					}
+					List<Media> userMedia = parseMedia(json);
 					messages.add(UserMessage.builder().text(content).metadata(metadata).media(userMedia).build());
 				}
 
@@ -998,82 +848,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 							toolCallJson.has("arguments") ? toolCallJson.get("arguments").getAsString() : ""));
 				});
 			}
-
-			// Handle media if present
-			List<Media> media = new ArrayList<>();
-			if (json.has("media") && json.get("media").isJsonArray()) {
-				JsonArray mediaArray = json.getAsJsonArray("media");
-				for (JsonElement mediaElement : mediaArray) {
-					JsonObject mediaJson = mediaElement.getAsJsonObject();
-
-					// Extract required media properties
-					String mediaId = mediaJson.has("id") ? mediaJson.get("id").getAsString() : null;
-					String mediaName = mediaJson.has("name") ? mediaJson.get("name").getAsString() : null;
-					String mimeTypeString = mediaJson.has("mimeType") ? mediaJson.get("mimeType").getAsString() : null;
-
-					if (mimeTypeString != null) {
-						MimeType mimeType = MimeType.valueOf(mimeTypeString);
-						Media.Builder mediaBuilder = Media.builder().mimeType(mimeType);
-
-						// Set optional properties if present
-						if (mediaId != null) {
-							mediaBuilder.id(mediaId);
-						}
-
-						if (mediaName != null) {
-							mediaBuilder.name(mediaName);
-						}
-
-						// Handle data based on its type
-						if (mediaJson.has("data")) {
-							JsonElement dataElement = mediaJson.get("data");
-							if (dataElement.isJsonPrimitive() && dataElement.getAsJsonPrimitive().isString()) {
-								String dataString = dataElement.getAsString();
-
-								// Check if data is Base64-encoded
-								if (mediaJson.has("dataType")
-										&& "base64".equals(mediaJson.get("dataType").getAsString())) {
-									// Decode Base64 string to byte array
-									try {
-										byte[] decodedBytes = Base64.getDecoder().decode(dataString);
-										mediaBuilder.data(decodedBytes);
-									}
-
-									catch (IllegalArgumentException e) {
-										logger.warn("Failed to decode Base64 data, storing as string", e);
-										mediaBuilder.data(dataString);
-									}
-								}
-
-								else {
-									// Handle URL/URI data
-									try {
-										mediaBuilder.data(URI.create(dataString));
-									}
-
-									catch (IllegalArgumentException e) {
-										// Not a valid URI, store as string
-										mediaBuilder.data(dataString);
-									}
-								}
-							}
-
-							else if (dataElement.isJsonArray()) {
-								// For backward compatibility - handle byte array data
-								// stored as JSON array
-								JsonArray dataArray = dataElement.getAsJsonArray();
-								byte[] byteArray = new byte[dataArray.size()];
-								for (int i = 0; i < dataArray.size(); i++) {
-									byteArray[i] = dataArray.get(i).getAsByte();
-								}
-								mediaBuilder.data(byteArray);
-							}
-						}
-
-						media.add(mediaBuilder.build());
-					}
-				}
-			}
+			List<Media> media = parseMedia(json);
 
 			return AssistantMessage.builder()
 				.content(content)
@@ -1085,80 +860,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 
 		else if (MessageType.USER.toString().equals(type)) {
 			// Create a UserMessage with the builder to properly set metadata
-			List<Media> userMedia = new ArrayList<>();
-			if (json.has("media") && json.get("media").isJsonArray()) {
-				JsonArray mediaArray = json.getAsJsonArray("media");
-				for (JsonElement mediaElement : mediaArray) {
-					JsonObject mediaJson = mediaElement.getAsJsonObject();
-
-					// Extract required media properties
-					String mediaId = mediaJson.has("id") ? mediaJson.get("id").getAsString() : null;
-					String mediaName = mediaJson.has("name") ? mediaJson.get("name").getAsString() : null;
-					String mimeTypeString = mediaJson.has("mimeType") ? mediaJson.get("mimeType").getAsString() : null;
-
-					if (mimeTypeString != null) {
-						MimeType mimeType = MimeType.valueOf(mimeTypeString);
-						Media.Builder mediaBuilder = Media.builder().mimeType(mimeType);
-
-						// Set optional properties if present
-						if (mediaId != null) {
-							mediaBuilder.id(mediaId);
-						}
-
-						if (mediaName != null) {
-							mediaBuilder.name(mediaName);
-						}
-
-						// Handle data based on its type and markers
-						if (mediaJson.has("data")) {
-							JsonElement dataElement = mediaJson.get("data");
-							if (dataElement.isJsonPrimitive() && dataElement.getAsJsonPrimitive().isString()) {
-								String dataString = dataElement.getAsString();
-
-								// Check if data is Base64-encoded
-								if (mediaJson.has("dataType")
-										&& "base64".equals(mediaJson.get("dataType").getAsString())) {
-									// Decode Base64 string to byte array
-									try {
-										byte[] decodedBytes = Base64.getDecoder().decode(dataString);
-										mediaBuilder.data(decodedBytes);
-									}
-
-									catch (IllegalArgumentException e) {
-										logger.warn("Failed to decode Base64 data, storing as string", e);
-										mediaBuilder.data(dataString);
-									}
-								}
-
-								else {
-									// Handle URL/URI data
-									try {
-										mediaBuilder.data(URI.create(dataString));
-									}
-
-									catch (IllegalArgumentException e) {
-										// Not a valid URI, store as string
-										mediaBuilder.data(dataString);
-									}
-								}
-							}
-
-							else if (dataElement.isJsonArray()) {
-								// For backward compatibility - handle byte array data
-								// stored as JSON array
-								JsonArray dataArray = dataElement.getAsJsonArray();
-								byte[] byteArray = new byte[dataArray.size()];
-								for (int i = 0; i < dataArray.size(); i++) {
-									byteArray[i] = dataArray.get(i).getAsByte();
-								}
-								mediaBuilder.data(byteArray);
-							}
-						}
-
-						userMedia.add(mediaBuilder.build());
-					}
-				}
-			}
+			List<Media> userMedia = parseMedia(json);
 			return UserMessage.builder().text(content).metadata(metadata).media(userMedia).build();
 		}
 
@@ -1189,6 +891,71 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		// For unknown message types, return a generic UserMessage
 		logger.warn("Unknown message type: {}, returning generic UserMessage", type);
 		return UserMessage.builder().text(content).metadata(metadata).build();
+	}
+
+	private List<Media> parseMedia(JsonObject json) {
+		List<Media> mediaList = new ArrayList<>();
+		if (json.has("media") && json.get("media").isJsonArray()) {
+			JsonArray mediaArray = json.getAsJsonArray("media");
+			for (JsonElement mediaElement : mediaArray) {
+				JsonObject mediaJson = mediaElement.getAsJsonObject();
+				String mimeTypeString = mediaJson.has("mimeType") ? mediaJson.get("mimeType").getAsString() : null;
+
+				if (mimeTypeString != null) {
+					MimeType mimeType = MimeType.valueOf(mimeTypeString);
+					Media.Builder mediaBuilder = Media.builder().mimeType(mimeType);
+
+					if (mediaJson.has("id")) {
+						mediaBuilder.id(mediaJson.get("id").getAsString());
+					}
+
+					if (mediaJson.has("name")) {
+						mediaBuilder.name(mediaJson.get("name").getAsString());
+					}
+
+					if (mediaJson.has("data")) {
+						parseMediaData(mediaJson, mediaBuilder);
+					}
+
+					mediaList.add(mediaBuilder.build());
+				}
+			}
+		}
+		return mediaList;
+	}
+
+	private void parseMediaData(JsonObject mediaJson, Media.Builder mediaBuilder) {
+		JsonElement dataElement = mediaJson.get("data");
+		if (dataElement.isJsonPrimitive() && dataElement.getAsJsonPrimitive().isString()) {
+			String dataString = dataElement.getAsString();
+
+			if (mediaJson.has("dataType") && "base64".equals(mediaJson.get("dataType").getAsString())) {
+				try {
+					byte[] decodedBytes = Base64.getDecoder().decode(dataString);
+					mediaBuilder.data(decodedBytes);
+				}
+				catch (IllegalArgumentException e) {
+					logger.warn("Failed to decode Base64 data, storing as string", e);
+					mediaBuilder.data(dataString);
+				}
+			}
+			else {
+				try {
+					mediaBuilder.data(URI.create(dataString));
+				}
+				catch (IllegalArgumentException e) {
+					mediaBuilder.data(dataString);
+				}
+			}
+		}
+		else if (dataElement.isJsonArray()) {
+			JsonArray dataArray = dataElement.getAsJsonArray();
+			byte[] byteArray = new byte[dataArray.size()];
+			for (int i = 0; i < dataArray.size(); i++) {
+				byteArray[i] = dataArray.get(i).getAsByte();
+			}
+			mediaBuilder.data(byteArray);
+		}
 	}
 
 	/**
