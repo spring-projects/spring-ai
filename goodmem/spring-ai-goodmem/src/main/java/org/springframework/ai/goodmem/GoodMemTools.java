@@ -122,6 +122,25 @@ public class GoodMemTools {
 		}
 	}
 
+	@Tool(name = "goodmem_update_space",
+			description = "Update an existing GoodMem space. Omitted arguments keep their current values. replaceLabelsJson and mergeLabelsJson cannot be used together.")
+	public Map<String, Object> updateSpace(@ToolParam(description = "The UUID of the space to update.") String spaceId,
+			@ToolParam(required = false, description = "New name for the space.") @Nullable String name,
+			@ToolParam(required = false,
+					description = "Whether to allow unauthenticated read access to the space.") @Nullable Boolean publicRead,
+			@ToolParam(required = false,
+					description = "A JSON object of labels that replaces the entire existing label set, e.g. {\"env\":\"prod\"}.") @Nullable String replaceLabelsJson,
+			@ToolParam(required = false,
+					description = "A JSON object of labels to merge into the existing label set, e.g. {\"team\":\"ml\"}.") @Nullable String mergeLabelsJson) {
+		try {
+			return this.client.updateSpace(spaceId, name, publicRead, replaceLabelsJson, mergeLabelsJson);
+		}
+		catch (GoodMemClientException ex) {
+			logger.warn("goodmem_update_space failed: {}", ex.getMessage());
+			return errorResult(ex);
+		}
+	}
+
 	@Tool(name = "goodmem_create_memory",
 			description = "Store a document as a new memory in a GoodMem space. Accepts a local file path or plain text. The memory is chunked and embedded asynchronously.")
 	public Map<String, Object> createMemory(

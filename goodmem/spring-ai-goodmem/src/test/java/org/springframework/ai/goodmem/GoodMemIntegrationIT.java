@@ -277,6 +277,33 @@ class GoodMemIntegrationIT {
 		assertThat(result.get("error")).asString().isNotBlank();
 	}
 
+	@Test
+	@Order(11)
+	void updateSpace_changesName() {
+		String original = "spring-ai-update-" + UUID.randomUUID().toString().substring(0, 8);
+		String renamed = original + "-renamed";
+		Map<String, Object> created = this.tools.createSpace(original, this.embedderId, null, null, null);
+		String spaceId = String.valueOf(created.get("spaceId"));
+		try {
+			Map<String, Object> updated = this.tools.updateSpace(spaceId, renamed, null, null, null);
+			assertThat(updated.get("name")).isEqualTo(renamed);
+		}
+		finally {
+			cleanupSpace(created);
+		}
+	}
+
+	@Test
+	@Order(12)
+	void updateSpace_withBothLabelArgumentsReturnsActionableError() {
+		// updateSpace rejects the conflicting arguments before any HTTP call, so a
+		// placeholder space ID is sufficient here.
+		Map<String, Object> result = this.tools.updateSpace("00000000-0000-0000-0000-000000000000", null, null,
+				"{\"a\":\"b\"}", "{\"c\":\"d\"}");
+		assertThat(result).extracting("success").isEqualTo(false);
+		assertThat(result.get("error")).asString().contains("Cannot use both");
+	}
+
 	private void cleanupSpace(Map<String, Object> spaceResult) {
 		try {
 			Object idObj = spaceResult.get("spaceId");

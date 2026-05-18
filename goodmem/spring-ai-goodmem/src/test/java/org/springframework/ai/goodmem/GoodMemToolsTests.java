@@ -27,22 +27,23 @@ import org.springframework.ai.tool.annotation.Tool;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Basic structural tests verifying that the GoodMem tool surface exposes the expected
- * {@link Tool}-annotated methods. These tests do not require a live GoodMem instance.
+ * Structural tests for the {@link Tool}-annotated surface of {@link GoodMemTools}. No
+ * live GoodMem instance is required.
  */
 class GoodMemToolsTests {
 
+	private static final List<String> EXPECTED_TOOL_NAMES = List.of("goodmem_list_embedders", "goodmem_list_spaces",
+			"goodmem_create_space", "goodmem_update_space", "goodmem_create_memory", "goodmem_retrieve_memories",
+			"goodmem_get_memory", "goodmem_delete_memory");
+
 	@Test
 	void allExpectedToolsAreAnnotated() {
-		List<String> expectedToolNames = Arrays.asList("goodmem_create_space", "goodmem_list_spaces",
-				"goodmem_create_memory", "goodmem_retrieve_memories", "goodmem_get_memory", "goodmem_delete_memory",
-				"goodmem_list_embedders");
 		List<String> actualNames = Arrays.stream(GoodMemTools.class.getDeclaredMethods())
 			.map(method -> method.getAnnotation(Tool.class))
 			.filter(annotation -> annotation != null)
 			.map(Tool::name)
 			.toList();
-		assertThat(actualNames).containsExactlyInAnyOrderElementsOf(expectedToolNames);
+		assertThat(actualNames).containsExactlyInAnyOrderElementsOf(EXPECTED_TOOL_NAMES);
 	}
 
 	@Test

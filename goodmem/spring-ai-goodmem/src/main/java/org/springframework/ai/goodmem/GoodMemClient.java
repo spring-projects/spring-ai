@@ -194,6 +194,61 @@ public final class GoodMemClient {
 	}
 
 	/**
+	 * Update an existing space's name, labels, or access settings. Only fields with
+	 * non-{@code null} arguments are sent in the PUT payload; omitted fields keep their
+	 * current value on the server. {@code replaceLabelsJson} and {@code mergeLabelsJson}
+	 * are mutually exclusive.
+	 * @param spaceId the UUID of the space to update
+	 * @param name new name for the space, or {@code null} to leave unchanged
+	 * @param publicRead whether to allow unauthenticated read access, or {@code null} to
+	 * leave unchanged
+	 * @param replaceLabelsJson a JSON object string of labels that replace all existing
+	 * labels (e.g. {@code {"env":"prod"}}), or {@code null}
+	 * @param mergeLabelsJson a JSON object string of labels that merge into existing
+	 * labels (e.g. {@code {"team":"ml"}}), or {@code null}
+	 * @return the updated space as a map, or a map with {@code success=false} when both
+	 * label arguments are provided
+	 * @since 2.0.0
+	 */
+	public Map<String, Object> updateSpace(String spaceId, @Nullable String name, @Nullable Boolean publicRead,
+			@Nullable String replaceLabelsJson, @Nullable String mergeLabelsJson) {
+		Assert.hasText(spaceId, "spaceId cannot be null or empty");
+		if (StringUtils.hasText(replaceLabelsJson) && StringUtils.hasText(mergeLabelsJson)) {
+			Map<String, Object> err = new LinkedHashMap<>();
+			err.put("success", false);
+			err.put("error", "Cannot use both replaceLabelsJson and mergeLabelsJson at the same time.");
+			return err;
+		}
+
+		ObjectNode requestBody = OBJECT_MAPPER.createObjectNode();
+		if (name != null) {
+			requestBody.put("name", name);
+		}
+		if (publicRead != null) {
+			requestBody.put("publicRead", publicRead);
+		}
+		if (StringUtils.hasText(replaceLabelsJson)) {
+			try {
+				requestBody.set("replaceLabels", OBJECT_MAPPER.readTree(replaceLabelsJson));
+			}
+			catch (RuntimeException ex) {
+				throw new GoodMemClientException("Failed to parse replaceLabelsJson: " + ex.getMessage(), ex);
+			}
+		}
+		if (StringUtils.hasText(mergeLabelsJson)) {
+			try {
+				requestBody.set("mergeLabels", OBJECT_MAPPER.readTree(mergeLabelsJson));
+			}
+			catch (RuntimeException ex) {
+				throw new GoodMemClientException("Failed to parse mergeLabelsJson: " + ex.getMessage(), ex);
+			}
+		}
+
+		JsonNode body = putJson("/v1/spaces/" + urlEncode(spaceId), requestBody);
+		return jsonNodeToMap(body);
+	}
+
+	/**
 	 * Delete a space by ID.
 	 * @param spaceId the UUID of the space
 	 * @return a confirmation map
@@ -586,6 +641,25 @@ public final class GoodMemClient {
 					response.body());
 		}
 		return response.body();
+	}
+
+	private JsonNode putJson(String path, JsonNode body) {
+		String url = this.baseUrl + path;
+		String json;
+		try {
+			json = OBJECT_MAPPER.writeValueAsString(body);
+		}
+		catch (RuntimeException ex) {
+			throw new GoodMemClientException("Failed to serialize request body", ex);
+		}
+		HttpRequest request = HttpRequest.newBuilder(URI.create(url))
+			.timeout(this.timeout)
+			.header("X-API-Key", this.apiKey)
+			.header("Content-Type", "application/json")
+			.header("Accept", "application/json")
+			.PUT(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
+			.build();
+		return parseJson(doRequest(request));
 	}
 
 	private void delete(String path) {
