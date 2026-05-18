@@ -50,11 +50,17 @@
 			<artifactId>spring-ai-autoconfigure-vector-store-observation</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-qdrant-store</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-    </dependencies>
+    		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-qdrant-store</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+	
+		<dependency>
+			<groupId>io.grpc</groupId>
+			<artifactId>grpc-api</artifactId>
+			<version>${grpc-netty-shaded.version}</version>
+		</dependency>
+	</dependencies>
 
 </project>
