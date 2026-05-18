@@ -8,13 +8,17 @@ be used with any Spring AI `ChatClient` or agent.
 
 | Tool name | Description |
 |---|---|
-| `goodmem_create_space` | Create a new space or reuse an existing one (dedupe by name) |
+| `goodmem_list_embedders` | List the available embedder models |
 | `goodmem_list_spaces` | List all spaces in your account |
+| `goodmem_get_space` | Fetch a space by UUID (embedders, chunking config, labels) |
+| `goodmem_create_space` | Create a new space or reuse an existing one (dedupe by name) |
+| `goodmem_update_space` | Update a space's name, public-read flag, or labels (replace or merge) |
+| `goodmem_delete_space` | Permanently delete a space and everything in it |
 | `goodmem_create_memory` | Store text or files (PDF, DOCX, image, ...) as memories |
+| `goodmem_list_memories` | List memories in a space with optional status filter, sorting, and pagination |
 | `goodmem_retrieve_memories` | Semantic similarity search across one or more spaces |
 | `goodmem_get_memory` | Fetch a specific memory by ID, optionally with original content |
 | `goodmem_delete_memory` | Permanently delete a memory and its embeddings |
-| `goodmem_list_embedders` | List the available embedder models |
 
 ## Installation
 
