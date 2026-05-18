@@ -44,9 +44,11 @@
 			<artifactId>spring-ai-s3-vector-store</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter</artifactId>
+			<artifactId>spring-boot-autoconfigure</artifactId>
+			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

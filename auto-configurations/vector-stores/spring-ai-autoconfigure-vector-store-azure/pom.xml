@@ -43,11 +43,12 @@
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-azure-store</artifactId>
 			<version>${project.parent.version}</version>
-			<optional>true</optional>
 		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter</artifactId>
+			<artifactId>spring-boot-autoconfigure</artifactId>
+			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -59,6 +60,7 @@
 			<artifactId>spring-boot-autoconfigure-processor</artifactId>
 			<optional>true</optional>
 		</dependency>
+
 		<!-- test dependencies -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
