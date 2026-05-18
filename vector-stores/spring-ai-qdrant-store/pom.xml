@@ -101,11 +101,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>io.qdrant</groupId>
             <artifactId>client</artifactId>
             <version>${qdrant.version}</version>

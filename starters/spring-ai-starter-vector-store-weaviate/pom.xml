@@ -50,11 +50,11 @@
 			<artifactId>spring-ai-autoconfigure-vector-store-observation</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-weaviate-store</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-    </dependencies>
+    		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-weaviate-store</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+	</dependencies>
 
 </project>

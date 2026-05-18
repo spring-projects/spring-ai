@@ -55,6 +55,8 @@
 			<artifactId>spring-ai-opensearch-store</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
+
+		<!-- TODO: move? -->
 		<dependency>
 			<groupId>software.amazon.awssdk</groupId>
 			<artifactId>apache-client</artifactId>
