@@ -46,12 +46,6 @@
         </dependency>
         
         <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-rag</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-core</artifactId>
         </dependency>
@@ -93,6 +87,12 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-jdbc</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-data-redis</artifactId>
 			<scope>test</scope>
 		</dependency>
 

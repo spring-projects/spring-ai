@@ -50,11 +50,11 @@
 			<artifactId>spring-ai-autoconfigure-vector-store-observation</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
-		<dependency>
+    		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-milvus-store</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
-    </dependencies>
+	</dependencies>
 
 </project>
