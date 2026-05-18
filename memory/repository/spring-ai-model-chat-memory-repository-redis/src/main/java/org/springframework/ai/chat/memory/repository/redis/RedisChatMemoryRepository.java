@@ -1,38 +1,20 @@
-package org.springframework.ai.chat.memory.repository.redis;
+/*
+ * Copyright 2023-present the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.memory.ChatMemoryRepository;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.content.Media;
-import org.springframework.ai.content.MediaContent;
-import org.springframework.util.Assert;
-import org.springframework.util.MimeType;
-import redis.clients.jedis.JedisPooled;
-import redis.clients.jedis.Pipeline;
-import redis.clients.jedis.json.Path2;
-import redis.clients.jedis.search.*;
-import redis.clients.jedis.search.RediSearchUtil;
-import redis.clients.jedis.search.aggr.AggregationBuilder;
-import redis.clients.jedis.search.aggr.AggregationResult;
-import redis.clients.jedis.search.aggr.Reducers;
-import redis.clients.jedis.search.querybuilder.QueryBuilders;
-import redis.clients.jedis.search.querybuilder.QueryNode;
-import redis.clients.jedis.search.querybuilder.Values;
-import redis.clients.jedis.search.schemafields.NumericField;
-import redis.clients.jedis.search.schemafields.SchemaField;
-import redis.clients.jedis.search.schemafields.TagField;
-import redis.clients.jedis.search.schemafields.TextField;
+package org.springframework.ai.chat.memory.repository.redis;
 
 import java.net.URI;
 import java.time.Duration;
@@ -44,6 +26,45 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.Pipeline;
+import redis.clients.jedis.json.Path2;
+import redis.clients.jedis.search.Document;
+import redis.clients.jedis.search.FTCreateParams;
+import redis.clients.jedis.search.IndexDataType;
+import redis.clients.jedis.search.Query;
+import redis.clients.jedis.search.RediSearchUtil;
+import redis.clients.jedis.search.SearchResult;
+import redis.clients.jedis.search.aggr.AggregationBuilder;
+import redis.clients.jedis.search.aggr.AggregationResult;
+import redis.clients.jedis.search.aggr.Reducers;
+import redis.clients.jedis.search.querybuilder.QueryBuilders;
+import redis.clients.jedis.search.querybuilder.QueryNode;
+import redis.clients.jedis.search.querybuilder.Values;
+import redis.clients.jedis.search.schemafields.NumericField;
+import redis.clients.jedis.search.schemafields.SchemaField;
+import redis.clients.jedis.search.schemafields.TagField;
+import redis.clients.jedis.search.schemafields.TextField;
+
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.content.Media;
+import org.springframework.ai.content.MediaContent;
+import org.springframework.util.Assert;
+import org.springframework.util.MimeType;
 
 /**
  * Redis implementation of {@link ChatMemoryRepository} using Redis (JSON + Query Engine).
@@ -93,7 +114,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		long nextTimestamp = getNextTimestampForConversation(conversationId);
 		final AtomicLong timestampSequence = new AtomicLong(nextTimestamp);
 
-		try (Pipeline pipeline = jedis.pipelined()) {
+		try (Pipeline pipeline = this.jedis.pipelined()) {
 			for (Message message : messages) {
 				long timestamp = timestampSequence.getAndIncrement();
 				String key = createKey(conversationId, timestamp);
@@ -112,8 +133,8 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 
 				pipeline.jsonSet(key, ROOT_PATH, json);
 
-				if (config.getTimeToLiveSeconds() != -1) {
-					pipeline.expire(key, config.getTimeToLiveSeconds());
+				if (this.config.getTimeToLiveSeconds() != -1) {
+					pipeline.expire(key, this.config.getTimeToLiveSeconds());
 				}
 			}
 			pipeline.sync();
@@ -144,10 +165,10 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 			logger.debug("Storing message with key: {}, JSON: {}", key, json);
 		}
 
-		jedis.jsonSet(key, ROOT_PATH, json);
+		this.jedis.jsonSet(key, ROOT_PATH, json);
 
-		if (config.getTimeToLiveSeconds() != -1) {
-			jedis.expire(key, config.getTimeToLiveSeconds());
+		if (this.config.getTimeToLiveSeconds() != -1) {
+			this.jedis.expire(key, this.config.getTimeToLiveSeconds());
 		}
 	}
 
@@ -160,7 +181,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 	 */
 	private long getNextTimestampForConversation(String conversationId) {
 		// Create a Redis key specifically for tracking the sequence
-		String sequenceKey = String.format("%scounter:%s", config.getKeyPrefix(), escapeKey(conversationId));
+		String sequenceKey = String.format("%scounter:%s", this.config.getKeyPrefix(), escapeKey(conversationId));
 
 		try {
 			// Get the current time as base timestamp
@@ -172,14 +193,14 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 					+ "return redis.call('INCR', KEYS[1])";
 
 			// Execute the script atomically
-			Object result = jedis.eval(script, java.util.Collections.singletonList(sequenceKey),
+			Object result = this.jedis.eval(script, java.util.Collections.singletonList(sequenceKey),
 					java.util.Collections.singletonList(String.valueOf(baseTimestamp)));
 
 			long nextTimestamp = Long.parseLong(result.toString());
 
 			// Set expiration on the counter key (same as the messages)
-			if (config.getTimeToLiveSeconds() != -1) {
-				jedis.expire(sequenceKey, config.getTimeToLiveSeconds());
+			if (this.config.getTimeToLiveSeconds() != -1) {
+				this.jedis.expire(sequenceKey, this.config.getTimeToLiveSeconds());
 			}
 
 			if (logger.isDebugEnabled()) {
@@ -199,7 +220,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 	}
 
 	public List<Message> get(String conversationId) {
-		return get(conversationId, config.getMaxMessagesPerConversation());
+		return get(conversationId, this.config.getMaxMessagesPerConversation());
 	}
 
 	public List<Message> get(String conversationId, int lastN) {
@@ -211,7 +232,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 				Values.tags(RediSearchUtil.escape(conversationId)));
 		Query query = new Query(queryNode.toString()).setSortBy("timestamp", true).limit(0, lastN);
 
-		SearchResult result = jedis.ftSearch(config.getIndexName(), query);
+		SearchResult result = this.jedis.ftSearch(this.config.getIndexName(), query);
 
 		if (logger.isDebugEnabled()) {
 			logger.debug("Redis search for conversation {} returned {} results", conversationId,
@@ -239,9 +260,8 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 				Map<String, Object> metadata = new HashMap<>();
 				if (json.has("metadata") && json.get("metadata").isJsonObject()) {
 					JsonObject metadataJson = json.getAsJsonObject("metadata");
-					metadataJson.entrySet().forEach(entry -> {
-						metadata.put(entry.getKey(), gson.fromJson(entry.getValue(), Object.class));
-					});
+					metadataJson.entrySet()
+						.forEach(entry -> metadata.put(entry.getKey(), gson.fromJson(entry.getValue(), Object.class)));
 				}
 
 				if (MessageType.ASSISTANT.toString().equals(type)) {
@@ -486,9 +506,9 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		QueryNode queryNode = QueryBuilders.intersect("conversation_id",
 				Values.tags(RediSearchUtil.escape(conversationId)));
 		Query query = new Query(queryNode.toString());
-		SearchResult result = jedis.ftSearch(config.getIndexName(), query);
+		SearchResult result = this.jedis.ftSearch(this.config.getIndexName(), query);
 
-		try (Pipeline pipeline = jedis.pipelined()) {
+		try (Pipeline pipeline = this.jedis.pipelined()) {
 			result.getDocuments().forEach(doc -> pipeline.del(doc.getId()));
 			pipeline.sync();
 		}
@@ -496,7 +516,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 
 	private void initializeSchema() {
 		try {
-			if (!jedis.ftList().contains(config.getIndexName())) {
+			if (!this.jedis.ftList().contains(this.config.getIndexName())) {
 				List<SchemaField> schemaFields = new ArrayList<>();
 
 				// Basic fields for all messages - using schema field objects
@@ -506,9 +526,9 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 				schemaFields.add(new NumericField("$.timestamp").as("timestamp"));
 
 				// Add metadata fields based on user-provided schema or default to text
-				if (config.getMetadataFields() != null && !config.getMetadataFields().isEmpty()) {
+				if (this.config.getMetadataFields() != null && !this.config.getMetadataFields().isEmpty()) {
 					// User has provided a metadata schema - use it
-					for (Map<String, String> fieldDef : config.getMetadataFields()) {
+					for (Map<String, String> fieldDef : this.config.getMetadataFields()) {
 						String fieldName = fieldDef.get("name");
 						String fieldType = fieldDef.getOrDefault("type", "text");
 						String jsonPath = "$.metadata." + fieldName;
@@ -539,9 +559,9 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 				// Create the index with the defined schema
 				FTCreateParams indexParams = FTCreateParams.createParams()
 					.on(IndexDataType.JSON)
-					.prefix(config.getKeyPrefix());
+					.prefix(this.config.getKeyPrefix());
 
-				String response = jedis.ftCreate(config.getIndexName(), indexParams,
+				String response = this.jedis.ftCreate(this.config.getIndexName(), indexParams,
 						schemaFields.toArray(new SchemaField[0]));
 
 				if (!response.equals("OK")) {
@@ -549,13 +569,13 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 				}
 
 				if (logger.isDebugEnabled()) {
-					logger.debug("Created Redis search index '{}' with {} schema fields", config.getIndexName(),
+					logger.debug("Created Redis search index '{}' with {} schema fields", this.config.getIndexName(),
 							schemaFields.size());
 				}
 			}
 
 			else if (logger.isDebugEnabled()) {
-				logger.debug("Redis search index '{}' already exists", config.getIndexName());
+				logger.debug("Redis search index '{}' already exists", this.config.getIndexName());
 			}
 		}
 
@@ -569,7 +589,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 	}
 
 	private String createKey(String conversationId, long timestamp) {
-		return String.format("%s%s:%d", config.getKeyPrefix(), escapeKey(conversationId), timestamp);
+		return String.format("%s%s:%d", this.config.getKeyPrefix(), escapeKey(conversationId), timestamp);
 	}
 
 	private Map<String, Object> createMessageDocument(String conversationId, Message message) {
@@ -661,9 +681,9 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		// Use Redis aggregation to get distinct conversation_ids
 		AggregationBuilder aggregation = new AggregationBuilder("*")
 			.groupBy("@conversation_id", Reducers.count().as("count"))
-			.limit(0, config.getMaxConversationIds()); // Use configured limit
+			.limit(0, this.config.getMaxConversationIds()); // Use configured limit
 
-		AggregationResult result = jedis.ftAggregate(config.getIndexName(), aggregation);
+		AggregationResult result = this.jedis.ftAggregate(this.config.getIndexName(), aggregation);
 
 		List<String> conversationIds = new ArrayList<>();
 		result.getResults().forEach(row -> {
@@ -690,7 +710,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 	@Override
 	public List<Message> findByConversationId(String conversationId) {
 		// Reuse existing get method with the configured limit
-		return get(conversationId, config.getMaxMessagesPerConversation());
+		return get(conversationId, this.config.getMaxMessagesPerConversation());
 	}
 
 	@Override
@@ -715,7 +735,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 	 * @return the index name
 	 */
 	public String getIndexName() {
-		return config.getIndexName();
+		return this.config.getIndexName();
 	}
 
 	@Override
@@ -733,7 +753,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 			logger.debug("Searching for messages with content pattern '{}' with limit {}", contentPattern, limit);
 		}
 
-		SearchResult result = jedis.ftSearch(config.getIndexName(), query);
+		SearchResult result = this.jedis.ftSearch(this.config.getIndexName(), query);
 		return processSearchResult(result);
 	}
 
@@ -750,7 +770,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 			logger.debug("Searching for messages of type {} with limit {}", messageType, limit);
 		}
 
-		SearchResult result = jedis.ftSearch(config.getIndexName(), query);
+		SearchResult result = this.jedis.ftSearch(this.config.getIndexName(), query);
 		return processSearchResult(result);
 	}
 
@@ -789,7 +809,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 					toTime, limit, finalQuery);
 		}
 
-		SearchResult result = jedis.ftSearch(config.getIndexName(), query);
+		SearchResult result = this.jedis.ftSearch(this.config.getIndexName(), query);
 		return processSearchResult(result);
 	}
 
@@ -804,8 +824,8 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		boolean isFieldIndexed = false;
 		String fieldType = "text";
 
-		if (config.getMetadataFields() != null) {
-			for (Map<String, String> fieldDef : config.getMetadataFields()) {
+		if (this.config.getMetadataFields() != null) {
+			for (Map<String, String> fieldDef : this.config.getMetadataFields()) {
 				if (metadataKey.equals(fieldDef.get("name"))) {
 					isFieldIndexed = true;
 					fieldType = fieldDef.getOrDefault("type", "text");
@@ -863,7 +883,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 					metadataValue, queryNode, limit);
 		}
 
-		SearchResult result = jedis.ftSearch(config.getIndexName(), query);
+		SearchResult result = this.jedis.ftSearch(this.config.getIndexName(), query);
 
 		if (logger.isDebugEnabled()) {
 			logger.debug("Search returned {} results", result.getTotalResults());
@@ -934,7 +954,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 	private List<MessageWithConversation> executeSearchQuery(Query query) {
 		try {
 			// Execute the search
-			SearchResult result = jedis.ftSearch(config.getIndexName(), query);
+			SearchResult result = this.jedis.ftSearch(this.config.getIndexName(), query);
 			return processSearchResult(result);
 		}
 
@@ -961,9 +981,8 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		Map<String, Object> metadata = new HashMap<>();
 		if (json.has("metadata") && json.get("metadata").isJsonObject()) {
 			JsonObject metadataJson = json.getAsJsonObject("metadata");
-			metadataJson.entrySet().forEach(entry -> {
-				metadata.put(entry.getKey(), gson.fromJson(entry.getValue(), Object.class));
-			});
+			metadataJson.entrySet()
+				.forEach(entry -> metadata.put(entry.getKey(), gson.fromJson(entry.getValue(), Object.class)));
 		}
 
 		if (MessageType.ASSISTANT.toString().equals(type)) {
