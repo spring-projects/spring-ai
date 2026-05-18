@@ -278,6 +278,25 @@ class GoodMemIntegrationIT {
 	}
 
 	@Test
+	@Order(10)
+	void getSpace_returnsFullRecord() {
+		String spaceName = "spring-ai-getspace-" + UUID.randomUUID().toString().substring(0, 8);
+		Map<String, Object> created = this.tools.createSpace(spaceName, this.embedderId, null, null, null);
+		String spaceId = String.valueOf(created.get("spaceId"));
+		try {
+			Map<String, Object> result = this.tools.getSpace(spaceId);
+			assertThat(result).extracting("success").isEqualTo(true);
+			@SuppressWarnings("unchecked")
+			Map<String, Object> space = (Map<String, Object>) result.get("space");
+			assertThat(space.get("spaceId")).isEqualTo(spaceId);
+			assertThat(space.get("name")).isEqualTo(spaceName);
+		}
+		finally {
+			cleanupSpace(created);
+		}
+	}
+
+	@Test
 	@Order(11)
 	void updateSpace_changesName() {
 		String original = "spring-ai-update-" + UUID.randomUUID().toString().substring(0, 8);
@@ -287,6 +306,12 @@ class GoodMemIntegrationIT {
 		try {
 			Map<String, Object> updated = this.tools.updateSpace(spaceId, renamed, null, null, null);
 			assertThat(updated.get("name")).isEqualTo(renamed);
+
+			// Round-trip via getSpace to confirm the change persisted server-side.
+			Map<String, Object> refetched = this.tools.getSpace(spaceId);
+			@SuppressWarnings("unchecked")
+			Map<String, Object> space = (Map<String, Object>) refetched.get("space");
+			assertThat(space.get("name")).isEqualTo(renamed);
 		}
 		finally {
 			cleanupSpace(created);
@@ -302,6 +327,45 @@ class GoodMemIntegrationIT {
 				"{\"a\":\"b\"}", "{\"c\":\"d\"}");
 		assertThat(result).extracting("success").isEqualTo(false);
 		assertThat(result.get("error")).asString().contains("Cannot use both");
+	}
+
+	@Test
+	@Order(13)
+	void listMemories_returnsMemoriesInSpace() throws InterruptedException {
+		String spaceName = "spring-ai-listmem-" + UUID.randomUUID().toString().substring(0, 8);
+		Map<String, Object> created = this.tools.createSpace(spaceName, this.embedderId, null, null, null);
+		String spaceId = String.valueOf(created.get("spaceId"));
+		try {
+			this.tools.createMemory(spaceId, "first note about Spring AI integration testing.", null, null);
+			this.tools.createMemory(spaceId, "second note about GoodMem semantic search.", null, null);
+			Thread.sleep(3000); // wait for async indexing
+
+			Map<String, Object> result = this.tools.listMemories(spaceId, null, false, null, null, null, null);
+			assertThat(result).extracting("success").isEqualTo(true);
+			@SuppressWarnings("unchecked")
+			List<Map<String, Object>> memories = (List<Map<String, Object>>) result.get("memories");
+			assertThat(memories).hasSizeGreaterThanOrEqualTo(2);
+		}
+		finally {
+			cleanupSpace(created);
+		}
+	}
+
+	@Test
+	@Order(14)
+	void deleteSpace_removesSpace() {
+		String spaceName = "spring-ai-deletespace-" + UUID.randomUUID().toString().substring(0, 8);
+		Map<String, Object> created = this.tools.createSpace(spaceName, this.embedderId, null, null, null);
+		String spaceId = String.valueOf(created.get("spaceId"));
+
+		Map<String, Object> deleted = this.tools.deleteSpace(spaceId);
+		assertThat(deleted).extracting("success").isEqualTo(true);
+		assertThat(deleted.get("spaceId")).isEqualTo(spaceId);
+
+		// goodmem_get_space wraps server errors, so a deleted space surfaces as
+		// success=false rather than a thrown exception.
+		Map<String, Object> refetched = this.tools.getSpace(spaceId);
+		assertThat(refetched).extracting("success").isEqualTo(false);
 	}
 
 	private void cleanupSpace(Map<String, Object> spaceResult) {

@@ -122,6 +122,22 @@ public class GoodMemTools {
 		}
 	}
 
+	@Tool(name = "goodmem_get_space",
+			description = "Fetch a GoodMem space by UUID. Returns the full space record, including embedders, chunking configuration, and labels.")
+	public Map<String, Object> getSpace(@ToolParam(description = "The UUID of the space to fetch.") String spaceId) {
+		try {
+			Map<String, Object> space = this.client.getSpace(spaceId);
+			Map<String, Object> result = new LinkedHashMap<>();
+			result.put("success", true);
+			result.put("space", space);
+			return result;
+		}
+		catch (GoodMemClientException ex) {
+			logger.warn("goodmem_get_space failed: {}", ex.getMessage());
+			return errorResult(ex);
+		}
+	}
+
 	@Tool(name = "goodmem_update_space",
 			description = "Update an existing GoodMem space. Omitted arguments keep their current values. replaceLabelsJson and mergeLabelsJson cannot be used together.")
 	public Map<String, Object> updateSpace(@ToolParam(description = "The UUID of the space to update.") String spaceId,
@@ -141,6 +157,19 @@ public class GoodMemTools {
 		}
 	}
 
+	@Tool(name = "goodmem_delete_space",
+			description = "Permanently delete a GoodMem space along with its memories, chunks, and vector embeddings. Irreversible.")
+	public Map<String, Object> deleteSpace(
+			@ToolParam(description = "The UUID of the space to delete.") String spaceId) {
+		try {
+			return this.client.deleteSpace(spaceId);
+		}
+		catch (GoodMemClientException ex) {
+			logger.warn("goodmem_delete_space failed: {}", ex.getMessage());
+			return errorResult(ex);
+		}
+	}
+
 	@Tool(name = "goodmem_create_memory",
 			description = "Store a document as a new memory in a GoodMem space. Accepts a local file path or plain text. The memory is chunked and embedded asynchronously.")
 	public Map<String, Object> createMemory(
@@ -156,6 +185,33 @@ public class GoodMemTools {
 		}
 		catch (GoodMemClientException ex) {
 			logger.warn("goodmem_create_memory failed: {}", ex.getMessage());
+			return errorResult(ex);
+		}
+	}
+
+	@Tool(name = "goodmem_list_memories",
+			description = "List memories in a GoodMem space with optional filtering by processing status, sorting, and pagination. Use includeContent=true to fetch each memory's original content alongside its metadata.")
+	public Map<String, Object> listMemories(
+			@ToolParam(description = "The UUID of the space to list memories from.") String spaceId,
+			@ToolParam(required = false,
+					description = "Filter by processing status. One of PENDING, PROCESSING, COMPLETED, or FAILED.") @Nullable String statusFilter,
+			@ToolParam(required = false,
+					description = "Include each memory's original content (in addition to metadata). Defaults to false.") @Nullable Boolean includeContent,
+			@ToolParam(required = false,
+					description = "Field to sort by: 'created_at' or 'updated_at'.") @Nullable String sortBy,
+			@ToolParam(required = false,
+					description = "Sort direction: 'ASCENDING' or 'DESCENDING'.") @Nullable String sortOrder,
+			@ToolParam(required = false,
+					description = "Maximum number of memories to return per page (server-clamped).") @Nullable Integer maxResults,
+			@ToolParam(required = false,
+					description = "Opaque pagination token returned by a previous call.") @Nullable String nextToken) {
+		boolean include = (includeContent != null) ? includeContent : false;
+		try {
+			return this.client.listMemories(spaceId, maxResults, nextToken, statusFilter, include, null, sortBy,
+					sortOrder);
+		}
+		catch (GoodMemClientException ex) {
+			logger.warn("goodmem_list_memories failed: {}", ex.getMessage());
 			return errorResult(ex);
 		}
 	}

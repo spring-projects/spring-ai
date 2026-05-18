@@ -493,7 +493,7 @@ public final class GoodMemClient {
 	}
 
 	/**
-	 * List memories within a space, with optional pagination and filtering.
+	 * List memories within a space, with optional pagination, filtering, and sorting.
 	 * @param spaceId the UUID of the space
 	 * @param maxResults max results per page (clamped server-side), or {@code null}
 	 * @param nextToken opaque pagination token from a previous response, or {@code null}
@@ -501,10 +501,15 @@ public final class GoodMemClient {
 	 * FAILED), or {@code null}
 	 * @param includeContent include the original content
 	 * @param filterExpression GoodMem filter expression, or {@code null}
+	 * @param sortBy field to sort by ({@code created_at} or {@code updated_at}), or
+	 * {@code null}
+	 * @param sortOrder sort direction ({@code ASCENDING} or {@code DESCENDING}), or
+	 * {@code null}
 	 * @return a map with the {@code memories} list and {@code nextToken}
 	 */
 	public Map<String, Object> listMemories(String spaceId, @Nullable Integer maxResults, @Nullable String nextToken,
-			@Nullable String statusFilter, boolean includeContent, @Nullable String filterExpression) {
+			@Nullable String statusFilter, boolean includeContent, @Nullable String filterExpression,
+			@Nullable String sortBy, @Nullable String sortOrder) {
 		Assert.hasText(spaceId, "spaceId cannot be null or empty");
 		Map<String, String> params = new LinkedHashMap<>();
 		if (maxResults != null) {
@@ -521,6 +526,12 @@ public final class GoodMemClient {
 		}
 		if (filterExpression != null) {
 			params.put("filter", filterExpression);
+		}
+		if (sortBy != null) {
+			params.put("sortBy", sortBy);
+		}
+		if (sortOrder != null) {
+			params.put("sortOrder", sortOrder);
 		}
 
 		JsonNode body = getJson("/v1/spaces/" + urlEncode(spaceId) + "/memories", params);

@@ -33,8 +33,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class GoodMemToolsTests {
 
 	private static final List<String> EXPECTED_TOOL_NAMES = List.of("goodmem_list_embedders", "goodmem_list_spaces",
-			"goodmem_create_space", "goodmem_update_space", "goodmem_create_memory", "goodmem_retrieve_memories",
-			"goodmem_get_memory", "goodmem_delete_memory");
+			"goodmem_get_space", "goodmem_create_space", "goodmem_update_space", "goodmem_delete_space",
+			"goodmem_create_memory", "goodmem_list_memories", "goodmem_retrieve_memories", "goodmem_get_memory",
+			"goodmem_delete_memory");
 
 	@Test
 	void allExpectedToolsAreAnnotated() {
