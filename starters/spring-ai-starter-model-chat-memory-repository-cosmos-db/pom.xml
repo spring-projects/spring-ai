@@ -53,6 +53,29 @@
             <artifactId>spring-ai-model-chat-memory-repository-cosmos-db</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-model-chat-memory</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-spring-data-cosmos</artifactId>
+			<version>${azure-cosmos.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-identity</artifactId>
+			<version>${azure-identity.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>jcl-over-slf4j</artifactId>
+		</dependency>
+
     </dependencies>
 
 </project>

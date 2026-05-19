@@ -391,6 +391,21 @@
 								<requireMavenVersion>
 									<version>[3.9.1,)</version>
 								</requireMavenVersion>
+
+								<bannedDependencies>
+									<!-- Spring AI should NOT depend on boot. There are only 4 exceptions to this: -->
+									<!-- 1. test code can currently depend on boot (includes element below)-->
+									<!-- 2. auto-configurations module CAN depend on boot, but should use optional=true on all deps. This enforcer rule sadly can't see those dependencies, so no particular config here -->
+									<!-- 3. starters obviously depend on boot. There is a special profile below in this pom that relaxes the following rule, see further below. -->
+									<!-- 4. docker-compose and testcontainers projects depend on boot and have an override in their respective poms. -->
+									<excludes>
+										<exclude>org.springframework.boot</exclude>
+									</excludes>
+									<includes>
+										<include>org.springframework.boot:*:*:jar:test</include>
+									</includes>
+									<message>Spring AI code should NOT depend on Spring boot. The only exception to this is autoconfigure and starter modules.</message>
+								</bannedDependencies>
 							</rules>
 						</configuration>
 					</execution>
@@ -717,6 +732,41 @@
 						</executions>
 					</plugin>
 
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>starter-banned-dependency-relaxation</id>
+			<!-- This profile relaxes the enforcer rule that prohibits code to depend on boot, for starters/ only. -->
+			<activation>
+				<file>
+					<!-- Trick: since profiles can't be activated via properties in children projects, -->
+					<!-- this profile leverages the fact that starters are the only project type that -->
+					<!-- do not contain source files. -->
+					<missing>src/main</missing>
+				</file>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-enforcer-plugin</artifactId>
+						<version>${maven-enforcer-plugin.version}</version>
+						<executions>
+							<execution>
+								<id>maven-enforcer</id>
+								<configuration>
+									<rules>
+										<bannedDependencies>
+											<includes combine.children="append">
+												<include>org.springframework.boot</include>
+											</includes>
+										</bannedDependencies>
+									</rules>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
 				</plugins>
 			</build>
 		</profile>
