@@ -354,13 +354,15 @@ Next, create a `OpenAiChatModel` and use it for text generations:
 
 [source,java]
 ----
-var openAiApi = new OpenAiApi("https://api.groq.com/openai", System.getenv("GROQ_API_KEY"));
-var openAiChatOptions = OpenAiChatOptions.builder()
-            .model("llama3-70b-8192")
-            .temperature(0.4)
-            .maxTokens(200)
-        .build();
-var chatModel = new OpenAiChatModel(this.openAiApi, this.openAiChatOptions);
+var chatModel = OpenAiChatModel.builder()
+    .options(OpenAiChatOptions.builder()
+        .baseUrl("https://api.groq.com/openai")
+        .apiKey(System.getenv("GROQ_API_KEY"))
+        .model("llama3-70b-8192")
+        .temperature(0.4)
+        .maxTokens(200)
+        .build())
+    .build();
 
 
 ChatResponse response = this.chatModel.call(
