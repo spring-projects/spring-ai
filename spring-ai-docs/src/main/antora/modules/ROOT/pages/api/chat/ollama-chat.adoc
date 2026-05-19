@@ -12,7 +12,6 @@ You first need access to an Ollama instance. There are a few options, including 
 
 * link:https://ollama.com/download[Download and install Ollama] on your local machine.
 * Configure and xref:api/testcontainers.adoc[run Ollama via Testcontainers].
-* Bind to an Ollama instance via xref:api/cloud-bindings.adoc[Kubernetes Service Bindings].
 
 You can pull the models you want to use in your application from the link:https://ollama.com/library[Ollama model library]:
 
