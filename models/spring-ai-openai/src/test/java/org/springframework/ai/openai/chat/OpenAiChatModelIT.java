@@ -685,7 +685,7 @@ public class OpenAiChatModelIT {
 	}
 
 	@Test
-	void testOpenAiApiRejectsUnknownParameter() {
+	void testOpenAiRejectsUnknownParameter() {
 		OpenAiChatOptions options = OpenAiChatOptions.builder()
 			.extraBody(Map.of("extra_body", Map.of("num_ctx", 4096, "num_predict", 10, "top_k", 40)))
 			.build();

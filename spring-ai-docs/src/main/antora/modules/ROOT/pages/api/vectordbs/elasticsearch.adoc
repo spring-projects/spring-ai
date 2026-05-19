@@ -271,7 +271,7 @@ public VectorStore vectorStore(RestClient restClient, EmbeddingModel embeddingMo
 // This can be any EmbeddingModel implementation
 @Bean
 public EmbeddingModel embeddingModel() {
-    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+    return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
 }
 ----
 
