@@ -149,6 +149,18 @@ public class McpStatelessServerAutoConfigurationIT {
 	}
 
 	@Test
+	void syncServerIsInitializedEagerlyUnderGlobalLazyInit() {
+		this.contextRunner.withPropertyValues("spring.main.lazy-initialization=true")
+			.run(context -> assertThat(context).hasSingleBean(McpStatelessSyncServer.class));
+	}
+
+	@Test
+	void asyncServerIsInitializedEagerlyUnderGlobalLazyInit() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC", "spring.main.lazy-initialization=true")
+			.run(context -> assertThat(context).hasSingleBean(McpStatelessAsyncServer.class));
+	}
+
+	@Test
 	void disabledConfiguration() {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.enabled=false").run(context -> {
 			assertThat(context).doesNotHaveBean(McpStatelessSyncServer.class);

@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.List;
+import java.util.Locale;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -29,6 +30,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -698,6 +700,31 @@ class JsonSchemaGeneratorTests {
 	void throwExceptionWhenTypeIsNull() {
 		assertThatThrownBy(() -> JsonSchemaGenerator.generateForType(null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("type cannot be null");
+	}
+
+	@Test
+	void convertTypeValuesToUpperCaseIsLocaleNeutral() throws Exception {
+		String schema = """
+				{
+				    "type": "object",
+				    "properties": {
+				        "count": { "type": "integer" },
+				        "name": { "type": "string" }
+				    }
+				}
+				""";
+		ObjectNode node = (ObjectNode) JsonParser.getJsonMapper().readTree(schema);
+		Locale original = Locale.getDefault();
+		try {
+			Locale.setDefault(new Locale("tr", "TR"));
+			JsonSchemaGenerator.convertTypeValuesToUpperCase(node);
+		}
+		finally {
+			Locale.setDefault(original);
+		}
+		assertThat(node.get("type").asText()).isEqualTo("OBJECT");
+		assertThat(node.path("properties").path("count").get("type").asText()).isEqualTo("INTEGER");
+		assertThat(node.path("properties").path("name").get("type").asText()).isEqualTo("STRING");
 	}
 
 	static class TestMethods {
