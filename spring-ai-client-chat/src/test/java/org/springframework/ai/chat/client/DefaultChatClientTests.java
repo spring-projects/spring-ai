@@ -131,6 +131,43 @@ class DefaultChatClientTests {
 	}
 
 	@Test
+	void whenPromptWithMessagesAndOptionsThenPropagated() {
+		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel).build();
+
+		ChatOptions promptOptions = ChatOptions.builder().model("qwen3-4b").temperature(0.7).build();
+		Prompt prompt = new Prompt(List.of(new UserMessage("Hello")), promptOptions);
+		DefaultChatClient.DefaultChatClientRequestSpec spec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
+			.prompt(prompt);
+
+		assertThat(spec.getMessages()).hasSize(1);
+		assertThat(spec.getMessages().get(0).getText()).isEqualTo("Hello");
+		assertThat(spec.getOptionsCustomizer()).isNotNull();
+
+		ChatOptions builtOptions = spec.getOptionsCustomizer().build();
+		assertThat(builtOptions.getModel()).isEqualTo("qwen3-4b");
+		assertThat(builtOptions.getTemperature()).isEqualTo(0.7);
+	}
+
+	@Test
+	void whenPromptWithOptionsThenOptionsFlowToChatClientRequest() {
+		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().model("gpt-5-mini").build());
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel).build();
+
+		ChatOptions promptOptions = ChatOptions.builder().model("qwen3-4b").build();
+		Prompt prompt = new Prompt(List.of(new UserMessage("Hello")), promptOptions);
+		DefaultChatClient.DefaultChatClientRequestSpec spec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
+			.prompt(prompt);
+
+		ChatClientRequest chatClientRequest = DefaultChatClientUtils.toChatClientRequest(spec);
+		assertThat(chatClientRequest).isNotNull();
+		assertThat(chatClientRequest.prompt().getOptions()).isNotNull();
+		assertThat(chatClientRequest.prompt().getOptions().getModel()).isEqualTo("qwen3-4b");
+	}
+
+	@Test
 	void testMutate() {
 		var media = mock(Media.class);
 		var toolCallback = mock(ToolCallback.class);
