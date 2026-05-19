@@ -14,3 +14,4 @@
 # limitations under the License.
 #
 org.springframework.ai.vectorstore.observation.autoconfigure.VectorStoreObservationAutoConfiguration
+org.springframework.ai.vectorstore.observation.autoconfigure.VectorStoreHealthContributorAutoConfiguration
