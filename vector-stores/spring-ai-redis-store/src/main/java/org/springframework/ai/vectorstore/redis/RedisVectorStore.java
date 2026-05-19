@@ -236,6 +236,7 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Soby Chacko
  * @author Jihoon Kim
+ * @author chabinhwang
  * @see VectorStore
  * @see EmbeddingModel
  * @since 1.0.0
@@ -357,9 +358,10 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 					this.batchingStrategy);
 
-			for (Document document : documents) {
+			for (int i = 0; i < documents.size(); i++) {
+				Document document = documents.get(i);
 				var fields = new HashMap<String, Object>();
-				float[] embedding = embeddings.get(documents.indexOf(document));
+				float[] embedding = embeddings.get(i);
 
 				// Normalize embeddings for COSINE distance metric
 				if (this.distanceMetric == DistanceMetric.COSINE) {
@@ -409,19 +411,23 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		try {
 			String filterStr = this.filterExpressionConverter.convertExpression(filterExpression);
+			// To avoid deleting only the first page, we paginate through all matches.
+			final int pageSize = 1000;
+			int deletedCount = 0;
 
-			List<String> matchingIds = new ArrayList<>();
-			SearchResult searchResult = this.jedis.ftSearch(this.indexName, filterStr);
+			while (true) {
+				SearchResult searchResult = this.jedis.ftSearch(this.indexName,
+						new Query(filterStr).limit(0, pageSize));
+				var docs = searchResult.getDocuments();
+				if (docs == null || docs.isEmpty()) {
+					break;
+				}
 
-			for (redis.clients.jedis.search.Document doc : searchResult.getDocuments()) {
-				String docId = doc.getId();
-				matchingIds.add(docId.replace(key(""), "")); // Remove the key prefix to
-																// get original ID
-			}
-
-			if (!matchingIds.isEmpty()) {
 				try (Pipeline pipeline = this.jedis.pipelined()) {
-					for (String id : matchingIds) {
+					for (redis.clients.jedis.search.Document doc : docs) {
+						String redisKey = doc.getId();
+						String id = redisKey.startsWith(this.prefix) ? redisKey.substring(this.prefix.length())
+								: redisKey;
 						pipeline.jsonDel(key(id));
 					}
 					List<Object> responses = pipeline.syncAndReturnAll();
@@ -433,8 +439,10 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 					}
 				}
 
-				logger.debug("Deleted {} documents matching filter expression", matchingIds.size());
+				deletedCount += docs.size();
 			}
+
+			logger.debug("Deleted {} documents matching filter expression", deletedCount);
 		}
 		catch (Exception e) {
 			logger.error("Failed to delete documents by filter", e);

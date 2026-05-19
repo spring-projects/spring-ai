@@ -18,6 +18,7 @@ package org.springframework.ai.testcontainers.service.connection.chroma;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.testcontainers.chromadb.ChromaDBContainer;
 
 import org.springframework.ai.vectorstore.chroma.autoconfigure.ChromaConnectionDetails;
@@ -62,7 +63,7 @@ class ChromaContainerConnectionDetailsFactory
 		}
 
 		@Override
-		public String getKeyToken() {
+		public @Nullable String getKeyToken() {
 			Map<String, String> envVars = getContainer().getEnvMap();
 			if (envVars.containsKey(CHROMA_SERVER_AUTH_CREDENTIALS)) {
 				return envVars.get(CHROMA_SERVER_AUTH_CREDENTIALS);

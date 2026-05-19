@@ -42,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Integration tests for {@link OpenAiEmbeddingModel}.
  *
  * @author Julien Dubois
+ * @author Sebastien Deleuze
  */
 @SpringBootTest(classes = OpenAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -119,6 +120,33 @@ class OpenAiEmbeddingIT {
 		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(2);
 		assertThat(embeddingResponse.getMetadata().getModel())
 			.isEqualTo(EmbeddingModel.TEXT_EMBEDDING_3_SMALL.toString());
+	}
+
+	@Test
+	void encodingFormatFloat() {
+		EmbeddingResponse embeddingResponse = this.openAiSdkEmbeddingModel
+			.call(new EmbeddingRequest(List.of("Hello World"),
+					OpenAiEmbeddingOptions.builder()
+						.model(EmbeddingModel.TEXT_EMBEDDING_3_SMALL.toString())
+						.encodingFormat(OpenAiEmbeddingOptions.EncodingFormat.FLOAT)
+						.build()));
+		assertThat(embeddingResponse.getResults()).hasSize(1);
+		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
+		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(1536);
+	}
+
+	@Test
+	void encodingFormatBase64() {
+		EmbeddingResponse embeddingResponse = this.openAiSdkEmbeddingModel
+			.call(new EmbeddingRequest(List.of("Hello World"),
+					OpenAiEmbeddingOptions.builder()
+						.model(EmbeddingModel.TEXT_EMBEDDING_3_SMALL.toString())
+						.encodingFormat(OpenAiEmbeddingOptions.EncodingFormat.BASE64)
+						.build()));
+		assertThat(embeddingResponse.getResults()).hasSize(1);
+		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
+		// Base64 embeddings are decoded to float[] by the SDK
+		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(1536);
 	}
 
 }

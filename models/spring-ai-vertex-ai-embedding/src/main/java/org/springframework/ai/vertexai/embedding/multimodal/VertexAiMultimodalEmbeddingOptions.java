@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vertexai.embedding.multimodal;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.util.StringUtils;
 
@@ -67,25 +69,25 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 	 * The embedding model name to use. Supported models are:
 	 * text-embedding-004, text-multilingual-embedding-002 and multimodalembedding@001.
 	 */
-	private String model;
+	private @Nullable String model;
 
 	/**
 	 * The number of dimensions the resulting output embeddings should have.
 	 * Supported for model version 004 and later. You can use this parameter to reduce the
 	 * embedding size, for example, for storage optimization.
 	 */
-	private Integer dimensions;
+	private @Nullable Integer dimensions;
 
 	/**
 	 * The start offset of the video segment in seconds. If not specified, it's calculated with max(0, endOffsetSec - 120).
 	 */
-	private Integer videoStartOffsetSec;
+	private @Nullable Integer videoStartOffsetSec;
 
 	/**
 	 * The end offset of the video segment in seconds. If not specified, it's calculated with min(video length, startOffSec + 120).
 	 * If both startOffSec and endOffSec are specified, endOffsetSec is adjusted to min(startOffsetSec+120, endOffsetSec).
 	 */
-	private Integer videoEndOffsetSec;
+	private @Nullable Integer videoEndOffsetSec;
 
 	/**
 	 * The interval of the video the embedding will be generated. The minimum value for interval_sec is 4.
@@ -93,7 +95,7 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 	 * of the interval. However, if the interval is larger than min(video length, 120s), it impacts the quality of the
 	 * generated embeddings. Default value: 16.
 	 */
-	private Integer videoIntervalSec;
+	private @Nullable Integer videoIntervalSec;
 
 
 	// @formatter:on
@@ -102,44 +104,44 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	@Override
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
+	public void setModel(@Nullable String model) {
 		this.model = model;
 	}
 
 	@Override
-	public Integer getDimensions() {
+	public @Nullable Integer getDimensions() {
 		return this.dimensions;
 	}
 
-	public void setDimensions(Integer dimensions) {
+	public void setDimensions(@Nullable Integer dimensions) {
 		this.dimensions = dimensions;
 	}
 
-	public Integer getVideoStartOffsetSec() {
+	public @Nullable Integer getVideoStartOffsetSec() {
 		return this.videoStartOffsetSec;
 	}
 
-	public void setVideoStartOffsetSec(Integer videoStartOffsetSec) {
+	public void setVideoStartOffsetSec(@Nullable Integer videoStartOffsetSec) {
 		this.videoStartOffsetSec = videoStartOffsetSec;
 	}
 
-	public Integer getVideoEndOffsetSec() {
+	public @Nullable Integer getVideoEndOffsetSec() {
 		return this.videoEndOffsetSec;
 	}
 
-	public void setVideoEndOffsetSec(Integer videoEndOffsetSec) {
+	public void setVideoEndOffsetSec(@Nullable Integer videoEndOffsetSec) {
 		this.videoEndOffsetSec = videoEndOffsetSec;
 	}
 
-	public Integer getVideoIntervalSec() {
+	public @Nullable Integer getVideoIntervalSec() {
 		return this.videoIntervalSec;
 	}
 
-	public void setVideoIntervalSec(Integer videoIntervalSec) {
+	public void setVideoIntervalSec(@Nullable Integer videoIntervalSec) {
 		this.videoIntervalSec = videoIntervalSec;
 	}
 
@@ -170,7 +172,7 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
-		public Builder model(String model) {
+		public Builder model(@Nullable String model) {
 			this.options.setModel(model);
 			return this;
 		}
@@ -180,22 +182,22 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
-		public Builder dimensions(Integer dimensions) {
+		public Builder dimensions(@Nullable Integer dimensions) {
 			this.options.setDimensions(dimensions);
 			return this;
 		}
 
-		public Builder videoStartOffsetSec(Integer videoStartOffsetSec) {
+		public Builder videoStartOffsetSec(@Nullable Integer videoStartOffsetSec) {
 			this.options.setVideoStartOffsetSec(videoStartOffsetSec);
 			return this;
 		}
 
-		public Builder videoEndOffsetSec(Integer videoEndOffsetSec) {
+		public Builder videoEndOffsetSec(@Nullable Integer videoEndOffsetSec) {
 			this.options.setVideoEndOffsetSec(videoEndOffsetSec);
 			return this;
 		}
 
-		public Builder videoIntervalSec(Integer videoIntervalSec) {
+		public Builder videoIntervalSec(@Nullable Integer videoIntervalSec) {
 			this.options.setVideoIntervalSec(videoIntervalSec);
 			return this;
 		}

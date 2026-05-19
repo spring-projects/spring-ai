@@ -41,38 +41,38 @@ import org.springframework.context.annotation.Bean;
  * @author lambochen
  * @author Issam El-atif
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 @AutoConfiguration
 @ConditionalOnProperty(name = SpringAIModelProperties.IMAGE_MODEL, havingValue = SpringAIModels.OPENAI,
 		matchIfMissing = true)
-@EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiImageProperties.class })
+@EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiImageProperties.class })
 public class OpenAiImageAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiImageModel openAiImageModel(OpenAiConnectionProperties commonProperties,
+	public OpenAiImageModel openAiImageModel(OpenAiCommonProperties commonProperties,
 			OpenAiImageProperties imageProperties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ImageModelObservationConvention> observationConvention) {
 
-		var imageModel = new OpenAiImageModel(openAiClient(commonProperties, imageProperties),
-				imageProperties.getOptions(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties, imageProperties);
+
+		var imageModel = new OpenAiImageModel(openAiClient(resolvedProperties), imageProperties.toOptions(),
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(imageModel::setObservationConvention);
 
 		return imageModel;
 	}
 
-	private OpenAIClient openAiClient(OpenAiConnectionProperties commonProperties,
-			OpenAiImageProperties imageProperties) {
+	private OpenAIClient openAiClient(OpenAiCommonProperties commonProperties) {
 
-		OpenAiAutoConfigurationUtil.ResolvedConnectionProperties resolved = OpenAiAutoConfigurationUtil
-			.resolveConnectionProperties(commonProperties, imageProperties);
-
-		return OpenAiSetup.setupSyncClient(resolved.getBaseUrl(), resolved.getApiKey(), resolved.getCredential(),
-				resolved.getMicrosoftDeploymentName(), resolved.getMicrosoftFoundryServiceVersion(),
-				resolved.getOrganizationId(), resolved.isMicrosoftFoundry(), resolved.isGitHubModels(),
-				resolved.getModel(), resolved.getTimeout(), resolved.getMaxRetries(), resolved.getProxy(),
-				resolved.getCustomHeaders());
+		return OpenAiSetup.setupSyncClient(commonProperties.getBaseUrl(), commonProperties.getApiKey(),
+				commonProperties.getCredential(), commonProperties.getMicrosoftDeploymentName(),
+				commonProperties.getMicrosoftFoundryServiceVersion(), commonProperties.getOrganizationId(),
+				commonProperties.isMicrosoftFoundry(), commonProperties.isGitHubModels(), commonProperties.getModel(),
+				commonProperties.getTimeout(), commonProperties.getMaxRetries(), commonProperties.getProxy(),
+				commonProperties.getCustomHeaders());
 	}
 
 }

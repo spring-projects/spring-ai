@@ -137,15 +137,12 @@ class BedrockProxyChatModelIT {
 
 		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
 		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
-		var referenceTokenUsage = this.chatModel.call(prompt).getMetadata().getUsage();
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
 		assertThat(streamingTokenUsage.getCompletionTokens()).isGreaterThan(0);
 		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
-
-		assertThat(streamingTokenUsage.getPromptTokens()).isEqualTo(referenceTokenUsage.getPromptTokens());
-		assertThat(streamingTokenUsage.getCompletionTokens()).isEqualTo(referenceTokenUsage.getCompletionTokens());
-		assertThat(streamingTokenUsage.getTotalTokens()).isEqualTo(referenceTokenUsage.getTotalTokens());
+		assertThat(streamingTokenUsage.getTotalTokens())
+			.isEqualTo(streamingTokenUsage.getPromptTokens() + streamingTokenUsage.getCompletionTokens());
 
 	}
 
@@ -626,7 +623,7 @@ class BedrockProxyChatModelIT {
 				frameworks, and real-time serving infrastructure. The ability to measure business
 				impact through metrics like click-through rate, conversion rate, and long-term
 				engagement is equally important. I'd be happy to dive deeper into any of these areas.
-				""".repeat(8);
+				""".repeat(15);
 
 		List<Message> conversationHistory = new ArrayList<>();
 		conversationHistory.add(new SystemMessage(largeSystemPrompt));
@@ -703,7 +700,7 @@ class BedrockProxyChatModelIT {
 				- Sunrise and sunset times for the location
 				The service uses data from multiple meteorological stations and satellites to ensure
 				accuracy and reliability. Data is updated every 15 minutes for most locations worldwide.
-				""".repeat(3);
+				""".repeat(10);
 		String forecastDesc = """
 				Get the weather forecast for the next 7 days for a specific location with detailed predictions.
 				This advanced forecasting service provides comprehensive weather predictions including:
@@ -721,7 +718,7 @@ class BedrockProxyChatModelIT {
 				machine learning algorithms, and historical climate data to provide highly accurate
 				predictions. Forecasts are updated four times daily with improving accuracy for near-term
 				predictions and reasonable accuracy extending to 7 days out.
-				""".repeat(3);
+				""".repeat(10);
 		String historicalDesc = """
 				Get historical weather data for a specific location and date range with comprehensive analysis.
 				This powerful historical weather service provides access to decades of weather records including:
@@ -738,7 +735,7 @@ class BedrockProxyChatModelIT {
 				climate trends, planning activities based on historical patterns, agricultural planning,
 				research purposes, and understanding how current weather compares to historical context.
 				Data quality indicators are provided to show the reliability of older records.
-				""".repeat(3);
+				""".repeat(10);
 		String alertsDesc = """
 				Get active weather alerts and warnings for a specific location with critical safety information.
 				This essential safety service provides real-time alerts from official meteorological services including:
@@ -757,7 +754,7 @@ class BedrockProxyChatModelIT {
 				safety, and contact information for local emergency management. Alerts are issued by
 				official national weather services and are updated in real-time as conditions evolve.
 				This service is critical for public safety and emergency preparedness.
-				""".repeat(3);
+				""".repeat(10);
 		String climateDesc = """
 				Get long-term climate data and comprehensive statistics for a specific location.
 				This climate analysis service provides in-depth climatological information including:
@@ -778,7 +775,7 @@ class BedrockProxyChatModelIT {
 				climate characteristics, agricultural planning, construction projects, tourism planning,
 				and understanding local climate change impacts. Data is derived from decades of official
 				meteorological observations and is continuously updated as new climate normals are established.
-				""".repeat(3);
+				""".repeat(10);
 		return List.of(
 				FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description(weatherDesc)

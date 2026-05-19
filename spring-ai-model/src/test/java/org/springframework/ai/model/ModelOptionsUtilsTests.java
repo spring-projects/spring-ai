@@ -33,99 +33,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class ModelOptionsUtilsTests {
 
 	@Test
-	public void merge() {
-		TestPortableOptionsImpl portableOptions = new TestPortableOptionsImpl();
-		portableOptions.setName("John");
-		portableOptions.setAge(30);
-		portableOptions.setNonInterfaceField("NonInterfaceField");
-
-		TestSpecificOptions specificOptions = new TestSpecificOptions();
-		specificOptions.setName("Mike");
-		specificOptions.setSpecificField("SpecificField");
-
-		assertThatThrownBy(
-				() -> ModelOptionsUtils.merge(portableOptions, specificOptions, TestPortableOptionsImpl.class))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("No @JsonProperty fields found in the ");
-
-		var specificOptions2 = ModelOptionsUtils.merge(portableOptions, specificOptions, TestSpecificOptions.class);
-
-		assertThat(specificOptions2.getAge()).isEqualTo(30);
-		assertThat(specificOptions2.getName()).isEqualTo("John"); // !!! Overridden by the
-		// portableOptions
-		assertThat(specificOptions2.getSpecificField()).isEqualTo("SpecificField");
-	}
-
-	@Test
-	public void objectToMap() {
-		TestPortableOptionsImpl portableOptions = new TestPortableOptionsImpl();
-		portableOptions.setName("John");
-		portableOptions.setAge(30);
-		portableOptions.setNonInterfaceField("NonInterfaceField");
-
-		Map<String, Object> map = ModelOptionsUtils.objectToMap(portableOptions);
-
-		assertThat(map).containsEntry("name", "John");
-		assertThat(map).containsEntry("age", 30);
-		assertThat(map).containsEntry("nonInterfaceField", "NonInterfaceField");
-	}
-
-	@Test
-	public void mapToClass() {
-		TestPortableOptionsImpl portableOptions = ModelOptionsUtils.mapToClass(
-				Map.of("name", "John", "age", 30, "nonInterfaceField", "NonInterfaceField"),
-				TestPortableOptionsImpl.class);
-
-		assertThat(portableOptions.getName()).isEqualTo("John");
-		assertThat(portableOptions.getAge()).isEqualTo(30);
-		assertThat(portableOptions.getNonInterfaceField()).isEqualTo("NonInterfaceField");
-	}
-
-	@Test
-	public void mergeBeans() {
-
-		var portableOptions = new TestPortableOptionsImpl();
-		portableOptions.setName("John");
-		portableOptions.setAge(30);
-		portableOptions.setNonInterfaceField("NonInterfaceField");
-
-		var specificOptions = new TestSpecificOptions();
-
-		specificOptions.setName("Mike");
-		specificOptions.setAge(60);
-		specificOptions.setSpecificField("SpecificField");
-
-		TestSpecificOptions specificOptions2 = ModelOptionsUtils.mergeBeans(portableOptions, specificOptions,
-				TestPortableOptions.class, false);
-
-		assertThat(specificOptions2.getAge()).isEqualTo(60);
-		assertThat(specificOptions2.getName()).isEqualTo("Mike");
-		assertThat(specificOptions2.getSpecificField()).isEqualTo("SpecificField");
-
-		TestSpecificOptions specificOptionsWithOverride = ModelOptionsUtils.mergeBeans(portableOptions, specificOptions,
-				TestPortableOptions.class, true);
-
-		assertThat(specificOptionsWithOverride.getAge()).isEqualTo(30);
-		assertThat(specificOptionsWithOverride.getName()).isEqualTo("John");
-		assertThat(specificOptionsWithOverride.getSpecificField()).isEqualTo("SpecificField");
-	}
-
-	@Test
-	public void copyToTarget() {
-		var portableOptions = new TestPortableOptionsImpl();
-		portableOptions.setName("John");
-		portableOptions.setAge(30);
-		portableOptions.setNonInterfaceField("NonInterfaceField");
-
-		TestSpecificOptions target = ModelOptionsUtils.copyToTarget(portableOptions, TestPortableOptions.class,
-				TestSpecificOptions.class);
-
-		assertThat(target.getAge()).isEqualTo(30);
-		assertThat(target.getName()).isEqualTo("John");
-		assertThat(target.getSpecificField()).isNull();
-	}
-
-	@Test
 	public void jsonToMap_emptyStringAsNullObject() {
 		String json = "{\"name\":\"\", \"age\":30}";
 		// For Map: empty string remains ""
@@ -164,15 +71,6 @@ public class ModelOptionsUtilsTests {
 		// .build();
 		// assertThatThrownBy(() -> strictMapper.readValue(jsonWithEmptyAge,
 		// Person.class)).isInstanceOf(Exception.class);
-	}
-
-	@Test
-	public void getJsonPropertyValues() {
-		record TestRecord(@JsonProperty("field1") String fieldA, @JsonProperty("field2") String fieldB) {
-
-		}
-		assertThat(ModelOptionsUtils.getJsonPropertyValues(TestRecord.class)).hasSize(2);
-		assertThat(ModelOptionsUtils.getJsonPropertyValues(TestRecord.class)).containsExactly("field1", "field2");
 	}
 
 	@Test

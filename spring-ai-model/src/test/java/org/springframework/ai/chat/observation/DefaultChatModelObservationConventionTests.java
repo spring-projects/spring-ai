@@ -149,11 +149,14 @@ class DefaultChatModelObservationConventionTests {
 					HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(),
 					HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString(),
 					HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
+					HighCardinalityKeyNames.REQUEST_STREAM.asString(),
 					HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(),
 					HighCardinalityKeyNames.REQUEST_TOOL_NAMES.asString(),
 					HighCardinalityKeyNames.REQUEST_TOP_K.asString(), HighCardinalityKeyNames.REQUEST_TOP_P.asString(),
 					HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(),
 					HighCardinalityKeyNames.RESPONSE_ID.asString(),
+					HighCardinalityKeyNames.USAGE_CACHE_WRITE_INPUT_TOKENS.asString(),
+					HighCardinalityKeyNames.USAGE_CACHE_READ_INPUT_TOKENS.asString(),
 					HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 					HighCardinalityKeyNames.USAGE_OUTPUT_TOKENS.asString(),
 					HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString());
@@ -175,6 +178,32 @@ class DefaultChatModelObservationConventionTests {
 			.toList()).doesNotContain(HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
 					HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(),
 					HighCardinalityKeyNames.RESPONSE_ID.asString());
+	}
+
+	@Test
+	void shouldHaveRequestStreamWhenStreaming() {
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.streaming(true)
+			.build();
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext))
+			.contains(KeyValue.of(HighCardinalityKeyNames.REQUEST_STREAM.asString(), "true"));
+	}
+
+	@Test
+	void shouldHaveKeyValuesWhenCacheTokensDefined() {
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.build();
+		observationContext.setResponse(new ChatResponse(
+				List.of(new Generation(new AssistantMessage("response"),
+						ChatGenerationMetadata.builder().finishReason("stop").build())),
+				ChatResponseMetadata.builder().id("id42").model("mistral-42").usage(new TestCacheUsage()).build()));
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).contains(
+				KeyValue.of(HighCardinalityKeyNames.USAGE_CACHE_WRITE_INPUT_TOKENS.asString(), "200"),
+				KeyValue.of(HighCardinalityKeyNames.USAGE_CACHE_READ_INPUT_TOKENS.asString(), "100"));
 	}
 
 	@Test
@@ -217,6 +246,20 @@ class DefaultChatModelObservationConventionTests {
 			usage.put("completionTokens", getCompletionTokens());
 			usage.put("totalTokens", getTotalTokens());
 			return usage;
+		}
+
+	}
+
+	static class TestCacheUsage extends TestUsage {
+
+		@Override
+		public Long getCacheWriteInputTokens() {
+			return 200L;
+		}
+
+		@Override
+		public Long getCacheReadInputTokens() {
+			return 100L;
 		}
 
 	}

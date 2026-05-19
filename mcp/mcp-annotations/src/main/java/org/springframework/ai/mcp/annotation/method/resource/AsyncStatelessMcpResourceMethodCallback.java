@@ -102,8 +102,7 @@ public final class AsyncStatelessMcpResourceMethodCallback extends AbstractMcpRe
 	 * @param context The transport context, may be null if the method doesn't require it
 	 * @param request The resource request, must not be null
 	 * @return A Mono that emits the resource result
-	 * @throws McpResourceMethodException if there is an error invoking the resource
-	 * method
+	 * @throws McpError if there is an error invoking the resource method
 	 * @throws IllegalArgumentException if the request is null or if URI variable
 	 * extraction fails
 	 */

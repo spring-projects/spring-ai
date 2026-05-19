@@ -69,7 +69,7 @@ public class ElevenLabsAutoConfiguration {
 
 		return ElevenLabsTextToSpeechModel.builder()
 			.elevenLabsApi(elevenLabsApi)
-			.defaultOptions(speechProperties.getOptions())
+			.defaultOptions(speechProperties.toOptions())
 			.retryTemplate(retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))
 			.build();
 	}

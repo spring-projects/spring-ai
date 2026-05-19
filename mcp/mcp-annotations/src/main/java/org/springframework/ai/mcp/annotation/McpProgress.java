@@ -36,10 +36,10 @@ import java.lang.annotation.Target;
  * &#64;McpProgress(clientId = "my-client-id")
  * public void handleProgressMessage(ProgressNotification notification) {
  *     // Handle the progress notification
+ * }
  * }</pre>
  *
  * @author Christian Tzolov
- *
  * @see io.modelcontextprotocol.spec.McpSchema.ProgressNotification
  */
 @Target({ ElementType.METHOD, ElementType.ANNOTATION_TYPE })

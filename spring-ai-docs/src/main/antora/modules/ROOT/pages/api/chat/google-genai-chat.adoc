@@ -105,39 +105,39 @@ The prefix `spring.ai.google.genai.chat` is the property prefix that lets you co
 |====
 | Property | Description | Default
 
-| spring.ai.google.genai.chat.options.model | Supported https://ai.google.dev/gemini-api/docs/models[Google GenAI Chat models] to use include `gemini-2.0-flash`, `gemini-2.0-flash-lite`, `gemini-pro`, and `gemini-1.5-flash`. | gemini-2.0-flash
-| spring.ai.google.genai.chat.options.response-mime-type | Output response mimetype of the generated candidate text. |  `text/plain`: (default) Text output or `application/json`: JSON response.
-| spring.ai.google.genai.chat.options.google-search-retrieval | Use Google search Grounding feature | `true` or `false`, default `false`.
-| spring.ai.google.genai.chat.options.include-server-side-tool-invocations | When true, the API response includes server-side tool calls and responses (e.g., Google Search invocations) in the response metadata, allowing observation of the server's tool usage. Only supported with Gemini Developer API (MLDev), not Vertex AI. See <<server-side-tool-invocations>>. | `false`
-| spring.ai.google.genai.chat.options.temperature | Controls the randomness of the output. Values can range over [0.0,1.0], inclusive. A value closer to 1.0 will produce responses that are more varied, while a value closer to 0.0 will typically result in less surprising responses from the generative. | -
-| spring.ai.google.genai.chat.options.top-k | The maximum number of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Top-k sampling considers the set of topK most probable tokens. | -
-| spring.ai.google.genai.chat.options.top-p | The maximum cumulative probability of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Nucleus sampling considers the smallest set of tokens whose probability sum is at least topP.  | -
-| spring.ai.google.genai.chat.options.candidate-count | The number of generated response messages to return. This value must be between [1, 8], inclusive. Defaults to 1. | 1
-| spring.ai.google.genai.chat.options.max-output-tokens | The maximum number of tokens to generate. | -
-| spring.ai.google.genai.chat.options.frequency-penalty | Frequency penalties for reducing repetition. | -
-| spring.ai.google.genai.chat.options.presence-penalty | Presence penalties for reducing repetition. | -
-| spring.ai.google.genai.chat.options.thinking-budget | Thinking budget for the thinking process. See <<thinking-config>>. | -
-| spring.ai.google.genai.chat.options.thinking-level | The level of thinking tokens the model should generate. Valid values: `LOW`, `HIGH`, `THINKING_LEVEL_UNSPECIFIED`. See <<thinking-config>>. | -
-| spring.ai.google.genai.chat.options.include-thoughts | Enable thought signatures for function calling. **Required** for Gemini 3 Pro to avoid validation errors during the internal tool execution loop. See <<thought-signatures>>. | false
-| spring.ai.google.genai.chat.options.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
-| spring.ai.google.genai.chat.options.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
-| spring.ai.google.genai.chat.options.internal-tool-execution-enabled | If true, the tool execution should be performed, otherwise the response from the model is returned back to the user. Default is null, but if it's null, `ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_ENABLED` which is true will take into account | -
-| spring.ai.google.genai.chat.options.safety-settings | List of safety settings to control safety filters, as defined by https://ai.google.dev/gemini-api/docs/safety-settings[Google GenAI Safety Settings]. Each safety setting can have a method, threshold, and category. | -
-| spring.ai.google.genai.chat.options.cached-content-name | The name of cached content to use for this request. When set along with `use-cached-content=true`, the cached content will be used as context. See <<cached-content>>. | -
-| spring.ai.google.genai.chat.options.use-cached-content | Whether to use cached content if available. When true and `cached-content-name` is set, the system will use the cached content. | false
-| spring.ai.google.genai.chat.options.auto-cache-threshold | Automatically cache prompts that exceed this token threshold. When set, prompts larger than this value will be automatically cached for reuse. Set to null to disable auto-caching. | -
-| spring.ai.google.genai.chat.options.auto-cache-ttl | Time-to-live (Duration) for auto-cached content in ISO-8601 format (e.g., `PT1H` for 1 hour). Used when auto-caching is enabled. | PT1H
+| spring.ai.google.genai.chat.model | Supported https://ai.google.dev/gemini-api/docs/models[Google GenAI Chat models] to use include `gemini-2.0-flash`, `gemini-2.0-flash-lite`, `gemini-pro`, and `gemini-1.5-flash`. | gemini-2.0-flash
+| spring.ai.google.genai.chat.response-mime-type | Output response mimetype of the generated candidate text. |  `text/plain`: (default) Text output or `application/json`: JSON response.
+| spring.ai.google.genai.chat.google-search-retrieval | Use Google search Grounding feature | `true` or `false`, default `false`.
+| spring.ai.google.genai.chat.include-server-side-tool-invocations | When true, the API response includes server-side tool calls and responses (e.g., Google Search invocations) in the response metadata, allowing observation of the server's tool usage. Only supported with Gemini Developer API (MLDev), not Vertex AI. See <<server-side-tool-invocations>>. | `false`
+| spring.ai.google.genai.chat.temperature | Controls the randomness of the output. Values can range over [0.0,1.0], inclusive. A value closer to 1.0 will produce responses that are more varied, while a value closer to 0.0 will typically result in less surprising responses from the generative. | -
+| spring.ai.google.genai.chat.top-k | The maximum number of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Top-k sampling considers the set of topK most probable tokens. | -
+| spring.ai.google.genai.chat.top-p | The maximum cumulative probability of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Nucleus sampling considers the smallest set of tokens whose probability sum is at least topP.  | -
+| spring.ai.google.genai.chat.candidate-count | The number of generated response messages to return. This value must be between [1, 8], inclusive. Defaults to 1. | 1
+| spring.ai.google.genai.chat.max-output-tokens | The maximum number of tokens to generate. | -
+| spring.ai.google.genai.chat.frequency-penalty | Frequency penalties for reducing repetition. | -
+| spring.ai.google.genai.chat.presence-penalty | Presence penalties for reducing repetition. | -
+| spring.ai.google.genai.chat.thinking-budget | Thinking budget for the thinking process. See <<thinking-config>>. | -
+| spring.ai.google.genai.chat.thinking-level | The level of thinking tokens the model should generate. Valid values: `LOW`, `HIGH`, `THINKING_LEVEL_UNSPECIFIED`. See <<thinking-config>>. | -
+| spring.ai.google.genai.chat.include-thoughts | Enable thought signatures for function calling. **Required** for Gemini 3 Pro to avoid validation errors during the internal tool execution loop. See <<thought-signatures>>. | false
+| spring.ai.google.genai.chat.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
+| spring.ai.google.genai.chat.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
+| spring.ai.google.genai.chat.internal-tool-execution-enabled | If true, the tool execution should be performed, otherwise the response from the model is returned back to the user. Default is null, but if it's null, `ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_ENABLED` which is true will take into account | -
+| spring.ai.google.genai.chat.safety-settings | List of safety settings to control safety filters, as defined by https://ai.google.dev/gemini-api/docs/safety-settings[Google GenAI Safety Settings]. Each safety setting can have a method, threshold, and category. | -
+| spring.ai.google.genai.chat.cached-content-name | The name of cached content to use for this request. When set along with `use-cached-content=true`, the cached content will be used as context. See <<cached-content>>. | -
+| spring.ai.google.genai.chat.use-cached-content | Whether to use cached content if available. When true and `cached-content-name` is set, the system will use the cached content. | false
+| spring.ai.google.genai.chat.auto-cache-threshold | Automatically cache prompts that exceed this token threshold. When set, prompts larger than this value will be automatically cached for reuse. Set to null to disable auto-caching. | -
+| spring.ai.google.genai.chat.auto-cache-ttl | Time-to-live (Duration) for auto-cached content in ISO-8601 format (e.g., `PT1H` for 1 hour). Used when auto-caching is enabled. | PT1H
 | spring.ai.google.genai.chat.enable-cached-content | Enable the `GoogleGenAiCachedContentService` bean for managing cached content. | true
 
 |====
 
-TIP: All properties prefixed with `spring.ai.google.genai.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
+TIP: All properties prefixed with `spring.ai.google.genai.chat` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
 
 == Runtime options [[chat-options]]
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-google-genai/src/main/java/org/springframework/ai/google/genai/GoogleGenAiChatOptions.java[GoogleGenAiChatOptions.java] provides model configurations, such as the temperature, the topK, etc.
 
-On start-up, the default options can be configured with the `GoogleGenAiChatModel(client, options)` constructor or the `spring.ai.google.genai.chat.options.*` properties.
+On start-up, the default options can be configured with the `GoogleGenAiChatModel(client, options)` constructor or the `spring.ai.google.genai.chat.*` properties.
 
 At runtime, you can override the default options by adding new, request specific, options to the `Prompt` call.
 For example, to override the default temperature for a specific request:
@@ -213,8 +213,8 @@ Enable via application properties:
 
 [source,application.properties]
 ----
-spring.ai.google.genai.chat.options.google-search-retrieval=true
-spring.ai.google.genai.chat.options.include-server-side-tool-invocations=true
+spring.ai.google.genai.chat.google-search-retrieval=true
+spring.ai.google.genai.chat.include-server-side-tool-invocations=true
 ----
 
 Or programmatically at runtime:
@@ -325,8 +325,8 @@ The `thinkingLevel` option controls the depth of reasoning tokens the model gene
 
 [source,application.properties]
 ----
-spring.ai.google.genai.chat.options.model=gemini-3-pro-preview
-spring.ai.google.genai.chat.options.thinking-level=HIGH
+spring.ai.google.genai.chat.model=gemini-3-pro-preview
+spring.ai.google.genai.chat.thinking-level=HIGH
 ----
 
 ==== Programmatic Configuration
@@ -468,8 +468,8 @@ Enable thought signatures using configuration properties:
 
 [source,application.properties]
 ----
-spring.ai.google.genai.chat.options.model=gemini-3-pro-preview
-spring.ai.google.genai.chat.options.include-thoughts=true
+spring.ai.google.genai.chat.model=gemini-3-pro-preview
+spring.ai.google.genai.chat.include-thoughts=true
 ----
 
 Or programmatically at runtime:
@@ -651,8 +651,8 @@ Or via configuration properties:
 
 [source,application.properties]
 ----
-spring.ai.google.genai.chat.options.use-cached-content=true
-spring.ai.google.genai.chat.options.cached-content-name=cachedContent/your-cache-name
+spring.ai.google.genai.chat.use-cached-content=true
+spring.ai.google.genai.chat.cached-content-name=cachedContent/your-cache-name
 ----
 
 ==== Managing Cached Content
@@ -706,9 +706,9 @@ Spring AI can automatically cache large prompts when they exceed a specified tok
 [source,application.properties]
 ----
 # Automatically cache prompts larger than 100,000 tokens
-spring.ai.google.genai.chat.options.auto-cache-threshold=100000
+spring.ai.google.genai.chat.auto-cache-threshold=100000
 # Set auto-cache TTL to 1 hour
-spring.ai.google.genai.chat.options.auto-cache-ttl=PT1H
+spring.ai.google.genai.chat.auto-cache-ttl=PT1H
 ----
 
 Or programmatically:
@@ -766,12 +766,12 @@ Complete configuration example:
 spring.ai.google.genai.chat.enable-cached-content=true
 
 # Use a specific cached content
-spring.ai.google.genai.chat.options.use-cached-content=true
-spring.ai.google.genai.chat.options.cached-content-name=cachedContent/my-cache-123
+spring.ai.google.genai.chat.use-cached-content=true
+spring.ai.google.genai.chat.cached-content-name=cachedContent/my-cache-123
 
 # Auto-caching configuration
-spring.ai.google.genai.chat.options.auto-cache-threshold=50000
-spring.ai.google.genai.chat.options.auto-cache-ttl=PT30M
+spring.ai.google.genai.chat.auto-cache-threshold=50000
+spring.ai.google.genai.chat.auto-cache-ttl=PT30M
 ----
 
 == Sample Controller
@@ -785,8 +785,8 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 [source,application.properties]
 ----
 spring.ai.google.genai.api-key=YOUR_API_KEY
-spring.ai.google.genai.chat.options.model=gemini-2.0-flash
-spring.ai.google.genai.chat.options.temperature=0.5
+spring.ai.google.genai.chat.model=gemini-2.0-flash
+spring.ai.google.genai.chat.temperature=0.5
 ----
 
 === Using Vertex AI
@@ -795,8 +795,8 @@ spring.ai.google.genai.chat.options.temperature=0.5
 ----
 spring.ai.google.genai.project-id=PROJECT_ID
 spring.ai.google.genai.location=LOCATION
-spring.ai.google.genai.chat.options.model=gemini-2.0-flash
-spring.ai.google.genai.chat.options.temperature=0.5
+spring.ai.google.genai.chat.model=gemini-2.0-flash
+spring.ai.google.genai.chat.temperature=0.5
 ----
 
 TIP: Replace the `project-id` with your Google Cloud Project ID and `location` is Google Cloud Region

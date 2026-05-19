@@ -85,8 +85,7 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 	}
 
 	protected KeyValue responseModel(ChatModelObservationContext context) {
-		if (context.getResponse() != null && context.getResponse().getMetadata() != null
-				&& StringUtils.hasText(context.getResponse().getMetadata().getModel())) {
+		if (context.getResponse() != null && StringUtils.hasText(context.getResponse().getMetadata().getModel())) {
 			return KeyValue.of(ChatModelObservationDocumentation.LowCardinalityKeyNames.RESPONSE_MODEL,
 					context.getResponse().getMetadata().getModel());
 		}
@@ -101,6 +100,7 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 		keyValues = requestMaxTokens(keyValues, context);
 		keyValues = requestPresencePenalty(keyValues, context);
 		keyValues = requestStopSequences(keyValues, context);
+		keyValues = requestStream(keyValues, context);
 		keyValues = requestTemperature(keyValues, context);
 		keyValues = requestTools(keyValues, context);
 		keyValues = requestTopK(keyValues, context);
@@ -108,6 +108,8 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 		// Response
 		keyValues = responseFinishReasons(keyValues, context);
 		keyValues = responseId(keyValues, context);
+		keyValues = usageCacheWriteInputTokens(keyValues, context);
+		keyValues = usageCacheReadInputTokens(keyValues, context);
 		keyValues = usageInputTokens(keyValues, context);
 		keyValues = usageOutputTokens(keyValues, context);
 		keyValues = usageTotalTokens(keyValues, context);
@@ -142,6 +144,14 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 			return keyValues.and(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString(),
 					String.valueOf(options.getPresencePenalty()));
+		}
+		return keyValues;
+	}
+
+	protected KeyValues requestStream(KeyValues keyValues, ChatModelObservationContext context) {
+		if (context.isStreaming()) {
+			return keyValues.and(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STREAM.asString(),
+					String.valueOf(true));
 		}
 		return keyValues;
 	}
@@ -227,18 +237,36 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 	}
 
 	protected KeyValues responseId(KeyValues keyValues, ChatModelObservationContext context) {
-		if (context.getResponse() != null && context.getResponse().getMetadata() != null
-				&& StringUtils.hasText(context.getResponse().getMetadata().getId())) {
+		if (context.getResponse() != null && StringUtils.hasText(context.getResponse().getMetadata().getId())) {
 			return keyValues.and(ChatModelObservationDocumentation.HighCardinalityKeyNames.RESPONSE_ID.asString(),
 					context.getResponse().getMetadata().getId());
 		}
 		return keyValues;
 	}
 
+	protected KeyValues usageCacheWriteInputTokens(KeyValues keyValues, ChatModelObservationContext context) {
+		if (context.getResponse() != null && context.getResponse().getMetadata().getUsage() != null
+				&& context.getResponse().getMetadata().getUsage().getCacheWriteInputTokens() != null) {
+			return keyValues.and(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.USAGE_CACHE_WRITE_INPUT_TOKENS.asString(),
+					String.valueOf(context.getResponse().getMetadata().getUsage().getCacheWriteInputTokens()));
+		}
+		return keyValues;
+	}
+
+	protected KeyValues usageCacheReadInputTokens(KeyValues keyValues, ChatModelObservationContext context) {
+		if (context.getResponse() != null && context.getResponse().getMetadata().getUsage() != null
+				&& context.getResponse().getMetadata().getUsage().getCacheReadInputTokens() != null) {
+			return keyValues.and(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.USAGE_CACHE_READ_INPUT_TOKENS.asString(),
+					String.valueOf(context.getResponse().getMetadata().getUsage().getCacheReadInputTokens()));
+		}
+		return keyValues;
+	}
+
 	protected KeyValues usageInputTokens(KeyValues keyValues, ChatModelObservationContext context) {
-		if (context.getResponse() != null && context.getResponse().getMetadata() != null
-				&& context.getResponse().getMetadata().getUsage() != null
-				&& context.getResponse().getMetadata().getUsage().getPromptTokens() != null) {
+		if (context.getResponse() != null && context.getResponse().getMetadata().getUsage() != null) {
+			context.getResponse().getMetadata().getUsage().getPromptTokens();
 			return keyValues.and(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 					String.valueOf(context.getResponse().getMetadata().getUsage().getPromptTokens()));
@@ -247,9 +275,8 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 	}
 
 	protected KeyValues usageOutputTokens(KeyValues keyValues, ChatModelObservationContext context) {
-		if (context.getResponse() != null && context.getResponse().getMetadata() != null
-				&& context.getResponse().getMetadata().getUsage() != null
-				&& context.getResponse().getMetadata().getUsage().getCompletionTokens() != null) {
+		if (context.getResponse() != null && context.getResponse().getMetadata().getUsage() != null) {
+			context.getResponse().getMetadata().getUsage().getCompletionTokens();
 			return keyValues.and(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.USAGE_OUTPUT_TOKENS.asString(),
 					String.valueOf(context.getResponse().getMetadata().getUsage().getCompletionTokens()));
@@ -258,9 +285,8 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 	}
 
 	protected KeyValues usageTotalTokens(KeyValues keyValues, ChatModelObservationContext context) {
-		if (context.getResponse() != null && context.getResponse().getMetadata() != null
-				&& context.getResponse().getMetadata().getUsage() != null
-				&& context.getResponse().getMetadata().getUsage().getTotalTokens() != null) {
+		if (context.getResponse() != null && context.getResponse().getMetadata().getUsage() != null) {
+			context.getResponse().getMetadata().getUsage().getTotalTokens();
 			return keyValues.and(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(),
 					String.valueOf(context.getResponse().getMetadata().getUsage().getTotalTokens()));

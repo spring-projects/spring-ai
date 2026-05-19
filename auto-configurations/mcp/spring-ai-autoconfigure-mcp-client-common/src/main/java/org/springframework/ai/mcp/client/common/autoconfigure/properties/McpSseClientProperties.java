@@ -46,7 +46,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *       sse-endpoint: /mcp-hub/sse/cf9ec4527e3c4a2cbb149a85ea45ab01
  *     custom-server:
  *       url: http://api.example.com
- *       sse-endpoint: /v1/mcp/events?token=abc123&format=json
+ *       sse-endpoint: /v1/mcp/events?token=abc123&amp;format=json
  *
  * # How to split a full URL:
  * # Full URL: http://localhost:3000/mcp-hub/sse/token123
@@ -59,6 +59,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @see SseParameters
  */
 @ConfigurationProperties(McpSseClientProperties.CONFIG_PREFIX)
+@Deprecated(since = "2.0.0", forRemoval = true)
 public class McpSseClientProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.mcp.client.sse";

@@ -233,7 +233,7 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 					.query("The World")
 					.topK(5)
 					.similarityThresholdAll()
-					.filterExpression("'\"foo bar 1\"' == 'bar.foo'")
+					.filterExpression("\"foo bar 1\" == 'bar.foo'")
 					.build());
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());

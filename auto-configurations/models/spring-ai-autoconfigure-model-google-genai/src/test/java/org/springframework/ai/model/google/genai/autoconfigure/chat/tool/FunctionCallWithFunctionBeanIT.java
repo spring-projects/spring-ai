@@ -64,7 +64,7 @@ public class FunctionCallWithFunctionBeanIT {
 			GoogleGenAiChatModel chatModel = context.getBean(GoogleGenAiChatModel.class);
 
 			var options = GoogleGenAiChatOptions.builder()
-				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
+				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue())
 				.toolNames("CurrentWeatherService")
 				.build();
 
@@ -96,7 +96,7 @@ public class FunctionCallWithFunctionBeanIT {
 			GoogleGenAiChatModel chatModel = context.getBean(GoogleGenAiChatModel.class);
 
 			var options = GoogleGenAiChatOptions.builder()
-				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
+				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue())
 				.toolNames("CurrentWeatherService")
 				.build();
 

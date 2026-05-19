@@ -86,7 +86,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -109,6 +108,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Soby Chacko
  * @author Ilayaperumal Gopinathan
+ * @author Thomas Vitale
  */
 public final class OpenAiChatModel implements ChatModel {
 
@@ -182,6 +182,7 @@ public final class OpenAiChatModel implements ChatModel {
 	@Override
 	public ChatResponse call(Prompt prompt) {
 		Prompt requestPrompt = buildRequestPrompt(prompt);
+		verifyPromptChatOptions(requestPrompt);
 		return this.internalCall(requestPrompt, null);
 	}
 
@@ -197,7 +198,7 @@ public final class OpenAiChatModel implements ChatModel {
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
-			.provider(AiProvider.OPENAI_SDK.value())
+			.provider(AiProvider.OPENAI.value())
 			.build();
 
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
@@ -263,6 +264,7 @@ public final class OpenAiChatModel implements ChatModel {
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 		Prompt requestPrompt = buildRequestPrompt(prompt);
+		verifyPromptChatOptions(requestPrompt);
 		return internalStream(requestPrompt, null);
 	}
 
@@ -295,7 +297,8 @@ public final class OpenAiChatModel implements ChatModel {
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
-				.provider(AiProvider.OPENAI_SDK.value())
+				.provider(AiProvider.OPENAI.value())
+				.streaming(true)
 				.build();
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
 					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
@@ -551,21 +554,38 @@ public final class OpenAiChatModel implements ChatModel {
 		Assert.notNull(result, "OpenAI ChatCompletion must not be null");
 		result.model();
 		result.id();
-		return ChatResponseMetadata.builder()
+		ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder()
 			.id(result.id())
 			.usage(usage)
 			.model(result.model())
-			.keyValue("created", result.created())
-			.build();
+			.keyValue("created", result.created());
+
+		result._additionalProperties().forEach((key, jsonValue) -> {
+			try {
+				Object value = ModelOptionsUtils.JSON_MAPPER.convertValue(jsonValue, Object.class);
+				metadataBuilder.keyValue(key, value);
+			}
+			catch (Exception e) {
+				logger.error("Error parsing JSON value for key '{}': {}", key, jsonValue, e);
+				metadataBuilder.keyValue(key, jsonValue);
+			}
+		});
+
+		return metadataBuilder.build();
 	}
 
 	private ChatResponseMetadata from(ChatResponseMetadata chatResponseMetadata, Usage usage) {
 		Assert.notNull(chatResponseMetadata, "OpenAI ChatResponseMetadata must not be null");
-		return ChatResponseMetadata.builder()
+		ChatResponseMetadata.Builder builder = ChatResponseMetadata.builder()
 			.id(chatResponseMetadata.getId())
 			.usage(usage)
 			.model(chatResponseMetadata.getModel())
-			.build();
+			.promptMetadata(chatResponseMetadata.getPromptMetadata())
+			.rateLimit(chatResponseMetadata.getRateLimit());
+
+		chatResponseMetadata.entrySet().forEach(e -> builder.keyValue(e.getKey(), e.getValue()));
+
+		return builder.build();
 	}
 
 	/**
@@ -617,6 +637,7 @@ public final class OpenAiChatModel implements ChatModel {
 			.model(chunk.model())
 			.usage(chunk.usage()
 				.orElse(CompletionUsage.builder().promptTokens(0).completionTokens(0).totalTokens(0).build()))
+			.putAllAdditionalProperties(chunk._additionalProperties())
 			.build();
 	}
 
@@ -626,26 +647,12 @@ public final class OpenAiChatModel implements ChatModel {
 				Math.toIntExact(usage.totalTokens()), usage, cacheRead, null);
 	}
 
-	/**
-	 * Builds the request prompt by merging runtime options with default options.
-	 * @param prompt the original prompt
-	 * @return the prompt with merged options
-	 */
-	Prompt buildRequestPrompt(Prompt prompt) {
-		OpenAiChatOptions.Builder requestBuilder = this.options.mutate();
+	private void verifyPromptChatOptions(Prompt prompt) {
+		var chatOptions = prompt.getOptions();
 
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions().getTopK() != null) {
-				logger.warn("The topK option is not supported by OpenAI chat models. Ignoring.");
-			}
-			requestBuilder.combineWith(prompt.getOptions().mutate());
+		if (chatOptions != null && chatOptions.getTopK() != null) {
+			logger.warn("The topK option is not supported by OpenAI chat models. Ignoring.");
 		}
-
-		OpenAiChatOptions requestOptions = requestBuilder.build();
-
-		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
-
-		return new Prompt(prompt.getInstructions(), requestOptions);
 	}
 
 	/**

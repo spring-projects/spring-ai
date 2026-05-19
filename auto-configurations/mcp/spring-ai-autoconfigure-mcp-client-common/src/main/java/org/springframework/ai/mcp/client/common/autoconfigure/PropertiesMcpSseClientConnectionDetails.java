@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpSseClientProperties;
 
+@Deprecated(since = "2.0.0", forRemoval = true)
 public class PropertiesMcpSseClientConnectionDetails implements McpSseClientConnectionDetails {
 
 	private final McpSseClientProperties properties;

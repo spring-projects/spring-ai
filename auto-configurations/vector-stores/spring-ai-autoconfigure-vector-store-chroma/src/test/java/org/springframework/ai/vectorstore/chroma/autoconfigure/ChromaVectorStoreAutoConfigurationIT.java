@@ -31,6 +31,7 @@ import tools.jackson.databind.json.JsonMapper;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.vectorstore.VectorStoreChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -88,7 +89,10 @@ public class ChromaVectorStoreAutoConfigurationIT {
 
 			assertThat(advisor.getName()).isEqualTo("VectorStoreChatMemoryAdvisor");
 
-			var req = ChatClientRequest.builder().prompt(Prompt.builder().content("UserPrompt").build()).build();
+			var req = ChatClientRequest.builder()
+				.prompt(Prompt.builder().content("UserPrompt").build())
+				.context(ChatMemory.CONVERSATION_ID, "test-conversation")
+				.build();
 
 			ChatClientRequest req2 = advisor.before(req, null);
 			assertThat(req2).isNotNull();
@@ -100,6 +104,7 @@ public class ChromaVectorStoreAutoConfigurationIT {
 						.properties(Map.of("annotations", List.of()))
 						.build())))
 					.build())
+				.context(ChatMemory.CONVERSATION_ID, "test-conversation")
 				.build();
 			var res2 = advisor.after(response, null);
 			assertThat(res2).isNotNull();

@@ -126,7 +126,9 @@ public class WeaviateFilterExpressionConverter extends AbstractFilterExpressionC
 	@Override
 	protected void doKey(Key key, StringBuilder context) {
 		var identifier = (hasOuterQuotes(key.key())) ? removeOuterQuotes(key.key()) : key.key();
-		context.append("path:[\"" + withMetaPrefix(identifier) + "\"] \n");
+		context.append("path:[");
+		emitJsonValue(withMetaPrefix(identifier), context);
+		context.append("] \n");
 	}
 
 	public String withMetaPrefix(String identifier) {

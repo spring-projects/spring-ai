@@ -16,6 +16,8 @@
 
 package org.springframework.ai.bedrock.cohere;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest.InputType;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest.Truncate;
 import org.springframework.ai.embedding.EmbeddingOptions;
@@ -36,43 +38,43 @@ public class BedrockCohereEmbeddingOptions implements EmbeddingOptions {
 	 * In this case, embed your corpus with the search_document type and embedded queries with
 	 * type search_query type.
 	 */
-	private InputType inputType;
+	private @Nullable InputType inputType;
 
 	/**
 	 * Specifies how the API handles inputs longer than the maximum token length. If you specify LEFT or
 	 * RIGHT, the model discards the input until the remaining input is exactly the maximum input token length for the
 	 * model.
 	 */
-	private Truncate truncate;
+	private @Nullable Truncate truncate;
 	// @formatter:on
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	public InputType getInputType() {
+	public @Nullable InputType getInputType() {
 		return this.inputType;
 	}
 
-	public void setInputType(InputType inputType) {
+	public void setInputType(@Nullable InputType inputType) {
 		this.inputType = inputType;
 	}
 
-	public Truncate getTruncate() {
+	public @Nullable Truncate getTruncate() {
 		return this.truncate;
 	}
 
-	public void setTruncate(Truncate truncate) {
+	public void setTruncate(@Nullable Truncate truncate) {
 		this.truncate = truncate;
 	}
 
 	@Override
-	public String getModel() {
+	public @Nullable String getModel() {
 		return null;
 	}
 
 	@Override
-	public Integer getDimensions() {
+	public @Nullable Integer getDimensions() {
 		return null;
 	}
 
@@ -80,12 +82,12 @@ public class BedrockCohereEmbeddingOptions implements EmbeddingOptions {
 
 		private BedrockCohereEmbeddingOptions options = new BedrockCohereEmbeddingOptions();
 
-		public Builder inputType(InputType inputType) {
+		public Builder inputType(@Nullable InputType inputType) {
 			this.options.setInputType(inputType);
 			return this;
 		}
 
-		public Builder truncate(Truncate truncate) {
+		public Builder truncate(@Nullable Truncate truncate) {
 			this.options.setTruncate(truncate);
 			return this;
 		}

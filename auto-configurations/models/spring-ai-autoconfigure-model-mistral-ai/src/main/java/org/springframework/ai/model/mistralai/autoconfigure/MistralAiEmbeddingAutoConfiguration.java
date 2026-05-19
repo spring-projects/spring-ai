@@ -17,6 +17,7 @@
 package org.springframework.ai.model.mistralai.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.mistralai.MistralAiEmbeddingModel;
@@ -80,8 +81,9 @@ public class MistralAiEmbeddingAutoConfiguration {
 		return embeddingModel;
 	}
 
-	private MistralAiApi mistralAiApi(String apiKey, String commonApiKey, String baseUrl, String commonBaseUrl,
-			RestClient.Builder restClientBuilder, ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
+	private MistralAiApi mistralAiApi(@Nullable String apiKey, @Nullable String commonApiKey, @Nullable String baseUrl,
+			@Nullable String commonBaseUrl, RestClient.Builder restClientBuilder,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		var resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
 		var resoledBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;

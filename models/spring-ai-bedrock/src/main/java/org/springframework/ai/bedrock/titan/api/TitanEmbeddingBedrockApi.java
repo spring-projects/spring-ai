@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import tools.jackson.databind.json.JsonMapper;
@@ -128,8 +129,8 @@ public class TitanEmbeddingBedrockApi extends
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record TitanEmbeddingRequest(
-			@JsonProperty("inputText") String inputText,
-			@JsonProperty("inputImage") String inputImage) {
+			@JsonProperty("inputText") @Nullable String inputText,
+			@JsonProperty("inputImage") @Nullable String inputImage) {
 
 
 		public static Builder builder() {
@@ -141,15 +142,15 @@ public class TitanEmbeddingBedrockApi extends
 		 */
 		public static final class Builder {
 
-			private String inputText;
-			private String inputImage;
+			private @Nullable String inputText;
+			private @Nullable String inputImage;
 
-			public Builder inputText(String inputText) {
+			public Builder inputText(@Nullable String inputText) {
 				this.inputText = inputText;
 				return this;
 			}
 
-			public Builder inputImage(String inputImage) {
+			public Builder inputImage(@Nullable String inputImage) {
 				this.inputImage = inputImage;
 				return this;
 			}
@@ -177,8 +178,8 @@ public class TitanEmbeddingBedrockApi extends
 	@JsonInclude(Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record TitanEmbeddingResponse(
-			@JsonProperty("embedding") float[] embedding,
-			@JsonProperty("inputTextTokenCount") Integer inputTextTokenCount,
+			@JsonProperty("embedding") float @Nullable[] embedding,
+			@JsonProperty("inputTextTokenCount") @Nullable Integer inputTextTokenCount,
 			@JsonProperty("successCount") Integer successCount,
 			@JsonProperty("failureCount") Integer failureCount,
 			@JsonProperty("embeddingsByType") Map<String, Object> embeddingsByType,

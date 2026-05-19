@@ -36,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class ChatClientAutoConfigurationIT {
@@ -44,7 +45,7 @@ public class ChatClientAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
-				"spring.ai.openai.chat.options.model=gpt-4o")
+				"spring.ai.openai.chat.model=gpt-4o")
 		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ChatClientAutoConfiguration.class,
 				ToolCallingAutoConfiguration.class));
 

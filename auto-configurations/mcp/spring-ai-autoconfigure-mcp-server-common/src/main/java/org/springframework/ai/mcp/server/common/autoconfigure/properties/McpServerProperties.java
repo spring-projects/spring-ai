@@ -97,7 +97,7 @@ public class McpServerProperties {
 
 	private final Capabilities capabilities = new Capabilities();
 
-	private ServerProtocol protocol = ServerProtocol.SSE;
+	private ServerProtocol protocol = ServerProtocol.STREAMABLE;
 
 	/**
 	 * Whether to re-expose downstream MCP tools (provided by MCP clients) as tools in

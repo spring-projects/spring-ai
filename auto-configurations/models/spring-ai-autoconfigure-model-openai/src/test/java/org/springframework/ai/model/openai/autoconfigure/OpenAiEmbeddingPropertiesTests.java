@@ -25,10 +25,10 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit Tests for {@link OpenAiConnectionProperties} and
- * {@link OpenAiEmbeddingProperties}.
+ * Unit Tests for {@link OpenAiCommonProperties} and {@link OpenAiEmbeddingProperties}.
  *
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 public class OpenAiEmbeddingPropertiesTests {
 
@@ -47,41 +47,10 @@ public class OpenAiEmbeddingPropertiesTests {
 			.withConfiguration(AutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var embeddingProperties = context.getBean(OpenAiEmbeddingProperties.class);
-				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+				var commonProperties = context.getBean(OpenAiCommonProperties.class);
 
-				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
-				assertThat(connectionProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
-
-				assertThat(embeddingProperties.getApiKey()).isNull();
-				assertThat(embeddingProperties.getBaseUrl()).isNull();
-
-				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(embeddingProperties.getOptions().getDimensions()).isEqualTo(512);
-			});
-	}
-
-	@Test
-	public void embeddingOverrideConnectionProperties() {
-
-		this.contextRunner.withPropertyValues(
-		// @formatter:off
-				"spring.ai.openai.base-url=http://TEST.BASE.URL",
-				"spring.ai.openai.api-key=abc123",
-				"spring.ai.openai.embedding.base-url=http://TEST.BASE.URL2",
-				"spring.ai.openai.embedding.api-key=456",
-				"spring.ai.openai.embedding.options.model=MODEL_XYZ",
-				"spring.ai.openai.embedding.options.dimensions=512")
-				// @formatter:on
-			.withConfiguration(AutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
-			.run(context -> {
-				var embeddingProperties = context.getBean(OpenAiEmbeddingProperties.class);
-				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
-
-				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
-				assertThat(connectionProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
-
-				assertThat(embeddingProperties.getApiKey()).isEqualTo("456");
-				assertThat(embeddingProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL2");
+				assertThat(commonProperties.getApiKey()).isEqualTo("abc123");
+				assertThat(commonProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
 
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(embeddingProperties.getOptions().getDimensions()).isEqualTo(512);
@@ -105,10 +74,10 @@ public class OpenAiEmbeddingPropertiesTests {
 			.withConfiguration(AutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var embeddingProperties = context.getBean(OpenAiEmbeddingProperties.class);
-				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+				var commonProperties = context.getBean(OpenAiCommonProperties.class);
 
-				assertThat(connectionProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
-				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
+				assertThat(commonProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
+				assertThat(commonProperties.getApiKey()).isEqualTo("API_KEY");
 
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(embeddingProperties.getOptions().getUser()).isEqualTo("userXYZ");

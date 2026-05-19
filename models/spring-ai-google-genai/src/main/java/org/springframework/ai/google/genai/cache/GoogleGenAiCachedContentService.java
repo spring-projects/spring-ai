@@ -33,10 +33,10 @@ import com.google.genai.types.DeleteCachedContentResponse;
 import com.google.genai.types.GetCachedContentConfig;
 import com.google.genai.types.ListCachedContentsConfig;
 import com.google.genai.types.UpdateCachedContentConfig;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -72,7 +72,7 @@ public class GoogleGenAiCachedContentService {
 	 * @param request the cached content creation request
 	 * @return the created cached content
 	 */
-	public GoogleGenAiCachedContent create(CachedContentRequest request) {
+	public @Nullable GoogleGenAiCachedContent create(CachedContentRequest request) {
 		Assert.notNull(request, "Request must not be null");
 
 		CreateCachedContentConfig.Builder configBuilder = CreateCachedContentConfig.builder()
@@ -110,8 +110,7 @@ public class GoogleGenAiCachedContentService {
 	 * @param name the cached content name
 	 * @return the cached content, or null if not found
 	 */
-	@Nullable
-	public GoogleGenAiCachedContent get(String name) {
+	@Nullable public GoogleGenAiCachedContent get(String name) {
 		Assert.hasText(name, "Name must not be empty");
 
 		try {
@@ -132,7 +131,7 @@ public class GoogleGenAiCachedContentService {
 	 * @param request the update request
 	 * @return the updated cached content
 	 */
-	public GoogleGenAiCachedContent update(String name, CachedContentUpdateRequest request) {
+	public @Nullable GoogleGenAiCachedContent update(String name, CachedContentUpdateRequest request) {
 		Assert.hasText(name, "Name must not be empty");
 		Assert.notNull(request, "Request must not be null");
 
@@ -355,7 +354,7 @@ public class GoogleGenAiCachedContentService {
 	 * @param additionalTtl the additional TTL to add
 	 * @return the updated cached content
 	 */
-	public GoogleGenAiCachedContent extendTtl(String name, Duration additionalTtl) {
+	public @Nullable GoogleGenAiCachedContent extendTtl(String name, Duration additionalTtl) {
 		Assert.hasText(name, "Name must not be empty");
 		Assert.notNull(additionalTtl, "Additional TTL must not be null");
 
@@ -380,7 +379,7 @@ public class GoogleGenAiCachedContentService {
 	 * @param maxTtl the maximum TTL to set
 	 * @return the updated cached content
 	 */
-	public GoogleGenAiCachedContent refreshExpiration(String name, Duration maxTtl) {
+	public @Nullable GoogleGenAiCachedContent refreshExpiration(String name, Duration maxTtl) {
 		Assert.hasText(name, "Name must not be empty");
 		Assert.notNull(maxTtl, "Max TTL must not be null");
 
@@ -399,9 +398,10 @@ public class GoogleGenAiCachedContentService {
 
 		for (GoogleGenAiCachedContent content : allContent) {
 			if (content.isExpired()) {
-				if (delete(content.getName())) {
+				String name = content.getName();
+				if (name != null && delete(name)) {
 					removed++;
-					logger.info("Removed expired cached content: {}", content.getName());
+					logger.info("Removed expired cached content: {}", name);
 				}
 			}
 		}
@@ -416,9 +416,9 @@ public class GoogleGenAiCachedContentService {
 
 		private final List<GoogleGenAiCachedContent> contents;
 
-		private final String nextPageToken;
+		@Nullable private final String nextPageToken;
 
-		public CachedContentPage(List<GoogleGenAiCachedContent> contents, String nextPageToken) {
+		public CachedContentPage(List<GoogleGenAiCachedContent> contents, @Nullable String nextPageToken) {
 			this.contents = contents != null ? new ArrayList<>(contents) : new ArrayList<>();
 			this.nextPageToken = nextPageToken;
 		}
@@ -427,7 +427,7 @@ public class GoogleGenAiCachedContentService {
 			return this.contents;
 		}
 
-		public String getNextPageToken() {
+		public @Nullable String getNextPageToken() {
 			return this.nextPageToken;
 		}
 

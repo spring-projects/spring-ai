@@ -16,8 +16,13 @@
 
 package org.springframework.ai.openai;
 
+import java.net.Proxy;
+import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
+import com.openai.azure.AzureOpenAIServiceVersion;
+import com.openai.credential.Credential;
 import com.openai.models.embeddings.EmbeddingCreateParams;
 import com.openai.models.embeddings.EmbeddingModel;
 import org.jspecify.annotations.Nullable;
@@ -31,6 +36,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  * @author Julien Dubois
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements EmbeddingOptions {
 
@@ -40,13 +46,31 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 	 * An identifier for the caller or end user of the operation. This may be used for
 	 * tracking or rate-limiting purposes.
 	 */
-	private @Nullable String user;
+	private final @Nullable String user;
+
+	/**
+	 * The format to return the embeddings in. Can be either float or base64.
+	 */
+	private final @Nullable EncodingFormat encodingFormat;
 
 	/*
 	 * The number of dimensions the resulting output embeddings should have. Only
 	 * supported in `text-embedding-3` and later models.
 	 */
-	private @Nullable Integer dimensions;
+	private final @Nullable Integer dimensions;
+
+	protected OpenAiEmbeddingOptions(@Nullable String baseUrl, @Nullable String apiKey, @Nullable Credential credential,
+			@Nullable String model, @Nullable String microsoftDeploymentName,
+			@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion, @Nullable String organizationId,
+			@Nullable Boolean isMicrosoftFoundry, @Nullable Boolean isGitHubModels, @Nullable Duration timeout,
+			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
+			@Nullable String user, @Nullable EncodingFormat encodingFormat, @Nullable Integer dimensions) {
+		super(baseUrl, apiKey, credential, model, microsoftDeploymentName, microsoftFoundryServiceVersion,
+				organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries, proxy, customHeaders);
+		this.user = user;
+		this.encodingFormat = encodingFormat;
+		this.dimensions = dimensions;
+	}
 
 	public static Builder builder() {
 		return new Builder();
@@ -56,8 +80,8 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 		return this.user;
 	}
 
-	public void setUser(@Nullable String user) {
-		this.user = user;
+	public @Nullable EncodingFormat getEncodingFormat() {
+		return this.encodingFormat;
 	}
 
 	@Override
@@ -65,14 +89,11 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 		return this.dimensions;
 	}
 
-	public void setDimensions(@Nullable Integer dimensions) {
-		this.dimensions = dimensions;
-	}
-
 	@Override
 	public String toString() {
 		return "OpenAiEmbeddingOptions{" + "user='" + this.user + '\'' + ", model='" + this.getModel() + '\''
-				+ ", deploymentName='" + this.getDeploymentName() + '\'' + ", dimensions=" + this.dimensions + '}';
+				+ ", deploymentName='" + this.getDeploymentName() + '\'' + ", encodingFormat='" + this.encodingFormat
+				+ '\'' + ", dimensions=" + this.dimensions + '}';
 	}
 
 	public EmbeddingCreateParams toOpenAiCreateParams(List<String> instructions) {
@@ -94,34 +115,61 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 		if (this.getUser() != null) {
 			builder.user(this.getUser());
 		}
+		if (this.getEncodingFormat() != null) {
+			builder.encodingFormat(EmbeddingCreateParams.EncodingFormat.of(this.getEncodingFormat().getValue()));
+		}
 		if (this.getDimensions() != null) {
 			builder.dimensions(this.getDimensions());
 		}
 		return builder.build();
 	}
 
-	public static final class Builder {
+	/**
+	 * The format to return the embeddings in. Can be either float or base64.
+	 */
+	public enum EncodingFormat {
 
-		private final OpenAiEmbeddingOptions options = new OpenAiEmbeddingOptions();
+		FLOAT("float"), BASE64("base64");
+
+		private final String value;
+
+		EncodingFormat(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+	}
+
+	public static final class Builder extends AbstractBuilder<OpenAiEmbeddingOptions, Builder> {
+
+		private @Nullable String user;
+
+		private @Nullable EncodingFormat encodingFormat;
+
+		private @Nullable Integer dimensions;
 
 		public Builder from(OpenAiEmbeddingOptions fromOptions) {
 			// Parent class fields
-			this.options.setBaseUrl(fromOptions.getBaseUrl());
-			this.options.setApiKey(fromOptions.getApiKey());
-			this.options.setCredential(fromOptions.getCredential());
-			this.options.setModel(fromOptions.getModel());
-			this.options.setDeploymentName(fromOptions.getDeploymentName());
-			this.options.setMicrosoftFoundryServiceVersion(fromOptions.getMicrosoftFoundryServiceVersion());
-			this.options.setOrganizationId(fromOptions.getOrganizationId());
-			this.options.setMicrosoftFoundry(fromOptions.isMicrosoftFoundry());
-			this.options.setGitHubModels(fromOptions.isGitHubModels());
-			this.options.setTimeout(fromOptions.getTimeout());
-			this.options.setMaxRetries(fromOptions.getMaxRetries());
-			this.options.setProxy(fromOptions.getProxy());
-			this.options.setCustomHeaders(fromOptions.getCustomHeaders());
+			this.baseUrl = fromOptions.getBaseUrl();
+			this.apiKey = fromOptions.getApiKey();
+			this.credential = fromOptions.getCredential();
+			this.model = fromOptions.getModel();
+			this.microsoftDeploymentName = fromOptions.getDeploymentName();
+			this.microsoftFoundryServiceVersion = fromOptions.getMicrosoftFoundryServiceVersion();
+			this.organizationId = fromOptions.getOrganizationId();
+			this.isMicrosoftFoundry = fromOptions.isMicrosoftFoundry();
+			this.isGitHubModels = fromOptions.isGitHubModels();
+			this.timeout = fromOptions.getTimeout();
+			this.maxRetries = fromOptions.getMaxRetries();
+			this.proxy = fromOptions.getProxy();
+			this.customHeaders = fromOptions.getCustomHeaders();
 			// Child class fields
-			this.options.setUser(fromOptions.getUser());
-			this.options.setDimensions(fromOptions.getDimensions());
+			this.user = fromOptions.getUser();
+			this.encodingFormat = fromOptions.getEncodingFormat();
+			this.dimensions = fromOptions.getDimensions();
 			return this;
 		}
 
@@ -129,43 +177,50 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 			if (from == null) {
 				return this;
 			}
-			if (from instanceof OpenAiEmbeddingOptions castFrom) {
-				// Parent class fields
+			if (from.getModel() != null) {
+				this.model = from.getModel();
+			}
+			if (from.getDimensions() != null) {
+				this.dimensions = from.getDimensions();
+			}
+			if (from instanceof AbstractOpenAiOptions castFrom) {
 				if (castFrom.getBaseUrl() != null) {
-					this.options.setBaseUrl(castFrom.getBaseUrl());
+					this.baseUrl = castFrom.getBaseUrl();
 				}
 				if (castFrom.getApiKey() != null) {
-					this.options.setApiKey(castFrom.getApiKey());
+					this.apiKey = castFrom.getApiKey();
 				}
 				if (castFrom.getCredential() != null) {
-					this.options.setCredential(castFrom.getCredential());
-				}
-				if (castFrom.getModel() != null) {
-					this.options.setModel(castFrom.getModel());
+					this.credential = castFrom.getCredential();
 				}
 				if (castFrom.getDeploymentName() != null) {
-					this.options.setDeploymentName(castFrom.getDeploymentName());
+					this.microsoftDeploymentName = castFrom.getDeploymentName();
 				}
 				if (castFrom.getMicrosoftFoundryServiceVersion() != null) {
-					this.options.setMicrosoftFoundryServiceVersion(castFrom.getMicrosoftFoundryServiceVersion());
+					this.microsoftFoundryServiceVersion = castFrom.getMicrosoftFoundryServiceVersion();
 				}
 				if (castFrom.getOrganizationId() != null) {
-					this.options.setOrganizationId(castFrom.getOrganizationId());
+					this.organizationId = castFrom.getOrganizationId();
 				}
-				this.options.setMicrosoftFoundry(castFrom.isMicrosoftFoundry());
-				this.options.setGitHubModels(castFrom.isGitHubModels());
-				this.options.setTimeout(castFrom.getTimeout());
-				this.options.setMaxRetries(castFrom.getMaxRetries());
+				this.isMicrosoftFoundry = castFrom.isMicrosoftFoundry();
+				this.isGitHubModels = castFrom.isGitHubModels();
+				if (castFrom.getTimeout() != null) {
+					this.timeout = castFrom.getTimeout();
+				}
+				this.maxRetries = castFrom.getMaxRetries();
 				if (castFrom.getProxy() != null) {
-					this.options.setProxy(castFrom.getProxy());
+					this.proxy = castFrom.getProxy();
 				}
-				this.options.setCustomHeaders(castFrom.getCustomHeaders());
-				// Child class fields
+				if (castFrom.getCustomHeaders() != null) {
+					this.customHeaders = castFrom.getCustomHeaders();
+				}
+			}
+			if (from instanceof OpenAiEmbeddingOptions castFrom) {
 				if (castFrom.getUser() != null) {
-					this.options.setUser(castFrom.getUser());
+					this.user = castFrom.getUser();
 				}
-				if (castFrom.getDimensions() != null) {
-					this.options.setDimensions(castFrom.getDimensions());
+				if (castFrom.getEncodingFormat() != null) {
+					this.encodingFormat = castFrom.getEncodingFormat();
 				}
 			}
 			return this;
@@ -174,91 +229,39 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 		public Builder from(EmbeddingCreateParams openAiCreateParams) {
 
 			if (openAiCreateParams.user().isPresent()) {
-				this.options.setUser(openAiCreateParams.user().get());
+				this.user = openAiCreateParams.user().get();
+			}
+			if (openAiCreateParams.encodingFormat().isPresent()) {
+				this.encodingFormat = EncodingFormat
+					.valueOf(openAiCreateParams.encodingFormat().get().asString().toUpperCase());
 			}
 			if (openAiCreateParams.dimensions().isPresent()) {
-				this.options.setDimensions(Math.toIntExact(openAiCreateParams.dimensions().get()));
+				this.dimensions = Math.toIntExact(openAiCreateParams.dimensions().get());
 			}
 			return this;
 		}
 
 		public Builder user(String user) {
-			this.options.setUser(user);
+			this.user = user;
 			return this;
 		}
 
-		public Builder deploymentName(String deploymentName) {
-			this.options.setDeploymentName(deploymentName);
-			return this;
-		}
-
-		public Builder model(String model) {
-			this.options.setModel(model);
-			return this;
-		}
-
-		public Builder baseUrl(String baseUrl) {
-			this.options.setBaseUrl(baseUrl);
-			return this;
-		}
-
-		public Builder apiKey(String apiKey) {
-			this.options.setApiKey(apiKey);
-			return this;
-		}
-
-		public Builder credential(com.openai.credential.Credential credential) {
-			this.options.setCredential(credential);
-			return this;
-		}
-
-		public Builder azureOpenAIServiceVersion(com.openai.azure.AzureOpenAIServiceVersion azureOpenAIServiceVersion) {
-			this.options.setMicrosoftFoundryServiceVersion(azureOpenAIServiceVersion);
-			return this;
-		}
-
-		public Builder organizationId(String organizationId) {
-			this.options.setOrganizationId(organizationId);
-			return this;
-		}
-
-		public Builder azure(boolean azure) {
-			this.options.setMicrosoftFoundry(azure);
-			return this;
-		}
-
-		public Builder gitHubModels(boolean gitHubModels) {
-			this.options.setGitHubModels(gitHubModels);
-			return this;
-		}
-
-		public Builder timeout(java.time.Duration timeout) {
-			this.options.setTimeout(timeout);
-			return this;
-		}
-
-		public Builder maxRetries(Integer maxRetries) {
-			this.options.setMaxRetries(maxRetries);
-			return this;
-		}
-
-		public Builder proxy(java.net.Proxy proxy) {
-			this.options.setProxy(proxy);
-			return this;
-		}
-
-		public Builder customHeaders(java.util.Map<String, String> customHeaders) {
-			this.options.setCustomHeaders(customHeaders);
+		public Builder encodingFormat(EncodingFormat encodingFormat) {
+			this.encodingFormat = encodingFormat;
 			return this;
 		}
 
 		public Builder dimensions(Integer dimensions) {
-			this.options.dimensions = dimensions;
+			this.dimensions = dimensions;
 			return this;
 		}
 
+		@Override
 		public OpenAiEmbeddingOptions build() {
-			return this.options;
+			return new OpenAiEmbeddingOptions(this.baseUrl, this.apiKey, this.credential, this.model,
+					this.microsoftDeploymentName, this.microsoftFoundryServiceVersion, this.organizationId,
+					this.isMicrosoftFoundry, this.isGitHubModels, this.timeout, this.maxRetries, this.proxy,
+					this.customHeaders, this.user, this.encodingFormat, this.dimensions);
 		}
 
 	}

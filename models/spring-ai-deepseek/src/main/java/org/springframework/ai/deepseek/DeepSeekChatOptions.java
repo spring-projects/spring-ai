@@ -32,7 +32,6 @@ import org.springframework.ai.deepseek.api.ResponseFormat;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.util.Assert;
 
 /**
  * Chat completions options for the DeepSeek chat API.
@@ -176,17 +175,9 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		return this.model;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
-	}
-
 	@Override
 	public @Nullable Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
-	}
-
-	public void setFrequencyPenalty(@Nullable Double frequencyPenalty) {
-		this.frequencyPenalty = frequencyPenalty;
 	}
 
 	@Override
@@ -194,25 +185,13 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		return this.maxTokens;
 	}
 
-	public void setMaxTokens(@Nullable Integer maxTokens) {
-		this.maxTokens = maxTokens;
-	}
-
 	@Override
 	public @Nullable Double getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
-	public void setPresencePenalty(@Nullable Double presencePenalty) {
-		this.presencePenalty = presencePenalty;
-	}
-
 	public @Nullable ResponseFormat getResponseFormat() {
 		return this.responseFormat;
-	}
-
-	public void setResponseFormat(@Nullable ResponseFormat responseFormat) {
-		this.responseFormat = responseFormat;
 	}
 
 	@Override
@@ -220,16 +199,8 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		return getStop();
 	}
 
-	public void setStopSequences(@Nullable List<String> stopSequences) {
-		setStop(stopSequences);
-	}
-
 	public @Nullable List<String> getStop() {
 		return this.stop;
-	}
-
-	public void setStop(@Nullable List<String> stop) {
-		this.stop = stop;
 	}
 
 	@Override
@@ -237,33 +208,17 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		return this.temperature;
 	}
 
-	public void setTemperature(@Nullable Double temperature) {
-		this.temperature = temperature;
-	}
-
 	@Override
 	public @Nullable Double getTopP() {
 		return this.topP;
-	}
-
-	public void setTopP(@Nullable Double topP) {
-		this.topP = topP;
 	}
 
 	public @Nullable List<DeepSeekApi.FunctionTool> getTools() {
 		return this.tools;
 	}
 
-	public void setTools(@Nullable List<DeepSeekApi.FunctionTool> tools) {
-		this.tools = tools;
-	}
-
 	public @Nullable Object getToolChoice() {
 		return this.toolChoice;
-	}
-
-	public void setToolChoice(@Nullable Object toolChoice) {
-		this.toolChoice = toolChoice;
 	}
 
 
@@ -273,23 +228,8 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
-		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-		this.toolCallbacks = toolCallbacks;
-	}
-
-	@Override
 	public Set<String> getToolNames() {
 		return this.toolNames;
-	}
-
-	@Override
-	public void setToolNames(Set<String> toolNames) {
-		Assert.notNull(toolNames, "toolNames cannot be null");
-		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
-		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
-		this.toolNames = toolNames;
 	}
 
 	@Override
@@ -297,25 +237,12 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		return this.internalToolExecutionEnabled;
 	}
 
-	@Override
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
 	public @Nullable Boolean getLogprobs() {
 		return this.logprobs;
 	}
 
-	public void setLogprobs(@Nullable Boolean logprobs) {
-		this.logprobs = logprobs;
-	}
-
 	public @Nullable Integer getTopLogprobs() {
 		return this.topLogprobs;
-	}
-
-	public void setTopLogprobs(@Nullable Integer topLogprobs) {
-		this.topLogprobs = topLogprobs;
 	}
 
 	@Override
@@ -327,11 +254,6 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	@Override
 	public Map<String, Object> getToolContext() {
 		return this.toolContext;
-	}
-
-	@Override
-	public void setToolContext(Map<String, Object> toolContext) {
-		this.toolContext = toolContext;
 	}
 
 	@Override

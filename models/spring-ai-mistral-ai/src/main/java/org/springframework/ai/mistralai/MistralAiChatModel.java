@@ -63,7 +63,6 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.T
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -89,6 +88,7 @@ import org.springframework.util.MimeType;
  * @author Alexandros Pappas
  * @author Nicolas Krier
  * @author Jason Smith
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public class MistralAiChatModel implements ChatModel {
@@ -263,6 +263,7 @@ public class MistralAiChatModel implements ChatModel {
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(MistralAiApi.PROVIDER_NAME)
+				.streaming(true)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
@@ -387,20 +388,6 @@ public class MistralAiChatModel implements ChatModel {
 				choices, chunk.usage());
 	}
 
-	Prompt buildRequestPrompt(Prompt prompt) {
-		MistralAiChatOptions.Builder requestBuilder = this.defaultOptions.mutate();
-
-		if (prompt.getOptions() != null) {
-			requestBuilder.combineWith(prompt.getOptions().mutate());
-		}
-
-		MistralAiChatOptions requestOptions = requestBuilder.build();
-
-		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
-
-		return new Prompt(prompt.getInstructions(), requestOptions);
-	}
-
 	/**
 	 * Accessible for testing.
 	 */
@@ -420,8 +407,11 @@ public class MistralAiChatModel implements ChatModel {
 				ModelOptionsUtils.mergeOption(options.getToolChoice(), request.toolChoice()),
 				ModelOptionsUtils.mergeOption(options.getTemperature(), request.temperature()),
 				ModelOptionsUtils.mergeOption(options.getTopP(), request.topP()),
-				ModelOptionsUtils.mergeOption(options.getMaxTokens(), request.maxTokens()), request.stream(),
-				ModelOptionsUtils.mergeOption(options.getSafePrompt(), request.safePrompt()),
+				ModelOptionsUtils.mergeOption(options.getMaxTokens(), request.maxTokens()),
+				ModelOptionsUtils.mergeOption(options.getN(), request.n()),
+				ModelOptionsUtils.mergeOption(options.getPresencePenalty(), request.presencePenalty()),
+				ModelOptionsUtils.mergeOption(options.getFrequencyPenalty(), request.frequencyPenalty()),
+				request.stream(), ModelOptionsUtils.mergeOption(options.getSafePrompt(), request.safePrompt()),
 				ModelOptionsUtils.mergeOption(options.getStop(), request.stop()),
 				ModelOptionsUtils.mergeOption(options.getRandomSeed(), request.randomSeed()),
 				ModelOptionsUtils.mergeOption(options.getResponseFormat(), request.responseFormat()));
@@ -431,7 +421,8 @@ public class MistralAiChatModel implements ChatModel {
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
 			request = new ChatCompletionRequest(request.model(), request.messages(),
 					this.getFunctionTools(toolDefinitions), request.toolChoice(), request.temperature(), request.topP(),
-					request.maxTokens(), request.stream(), request.safePrompt(), request.stop(), request.randomSeed(),
+					request.maxTokens(), request.n(), request.presencePenalty(), request.frequencyPenalty(),
+					request.stream(), request.safePrompt(), request.stop(), request.randomSeed(),
 					request.responseFormat());
 		}
 

@@ -29,7 +29,6 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import net.javacrumbs.jsonunit.assertj.JsonAssertions;
 import net.javacrumbs.jsonunit.core.Option;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.mcp.annotation.McpTool;
@@ -538,7 +537,6 @@ public class SyncMcpToolMethodCallbackTests {
 	}
 
 	@Test
-	@Disabled("Disabled for CI until the spring-ai-model SNAPSHOT has been published")
 	public void testToolWithDateParameter() throws Exception {
 		TestToolProvider provider = new TestToolProvider();
 		Method method = TestToolProvider.class.getMethod("dateTool", LocalDate.class);

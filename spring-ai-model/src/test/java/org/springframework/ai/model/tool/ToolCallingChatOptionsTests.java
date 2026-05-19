@@ -38,15 +38,13 @@ class ToolCallingChatOptionsTests {
 
 	@Test
 	void whenToolCallingChatOptionsAndExecutionEnabledTrue() {
-		ToolCallingChatOptions options = new DefaultToolCallingChatOptions();
-		options.setInternalToolExecutionEnabled(true);
+		ToolCallingChatOptions options = ToolCallingChatOptions.builder().internalToolExecutionEnabled(true).build();
 		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options)).isTrue();
 	}
 
 	@Test
 	void whenToolCallingChatOptionsAndExecutionEnabledFalse() {
-		ToolCallingChatOptions options = new DefaultToolCallingChatOptions();
-		options.setInternalToolExecutionEnabled(false);
+		ToolCallingChatOptions options = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
 		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options)).isFalse();
 	}
 

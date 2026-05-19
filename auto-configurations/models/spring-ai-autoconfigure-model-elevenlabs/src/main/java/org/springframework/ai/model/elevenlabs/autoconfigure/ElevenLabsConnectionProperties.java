@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.elevenlabs.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -32,18 +34,18 @@ public class ElevenLabsConnectionProperties {
 	/**
 	 * ElevenLabs API access key.
 	 */
-	private String apiKey;
+	private @Nullable String apiKey;
 
 	/**
 	 * ElevenLabs API base URL.
 	 */
 	private String baseUrl = ElevenLabsApi.DEFAULT_BASE_URL;
 
-	public String getApiKey() {
+	public @Nullable String getApiKey() {
 		return this.apiKey;
 	}
 
-	public void setApiKey(String apiKey) {
+	public void setApiKey(@Nullable String apiKey) {
 		this.apiKey = apiKey;
 	}
 

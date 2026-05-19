@@ -39,6 +39,7 @@ import org.springframework.context.annotation.Bean;
  * {@link AutoConfiguration Auto-configuration} for Anthropic Chat Model.
  *
  * @author Soby Chacko
+ * @author Sebastien Deleuze
  * @since 2.0.0
  */
 @AutoConfiguration
@@ -56,25 +57,26 @@ public class AnthropicChatAutoConfiguration {
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
 			ObjectProvider<ToolExecutionEligibilityPredicate> anthropicToolExecutionEligibilityPredicate) {
 
-		AnthropicChatOptions options = chatProperties.getOptions();
+		AnthropicChatOptions.Builder builder = chatProperties.toOptions().mutate();
 		if (connectionProperties.getApiKey() != null) {
-			options.setApiKey(connectionProperties.getApiKey());
+			builder.apiKey(connectionProperties.getApiKey());
 		}
 		if (connectionProperties.getBaseUrl() != null) {
-			options.setBaseUrl(connectionProperties.getBaseUrl());
+			builder.baseUrl(connectionProperties.getBaseUrl());
 		}
 		if (connectionProperties.getTimeout() != null) {
-			options.setTimeout(connectionProperties.getTimeout());
+			builder.timeout(connectionProperties.getTimeout());
 		}
 		if (connectionProperties.getMaxRetries() != null) {
-			options.setMaxRetries(connectionProperties.getMaxRetries());
+			builder.maxRetries(connectionProperties.getMaxRetries());
 		}
 		if (connectionProperties.getProxy() != null) {
-			options.setProxy(connectionProperties.getProxy());
+			builder.proxy(connectionProperties.getProxy());
 		}
 		if (!connectionProperties.getCustomHeaders().isEmpty()) {
-			options.setCustomHeaders(connectionProperties.getCustomHeaders());
+			builder.customHeaders(connectionProperties.getCustomHeaders());
 		}
+		AnthropicChatOptions options = builder.build();
 
 		var chatModel = AnthropicChatModel.builder()
 			.options(options)

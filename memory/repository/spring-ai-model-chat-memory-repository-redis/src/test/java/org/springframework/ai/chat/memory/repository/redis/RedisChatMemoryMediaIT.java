@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.chat.memory.repository.redis;
 
 import java.net.URI;
@@ -70,22 +71,22 @@ class RedisChatMemoryMediaIT {
 	@BeforeEach
 	void setUp() {
 		// Create JedisPooled directly with container properties for reliable connection
-		jedisClient = new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort());
-		chatMemory = RedisChatMemoryRepository.builder()
-			.jedisClient(jedisClient)
+		this.jedisClient = new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort());
+		this.chatMemory = RedisChatMemoryRepository.builder()
+			.jedisClient(this.jedisClient)
 			.indexName("test-media-" + RedisChatMemoryConfig.DEFAULT_INDEX_NAME)
 			.build();
 
 		// Clear any existing data
-		for (String conversationId : chatMemory.findConversationIds()) {
-			chatMemory.clear(conversationId);
+		for (String conversationId : this.chatMemory.findConversationIds()) {
+			this.chatMemory.clear(conversationId);
 		}
 	}
 
 	@AfterEach
 	void tearDown() {
-		if (jedisClient != null) {
-			jedisClient.close();
+		if (this.jedisClient != null) {
+			this.jedisClient.close();
 		}
 	}
 
@@ -109,10 +110,10 @@ class RedisChatMemoryMediaIT {
 				.build();
 
 			// Store the message
-			chatMemory.add("test-conversation", userMessage);
+			this.chatMemory.add("test-conversation", userMessage);
 
 			// Retrieve the message
-			List<Message> messages = chatMemory.get("test-conversation", 10);
+			List<Message> messages = this.chatMemory.get("test-conversation", 10);
 
 			assertThat(messages).hasSize(1);
 			assertThat(messages.get(0)).isInstanceOf(UserMessage.class);
@@ -156,10 +157,10 @@ class RedisChatMemoryMediaIT {
 				.build();
 
 			// Store the message
-			chatMemory.add("test-conversation", assistantMessage);
+			this.chatMemory.add("test-conversation", assistantMessage);
 
 			// Retrieve the message
-			List<Message> messages = chatMemory.get("test-conversation", 10);
+			List<Message> messages = this.chatMemory.get("test-conversation", 10);
 
 			assertThat(messages).hasSize(1);
 			assertThat(messages.get(0)).isInstanceOf(AssistantMessage.class);
@@ -221,10 +222,10 @@ class RedisChatMemoryMediaIT {
 			UserMessage userMessage2 = UserMessage.builder().text("Message with PDF").media(pdfMedia).build();
 
 			// Store all messages
-			chatMemory.add("media-conversation", List.of(userMessage1, assistantMessage, userMessage2));
+			this.chatMemory.add("media-conversation", List.of(userMessage1, assistantMessage, userMessage2));
 
 			// Retrieve the messages
-			List<Message> messages = chatMemory.get("media-conversation", 10);
+			List<Message> messages = this.chatMemory.get("media-conversation", 10);
 
 			assertThat(messages).hasSize(3);
 
@@ -281,10 +282,10 @@ class RedisChatMemoryMediaIT {
 				.build();
 
 			// Store the message
-			chatMemory.add("multi-media-conversation", userMessage);
+			this.chatMemory.add("multi-media-conversation", userMessage);
 
 			// Retrieve the message
-			List<Message> messages = chatMemory.get("multi-media-conversation", 10);
+			List<Message> messages = this.chatMemory.get("multi-media-conversation", 10);
 
 			assertThat(messages).hasSize(1);
 			UserMessage retrievedMessage = (UserMessage) messages.get(0);
@@ -323,17 +324,17 @@ class RedisChatMemoryMediaIT {
 
 			// Store the message
 			String conversationId = "conversation-to-clear";
-			chatMemory.add(conversationId, userMessage);
+			this.chatMemory.add(conversationId, userMessage);
 
 			// Verify it was stored
-			assertThat(chatMemory.get(conversationId, 10)).hasSize(1);
+			assertThat(this.chatMemory.get(conversationId, 10)).hasSize(1);
 
 			// Clear the conversation
-			chatMemory.clear(conversationId);
+			this.chatMemory.clear(conversationId);
 
 			// Verify it was cleared
-			assertThat(chatMemory.get(conversationId, 10)).isEmpty();
-			assertThat(chatMemory.findConversationIds()).doesNotContain(conversationId);
+			assertThat(this.chatMemory.get(conversationId, 10)).isEmpty();
+			assertThat(this.chatMemory.findConversationIds()).doesNotContain(conversationId);
 		});
 	}
 
@@ -363,10 +364,10 @@ class RedisChatMemoryMediaIT {
 
 			// Store the message
 			String conversationId = "large-media-conversation";
-			chatMemory.add(conversationId, userMessage);
+			this.chatMemory.add(conversationId, userMessage);
 
 			// Retrieve the message
-			List<Message> messages = chatMemory.get(conversationId, 10);
+			List<Message> messages = this.chatMemory.get(conversationId, 10);
 
 			// Verify
 			assertThat(messages).hasSize(1);
@@ -407,10 +408,10 @@ class RedisChatMemoryMediaIT {
 
 			// Store the message
 			String conversationId = "edge-case-media";
-			chatMemory.add(conversationId, userMessage);
+			this.chatMemory.add(conversationId, userMessage);
 
 			// Retrieve the message
-			List<Message> messages = chatMemory.get(conversationId, 10);
+			List<Message> messages = this.chatMemory.get(conversationId, 10);
 
 			// Verify the message was stored and retrieved
 			assertThat(messages).hasSize(1);
@@ -479,10 +480,10 @@ class RedisChatMemoryMediaIT {
 
 			// Store the messages
 			String conversationId = "complex-media-conversation";
-			chatMemory.add(conversationId, List.of(userMessage, assistantMessage));
+			this.chatMemory.add(conversationId, List.of(userMessage, assistantMessage));
 
 			// Retrieve the messages
-			List<Message> messages = chatMemory.get(conversationId, 10);
+			List<Message> messages = this.chatMemory.get(conversationId, 10);
 
 			// Verify
 			assertThat(messages).hasSize(2);

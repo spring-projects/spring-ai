@@ -72,6 +72,7 @@ import org.springframework.util.Assert;
  * @author Eddú Meléndez
  * @author Mark Pollack
  * @author Soby Chacko
+ * @author chabinhwang
  * @see org.springframework.ai.vectorstore.VectorStore
  * @see org.springframework.ai.embedding.EmbeddingModel
  */
@@ -144,12 +145,13 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
-		List<HashMap<String, Object>> documentList = documents.stream().map(document -> {
+		List<HashMap<String, Object>> documentList = IntStream.range(0, documents.size()).mapToObj(i -> {
+			Document document = documents.get(i);
 			HashMap<String, Object> typesenseDoc = new HashMap<>();
 			typesenseDoc.put(DOC_ID_FIELD_NAME, document.getId());
 			typesenseDoc.put(CONTENT_FIELD_NAME, document.getText());
 			typesenseDoc.put(METADATA_FIELD_NAME, document.getMetadata());
-			typesenseDoc.put(EMBEDDING_FIELD_NAME, embeddings.get(documents.indexOf(document)));
+			typesenseDoc.put(EMBEDDING_FIELD_NAME, embeddings.get(i));
 
 			return typesenseDoc;
 		}).toList();
@@ -170,7 +172,12 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	@Override
 	public void doDelete(List<String> idList) {
 		DeleteDocumentsParameters deleteDocumentsParameters = new DeleteDocumentsParameters();
-		deleteDocumentsParameters.filterBy(DOC_ID_FIELD_NAME + ":=[" + String.join(",", idList) + "]");
+		// Typesense filter_by for the id field expects bare string values, not quoted
+		// literals — e.g. id: [id1,id2]. Typesense document IDs are restricted to
+		// URL-safe characters (no commas, brackets, or quotes), so raw string joining
+		// is safe here. The operator is `: ` (not `:=`) per the Typesense recommendation
+		// for multi-value id filters.
+		deleteDocumentsParameters.filterBy(DOC_ID_FIELD_NAME + ": [" + String.join(",", idList) + "]");
 
 		try {
 			int deletedDocs = (Integer) this.client.collections(this.collectionName)

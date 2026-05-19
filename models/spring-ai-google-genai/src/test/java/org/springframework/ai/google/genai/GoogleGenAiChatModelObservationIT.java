@@ -43,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Soby Chacko
+ * @author Thomas Vitale
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
@@ -64,7 +65,7 @@ public class GoogleGenAiChatModelObservationIT {
 	void observationForChatOperation() {
 
 		var options = GoogleGenAiChatOptions.builder()
-			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
+			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue())
 			.temperature(0.7)
 			.stopSequences(List.of("this-is-the-end"))
 			.maxOutputTokens(2048)
@@ -74,19 +75,20 @@ public class GoogleGenAiChatModelObservationIT {
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
+		assertThat(chatResponse.getResult()).isNotNull();
 		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata);
+		validate(responseMetadata, false);
 	}
 
 	@Test
 	void observationForStreamingOperation() {
 
 		var options = GoogleGenAiChatOptions.builder()
-			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
+			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue())
 			.temperature(0.7)
 			.stopSequences(List.of("this-is-the-end"))
 			.maxOutputTokens(2048)
@@ -111,11 +113,11 @@ public class GoogleGenAiChatModelObservationIT {
 		ChatResponseMetadata responseMetadata = lastChatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata);
+		validate(responseMetadata, true);
 	}
 
-	private void validate(ChatResponseMetadata responseMetadata) {
-		TestObservationRegistryAssert.assertThat(this.observationRegistry)
+	private void validate(ChatResponseMetadata responseMetadata, boolean streaming) {
+		var observationAssert = TestObservationRegistryAssert.assertThat(this.observationRegistry)
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
 			.that()
@@ -126,7 +128,7 @@ public class GoogleGenAiChatModelObservationIT {
 					AiProvider.GOOGLE_GENAI_AI.value())
 			.hasLowCardinalityKeyValue(
 					ChatModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
+					GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue())
 			.hasHighCardinalityKeyValue(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), "2048")
 			.hasHighCardinalityKeyValue(
@@ -152,6 +154,14 @@ public class GoogleGenAiChatModelObservationIT {
 					String.valueOf(responseMetadata.getUsage().getTotalTokens()))
 			.hasBeenStarted()
 			.hasBeenStopped();
+		if (streaming) {
+			observationAssert.hasHighCardinalityKeyValue(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STREAM.asString(), "true");
+		}
+		else {
+			observationAssert.doesNotHaveHighCardinalityKeyValueWithKey(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STREAM.asString());
+		}
 	}
 
 	@SpringBootConfiguration
@@ -176,7 +186,7 @@ public class GoogleGenAiChatModelObservationIT {
 				.genAiClient(genAiClient)
 				.observationRegistry(observationRegistry)
 				.defaultOptions(
-						GoogleGenAiChatOptions.builder().model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH).build())
+						GoogleGenAiChatOptions.builder().model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH).build())
 				.build();
 		}
 

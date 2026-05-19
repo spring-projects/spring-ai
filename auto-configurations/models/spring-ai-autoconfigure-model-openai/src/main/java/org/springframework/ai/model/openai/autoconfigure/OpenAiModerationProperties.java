@@ -16,10 +16,11 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
-import org.springframework.ai.openai.AbstractOpenAiOptions;
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.openai.OpenAiModerationOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 /**
  * OpenAI SDK Moderation autoconfiguration properties.
@@ -28,17 +29,52 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * @author Ilayaperumal Gopinathan
  */
 @ConfigurationProperties(OpenAiModerationProperties.CONFIG_PREFIX)
-public class OpenAiModerationProperties extends AbstractOpenAiOptions {
+public class OpenAiModerationProperties extends AbstractOpenAiProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.moderation";
 
-	@NestedConfigurationProperty
-	private final OpenAiModerationOptions options = OpenAiModerationOptions.builder()
-		.model(OpenAiModerationOptions.DEFAULT_MODERATION_MODEL)
-		.build();
+	private @Nullable String model = OpenAiModerationOptions.DEFAULT_MODERATION_MODEL;
 
-	public OpenAiModerationOptions getOptions() {
+	public @Nullable String getModel() {
+		return this.model;
+	}
+
+	public void setModel(@Nullable String model) {
+		this.model = model;
+	}
+
+	public OpenAiModerationOptions toOptions() {
+		OpenAiModerationOptions.Builder builder = OpenAiModerationOptions.builder();
+		if (this.getModel() != null) {
+			builder.model(this.getModel());
+		}
+		return builder.build();
+	}
+
+	private Options options = new Options();
+
+	@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.moderation")
+	@Deprecated(since = "2.0.0", forRemoval = true)
+	public Options getOptions() {
 		return this.options;
+	}
+
+	public void setOptions(Options options) {
+		this.options = options;
+	}
+
+	public class Options {
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.moderation.model")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable String getModel() {
+			return OpenAiModerationProperties.this.getModel();
+		}
+
+		public void setModel(@Nullable String model) {
+			OpenAiModerationProperties.this.setModel(model);
+		}
+
 	}
 
 }

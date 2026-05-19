@@ -27,7 +27,7 @@ By providing straightforward methods like `embed(String text)` and `embed(Docume
 The Embedding Model API is built on top of the generic https://github.com/spring-projects/spring-ai/tree/main/spring-ai-model/src/main/java/org/springframework/ai/model[Spring AI Model API], which is a part of the Spring AI library.
 As such, the EmbeddingModel interface extends the `Model` interface, which provides a standard set of methods for interacting with AI models. The `EmbeddingRequest` and `EmbeddingResponse` classes extend from the `ModelRequest` and `ModelResponse` are used to encapsulate the input and output of the embedding models, respectively.
 
-The Embedding API in turn is used by higher-level components to implement Embedding Models for specific embedding models, such as OpenAI, Titan, Azure OpenAI, Ollie, and others.
+The Embedding API in turn is used by higher-level components to implement Embedding Models for specific embedding models, such as OpenAI, Titan, Ollie, and others.
 
 Following diagram illustrates the Embedding API and its relationship with the Spring AI Model API and the Embedding Models:
 
@@ -114,7 +114,7 @@ Multiple shortcut methods are provided for embedding text, including the `embed(
 All shortcuts are implemented around the `call` method, which is the primary method for invoking the embedding model.
 
 The `getEmbeddingContent(Document)` method controls how text is extracted from a `Document` before embedding.
-By default it returns `Document.getText()`, but embedding model implementations that support `MetadataMode` (such as OpenAI, Azure OpenAI, and Mistral AI) override this method to return `Document.getFormattedContent(MetadataMode)`, ensuring that document metadata is included in the text sent to the embedding API when configured.
+By default it returns `Document.getText()`, but embedding model implementations that support `MetadataMode` (such as OpenAI or Mistral AI) override this method to return `Document.getFormattedContent(MetadataMode)`, ensuring that document metadata is included in the text sent to the embedding API when configured.
 This method is used by the batched embedding path that vector stores rely on.
 
 Typically the embedding returns a lists of floats, representing the embeddings in a numerical vector format.
@@ -174,7 +174,6 @@ public class Embedding implements ModelResult<float[]> {
 Internally the various `EmbeddingModel` implementations use different low-level libraries and APIs to perform the embedding tasks. The following are some of the available implementations of the `EmbeddingModel` implementations:
 
 * xref:api/embeddings/openai-embeddings.adoc[Spring AI OpenAI Embeddings]
-* xref:api/embeddings/azure-openai-embeddings.adoc[Spring AI Azure OpenAI Embeddings]
 * xref:api/embeddings/ollama-embeddings.adoc[Spring AI Ollama Embeddings]
 * xref:api/embeddings/onnx.adoc[Spring AI Transformers (ONNX) Embeddings]
 * xref:api/embeddings/postgresml-embeddings.adoc[Spring AI PostgresML Embeddings]

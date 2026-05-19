@@ -336,10 +336,9 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	@Override
 	protected void doDelete(Filter.Expression filterExpression) {
-		String nativeFilterExpression = this.filterExpressionConverter.convertExpression(filterExpression);
+		String filterClause = this.filterExpressionConverter.convertExpression(filterExpression);
 
-		String sql = "DELETE FROM " + getFullyQualifiedTableName() + " WHERE metadata::jsonb @@ '"
-				+ nativeFilterExpression + "'::jsonpath";
+		String sql = "DELETE FROM " + getFullyQualifiedTableName() + " WHERE " + filterClause;
 
 		// Execute the delete
 		try {
@@ -359,7 +358,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		String jsonPathFilter = "";
 
 		if (StringUtils.hasText(nativeFilterExpression)) {
-			jsonPathFilter = " AND metadata::jsonb @@ '" + nativeFilterExpression + "'::jsonpath ";
+			jsonPathFilter = " AND " + nativeFilterExpression + " ";
 		}
 
 		double distance = 1 - request.getSimilarityThreshold();

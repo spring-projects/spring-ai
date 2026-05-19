@@ -1,15 +1,191 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-2-0-0-M7]]
+== Upgrading to 2.0.0-M7
+
+=== Cloud Bindings
+
+The `spring-ai-spring-cloud-bindings` module that provided integration for https://github.com/spring-cloud/spring-cloud-bindings has been removed.
+
+[[upgrading-to-2-0-0-M6]]
+== Upgrading to 2.0.0-M6
+
+=== Options and Properties
+
+The configuration properties do not use `.options` anymore, so for example the former `spring.ai.openai.chat.options.model` is now `spring.ai.openai.chat.model`.
+Deprecated configuration properties are provided for the `.options` ones in order to provide a smoother migration experience.
+
+The setters have been removed from the options classes, builder should now be used instead.
+
+=== Observability
+
+==== Tool Calling
+
+The observations produced for tool calling operations have changed as follows:
+
+* the span name is `execute_tool <tool-name>` instead of `tool_call <tool-name>`.
+* the metric/span attribute `gen_ai.operation.name` has value `execute_tool` instead of `framework`.
+* a new `spring.ai.tool.type` metric/span attribute has been introduced to capture the tool type (e.g. `function`).
+* a new `spring.ai.tool.call.id` span attribute has been introduced to capture the tool call ID, as identified by the chat model.
+
+=== Removed Modules
+
+==== `spring-ai-hanadb-store` module removal
+
+The `spring-ai-hanadb-store` module has been **removed** from Spring AI as of version `2.0.0-M6`.
+
+[[upgrading-to-2-0-0-M6-chat-memory]]
+== Upgrading to 2.0.0-M6
+
+=== Chat Memory Advisors: Conversation ID Is Now Required
+
+The conversation ID is no longer optional for the built-in memory advisors (`MessageChatMemoryAdvisor` and `VectorStoreChatMemoryAdvisor`).
+Every call through these advisors must supply `ChatMemory.CONVERSATION_ID` via the advisor context.
+If the value is absent or `null`, the advisor throws an `IllegalArgumentException` immediately.
+
+==== Removed: `ChatMemory.DEFAULT_CONVERSATION_ID`
+
+The constant `ChatMemory.DEFAULT_CONVERSATION_ID` (value `"default"`) has been removed from the `ChatMemory` interface.
+
+===== Impact
+
+Code that references this constant will fail to compile.
+
+===== Migration
+
+Replace any reference to `ChatMemory.DEFAULT_CONVERSATION_ID` with an explicit conversation ID string or a value derived from your session/user context.
+
+[source,java]
+----
+// Before
+String conversationId = ChatMemory.DEFAULT_CONVERSATION_ID;
+
+// After
+String conversationId = "my-conversation-id";
+----
+
+==== Removed: `.conversationId()` Builder Method on Memory Advisors
+
+The `.conversationId(String)` builder method has been removed from `MessageChatMemoryAdvisor.Builder` and `VectorStoreChatMemoryAdvisor.Builder`.
+Setting a default conversation ID at construction time is no longer supported.
+
+===== Impact
+
+Code that calls `.conversationId()` on any of these builders will fail to compile.
+
+===== Migration
+
+Remove the `.conversationId()` builder call and always supply the conversation ID at call time via the advisor context using `ChatMemory.CONVERSATION_ID`:
+
+[source,java]
+----
+// Before
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory)
+        .conversationId("my-session")
+        .build())
+    .build();
+
+chatClient.prompt()
+    .user("Hello!")
+    .call()
+    .content();
+
+// After
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+    .build();
+
+chatClient.prompt()
+    .user("Hello!")
+    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "my-session"))
+    .call()
+    .content();
+----
+
+==== Changed: `BaseChatMemoryAdvisor.getConversationId()` Signature
+
+The default method `BaseChatMemoryAdvisor.getConversationId(Map, String)` has been replaced by `getConversationId(Map)`.
+
+===== Impact
+
+Custom advisor implementations that override or call the two-argument form will fail to compile.
+
+===== Migration
+
+Update overrides and call sites to the single-argument form. Ensure the context always contains `ChatMemory.CONVERSATION_ID` before calling the method.
+
+[source,java]
+----
+// Before
+String conversationId = getConversationId(context, this.defaultConversationId);
+
+// After
+String conversationId = getConversationId(context); // throws if CONVERSATION_ID is absent
+----
+
+=== Removed: `PromptChatMemoryAdvisor`
+
+`PromptChatMemoryAdvisor` has been removed. Use `MessageChatMemoryAdvisor` as a replacement.
+
+==== Impact
+
+Code that imports or references `PromptChatMemoryAdvisor` will fail to compile.
+
+==== Migration
+
+Replace `PromptChatMemoryAdvisor` with `MessageChatMemoryAdvisor`. The builder API is identical.
+Instead of injecting memory as plain text into the system prompt, `MessageChatMemoryAdvisor` includes the conversation history directly as chat messages in the prompt.
+
+[source,java]
+----
+// Before
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(PromptChatMemoryAdvisor.builder(chatMemory).build())
+    .build();
+
+// After
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+    .build();
+----
+
 [[upgrading-to-2-0-0-M5]]
 == Upgrading to 2.0.0-M5
 
 === OpenAI Java SDK Transition
 
-Starting from version `2.0.0-M5`, Spring AI uses the official `openai-java` SDK under the hood for all OpenAI models (Chat, Embeddings, Image, Audio Speech, Audio Transcription, and Moderation).
+Starting from version `2.0.0-M5`, Spring AI uses the official `openai-java` SDK under the hood for all OpenAI models (Chat, Embeddings, Image, Audio Speech, Audio Transcription, and Moderation) in the `spring-ai-openai` module.
 
-The transition is seamless, and **no breaking changes are expected** for existing users of the `spring-ai-openai` module.
+The transition should be seamless, and **no major breaking changes are expected** for existing users of the `spring-ai-openai` module.
 All properties (with the `spring.ai.openai.*` prefix), builders, and options remain fully intact. The existing `extraBody` configuration parameter transparently maps to the underlying `additionalBodyProperties` in the `openai-java` SDK.
+
+==== Removed: `spring.ai.openai.chat.completions-path`
+
+The `spring.ai.openai.chat.completions-path` property has been removed as the new `openai-java` SDK automatically appends the correct paths (like `/chat/completions`) to the base URL. If you were using a custom completions path (for example, with a local Docker Model Runner), you should update your `spring.ai.openai.chat.base-url` property to include any required API prefixes (such as `/v1`).
+
+[source,properties]
+----
+# Before M5
+spring.ai.openai.chat.base-url=http://localhost:12434/engines
+spring.ai.openai.chat.completions-path=/v1/chat/completions
+
+# After M5
+spring.ai.openai.chat.base-url=http://localhost:12434/engines/v1
+----
+
+==== `spring-ai-azure-openai` module removal
+
+The `spring-ai-azure-openai` module (and its associated Spring Boot starter `spring-ai-starter-model-azure-openai` and auto-configuration `spring-ai-autoconfigure-model-azure-openai`) have been **removed** from Spring AI as of version `2.0.0-M5`.
+
+Existing users should use the `spring-ai-openai` module (and related starter and auto-configuration) instead and adapt class names (by removing the `Azure` prefix for example) and configuration properties accordingly.
+
+==== `spring-ai-openai-sdk` module removal
+
+The `spring-ai-openai-sdk` module (and its associated Spring Boot starter `spring-ai-starter-model-openai-sdk` and auto-configuration `spring-ai-autoconfigure-model-openai-sdk`) have been **removed** from Spring AI as of version `2.0.0-M5`.
+
+Existing users should use the `spring-ai-openai` module (and related starter and auto-configuration) instead and adapt class names accordingly (by removing the `Sdk` suffix for example) and configuration properties accordingly.
 
 === ChatOptions Handling
 Users can interact with ChatModels in two ways:
@@ -64,9 +240,219 @@ var response = model.call(prompt);
 ----
 --
 
+=== MCP Java SDK Upgraded to 2.0.0
+
+Spring AI 2.0.0-M5 upgrades the MCP Java SDK from `1.1.x` to `2.0.0`. This release introduces several breaking changes at the SDK level that may affect applications that interact with MCP types directly.
+
+==== Server-Side Tool Input Validation Enabled by Default
+
+MCP servers now validate incoming tool arguments against the tool's JSON schema before invoking the tool handler.
+Failed validation produces a `CallToolResult` with `isError=true` and a descriptive error message.
+
+===== Impact
+
+Existing MCP servers that previously accepted loosely-typed or missing tool arguments may now return validation errors to clients that send non-conforming arguments.
+
+===== Migration
+
+Ensure that your tool definitions carry accurate JSON schemas and that all clients send conforming arguments.
+To disable validation and restore the pre-2.0 behavior, set `validateToolInputs(false)` on the server builder:
+
+[source,java]
+----
+McpServer.sync(transportProvider)
+    .validateToolInputs(false)
+    .tool(myTool, handler)
+    .build();
+----
+
+NOTE: When using `@McpTool` annotations, Spring AI generates JSON schemas from method parameters automatically. These schemas are compatible with the built-in validator and require no extra action.
+
+==== `Tool.inputSchema` Changed from `JsonSchema` to `Map<String, Object>`
+
+`McpSchema.Tool.inputSchema()` (and `outputSchema()`) now returns `Map<String, Object>` instead of the former `JsonSchema` record.
+This allows arbitrary JSON Schema dialect keywords (`$ref`, `unevaluatedProperties`, vendor extensions) to round-trip without being trimmed.
+
+===== Impact
+
+Code that uses `tool.inputSchema()` as a `JsonSchema` object will fail to compile.
+
+===== Migration
+
+Switch to `Map<String, Object>`:
+
+[source,java]
+----
+// Before
+McpSchema.JsonSchema schema = tool.inputSchema();
+
+// After
+Map<String, Object> schema = tool.inputSchema();
+----
+
+When constructing tools via `McpSchema.Tool.Builder`, the deprecated `inputSchema(JsonSchema)` helper is still available for backwards compatibility, but prefer `inputSchema(Map)` or `inputSchema(McpJsonMapper, String)`.
+
+NOTE: Applications that use `@McpTool` annotations or Spring AI's `SyncMcpToolProvider` / `AsyncMcpToolProvider` are not affected — Spring AI handles schema generation internally.
+
+==== `Builder.customizeRequest()` Removed from HTTP Client Transports
+
+The deprecated `Builder.customizeRequest()` method has been removed from `HttpClientSseClientTransport.Builder` and `HttpClientStreamableHttpTransport.Builder`.
+
+===== Impact
+
+Any code calling `.customizeRequest()` directly on these builder types will fail to compile.
+
+===== Migration
+
+Replace `customizeRequest()` with `httpRequestCustomizer()` (sync) or `asyncHttpRequestCustomizer()` (async):
+
+[source,java]
+----
+// Before
+HttpClientSseClientTransport.builder(baseUrl)
+    .customizeRequest(req -> req.header("Authorization", "Bearer token"))
+    .build();
+
+// After
+HttpClientSseClientTransport.builder(baseUrl)
+    .httpRequestCustomizer(req -> req.header("Authorization", "Bearer token"))
+    .build();
+----
+
+NOTE: If you already migrated to the `McpClientCustomizer<B>` API introduced in 2.0.0-M3, no further action is required.
+
+==== Sealed MCP Schema Interfaces Removed
+
+The following interfaces are no longer `sealed`:
+`McpSchema.JSONRPCMessage`, `McpSchema.Request`, `McpSchema.Result`, `McpSchema.Notification`,
+`McpSchema.ResourceContents`, `McpSchema.CompleteReference`, and `McpSchema.Content`.
+
+===== Impact
+
+Exhaustive `switch` expressions over these types that relied on the sealed hierarchy for completeness no longer compile without a `default` branch.
+
+===== Migration
+
+Add a `default` branch to any exhaustive `switch` over these types:
+
+[source,java]
+----
+// Before (no default needed when McpSchema.Content was sealed)
+String text = switch (content) {
+    case McpSchema.TextContent tc   -> tc.text();
+    case McpSchema.ImageContent ic  -> "[image]";
+    case McpSchema.EmbeddedResource er -> "[resource]";
+};
+
+// After
+String text = switch (content) {
+    case McpSchema.TextContent tc   -> tc.text();
+    case McpSchema.ImageContent ic  -> "[image]";
+    case McpSchema.EmbeddedResource er -> "[resource]";
+    default -> throw new IllegalArgumentException("Unknown content type: " + content);
+};
+----
+
+NOTE: This change is unlikely to affect most Spring AI users who interact with MCP through annotations or Spring AI's higher-level abstractions.
+
+=== Unified Cache Usage Metrics on `Usage`
+
+The `org.springframework.ai.chat.metadata.Usage` interface gains two default methods, `getCacheReadInputTokens()` and `getCacheWriteInputTokens()`. Both return `null` when the provider doesn't report a value.
+
+Anthropic, Bedrock Converse, OpenAI, and Google GenAI populate them: Anthropic and Bedrock in both directions, OpenAI and Google for cache reads only.
+
+Code that cast to native types or read provider-specific metadata keys for these numbers can switch to the interface methods. See xref:api/usage-handling.adoc#_prompt_cache_usage_metrics[Prompt Cache Usage Metrics] for examples.
+
+=== Anthropic Module Updates
+
+`spring-ai-anthropic` picks up four new chat options and an SDK bump. The full reference for each is in xref:api/chat/anthropic-chat.adoc[Anthropic Chat]; the highlights:
+
+[cols="1,3", options="header"]
+|===
+| Option | What it adds
+
+| Thinking display
+| `Display.SUMMARIZED` and `Display.OMITTED` on the `thinkingEnabled` / `thinkingAdaptive` builders, so Claude can use a thinking budget without surfacing the full reasoning. (https://github.com/spring-projects/spring-ai/issues/5642[GH-5642])
+
+| Service tier
+| `AnthropicServiceTier.AUTO` / `STANDARD_ONLY` for Anthropic's priority capacity tier. Property `spring.ai.anthropic.chat.options.service-tier`.
+
+| Built-in web search
+| `AnthropicWebSearchTool` lets Claude search the web during a request. Properties under `spring.ai.anthropic.chat.options.web-search-tool.*`.
+
+| Inference geo
+| `inferenceGeo("us")` or `inferenceGeo("eu")` for data-residency routing. Property `spring.ai.anthropic.chat.options.inference-geo`.
+|===
+
+`com.anthropic:anthropic-java` is bumped from `2.16.1` (the version M3 shipped with) to `2.24.0`, binary-compatible at every surface `spring-ai-anthropic` uses.
+
+NOTE: If you are upgrading from `1.1.x` (or `1.0.x`), the bigger change for the Anthropic module landed in M3. See xref:api/chat/anthropic-migration.adoc[Migrating the Anthropic Module to the Official Java SDK] for the `RestClient` → SDK transition.
+
 
 [[upgrading-to-2-0-0-M3]]
 == Upgrading to 2.0.0-M3
+
+=== Anthropic Module Migrated to Official Java SDK
+
+`spring-ai-anthropic` is now built on `com.anthropic:anthropic-java` instead of the hand-rolled `RestClient` / `WebClient` implementation.
+
+For most applications the change is transparent. The Maven artifact, the `spring.ai.anthropic.*` configuration, and the `AnthropicChatModel` / `AnthropicChatOptions` / `ChatClient` API are preserved, and code that goes through `ChatClient` or `ChatModel.call(Prompt)` does not need updates.
+
+Code that imported from `org.springframework.ai.anthropic.api`, constructed `AnthropicChatModel` with an `AnthropicApi` argument, or depended on the old `maxTokens` default does need attention.
+
+==== Impact
+
+* `org.springframework.ai.anthropic.api.AnthropicApi` and all its nested record types (`ChatCompletionRequest`, `ContentBlock`, `Tool`, `ToolChoice*`, streaming event records) are gone. Code referencing these will not compile.
+* The public `AnthropicChatModel(AnthropicApi, AnthropicChatOptions, ...)` constructor is gone. Use `AnthropicChatModel.builder()`.
+* `AnthropicChatOptions#maxTokens` defaults to `4096` instead of `500`. Responses that hit the old cap will now run longer, with correspondingly higher token usage.
+* `AnthropicCacheOptions`, `AnthropicCacheStrategy`, `AnthropicCacheTtl`, `CacheBreakpointTracker`, and `CacheEligibilityResolver` moved out of `api` (and `api.utils`) into the root `org.springframework.ai.anthropic` package.
+* `AnthropicCacheType`, `StreamHelper`, and `metadata.AnthropicRateLimit` were removed; the equivalent SDK types (`CacheControlEphemeral`, `AsyncStreamResponse<RawMessageStreamEvent>`, `RateLimitException`) are used directly.
+* `CitationDocument` was renamed to `AnthropicCitationDocument`.
+* `com.anthropic:anthropic-java` brings `com.squareup.okhttp3:okhttp` onto the classpath transitively.
+
+==== Migration
+
+Update imports for the moved cache and citation classes:
+
+[cols="1,1", options="header"]
+|===
+| Before | After
+| `org.springframework.ai.anthropic.api.AnthropicCacheOptions` | `org.springframework.ai.anthropic.AnthropicCacheOptions`
+| `org.springframework.ai.anthropic.api.AnthropicCacheStrategy` | `org.springframework.ai.anthropic.AnthropicCacheStrategy`
+| `org.springframework.ai.anthropic.api.AnthropicCacheTtl` | `org.springframework.ai.anthropic.AnthropicCacheTtl`
+| `org.springframework.ai.anthropic.api.utils.CacheBreakpointTracker` | `org.springframework.ai.anthropic.CacheBreakpointTracker`
+| `org.springframework.ai.anthropic.api.utils.CacheEligibilityResolver` | `org.springframework.ai.anthropic.CacheEligibilityResolver`
+| `org.springframework.ai.anthropic.api.CitationDocument` | `org.springframework.ai.anthropic.AnthropicCitationDocument`
+|===
+
+`AnthropicCacheStrategy` (`NONE`, `TOOLS_ONLY`, `SYSTEM_ONLY`, `SYSTEM_AND_TOOLS`, `CONVERSATION_HISTORY`) and `AnthropicCacheTtl` (`FIVE_MINUTES`, `ONE_HOUR`) keep the same enum values.
+
+Replace direct constructor usage with the builder:
+
+[source,java]
+----
+// Before
+AnthropicApi anthropicApi = new AnthropicApi(apiKey);
+AnthropicChatModel chatModel = new AnthropicChatModel(anthropicApi, options);
+
+// After
+AnthropicChatModel chatModel = AnthropicChatModel.builder()
+    .apiKey(apiKey)
+    .defaultOptions(options)
+    .build();
+----
+
+If you relied on the `500`-token default to bound costs, set it explicitly:
+
+[source,java]
+----
+AnthropicChatOptions.builder()
+    .maxTokens(500)
+    // ...
+    .build();
+----
+
+xref:api/chat/anthropic-migration.adoc[Migrating the Anthropic Module to the Official Java SDK] covers the rest: direct SDK access, streaming behavior, prompt caching, citations, and removed types.
 
 === MCP Annotations Migrated into Spring AI
 
@@ -606,7 +992,7 @@ If you want to maintain the previous behavior, explicitly set the temperature in
 [source,properties]
 ----
 # Example for OpenAI
-spring.ai.openai.chat.options.temperature=0.7
+spring.ai.openai.chat.temperature=0.7
 
 # Example for Anthropic
 spring.ai.anthropic.chat.options.temperature=0.7
@@ -718,7 +1104,7 @@ The 1.0.0-SNAPSHOT version includes significant changes to artifact IDs, package
 === Add Snapshot Repositories
 
 To use the 1.0.0-SNAPSHOT version, you need to add the snapshot repositories to your build file.
-For detailed instructions, refer to the xref:getting-started.adoc#snapshots-add-snapshot-repositories[Snapshots - Add Snapshot Repositories] section in the Getting Started guide.
+For detailed instructions, refer to the xref:getting-started.adoc#_snapshots_add_snapshot_repositories[Snapshots - Add Snapshot Repositories] section in the Getting Started guide.
 
 === Update Dependency Management
 
@@ -763,9 +1149,6 @@ The built-in advisors that perform prompt augmentation have been updated to use 
 * The `QuestionAnswerAdvisor` expects a template with the following placeholders (see xref:api/retrieval-augmented-generation.adoc#_questionansweradvisor[more details]):
 ** a `query` placeholder to receive the user question.
 ** a `question_answer_context` placeholder to receive the retrieved context.
-* The `PromptChatMemoryAdvisor` expects a template with the following placeholders (see xref:api/chat-memory.adoc#_promptchatmemoryadvisor[more details]):
-** an `instructions` placeholder to receive the original system message.
-** a `memory` placeholder to receive the retrieved conversation memory.
 * The `VectorStoreChatMemoryAdvisor` expects a template with the following placeholders (see xref:api/chat-memory.adoc#_vectorstorechatmemoryadvisor[more details]):
 ** an `instructions` placeholder to receive the original system message.
 ** a `long_term_memory` placeholder to receive the retrieved conversation memory.
@@ -1115,7 +1498,7 @@ You can automate the upgrade process to 1.0.0-M7 using the Claude Code CLI tool 
 3. Paste the prompt into the Claude Code CLI
 4. The AI will analyze your project and make the necessary changes
 
-NOTE: The automated upgrade prompt currently handles artifact ID changes, package relocations, and module structure changes, but does not yet include automatic changes for upgrading to MCP 0.9.0. If you're using MCP, you'll need to manually update your code following the guidance in the xref:upgrade-notes.adoc#mcp-java-sdk-upgrade-to-0-9-0[MCP Java SDK Upgrade] section.
+NOTE: The automated upgrade prompt currently handles artifact ID changes, package relocations, and module structure changes, but does not yet include automatic changes for upgrading to MCP 0.9.0. If you're using MCP, you'll need to manually update your code following the guidance in the xref:upgrade-notes.adoc#_mcp_java_sdk_upgrade_to_0_9_0[MCP Java SDK Upgrade] section.
 
 [[common-sections]]
 == Common Changes Across Versions
@@ -1468,9 +1851,8 @@ Not all vector stores support this property.
 See the corresponding vector store documentation for more details.
 The following are the vector stores that currently don't support the `initialize-schema` property.
 
-1. Hana
-2. Pinecone
-3. Weaviate
+1. Pinecone
+2. Weaviate
 
 * In Bedrock Jurassic 2, the chat options `countPenalty`, `frequencyPenalty`, and `presencePenalty`
 have been renamed to `countPenaltyOptions`, `frequencyPenaltyOptions`, and `presencePenaltyOptions`.
@@ -1569,8 +1951,8 @@ to
 
 The following OpenAi Autoconfiguration chat properties have changed
 
-* from `spring.ai.openai.model` to `spring.ai.openai.chat.options.model`.
-* from `spring.ai.openai.temperature` to `spring.ai.openai.chat.options.temperature`.
+* from `spring.ai.openai.model` to `spring.ai.openai.chat.model`.
+* from `spring.ai.openai.temperature` to `spring.ai.openai.chat.temperature`.
 
 Find updated documentation about the OpenAi properties: https://docs.spring.io/spring-ai/reference/api/chat/openai-chat.html
 
