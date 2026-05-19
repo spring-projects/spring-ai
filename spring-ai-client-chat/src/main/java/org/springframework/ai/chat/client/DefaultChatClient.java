@@ -118,6 +118,17 @@ public class DefaultChatClient implements ChatClient {
 			spec.messages(prompt.getInstructions());
 		}
 
+		// ChatOptions
+		if (prompt.getOptions() != null) {
+			ChatOptions.Builder<?> requestOptionsBuilder = prompt.getOptions().mutate();
+			if (spec.getOptionsCustomizer() != null) {
+				spec.getOptionsCustomizer().combineWith(requestOptionsBuilder);
+			}
+			else {
+				spec.options(requestOptionsBuilder);
+			}
+		}
+
 		return spec;
 	}
 

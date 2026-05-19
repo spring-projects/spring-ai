@@ -131,6 +131,25 @@ class DefaultChatClientTests {
 	}
 
 	@Test
+	void whenPromptWithMessagesAndChatOptionsThenReturn() {
+		ChatModel chatModel = mock(ChatModel.class);
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel)
+			.defaultOptions(ChatOptions.builder().model("default-model").topK(3))
+			.build();
+		ChatOptions chatOptions = ChatOptions.builder().model("test-model").temperature(0.7).build();
+		Prompt prompt = new Prompt(List.of(new UserMessage("my question")), chatOptions);
+		DefaultChatClient.DefaultChatClientRequestSpec spec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
+			.prompt(prompt);
+		assertThat(spec.getMessages()).hasSize(1);
+		assertThat(spec.getMessages().get(0).getText()).isEqualTo("my question");
+		assertThat(spec.getOptionsCustomizer()).isNotNull();
+		ChatOptions builtOptions = spec.getOptionsCustomizer().build();
+		assertThat(builtOptions.getModel()).isEqualTo("test-model");
+		assertThat(builtOptions.getTemperature()).isEqualTo(0.7);
+		assertThat(builtOptions.getTopK()).isEqualTo(3);
+	}
+
+	@Test
 	void testMutate() {
 		var media = mock(Media.class);
 		var toolCallback = mock(ToolCallback.class);
