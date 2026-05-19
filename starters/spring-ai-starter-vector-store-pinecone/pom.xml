@@ -50,11 +50,6 @@
 			<artifactId>spring-ai-autoconfigure-vector-store-observation</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-pinecone-store</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
     </dependencies>
 
 </project>
