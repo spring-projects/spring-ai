@@ -28,10 +28,14 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
@@ -44,6 +48,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Jihoon Kim
@@ -342,6 +348,54 @@ class OllamaChatModelTests {
 
 		assertThat(chatModel).isNotNull();
 		assertThat(chatModel).isInstanceOf(OllamaChatModel.class);
+	}
+
+	@Test
+	void thinkingFieldIsStoredInAssistantMessageProperties() {
+		String thinkingText = "Let me reason step by step...";
+		OllamaApi.Message assistantApiMessage = OllamaApi.Message.builder(OllamaApi.Message.Role.ASSISTANT)
+			.content("The answer is 42.")
+			.thinking(thinkingText)
+			.build();
+		OllamaApi.ChatResponse apiResponse = new OllamaApi.ChatResponse("model", Instant.now(), assistantApiMessage,
+				"stop", true, null, null, 10, 1000L, 20, 2000L);
+		when(this.ollamaApi.chat(any())).thenReturn(apiResponse);
+
+		OllamaChatModel chatModel = OllamaChatModel.builder().ollamaApi(this.ollamaApi).build();
+		ChatResponse response = chatModel.call(new Prompt(new UserMessage("What is the answer?")));
+
+		Generation generation = response.getResult();
+		AssistantMessage message = generation.getOutput();
+		assertThat(message.getMetadata()).containsKey("thinking");
+		assertThat(message.getMetadata().get("thinking")).isEqualTo(thinkingText);
+	}
+
+	@Test
+	void thinkingFieldRoundTripsThroughConversationHistory() {
+		String thinkingText = "Step 1: understand the question...";
+		OllamaApi.Message firstApiMessage = OllamaApi.Message.builder(OllamaApi.Message.Role.ASSISTANT)
+			.content("First answer.")
+			.thinking(thinkingText)
+			.build();
+		OllamaApi.ChatResponse firstApiResponse = new OllamaApi.ChatResponse("model", Instant.now(), firstApiMessage,
+				"stop", true, null, null, 10, 1000L, 20, 2000L);
+
+		OllamaApi.Message secondApiMessage = OllamaApi.Message.builder(OllamaApi.Message.Role.ASSISTANT)
+			.content("Second answer.")
+			.build();
+		OllamaApi.ChatResponse secondApiResponse = new OllamaApi.ChatResponse("model", Instant.now(), secondApiMessage,
+				"stop", true, null, null, 10, 1000L, 20, 2000L);
+		when(this.ollamaApi.chat(any())).thenReturn(firstApiResponse).thenReturn(secondApiResponse);
+
+		OllamaChatModel chatModel = OllamaChatModel.builder().ollamaApi(this.ollamaApi).build();
+
+		ChatResponse firstResponse = chatModel.call(new Prompt(new UserMessage("Turn 1")));
+		AssistantMessage firstAssistantMessage = firstResponse.getResult().getOutput();
+		assertThat(firstAssistantMessage.getMetadata().get("thinking")).isEqualTo(thinkingText);
+
+		Prompt secondPrompt = new Prompt(
+				List.of(new UserMessage("Turn 1"), firstAssistantMessage, new UserMessage("Turn 2")));
+		chatModel.call(secondPrompt);
 	}
 
 }

@@ -244,9 +244,12 @@ public class OllamaChatModel implements ChatModel {
 									toolCall.function().name(), jsonHelper.toJson(toolCall.function().arguments())))
 							.toList();
 
+				String thinking = ollamaResponse.message().thinking();
+				Map<String, Object> messageProperties = thinking != null ? Map.of(THINKING_METADATA_KEY, thinking)
+						: Map.of();
 				var assistantMessage = AssistantMessage.builder()
 					.content(ollamaResponse.message().content())
-					.properties(Map.of())
+					.properties(messageProperties)
 					.toolCalls(toolCalls)
 					.build();
 
@@ -254,7 +257,6 @@ public class OllamaChatModel implements ChatModel {
 				if (ollamaResponse.promptEvalCount() != null && ollamaResponse.evalCount() != null) {
 					ChatGenerationMetadata.Builder builder = ChatGenerationMetadata.builder()
 						.finishReason(ollamaResponse.doneReason());
-					String thinking = ollamaResponse.message().thinking();
 					if (thinking != null) {
 						builder.metadata(THINKING_METADATA_KEY, thinking);
 					}
@@ -320,16 +322,17 @@ public class OllamaChatModel implements ChatModel {
 						.toList();
 				}
 
+				String thinking = chunk.message().thinking();
+				Map<String, Object> messageProperties = thinking != null ? Map.of(THINKING_METADATA_KEY, thinking)
+						: Map.of();
 				var assistantMessage = AssistantMessage.builder()
 					.content(content)
-					.properties(Map.of())
+					.properties(messageProperties)
 					.toolCalls(toolCalls)
 					.build();
 
 				ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
 				boolean hasEvalCount = chunk.promptEvalCount() != null && chunk.evalCount() != null;
-				String thinking = chunk.message().thinking();
-
 				if (hasEvalCount || thinking != null) {
 					ChatGenerationMetadata.Builder builder = ChatGenerationMetadata.builder();
 					if (hasEvalCount) {
