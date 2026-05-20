@@ -174,8 +174,12 @@ public class OpenAiPaymentTransactionIT {
 		}
 
 		@Bean
-		public ChatClient chatClient(OpenAiChatModel chatModel) {
-			return ChatClient.builder(chatModel).build();
+		public ChatClient chatClient(OpenAiChatModel chatModel, ToolCallingManager toolCallingManager) {
+			return ChatClient
+				.builder(chatModel, io.micrometer.observation.ObservationRegistry.NOOP, null, null,
+						org.springframework.ai.chat.client.advisor.ToolCallAdvisor.builder()
+							.toolCallingManager(toolCallingManager))
+				.build();
 		}
 
 		@Bean
