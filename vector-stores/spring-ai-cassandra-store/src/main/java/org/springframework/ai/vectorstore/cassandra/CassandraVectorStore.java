@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -336,7 +335,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 			if (!matchingDocs.isEmpty()) {
 				// Then delete those documents by ID
-				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).collect(Collectors.toList());
+				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).toList();
 				delete(idsToDelete);
 				logger.debug("Deleted {} documents matching filter expression", idsToDelete.size());
 			}

@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import com.azure.cosmos.CosmosAsyncClient;
@@ -258,7 +257,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 			// Extract just the CosmosItemOperations from the pairs
 			List<CosmosItemOperation> itemOperations = itemOperationsWithIds.stream()
 				.map(ImmutablePair::getValue)
-				.collect(Collectors.toList());
+				.toList();
 
 			this.container.executeBulkOperations(Flux.fromIterable(itemOperations)).doOnNext(response -> {
 				if (response != null && response.getResponse() != null) {
@@ -344,7 +343,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 				}
 
 				return CosmosBulkOperations.getDeleteItemOperation(id, new PartitionKey(partitionKeyValue));
-			}).collect(Collectors.toList());
+			}).toList();
 
 			// Execute bulk delete operations synchronously by using blockLast() on the
 			// Flux
@@ -377,9 +376,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 		logger.info("similarity threshold: {}", request.getSimilarityThreshold());
 
-		List<Float> embeddingList = IntStream.range(0, embedding.length)
-			.mapToObj(i -> embedding[i])
-			.collect(Collectors.toList());
+		List<Float> embeddingList = IntStream.range(0, embedding.length).mapToObj(i -> embedding[i]).toList();
 
 		// Start building query for similarity search
 		StringBuilder queryBuilder = new StringBuilder("SELECT TOP @topK * FROM c WHERE ");
@@ -441,7 +438,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 					.text(doc.get("content").asText())
 					.metadata(docFields)
 					.build())
-				.collect(Collectors.toList());
+				.toList();
 		}
 		catch (Exception e) {
 			logger.error("Error during similarity search: {}", e.getMessage());

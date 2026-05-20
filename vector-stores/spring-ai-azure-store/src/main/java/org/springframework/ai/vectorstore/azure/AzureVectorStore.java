@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import com.alibaba.fastjson2.JSONObject;
@@ -267,7 +266,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 				return Document.builder().id(id).text(content).metadata(metadata).score(result.getScore()).build();
 			})
-			.collect(Collectors.toList());
+			.toList();
 	}
 
 	@Override
