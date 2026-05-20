@@ -4,6 +4,71 @@
 [[upgrading-to-2-0-0-M7]]
 == Upgrading to 2.0.0-M7
 
+=== ChatClient Tool Calling
+
+==== New: Automatic `ToolCallAdvisor` Registration
+
+`ChatClient` now automatically registers a `ToolCallAdvisor` in the advisor chain whenever tools are configured on a call (via `.tools(...)`, `.toolCallbacks(...)`, or defaults set on the builder). Previously, callers had to add `ToolCallAdvisor` manually.
+
+===== Impact
+
+Existing code that already adds a `ToolCallAdvisor` explicitly will have the advisor present in the chain twice — once from the explicit add and once from auto-registration.
+
+===== Migration
+
+Remove the explicit `ToolCallAdvisor` from the chain and let auto-registration handle it. If you need a custom configuration, either supply a pre-configured `ToolCallAdvisor.Builder` at `ChatClient` construction time (see the xref:api/chatclient.adoc#_customizing_the_default_toolcalladvisor[Customizing the Default ToolCallAdvisor] section), or disable auto-registration and register the advisor manually:
+
+[source,java]
+----
+// Before — manual registration
+chatClient.prompt("What's the weather?")
+    .tools(weatherTool)
+    .advisors(ToolCallAdvisor.builder().build())
+    .call().content();
+
+// After — auto-registration handles it; no explicit advisor needed
+chatClient.prompt("What's the weather?")
+    .tools(weatherTool)
+    .call().content();
+
+// Or, to keep full control, disable auto-registration explicitly
+chatClient.prompt("What's the weather?")
+    .tools(weatherTool)
+    .advisors(
+        AdvisorParams.toolCallAdvisorAutoRegister(false),
+        ToolCallAdvisor.builder().build()
+    )
+    .call().content();
+----
+
+==== New: `ToolAdvisor` Marker Interface
+
+A `ToolAdvisor` marker interface has been added. `ToolCallAdvisor` implements it. `DefaultChatClient` checks for this marker to decide whether to auto-register a `ToolCallAdvisor` — if any advisor in the chain already implements `ToolAdvisor`, auto-registration is skipped.
+
+Custom advisors that own the tool-call lifecycle should implement `ToolAdvisor` to prevent a duplicate `ToolCallAdvisor` from being added automatically.
+
+==== New: `MemoryAdvisor` Marker Interface
+
+A `MemoryAdvisor` marker interface has been added. `BaseChatMemoryAdvisor` now extends it. `DefaultChatClient` uses this marker to detect downstream memory advisors and disable the `ToolCallAdvisor`'s internal conversation history when one is present.
+
+Custom memory advisors that do not extend `BaseChatMemoryAdvisor` but should integrate with the tool-call auto-registration logic should implement `MemoryAdvisor`.
+
+==== New: `ChatClient.builder()` Overload for Custom `ToolCallAdvisor` Configuration
+
+A new 5-argument `ChatClient.builder()` static method and a matching `DefaultChatClientBuilder` constructor accept a `ToolCallAdvisor.Builder<?>` to configure the advisor used during auto-registration:
+
+[source,java]
+----
+ChatClient chatClient = ChatClient
+    .builder(chatModel, observationRegistry, null, null,
+            ToolCallAdvisor.builder().toolCallingManager(myToolCallingManager))
+    .build();
+----
+
+Spring Boot users should prefer one of the following instead:
+
+* Set `spring.ai.chat.client.tool-calling.advisor-order` to control the advisor's position in the chain.
+* Declare a `ToolCallAdvisor.Builder<?>` bean to fully replace the auto-configured builder (suppressed via `@ConditionalOnMissingBean`).
 
 === Cloud Bindings
 

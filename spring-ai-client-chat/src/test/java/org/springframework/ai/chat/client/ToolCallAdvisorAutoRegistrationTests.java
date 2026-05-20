@@ -227,7 +227,9 @@ class ToolCallAdvisorAutoRegistrationTests {
 			when(customManager.executeToolCalls(any(), any())).thenReturn(
 					DefaultToolExecutionResult.builder().conversationHistory(List.of()).returnDirect(false).build());
 
-			ChatClient.builder(chatModel, ObservationRegistry.NOOP, null, null, customManager)
+			ChatClient
+				.builder(chatModel, ObservationRegistry.NOOP, null, null,
+						ToolCallAdvisor.builder().toolCallingManager(customManager))
 				.build()
 				.prompt()
 				.user("weather?")

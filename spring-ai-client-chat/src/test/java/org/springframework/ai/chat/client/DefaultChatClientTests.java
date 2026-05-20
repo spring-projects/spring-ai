@@ -34,6 +34,7 @@ import org.mockito.ArgumentCaptor;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
@@ -182,18 +183,19 @@ class DefaultChatClientTests {
 	}
 
 	@Test
-	void toolCallingManagerPreservedAfterMutate() {
+	void toolCallAdvisorBuilderPreservedAfterMutate() {
 		var manager = mock(ToolCallingManager.class);
-		ChatClient original = ChatClient.builder(mockChatModel(), ObservationRegistry.NOOP, null, null, manager)
+		var advisorBuilder = ToolCallAdvisor.builder().toolCallingManager(manager);
+		ChatClient original = ChatClient.builder(mockChatModel(), ObservationRegistry.NOOP, null, null, advisorBuilder)
 			.build();
 
 		// copy constructor path: each prompt() call copies the spec
 		var originalSpec = (DefaultChatClient.DefaultChatClientRequestSpec) original.prompt();
-		assertThat(ReflectionTestUtils.getField(originalSpec, "toolCallingManager")).isSameAs(manager);
+		assertThat(ReflectionTestUtils.getField(originalSpec, "toolCallAdvisorBuilder")).isSameAs(advisorBuilder);
 
 		// mutate() path: builder cloned, then prompt() copies again
 		var mutatedSpec = (DefaultChatClient.DefaultChatClientRequestSpec) original.mutate().build().prompt();
-		assertThat(ReflectionTestUtils.getField(mutatedSpec, "toolCallingManager")).isSameAs(manager);
+		assertThat(ReflectionTestUtils.getField(mutatedSpec, "toolCallAdvisorBuilder")).isSameAs(advisorBuilder);
 	}
 
 	@Test

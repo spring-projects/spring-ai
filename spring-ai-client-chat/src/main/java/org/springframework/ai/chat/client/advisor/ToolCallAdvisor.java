@@ -545,8 +545,22 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 		 * Returns the configured advisor order.
 		 * @return the advisor order value
 		 */
-		protected int getAdvisorOrder() {
+		public int getAdvisorOrder() {
 			return this.advisorOrder;
+		}
+
+		/**
+		 * Creates a shallow copy of this builder with all current settings. The copy can
+		 * be used as a template from which per-call overrides (e.g.
+		 * {@code conversationHistoryEnabled}, {@code streamToolCallResponses}) are
+		 * applied without mutating the original.
+		 * @return a new {@link Builder} with the same configuration
+		 */
+		public Builder<?> copy() {
+			return new Builder<>().toolCallingManager(this.toolCallingManager)
+				.advisorOrder(this.advisorOrder)
+				.conversationHistoryEnabled(this.conversationHistoryEnabled)
+				.streamToolCallResponses(this.streamToolCallResponses);
 		}
 
 		/**

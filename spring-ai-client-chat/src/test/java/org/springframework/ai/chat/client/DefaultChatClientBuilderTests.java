@@ -21,6 +21,7 @@ import java.nio.charset.Charset;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.core.io.ClassPathResource;
@@ -76,11 +77,13 @@ class DefaultChatClientBuilderTests {
 	void whenToolCallingManagerThenPropagatedToRequestSpec() {
 		var manager = mock(ToolCallingManager.class);
 		var builder = new DefaultChatClientBuilder(mock(ChatModel.class), mock(ObservationRegistry.class), null, null,
-				manager);
+				ToolCallAdvisor.builder().toolCallingManager(manager));
 
 		var defaultRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ReflectionTestUtils.getField(builder,
 				"defaultRequest");
-		assertThat(ReflectionTestUtils.getField(defaultRequest, "toolCallingManager")).isSameAs(manager);
+		var advisorBuilder = (ToolCallAdvisor.Builder<?>) ReflectionTestUtils.getField(defaultRequest,
+				"toolCallAdvisorBuilder");
+		assertThat(ReflectionTestUtils.getField(advisorBuilder, "toolCallingManager")).isSameAs(manager);
 	}
 
 	@Test
