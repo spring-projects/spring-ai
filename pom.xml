@@ -42,7 +42,6 @@
 		<module>advisors/spring-ai-advisors-vector-store</module>
 
 		<module>memory/repository/spring-ai-model-chat-memory-repository-cassandra</module>
-		<module>memory/repository/spring-ai-model-chat-memory-repository-cosmos-db</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-jdbc</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-mongodb</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-neo4j</module>
@@ -59,7 +58,6 @@
 		<module>document-readers/pdf-reader</module>
 		<module>document-readers/tika-reader</module>
 
-		<module>vector-stores/spring-ai-azure-cosmos-db-store</module>
 		<module>vector-stores/spring-ai-azure-store</module>
 		<module>vector-stores/spring-ai-cassandra-store</module>
 		<module>vector-stores/spring-ai-chroma-store</module>
@@ -91,7 +89,6 @@
 
 		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory</module>
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-cassandra</module>
-		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-cosmos-db</module>
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-jdbc</module>
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-mongodb</module>
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-neo4j</module>
@@ -126,7 +123,6 @@
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux</module>
 
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure-cosmos-db</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-cassandra</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-chroma</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-couchbase</module>
@@ -151,7 +147,6 @@
 
 		<module>starters/spring-ai-starter-vector-store-aws-opensearch</module>
 		<module>starters/spring-ai-starter-vector-store-azure</module>
-		<module>starters/spring-ai-starter-vector-store-azure-cosmos-db</module>
 		<module>starters/spring-ai-starter-vector-store-cassandra</module>
 		<module>starters/spring-ai-starter-vector-store-chroma</module>
 		<module>starters/spring-ai-starter-vector-store-couchbase</module>
@@ -206,7 +201,6 @@
 
 		<module>starters/spring-ai-starter-model-chat-memory</module>
 		<module>starters/spring-ai-starter-model-chat-memory-repository-cassandra</module>
-		<module>starters/spring-ai-starter-model-chat-memory-repository-cosmos-db</module>
 		<module>starters/spring-ai-starter-model-chat-memory-repository-jdbc</module>
 		<module>starters/spring-ai-starter-model-chat-memory-repository-mongodb</module>
 		<module>starters/spring-ai-starter-model-chat-memory-repository-neo4j</module>
@@ -311,7 +305,6 @@
 		<azure-core.version>1.57.1</azure-core.version>
 		<azure-json.version>1.5.1</azure-json.version>
 		<azure-search.version>11.7.6</azure-search.version>
-		<azure-cosmos.version>5.22.0</azure-cosmos.version>
 		<weaviate-client.version>5.2.0</weaviate-client.version>
 		<qdrant.version>1.17.0</qdrant.version>
 		<typesense.version>1.3.0</typesense.version>
@@ -904,7 +897,6 @@
 								<exclude>org.springframework.ai.vertexai.gemini/**/*IT.java</exclude>
 
 								<!-- Vector Stores -->
-								<exclude>org.springframework.ai.vectorstore**/CosmosDB**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore.azure/**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Cassandra**IT.java</exclude>
 								<exclude>org.springframework.ai.chroma/**IT.java</exclude>
