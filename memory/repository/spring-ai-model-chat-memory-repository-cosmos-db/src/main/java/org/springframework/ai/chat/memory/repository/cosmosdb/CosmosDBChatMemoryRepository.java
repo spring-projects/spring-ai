@@ -96,7 +96,7 @@ public final class CosmosDBChatMemoryRepository implements ChatMemoryRepository 
 			.map(doc -> (Map<?, ?>) doc)
 			.map(doc -> (String) doc.get("conversationId"))
 			.distinct()
-			.collect(Collectors.toList());
+			.toList();
 	}
 
 	@Override
@@ -124,7 +124,7 @@ public final class CosmosDBChatMemoryRepository implements ChatMemoryRepository 
 			.filter(Map.class::isInstance)
 			.map(doc -> (Map<String, Object>) doc)
 			.map(this::mapToMessage)
-			.collect(Collectors.toList());
+			.toList();
 
 		return messages;
 	}
@@ -177,7 +177,7 @@ public final class CosmosDBChatMemoryRepository implements ChatMemoryRepository 
 			.map(item -> (Map<String, Object>) item)
 			.map(item -> CosmosBulkOperations.getDeleteItemOperation((String) item.get("id"),
 					new PartitionKey(conversationId)))
-			.collect(Collectors.toList());
+			.toList();
 
 		this.container.executeBulkOperations(Flux.fromIterable(operations)).collectList().block();
 	}

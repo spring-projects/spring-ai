@@ -787,7 +787,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 						this.metadataFields.stream()
 							.filter(field -> field.fieldType() == FieldType.TEXT)
 							.map(MetadataField::name)
-							.collect(Collectors.toList()));
+							.toList());
 			}
 			throw new IllegalArgumentException(String.format("Field '%s' is not a TEXT field", normalizedFieldName));
 		}

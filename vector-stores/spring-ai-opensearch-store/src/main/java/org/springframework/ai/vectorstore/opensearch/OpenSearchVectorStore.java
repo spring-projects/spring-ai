@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
 import org.opensearch.client.json.JsonData;
@@ -378,7 +377,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 				.hits()
 				.stream()
 				.map(this::toDocument)
-				.collect(Collectors.toList());
+				.toList();
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
