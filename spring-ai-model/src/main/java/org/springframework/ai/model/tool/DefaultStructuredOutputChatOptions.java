@@ -50,11 +50,6 @@ public class DefaultStructuredOutputChatOptions extends DefaultChatOptions imple
 	}
 
 	@Override
-	public void setOutputSchema(String outputSchema) {
-		this.outputSchema = outputSchema;
-	}
-
-	@Override
 	public StructuredOutputChatOptions.Builder<?> mutate() {
 		return StructuredOutputChatOptions.builder()
 			.model(this.getModel())

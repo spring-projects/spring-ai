@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.chat.memory.repository.redis;
 
 import java.time.Duration;
@@ -59,19 +60,19 @@ class RedisChatMemoryIT {
 	void setUp() {
 		// Create JedisPooled directly with container properties for more reliable
 		// connection
-		jedisClient = new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort());
-		chatMemory = RedisChatMemoryRepository.builder()
-			.jedisClient(jedisClient)
+		this.jedisClient = new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort());
+		this.chatMemory = RedisChatMemoryRepository.builder()
+			.jedisClient(this.jedisClient)
 			.indexName("test-" + RedisChatMemoryConfig.DEFAULT_INDEX_NAME)
 			.build();
 
-		chatMemory.clear("test-conversation");
+		this.chatMemory.clear("test-conversation");
 	}
 
 	@AfterEach
 	void tearDown() {
-		if (jedisClient != null) {
-			jedisClient.close();
+		if (this.jedisClient != null) {
+			this.jedisClient.close();
 		}
 	}
 
@@ -81,12 +82,12 @@ class RedisChatMemoryIT {
 			String conversationId = "test-conversation";
 
 			// Add messages
-			chatMemory.add(conversationId, new UserMessage("Hello"));
-			chatMemory.add(conversationId, new AssistantMessage("Hi there!"));
-			chatMemory.add(conversationId, new UserMessage("How are you?"));
+			this.chatMemory.add(conversationId, new UserMessage("Hello"));
+			this.chatMemory.add(conversationId, new AssistantMessage("Hi there!"));
+			this.chatMemory.add(conversationId, new UserMessage("How are you?"));
 
 			// Retrieve messages
-			List<Message> messages = chatMemory.get(conversationId, 10);
+			List<Message> messages = this.chatMemory.get(conversationId, 10);
 
 			assertThat(messages).hasSize(3);
 			assertThat(messages.get(0).getText()).isEqualTo("Hello");
@@ -101,12 +102,12 @@ class RedisChatMemoryIT {
 			String conversationId = "test-conversation";
 
 			// Add messages
-			chatMemory.add(conversationId, new UserMessage("Message 1"));
-			chatMemory.add(conversationId, new AssistantMessage("Message 2"));
-			chatMemory.add(conversationId, new UserMessage("Message 3"));
+			this.chatMemory.add(conversationId, new UserMessage("Message 1"));
+			this.chatMemory.add(conversationId, new AssistantMessage("Message 2"));
+			this.chatMemory.add(conversationId, new UserMessage("Message 3"));
 
 			// Retrieve limited messages
-			List<Message> messages = chatMemory.get(conversationId, 2);
+			List<Message> messages = this.chatMemory.get(conversationId, 2);
 
 			assertThat(messages).hasSize(2);
 		});
@@ -118,14 +119,14 @@ class RedisChatMemoryIT {
 			String conversationId = "test-conversation";
 
 			// Add messages
-			chatMemory.add(conversationId, new UserMessage("Hello"));
-			chatMemory.add(conversationId, new AssistantMessage("Hi"));
+			this.chatMemory.add(conversationId, new UserMessage("Hello"));
+			this.chatMemory.add(conversationId, new AssistantMessage("Hi"));
 
 			// Clear conversation
-			chatMemory.clear(conversationId);
+			this.chatMemory.clear(conversationId);
 
 			// Verify messages are cleared
-			List<Message> messages = chatMemory.get(conversationId, 10);
+			List<Message> messages = this.chatMemory.get(conversationId, 10);
 			assertThat(messages).isEmpty();
 		});
 	}
@@ -141,10 +142,10 @@ class RedisChatMemoryIT {
 			);
 
 			// Add batch of messages
-			chatMemory.add(conversationId, messageBatch);
+			this.chatMemory.add(conversationId, messageBatch);
 
 			// Verify all messages were stored
-			List<Message> retrievedMessages = chatMemory.get(conversationId, 10);
+			List<Message> retrievedMessages = this.chatMemory.get(conversationId, 10);
 			assertThat(retrievedMessages).hasSize(4);
 		});
 	}
@@ -153,7 +154,7 @@ class RedisChatMemoryIT {
 	void shouldHandleTimeToLive() throws InterruptedException {
 		this.contextRunner.run(context -> {
 			RedisChatMemoryRepository shortTtlMemory = RedisChatMemoryRepository.builder()
-				.jedisClient(jedisClient)
+				.jedisClient(this.jedisClient)
 				.indexName("test-ttl-" + RedisChatMemoryConfig.DEFAULT_INDEX_NAME)
 				.timeToLive(Duration.ofSeconds(2))
 				.keyPrefix("short-lived:")
@@ -178,13 +179,13 @@ class RedisChatMemoryIT {
 		this.contextRunner.run(context -> {
 			String conversationId = "test-conversation";
 			// Add messages with minimal delay to test timestamp ordering
-			chatMemory.add(conversationId, new UserMessage("First"));
+			this.chatMemory.add(conversationId, new UserMessage("First"));
 			Thread.sleep(10);
-			chatMemory.add(conversationId, new AssistantMessage("Second"));
+			this.chatMemory.add(conversationId, new AssistantMessage("Second"));
 			Thread.sleep(10);
-			chatMemory.add(conversationId, new UserMessage("Third"));
+			this.chatMemory.add(conversationId, new UserMessage("Third"));
 
-			List<Message> messages = chatMemory.get(conversationId, 10);
+			List<Message> messages = this.chatMemory.get(conversationId, 10);
 			assertThat(messages).hasSize(3);
 			assertThat(messages.get(0).getText()).isEqualTo("First");
 			assertThat(messages.get(1).getText()).isEqualTo("Second");
@@ -198,11 +199,11 @@ class RedisChatMemoryIT {
 			String conv1 = "conversation-1";
 			String conv2 = "conversation-2";
 
-			chatMemory.add(conv1, new UserMessage("Conv1 Message"));
-			chatMemory.add(conv2, new UserMessage("Conv2 Message"));
+			this.chatMemory.add(conv1, new UserMessage("Conv1 Message"));
+			this.chatMemory.add(conv2, new UserMessage("Conv2 Message"));
 
-			List<Message> conv1Messages = chatMemory.get(conv1, 10);
-			List<Message> conv2Messages = chatMemory.get(conv2, 10);
+			List<Message> conv1Messages = this.chatMemory.get(conv1, 10);
+			List<Message> conv2Messages = this.chatMemory.get(conv2, 10);
 
 			assertThat(conv1Messages).hasSize(1);
 			assertThat(conv2Messages).hasSize(1);

@@ -31,7 +31,7 @@ import org.springframework.util.Assert;
  *
  * @author Brian Sam-Bodden
  */
-public class RedisChatMemoryConfig {
+public final class RedisChatMemoryConfig {
 
 	public static final String DEFAULT_INDEX_NAME = "chat-memory-idx";
 
@@ -94,23 +94,23 @@ public class RedisChatMemoryConfig {
 	}
 
 	public JedisPooled getJedisClient() {
-		return jedisClient;
+		return this.jedisClient;
 	}
 
 	public String getIndexName() {
-		return indexName;
+		return this.indexName;
 	}
 
 	public String getKeyPrefix() {
-		return keyPrefix;
+		return this.keyPrefix;
 	}
 
 	public Integer getTimeToLiveSeconds() {
-		return timeToLiveSeconds;
+		return this.timeToLiveSeconds;
 	}
 
 	public boolean isInitializeSchema() {
-		return initializeSchema;
+		return this.initializeSchema;
 	}
 
 	/**
@@ -118,7 +118,7 @@ public class RedisChatMemoryConfig {
 	 * @return maximum number of conversation IDs
 	 */
 	public int getMaxConversationIds() {
-		return maxConversationIds;
+		return this.maxConversationIds;
 	}
 
 	/**
@@ -126,7 +126,7 @@ public class RedisChatMemoryConfig {
 	 * @return maximum number of messages per conversation
 	 */
 	public int getMaxMessagesPerConversation() {
-		return maxMessagesPerConversation;
+		return this.maxMessagesPerConversation;
 	}
 
 	/**
@@ -134,7 +134,7 @@ public class RedisChatMemoryConfig {
 	 * @return list of metadata field definitions in RedisVL-compatible format
 	 */
 	public List<Map<String, String>> getMetadataFields() {
-		return metadataFields;
+		return this.metadataFields;
 	}
 
 	/**

@@ -73,6 +73,7 @@ import org.springframework.web.servlet.function.ServerResponse;
 @ConditionalOnClass(WebMvcSseServerTransportProvider.class)
 @ConditionalOnMissingBean(McpServerTransportProvider.class)
 @Conditional({ McpServerStdioDisabledCondition.class, McpServerAutoConfiguration.EnabledSseServerCondition.class })
+@Deprecated(since = "2.0.0", forRemoval = true)
 public class McpServerSseWebMvcAutoConfiguration {
 
 	@Bean

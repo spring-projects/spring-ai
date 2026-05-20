@@ -30,9 +30,11 @@ Option 2:
 private static final DockerModelRunnerContainer DMR = new DockerModelRunnerContainer("alpine/socat:1.7.4.3-r0");
 
 @Bean
-public OpenAiApi chatCompletionApi() {
+public OpenAiChatModel chatModel() {
 	var baseUrl = DMR.getOpenAIEndpoint();
-	return OpenAiApi.builder().baseUrl(baseUrl).apiKey("test").build();
+	return OpenAiChatModel.builder()
+		.options(OpenAiChatOptions.builder().baseUrl(baseUrl).apiKey("test").build())
+		.build();
 }
 ----
 

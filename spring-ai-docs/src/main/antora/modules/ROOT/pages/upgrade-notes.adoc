@@ -50,6 +50,11 @@ class CustomConverter extends BeanOutputConverter<MyType> {
 }
 ----
 
+=== Cloud Bindings
+
+The `spring-ai-spring-cloud-bindings` module that provided integration for https://github.com/spring-cloud/spring-cloud-bindings has been removed.
+
+
 [[upgrading-to-2-0-0-M6]]
 == Upgrading to 2.0.0-M6
 
@@ -202,6 +207,20 @@ Starting from version `2.0.0-M5`, Spring AI uses the official `openai-java` SDK 
 
 The transition should be seamless, and **no major breaking changes are expected** for existing users of the `spring-ai-openai` module.
 All properties (with the `spring.ai.openai.*` prefix), builders, and options remain fully intact. The existing `extraBody` configuration parameter transparently maps to the underlying `additionalBodyProperties` in the `openai-java` SDK.
+
+==== Removed: `spring.ai.openai.chat.completions-path`
+
+The `spring.ai.openai.chat.completions-path` property has been removed as the new `openai-java` SDK automatically appends the correct paths (like `/chat/completions`) to the base URL. If you were using a custom completions path (for example, with a local Docker Model Runner), you should update your `spring.ai.openai.chat.base-url` property to include any required API prefixes (such as `/v1`).
+
+[source,properties]
+----
+# Before M5
+spring.ai.openai.chat.base-url=http://localhost:12434/engines
+spring.ai.openai.chat.completions-path=/v1/chat/completions
+
+# After M5
+spring.ai.openai.chat.base-url=http://localhost:12434/engines/v1
+----
 
 ==== `spring-ai-azure-openai` module removal
 

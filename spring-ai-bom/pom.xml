@@ -187,14 +187,6 @@
 				<version>${project.version}</version>
 			</dependency>
 
-			<!-- Spring AI Spring Cloud Bindings -->
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-spring-cloud-bindings</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
 			<!-- Spring AI Chat memory implementations -->
 
 			<dependency>

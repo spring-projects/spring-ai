@@ -84,14 +84,13 @@ class OpenAiExtraBodySerializationTests {
 			.extraBody(Map.of("enable_thinking", true, "max_depth", 10))
 			.build();
 
-		OpenAiChatOptions runtimeOptions = OpenAiChatOptions.builder()
+		OpenAiChatOptions.Builder runtimeOptions = OpenAiChatOptions.builder()
 			.temperature(0.9)
-			.extraBody(Map.of("enable_thinking", false, "top_k", 50))
-			.build();
+			.extraBody(Map.of("enable_thinking", false, "top_k", 50));
 
 		// Act: Merge options using the builder's combineWith method, which is the actual
 		// mechanism used by OpenAiChatModel
-		OpenAiChatOptions merged = defaultOptions.mutate().combineWith(runtimeOptions.mutate()).build();
+		OpenAiChatOptions merged = defaultOptions.mutate().combineWith(runtimeOptions).build();
 
 		// Assert: Verify extraBody was successfully merged
 		assertThat(merged.getExtraBody()).isNotNull();

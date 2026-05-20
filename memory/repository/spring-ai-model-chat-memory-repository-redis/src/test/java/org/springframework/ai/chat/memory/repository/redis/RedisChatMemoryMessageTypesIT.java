@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.chat.memory.repository.redis;
 
 import java.util.Arrays;
@@ -65,19 +66,19 @@ class RedisChatMemoryMessageTypesIT {
 
 	@BeforeEach
 	void setUp() {
-		jedisClient = new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort());
-		chatMemory = RedisChatMemoryRepository.builder()
-			.jedisClient(jedisClient)
+		this.jedisClient = new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort());
+		this.chatMemory = RedisChatMemoryRepository.builder()
+			.jedisClient(this.jedisClient)
 			.indexName("test-" + RedisChatMemoryConfig.DEFAULT_INDEX_NAME)
 			.build();
 
-		chatMemory.clear("test-conversation");
+		this.chatMemory.clear("test-conversation");
 	}
 
 	@AfterEach
 	void tearDown() {
-		if (jedisClient != null) {
-			jedisClient.close();
+		if (this.jedisClient != null) {
+			this.jedisClient.close();
 		}
 	}
 
@@ -92,12 +93,12 @@ class RedisChatMemoryMessageTypesIT {
 			AssistantMessage assistantMessage = new AssistantMessage("The capital of France is Paris.");
 
 			// Store each message type
-			chatMemory.add(conversationId, systemMessage);
-			chatMemory.add(conversationId, userMessage);
-			chatMemory.add(conversationId, assistantMessage);
+			this.chatMemory.add(conversationId, systemMessage);
+			this.chatMemory.add(conversationId, userMessage);
+			this.chatMemory.add(conversationId, assistantMessage);
 
 			// Retrieve and verify messages
-			List<Message> messages = chatMemory.get(conversationId, 10);
+			List<Message> messages = this.chatMemory.get(conversationId, 10);
 
 			// Verify correct number of messages
 			assertThat(messages).hasSize(3);
@@ -129,10 +130,10 @@ class RedisChatMemoryMessageTypesIT {
 			};
 
 			// Store the message
-			chatMemory.add(conversationId, message);
+			this.chatMemory.add(conversationId, message);
 
 			// Retrieve messages
-			List<Message> messages = chatMemory.get(conversationId, 10);
+			List<Message> messages = this.chatMemory.get(conversationId, 10);
 
 			// Verify message was stored and retrieved correctly
 			assertThat(messages).hasSize(1);
@@ -166,10 +167,10 @@ class RedisChatMemoryMessageTypesIT {
 				.build();
 
 			// Store the message
-			chatMemory.add(conversationId, systemMessage);
+			this.chatMemory.add(conversationId, systemMessage);
 
 			// Retrieve messages
-			List<Message> messages = chatMemory.get(conversationId, 10);
+			List<Message> messages = this.chatMemory.get(conversationId, 10);
 
 			// Verify message count
 			assertThat(messages).hasSize(1);
@@ -200,10 +201,10 @@ class RedisChatMemoryMessageTypesIT {
 			List<Message> systemMessages = List.of(systemMessage1, systemMessage2, systemMessage3);
 
 			// Store all messages at once
-			chatMemory.add(conversationId, systemMessages);
+			this.chatMemory.add(conversationId, systemMessages);
 
 			// Retrieve messages
-			List<Message> retrievedMessages = chatMemory.get(conversationId, 10);
+			List<Message> retrievedMessages = this.chatMemory.get(conversationId, 10);
 
 			// Verify all messages were stored and retrieved
 			assertThat(retrievedMessages).hasSize(3);
@@ -233,11 +234,11 @@ class RedisChatMemoryMessageTypesIT {
 				.build();
 
 			// Store messages with metadata
-			chatMemory.add(conversationId, userMessage);
-			chatMemory.add(conversationId, assistantMessage);
+			this.chatMemory.add(conversationId, userMessage);
+			this.chatMemory.add(conversationId, assistantMessage);
 
 			// Retrieve messages
-			List<Message> messages = chatMemory.get(conversationId, 10);
+			List<Message> messages = this.chatMemory.get(conversationId, 10);
 
 			// Verify message count
 			assertThat(messages).hasSize(2);
@@ -270,10 +271,10 @@ class RedisChatMemoryMessageTypesIT {
 			};
 
 			// Store the message
-			chatMemory.add(conversationId, message);
+			this.chatMemory.add(conversationId, message);
 
 			// Retrieve the message
-			List<Message> messages = chatMemory.get(conversationId, 10);
+			List<Message> messages = this.chatMemory.get(conversationId, 10);
 
 			// Verify message was stored correctly
 			assertThat(messages).hasSize(1);
@@ -322,10 +323,10 @@ class RedisChatMemoryMessageTypesIT {
 				.build();
 
 			// Store message with tool calls
-			chatMemory.add(conversationId, assistantMessage);
+			this.chatMemory.add(conversationId, assistantMessage);
 
 			// Retrieve the message
-			List<Message> messages = chatMemory.get(conversationId, 10);
+			List<Message> messages = this.chatMemory.get(conversationId, 10);
 
 			// Verify we get back the same type of message
 			assertThat(messages).hasSize(1);
@@ -361,10 +362,10 @@ class RedisChatMemoryMessageTypesIT {
 				.build();
 
 			// Store the message
-			chatMemory.add(conversationId, toolResponseMessage);
+			this.chatMemory.add(conversationId, toolResponseMessage);
 
 			// Retrieve the message
-			List<Message> messages = chatMemory.get(conversationId, 10);
+			List<Message> messages = this.chatMemory.get(conversationId, 10);
 
 			// Verify we get back the correct message
 			assertThat(messages).hasSize(1);
@@ -407,10 +408,10 @@ class RedisChatMemoryMessageTypesIT {
 				.build();
 
 			// Store the message
-			chatMemory.add(conversationId, toolResponseMessage);
+			this.chatMemory.add(conversationId, toolResponseMessage);
 
 			// Retrieve the message
-			List<Message> messages = chatMemory.get(conversationId, 10);
+			List<Message> messages = this.chatMemory.get(conversationId, 10);
 
 			// Verify message type and count
 			assertThat(messages).hasSize(1);
@@ -478,10 +479,10 @@ class RedisChatMemoryMessageTypesIT {
 
 			// Store the conversation
 			List<Message> conversation = List.of(userMessage, assistantMessage, toolResponseMessage, finalResponse);
-			chatMemory.add(conversationId, conversation);
+			this.chatMemory.add(conversationId, conversation);
 
 			// Retrieve the conversation
-			List<Message> messages = chatMemory.get(conversationId, 10);
+			List<Message> messages = this.chatMemory.get(conversationId, 10);
 
 			// Verify the conversation flow
 			assertThat(messages).hasSize(4);
@@ -540,12 +541,12 @@ class RedisChatMemoryMessageTypesIT {
 
 			// Add each message individually with small delays
 			for (Message message : expectedMessages) {
-				chatMemory.add(conversationId, message);
+				this.chatMemory.add(conversationId, message);
 				Thread.sleep(10); // Small delay to ensure distinct timestamps
 			}
 
 			// Retrieve and verify messages
-			List<Message> retrievedMessages = chatMemory.get(conversationId, 10);
+			List<Message> retrievedMessages = this.chatMemory.get(conversationId, 10);
 
 			// Check the total count matches
 			assertThat(retrievedMessages).hasSize(expectedMessages.size());
@@ -616,24 +617,24 @@ class RedisChatMemoryMessageTypesIT {
 			AssistantMessage assistantMessage3 = new AssistantMessage("Third assistant response");
 
 			// Add messages one at a time with delays to simulate real conversation
-			chatMemory.add(conversationId, userMessage1);
+			this.chatMemory.add(conversationId, userMessage1);
 			Thread.sleep(50);
-			chatMemory.add(conversationId, assistantMessage1);
+			this.chatMemory.add(conversationId, assistantMessage1);
 			Thread.sleep(50);
-			chatMemory.add(conversationId, userMessage2);
+			this.chatMemory.add(conversationId, userMessage2);
 			Thread.sleep(50);
-			chatMemory.add(conversationId, assistantMessage2);
+			this.chatMemory.add(conversationId, assistantMessage2);
 			Thread.sleep(50);
-			chatMemory.add(conversationId, userMessage3);
+			this.chatMemory.add(conversationId, userMessage3);
 			Thread.sleep(50);
-			chatMemory.add(conversationId, assistantMessage3);
+			this.chatMemory.add(conversationId, assistantMessage3);
 
 			// Create the expected message order
 			List<Message> expectedMessages = List.of(userMessage1, assistantMessage1, userMessage2, assistantMessage2,
 					userMessage3, assistantMessage3);
 
 			// Retrieve all messages
-			List<Message> retrievedMessages = chatMemory.get(conversationId, 10);
+			List<Message> retrievedMessages = this.chatMemory.get(conversationId, 10);
 
 			// Check count matches
 			assertThat(retrievedMessages).hasSize(expectedMessages.size());
@@ -648,7 +649,7 @@ class RedisChatMemoryMessageTypesIT {
 			}
 
 			// Test with a limit
-			List<Message> limitedMessages = chatMemory.get(conversationId, 3);
+			List<Message> limitedMessages = this.chatMemory.get(conversationId, 3);
 
 			// Should get the 3 oldest messages
 			assertThat(limitedMessages).hasSize(3);

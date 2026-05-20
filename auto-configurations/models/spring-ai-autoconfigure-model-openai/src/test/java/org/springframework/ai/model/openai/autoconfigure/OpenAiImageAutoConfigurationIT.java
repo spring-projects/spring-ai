@@ -48,24 +48,23 @@ public class OpenAiImageAutoConfigurationIT {
 				OpenAiImageModel imageModel = context.getBean(OpenAiImageModel.class);
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("forest"));
 				assertThat(imageResponse.getResults()).hasSize(1);
-				assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
-				logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
+				assertThat(imageResponse.getResult().getOutput().getB64Json()).isNotEmpty();
+				logger.info("Generated image successfully");
 			});
 	}
 
 	@Test
 	void generateImageWithModel() {
-		// The 256x256 size is supported by dall-e-2, but not by dall-e-3.
 		this.contextRunner
-			.withPropertyValues("spring.ai.openai.image.options.model=dall-e-2",
-					"spring.ai.openai.image.options.size=256x256")
+			.withPropertyValues("spring.ai.openai.image.options.model=gpt-image-1-mini",
+					"spring.ai.openai.image.options.size=1024x1024")
 			.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class))
 			.run(context -> {
 				OpenAiImageModel imageModel = context.getBean(OpenAiImageModel.class);
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("forest"));
 				assertThat(imageResponse.getResults()).hasSize(1);
-				assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
-				logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
+				assertThat(imageResponse.getResult().getOutput().getB64Json()).isNotEmpty();
+				logger.info("Generated image successfully");
 			});
 	}
 

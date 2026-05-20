@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
-import tools.jackson.core.type.TypeReference;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -36,7 +35,6 @@ import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.util.json.JsonParser;
-import org.springframework.util.Assert;
 
 /**
  * Helper class for creating strongly-typed Ollama options.
@@ -605,23 +603,8 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
-		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-		this.toolCallbacks = toolCallbacks;
-	}
-
-	@Override
 	public Set<String> getToolNames() {
 		return this.toolNames;
-	}
-
-	@Override
-	public void setToolNames(Set<String> toolNames) {
-		Assert.notNull(toolNames, "toolNames cannot be null");
-		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
-		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
-		this.toolNames = toolNames;
 	}
 
 	@Override
@@ -630,18 +613,8 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
-	@Override
 	public Map<String, Object> getToolContext() {
 		return this.toolContext;
-	}
-
-	@Override
-	public void setToolContext(Map<String, Object> toolContext) {
-		this.toolContext = toolContext;
 	}
 
 	@Override
@@ -655,14 +628,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		}
 		// Otherwise, serialize the Map/Object to JSON string (JSON Schema case)
 		return JsonParser.toJson(this.format);
-	}
-
-	@Override
-	public void setOutputSchema(@Nullable String outputSchema) {
-		if (outputSchema != null) {
-			this.format = JsonParser.fromJson(outputSchema, new TypeReference<Map<String, Object>>() {
-			});
-		}
 	}
 
 	/**

@@ -16,7 +16,6 @@
 
 package org.springframework.ai.openai.chat;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -25,6 +24,8 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.openai.OpenAiChatModel.ResponseFormat;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiChatOptions.Builder;
@@ -33,12 +34,12 @@ import org.springframework.ai.test.options.AbstractChatOptionsTests;
 import org.springframework.ai.tool.ToolCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Tests for {@link OpenAiChatOptions}.
  *
  * @author Julien Dubois
+ * @author Sebastien Deleuze
  */
 public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatOptions, Builder> {
 
@@ -515,49 +516,73 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 	}
 
 	@Test
-	@SuppressWarnings("DataFlowIssue")
-	void testSetToolCallbacksValidation() {
-		OpenAiChatOptions options = OpenAiChatOptions.builder().build();
-
+	void testToolCallbacksBuilderValidation() {
 		// Test null validation
-		assertThatThrownBy(() -> options.setToolCallbacks(null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("toolCallbacks cannot be null");
-
-		// Test null elements validation
-		List<ToolCallback> callbacksWithNull = new ArrayList<>();
-		callbacksWithNull.add(null);
-		assertThatThrownBy(() -> options.setToolCallbacks(callbacksWithNull))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("toolCallbacks cannot contain null elements");
+		OpenAiChatOptions options1 = OpenAiChatOptions.builder().toolCallbacks((List<ToolCallback>) null).build();
+		assertThat(options1.getToolCallbacks()).isEmpty();
 	}
 
 	@Test
-	@SuppressWarnings("DataFlowIssue")
-	void testSetToolNamesValidation() {
-		OpenAiChatOptions options = OpenAiChatOptions.builder().build();
-
+	void testToolNamesBuilderValidation() {
 		// Test null validation
-		assertThatThrownBy(() -> options.setToolNames(null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("toolNames cannot be null");
+		OpenAiChatOptions options1 = OpenAiChatOptions.builder().toolNames((Set<String>) null).build();
+		assertThat(options1.getToolNames()).isEmpty();
+	}
 
-		// Test null elements validation
-		Set<String> toolNamesWithNull = new HashSet<>();
-		toolNamesWithNull.add(null);
-		assertThatThrownBy(() -> options.setToolNames(toolNamesWithNull)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("toolNames cannot contain null elements");
+	@Test
+	void testCombineWithChatOptions() {
+		OpenAiChatOptions merged = OpenAiChatOptions.builder()
+			.combineWith(ChatOptions.builder().model("override-model").temperature(0.9).maxTokens(100))
+			.build();
 
-		// Test empty string validation
-		Set<String> toolNamesWithEmpty = new HashSet<>();
-		toolNamesWithEmpty.add("");
-		assertThatThrownBy(() -> options.setToolNames(toolNamesWithEmpty)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("toolNames cannot contain empty elements");
+		assertThat(merged.getModel()).isEqualTo("override-model");
+		assertThat(merged.getTemperature()).isEqualTo(0.9);
+		assertThat(merged.getMaxTokens()).isEqualTo(100);
+	}
 
-		// Test whitespace string validation
-		Set<String> toolNamesWithWhitespace = new HashSet<>();
-		toolNamesWithWhitespace.add("   ");
-		assertThatThrownBy(() -> options.setToolNames(toolNamesWithWhitespace))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("toolNames cannot contain empty elements");
+	@Test
+	void testCombineWithToolCallingChatOptions() {
+		OpenAiChatOptions merged = OpenAiChatOptions.builder()
+			.combineWith(ToolCallingChatOptions.builder()
+				.model("override-model")
+				.temperature(0.9)
+				.toolNames("tool1")
+				.internalToolExecutionEnabled(true))
+			.build();
+
+		assertThat(merged.getModel()).isEqualTo("override-model");
+		assertThat(merged.getTemperature()).isEqualTo(0.9);
+		assertThat(merged.getToolNames()).containsExactly("tool1");
+		assertThat(merged.getInternalToolExecutionEnabled()).isTrue();
+	}
+
+	@Test
+	void testCombineWithAbstractOpenAiOptions() {
+		Map<String, String> headers = Map.of("header1", "value1");
+
+		OpenAiChatOptions override = OpenAiChatOptions.builder()
+			.baseUrl("https://override.com")
+			.apiKey("override-key")
+			.deploymentName("override-deployment")
+			.organizationId("override-org")
+			.microsoftFoundry(true)
+			.gitHubModels(true)
+			.timeout(java.time.Duration.ofSeconds(10))
+			.maxRetries(5)
+			.customHeaders(headers)
+			.build();
+
+		OpenAiChatOptions merged = OpenAiChatOptions.builder().combineWith(override.mutate()).build();
+
+		assertThat(merged.getBaseUrl()).isEqualTo("https://override.com");
+		assertThat(merged.getApiKey()).isEqualTo("override-key");
+		assertThat(merged.getDeploymentName()).isEqualTo("override-deployment");
+		assertThat(merged.getOrganizationId()).isEqualTo("override-org");
+		assertThat(merged.isMicrosoftFoundry()).isTrue();
+		assertThat(merged.isGitHubModels()).isTrue();
+		assertThat(merged.getTimeout()).isEqualTo(java.time.Duration.ofSeconds(10));
+		assertThat(merged.getMaxRetries()).isEqualTo(5);
+		assertThat(merged.getCustomHeaders()).isEqualTo(headers);
 	}
 
 	@Test
@@ -615,9 +640,9 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 			.maxTokens(100)
 			.build();
 
-		OpenAiChatOptions override = OpenAiChatOptions.builder().model(null).temperature(null).build();
+		OpenAiChatOptions.Builder override = OpenAiChatOptions.builder().model(null).temperature(null);
 
-		OpenAiChatOptions merged = base.mutate().combineWith(override.mutate()).build();
+		OpenAiChatOptions merged = base.mutate().combineWith(override).build();
 
 		// Null values should not override
 		assertThat(merged.getModel()).isEqualTo("base-model");
@@ -633,12 +658,11 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 			.reasoningEffort("medium")
 			.build();
 
-		OpenAiChatOptions override = OpenAiChatOptions.builder()
+		OpenAiChatOptions.Builder override = OpenAiChatOptions.builder()
 			.model("override-model")
-			.reasoningEffort("high")
-			.build();
+			.reasoningEffort("high");
 
-		OpenAiChatOptions merged = base.mutate().combineWith(override.mutate()).build();
+		OpenAiChatOptions merged = base.mutate().combineWith(override).build();
 
 		assertThat(merged.getModel()).isEqualTo("override-model");
 		assertThat(merged.getTemperature()).isEqualTo(0.5);

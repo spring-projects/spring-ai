@@ -27,6 +27,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  */
 @ConfigurationProperties(McpServerSseProperties.CONFIG_PREFIX)
+@Deprecated(since = "2.0.0", forRemoval = true)
 public class McpServerSseProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.mcp.server";

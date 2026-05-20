@@ -61,11 +61,9 @@ public class OpenAiImageModelObservationIT {
 	@Test
 	void observationForImageOperation() throws InterruptedException {
 		var options = OpenAiImageOptions.builder()
-			.model(ImageModel.DALL_E_3.asString())
+			.model(ImageModel.GPT_IMAGE_1_MINI.asString())
 			.height(1024)
 			.width(1024)
-			.responseFormat("url")
-			.style("natural")
 			.build();
 
 		var instructions = """
@@ -83,7 +81,7 @@ public class OpenAiImageModelObservationIT {
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultImageModelObservationConvention.DEFAULT_NAME)
 			.that()
-			.hasContextualNameEqualTo("image " + ImageModel.DALL_E_3.asString())
+			.hasContextualNameEqualTo("image " + ImageModel.GPT_IMAGE_1_MINI.asString())
 			.hasLowCardinalityKeyValue(
 					ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.IMAGE.value())
@@ -91,13 +89,10 @@ public class OpenAiImageModelObservationIT {
 					AiProvider.OPENAI.value())
 			.hasLowCardinalityKeyValue(
 					ImageModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					ImageModel.DALL_E_3.asString())
+					ImageModel.GPT_IMAGE_1_MINI.asString())
 			.hasHighCardinalityKeyValue(
 					ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_SIZE.asString(),
 					"1024x1024")
-			.hasHighCardinalityKeyValue(
-					ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_RESPONSE_FORMAT.asString(),
-					"url")
 			.hasBeenStarted()
 			.hasBeenStopped();
 	}
