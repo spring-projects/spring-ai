@@ -230,15 +230,14 @@ public final class OpenAiChatModel implements ChatModel {
 				}
 
 				List<Generation> generations = choices.stream().map(choice -> {
-					chatCompletion.id();
-					choice.finishReason();
 					Map<String, Object> metadata = Map.of("id", chatCompletion.id(), "role",
 							choice.message()._role().asString().isPresent() ? choice.message()._role().asStringOrThrow()
 									: "",
 							"index", choice.index(), "finishReason", choice.finishReason().value().toString(),
-							"refusal", choice.message().refusal().isPresent() ? choice.message().refusal() : "",
-							"annotations", choice.message().annotations().isPresent() ? choice.message().annotations()
-									: List.of(Map.of()));
+							"refusal", choice.message().refusal().isPresent() ? choice.message().refusal().get() : "",
+							"annotations", choice.message().annotations().isPresent()
+									? choice.message().annotations().get() : List.of(Map.of()),
+							"reasoningContent", getReasoningContent(choice));
 					return buildGeneration(choice, metadata, request);
 				}).toList();
 
@@ -336,10 +335,12 @@ public final class OpenAiChatModel implements ChatModel {
 
 							Map<String, Object> metadata = Map.of("id", id, "role", roleMap.getOrDefault(id, ""),
 									"index", choice.index(), "finishReason", choice.finishReason().value(), "refusal",
-									choice.message().refusal().isPresent() ? choice.message().refusal() : "",
-									"annotations", choice.message().annotations().isPresent()
-											? choice.message().annotations() : List.of(),
-									"chunkChoice", chunk.choices().get((int) choice.index()));
+									choice.message().refusal().isPresent() ? choice.message().refusal().get() : "",
+									"annotations",
+									choice.message().annotations().isPresent() ? choice.message().annotations().get()
+											: List.of(),
+									"chunkChoice", chunk.choices().get((int) choice.index()), "reasoningContent",
+									getReasoningContent(choice));
 
 							return buildGeneration(choice, metadata, request);
 						}).toList();
@@ -1139,6 +1140,22 @@ public final class OpenAiChatModel implements ChatModel {
 			return ChatCompletionTool
 				.ofFunction(ChatCompletionFunctionTool.builder().function(functionDefinition).build());
 		}).toList();
+	}
+
+	private String getReasoningContent(ChatCompletion.Choice choice) {
+		String reasoningContent = "";
+		Map<String, JsonValue> additionalProperties = choice._additionalProperties();
+		if (additionalProperties.get("reasoning_content") != null) {
+			reasoningContent = additionalProperties.get("reasoning_content").asString().isPresent()
+					? additionalProperties.get("reasoning_content").asString().get().toString() : "";
+		}
+		else {
+			if (additionalProperties.get("reasoning") != null) {
+				reasoningContent = additionalProperties.get("reasoning").asString().isPresent()
+						? additionalProperties.get("reasoning").asString().get().toString() : "";
+			}
+		}
+		return reasoningContent;
 	}
 
 	/**
