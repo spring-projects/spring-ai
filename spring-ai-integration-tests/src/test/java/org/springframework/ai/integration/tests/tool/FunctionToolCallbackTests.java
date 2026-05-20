@@ -26,10 +26,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.integration.tests.TestApplication;
 import org.springframework.ai.integration.tests.tool.domain.Author;
 import org.springframework.ai.integration.tests.tool.domain.Book;
 import org.springframework.ai.integration.tests.tool.domain.BookService;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,9 +62,13 @@ public class FunctionToolCallbackTests {
 	@Autowired
 	OpenAiChatModel openAiChatModel;
 
+	@Autowired
+	ToolCallingManager toolCallingManager;
+
 	@Test
 	void chatVoidInputFromBean() {
 		var content = ChatClient.builder(this.openAiChatModel)
+			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
 			.build()
 			.prompt()
 			.user("Welcome the users to the library")
@@ -75,6 +81,7 @@ public class FunctionToolCallbackTests {
 	@Test
 	void chatVoidInputFromCallback() {
 		var content = ChatClient.builder(this.openAiChatModel)
+			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
 			.build()
 			.prompt()
 			.user("Welcome the users to the library")
@@ -91,6 +98,7 @@ public class FunctionToolCallbackTests {
 	@Test
 	void chatVoidOutputFromBean() {
 		var content = ChatClient.builder(this.openAiChatModel)
+			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
 			.build()
 			.prompt()
 			.user("Welcome %s to the library".formatted("James Bond"))
@@ -103,6 +111,7 @@ public class FunctionToolCallbackTests {
 	@Test
 	void chatVoidOutputFromCallback() {
 		var content = ChatClient.builder(this.openAiChatModel)
+			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
 			.build()
 			.prompt()
 			.user("Welcome %s to the library".formatted("James Bond"))
@@ -119,6 +128,7 @@ public class FunctionToolCallbackTests {
 	@Test
 	void chatSingleFromBean() {
 		var content = ChatClient.builder(this.openAiChatModel)
+			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
 			.build()
 			.prompt()
 			.user("What books written by %s are available in the library?".formatted("J.R.R. Tolkien"))
@@ -138,6 +148,7 @@ public class FunctionToolCallbackTests {
 			return new BookService().getBooksByAuthor(author);
 		};
 		var content = ChatClient.builder(this.openAiChatModel)
+			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
 			.build()
 			.prompt()
 			.user("What books written by %s are available in the library?".formatted("J.R.R. Tolkien"))
@@ -156,6 +167,7 @@ public class FunctionToolCallbackTests {
 	@Test
 	void chatListFromBean() {
 		var content = ChatClient.builder(this.openAiChatModel)
+			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
 			.build()
 			.prompt()
 			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit", "The Lion, the Witch and the Wardrobe"))
@@ -172,6 +184,7 @@ public class FunctionToolCallbackTests {
 			return new BookService().getAuthorsByBook(books.books());
 		};
 		var content = ChatClient.builder(this.openAiChatModel)
+			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
 			.build()
 			.prompt()
 			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit", "The Lion, the Witch and the Wardrobe"))
