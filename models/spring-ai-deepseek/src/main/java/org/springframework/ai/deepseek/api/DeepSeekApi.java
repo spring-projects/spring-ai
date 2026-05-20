@@ -196,16 +196,12 @@ public class DeepSeekApi {
 				}
 				return !isInsideTool.get();
 			})
-			// Merging the window chunks into a single chunk.
-			// Reduce the inner Flux<ChatCompletionChunk> window into a single
-			// Mono<ChatCompletionChunk>,
-			// Flux<Flux<ChatCompletionChunk>> -> Flux<Mono<ChatCompletionChunk>>
-			.concatMapIterable(window -> {
-				Mono<ChatCompletionChunk> monoChunk = window.reduce(this.chunkMerger::merge);
-				return List.of(monoChunk);
-			})
-			// Flux<Mono<ChatCompletionChunk>> -> Flux<ChatCompletionChunk>
-			.flatMap(mono -> mono);
+			// Expand each tool-call window into per-token delta frames followed by a
+			// single authoritative merged frame. Single-chunk windows (regular text
+			// deltas, reasoning_content deltas) are passed through unchanged so the
+			// existing streaming UX is preserved. Flux<Flux<ChatCompletionChunk>> ->
+			// Flux<ChatCompletionChunk>.
+			.concatMap(window -> window.collectList().flatMapIterable(this.chunkMerger::expandToolCallWindow));
 	}
 
 	private String getEndpoint(ChatCompletionRequest request) {

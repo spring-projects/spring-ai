@@ -56,4 +56,19 @@ public class StreamingToolCallBuilder {
 		return new AssistantMessage.ToolCall(this.id, "function", this.name, toolArgs);
 	}
 
+	/**
+	 * Build a partial {@link AssistantMessage.ToolCall} carrying just the {@code delta}
+	 * fragment from the latest streaming event with this builder's id and name stamped
+	 * on. Returns {@code null} when id/name have not been seeded yet (the first
+	 * content_block_start event has not arrived).
+	 * @param delta the argument fragment from the current streaming event
+	 * @return a partial tool call, or {@code null} if id or name is missing
+	 */
+	public AssistantMessage.@Nullable ToolCall toPartial(String delta) {
+		if (this.id == null || this.name == null) {
+			return null;
+		}
+		return new AssistantMessage.ToolCall(this.id, "function", this.name, delta, true);
+	}
+
 }

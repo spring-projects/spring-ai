@@ -114,7 +114,18 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 		StreamingToolCallBuilder toolCallBuilder = this.toolUseMap.get(event.contentBlockIndex());
 
 		if (toolCallBuilder != null) {
-			toolCallBuilder.delta(event.delta().toolUse().input());
+			String inputDelta = event.delta().toolUse().input();
+			toolCallBuilder.delta(inputDelta);
+			// Emit the delta as a partial ToolCall so subscribers see argument
+			// tokens in real time. The partial=true flag keeps the tool-execution
+			// gate, advisor routing, and persistence quiet on intermediate frames;
+			// visitMetadata still emits the authoritative non-partial tool calls
+			// once the stream completes.
+			AssistantMessage.ToolCall partial = toolCallBuilder.toPartial(inputDelta);
+			if (partial != null) {
+				this.emitChatResponse(
+						new Generation(AssistantMessage.builder().content("").toolCalls(List.of(partial)).build()));
+			}
 		}
 		else if (ContentBlockDelta.Type.TEXT.equals(event.delta().type())) {
 			this.emitChatResponse(new Generation(AssistantMessage.builder().content(event.delta().text()).build()));

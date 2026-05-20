@@ -208,6 +208,156 @@ class DeepSeekStreamFunctionCallingHelperTest {
 	}
 
 	@Test
+	void mergeShouldAccumulateReasoningContentAcrossChunks() {
+		// Given: streamed deltas where reasoning_content is split across chunks and a
+		// tool call arrives only at the end (the failure mode reported in #5898).
+		ChatCompletionMessage previousMsg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, null, null,
+				"Let me think ");
+		ChatCompletionMessage currentMsg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, null, null,
+				"about this.");
+
+		ChatCompletionChunk previous = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, previousMsg, null)), 123L, "model", null, null,
+				null, null);
+
+		ChatCompletionChunk current = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, currentMsg, null)), 123L, "model", null, null,
+				null, null);
+
+		// When
+		ChatCompletionChunk result = this.helper.merge(previous, current);
+
+		// Then
+		assertThat(result.choices().get(0).delta().reasoningContent()).isEqualTo("Let me think about this.");
+	}
+
+	@Test
+	void mergeShouldHandleNullCurrentReasoningContent() {
+		// Given
+		ChatCompletionMessage previousMsg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, null, null,
+				"partial reasoning");
+		ChatCompletionMessage currentMsg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, null, null,
+				null);
+
+		ChatCompletionChunk previous = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, previousMsg, null)), 123L, "model", null, null,
+				null, null);
+
+		ChatCompletionChunk current = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, currentMsg, null)), 123L, "model", null, null,
+				null, null);
+
+		// When
+		ChatCompletionChunk result = this.helper.merge(previous, current);
+
+		// Then
+		assertThat(result.choices().get(0).delta().reasoningContent()).isEqualTo("partial reasoning");
+	}
+
+	@Test
+	void mergeShouldPreservePrefixFromPreviousWhenCurrentIsNull() {
+		// Given
+		ChatCompletionMessage previousMsg = new ChatCompletionMessage("hello", Role.ASSISTANT, null, null, null, true,
+				null);
+		ChatCompletionMessage currentMsg = new ChatCompletionMessage(" world", Role.ASSISTANT, null, null, null, null,
+				null);
+
+		ChatCompletionChunk previous = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, previousMsg, null)), 123L, "model", null, null,
+				null, null);
+
+		ChatCompletionChunk current = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, currentMsg, null)), 123L, "model", null, null,
+				null, null);
+
+		// When
+		ChatCompletionChunk result = this.helper.merge(previous, current);
+
+		// Then
+		assertThat(result.choices().get(0).delta().prefix()).isTrue();
+	}
+
+	@Test
+	void expandToolCallWindowEmitsPerChunkDeltasFollowedByMergedFrame() {
+		// Given: an SSE-shaped tool-call window where only the first chunk carries id +
+		// name, subsequent chunks carry only argument fragments, and the final chunk is
+		// an empty delta with finish_reason = TOOL_CALLS.
+		ChatCompletionChunk first = chunkWithToolCall(
+				new ToolCall(0, "call_abc", "function", new ChatCompletionFunction("write_code", "")), null);
+		ChatCompletionChunk second = chunkWithToolCall(
+				new ToolCall(0, null, null, new ChatCompletionFunction(null, "def ")), null);
+		ChatCompletionChunk third = chunkWithToolCall(
+				new ToolCall(0, null, null, new ChatCompletionFunction(null, "hello")), null);
+		ChatCompletionChunk finishMarker = chunkWithToolCall(null, DeepSeekApi.ChatCompletionFinishReason.TOOL_CALLS);
+
+		// When
+		List<ChatCompletionChunk> expanded = this.helper
+			.expandToolCallWindow(List.of(first, second, third, finishMarker));
+
+		// Then: three partial frames are emitted (the empty finish marker is dropped) +
+		// one terminal merged frame with concatenated arguments and finish_reason.
+		assertThat(expanded).hasSize(4);
+
+		// Each partial frame keeps its own argument fragment and stamps the cumulative
+		// id/name; finish_reason stays unset so downstream can tell partials apart from
+		// the merged frame.
+		ToolCall partial1 = expanded.get(0).choices().get(0).delta().toolCalls().get(0);
+		assertThat(partial1.id()).isEqualTo("call_abc");
+		assertThat(partial1.function().name()).isEqualTo("write_code");
+		assertThat(partial1.function().arguments()).isEmpty();
+		assertThat(expanded.get(0).choices().get(0).finishReason()).isNull();
+
+		ToolCall partial2 = expanded.get(1).choices().get(0).delta().toolCalls().get(0);
+		assertThat(partial2.id()).isEqualTo("call_abc"); // stamped from cumulative
+		assertThat(partial2.function().name()).isEqualTo("write_code"); // stamped from
+																		// cumulative
+		assertThat(partial2.function().arguments()).isEqualTo("def ");
+		assertThat(expanded.get(1).choices().get(0).finishReason()).isNull();
+
+		ToolCall partial3 = expanded.get(2).choices().get(0).delta().toolCalls().get(0);
+		assertThat(partial3.id()).isEqualTo("call_abc");
+		assertThat(partial3.function().name()).isEqualTo("write_code");
+		assertThat(partial3.function().arguments()).isEqualTo("hello");
+		assertThat(expanded.get(2).choices().get(0).finishReason()).isNull();
+
+		// Final merged frame: full concatenated arguments + finish_reason carried over
+		// from the input's empty marker chunk.
+		ToolCall merged = expanded.get(3).choices().get(0).delta().toolCalls().get(0);
+		assertThat(merged.id()).isEqualTo("call_abc");
+		assertThat(merged.function().name()).isEqualTo("write_code");
+		assertThat(merged.function().arguments()).isEqualTo("def hello");
+		assertThat(expanded.get(3).choices().get(0).finishReason())
+			.isEqualTo(DeepSeekApi.ChatCompletionFinishReason.TOOL_CALLS);
+	}
+
+	@Test
+	void expandToolCallWindowPassesSingleChunkThrough() {
+		ChatCompletionChunk only = chunkWithToolCall(
+				new ToolCall(0, "call_xyz", "function", new ChatCompletionFunction("noop", "{}")),
+				DeepSeekApi.ChatCompletionFinishReason.TOOL_CALLS);
+
+		List<ChatCompletionChunk> expanded = this.helper.expandToolCallWindow(List.of(only));
+
+		// Single-chunk windows are passed through unchanged so reasoning / text deltas
+		// retain their existing streaming UX.
+		assertThat(expanded).hasSize(1).containsExactly(only);
+	}
+
+	@Test
+	void expandToolCallWindowReturnsEmptyListForEmptyInput() {
+		assertThat(this.helper.expandToolCallWindow(List.of())).isEmpty();
+	}
+
+	private static ChatCompletionChunk chunkWithToolCall(ToolCall toolCall,
+			DeepSeekApi.ChatCompletionFinishReason finishReason) {
+		List<ToolCall> toolCalls = (toolCall == null) ? List.of() : List.of(toolCall);
+		ChatCompletionMessage delta = new ChatCompletionMessage(null, ChatCompletionMessage.Role.ASSISTANT, null, null,
+				toolCalls);
+		ChatCompletionChunk.ChunkChoice choice = new ChatCompletionChunk.ChunkChoice(finishReason, 0, delta, null);
+		return new ChatCompletionChunk("id", List.of(choice), 123L, "model", null, null, null, null);
+	}
+
+	@Test
 	void mergeWhenCurrentToolCallsIsEmptyListShouldNotThrowException() {
 		// Given
 		ToolCall toolCall = new ToolCall("call_1", "function", new ChatCompletionFunction("func1", "{}"));

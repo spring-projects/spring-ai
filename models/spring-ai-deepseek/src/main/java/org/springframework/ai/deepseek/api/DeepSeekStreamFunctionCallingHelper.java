@@ -81,10 +81,14 @@ public class DeepSeekStreamFunctionCallingHelper {
 	private ChatCompletionMessage merge(@Nullable ChatCompletionMessage previous, ChatCompletionMessage current) {
 		String content = (previous != null && previous.content() != null)
 				? previous.content() + (current.content() != null ? current.content() : "") : current.content();
+		String reasoningContent = (previous != null && previous.reasoningContent() != null)
+				? previous.reasoningContent() + (current.reasoningContent() != null ? current.reasoningContent() : "")
+				: current.reasoningContent();
 		Role role = current.role();
 		String name = (current.name() != null ? current.name() : (previous != null ? previous.name() : null));
 		String toolCallId = (current.toolCallId() != null ? current.toolCallId()
 				: (previous != null ? previous.toolCallId() : null));
+		Boolean prefix = (current.prefix() != null ? current.prefix() : (previous != null ? previous.prefix() : null));
 
 		List<ToolCall> toolCalls = new ArrayList<>();
 		ToolCall lastPreviousTooCall = null;
@@ -114,7 +118,7 @@ public class DeepSeekStreamFunctionCallingHelper {
 				toolCalls.add(lastPreviousTooCall);
 			}
 		}
-		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls);
+		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, prefix, reasoningContent);
 	}
 
 	private ToolCall merge(@Nullable ToolCall previous, ToolCall current) {
@@ -175,6 +179,105 @@ public class DeepSeekStreamFunctionCallingHelper {
 			return false;
 		}
 		return choice.finishReason() == ChatCompletionFinishReason.TOOL_CALLS;
+	}
+
+	/**
+	 * Expand a tool-call SSE window into per-chunk delta frames followed by a single
+	 * authoritative merged frame.
+	 *
+	 * <p>
+	 * For each input chunk that carries a tool-call delta, this emits a frame that
+	 * preserves the chunk's own {@code arguments} fragment (i.e. only the new bytes the
+	 * model produced in that SSE event) but stamps the cumulative tool-call identity (id,
+	 * type, function name) carried over from earlier chunks. Empty SSE marker chunks
+	 * (e.g. the trailing {@code delta: {}, finish_reason: tool_calls} frame that closes
+	 * the window) are dropped — the merged frame at the end carries the
+	 * {@code finish_reason}. Pre-merge frames keep {@code finish_reason} unset so
+	 * downstream can distinguish them from the merged complete frame.
+	 *
+	 * <p>
+	 * The final element of the returned list is the fully merged chunk: full id, name,
+	 * concatenated arguments, and {@code finish_reason = TOOL_CALLS}.
+	 * @param windowChunks chunks belonging to the same tool-call window, in arrival order
+	 * @return delta frames + one terminal merged frame; empty when input is empty
+	 */
+	public List<ChatCompletionChunk> expandToolCallWindow(List<ChatCompletionChunk> windowChunks) {
+		if (CollectionUtils.isEmpty(windowChunks)) {
+			return List.of();
+		}
+		if (windowChunks.size() == 1) {
+			return List.of(windowChunks.get(0));
+		}
+
+		List<ChatCompletionChunk> out = new ArrayList<>(windowChunks.size() + 1);
+		ChatCompletionChunk cumulative = null;
+		for (ChatCompletionChunk chunk : windowChunks) {
+			cumulative = (cumulative == null) ? chunk : merge(cumulative, chunk);
+			if (carriesToolCallDelta(chunk)) {
+				out.add(stampToolCallIdentity(chunk, cumulative));
+			}
+		}
+		// The merged chunk carries the full id/name, the concatenated arguments, and
+		// the trailing finish_reason — downstream uses it as the authoritative frame
+		// to drive tool execution.
+		if (cumulative != null) {
+			out.add(cumulative);
+		}
+		return out;
+	}
+
+	private static boolean carriesToolCallDelta(ChatCompletionChunk chunk) {
+		if (CollectionUtils.isEmpty(chunk.choices())) {
+			return false;
+		}
+		ChunkChoice choice = chunk.choices().get(0);
+		return choice != null && choice.delta() != null && !CollectionUtils.isEmpty(choice.delta().toolCalls());
+	}
+
+	/**
+	 * Build a chunk that preserves {@code source}'s own {@code arguments} fragment but
+	 * adopts the {@code identitySource}'s id/type/name and clears any finish_reason.
+	 */
+	private static ChatCompletionChunk stampToolCallIdentity(ChatCompletionChunk source,
+			ChatCompletionChunk identitySource) {
+		if (CollectionUtils.isEmpty(source.choices()) || CollectionUtils.isEmpty(identitySource.choices())) {
+			return source;
+		}
+		ChunkChoice srcChoice = source.choices().get(0);
+		ChunkChoice idChoice = identitySource.choices().get(0);
+		if (srcChoice == null || srcChoice.delta() == null || idChoice == null || idChoice.delta() == null) {
+			return source;
+		}
+
+		List<ToolCall> srcToolCalls = srcChoice.delta().toolCalls();
+		List<ToolCall> idToolCalls = idChoice.delta().toolCalls();
+		if (CollectionUtils.isEmpty(srcToolCalls) || CollectionUtils.isEmpty(idToolCalls)) {
+			return source;
+		}
+
+		List<ToolCall> stamped = new ArrayList<>(srcToolCalls.size());
+		for (int i = 0; i < srcToolCalls.size(); i++) {
+			ToolCall src = srcToolCalls.get(i);
+			ToolCall identity = i < idToolCalls.size() ? idToolCalls.get(i) : src;
+			ChatCompletionFunction srcFn = src.function();
+			ChatCompletionFunction idFn = identity.function();
+			String stampedName = (srcFn != null && StringUtils.hasText(srcFn.name())) ? srcFn.name()
+					: (idFn != null && idFn.name() != null) ? idFn.name() : "";
+			String args = (srcFn != null && srcFn.arguments() != null) ? srcFn.arguments() : "";
+			ChatCompletionFunction fn = new ChatCompletionFunction(stampedName, args);
+			String stampedId = StringUtils.hasText(src.id()) ? src.id() : identity.id();
+			String stampedType = (src.type() != null) ? src.type() : identity.type();
+			stamped.add(new ToolCall(src.index(), stampedId, stampedType, fn));
+		}
+
+		ChatCompletionMessage delta = srcChoice.delta();
+		ChatCompletionMessage stampedDelta = new ChatCompletionMessage(delta.content(), delta.role(), delta.name(),
+				delta.toolCallId(), stamped, delta.prefix(), delta.reasoningContent());
+		// finish_reason cleared so downstream can distinguish partial deltas from the
+		// terminal merged frame, which carries finish_reason = TOOL_CALLS.
+		ChunkChoice stampedChoice = new ChunkChoice(null, srcChoice.index(), stampedDelta, srcChoice.logprobs());
+		return new ChatCompletionChunk(source.id(), List.of(stampedChoice), source.created(), source.model(),
+				source.serviceTier(), source.systemFingerprint(), source.object(), source.usage());
 	}
 
 }

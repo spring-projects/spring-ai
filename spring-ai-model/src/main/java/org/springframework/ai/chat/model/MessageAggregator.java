@@ -16,13 +16,15 @@
 
 package org.springframework.ai.chat.model;
 
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -60,7 +62,9 @@ public class MessageAggregator {
 		AtomicReference<StringBuilder> thoughtsRef = new AtomicReference<>(new StringBuilder());
 		AtomicReference<StringBuilder> outputWithoutThoughtsRef = new AtomicReference<>(new StringBuilder());
 		AtomicReference<Map<String, Object>> messageMetadataMapRef = new AtomicReference<>();
-		AtomicReference<List<ToolCall>> toolCallsRef = new AtomicReference<>(new ArrayList<>());
+		AtomicReference<LinkedHashMap<String, ToolCallBuilder>> toolCallBuildersRef = new AtomicReference<>(
+				new LinkedHashMap<>());
+		AtomicInteger anonymousToolCallCounterRef = new AtomicInteger();
 
 		// ChatGeneration Metadata
 		AtomicReference<ChatGenerationMetadata> generationMetadataRef = new AtomicReference<>(
@@ -82,7 +86,8 @@ public class MessageAggregator {
 			thoughtsRef.set(new StringBuilder());
 			outputWithoutThoughtsRef.set(new StringBuilder());
 			messageMetadataMapRef.set(new HashMap<>());
-			toolCallsRef.set(new ArrayList<>());
+			toolCallBuildersRef.set(new LinkedHashMap<>());
+			anonymousToolCallCounterRef.set(0);
 			metadataIdRef.set("");
 			metadataModelRef.set("");
 			metadataUsagePromptTokensRef.set(0);
@@ -116,7 +121,8 @@ public class MessageAggregator {
 				}
 				AssistantMessage outputMessage = chatResponse.getResult().getOutput();
 				if (!CollectionUtils.isEmpty(outputMessage.getToolCalls())) {
-					toolCallsRef.get().addAll(outputMessage.getToolCalls());
+					mergeToolCalls(outputMessage.getToolCalls(), toolCallBuildersRef.get(),
+							anonymousToolCallCounterRef);
 				}
 
 			}
@@ -148,7 +154,7 @@ public class MessageAggregator {
 				if (toolCallsFromMetadata instanceof List) {
 					@SuppressWarnings("unchecked")
 					List<ToolCall> toolCallsList = (List<ToolCall>) toolCallsFromMetadata;
-					toolCallsRef.get().addAll(toolCallsList);
+					mergeToolCalls(toolCallsList, toolCallBuildersRef.get(), anonymousToolCallCounterRef);
 				}
 
 			}
@@ -171,7 +177,11 @@ public class MessageAggregator {
 				messageMetadata.put("thoughts", thoughtsRef.get().toString());
 				messageMetadata.put("outputWithoutThoughts", outputWithoutThoughtsRef.get().toString());
 			}
-			List<ToolCall> collectedToolCalls = toolCallsRef.get();
+			List<ToolCall> collectedToolCalls = toolCallBuildersRef.get()
+				.values()
+				.stream()
+				.map(ToolCallBuilder::build)
+				.toList();
 
 			if (!CollectionUtils.isEmpty(collectedToolCalls)) {
 
@@ -195,7 +205,8 @@ public class MessageAggregator {
 			thoughtsRef.set(new StringBuilder());
 			outputWithoutThoughtsRef.set(new StringBuilder());
 			messageMetadataMapRef.set(new HashMap<>());
-			toolCallsRef.set(new ArrayList<>());
+			toolCallBuildersRef.set(new LinkedHashMap<>());
+			anonymousToolCallCounterRef.set(0);
 			metadataIdRef.set("");
 			metadataModelRef.set("");
 			metadataUsagePromptTokensRef.set(0);
@@ -205,6 +216,60 @@ public class MessageAggregator {
 			metadataRateLimitRef.set(new EmptyRateLimit());
 
 		}).doOnError(e -> logger.error("Aggregation Error", e));
+	}
+
+	private static void mergeToolCalls(List<ToolCall> incoming, LinkedHashMap<String, ToolCallBuilder> builders,
+			AtomicInteger anonymousCounter) {
+		for (ToolCall toolCall : incoming) {
+			String key = StringUtils.hasText(toolCall.id()) ? toolCall.id()
+					: "_anon_" + anonymousCounter.getAndIncrement();
+			builders.computeIfAbsent(key, k -> new ToolCallBuilder()).merge(toolCall);
+		}
+	}
+
+	private static final class ToolCallBuilder {
+
+		private @Nullable String id;
+
+		private @Nullable String type;
+
+		private @Nullable String name;
+
+		private final StringBuilder arguments = new StringBuilder();
+
+		private boolean finalized;
+
+		void merge(ToolCall toolCall) {
+			if (StringUtils.hasText(toolCall.id())) {
+				this.id = toolCall.id();
+			}
+			if (StringUtils.hasText(toolCall.type())) {
+				this.type = toolCall.type();
+			}
+			if (StringUtils.hasText(toolCall.name())) {
+				this.name = toolCall.name();
+			}
+			if (!toolCall.partial()) {
+				// Provider has emitted the complete arguments string in this frame —
+				// trust it as authoritative and discard whatever fragments accumulated.
+				this.arguments.setLength(0);
+				if (toolCall.arguments() != null) {
+					this.arguments.append(toolCall.arguments());
+				}
+				this.finalized = true;
+			}
+			else if (!this.finalized) {
+				if (toolCall.arguments() != null) {
+					this.arguments.append(toolCall.arguments());
+				}
+			}
+		}
+
+		ToolCall build() {
+			return new ToolCall(this.id != null ? this.id : "", this.type != null ? this.type : "function",
+					this.name != null ? this.name : "", this.arguments.toString(), false);
+		}
+
 	}
 
 	public record DefaultUsage(Integer promptTokens, Integer completionTokens, Integer totalTokens) implements Usage {

@@ -202,11 +202,10 @@ public class MistralAiApi {
 				}
 				return !isInsideTool.get();
 			})
-			.concatMapIterable(window -> {
-				Mono<ChatCompletionChunk> mono1 = window.reduce(this.chunkMerger::merge);
-				return List.of(mono1);
-			})
-			.flatMap(mono -> mono);
+			// Expand each tool-call window into per-token delta frames followed by a
+			// single authoritative merged frame. Single-chunk windows pass through
+			// unchanged so plain text streaming UX is preserved.
+			.concatMap(window -> window.collectList().flatMapIterable(this.chunkMerger::expandToolCallWindow));
 	}
 
 	/**
