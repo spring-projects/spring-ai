@@ -45,6 +45,9 @@ This is the default message type used by Spring AI to auto-configure a `ChatMemo
 
 Spring AI offers the `ChatMemoryRepository` abstraction for storing chat memory. This section describes the built-in repositories provided by Spring AI and how to use them, but you can also implement your own repository if needed.
 
+NOTE: Azure Cosmos DB chat memory repository support is available as an external module maintained by the Azure Cosmos DB team.
+See https://azurecosmosdb.github.io/spring-ai/docs/index.html for more information.
+
 === In-Memory Repository
 
 `InMemoryChatMemoryRepository` stores messages in memory using a `ConcurrentHashMap`.
