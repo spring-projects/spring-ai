@@ -39,8 +39,7 @@ public final class AdvisorParams {
 	 * Controls whether a
 	 * {@link org.springframework.ai.chat.client.advisor.ToolCallAdvisor} is automatically
 	 * added to the chain when tools are configured on the {@code ChatClient} and no
-	 * explicit
-	 * {@link org.springframework.ai.chat.client.advisor.api.ToolCallHandlingAdvisor} is
+	 * explicit {@link org.springframework.ai.chat.client.advisor.api.ToolAdvisor} is
 	 * already present. Auto-registration is enabled by default; pass {@code false} to opt
 	 * out:
 	 *
@@ -53,30 +52,6 @@ public final class AdvisorParams {
 	 */
 	public static Consumer<ChatClient.AdvisorSpec> toolCallAdvisorAutoRegister(boolean enabled) {
 		return a -> a.param(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey(), enabled);
-	}
-
-	/**
-	 * Overrides the advisor chain order of the auto-registered
-	 * {@link org.springframework.ai.chat.client.advisor.ToolCallAdvisor}. The default
-	 * order is
-	 * {@link org.springframework.ai.chat.client.advisor.ToolCallAdvisor#DEFAULT_ORDER}.
-	 *
-	 * <p>
-	 * The order also determines which
-	 * {@link org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor}
-	 * instances are considered downstream (and therefore participate in each tool-call
-	 * iteration). Only memory advisors with a higher order value than the
-	 * {@code ToolCallAdvisor} are inside the recursive loop.
-	 *
-	 * <pre>{@code
-	 * client.prompt()
-	 *     .tools(myTool)
-	 *     .advisors(AdvisorParams.toolCallAdvisorOrder(Ordered.HIGHEST_PRECEDENCE + 500))
-	 *     .call();
-	 * }</pre>
-	 */
-	public static Consumer<ChatClient.AdvisorSpec> toolCallAdvisorOrder(int order) {
-		return a -> a.param(ChatClientAttributes.TOOL_CALL_ADVISOR_ORDER.getKey(), order);
 	}
 
 }

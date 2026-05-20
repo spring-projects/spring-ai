@@ -44,7 +44,8 @@ import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
-import org.springframework.ai.chat.client.advisor.api.ToolCallHandlingAdvisor;
+import org.springframework.ai.chat.client.advisor.api.MemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.api.ToolAdvisor;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
@@ -1072,10 +1073,10 @@ public class DefaultChatClient implements ChatClient {
 
 		/**
 		 * Auto-registers a {@link ToolCallAdvisor} when tools are configured but no
-		 * {@link ToolCallHandlingAdvisor} is present. Disables the advisor's internal
-		 * conversation history when a {@link BaseChatMemoryAdvisor} with a higher order
-		 * (i.e. downstream in the request direction) is already registered, since that
-		 * memory advisor will handle history for every tool-call iteration.
+		 * {@link ToolAdvisor} is present. Disables the advisor's internal conversation
+		 * history when a {@link BaseChatMemoryAdvisor} with a higher order (i.e.
+		 * downstream in the request direction) is already registered, since that memory
+		 * advisor will handle history for every tool-call iteration.
 		 * <p>
 		 * {@code streamToolCallResponses} is set automatically: {@code true} for
 		 * {@link #stream()} calls, {@code false} for {@link #call()}.
@@ -1094,17 +1095,15 @@ public class DefaultChatClient implements ChatClient {
 				return;
 			}
 
-			boolean hasToolCallAdvisor = this.advisors.stream().anyMatch(a -> a instanceof ToolCallHandlingAdvisor);
+			boolean hasToolCallAdvisor = this.advisors.stream().anyMatch(a -> a instanceof ToolAdvisor);
 			if (hasToolCallAdvisor) {
 				return;
 			}
 
-			int configuredOrder = (this.advisorParams
-				.get(ChatClientAttributes.TOOL_CALL_ADVISOR_ORDER.getKey()) instanceof Integer order) ? order
-						: ToolCallAdvisor.DEFAULT_ORDER;
+			int configuredOrder = ToolCallAdvisor.DEFAULT_ORDER;
 
 			boolean hasDownstreamMemoryAdvisor = this.advisors.stream()
-				.anyMatch(a -> a instanceof BaseChatMemoryAdvisor && a.getOrder() > configuredOrder);
+				.anyMatch(a -> a instanceof MemoryAdvisor && a.getOrder() > configuredOrder);
 
 			this.advisors.add(ToolCallAdvisor.builder()
 				.toolCallingManager(this.toolCallingManager)
@@ -1115,17 +1114,16 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		/**
-		 * Warns when a {@link BaseChatMemoryAdvisor} is ordered before (lower order than)
-		 * a {@link ToolCallHandlingAdvisor}. In that configuration the memory advisor is
-		 * not part of the recursive tool-call chain, so tool messages will not be stored
-		 * between iterations and streaming memory updates will not be sequenced
-		 * correctly.
+		 * Warns when a {@link MemoryAdvisor} is ordered before (lower order than) a
+		 * {@link ToolAdvisor}. In that configuration the memory advisor is not part of
+		 * the recursive tool-call chain, so tool messages will not be stored between
+		 * iterations and streaming memory updates will not be sequenced correctly.
 		 */
 		private void warnOnMemoryAdvisorOrderMismatch() {
 			this.advisors.stream()
-				.filter(a -> a instanceof ToolCallHandlingAdvisor)
+				.filter(a -> a instanceof ToolAdvisor)
 				.forEach(tca -> this.advisors.stream()
-					.filter(a -> a instanceof BaseChatMemoryAdvisor && a.getOrder() <= tca.getOrder())
+					.filter(a -> a instanceof MemoryAdvisor && a.getOrder() <= tca.getOrder())
 					.forEach(mem -> logger.warn(
 							"ChatMemoryAdvisor '{}' (order={}) is ordered at or before ToolCallAdvisor '{}' (order={}). "
 									+ "Memory will not be updated between tool-call iterations. "

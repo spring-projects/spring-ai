@@ -30,7 +30,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
-import org.springframework.ai.chat.client.advisor.api.ToolCallHandlingAdvisor;
+import org.springframework.ai.chat.client.advisor.api.ToolAdvisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -52,7 +52,7 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  */
-public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolCallHandlingAdvisor {
+public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor {
 
 	/**
 	 * Default advisor order. Placed early in the chain so that all downstream advisors

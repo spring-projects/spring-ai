@@ -393,27 +393,6 @@ public abstract class AbstractToolCallAdvisorAutoRegistrationIT {
 			assertThat(counter.getCallCount()).isEqualTo(1);
 		}
 
-		@Test
-		void toolCallAdvisorOrderViaFactory() {
-			int customOrder = ToolCallAdvisor.DEFAULT_ORDER + 500;
-			// Counter placed before the custom-order advisor → sees only the outer call
-			var counterBefore = new ChainIterationCountingAdvisor(ToolCallAdvisor.DEFAULT_ORDER + 50);
-			// Counter placed after → sees each iteration
-			var counterAfter = new ChainIterationCountingAdvisor(customOrder + 100);
-
-			ChatClient.create(getChatModel())
-				.prompt()
-				.advisors(counterBefore, counterAfter)
-				.advisors(AdvisorParams.toolCallAdvisorOrder(customOrder))
-				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
-				.toolCallbacks(createWeatherToolCallback())
-				.call()
-				.content();
-
-			assertThat(counterBefore.getCallCount()).isEqualTo(1);
-			assertThat(counterAfter.getCallCount()).isGreaterThanOrEqualTo(2);
-		}
-
 	}
 
 	// -------------------------------------------------------------------------

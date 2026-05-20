@@ -35,7 +35,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
-import org.springframework.ai.chat.client.advisor.api.ToolCallHandlingAdvisor;
+import org.springframework.ai.chat.client.advisor.api.ToolAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatModel;
@@ -218,30 +218,6 @@ class ToolCallAdvisorAutoRegistrationTests {
 		}
 
 		@Test
-		void customOrderAppliedToAutoRegisteredAdvisor() {
-			stubTwoCallCycle();
-
-			int customOrder = ToolCallAdvisor.DEFAULT_ORDER + 200;
-			// Positioned BEFORE the custom-order ToolCallAdvisor → sees the outer call
-			// only
-			var counterBefore = new ChainIterationCountingAdvisor(ToolCallAdvisor.DEFAULT_ORDER + 50);
-			// Positioned AFTER → sees every iteration of the loop
-			var counterAfter = new ChainIterationCountingAdvisor(customOrder + 100);
-
-			ChatClient.create(chatModel)
-				.prompt()
-				.advisors(counterBefore, counterAfter)
-				.advisors(a -> a.param(ChatClientAttributes.TOOL_CALL_ADVISOR_ORDER.getKey(), customOrder))
-				.user("weather?")
-				.toolCallbacks(weatherTool)
-				.call()
-				.content();
-
-			assertThat(counterBefore.getCallCount()).isEqualTo(1);
-			assertThat(counterAfter.getCallCount()).isGreaterThanOrEqualTo(2);
-		}
-
-		@Test
 		void autoRegisteredAdvisorUsesInjectedToolCallingManager() {
 			ChatResponse first = toolCallChatResponse();
 			ChatResponse second = finalChatResponse();
@@ -388,10 +364,10 @@ class ToolCallAdvisorAutoRegistrationTests {
 	}
 
 	/**
-	 * A custom {@link ToolCallHandlingAdvisor} that performs no work. Its presence in the
-	 * chain is sufficient to prevent auto-registration of {@link ToolCallAdvisor}.
+	 * A custom {@link ToolAdvisor} that performs no work. Its presence in the chain is
+	 * sufficient to prevent auto-registration of {@link ToolCallAdvisor}.
 	 */
-	static class NoOpToolCallHandlingAdvisor implements ToolCallHandlingAdvisor, BaseAdvisor {
+	static class NoOpToolCallHandlingAdvisor implements ToolAdvisor, BaseAdvisor {
 
 		@Override
 		public ChatClientRequest before(ChatClientRequest request, AdvisorChain advisorChain) {

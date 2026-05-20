@@ -4,6 +4,7 @@
 [[upgrading-to-2-0-0-M7]]
 == Upgrading to 2.0.0-M7
 
+
 === Cloud Bindings
 
 The `spring-ai-spring-cloud-bindings` module that provided integration for https://github.com/spring-cloud/spring-cloud-bindings has been removed.

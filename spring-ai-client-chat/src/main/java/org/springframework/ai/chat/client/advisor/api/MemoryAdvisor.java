@@ -17,19 +17,19 @@
 package org.springframework.ai.chat.client.advisor.api;
 
 /**
- * Marker interface for advisors that own the tool-call lifecycle. An advisor implementing
- * this interface takes responsibility for executing tools and driving the tool-call loop,
- * replacing the model-internal tool execution path.
+ * Marker interface for advisors that own the memory lifecycle. An advisor implementing
+ * this interface takes responsibility for managing the chat memory, including storing,
+ * retrieving, and updating conversation context.
  *
  * <p>
  * {@link org.springframework.ai.chat.client.DefaultChatClient} uses this marker to detect
- * whether a tool-call handling advisor is already present in the chain, and to avoid
- * auto-registering a duplicate when tools are configured on the {@code ChatClient}.
+ * whether a memory advisor is already present in the chain, and to avoid auto-registering
+ * a duplicate when memory management is configured on the {@code ChatClient}.
  *
  * @author Christian Tzolov
  * @since 2.0.0
- * @see org.springframework.ai.chat.client.advisor.ToolCallAdvisor
+ * @see org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor
  */
-public interface ToolCallHandlingAdvisor extends Advisor {
+public interface MemoryAdvisor extends Advisor {
 
 }

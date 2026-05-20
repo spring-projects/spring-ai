@@ -782,7 +782,7 @@ chatClient.prompt("What day is tomorrow?")
     .content();
 ----
 
-Or you can provide your own `ToolCallAdvisor` (or any other advisor implementing `ToolCallHandlingAdvisor`) — in that case auto-registration is suppressed automatically because the chain already contains a `ToolCallHandlingAdvisor`:
+Or you can provide your own `ToolCallAdvisor` (or any other advisor implementing `ToolAdvisor`) — in that case auto-registration is suppressed automatically because the chain already contains a `ToolAdvisor`:
 
 [source,java]
 ----
@@ -797,22 +797,9 @@ chatClient.prompt("What day is tomorrow?")
     .content();
 ----
 
-==== Customizing the Advisor Order
+==== ToolAdvisor Marker Interface
 
-Override the default order using `AdvisorParams.toolCallAdvisorOrder(int)`:
-
-[source,java]
-----
-chatClient.prompt("What day is tomorrow?")
-    .tools(new DateTimeTools())
-    .advisors(AdvisorParams.toolCallAdvisorOrder(Ordered.HIGHEST_PRECEDENCE + 100))
-    .call()
-    .content();
-----
-
-==== ToolCallHandlingAdvisor Marker Interface
-
-`ToolCallHandlingAdvisor` is a marker interface that signals to the `ChatClient` that the advisor chain already handles tool execution. Implementing this interface on a custom advisor prevents the auto-registration of a second `ToolCallAdvisor`.
+`ToolAdvisor` is a marker interface that signals to the `ChatClient` that the advisor chain already handles tool execution. Implementing this interface on a custom advisor prevents the auto-registration of a second `ToolCallAdvisor`.
 
 For more details see xref:api/tools.adoc#_advisor_controlled_tool_execution_with_toolcalladvisor[Advisor-Controlled Tool Execution].
 
@@ -834,6 +821,14 @@ There are several implementations available, including the `InMemoryChatMemoryRe
 IMPORTANT: The `ChatMemory.CONVERSATION_ID` parameter is *required* for all memory advisors. It must be supplied on every call via `.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))`. Omitting it throws an `IllegalArgumentException`. There is no default conversation ID.
 
 For more details and usage examples, see the xref:api/chat-memory.adoc[Chat Memory] documentation.
+
+
+=== MemoryAdvisor Marker Interface
+
+`MemoryAdvisor` is a marker interface extended by `BaseChatMemoryAdvisor`.
+`DefaultChatClient` uses this marker to detect downstream memory advisors in the auto-registration logic.
+
+Custom memory advisors that do not extend `BaseChatMemoryAdvisor` but should participate in this detection should implement `MemoryAdvisor`.
 
 == Implementation Notes
 
