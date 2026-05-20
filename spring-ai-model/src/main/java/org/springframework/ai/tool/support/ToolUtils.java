@@ -112,7 +112,7 @@ public final class ToolUtils {
 			.stream()
 			.filter(entry -> entry.getValue() > 1)
 			.map(Map.Entry::getKey)
-			.collect(Collectors.toList());
+			.toList();
 	}
 
 	public static List<String> getDuplicateToolNames(ToolCallback... toolCallbacks) {

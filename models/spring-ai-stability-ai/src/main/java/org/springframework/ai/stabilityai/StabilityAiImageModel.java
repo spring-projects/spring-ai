@@ -17,7 +17,6 @@
 package org.springframework.ai.stabilityai;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
 
@@ -61,7 +60,7 @@ public class StabilityAiImageModel implements ImageModel {
 				.stream()
 				.map(message -> new StabilityAiApi.GenerateImageRequest.TextPrompts(message.getText(),
 						message.getWeight()))
-				.collect(Collectors.toList()))
+				.toList())
 			.height(optionsToUse.getHeight())
 			.width(optionsToUse.getWidth())
 			.cfgScale(optionsToUse.getCfgScale())

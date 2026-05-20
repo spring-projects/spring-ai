@@ -22,11 +22,14 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.ThinkOption;
+import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeReference;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
+import static org.springframework.aot.hint.predicate.RuntimeHintsPredicates.reflection;
 
 class OllamaRuntimeHintsTests {
 
@@ -49,6 +52,18 @@ class OllamaRuntimeHintsTests {
 		assertThat(registeredTypes.contains(TypeReference.of(OllamaApi.ChatRequest.class))).isTrue();
 		assertThat(registeredTypes.contains(TypeReference.of(OllamaApi.ChatRequest.Tool.class))).isTrue();
 		assertThat(registeredTypes.contains(TypeReference.of(OllamaApi.Message.class))).isTrue();
+	}
+
+	@Test
+	void registerThinkOptionJacksonHandlers() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		OllamaRuntimeHints ollamaRuntimeHints = new OllamaRuntimeHints();
+		ollamaRuntimeHints.registerHints(runtimeHints, null);
+
+		assertThat(runtimeHints).matches(reflection().onType(ThinkOption.ThinkOptionDeserializer.class));
+		assertThat(runtimeHints).matches(reflection().onType(ThinkOption.ThinkOptionSerializer.class));
+		assertThatAllMemberCategoriesAreRegistered(runtimeHints, ThinkOption.ThinkOptionDeserializer.class);
+		assertThatAllMemberCategoriesAreRegistered(runtimeHints, ThinkOption.ThinkOptionSerializer.class);
 	}
 
 	@Test
@@ -277,6 +292,17 @@ class OllamaRuntimeHintsTests {
 			.filter(typeRef -> typeRef.getName().toLowerCase().contains("tool"))
 			.count();
 		assertThat(toolClassCount).isGreaterThan(0);
+	}
+
+	private static void assertThatAllMemberCategoriesAreRegistered(RuntimeHints runtimeHints, Class<?> type) {
+		Set<MemberCategory> memberCategories = runtimeHints.reflection()
+			.typeHints()
+			.filter(typeHint -> typeHint.getType().equals(TypeReference.of(type)))
+			.findFirst()
+			.orElseThrow()
+			.getMemberCategories();
+
+		assertThat(memberCategories.containsAll(Set.of(MemberCategory.values()))).isTrue();
 	}
 
 }

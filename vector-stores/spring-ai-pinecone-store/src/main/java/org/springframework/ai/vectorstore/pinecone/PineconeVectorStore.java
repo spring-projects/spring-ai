@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
@@ -265,7 +264,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 			if (!matchingDocs.isEmpty()) {
 				// Then delete those documents by ID
-				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).collect(Collectors.toList());
+				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).toList();
 				delete(idsToDelete, this.pineconeNamespace);
 				logger.debug("Deleted {} documents matching filter expression", idsToDelete.size());
 			}

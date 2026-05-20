@@ -53,7 +53,6 @@
 		<module>spring-ai-retry</module>
 		<module>spring-ai-spring-boot-docker-compose</module>
 		<module>spring-ai-spring-boot-testcontainers</module>
-		<module>spring-ai-spring-cloud-bindings</module>
 
 		<module>document-readers/jsoup-reader</module>
 		<module>document-readers/markdown-reader</module>
@@ -288,7 +287,6 @@
 		<jsonschema.version>5.0.0</jsonschema.version>
 		<swagger-annotations.version>2.2.38</swagger-annotations.version>
 		<mockk-jvm.version>1.13.13</mockk-jvm.version>
-		<spring-cloud-bindings.version>2.0.3</spring-cloud-bindings.version>
 
 		<jsoup.version>1.22.1</jsoup.version>
 

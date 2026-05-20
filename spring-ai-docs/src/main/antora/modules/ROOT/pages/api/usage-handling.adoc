@@ -22,16 +22,11 @@ Here's a complete example showing how to track usage with OpenAI's ChatModel:
 public class Configuration {
 
         @Bean
-        public OpenAiApi chatCompletionApi() {
-            return OpenAiApi.builder()
-                .apiKey(System.getenv("OPENAI_API_KEY"))
-                .build();
-        }
-
-        @Bean
-        public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
+        public OpenAiChatModel openAiChatModel() {
             return OpenAiChatModel.builder()
-                .openAiApi(openAiApi)
+                .options(OpenAiChatOptions.builder()
+                    .apiKey(System.getenv("OPENAI_API_KEY"))
+                    .build())
                 .build();
         }
 
@@ -62,21 +57,25 @@ public class ChatService {
         System.out.println("Total Tokens: " + usage.getTotalTokens());
 
         // Access native OpenAI usage data with detailed token information
-        if (usage.getNativeUsage() instanceof org.springframework.ai.openai.api.OpenAiApi.Usage) {
-            org.springframework.ai.openai.api.OpenAiApi.Usage nativeUsage =
-                (org.springframework.ai.openai.api.OpenAiApi.Usage) usage.getNativeUsage();
+        if (usage.getNativeUsage() instanceof com.openai.models.completions.CompletionUsage) {
+            com.openai.models.completions.CompletionUsage nativeUsage =
+                (com.openai.models.completions.CompletionUsage) usage.getNativeUsage();
 
             // Detailed prompt token information
-            System.out.println("Prompt Tokens Details:");
-            System.out.println("- Audio Tokens: " + nativeUsage.promptTokensDetails().audioTokens());
-            System.out.println("- Cached Tokens: " + nativeUsage.promptTokensDetails().cachedTokens());
+            nativeUsage.promptTokensDetails().ifPresent(details -> {
+                System.out.println("Prompt Tokens Details:");
+                details.audioTokens().ifPresent(tokens -> System.out.println("- Audio Tokens: " + tokens));
+                details.cachedTokens().ifPresent(tokens -> System.out.println("- Cached Tokens: " + tokens));
+            });
 
             // Detailed completion token information
-            System.out.println("Completion Tokens Details:");
-            System.out.println("- Reasoning Tokens: " + nativeUsage.completionTokenDetails().reasoningTokens());
-            System.out.println("- Accepted Prediction Tokens: " + nativeUsage.completionTokenDetails().acceptedPredictionTokens());
-            System.out.println("- Audio Tokens: " + nativeUsage.completionTokenDetails().audioTokens());
-            System.out.println("- Rejected Prediction Tokens: " + nativeUsage.completionTokenDetails().rejectedPredictionTokens());
+            nativeUsage.completionTokensDetails().ifPresent(details -> {
+                System.out.println("Completion Tokens Details:");
+                details.reasoningTokens().ifPresent(tokens -> System.out.println("- Reasoning Tokens: " + tokens));
+                details.acceptedPredictionTokens().ifPresent(tokens -> System.out.println("- Accepted Prediction Tokens: " + tokens));
+                details.audioTokens().ifPresent(tokens -> System.out.println("- Audio Tokens: " + tokens));
+                details.rejectedPredictionTokens().ifPresent(tokens -> System.out.println("- Rejected Prediction Tokens: " + tokens));
+            });
         }
     }
 }
@@ -152,9 +151,9 @@ NOTE: For detailed provider-specific cache metrics (such as per-modality cache b
 When working with native usage data, consider type casting carefully:
 ```java
 // Safe way to access native usage
-if (usage.getNativeUsage() instanceof org.springframework.ai.openai.api.OpenAiApi.Usage) {
-    org.springframework.ai.openai.api.OpenAiApi.Usage nativeUsage =
-        (org.springframework.ai.openai.api.OpenAiApi.Usage) usage.getNativeUsage();
+if (usage.getNativeUsage() instanceof com.openai.models.completions.CompletionUsage) {
+    com.openai.models.completions.CompletionUsage nativeUsage =
+        (com.openai.models.completions.CompletionUsage) usage.getNativeUsage();
     // Work with native usage data
 }
 ```

@@ -78,7 +78,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * The model name used. When using Microsoft Foundry, this is also used as the default
 	 * deployment name.
 	 */
-	private final String model;
+	private final @Nullable String model;
 
 	/**
 	 * The deployment name as defined in Microsoft Foundry. On Microsoft Foundry, the
@@ -210,7 +210,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.baseUrl = baseUrl;
 		this.apiKey = apiKey;
 		this.credential = credential;
-		this.model = (model != null ? model : DEFAULT_CHAT_MODEL);
+		this.model = model;
 		this.microsoftDeploymentName = microsoftDeploymentName;
 		this.microsoftFoundryServiceVersion = microsoftFoundryServiceVersion;
 		this.organizationId = organizationId;

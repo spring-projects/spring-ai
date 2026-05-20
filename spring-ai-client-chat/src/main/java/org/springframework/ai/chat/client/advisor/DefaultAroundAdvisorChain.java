@@ -175,6 +175,7 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 		var remainingStreamAdvisors = advisors.subList(afterAdvisorIndex + 1, advisors.size());
 
 		return DefaultAroundAdvisorChain.builder(this.getObservationRegistry())
+			.observationConvention(this.observationConvention)
 			.pushAll(remainingStreamAdvisors)
 			.build();
 	}

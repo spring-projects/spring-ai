@@ -26,6 +26,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
@@ -82,10 +83,19 @@ public interface ChatClient {
 	static Builder builder(ChatModel chatModel, ObservationRegistry observationRegistry,
 			@Nullable ChatClientObservationConvention chatClientObservationConvention,
 			@Nullable AdvisorObservationConvention advisorObservationConvention) {
+		return builder(chatModel, observationRegistry, chatClientObservationConvention, advisorObservationConvention,
+				null);
+	}
+
+	static Builder builder(ChatModel chatModel, ObservationRegistry observationRegistry,
+			@Nullable ChatClientObservationConvention chatClientObservationConvention,
+			@Nullable AdvisorObservationConvention advisorObservationConvention,
+			ToolCallAdvisor.@Nullable Builder<?> toolCallAdvisorBuilder) {
 		Assert.notNull(chatModel, "chatModel cannot be null");
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
+
 		return new DefaultChatClientBuilder(chatModel, observationRegistry, chatClientObservationConvention,
-				advisorObservationConvention);
+				advisorObservationConvention, toolCallAdvisorBuilder);
 	}
 
 	ChatClientRequestSpec prompt();

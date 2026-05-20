@@ -244,18 +244,13 @@ Next, create an `OpenAiEmbeddingModel` instance and use it to compute the simila
 
 [source,java]
 ----
-var openAiApi = OpenAiApi.builder()
-                .apiKey(System.getenv("OPENAI_API_KEY"))
-                .build();
-
 var embeddingModel = new OpenAiEmbeddingModel(
-		this.openAiApi,
         MetadataMode.EMBED,
         OpenAiEmbeddingOptions.builder()
+                .apiKey(System.getenv("OPENAI_API_KEY"))
                 .model("text-embedding-ada-002")
                 .user("user-6")
-                .build(),
-        RetryUtils.DEFAULT_RETRY_TEMPLATE);
+                .build());
 
 EmbeddingResponse embeddingResponse = this.embeddingModel
         .embedForResponse(List.of("Hello World", "World is big and salvation is near"));

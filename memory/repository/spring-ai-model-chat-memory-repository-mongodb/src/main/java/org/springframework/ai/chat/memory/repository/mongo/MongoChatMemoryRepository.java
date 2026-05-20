@@ -19,7 +19,6 @@ package org.springframework.ai.chat.memory.repository.mongo;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -62,7 +61,7 @@ public final class MongoChatMemoryRepository implements ChatMemoryRepository {
 		var messages = this.mongoTemplate.query(Conversation.class)
 			.matching(Query.query(Criteria.where("conversationId").is(conversationId))
 				.with(Sort.by("timestamp").ascending()));
-		return messages.stream().map(MongoChatMemoryRepository::mapMessage).collect(Collectors.toList());
+		return messages.stream().map(MongoChatMemoryRepository::mapMessage).toList();
 	}
 
 	@Override

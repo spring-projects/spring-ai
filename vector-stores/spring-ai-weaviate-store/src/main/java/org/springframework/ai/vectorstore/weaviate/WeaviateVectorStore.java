@@ -307,7 +307,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			List<Document> matchingDocs = similaritySearch(searchRequest);
 
 			if (!matchingDocs.isEmpty()) {
-				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).collect(Collectors.toList());
+				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).toList();
 
 				delete(idsToDelete);
 

@@ -16,10 +16,13 @@
 
 package org.springframework.ai.openai.image;
 
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImageOptionsBuilder;
+import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.openai.OpenAiImageOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,6 +48,18 @@ class OpenAiImageOptionsTests {
 		assertThat(merged.getHeight()).isEqualTo(1024);
 		assertThat(merged.getResponseFormat()).isEqualTo("b64_json");
 		assertThat(merged.getStyle()).isEqualTo("vivid");
+	}
+
+	@Test
+	void customHeadersArePropagatedToImageGenerateParams() {
+		OpenAiImageOptions options = OpenAiImageOptions.builder()
+			.model("gpt-image-1")
+			.customHeaders(Map.of("x-budget-id", "BUDGET_123"))
+			.build();
+
+		var params = options.toOpenAiImageGenerateParams(new ImagePrompt("a ducati motorcycle", options));
+
+		assertThat(params._additionalHeaders().values("x-budget-id")).containsExactly("BUDGET_123");
 	}
 
 }
