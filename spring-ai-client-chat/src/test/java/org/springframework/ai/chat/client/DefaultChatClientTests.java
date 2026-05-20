@@ -79,6 +79,7 @@ import static org.mockito.Mockito.when;
  *
  * @author Thomas Vitale
  * @author Jonatan Ivanov
+ * @author Sebastien Deleuze
  */
 class DefaultChatClientTests {
 
@@ -134,7 +135,7 @@ class DefaultChatClientTests {
 	}
 
 	@Test
-	void whenPromptWithMessagesAndChatOptionsThenReturn() {
+	void whenPromptWithMessagesAndChatOptionsAndCustomizerThenReturn() {
 		ChatModel chatModel = mock(ChatModel.class);
 		ChatClient chatClient = new DefaultChatClientBuilder(chatModel)
 			.defaultOptions(ChatOptions.builder().model("default-model").topK(3))
@@ -150,6 +151,22 @@ class DefaultChatClientTests {
 		assertThat(builtOptions.getModel()).isEqualTo("test-model");
 		assertThat(builtOptions.getTemperature()).isEqualTo(0.7);
 		assertThat(builtOptions.getTopK()).isEqualTo(3);
+	}
+
+	@Test
+	void whenPromptWithMessagesAndChatOptionsAndNoCustomizerThenReturn() {
+		ChatModel chatModel = mock(ChatModel.class);
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel).build();
+		ChatOptions chatOptions = ChatOptions.builder().model("test-model").temperature(0.7).build();
+		Prompt prompt = new Prompt(List.of(new UserMessage("my question")), chatOptions);
+		DefaultChatClient.DefaultChatClientRequestSpec spec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
+			.prompt(prompt);
+		assertThat(spec.getMessages()).hasSize(1);
+		assertThat(spec.getMessages().get(0).getText()).isEqualTo("my question");
+		assertThat(spec.getOptionsCustomizer()).isNotNull();
+		ChatOptions builtOptions = spec.getOptionsCustomizer().build();
+		assertThat(builtOptions.getModel()).isEqualTo("test-model");
+		assertThat(builtOptions.getTemperature()).isEqualTo(0.7);
 	}
 
 	@Test
