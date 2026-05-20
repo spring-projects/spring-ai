@@ -213,6 +213,9 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 		if (this.getUser() != null) {
 			builder.user(this.getUser());
 		}
+		if (this.getCustomHeaders() != null && !this.getCustomHeaders().isEmpty()) {
+			this.getCustomHeaders().forEach(builder::putAdditionalHeader);
+		}
 
 		return builder.build();
 	}
