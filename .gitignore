@@ -27,6 +27,7 @@ out
 *~
 /.gradletasknamecache
 **/*.flattened-pom.xml
+dependency-reduced-pom.xml
 
 vscode
 settings.json

@@ -16,62 +16,134 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>org.springframework.ai</groupId>
-        <artifactId>spring-ai-parent</artifactId>
-        <version>2.0.0-SNAPSHOT</version>
-    </parent>
-    <artifactId>spring-ai-template-st</artifactId>
-    <packaging>jar</packaging>
-    <name>Spring AI Template StringTemplate</name>
-    <description>StringTemplate implementation for Spring AI templating</description>
-    <url>https://github.com/spring-projects/spring-ai</url>
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.ai</groupId>
+		<artifactId>spring-ai-parent</artifactId>
+		<version>2.0.0-SNAPSHOT</version>
+	</parent>
+	<artifactId>spring-ai-template-st</artifactId>
+	<packaging>jar</packaging>
+	<name>Spring AI Template StringTemplate</name>
+	<description>StringTemplate implementation for Spring AI templating</description>
+	<url>https://github.com/spring-projects/spring-ai</url>
 
-    <scm>
-        <url>https://github.com/spring-projects/spring-ai</url>
-        <connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
-    </scm>
+	<scm>
+		<url>https://github.com/spring-projects/spring-ai</url>
+		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
+		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
+	</scm>
 
-    <properties>
-        <maven.compiler.target>17</maven.compiler.target>
-        <maven.compiler.source>17</maven.compiler.source>
-    </properties>
+	<properties>
+		<maven.compiler.target>17</maven.compiler.target>
+		<maven.compiler.source>17</maven.compiler.source>
+	</properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-commons</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-commons</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
 
-        <dependency>
-            <groupId>org.antlr</groupId>
-            <artifactId>ST4</artifactId>
-            <version>${ST4.version}</version>
-        </dependency>
+		<dependency>
+			<groupId>org.antlr</groupId>
+			<artifactId>ST4</artifactId>
+			<version>${ST4.version}</version>
+		</dependency>
 
-        <!-- ANTLR for token parsing -->
-        <dependency>
-            <groupId>org.antlr</groupId>
-            <artifactId>antlr4-runtime</artifactId>
-            <version>${antlr.version}</version>
-        </dependency>
+		<!-- Logging -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
 
-        <!-- Logging -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
+		<!-- test dependencies -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
 
-        <!-- test dependencies -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+	<build>
+		<plugins>
+			<!-- Move the antlr-runtime (ANTLR 3 !!!) to a location specific for this module to avoid conflicts. -->
+			<!-- Conflicts can occur when used in conjunction with a different libraries which need  -->
+			<!-- a different version of the antlr runtime -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>3.6.2</version>
+				<configuration>
+					<createDependencyReducedPom>true</createDependencyReducedPom>
+					<useDependencyReducedPomInJar>true</useDependencyReducedPomInJar>
+					<filters>
+						<filter>
+							<artifact>org.antlr:ST4</artifact>
+							<excludes>
+								<exclude>META-INF/services/**</exclude>
+								<exclude>META-INF/MANIFEST.MF</exclude>
+								<exclude>META-INF/maven/**</exclude>
+							</excludes>
+						</filter>
+						<filter>
+							<artifact>org.antlr:antlr-runtime</artifact>
+							<excludes>
+								<exclude>META-INF/services/**</exclude>
+								<exclude>META-INF/MANIFEST.MF</exclude>
+								<exclude>META-INF/maven/**</exclude>
+							</excludes>
+						</filter>
+					</filters>
+					<relocations>
+						<relocation>
+							<pattern>org.stringtemplate.v4</pattern>
+							<shadedPattern>shaded.${project.groupId}.${project.artifactId}.library.org.stringtemplate.v4</shadedPattern>
+						</relocation>
+						<relocation>
+							<pattern>org.antlr</pattern>
+							<shadedPattern>shaded.${project.groupId}.${project.artifactId}.library.org.antlr</shadedPattern>
+						</relocation>
+					</relocations>
+					<artifactSet>
+						<includes>
+							<include>org.antlr:ST4</include>
+							<include>org.antlr:antlr-runtime</include>
+						</includes>
+					</artifactSet>
+				</configuration>
+
+				<executions>
+					<execution>
+						<id>inject-problematic-dependencies</id>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-clean-plugin</artifactId>
+				<configuration>
+					<filesets>
+						<fileset>
+							<directory>${project.basedir}</directory>
+							<includes>
+								<!-- Cleaning the intermediate files from maven-shade-plugin. -->
+								<include>dependency-reduced-pom.xml</include>
+							</includes>
+						</fileset>
+					</filesets>
+				</configuration>
+			</plugin>
+
+		</plugins>
+	</build>
+
 </project>

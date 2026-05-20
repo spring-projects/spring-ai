@@ -47,6 +47,13 @@
 			<version>${project.parent.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>org.antlr</groupId>
+			<artifactId>antlr4-runtime</artifactId>
+			<!-- Pin the runtime to the EXACT same version as the code generator or Antlr4 will fail at runtime. -->
+			<version>[${antlr.version}]</version>
+		</dependency>
+
 		<!-- test dependencies -->
 
 		<dependency>
@@ -63,34 +70,85 @@
 		
 	</dependencies>
 	
-	<profiles>
-		<profile>
-			<id>antlr4</id>
-			<activation>
-				<activeByDefault>false</activeByDefault>
-			</activation>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.antlr</groupId>
-						<artifactId>antlr4-maven-plugin</artifactId>
-						<version>${antlr.version}</version>
-						<configuration>
-							<sourceDirectory>${basedir}/src/main/antlr4</sourceDirectory>
-							<outputDirectory>${basedir}/src/main/java</outputDirectory>
-							<visitor>true</visitor>
-						</configuration>
-						<executions>
-							<execution>
-								<goals>
-									<goal>antlr4</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
-	
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.antlr</groupId>
+				<artifactId>antlr4-maven-plugin</artifactId>
+				<version>${antlr.version}</version>
+				<configuration>
+					<visitor>true</visitor>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>antlr4</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- Move the antlr4-runtime to a location specific for this module to avoid conflicts. -->
+			<!-- Conflicts can occur when used in conjunction with a different library which needs  -->
+			<!-- a different version of the antlr4-runtime -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>3.6.2</version>
+				<configuration>
+					<createDependencyReducedPom>true</createDependencyReducedPom>
+					<useDependencyReducedPomInJar>true</useDependencyReducedPomInJar>
+					<filters>
+						<filter>
+							<artifact>org.antlr:antlr4-runtime</artifact>
+							<excludes>
+								<exclude>META-INF/services/**</exclude>
+								<exclude>META-INF/MANIFEST.MF</exclude>
+								<exclude>META-INF/maven/**</exclude>
+							</excludes>
+						</filter>
+					</filters>
+					<relocations>
+						<relocation>
+							<pattern>org.antlr</pattern>
+							<shadedPattern>shaded.${project.groupId}.${project.artifactId}.library.org.antlr</shadedPattern>
+						</relocation>
+					</relocations>
+					<artifactSet>
+						<includes>
+							<include>org.antlr:antlr4-runtime</include>
+						</includes>
+					</artifactSet>
+				</configuration>
+
+				<executions>
+					<execution>
+						<id>inject-problematic-dependencies</id>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-clean-plugin</artifactId>
+				<configuration>
+					<filesets>
+						<fileset>
+							<directory>${project.basedir}</directory>
+							<includes>
+								<!-- Cleaning the intermediate files from maven-shade-plugin. -->
+								<include>dependency-reduced-pom.xml</include>
+							</includes>
+						</fileset>
+					</filesets>
+				</configuration>
+			</plugin>
+
+		</plugins>
+	</build>
+
 </project>
