@@ -387,7 +387,7 @@ Besides the `@ToolParam` annotation, you can also use the `@Schema` annotation f
 
 ==== Adding Tools to `ChatClient` and `ChatModel`
 
-When using the programmatic specification approach, you can pass the `MethodToolCallback` instance to the `toolCallbacks()` method of `ChatClient`.
+When using the programmatic specification approach, you can pass the `MethodToolCallback` instance via the `tools()` consumer to `ChatClient`.
 The tool will only be available for the specific chat request it's added to.
 
 [source,java]
@@ -395,14 +395,14 @@ The tool will only be available for the specific chat request it's added to.
 ToolCallback toolCallback = ...
 ChatClient.create(chatModel)
     .prompt("What day is tomorrow?")
-    .toolCallbacks(toolCallback)
+    .tools(t -> t.callbacks(toolCallback))
     .call()
     .content();
 ----
 
 ==== Adding Default Tools to `ChatClient`
 
-When using the programmatic specification approach, you can add default tools to a `ChatClient.Builder` by passing the `MethodToolCallback` instance to the `defaultToolCallbacks()` method.
+When using the programmatic specification approach, you can add default tools to a `ChatClient.Builder` via the `defaultTools()` consumer.
 If both default and runtime tools are provided, the runtime tools will completely override the default tools.
 
 WARNING: Default tools are shared across all the chat requests performed by all the `ChatClient` instances built from the same `ChatClient.Builder`. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
@@ -412,7 +412,7 @@ WARNING: Default tools are shared across all the chat requests performed by all 
 ChatModel chatModel = ...
 ToolCallback toolCallback = ...
 ChatClient chatClient = ChatClient.builder(chatModel)
-    .defaultToolCallbacks(toolCallback)
+    .defaultTools(t -> t.callbacks(toolCallback))
     .build();
 ----
 
@@ -510,21 +510,21 @@ NOTE: Some types are not supported. See xref:_function_tool_limitations[] for mo
 
 ==== Adding Tools to `ChatClient`
 
-When using the programmatic specification approach, you can pass the `FunctionToolCallback` instance to the `toolCallbacks()` method of `ChatClient`. The tool will only be available for the specific chat request it's added to.
+When using the programmatic specification approach, you can pass the `FunctionToolCallback` instance via the `tools()` consumer to `ChatClient`. The tool will only be available for the specific chat request it's added to.
 
 [source,java]
 ----
 ToolCallback toolCallback = ...
 ChatClient.create(chatModel)
     .prompt("What's the weather like in Copenhagen?")
-    .toolCallbacks(toolCallback)
+    .tools(t -> t.callbacks(toolCallback))
     .call()
     .content();
 ----
 
 ==== Adding Default Tools to `ChatClient`
 
-When using the programmatic specification approach, you can add default tools to a `ChatClient.Builder` by passing the `FunctionToolCallback` instance to the `defaultToolCallbacks()` method.
+When using the programmatic specification approach, you can add default tools to a `ChatClient.Builder` via the `defaultTools()` consumer.
 If both default and runtime tools are provided, the runtime tools will completely override the default tools.
 
 WARNING: Default tools are shared across all the chat requests performed by all the `ChatClient` instances built from the same `ChatClient.Builder`. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
@@ -534,7 +534,7 @@ WARNING: Default tools are shared across all the chat requests performed by all 
 ChatModel chatModel = ...
 ToolCallback toolCallback = ...
 ChatClient chatClient = ChatClient.builder(chatModel)
-    .defaultToolCallbacks(toolCallback)
+    .defaultTools(t -> t.callbacks(toolCallback))
     .build();
 ----
 
@@ -620,8 +620,10 @@ class WeatherTools {
 
 ==== Adding Tools to `ChatClient`
 
-When using the dynamic specification approach, you can pass the tool name (i.e. the function bean name) to the `toolNames()` method of `ChatClient`.
+When using the dynamic specification approach, you can pass the tool name (i.e. the function bean name) to the `toolNames()` method on `ChatClient`.
 The tool will only be available for the specific chat request it's added to.
+
+CAUTION: `toolNames()` is deprecated as of 2.0.0. Prefer injecting a resolved `ToolCallback` instance via `.tools(t -> t.callbacks(...))` instead.
 
 [source,java]
 ----
@@ -634,10 +636,12 @@ ChatClient.create(chatModel)
 
 ==== Adding Default Tools to `ChatClient`
 
-When using the dynamic specification approach, you can add default tools to a `ChatClient.Builder` by passing the tool name to the `defaultToolNames()` method.
+When using the dynamic specification approach, you can add default tools to a `ChatClient.Builder` via the `defaultToolNames()` method.
 If both default and runtime tools are provided, the runtime tools will completely override the default tools.
 
 WARNING: Default tools are shared across all the chat requests performed by all the `ChatClient` instances built from the same `ChatClient.Builder`. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
+
+CAUTION: `defaultToolNames()` is deprecated as of 2.0.0. Prefer injecting a resolved `ToolCallback` instance via `.defaultTools(t -> t.callbacks(...))` instead.
 
 [source,java]
 ----
@@ -955,8 +959,7 @@ ChatModel chatModel = ...
 
 String response = ChatClient.create(chatModel)
         .prompt("Tell me more about the customer with ID 42")
-        .tools(new CustomerTools())
-        .toolContext(Map.of("tenantId", "acme"))
+        .tools(t -> t.instances(new CustomerTools()).context(Map.of("tenantId", "acme")))
         .call()
         .content();
 
@@ -1384,7 +1387,7 @@ AugmentedToolCallbackProvider<AgentThinking> provider = AugmentedToolCallbackPro
 [source,java]
 ----
 ChatClient chatClient = ChatClient.builder(chatModel)
-    .defaultToolCallbacks(provider)
+    .defaultTools(t -> t.callbacks(provider))
     .build();
 ----
 
