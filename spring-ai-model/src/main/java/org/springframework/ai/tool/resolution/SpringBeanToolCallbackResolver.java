@@ -55,7 +55,10 @@ import org.springframework.util.StringUtils;
  * @author Sebastien Deleuze
  * @author Thomas Vitale
  * @since 1.0.0
+ * @deprecated since 2.0.0 in favor of using {@link ToolCallback} beans directly and
+ * retrieving them via a {@link FunctionToolCallback}.
  */
+@Deprecated(since = "2.0.0", forRemoval = true)
 public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 
 	private static final Logger logger = LoggerFactory.getLogger(SpringBeanToolCallbackResolver.class);

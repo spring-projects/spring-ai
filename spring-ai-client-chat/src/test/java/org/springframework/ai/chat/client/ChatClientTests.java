@@ -267,11 +267,10 @@ public class ChatClientTests {
 						.param("param2", "value2")
 						.metadata("smetadata1", "svalue1")
 						.metadata("smetadata2", "svalue2"))
-				.defaultToolNames("fun1", "fun2")
-				.defaultToolCallbacks(FunctionToolCallback.builder("fun3", mockFunction)
-						.description("fun3description")
-						.inputType(String.class)
-						.build())
+				.defaultTools(t -> t.callbacks(
+						FunctionToolCallback.builder("fun1", mockFunction).description("fun1").inputType(String.class).build(),
+						FunctionToolCallback.builder("fun2", mockFunction).description("fun2").inputType(String.class).build(),
+						FunctionToolCallback.builder("fun3", mockFunction).description("fun3description").inputType(String.class).build()))
 				.defaultUser(u -> u.text("Default user text {uparam1}, {uparam2}")
 						.param("uparam1", "value1")
 						.param("uparam2", "value2")
@@ -309,8 +308,8 @@ public class ChatClientTests {
 
 		var fco = (ToolCallingChatOptions) prompt.getOptions();
 
-		assertThat(fco.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2");
-		assertThat(fco.getToolCallbacks().iterator().next().getToolDefinition().name()).isEqualTo("fun3");
+		assertThat(fco.getToolCallbacks()).extracting(cb -> cb.getToolDefinition().name())
+			.containsExactlyInAnyOrder("fun1", "fun2", "fun3");
 
 		// Streaming
 		content = join(chatClient.prompt().stream().content());
@@ -339,14 +338,15 @@ public class ChatClientTests {
 
 		fco = (ToolCallingChatOptions) prompt.getOptions();
 
-		assertThat(fco.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2");
-		assertThat(fco.getToolCallbacks().iterator().next().getToolDefinition().name()).isEqualTo("fun3");
+		assertThat(fco.getToolCallbacks()).extracting(cb -> cb.getToolDefinition().name())
+			.containsExactlyInAnyOrder("fun1", "fun2", "fun3");
 
 		// mutate builder
 		// @formatter:off
 		chatClient = chatClient.mutate()
 				.defaultSystem("Mutated default system text {param1}, {param2}")
-				.defaultToolNames("fun4")
+				.defaultTools(t -> t.callbacks(
+						FunctionToolCallback.builder("fun4", mockFunction).description("fun4").inputType(String.class).build()))
 				.defaultUser("Mutated default user text {uparam1}, {uparam2}")
 				.build();
 		// @formatter:on
@@ -377,8 +377,8 @@ public class ChatClientTests {
 
 		fco = (ToolCallingChatOptions) prompt.getOptions();
 
-		assertThat(fco.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2", "fun4");
-		assertThat(fco.getToolCallbacks().iterator().next().getToolDefinition().name()).isEqualTo("fun3");
+		assertThat(fco.getToolCallbacks()).extracting(cb -> cb.getToolDefinition().name())
+			.containsExactlyInAnyOrder("fun1", "fun2", "fun3", "fun4");
 
 		// Streaming
 		content = join(chatClient.prompt().stream().content());
@@ -407,8 +407,8 @@ public class ChatClientTests {
 
 		fco = (ToolCallingChatOptions) prompt.getOptions();
 
-		assertThat(fco.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2", "fun4");
-		assertThat(fco.getToolCallbacks().iterator().next().getToolDefinition().name()).isEqualTo("fun3");
+		assertThat(fco.getToolCallbacks()).extracting(cb -> cb.getToolDefinition().name())
+			.containsExactlyInAnyOrder("fun1", "fun2", "fun3", "fun4");
 
 	}
 
@@ -434,11 +434,10 @@ public class ChatClientTests {
 						.param("param2", "value2")
 						.metadata("smetadata1", "svalue1")
 						.metadata("smetadata2", "svalue2"))
-				.defaultToolNames("fun1", "fun2")
-				.defaultToolCallbacks(FunctionToolCallback.builder("fun3", mockFunction)
-						.description("fun3description")
-						.inputType(String.class)
-						.build())
+				.defaultTools(t -> t.callbacks(
+						FunctionToolCallback.builder("fun1", mockFunction).description("fun1").inputType(String.class).build(),
+						FunctionToolCallback.builder("fun2", mockFunction).description("fun2").inputType(String.class).build(),
+						FunctionToolCallback.builder("fun3", mockFunction).description("fun3description").inputType(String.class).build()))
 				.defaultUser(u -> u.text("Default user text {uparam1}, {uparam2}")
 						.param("uparam1", "value1")
 						.param("uparam2", "value2")
@@ -454,7 +453,8 @@ public class ChatClientTests {
 					.user(u -> u.param("uparam1", "userValue1")
 						.param("uparam2", "userValue2")
 						.metadata("umetadata2", "userData2"))
-					.toolNames("fun5")
+					.tools(t -> t.callbacks(
+							FunctionToolCallback.builder("fun5", mockFunction).description("fun5").inputType(String.class).build()))
 				.mutate().build() // mutate and build new prompt
 				.prompt().call().content();
 		// @formatter:on
@@ -483,8 +483,8 @@ public class ChatClientTests {
 
 		var tco = (ToolCallingChatOptions) prompt.getOptions();
 
-		assertThat(tco.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2", "fun5");
-		assertThat(tco.getToolCallbacks().iterator().next().getToolDefinition().name()).isEqualTo("fun3");
+		assertThat(tco.getToolCallbacks()).extracting(cb -> cb.getToolDefinition().name())
+			.containsExactlyInAnyOrder("fun1", "fun2", "fun3", "fun5");
 
 		// Streaming
 		// @formatter:off
@@ -494,7 +494,8 @@ public class ChatClientTests {
 						.user(u -> u.param("uparam1", "userValue1")
 							.param("uparam2", "userValue2")
 							.metadata("umetadata2", "userData2"))
-						.toolNames("fun5")
+						.tools(t -> t.callbacks(
+							FunctionToolCallback.builder("fun5", mockFunction).description("fun5").inputType(String.class).build()))
 					.mutate().build() // mutate and build new prompt
 					.prompt().stream().content());
 		// @formatter:on
@@ -523,8 +524,8 @@ public class ChatClientTests {
 
 		var tcoptions = (ToolCallingChatOptions) prompt.getOptions();
 
-		assertThat(tcoptions.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2", "fun5");
-		assertThat(tcoptions.getToolCallbacks().iterator().next().getToolDefinition().name()).isEqualTo("fun3");
+		assertThat(tcoptions.getToolCallbacks()).extracting(cb -> cb.getToolDefinition().name())
+			.containsExactlyInAnyOrder("fun1", "fun2", "fun3", "fun5");
 	}
 
 	@Test
@@ -648,7 +649,8 @@ public class ChatClientTests {
 		// @formatter:off
 		ChatClient client = ChatClient.builder(this.chatModel)
 				.defaultSystem("System text")
-				.defaultToolNames("function1")
+				.defaultTools(t -> t.callbacks(
+						FunctionToolCallback.builder("function1", mockFunction).description("function1").inputType(String.class).build()))
 				.build();
 
 		String response = client.prompt()
@@ -679,7 +681,8 @@ public class ChatClientTests {
 
 		assertThat(modelOptions.getToolNames()).isEmpty();
 
-		assertThat(promptOptions.getToolNames()).containsExactly("function1");
+		assertThat(promptOptions.getToolCallbacks()).extracting(cb -> cb.getToolDefinition().name())
+			.containsExactly("function1");
 	}
 
 	// Constructors
