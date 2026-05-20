@@ -198,6 +198,40 @@ class ToolCallAdvisorAutoRegistrationTests {
 		}
 
 		@Test
+		void autoRegistersWhenToolsInModelDefaultOptions() {
+			stubTwoCallCycle();
+			// Override default: model already has the weather tool baked into its options
+			when(chatModel.getDefaultOptions())
+				.thenReturn(DefaultToolCallingChatOptions.builder().toolCallbacks(List.of(weatherTool)).build());
+
+			var counter = new ChainIterationCountingAdvisor();
+			// No tools added via ChatClient API — tools come from the model's default
+			// options
+			ChatClient.create(chatModel).prompt().advisors(counter).user("weather?").call().content();
+
+			assertThat(counter.getCallCount()).isGreaterThanOrEqualTo(2);
+			verify(chatModel, times(2)).call(any(Prompt.class));
+		}
+
+		@Test
+		void autoRegistersWhenToolsInOptionsCustomizer() {
+			stubTwoCallCycle();
+
+			var counter = new ChainIterationCountingAdvisor();
+			// Tools supplied via .options() instead of .toolCallbacks()
+			ChatClient.create(chatModel)
+				.prompt()
+				.advisors(counter)
+				.user("weather?")
+				.options(DefaultToolCallingChatOptions.builder().toolCallbacks(List.of(weatherTool)))
+				.call()
+				.content();
+
+			assertThat(counter.getCallCount()).isGreaterThanOrEqualTo(2);
+			verify(chatModel, times(2)).call(any(Prompt.class));
+		}
+
+		@Test
 		void doesNotAutoRegisterWhenExplicitToolCallHandlingAdvisorPresent() {
 			stubTwoCallCycle();
 

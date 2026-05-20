@@ -754,7 +754,7 @@ TIP: Be cautious about logging sensitive information in production environments.
 
 === Tool Calling
 
-When tools are registered on a `ChatClient` call (via `.tools(...)`, `.toolCallbacks(...)`, or defaults set on the builder), the `ChatClient` automatically registers a `ToolCallAdvisor` in the advisor chain to handle the tool execution lifecycle.
+When tools are registered on a `ChatClient` call — via `.tools(...)`, `.toolCallbacks(...)`, `.toolNames(...)`, defaults set on the builder, tools pre-configured in the `ChatModel`'s default options, or tools passed through `.options(...)` — the `ChatClient` automatically registers a `ToolCallAdvisor` in the advisor chain to handle the tool execution lifecycle.
 This means you do not need to add a `ToolCallAdvisor` manually for the common case.
 
 [source,java]

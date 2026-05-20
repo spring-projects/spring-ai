@@ -61,6 +61,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.StructuredOutputConverter;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.template.st.StTemplateRenderer;
@@ -1088,7 +1089,8 @@ public class DefaultChatClient implements ChatClient {
 			}
 
 			boolean hasTools = !this.toolCallbacks.isEmpty() || !this.toolCallbackProviders.isEmpty()
-					|| !this.toolNames.isEmpty();
+					|| !this.toolNames.isEmpty() || hasToolsInChatOptions(this.optionsCustomizer)
+					|| hasToolsInChatOptions(this.chatModel.getDefaultOptions());
 			if (!hasTools) {
 				return;
 			}
@@ -1107,6 +1109,18 @@ public class DefaultChatClient implements ChatClient {
 				.conversationHistoryEnabled(!hasDownstreamMemoryAdvisor)
 				.streamToolCallResponses(streaming)
 				.build());
+		}
+
+		private static boolean hasToolsInChatOptions(@Nullable Object options) {
+			ToolCallingChatOptions tco = null;
+			if (options instanceof ToolCallingChatOptions direct) {
+				tco = direct;
+			}
+			else if (options instanceof ToolCallingChatOptions.Builder<?> builder) {
+				tco = (ToolCallingChatOptions) builder.build();
+			}
+			return tco != null && ((tco.getToolCallbacks() != null && !tco.getToolCallbacks().isEmpty())
+					|| (tco.getToolNames() != null && !tco.getToolNames().isEmpty()));
 		}
 
 		/**
