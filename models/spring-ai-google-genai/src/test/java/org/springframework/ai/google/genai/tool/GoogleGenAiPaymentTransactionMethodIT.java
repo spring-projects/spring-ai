@@ -152,8 +152,12 @@ public class GoogleGenAiPaymentTransactionMethodIT {
 		}
 
 		@Bean
-		public ChatClient chatClient(GoogleGenAiChatModel chatModel) {
-			return ChatClient.builder(chatModel).build();
+		public ChatClient chatClient(GoogleGenAiChatModel chatModel, ToolCallingManager toolCallingManager) {
+			return ChatClient
+				.builder(chatModel, io.micrometer.observation.ObservationRegistry.NOOP, null, null,
+						org.springframework.ai.chat.client.advisor.ToolCallAdvisor.builder()
+							.toolCallingManager(toolCallingManager))
+				.build();
 		}
 
 		@Bean
