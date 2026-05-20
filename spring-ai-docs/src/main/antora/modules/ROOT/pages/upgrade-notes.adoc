@@ -178,6 +178,13 @@ class CustomConverter extends BeanOutputConverter<MyType> {
 }
 ----
 
+=== Azure Cosmos DB Support
+
+The Azure Cosmos DB vector store (`spring-ai-azure-cosmos-db-store`) and chat memory repository (`spring-ai-model-chat-memory-repository-cosmos-db`) modules, along with their corresponding auto-configurations and starters, have been removed from the Spring AI project.
+
+Azure Cosmos DB support is now available as an external module maintained by the Azure Cosmos DB team.
+See https://azurecosmosdb.github.io/spring-ai/docs/index.html for documentation and dependency coordinates.
+
 [[upgrading-to-2-0-0-M6]]
 == Upgrading to 2.0.0-M6
 
