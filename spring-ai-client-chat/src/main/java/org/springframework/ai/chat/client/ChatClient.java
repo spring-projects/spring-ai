@@ -234,28 +234,28 @@ public interface ChatClient {
 
 		/**
 		 * @deprecated as of 2.0.0, in favor of {@link #tools(Consumer)} and
-		 * {@link #tools(Object...)} To be removed in 3.0.0.
+		 * {@link #tools(Consumer<ToolSpec>)} To be removed in 3.0.0.
 		 */
 		@Deprecated(since = "2.0.0", forRemoval = true)
 		ChatClientRequestSpec toolCallbacks(ToolCallback... toolCallbacks);
 
 		/**
 		 * @deprecated as of 2.0.0, in favor of {@link #tools(Consumer)} and
-		 * {@link #tools(Object...)} To be removed in 3.0.0.
+		 * {@link #tools(Consumer<ToolSpec>)} To be removed in 3.0.0.
 		 */
 		@Deprecated(since = "2.0.0", forRemoval = true)
 		ChatClientRequestSpec toolCallbacks(List<ToolCallback> toolCallbacks);
 
 		/**
 		 * @deprecated as of 2.0.0, in favor of {@link #tools(Consumer)} and
-		 * {@link #tools(Object...)} To be removed in 3.0.0.
+		 * {@link #tools(Consumer<ToolSpec>)} To be removed in 3.0.0.
 		 */
 		@Deprecated(since = "2.0.0", forRemoval = true)
 		ChatClientRequestSpec toolCallbacks(ToolCallbackProvider... toolCallbackProviders);
 
 		/**
 		 * @deprecated as of 2.0.0, in favor of {@link #tools(Consumer)} and
-		 * {@link #tools(Object...)} To be removed in 3.0.0.
+		 * {@link #tools(Consumer<ToolSpec>)} To be removed in 3.0.0.
 		 */
 		@Deprecated(since = "2.0.0", forRemoval = true)
 		ChatClientRequestSpec toolContext(Map<String, Object> toolContext);
@@ -348,28 +348,28 @@ public interface ChatClient {
 
 		/**
 		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)} and
-		 * {@link #defaultTools(Object...)} To be removed in 3.0.0.
+		 * {@link #defaultTools(Consumer<ToolSpec>)} To be removed in 3.0.0.
 		 */
 		@Deprecated(since = "2.0.0", forRemoval = true)
 		Builder defaultToolCallbacks(ToolCallback... toolCallbacks);
 
 		/**
 		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)} and
-		 * {@link #defaultTools(Object...)} To be removed in 3.0.0.
+		 * {@link #defaultTools(Consumer<ToolSpec>)} To be removed in 3.0.0.
 		 */
 		@Deprecated(since = "2.0.0", forRemoval = true)
 		Builder defaultToolCallbacks(List<ToolCallback> toolCallbacks);
 
 		/**
 		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)} and
-		 * {@link #defaultTools(Object...)} To be removed in 3.0.0.
+		 * {@link #defaultTools(Consumer<ToolSpec>)} To be removed in 3.0.0.
 		 */
 		@Deprecated(since = "2.0.0", forRemoval = true)
 		Builder defaultToolCallbacks(ToolCallbackProvider... toolCallbackProviders);
 
 		/**
 		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)} and
-		 * {@link #defaultTools(Object...)} To be removed in 3.0.0.
+		 * {@link #defaultTools(Consumer<ToolSpec>)} To be removed in 3.0.0.
 		 */
 		@Deprecated(since = "2.0.0", forRemoval = true)
 		Builder defaultToolContext(Map<String, Object> toolContext);

@@ -193,7 +193,7 @@ public class DefaultChatClientBuilder implements Builder {
 	@Deprecated(since = "2.0.0", forRemoval = true)
 	@Override
 	public Builder defaultToolCallbacks(ToolCallback... toolCallbacks) {
-		this.defaultRequest.toolCallbacks(toolCallbacks);
+		this.defaultRequest.tools(t -> t.callbacks(toolCallbacks));
 		return this;
 	}
 
@@ -204,7 +204,7 @@ public class DefaultChatClientBuilder implements Builder {
 	@Deprecated(since = "2.0.0", forRemoval = true)
 	@Override
 	public Builder defaultToolCallbacks(List<ToolCallback> toolCallbacks) {
-		this.defaultRequest.toolCallbacks(toolCallbacks);
+		this.defaultRequest.tools(t -> t.callbacks(toolCallbacks));
 		return this;
 	}
 
@@ -215,7 +215,7 @@ public class DefaultChatClientBuilder implements Builder {
 	@Deprecated(since = "2.0.0", forRemoval = true)
 	@Override
 	public Builder defaultToolCallbacks(ToolCallbackProvider... toolCallbackProviders) {
-		this.defaultRequest.toolCallbacks(toolCallbackProviders);
+		this.defaultRequest.tools(t -> t.callbacks(toolCallbackProviders));
 		return this;
 	}
 
@@ -226,7 +226,7 @@ public class DefaultChatClientBuilder implements Builder {
 	@Deprecated(since = "2.0.0", forRemoval = true)
 	@Override
 	public Builder defaultToolContext(Map<String, Object> toolContext) {
-		this.defaultRequest.toolContext(toolContext);
+		this.defaultRequest.tools(t -> t.context(toolContext));
 		return this;
 	}
 

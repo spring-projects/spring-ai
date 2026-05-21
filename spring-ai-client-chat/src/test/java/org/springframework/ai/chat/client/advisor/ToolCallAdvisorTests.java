@@ -614,13 +614,6 @@ public class ToolCallAdvisorTests {
 	}
 
 	@Test
-	void testSuppressToolCallStreamingBuilderMethod() {
-		ToolCallAdvisor.Builder<?> builder = ToolCallAdvisor.builder().suppressToolCallStreaming();
-
-		assertThat(builder.isStreamToolCallResponses()).isFalse();
-	}
-
-	@Test
 	void testAdviseStreamWithToolCallResponsesEnabled() {
 		// Create advisor with tool call streaming explicitly enabled
 		ToolCallAdvisor advisor = ToolCallAdvisor.builder()

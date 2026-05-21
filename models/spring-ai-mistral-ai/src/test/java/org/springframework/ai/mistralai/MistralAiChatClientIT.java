@@ -241,10 +241,10 @@ class MistralAiChatClientIT {
 		String response = ChatClient.create(this.chatModel).prompt()
 				.options(MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_SMALL).toolChoice(ToolChoice.AUTO))
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius."))
-				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build())
+					.build()))
 				.call()
 				.content();
 		// @formatter:on
@@ -262,10 +262,10 @@ class MistralAiChatClientIT {
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
 				.defaultOptions(MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_SMALL))
-				.defaultToolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.defaultTools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build())
+					.build()))
 				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius."))
 			.build()
 			.prompt().call().content();
@@ -285,10 +285,10 @@ class MistralAiChatClientIT {
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.options(MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_SMALL))
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius.")
-				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build())
+					.build()))
 				.stream()
 				.content();
 
