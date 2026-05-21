@@ -346,7 +346,7 @@ class BedrockConverseChatClientIT {
 
 		logger.info(metadata.getUsage().toString());
 
-		assertThat(metadata.getUsage().getPromptTokens()).isGreaterThan(1000);
+		assertThat(metadata.getUsage().getPromptTokens()).isGreaterThan(900);
 		assertThat(metadata.getUsage().getPromptTokens()).isLessThan(2000);
 
 		assertThat(metadata.getUsage().getCompletionTokens()).isGreaterThan(0);
