@@ -54,6 +54,8 @@ import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.customizer.McpAsyncServerCustomizer;
+import org.springframework.ai.mcp.customizer.McpSyncServerCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerChangeNotificationProperties;
@@ -443,6 +445,28 @@ public class McpServerAutoConfigurationIT {
 			});
 	}
 
+	@Test
+	void syncServerCustomizerConfiguration() {
+		this.contextRunner.withUserConfiguration(McpSyncServerCustomizerConfiguration.class).run(context -> {
+			McpSyncServer syncServer = context.getBean(McpSyncServer.class);
+			assertThat(syncServer.getServerInfo().name()).isEqualTo("test");
+			assertThat(syncServer.getServerInfo().version()).isEqualTo("1.0.0");
+			assertThat(syncServer.getServerCapabilities().tools().listChanged()).isTrue();
+		});
+	}
+
+	@Test
+	void asyncServerCustomizerConfiguration() {
+		this.contextRunner.withUserConfiguration(McpAsyncServerCustomizerConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.server.type=async")
+			.run(context -> {
+				McpAsyncServer asyncServer = context.getBean(McpAsyncServer.class);
+				assertThat(asyncServer.getServerInfo().name()).isEqualTo("test");
+				assertThat(asyncServer.getServerInfo().version()).isEqualTo("1.0.0");
+				assertThat(asyncServer.getServerCapabilities().tools().listChanged()).isTrue();
+			});
+	}
+
 	@Configuration
 	static class TestResourceConfiguration {
 
@@ -692,6 +716,38 @@ public class McpServerAutoConfigurationIT {
 				.filter(city -> city.toLowerCase().startsWith(prefix.toLowerCase()))
 				.limit(10)
 				.toList());
+		}
+
+	}
+
+	@Configuration
+	static class McpSyncServerCustomizerConfiguration {
+
+		@Bean
+		McpSyncServerCustomizer serverInfoMcpSyncServerCustomizer() {
+			return serverBuilder -> serverBuilder.serverInfo("test", "1.0.0");
+		}
+
+		@Bean
+		McpSyncServerCustomizer capabilitiesMcpSyncServerCustomizer() {
+			return serverBuilder -> serverBuilder
+				.capabilities(McpSchema.ServerCapabilities.builder().tools(true).build());
+		}
+
+	}
+
+	@Configuration
+	static class McpAsyncServerCustomizerConfiguration {
+
+		@Bean
+		McpAsyncServerCustomizer serverInfoMcpSyncServerCustomizer() {
+			return serverBuilder -> serverBuilder.serverInfo("test", "1.0.0");
+		}
+
+		@Bean
+		McpAsyncServerCustomizer capabilitiesMcpSyncServerCustomizer() {
+			return serverBuilder -> serverBuilder
+				.capabilities(McpSchema.ServerCapabilities.builder().tools(true).build());
 		}
 
 	}

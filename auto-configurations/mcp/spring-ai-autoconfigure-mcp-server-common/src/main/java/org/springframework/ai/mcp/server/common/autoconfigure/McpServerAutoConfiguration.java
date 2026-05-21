@@ -18,7 +18,6 @@ package org.springframework.ai.mcp.server.common.autoconfigure;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
@@ -66,6 +65,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.log.LogAccessor;
 import org.springframework.util.CollectionUtils;
 
@@ -75,6 +75,7 @@ import org.springframework.util.CollectionUtils;
  * <p>
  *
  * @author Christian Tzolov
+ * @author Yanming Zhou
  * @since 1.0.0
  * @see McpServerProperties
  */
@@ -113,7 +114,7 @@ public class McpServerAutoConfiguration {
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
 			ObjectProvider<List<SyncCompletionSpecification>> completions,
 			ObjectProvider<BiConsumer<McpSyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumers,
-			Optional<McpSyncServerCustomizer> mcpSyncServerCustomizer) {
+			ObjectProvider<McpSyncServerCustomizer> mcpSyncServerCustomizers) {
 
 		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
 				serverProperties.getVersion());
@@ -210,12 +211,13 @@ public class McpServerAutoConfiguration {
 		serverBuilder.instructions(serverProperties.getInstructions());
 
 		serverBuilder.requestTimeout(serverProperties.getRequestTimeout());
-		mcpSyncServerCustomizer.ifPresent(customizer -> customizer.customize(serverBuilder));
+		mcpSyncServerCustomizers.orderedStream().forEach(customizer -> customizer.customize(serverBuilder));
 
 		return serverBuilder.build();
 	}
 
 	@Bean
+	@Order(0)
 	@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
@@ -234,7 +236,7 @@ public class McpServerAutoConfiguration {
 			ObjectProvider<List<AsyncPromptSpecification>> prompts,
 			ObjectProvider<List<AsyncCompletionSpecification>> completions,
 			ObjectProvider<BiConsumer<McpAsyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumer,
-			Optional<McpAsyncServerCustomizer> asyncServerCustomizer) {
+			ObjectProvider<McpAsyncServerCustomizer> mcpAsyncServerCustomizers) {
 
 		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
 				serverProperties.getVersion());
@@ -333,7 +335,7 @@ public class McpServerAutoConfiguration {
 		serverBuilder.instructions(serverProperties.getInstructions());
 
 		serverBuilder.requestTimeout(serverProperties.getRequestTimeout());
-		asyncServerCustomizer.ifPresent(customizer -> customizer.customize(serverBuilder));
+		mcpAsyncServerCustomizers.orderedStream().forEach(customizer -> customizer.customize(serverBuilder));
 
 		return serverBuilder.build();
 	}
