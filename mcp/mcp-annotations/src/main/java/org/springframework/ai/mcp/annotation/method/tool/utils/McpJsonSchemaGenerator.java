@@ -144,14 +144,10 @@ public final class McpJsonSchemaGenerator {
 
 		ObjectNode schema = JsonParser.getJsonMapper().createObjectNode();
 		schema.put("$schema", SchemaVersion.DRAFT_2020_12.getIdentifier());
-		schema.put("type", "object");
 
-		ObjectNode properties = schema.putObject("properties");
-		List<String> required = new ArrayList<>();
-
+		List<Integer> nonReservedParamIndexs = new ArrayList<>();
 		for (int i = 0; i < method.getParameterCount(); i++) {
 			Parameter parameter = method.getParameters()[i];
-			String parameterName = parameter.getName();
 			Type parameterType = method.getGenericParameterTypes()[i];
 
 			// Skip parameters annotated with @McpProgressToken
@@ -174,6 +170,28 @@ public final class McpJsonSchemaGenerator {
 							|| ClassUtils.isAssignable(CallToolRequest.class, parameterClass))) {
 				continue;
 			}
+			nonReservedParamIndexs.add(i);
+		}
+		if (nonReservedParamIndexs.size() == 1) {
+			Integer index = nonReservedParamIndexs.get(0);
+			Type parameterType = method.getGenericParameterTypes()[index];
+			ObjectNode parameterNode = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
+			if(parameterNode.hasNonNull("properties")) {
+				schema.setAll(parameterNode);
+				return schema.toPrettyString();
+			}
+		}
+
+		schema.put("type", "object");
+
+		ObjectNode properties = schema.putObject("properties");
+		List<String> required = new ArrayList<>();
+
+		for (int i = 0; i < nonReservedParamIndexs.size(); i++) {
+			Integer index = nonReservedParamIndexs.get(i);
+			Parameter parameter = method.getParameters()[index];
+			String parameterName = parameter.getName();
+			Type parameterType = method.getGenericParameterTypes()[index];
 
 			if (isMethodParameterRequired(method, i)) {
 				required.add(parameterName);
