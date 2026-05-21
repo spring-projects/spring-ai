@@ -1417,3 +1417,271 @@ Optionally, Spring AI can export tool call arguments and results as span attribu
 === Logging
 
 All the main operations of the tool calling features are logged at the `DEBUG` level. You can enable the logging by setting the log level to `DEBUG` for the `org.springframework.ai` package.
+
+[[tool-search-tool]]
+== Tool Search Tool
+
+As AI agents connect to more services (Slack, GitHub, Jira, MCP servers), tool libraries grow rapidly.
+A typical multi-server setup can easily have 50+ tools consuming *55,000+ tokens* before any conversation starts.
+Tool selection accuracy also degrades when models face 30+ similarly-named tools.
+
+The **Tool Search Tool** pattern solves this by enabling on-demand tool discovery:
+
+* The model receives only a single search tool initially — minimal token usage.
+* When capabilities are needed, the model calls the search tool with a natural-language query.
+* Matching tool definitions are dynamically expanded into the context.
+* The model can then invoke the discovered tools normally.
+
+This achieves significant token savings while maintaining access to large tool catalogs.
+
+=== How It Works
+
+The `ToolSearchToolCallingAdvisor` extends Spring AI's `ToolCallAdvisor` to implement dynamic tool discovery.
+
+The flow at runtime is:
+
+1. **Indexing** — At conversation start, all registered tools are indexed in the `ToolIndex` but *not* sent to the LLM.
+2. **Initial Request** — Only the built-in `toolSearchTool` definition is sent to the LLM.
+3. **Discovery Call** — When the LLM needs a capability, it calls `toolSearchTool` with a search query.
+4. **Search & Expand** — The `ToolIndex` finds matching tools; their definitions are added to the next request.
+5. **Tool Invocation** — The LLM sees both `toolSearchTool` and the discovered tool definitions, and can call the actual tool.
+6. **Tool Execution** — The discovered tool is executed and its result returned to the LLM.
+7. **Response** — The LLM generates the final answer using the tool result.
+
+=== Installation
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-tool-search-tool-advisor</artifactId>
+</dependency>
+
+<!-- Choose a search strategy (see Search Strategies below) -->
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-tool-index-vectorstore</artifactId>
+</dependency>
+----
+
+=== Quick Start
+
+[source,java]
+----
+// 1. Configure a ToolIndex (e.g., VectorToolIndex for semantic search)
+@Bean
+ToolIndex toolIndex(VectorStore vectorStore) {
+    return new VectorToolIndex(vectorStore);
+}
+
+// 2. Create the advisor
+var smartToolRetrieverAdvisor = ToolSearchToolCallingAdvisor.builder()
+    .toolIndex(toolIndex)
+    .maxResults(5)
+    .build();
+
+// 3. Use with ChatClient — tools are registered but NOT sent to the LLM initially
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultTools(new MyTools())
+    .defaultAdvisors(smartToolRetrieverAdvisor)
+    .build();
+
+// 4. Make requests — tools are discovered on-demand
+String answer = chatClient.prompt("What's the weather in Amsterdam?")
+    .call()
+    .content();
+----
+
+=== Search Strategies
+
+The `ToolIndex` interface abstracts the search implementation.
+Three strategies are provided out of the box:
+
+[cols="1,2,2", options="header"]
+|===
+| Strategy | Module | Best For
+
+| **Semantic**
+| `tool-index-vectorstore`
+| Natural-language queries, fuzzy matching
+
+| **Keyword**
+| `tool-index-lucene`
+| Exact term matching, known tool names
+
+| **Regex**
+| `tool-index-regex`
+| Tool name patterns (`get_*_data`)
+|===
+
+==== VectorToolIndex (Semantic)
+
+[source,java]
+----
+@Bean
+ToolIndex vectorToolIndex(VectorStore vectorStore) {
+    return new VectorToolIndex(vectorStore);
+}
+----
+
+Uses embedding-based similarity search. Best for natural-language queries where users describe what they need.
+
+==== LuceneToolIndex (Keyword)
+
+[source,java]
+----
+@Bean
+ToolIndex luceneToolIndex() {
+    return new LuceneToolIndex();        // default threshold of 0.25
+    // return new LuceneToolIndex(0.4f); // custom minimum score threshold
+}
+----
+
+Uses Apache Lucene for keyword-based search. Fast and effective for exact-term matching.
+
+==== RegexToolIndex (Pattern)
+
+[source,java]
+----
+@Bean
+ToolIndex regexToolIndex() {
+    return new RegexToolIndex();
+}
+----
+
+Uses regex pattern matching. Useful when tool names follow a known naming convention (e.g., `get_*` or `*_database_*`).
+
+=== Configuration
+
+The following options are available on `ToolSearchToolCallingAdvisor.Builder`:
+
+|===
+| Option | Description | Default
+
+| `toolIndex(ToolIndex)`
+| The search implementation to use.
+| Required
+
+| `maxResults(Integer)`
+| Maximum tool references returned per search. When `null`, the LLM decides (guided by the tool description hint of 5).
+| `null`
+
+| `systemMessageSuffix(String)`
+| Custom prompt suffix appended to the system message to instruct the model how to use `toolSearchTool`.
+| Built-in template
+
+| `referenceToolNameAccumulation(boolean)`
+| When `true`, tool names discovered across all prior search calls are accumulated and injected. When `false`, only the most recent search result is used.
+| `true`
+
+| `sessionIdKeyName(String)`
+| Context key used to look up the conversation/session ID. Change this when your app stores the conversation ID under a custom key.
+| `"conversationId"`
+
+| `evictionStrategy(ToolIndexEvictionStrategy)`
+| Determines when session tool indexes are freed. See xref:_index_eviction[Index Eviction] below.
+| `LruEvictionStrategy(1000)`
+
+| `advisorOrder(int)`
+| Position of this advisor in the advisor chain.
+| `HIGHEST_PRECEDENCE + 300`
+|===
+
+=== ToolIndex API
+
+The `ToolIndex` interface and its companion types (`ToolSearchRequest`, `ToolSearchResponse`, `ToolReference`, `SearchType`) live in the `spring-ai-tool-search-tool-api` module under the package `org.springframework.ai.chat.client.advisor.tool.search.api`.
+The built-in index implementations (`spring-ai-tool-index-lucene`, `spring-ai-tool-index-vectorstore`, `spring-ai-tool-index-regex`) all depend on this module, so it is pulled in transitively when you use any of them.
+To implement a custom `ToolIndex` without pulling in a concrete search engine, depend only on the API artifact:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-tool-search-tool-api</artifactId>
+</dependency>
+----
+
+[source,java]
+----
+public interface ToolIndex {
+    void indexTool(String sessionId, ToolReference toolReference);
+    void indexTools(String sessionId, List<ToolReference> toolReferences); // default: loops over indexTool
+    ToolSearchResponse search(ToolSearchRequest request);
+    void clearIndex(String sessionId);
+}
+----
+
+Each call is scoped by `sessionId` so tool indexes are isolated across concurrent conversations.
+
+=== Index Eviction
+
+By default (`LruEvictionStrategy(1000)`), up to 1,000 active sessions are retained and the least-recently-used session is evicted when the cap is exceeded.
+Call `advisor.evictSession(sessionId)` to release a session eagerly (e.g. on logout).
+Five built-in strategies are provided:
+
+[cols="2,3", options="header"]
+|===
+| Strategy | Behaviour
+
+| `LruEvictionStrategy(maxSessions)` (**default**)
+| Evicts the least-recently-used session once the number of active sessions exceeds `maxSessions`.
+
+| `NeverEvictStrategy.INSTANCE`
+| Never evicts automatically; indexes persist until `evictSession()` is called explicitly.
+
+| `AlwaysEvictStrategy.INSTANCE`
+| Clears a session's index before every request, forcing a full re-index each turn. Useful for testing or when tool sets change every request.
+
+| `TtlEvictionStrategy(duration)`
+| Evicts sessions whose last-access time exceeds the given TTL. Evaluated lazily on each request.
+
+| `CompositeEvictionStrategy(strategies...)`
+| Delegates to multiple strategies and evicts a session if _any_ delegate requests it.
+|===
+
+[source,java]
+----
+// Default: LRU cap of 1000 sessions (no configuration needed)
+var advisor = ToolSearchToolCallingAdvisor.builder()
+    .toolIndex(toolIndex)
+    .build();
+
+// Never evict — manage session lifetime yourself
+ToolIndexEvictionStrategy eviction = NeverEvictStrategy.INSTANCE;
+
+// Always evict — re-index every request (useful for testing)
+ToolIndexEvictionStrategy eviction = AlwaysEvictStrategy.INSTANCE;
+
+// Evict least-recently-used session when more than 200 are active
+ToolIndexEvictionStrategy eviction = new LruEvictionStrategy(200);
+
+// Evict sessions idle for more than 30 minutes
+ToolIndexEvictionStrategy eviction = new TtlEvictionStrategy(Duration.ofMinutes(30));
+
+// Combine: TTL + LRU cap
+ToolIndexEvictionStrategy eviction = new CompositeEvictionStrategy(
+    new TtlEvictionStrategy(Duration.ofMinutes(30)),
+    new LruEvictionStrategy(200));
+
+var advisor = ToolSearchToolCallingAdvisor.builder()
+    .toolIndex(toolIndex)
+    .evictionStrategy(eviction)
+    .build();
+----
+
+Eviction is evaluated lazily on each request — no background thread is required.
+
+=== When to Use
+
+**Good fit:**
+
+* 10 or more tools in your system.
+* Tool definitions are consuming more than 10K tokens.
+* Building MCP-powered systems with multiple servers.
+* Experiencing tool selection accuracy issues with large tool sets.
+
+**Traditional approach may be better:**
+
+* Small tool library (fewer than 10 tools).
+* All tools are frequently used in every session.
+* Tool definitions are very compact.
