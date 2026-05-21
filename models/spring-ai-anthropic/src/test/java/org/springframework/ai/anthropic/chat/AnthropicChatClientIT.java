@@ -37,6 +37,7 @@ import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -350,6 +351,7 @@ class AnthropicChatClientIT {
 			.options(ToolCallingChatOptions.builder().model(modelName))
 			.tools(new MyTools())
 			.user("Get current weather in Amsterdam and Paris")
+			.advisors(ToolCallAdvisor.builder().suppressToolCallStreaming().build())
 			.stream()
 			.chatResponse();
 
