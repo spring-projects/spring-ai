@@ -17,7 +17,9 @@
 package org.springframework.ai.stabilityai;
 
 import java.util.List;
+import java.util.Objects;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.image.Image;
@@ -27,9 +29,15 @@ import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.ImageResponseMetadata;
+import org.springframework.ai.image.observation.ImageModelObservationContext;
+import org.springframework.ai.image.observation.ImageModelObservationConvention;
+import org.springframework.ai.image.observation.ImageModelObservationDocumentation;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.observation.conventions.AiProvider;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.stabilityai.api.StabilityAiApi;
 import org.springframework.ai.stabilityai.api.StabilityAiImageOptions;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
@@ -42,15 +50,28 @@ public class StabilityAiImageModel implements ImageModel {
 
 	private final StabilityAiApi stabilityAiApi;
 
+	private final RetryTemplate retryTemplate;
+
+	private final ObservationRegistry observationRegistry;
+
+	private ImageModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
+
 	public StabilityAiImageModel(StabilityAiApi stabilityAiApi) {
 		this(stabilityAiApi, StabilityAiImageOptions.builder().build());
 	}
 
 	public StabilityAiImageModel(StabilityAiApi stabilityAiApi, StabilityAiImageOptions options) {
+		this(stabilityAiApi, options, null, null);
+	}
+
+	public StabilityAiImageModel(StabilityAiApi stabilityAiApi, StabilityAiImageOptions options,
+			@Nullable ObservationRegistry observationRegistry, @Nullable RetryTemplate retryTemplate) {
 		Assert.notNull(stabilityAiApi, "StabilityAiApi must not be null");
 		Assert.notNull(options, "StabilityAiImageOptions must not be null");
 		this.stabilityAiApi = stabilityAiApi;
 		this.options = options;
+		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
+		this.retryTemplate = Objects.requireNonNullElse(retryTemplate, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
 	private static StabilityAiApi.GenerateImageRequest getGenerateImageRequest(ImagePrompt stabilityAiImagePrompt,
@@ -96,9 +117,17 @@ public class StabilityAiImageModel implements ImageModel {
 		StabilityAiApi.GenerateImageRequest generateImageRequest = getGenerateImageRequest(imagePrompt,
 				requestImageOptions);
 
+		var observationContext = ImageModelObservationContext.builder()
+			.imagePrompt(imagePrompt)
+			.provider(AiProvider.STABILITY_AI.value())
+			.build();
+
 		// Make the request
-		StabilityAiApi.GenerateImageResponse generateImageResponse = this.stabilityAiApi
-			.generateImage(generateImageRequest);
+		StabilityAiApi.GenerateImageResponse generateImageResponse = ImageModelObservationDocumentation.IMAGE_MODEL_OPERATION
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> Objects.requireNonNull(RetryUtils.execute(this.retryTemplate,
+					() -> this.stabilityAiApi.generateImage(generateImageRequest))));
 
 		// Convert to org.springframework.ai.model derived ImageResponse data type
 		return convertResponse(generateImageResponse);
@@ -151,6 +180,15 @@ public class StabilityAiImageModel implements ImageModel {
 		}
 
 		return builder.build();
+	}
+
+	/**
+	 * Use the provided convention for reporting observation data
+	 * @param observationConvention The provided convention
+	 */
+	public void setObservationConvention(ImageModelObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
 	}
 
 }
