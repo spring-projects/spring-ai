@@ -290,7 +290,7 @@
 		<milvus.version>2.5.8</milvus.version>
 		<mockk-jvm.version>1.13.13</mockk-jvm.version>
 		<neo4j-cypher-dsl-bom.version>2024.5.1</neo4j-cypher-dsl-bom.version>
-		<openai-sdk.version>4.34.0</openai-sdk.version>
+		<openai-sdk.version>4.36.0</openai-sdk.version>
 		<opensearch-client.version>3.6.0</opensearch-client.version>
 		<opensearch-testcontainers.version>4.1.0</opensearch-testcontainers.version>
 		<pdfbox.version>3.0.7</pdfbox.version>
