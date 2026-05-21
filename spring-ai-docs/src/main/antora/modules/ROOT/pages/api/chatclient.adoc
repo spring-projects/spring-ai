@@ -175,7 +175,7 @@ public class MultiModelService {
             // Create a new OpenAiChatModel for Groq (Llama3)
             OpenAiChatModel groqModel = OpenAiChatModel.builder()
                 .options(OpenAiChatOptions.builder()
-                    .baseUrl("https://api.groq.com/openai")
+                    .baseUrl("https://api.groq.com/openai/v1")
                     .apiKey(System.getenv("GROQ_API_KEY"))
                     .model("llama3-70b-8192")
                     .temperature(0.5)
