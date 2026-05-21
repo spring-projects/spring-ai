@@ -35,7 +35,6 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
@@ -276,9 +275,11 @@ public class OpenAiApi {
 			// Reduce the inner Flux<ChatCompletionChunk> window into a single
 			// Mono<ChatCompletionChunk>,
 			// Flux<Flux<ChatCompletionChunk>> -> Flux<ChatCompletionChunk>>
+			// @formatter:off
 			.concatMap(window -> window.reduce(
 					new ChatCompletionChunk(null, null, null, null, null, null, null, null),
 					(previous, current) -> this.chunkMerger.merge(previous, current)));
+			// @formatter:on
 	}
 
 	/**

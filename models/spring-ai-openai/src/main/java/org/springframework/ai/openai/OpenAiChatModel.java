@@ -30,7 +30,6 @@ import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccess
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -303,8 +302,8 @@ public class OpenAiChatModel implements ChatModel {
 
 			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
 			// the function call handling logic.
+			// @formatter:off
 			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
-//				.switchMap(chatCompletion2 -> Mono.just(chatCompletion2).map(chatCompletion -> {
 				.map(chatCompletion -> {
 					try {
 						// If an id is not provided, set to "NO_ID" (for compatible APIs).
@@ -341,7 +340,6 @@ public class OpenAiChatModel implements ChatModel {
 					// created to store both the current and the subsequent response
 					// to accumulate the usage from the subsequent response.
 				})
-//				}))
 				.buffer(2, 1)
 				.map(bufferList -> {
 					ChatResponse firstResponse = bufferList.get(0);
@@ -364,7 +362,6 @@ public class OpenAiChatModel implements ChatModel {
 					return firstResponse;
 				});
 
-			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.concatMap(response -> {
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 					// FIXME: bounded elastic needs to be used since tool calling

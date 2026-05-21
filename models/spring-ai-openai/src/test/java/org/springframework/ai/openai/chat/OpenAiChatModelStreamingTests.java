@@ -16,7 +16,6 @@
 
 package org.springframework.ai.openai.chat;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -29,6 +28,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -43,7 +43,6 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.retry.support.RetryTemplate;
-import reactor.core.scheduler.Schedulers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -51,7 +50,7 @@ import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-public class OpenAiChatModelStreamNumbersTests {
+public class OpenAiChatModelStreamingTests {
 
 	@Mock
 	private OpenAiApi openAiApi;
@@ -81,25 +80,31 @@ public class OpenAiChatModelStreamNumbersTests {
 				return n.getT2();
 			}));
 
-		// Execute
 		Flux<ChatResponse> result = this.chatModel.stream(new Prompt("Count to 300"));
 
-		// Verify
+		// @formatter:off
 		List<ChatResponse> responses = result
-				.subscribeOn(Schedulers.boundedElastic())
-				.publishOn(Schedulers.boundedElastic(), 256)
-				.map(r -> {
-			try {
-				if (latch.await(5, TimeUnit.SECONDS)) {
-					return r;
-				} else {
-					throw new RuntimeException("Timed out waiting for completion response");
+			// Produce independently
+			.subscribeOn(Schedulers.boundedElastic())
+			// Fill the buffer of 256 items
+			.publishOn(Schedulers.boundedElastic(), 256)
+			.map(r -> {
+				try {
+					if (latch.await(5, TimeUnit.SECONDS)) {
+						return r;
+					}
+					else {
+						throw new RuntimeException("Timed out waiting for completion response");
+					}
 				}
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				throw new IllegalStateException(e);
-			}
-		}).collectList().block();
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					throw new IllegalStateException(e);
+				}
+			})
+			.collectList()
+			.block();
+		// @formatter:on
 		assertThat(responses).isNotNull();
 		assertThat(responses).isNotEmpty();
 
