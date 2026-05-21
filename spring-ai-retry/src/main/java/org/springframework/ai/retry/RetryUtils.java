@@ -26,6 +26,7 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.retry.error.ApiErrorMessageImprover;
 import org.springframework.core.retry.RetryException;
 import org.springframework.core.retry.RetryListener;
 import org.springframework.core.retry.RetryPolicy;
@@ -79,7 +80,7 @@ public abstract class RetryUtils {
 		public void handleError(final ClientHttpResponse response) throws IOException {
 			if (response.getStatusCode().isError()) {
 				String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
-				String message = String.format("%s - %s", response.getStatusCode().value(), error);
+				String message = ApiErrorMessageImprover.improveErrorMessage(error, response.getStatusCode());
 				/*
 				 * Thrown on 4xx client errors, such as 401 - Incorrect API key provided,
 				 * 401 - You must be a member of an organization to use the API, 429 -

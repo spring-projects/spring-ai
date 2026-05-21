@@ -52,6 +52,11 @@
 			<artifactId>slf4j-api</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>tools.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+		</dependency>
+
 		<!-- test dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
