@@ -119,6 +119,38 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<!-- Spring AI Tool SearchTool Advisors -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-tool-search-tool-advisor</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-tool-search-tool-api</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-tool-index-lucene</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-tool-index-regex</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-tool-index-vectorstore</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			
 			<!-- Spring AI retry -->
 
 			<dependency>

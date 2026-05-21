@@ -8,7 +8,7 @@ Spring AI's implementation achieves **34-64% token reduction** across OpenAI, An
 
 == Introduction
 
-The link:https://github.com/spring-ai-community/spring-ai-tool-search-tool[Tool Search Tool] project extends Spring AI's xref:api/advisors-recursive.adoc[Recursive Advisors] to implement dynamic tool discovery that works across **any LLM provider** supported by Spring AI.
+The Tool Search Tool extends Spring AI's xref:api/advisors-recursive.adoc[Recursive Advisors] to implement dynamic tool discovery that works across **any LLM provider** supported by Spring AI.
 
 **Key benefits:**
 
@@ -36,16 +36,14 @@ Maven::
 [source,xml]
 ----
 <dependency>
-    <groupId>org.springaicommunity</groupId>
-    <artifactId>tool-search-tool</artifactId>
-    <version>2.0.0</version>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-tool-search-tool-advisor</artifactId>
 </dependency>
 
 <!-- Choose a search strategy -->
 <dependency>
-    <groupId>org.springaicommunity</groupId>
-    <artifactId>tool-searcher-lucene</artifactId>
-    <version>2.0.0</version>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-tool-index-lucene</artifactId>
 </dependency>
 ----
 
@@ -54,15 +52,13 @@ Gradle::
 [source,gradle]
 ----
 dependencies {
-    implementation 'org.springaicommunity:tool-search-tool:2.0.0'
-    
+    implementation 'org.springframework.ai:tool-search-tool-advisor'
+
     // Choose a search strategy
-    implementation 'org.springaicommunity:tool-searcher-lucene:2.0.0'
+    implementation 'org.springframework.ai:tool-index-lucene'
 }
 ----
 ======
-
-NOTE: Version link:https://github.com/spring-ai-community/spring-ai-tool-search-tool/tree/1.0.x[v1.0.x] is Spring AI 1.1.x / Spring Boot 3 compatible. Version link:https://github.com/spring-ai-community/spring-ai-tool-search-tool[v2.0.x] is Spring AI 2.x / Spring Boot 4 compatible.
 
 === Basic Usage
 
@@ -72,10 +68,10 @@ NOTE: Version link:https://github.com/spring-ai-community/spring-ai-tool-search-
 public class Application {
 
     @Bean
-    CommandLineRunner demo(ChatClient.Builder builder, ToolSearcher toolSearcher) {
+    CommandLineRunner demo(ChatClient.Builder builder, ToolIndex toolIndex) {
         return args -> {
-            var advisor = ToolSearchToolCallAdvisor.builder()
-                .toolSearcher(toolSearcher)
+            var advisor = ToolSearchToolCallingAdvisor.builder()
+                .toolIndex(toolIndex)
                 .build();
 
             ChatClient chatClient = builder
@@ -117,40 +113,40 @@ public class Application {
 
 == How It Works
 
-The `ToolSearchToolCallAdvisor` extends Spring AI's `ToolCallAdvisor` to implement dynamic tool discovery:
+The `ToolSearchToolCallingAdvisor` extends Spring AI's `ToolCallAdvisor` to implement dynamic tool discovery:
 
 image::https://raw.githubusercontent.com/spring-io/spring-io-static/refs/heads/main/blog/tzolov/20251208/spring-ai-tool-search-tool-calling-flow.png[Tool Search Tool Flow,600]
 
-1. **Indexing**: At conversation start, all registered tools are indexed in the `ToolSearcher` (but NOT sent to the LLM)
+1. **Indexing**: At conversation start, all registered tools are indexed in the `ToolIndex` (but NOT sent to the LLM)
 2. **Initial Request**: Only the **Tool Search Tool** definition is sent to the LLM
 3. **Discovery Call**: When the LLM needs capabilities, it calls the search tool with a query
-4. **Search & Expand**: The `ToolSearcher` finds matching tools and their definitions are added to the next request
+4. **Search & Expand**: The `ToolIndex` finds matching tools and their definitions are added to the next request
 5. **Tool Invocation**: The LLM now sees both the search tool and discovered tool definitions
 6. **Tool Execution**: Discovered tools are executed and results returned
 7. **Response**: The LLM generates the final answer
 
 == Search Strategies
 
-The `ToolSearcher` interface supports multiple search implementations:
+The `ToolIndex` interface supports multiple search implementations:
 
 [cols="1,2,2"]
 |===
 |Strategy |Implementation |Best For
 
 |**Semantic**
-|`VectorToolSearcher`
+|`VectorToolIndex`
 |Natural language queries, fuzzy matching
 
 |**Keyword**
-|`LuceneToolSearcher`
+|`LuceneToolIndex`
 |Exact term matching, known tool names
 
 |**Regex**
-|`RegexToolSearcher`
+|`RegexToolIndex`
 |Tool name patterns (`get_*_data`)
 |===
 
-See link:https://github.com/spring-ai-community/spring-ai-tool-search-tool/tree/main/tool-searchers[tool-searchers] for all available implementations.
+See xref:api/tools.adoc#tool-search-tool[Tool Search Tool] for all available implementations and configuration options.
 
 == Performance
 
@@ -194,16 +190,6 @@ Preliminary benchmarks with 28 tools show significant token savings:
 |Experiencing tool selection accuracy issues
 |
 |===
-
-== Example Projects
-
-* link:https://github.com/spring-ai-community/spring-ai-tool-search-tool/tree/main/examples/tool-search-tool-demo[Tool Search Tool Demo] - Complete working example
-* link:https://github.com/spring-ai-community/spring-ai-tool-search-tool/tree/main/examples/pre-select-tool-demo[Pre-Select Tool Demo] - Deterministic tool selection without LLM involvement
-
-== Community Resources
-
-* link:https://github.com/spring-ai-community/spring-ai-tool-search-tool[Tool Search Tool Repository]
-* link:https://github.com/spring-ai-community/awesome-spring-ai[Awesome Spring AI] - Community examples and resources
 
 == Related Documentation
 
