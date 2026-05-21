@@ -27,7 +27,6 @@ import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccess
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -348,8 +347,9 @@ public class MiniMaxChatModel implements ChatModel {
 
 			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
 			// the function call handling logic.
+			// @formatter:off
 			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
-				.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
+				.map(chatCompletion2 -> {
 					try {
 						@SuppressWarnings("null")
 						String id = chatCompletion2.id();
@@ -371,7 +371,7 @@ public class MiniMaxChatModel implements ChatModel {
 							logger.error("Error processing chat completion", e);
 							return new ChatResponse(List.of());
 						}
-					}));
+					});
 
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response)) {

@@ -30,7 +30,6 @@ import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccess
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -303,13 +302,14 @@ public class OpenAiChatModel implements ChatModel {
 
 			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
 			// the function call handling logic.
+			// @formatter:off
 			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
-				.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
+				.map(chatCompletion -> {
 					try {
 						// If an id is not provided, set to "NO_ID" (for compatible APIs).
-						String id = chatCompletion2.id() == null ? "NO_ID" : chatCompletion2.id();
+						String id = chatCompletion.id() == null ? "NO_ID" : chatCompletion.id();
 
-						List<Generation> generations = chatCompletion2.choices().stream().map(choice -> { // @formatter:off
+						List<Generation> generations = chatCompletion.choices().stream().map(choice -> { // @formatter:off
 							if (choice.message().role() != null) {
 								roleMap.putIfAbsent(id, choice.message().role().name());
 							}
@@ -324,11 +324,11 @@ public class OpenAiChatModel implements ChatModel {
 							return buildGeneration(choice, metadata, request);
 						}).toList();
 						// @formatter:on
-						OpenAiApi.Usage usage = chatCompletion2.usage();
+						OpenAiApi.Usage usage = chatCompletion.usage();
 						Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
 						Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
 								previousChatResponse);
-						return new ChatResponse(generations, from(chatCompletion2, null, accumulatedUsage));
+						return new ChatResponse(generations, from(chatCompletion, null, accumulatedUsage));
 					}
 					catch (Exception e) {
 						logger.error("Error processing chat completion", e);
@@ -339,7 +339,7 @@ public class OpenAiChatModel implements ChatModel {
 					// final response. Hence, the following overlapping buffer is
 					// created to store both the current and the subsequent response
 					// to accumulate the usage from the subsequent response.
-				}))
+				})
 				.buffer(2, 1)
 				.map(bufferList -> {
 					ChatResponse firstResponse = bufferList.get(0);
@@ -362,11 +362,10 @@ public class OpenAiChatModel implements ChatModel {
 					return firstResponse;
 				});
 
-			// @formatter:off
-			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
+			Flux<ChatResponse> flux = chatResponse.concatMap(response -> {
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 					// FIXME: bounded elastic needs to be used since tool calling
-					//  is currently only synchronous
+					// is currently only synchronous
 					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult toolExecutionResult;
 						try {
@@ -378,13 +377,15 @@ public class OpenAiChatModel implements ChatModel {
 						}
 						if (toolExecutionResult.returnDirect()) {
 							// Return tool execution result directly to the client.
-							return Flux.just(ChatResponse.builder().from(response)
-									.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-									.build());
+							return Flux.just(ChatResponse.builder()
+								.from(response)
+								.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+								.build());
 						}
 						else {
 							// Send the tool execution result back to the model.
-							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+							return this.internalStream(
+									new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
 									response);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
@@ -393,9 +394,9 @@ public class OpenAiChatModel implements ChatModel {
 					return Flux.just(response);
 				}
 			})
-			.doOnError(observation::error)
-			.doFinally(s -> observation.stop())
-			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+				.doOnError(observation::error)
+				.doFinally(s -> observation.stop())
+				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 
 			return new MessageAggregator().aggregate(flux, observationContext::setResponse);

@@ -507,7 +507,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 				ResponseStream<GenerateContentResponse> responseStream = request.model
 					.generateContentStream(request.contents);
 
-				Flux<ChatResponse> chatResponseFlux = Flux.fromStream(responseStream.stream()).switchMap(response -> {
+				Flux<ChatResponse> chatResponseFlux = Flux.fromStream(responseStream.stream()).map(response -> {
 					List<Generation> generations = response.getCandidatesList()
 						.stream()
 						.map(this::responseCandidateToGeneration)
@@ -518,7 +518,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 					Usage currentUsage = getDefaultUsage(usage);
 					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
 					ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(cumulativeUsage));
-					return Flux.just(chatResponse);
+					return chatResponse;
 				});
 
 				// @formatter:off

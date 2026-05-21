@@ -559,7 +559,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				ResponseStream<GenerateContentResponse> responseStream = this.genAiClient.models
 					.generateContentStream(request.modelName, request.contents, request.config);
 
-				Flux<ChatResponse> chatResponseFlux = Flux.fromIterable(responseStream).switchMap(response -> {
+				Flux<ChatResponse> chatResponseFlux = Flux.fromIterable(responseStream).map(response -> {
 					List<Generation> generations = response.candidates()
 						.orElse(List.of())
 						.stream()
@@ -574,7 +574,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
 					ChatResponse chatResponse = new ChatResponse(generations,
 							toChatResponseMetadata(cumulativeUsage, response.modelVersion().get()));
-					return Flux.just(chatResponse);
+					return chatResponse;
 				});
 
 				// @formatter:off

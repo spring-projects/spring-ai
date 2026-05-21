@@ -834,7 +834,7 @@ public class BedrockProxyChatModel implements ChatModel {
 					converseStreamRequest, accumulatedUsage)
 				.stream();
 
-			Flux<ChatResponse> chatResponseFlux = chatResponses.switchMap(chatResponse -> {
+			Flux<ChatResponse> chatResponseFlux = chatResponses.concatMap(chatResponse -> {
 
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)
 						&& chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
