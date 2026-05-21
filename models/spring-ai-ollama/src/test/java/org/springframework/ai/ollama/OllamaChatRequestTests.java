@@ -17,6 +17,7 @@
 package org.springframework.ai.ollama;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -65,6 +66,24 @@ class OllamaChatRequestTests {
 	}
 
 	@Test
+	void createRequestWithDefaultExtraOptions() {
+		OllamaChatModel chatModel = OllamaChatModel.builder()
+			.ollamaApi(OllamaApi.builder().build())
+			.defaultOptions(OllamaChatOptions.builder()
+				.model("MODEL_NAME")
+				.extraOptions(Map.of("custom_option", "value", "num_ctx", 4096))
+				.build())
+			.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
+			.build();
+		var prompt = chatModel.buildRequestPrompt(new Prompt("Test message content"));
+
+		var request = chatModel.ollamaChatRequest(prompt, false);
+
+		assertThat(request.options()).containsEntry("custom_option", "value").containsEntry("num_ctx", 4096);
+		assertThat(request.options()).doesNotContainKey("extra_options");
+	}
+
+	@Test
 	void createRequestWithPromptOllamaOptions() {
 		// Runtime options should override the default options.
 		OllamaChatOptions promptOptions = OllamaChatOptions.builder()
@@ -85,6 +104,29 @@ class OllamaChatRequestTests {
 		assertThat(request.options()).containsEntry("top_k", 99);
 		assertThat(request.options()).containsEntry("num_gpu", 2);
 		assertThat(request.options()).containsEntry("top_p", 0.5);
+	}
+
+	@Test
+	void createRequestWithPromptExtraOptions() {
+		OllamaChatModel chatModel = OllamaChatModel.builder()
+			.ollamaApi(OllamaApi.builder().build())
+			.defaultOptions(OllamaChatOptions.builder()
+				.model("MODEL_NAME")
+				.extraOptions(Map.of("shared", "default", "default_only", true))
+				.build())
+			.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
+			.build();
+		OllamaChatOptions promptOptions = OllamaChatOptions.builder()
+			.extraOptions(Map.of("shared", "runtime", "runtime_only", 42))
+			.build();
+		var prompt = chatModel.buildRequestPrompt(new Prompt("Test message content", promptOptions));
+
+		var request = chatModel.ollamaChatRequest(prompt, true);
+
+		assertThat(request.options()).containsEntry("shared", "runtime")
+			.containsEntry("default_only", true)
+			.containsEntry("runtime_only", 42);
+		assertThat(request.options()).doesNotContainKey("extra_options");
 	}
 
 	@Test

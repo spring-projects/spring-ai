@@ -196,6 +196,7 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 			.model("llama2")
 			.temperature(0.7)
 			.topK(40)
+			.extraOptions(Map.of("custom_option", "value"))
 			.toolNames(Set.of("function1"))
 			.build();
 
@@ -205,7 +206,61 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 		assertThat(copiedOptions.getModel()).isEqualTo("llama2");
 		assertThat(copiedOptions.getTemperature()).isEqualTo(0.7);
 		assertThat(copiedOptions.getTopK()).isEqualTo(40);
+		assertThat(copiedOptions.getExtraOptions()).containsEntry("custom_option", "value");
 		assertThat(copiedOptions.getToolNames()).containsExactly("function1");
+	}
+
+	@Test
+	void testExtraOptions() {
+		var options = OllamaChatOptions.builder()
+			.model("llama2")
+			.extraOptions(Map.of("custom_option", "value", "num_ctx", 4096))
+			.build();
+
+		var optionsMap = options.toMap();
+
+		assertThat(options.getExtraOptions()).containsEntry("custom_option", "value").containsEntry("num_ctx", 4096);
+		assertThat(optionsMap).containsEntry("custom_option", "value").containsEntry("num_ctx", 4096);
+		assertThat(optionsMap).doesNotContainKey("extra_options");
+	}
+
+	@Test
+	void testNullAndEmptyExtraOptionsAreNotIncludedInMap() {
+		var nullOptions = OllamaChatOptions.builder().extraOptions(null).build();
+
+		assertThat(nullOptions.toMap()).doesNotContainKey("extra_options");
+
+		var emptyOptions = OllamaChatOptions.builder().extraOptions(Map.of()).build();
+
+		assertThat(emptyOptions.toMap()).doesNotContainKey("extra_options");
+	}
+
+	@Test
+	void testCopyPreservesExtraOptions() {
+		var options = OllamaChatOptions.builder().extraOptions(Map.of("custom_option", "value")).build();
+
+		var copiedOptions = options.copy();
+
+		assertThat(copiedOptions.getExtraOptions()).containsEntry("custom_option", "value");
+	}
+
+	@Test
+	void testCombineWithExtraOptions() {
+		var defaultOptions = OllamaChatOptions.builder()
+			.model("llama2")
+			.extraOptions(Map.of("shared", "default", "default_only", true))
+			.build();
+		var runtimeOptions = OllamaChatOptions.builder()
+			.temperature(0.7)
+			.extraOptions(Map.of("shared", "runtime", "runtime_only", 42));
+
+		var mergedOptions = defaultOptions.mutate().combineWith(runtimeOptions).build();
+
+		assertThat(mergedOptions.getExtraOptions()).containsEntry("shared", "runtime")
+			.containsEntry("default_only", true)
+			.containsEntry("runtime_only", 42);
+		assertThat(mergedOptions.getModel()).isEqualTo("llama2");
+		assertThat(mergedOptions.getTemperature()).isEqualTo(0.7);
 	}
 
 	@Test
