@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.anthropic.client.AnthropicClient;
@@ -93,7 +94,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -155,6 +155,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	private final ToolCallingManager toolCallingManager;
 
 	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+
+	private final AtomicBoolean internalToolExecutionWarned = new AtomicBoolean(false);
 
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
@@ -256,6 +258,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(AiProvider.ANTHROPIC.value())
+				.streaming(true)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
@@ -325,6 +328,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				return Flux.deferContextual(ctx -> {
 					ToolExecutionResult toolExecutionResult;
 					try {
+						if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
+							logger.warn(
+									"Internal tool execution in AnthropicChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
+											+ "Use ChatClient with ToolCallAdvisor instead.");
+						}
 						org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder.setContext(ctx);
 						toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
 					}
@@ -497,8 +505,12 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			// message_delta
 			long inputTokens = streamingState.getInputTokens();
 			long outputTokens = deltaEvent.usage().outputTokens();
-			Usage usage = new DefaultUsage(Math.toIntExact(inputTokens), Math.toIntExact(outputTokens),
-					Math.toIntExact(inputTokens + outputTokens), deltaEvent.usage());
+			Long cacheRead = deltaEvent.usage().cacheReadInputTokens().orElse(null);
+			Long cacheWrite = deltaEvent.usage().cacheCreationInputTokens().orElse(null);
+			Usage usage = new DefaultUsage(Integer.valueOf(Math.toIntExact(inputTokens)),
+					Integer.valueOf(Math.toIntExact(outputTokens)),
+					Integer.valueOf(Math.toIntExact(inputTokens + outputTokens)), deltaEvent.usage(), cacheRead,
+					cacheWrite);
 
 			Usage accumulatedUsage = previousChatResponse != null
 					? UsageCalculator.getCumulativeUsage(usage, previousChatResponse) : usage;
@@ -579,6 +591,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		ChatOptions promptOptions = prompt.getOptions();
 		if (promptOptions != null
 				&& this.toolExecutionEligibilityPredicate.isToolExecutionRequired(promptOptions, response)) {
+			if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
+				logger.warn(
+						"Internal tool execution in AnthropicChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
+								+ "Use ChatClient with ToolCallAdvisor instead.");
+			}
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -595,15 +612,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		return response;
-	}
-
-	Prompt buildRequestPrompt(Prompt prompt) {
-		var requestOptions = (AnthropicChatOptions) prompt.getOptions();
-		requestOptions = requestOptions == null ? this.options : requestOptions;
-
-		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
-
-		return prompt.mutate().chatOptions(requestOptions).build();
 	}
 
 	/**
@@ -1054,8 +1062,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 		long inputTokens = usage.inputTokens();
 		long outputTokens = usage.outputTokens();
-		return new DefaultUsage(Math.toIntExact(inputTokens), Math.toIntExact(outputTokens),
-				Math.toIntExact(inputTokens + outputTokens), usage);
+		Long cacheRead = usage.cacheReadInputTokens().orElse(null);
+		Long cacheWrite = usage.cacheCreationInputTokens().orElse(null);
+		return new DefaultUsage(Integer.valueOf(Math.toIntExact(inputTokens)),
+				Integer.valueOf(Math.toIntExact(outputTokens)),
+				Integer.valueOf(Math.toIntExact(inputTokens + outputTokens)), usage, cacheRead, cacheWrite);
 	}
 
 	private @Nullable Citation convertTextCitation(TextCitation textCitation) {
@@ -1603,10 +1614,15 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		/**
-		 * Sets the tool calling manager.
+		 * Sets the tool calling manager used for internal tool execution.
 		 * @param toolCallingManager the tool calling manager
 		 * @return this builder
+		 * @deprecated since 2.0.0 for removal in 3.0.0 — internal tool execution in
+		 * {@link AnthropicChatModel} is superseded by
+		 * {@link org.springframework.ai.chat.client.advisor.ToolCallAdvisor} used via
+		 * {@link org.springframework.ai.chat.client.ChatClient}.
 		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
 			this.toolCallingManager = toolCallingManager;
 			return this;
@@ -1626,7 +1642,12 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		 * Sets the predicate to determine tool execution eligibility.
 		 * @param toolExecutionEligibilityPredicate the predicate
 		 * @return this builder
+		 * @deprecated since 2.0.0 for removal in 3.0.0 — internal tool execution in
+		 * {@link AnthropicChatModel} is superseded by
+		 * {@link org.springframework.ai.chat.client.advisor.ToolCallAdvisor} used via
+		 * {@link org.springframework.ai.chat.client.ChatClient}.
 		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public Builder toolExecutionEligibilityPredicate(
 				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;

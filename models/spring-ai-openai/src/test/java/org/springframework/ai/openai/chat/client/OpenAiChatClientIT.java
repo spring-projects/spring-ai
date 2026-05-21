@@ -389,7 +389,7 @@ class OpenAiChatClientIT {
 		ChatResponse response = ChatClient.create(this.chatModel)
 			.prompt("Tell me joke about Spring Framework")
 			.options(OpenAiChatOptions.builder()
-				.model(com.openai.models.ChatModel.GPT_4O_AUDIO_PREVIEW.asString())
+				.model("gpt-audio")
 				.outputAudio(new AudioParameters(AudioParameters.Voice.ALLOY, AudioParameters.AudioResponseFormat.WAV))
 				.outputModalities(List.of(Modality.TEXT.asString(), Modality.AUDIO.asString())))
 			.call()

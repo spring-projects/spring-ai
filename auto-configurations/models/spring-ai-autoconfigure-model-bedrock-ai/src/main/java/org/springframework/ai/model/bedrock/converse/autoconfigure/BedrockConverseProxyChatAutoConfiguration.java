@@ -49,6 +49,7 @@ import org.springframework.context.annotation.Import;
  * @author Christian Tzolov
  * @author Wei Jiang
  * @author Pawel Potaczala
+ * @author Sébastien Deleuze
  */
 @AutoConfiguration
 @EnableConfigurationProperties({ BedrockConverseProxyChatProperties.class, BedrockAwsConnectionConfiguration.class })
@@ -78,7 +79,7 @@ public class BedrockConverseProxyChatAutoConfiguration {
 			.asyncReadTimeout(connectionProperties.getAsyncReadTimeout())
 			.connectionAcquisitionTimeout(connectionProperties.getConnectionAcquisitionTimeout())
 			.socketTimeout(connectionProperties.getSocketTimeout())
-			.defaultOptions(chatProperties.getOptions())
+			.defaultOptions(chatProperties.toOptions())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.toolCallingManager(toolCallingManager)
 			.toolExecutionEligibilityPredicate(

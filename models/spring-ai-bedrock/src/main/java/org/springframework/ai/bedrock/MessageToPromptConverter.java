@@ -19,6 +19,8 @@ package org.springframework.ai.bedrock;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 
@@ -80,7 +82,7 @@ public final class MessageToPromptConverter {
 				+ ASSISTANT_PROMPT;
 	}
 
-	protected String messageToString(Message message) {
+	protected @Nullable String messageToString(Message message) {
 		return switch (message.getMessageType()) {
 			case SYSTEM -> message.getText();
 			case USER -> this.humanPrompt + " " + message.getText();

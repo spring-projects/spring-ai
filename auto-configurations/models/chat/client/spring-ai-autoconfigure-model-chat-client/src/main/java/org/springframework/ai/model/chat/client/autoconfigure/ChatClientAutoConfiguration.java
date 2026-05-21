@@ -23,12 +23,14 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientCustomizer;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientCompletionObservationHandler;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientPromptContentObservationHandler;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.observation.TracingAwareLoggingObservationHandler;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -58,7 +60,7 @@ import org.springframework.context.annotation.Scope;
  * @author Jonatan Ivanov
  * @since 1.0.0
  */
-@AutoConfiguration
+@AutoConfiguration(afterName = "org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration")
 @ConditionalOnClass(ChatClient.class)
 @EnableConfigurationProperties(ChatClientBuilderProperties.class)
 @ConditionalOnProperty(prefix = ChatClientBuilderProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
@@ -86,15 +88,27 @@ public class ChatClientAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnBean(ToolCallingManager.class)
+	ToolCallAdvisor.Builder<?> toolCallAdvisorBuilder(ChatClientBuilderProperties properties,
+			ToolCallingManager toolCallingManager) {
+		return ToolCallAdvisor.builder()
+			.toolCallingManager(toolCallingManager)
+			.advisorOrder(properties.getToolCalling().getAdvisorOrder());
+	}
+
+	@Bean
 	@Scope("prototype")
 	@ConditionalOnMissingBean
 	ChatClient.Builder chatClientBuilder(ChatClientBuilderConfigurer chatClientBuilderConfigurer, ChatModel chatModel,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatClientObservationConvention> chatClientObservationConvention,
-			ObjectProvider<AdvisorObservationConvention> advisorObservationConvention) {
+			ObjectProvider<AdvisorObservationConvention> advisorObservationConvention,
+			ObjectProvider<ToolCallAdvisor.Builder<?>> toolCallAdvisorBuilder) {
 		ChatClient.Builder builder = ChatClient.builder(chatModel,
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				chatClientObservationConvention.getIfUnique(), advisorObservationConvention.getIfUnique());
+				chatClientObservationConvention.getIfUnique(), advisorObservationConvention.getIfUnique(),
+				toolCallAdvisorBuilder.getIfAvailable());
 		return chatClientBuilderConfigurer.configure(builder);
 	}
 

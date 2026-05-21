@@ -17,6 +17,7 @@
 package org.springframework.ai.chat.client.advisor;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import reactor.core.scheduler.Schedulers;
@@ -46,6 +47,10 @@ import static org.mockito.Mockito.mock;
  */
 public class MessageChatMemoryAdvisorTests {
 
+	// -------------------------------------------------------------------------
+	// Builder validation
+	// -------------------------------------------------------------------------
+
 	@Test
 	void whenChatMemoryIsNullThenThrow() {
 		assertThatThrownBy(() -> MessageChatMemoryAdvisor.builder(null).build())
@@ -54,119 +59,74 @@ public class MessageChatMemoryAdvisorTests {
 	}
 
 	@Test
-	void whenDefaultConversationIdIsNullThenThrow() {
-		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
-
-		assertThatThrownBy(() -> MessageChatMemoryAdvisor.builder(chatMemory).conversationId(null).build())
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("defaultConversationId cannot be null or empty");
-	}
-
-	@Test
-	void whenDefaultConversationIdIsEmptyThenThrow() {
-		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
-
-		assertThatThrownBy(() -> MessageChatMemoryAdvisor.builder(chatMemory).conversationId(null).build())
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("defaultConversationId cannot be null or empty");
-	}
-
-	@Test
 	void whenSchedulerIsNullThenThrow() {
 		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
-
 		assertThatThrownBy(() -> MessageChatMemoryAdvisor.builder(chatMemory).scheduler(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("scheduler cannot be null");
 	}
 
 	@Test
-	void testBuilderMethodChaining() {
-		// Create a chat memory
+	void whenBuilderWithDefaultsThenSuccess() {
 		ChatMemory chatMemory = MessageWindowChatMemory.builder()
 			.chatMemoryRepository(new InMemoryChatMemoryRepository())
 			.build();
-
-		// Test builder method chaining with methods from AbstractBuilder
-		String customConversationId = "test-conversation-id";
-		int customOrder = 42;
-
-		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory)
-			.conversationId(customConversationId)
-			.order(customOrder)
-			.scheduler(Schedulers.immediate())
-			.build();
-
-		// Verify the advisor was built with the correct properties
-		assertThat(advisor).isNotNull();
-		// We can't directly access private fields, but we can test the behavior
-		// by checking the order which is exposed via a getter
-		assertThat(advisor.getOrder()).isEqualTo(customOrder);
-	}
-
-	@Test
-	void testDefaultValues() {
-		// Create a chat memory
-		ChatMemory chatMemory = MessageWindowChatMemory.builder()
-			.chatMemoryRepository(new InMemoryChatMemoryRepository())
-			.build();
-
-		// Create advisor with default values
 		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
-
-		// Verify default values
-		assertThat(advisor).isNotNull();
 		assertThat(advisor.getOrder()).isEqualTo(Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
 	}
 
 	@Test
-	void beforeMethodHandlesToolResponseMessage() {
-		ChatMemory chatMemory = MessageWindowChatMemory.builder()
-			.chatMemoryRepository(new InMemoryChatMemoryRepository())
-			.build();
-
+	void whenCustomOrderIsSetThenGetOrderReturnsIt() {
+		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
 		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory)
-			.conversationId("test-conversation")
+			.order(42)
+			.scheduler(Schedulers.immediate())
 			.build();
+		assertThat(advisor.getOrder()).isEqualTo(42);
+	}
 
-		// Create a prompt with a ToolResponseMessage as the last message
-		ToolResponseMessage toolResponse = ToolResponseMessage.builder()
-			.responses(List.of(new ToolResponseMessage.ToolResponse("weatherTool", "getWeather", "Sunny, 72°F")))
-			.build();
+	// -------------------------------------------------------------------------
+	// Conversation ID resolution from request context
+	// -------------------------------------------------------------------------
 
-		Prompt prompt = Prompt.builder()
-			.messages(new UserMessage("What's the weather?"), new AssistantMessage("Let me check..."), toolResponse)
-			.build();
+	@Test
+	void whenConversationIdAbsentFromContextThenThrow() {
+		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
+		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
 
-		ChatClientRequest request = ChatClientRequest.builder().prompt(prompt).build();
-		AdvisorChain chain = mock(AdvisorChain.class);
-
-		advisor.before(request, chain);
-
-		// Verify that the ToolResponseMessage was added to memory
-		List<Message> messages = chatMemory.get("test-conversation");
-		assertThat(messages).hasSize(1);
-		assertThat(messages.get(0)).isInstanceOf(ToolResponseMessage.class);
+		assertThatThrownBy(() -> advisor.getConversationId(Map.of())).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("conversationId cannot be null");
 	}
 
 	@Test
-	void beforeMethodHandlesUserMessageWhenNoToolResponse() {
+	void whenConversationIdPresentInContextThenReturn() {
+		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
+		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
+
+		String result = advisor.getConversationId(Map.of(ChatMemory.CONVERSATION_ID, "session-42"));
+
+		assertThat(result).isEqualTo("session-42");
+	}
+
+	// -------------------------------------------------------------------------
+	// before() behavior
+	// -------------------------------------------------------------------------
+
+	@Test
+	void whenBeforeWithUserMessageThenStoreInMemory() {
 		ChatMemory chatMemory = MessageWindowChatMemory.builder()
 			.chatMemoryRepository(new InMemoryChatMemoryRepository())
 			.build();
-
-		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory)
-			.conversationId("test-conversation")
-			.build();
-
+		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
 		Prompt prompt = Prompt.builder().messages(new UserMessage("Hello")).build();
-
-		ChatClientRequest request = ChatClientRequest.builder().prompt(prompt).build();
+		ChatClientRequest request = ChatClientRequest.builder()
+			.prompt(prompt)
+			.context(ChatMemory.CONVERSATION_ID, "test-conversation")
+			.build();
 		AdvisorChain chain = mock(AdvisorChain.class);
 
 		advisor.before(request, chain);
 
-		// Verify that the UserMessage was added to memory
 		List<Message> messages = chatMemory.get("test-conversation");
 		assertThat(messages).hasSize(1);
 		assertThat(messages.get(0)).isInstanceOf(UserMessage.class);
@@ -174,96 +134,72 @@ public class MessageChatMemoryAdvisorTests {
 	}
 
 	@Test
-	void beforeMethodHandlesToolResponseAfterUserMessage() {
+	void whenBeforeWithToolResponseMessageThenStoreInMemory() {
 		ChatMemory chatMemory = MessageWindowChatMemory.builder()
 			.chatMemoryRepository(new InMemoryChatMemoryRepository())
 			.build();
-
-		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory)
-			.conversationId("test-conversation")
-			.build();
-
-		AdvisorChain chain = mock(AdvisorChain.class);
-
-		// First request with user message
-		Prompt prompt1 = Prompt.builder().messages(new UserMessage("What's the weather?")).build();
-		ChatClientRequest request1 = ChatClientRequest.builder().prompt(prompt1).build();
-
-		advisor.before(request1, chain);
-
-		// Second request with tool response as the last message
+		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
 		ToolResponseMessage toolResponse = ToolResponseMessage.builder()
 			.responses(List.of(new ToolResponseMessage.ToolResponse("weatherTool", "getWeather", "Sunny, 72°F")))
 			.build();
-		Prompt prompt2 = Prompt.builder()
+		Prompt prompt = Prompt.builder()
 			.messages(new UserMessage("What's the weather?"), new AssistantMessage("Let me check..."), toolResponse)
 			.build();
-		ChatClientRequest request2 = ChatClientRequest.builder().prompt(prompt2).build();
+		ChatClientRequest request = ChatClientRequest.builder()
+			.prompt(prompt)
+			.context(ChatMemory.CONVERSATION_ID, "test-conversation")
+			.build();
+		AdvisorChain chain = mock(AdvisorChain.class);
 
-		advisor.before(request2, chain);
+		advisor.before(request, chain);
 
-		// Verify that both messages were added to memory
 		List<Message> messages = chatMemory.get("test-conversation");
-		assertThat(messages).hasSize(2);
-		assertThat(messages.get(0)).isInstanceOf(UserMessage.class);
-		assertThat(messages.get(1)).isInstanceOf(ToolResponseMessage.class);
+		assertThat(messages).hasSize(1);
+		assertThat(messages.get(0)).isInstanceOf(ToolResponseMessage.class);
 	}
 
 	@Test
-	void beforeMethodMovesSystemMessageToFirstPosition() {
+	void whenBeforeMovesSystemMessageToFirstPosition() {
 		ChatMemory chatMemory = MessageWindowChatMemory.builder()
 			.chatMemoryRepository(new InMemoryChatMemoryRepository())
 			.build();
-
-		// Pre-populate memory with some messages (no system message in memory)
 		chatMemory.add("test-conversation",
 				List.of(new UserMessage("Previous question"), new AssistantMessage("Previous answer")));
-
-		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory)
-			.conversationId("test-conversation")
-			.build();
-
-		// Create a prompt with system message NOT at the first position
-		// The system message is in the instructions, after user message
+		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
 		Prompt prompt = Prompt.builder()
 			.messages(new UserMessage("Hello"), new SystemMessage("You are a helpful assistant"))
 			.build();
-
-		ChatClientRequest request = ChatClientRequest.builder().prompt(prompt).build();
+		ChatClientRequest request = ChatClientRequest.builder()
+			.prompt(prompt)
+			.context(ChatMemory.CONVERSATION_ID, "test-conversation")
+			.build();
 		AdvisorChain chain = mock(AdvisorChain.class);
 
 		ChatClientRequest processedRequest = advisor.before(request, chain);
 
-		// Verify that the system message is now first in the processed messages
 		List<Message> processedMessages = processedRequest.prompt().getInstructions();
-		assertThat(processedMessages).isNotEmpty();
 		assertThat(processedMessages.get(0)).isInstanceOf(SystemMessage.class);
 		assertThat(processedMessages.get(0).getText()).isEqualTo("You are a helpful assistant");
 	}
 
 	@Test
-	void beforeMethodKeepsSystemMessageFirstWhenAlreadyFirst() {
+	void whenBeforeSystemMessageAlreadyFirstThenKeepOrder() {
 		ChatMemory chatMemory = MessageWindowChatMemory.builder()
 			.chatMemoryRepository(new InMemoryChatMemoryRepository())
 			.build();
-
-		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory)
-			.conversationId("test-conversation")
-			.build();
-
-		// Create a prompt with system message already at first position
+		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
 		Prompt prompt = Prompt.builder()
 			.messages(new SystemMessage("You are a helpful assistant"), new UserMessage("Hello"))
 			.build();
-
-		ChatClientRequest request = ChatClientRequest.builder().prompt(prompt).build();
+		ChatClientRequest request = ChatClientRequest.builder()
+			.prompt(prompt)
+			.context(ChatMemory.CONVERSATION_ID, "test-conversation")
+			.build();
 		AdvisorChain chain = mock(AdvisorChain.class);
 
 		ChatClientRequest processedRequest = advisor.before(request, chain);
 
-		// Verify that the system message remains first
 		List<Message> processedMessages = processedRequest.prompt().getInstructions();
-		assertThat(processedMessages).isNotEmpty();
 		assertThat(processedMessages.get(0)).isInstanceOf(SystemMessage.class);
 		assertThat(processedMessages.get(0).getText()).isEqualTo("You are a helpful assistant");
 		assertThat(processedMessages.get(1)).isInstanceOf(UserMessage.class);

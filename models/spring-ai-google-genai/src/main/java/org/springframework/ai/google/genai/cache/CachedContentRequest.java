@@ -24,6 +24,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.genai.types.Content;
 import com.google.genai.types.Part;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
 
@@ -39,19 +40,19 @@ public final class CachedContentRequest {
 	private final String model;
 
 	@JsonProperty("display_name")
-	private final String displayName;
+	@Nullable private final String displayName;
 
 	@JsonProperty("contents")
 	private final List<Content> contents;
 
 	@JsonProperty("system_instruction")
-	private final Content systemInstruction;
+	@Nullable private final Content systemInstruction;
 
 	@JsonProperty("ttl")
-	private final Duration ttl;
+	@Nullable private final Duration ttl;
 
 	@JsonProperty("expire_time")
-	private final Instant expireTime;
+	@Nullable private final Instant expireTime;
 
 	private CachedContentRequest(Builder builder) {
 		Assert.hasText(builder.model, "Model must not be empty");
@@ -70,7 +71,7 @@ public final class CachedContentRequest {
 		return this.model;
 	}
 
-	public String getDisplayName() {
+	public @Nullable String getDisplayName() {
 		return this.displayName;
 	}
 
@@ -78,15 +79,15 @@ public final class CachedContentRequest {
 		return this.contents;
 	}
 
-	public Content getSystemInstruction() {
+	public @Nullable Content getSystemInstruction() {
 		return this.systemInstruction;
 	}
 
-	public Duration getTtl() {
+	public @Nullable Duration getTtl() {
 		return this.ttl;
 	}
 
-	public Instant getExpireTime() {
+	public @Nullable Instant getExpireTime() {
 		return this.expireTime;
 	}
 
@@ -103,17 +104,17 @@ public final class CachedContentRequest {
 
 	public static final class Builder {
 
-		private String model;
+		@Nullable private String model;
 
-		private String displayName;
+		@Nullable private String displayName;
 
 		private List<Content> contents = new ArrayList<>();
 
-		private Content systemInstruction;
+		@Nullable private Content systemInstruction;
 
-		private Duration ttl;
+		@Nullable private Duration ttl;
 
-		private Instant expireTime;
+		@Nullable private Instant expireTime;
 
 		private Builder() {
 		}

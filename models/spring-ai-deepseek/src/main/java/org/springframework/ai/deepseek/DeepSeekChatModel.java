@@ -19,6 +19,7 @@ package org.springframework.ai.deepseek;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -59,7 +60,6 @@ import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest;
 import org.springframework.ai.deepseek.api.common.DeepSeekConstants;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -77,6 +77,7 @@ import org.springframework.util.CollectionUtils;
  * backed by {@link DeepSeekApi}.
  *
  * @author Geng Rong
+ * @author Thomas Vitale
  */
 public class DeepSeekChatModel implements ChatModel {
 
@@ -116,6 +117,8 @@ public class DeepSeekChatModel implements ChatModel {
 	 * executed.
 	 */
 	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+
+	private final AtomicBoolean internalToolExecutionWarned = new AtomicBoolean(false);
 
 	/**
 	 * Conventions to use for generating observations.
@@ -210,6 +213,11 @@ public class DeepSeekChatModel implements ChatModel {
 		ChatOptions options = prompt.getOptions();
 		Assert.state(options != null, "options must not be null");
 		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(options, response)) {
+			if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
+				logger.warn(
+						"Internal tool execution in DeepSeekChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
+								+ "Use ChatClient with ToolCallAdvisor instead.");
+			}
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -247,6 +255,7 @@ public class DeepSeekChatModel implements ChatModel {
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(DeepSeekConstants.PROVIDER_NAME)
+				.streaming(true)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
@@ -297,6 +306,11 @@ public class DeepSeekChatModel implements ChatModel {
 					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult toolExecutionResult;
 						try {
+							if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
+								logger.warn(
+										"Internal tool execution in DeepSeekChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
+												+ "Use ChatClient with ToolCallAdvisor instead.");
+							}
 							ToolCallReactiveContextHolder.setContext(ctx);
 							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 						}
@@ -393,14 +407,6 @@ public class DeepSeekChatModel implements ChatModel {
 
 	private DefaultUsage getDefaultUsage(DeepSeekApi.Usage usage) {
 		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
-	}
-
-	Prompt buildRequestPrompt(Prompt prompt) {
-		DeepSeekChatOptions runtimeOptions = (DeepSeekChatOptions) prompt.getOptions();
-		runtimeOptions = runtimeOptions == null ? this.defaultOptions : runtimeOptions;
-		ToolCallingChatOptions.validateToolCallbacks(runtimeOptions.getToolCallbacks());
-
-		return prompt.mutate().chatOptions(runtimeOptions).build();
 	}
 
 	/**
@@ -540,11 +546,31 @@ public class DeepSeekChatModel implements ChatModel {
 			return this;
 		}
 
+		/**
+		 * Sets the tool calling manager used for internal tool execution.
+		 * @param toolCallingManager the tool calling manager
+		 * @return this builder
+		 * @deprecated since 2.0.0 for removal in 3.0.0 — internal tool execution in
+		 * {@link DeepSeekChatModel} is superseded by
+		 * {@link org.springframework.ai.chat.client.advisor.ToolCallAdvisor} used via
+		 * {@link org.springframework.ai.chat.client.ChatClient}.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
 			this.toolCallingManager = toolCallingManager;
 			return this;
 		}
 
+		/**
+		 * Sets the predicate to determine tool execution eligibility.
+		 * @param toolExecutionEligibilityPredicate the predicate
+		 * @return this builder
+		 * @deprecated since 2.0.0 for removal in 3.0.0 — internal tool execution in
+		 * {@link DeepSeekChatModel} is superseded by
+		 * {@link org.springframework.ai.chat.client.advisor.ToolCallAdvisor} used via
+		 * {@link org.springframework.ai.chat.client.ChatClient}.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public Builder toolExecutionEligibilityPredicate(
 				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;

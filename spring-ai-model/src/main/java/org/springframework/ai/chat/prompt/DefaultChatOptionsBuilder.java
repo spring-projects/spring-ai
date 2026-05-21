@@ -131,7 +131,7 @@ public class DefaultChatOptionsBuilder<B extends DefaultChatOptionsBuilder<B>> i
 				this.presencePenalty = that.presencePenalty;
 			}
 			if (that.stopSequences != null) {
-				this.stopSequences = that.stopSequences;
+				this.stopSequences = new ArrayList<>(that.stopSequences);
 			}
 			if (that.temperature != null) {
 				this.temperature = that.temperature;

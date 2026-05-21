@@ -84,8 +84,8 @@ public class MongoDBAtlasFilterExpressionConverter extends AbstractFilterExpress
 
 	@Override
 	protected void doKey(Filter.Key filterKey, StringBuilder context) {
-		var identifier = (hasOuterQuotes(filterKey.key())) ? removeOuterQuotes(filterKey.key()) : filterKey.key();
-		context.append("\"metadata." + identifier + "\"");
+		var identifier = filterKey.key();
+		emitJsonValue("metadata." + identifier, context);
 	}
 
 	/**

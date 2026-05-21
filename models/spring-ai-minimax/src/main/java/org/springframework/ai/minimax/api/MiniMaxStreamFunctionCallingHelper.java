@@ -19,6 +19,8 @@ package org.springframework.ai.minimax.api;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionChunk;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionChunk.ChunkChoice;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionFinishReason;
@@ -39,7 +41,7 @@ import org.springframework.util.StringUtils;
  */
 public class MiniMaxStreamFunctionCallingHelper {
 
-	public ChatCompletionChunk merge(ChatCompletionChunk previous, ChatCompletionChunk current) {
+	public ChatCompletionChunk merge(@Nullable ChatCompletionChunk previous, ChatCompletionChunk current) {
 
 		if (previous == null) {
 			return current;
@@ -60,9 +62,12 @@ public class MiniMaxStreamFunctionCallingHelper {
 		return new ChatCompletionChunk(id, chunkChoices, created, model, systemFingerprint, object);
 	}
 
-	private ChunkChoice merge(ChunkChoice previous, ChunkChoice current) {
+	private @Nullable ChunkChoice merge(@Nullable ChunkChoice previous, @Nullable ChunkChoice current) {
 		if (previous == null) {
 			return current;
+		}
+		if (current == null) {
+			return previous;
 		}
 
 		ChatCompletionFinishReason finishReason = (current.finishReason() != null ? current.finishReason()
@@ -70,7 +75,18 @@ public class MiniMaxStreamFunctionCallingHelper {
 		Integer index = (current.index() != null ? current.index() : previous.index());
 		LogProbs logprobs = (current.logprobs() != null ? current.logprobs() : previous.logprobs());
 
-		ChatCompletionMessage message = merge(previous.delta(), current.delta());
+		ChatCompletionMessage previousDelta = previous.delta();
+		ChatCompletionMessage currentDelta = current.delta();
+		ChatCompletionMessage message;
+		if (previousDelta == null) {
+			message = currentDelta;
+		}
+		else if (currentDelta == null) {
+			message = previousDelta;
+		}
+		else {
+			message = merge(previousDelta, currentDelta);
+		}
 		return new ChunkChoice(finishReason, index, message, logprobs);
 	}
 
@@ -114,7 +130,7 @@ public class MiniMaxStreamFunctionCallingHelper {
 		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls);
 	}
 
-	private ToolCall merge(ToolCall previous, ToolCall current) {
+	private ToolCall merge(@Nullable ToolCall previous, ToolCall current) {
 		if (previous == null) {
 			return current;
 		}
@@ -124,7 +140,7 @@ public class MiniMaxStreamFunctionCallingHelper {
 		return new ToolCall(id, type, function);
 	}
 
-	private ChatCompletionFunction merge(ChatCompletionFunction previous, ChatCompletionFunction current) {
+	private ChatCompletionFunction merge(@Nullable ChatCompletionFunction previous, ChatCompletionFunction current) {
 		if (previous == null) {
 			return current;
 		}
@@ -143,7 +159,7 @@ public class MiniMaxStreamFunctionCallingHelper {
 	 * @param chatCompletion the ChatCompletionChunk to check
 	 * @return true if the ChatCompletionChunk is a streaming tool function call.
 	 */
-	public boolean isStreamingToolFunctionCall(ChatCompletionChunk chatCompletion) {
+	public boolean isStreamingToolFunctionCall(@Nullable ChatCompletionChunk chatCompletion) {
 
 		if (chatCompletion == null || CollectionUtils.isEmpty(chatCompletion.choices())) {
 			return false;
@@ -161,7 +177,7 @@ public class MiniMaxStreamFunctionCallingHelper {
 	 * @return true if the ChatCompletionChunk is a streaming tool function call and it is
 	 * the last one.
 	 */
-	public boolean isStreamingToolFunctionCallFinish(ChatCompletionChunk chatCompletion) {
+	public boolean isStreamingToolFunctionCallFinish(@Nullable ChatCompletionChunk chatCompletion) {
 
 		if (chatCompletion == null || CollectionUtils.isEmpty(chatCompletion.choices())) {
 			return false;
@@ -180,11 +196,12 @@ public class MiniMaxStreamFunctionCallingHelper {
 	 * @return the ChatCompletion
 	 */
 	public MiniMaxApi.ChatCompletion chunkToChatCompletion(MiniMaxApi.ChatCompletionChunk chunk) {
-		List<MiniMaxApi.ChatCompletion.Choice> choices = chunk.choices()
-			.stream()
-			.map(chunkChoice -> new MiniMaxApi.ChatCompletion.Choice(chunkChoice.finishReason(), chunkChoice.index(),
-					chunkChoice.delta(), null, chunkChoice.logprobs()))
-			.toList();
+		List<ChunkChoice> chunkChoices = chunk.choices();
+		List<MiniMaxApi.ChatCompletion.Choice> choices = chunkChoices == null ? List.of()
+				: chunkChoices.stream()
+					.map(chunkChoice -> new MiniMaxApi.ChatCompletion.Choice(chunkChoice.finishReason(),
+							chunkChoice.index(), chunkChoice.delta(), null, chunkChoice.logprobs()))
+					.toList();
 
 		return new MiniMaxApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(),
 				chunk.systemFingerprint(), "chat.completion", null, null);

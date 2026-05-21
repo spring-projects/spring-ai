@@ -61,7 +61,24 @@ public final class UsageCalculator {
 			promptTokens += usageFromPreviousChatResponse.getPromptTokens();
 			generationTokens += usageFromPreviousChatResponse.getCompletionTokens();
 			totalTokens += usageFromPreviousChatResponse.getTotalTokens();
-			return new DefaultUsage(promptTokens, generationTokens, totalTokens);
+			// Accumulate cache metrics, preserving null when neither side reports them.
+			Long cacheRead = null;
+			if (currentUsage.getCacheReadInputTokens() != null
+					|| usageFromPreviousChatResponse.getCacheReadInputTokens() != null) {
+				cacheRead = (currentUsage.getCacheReadInputTokens() != null ? currentUsage.getCacheReadInputTokens()
+						: 0L)
+						+ (usageFromPreviousChatResponse.getCacheReadInputTokens() != null
+								? usageFromPreviousChatResponse.getCacheReadInputTokens() : 0L);
+			}
+			Long cacheWrite = null;
+			if (currentUsage.getCacheWriteInputTokens() != null
+					|| usageFromPreviousChatResponse.getCacheWriteInputTokens() != null) {
+				cacheWrite = (currentUsage.getCacheWriteInputTokens() != null ? currentUsage.getCacheWriteInputTokens()
+						: 0L)
+						+ (usageFromPreviousChatResponse.getCacheWriteInputTokens() != null
+								? usageFromPreviousChatResponse.getCacheWriteInputTokens() : 0L);
+			}
+			return new DefaultUsage(promptTokens, generationTokens, totalTokens, null, cacheRead, cacheWrite);
 		}
 		// When current usage is empty, return the usage from the previous chat response.
 		return usageFromPreviousChatResponse;

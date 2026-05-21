@@ -45,6 +45,9 @@ This is the default message type used by Spring AI to auto-configure a `ChatMemo
 
 Spring AI offers the `ChatMemoryRepository` abstraction for storing chat memory. This section describes the built-in repositories provided by Spring AI and how to use them, but you can also implement your own repository if needed.
 
+NOTE: Azure Cosmos DB chat memory repository support is available as an external module maintained by the Azure Cosmos DB team.
+See https://azurecosmosdb.github.io/spring-ai/docs/index.html for more information.
+
 === In-Memory Repository
 
 `InMemoryChatMemoryRepository` stores messages in memory using a `ConcurrentHashMap`.
@@ -330,92 +333,6 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
 
 The Neo4j repository will automatically ensure that indexes are created for conversation IDs and message indices to optimize performance. If you use custom labels, indexes will be created for those labels as well. No schema initialization is required, but you should ensure your Neo4j instance is accessible to your application.
 
-=== CosmosDBChatMemoryRepository
-
-`CosmosDBChatMemoryRepository` is a built-in implementation that uses Azure Cosmos DB NoSQL API to store messages. It is suitable for applications that require a globally distributed, highly scalable document database for chat memory persistence. The repository uses the conversation ID as the partition key to ensure efficient data distribution and fast retrieval.
-
-Messages are retrieved in ascending timestamp order (oldest-to-newest), which is the expected format for LLM conversation history.
-
-First, add the following dependency to your project:
-
-[tabs]
-======
-Maven::
-+
-[source, xml]
-----
-<dependency>
-    <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-starter-model-chat-memory-repository-cosmos-db</artifactId>
-</dependency>
-----
-
-Gradle::
-+
-[source,groovy]
-----
-dependencies {
-    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-repository-cosmos-db'
-}
-----
-======
-
-Spring AI provides auto-configuration for the `CosmosDBChatMemoryRepository`, which you can use directly in your application.
-
-[source,java]
-----
-@Autowired
-CosmosDBChatMemoryRepository chatMemoryRepository;
-
-ChatMemory chatMemory = MessageWindowChatMemory.builder()
-    .chatMemoryRepository(chatMemoryRepository)
-    .maxMessages(10)
-    .build();
-----
-
-If you'd rather create the `CosmosDBChatMemoryRepository` manually, you can do so by providing a `CosmosDBChatMemoryRepositoryConfig` instance:
-
-[source,java]
-----
-ChatMemoryRepository chatMemoryRepository = CosmosDBChatMemoryRepository
-    .create(CosmosDBChatMemoryRepositoryConfig.builder()
-        .withCosmosClient(cosmosAsyncClient)
-        .withDatabaseName("chat-memory-db")
-        .withContainerName("conversations")
-        .build());
-
-ChatMemory chatMemory = MessageWindowChatMemory.builder()
-    .chatMemoryRepository(chatMemoryRepository)
-    .maxMessages(10)
-    .build();
-----
-
-==== Configuration Properties
-
-[cols="2,5,1",stripes=even]
-|===
-|Property | Description | Default Value
-| `spring.ai.chat.memory.repository.cosmosdb.endpoint` | Azure Cosmos DB endpoint URI. Required for auto-configuration. |
-| `spring.ai.chat.memory.repository.cosmosdb.key` | Azure Cosmos DB primary or secondary key. If not provided, Azure Identity authentication will be used. |
-| `spring.ai.chat.memory.repository.cosmosdb.connection-mode` | Connection mode for Cosmos DB client (`direct` or `gateway`). | `gateway`
-| `spring.ai.chat.memory.repository.cosmosdb.database-name` | Name of the Cosmos DB database. | `SpringAIChatMemory`
-| `spring.ai.chat.memory.repository.cosmosdb.container-name` | Name of the Cosmos DB container. | `ChatMemory`
-| `spring.ai.chat.memory.repository.cosmosdb.partition-key-path` | Partition key path for the container. | `/conversationId`
-|===
-
-==== Authentication
-
-The Cosmos DB Chat Memory Repository supports two authentication methods:
-
-1. **Key-based authentication**: Provide the `spring.ai.chat.memory.repository.cosmosdb.key` property with your Cosmos DB primary or secondary key.
-2. **Azure Identity authentication**: When no key is provided, the repository uses Azure Identity (`DefaultAzureCredential`) to authenticate with managed identity, service principal, or other Azure credential sources.
-
-==== Schema Initialization
-
-The auto-configuration will automatically create the specified database and container if they don't exist. The container is configured with the conversation ID as the partition key (`/conversationId`) to ensure optimal performance for chat memory operations. No manual schema setup is required.
-
-You can customize the database and container names using the configuration properties mentioned above.
-
 === MongoChatMemoryRepository
 
 `MongoChatMemoryRepository` is a built-in implementation that uses MongoDB to store messages. It is suitable for applications that require a flexible, document-oriented database for chat memory persistence.
@@ -632,7 +549,6 @@ Spring AI provides a few built-in Advisors that you can use to configure the mem
 WARNING: Currently, the intermediate messages exchanged with a large-language model when performing tool calls are not stored in the memory. This is a limitation of the current implementation and will be addressed in future releases. If you need to store these messages, refer to the instructions for the xref:api/tools.adoc#_user_controlled_tool_execution[User Controlled Tool Execution].
 
 * `MessageChatMemoryAdvisor`. This advisor manages the conversation memory using the provided `ChatMemory` implementation. On each interaction, it retrieves the conversation history from the memory and includes it in the prompt as a collection of messages.
-* `PromptChatMemoryAdvisor`. This advisor manages the conversation memory using the provided `ChatMemory` implementation. On each interaction, it retrieves the conversation history from the memory and appends it to the system prompt as plain text.
 * `VectorStoreChatMemoryAdvisor`. This advisor manages the conversation memory using the provided `VectorStore` implementation. On each interaction, it retrieves the conversation history from the vector store and appends it to the system message as plain text.
 
 For example, if you want to use `MessageWindowChatMemory` with the `MessageChatMemoryAdvisor`, you can configure it as follows:
@@ -646,7 +562,9 @@ ChatClient chatClient = ChatClient.builder(chatModel)
     .build();
 ----
 
-When performing a call to the `ChatClient`, the memory will be automatically managed by the `MessageChatMemoryAdvisor`. The conversation history will be retrieved from the memory based on the specified conversation ID:
+When performing a call to the `ChatClient`, the memory will be automatically managed by the `MessageChatMemoryAdvisor`. The conversation history will be retrieved from the memory based on the specified conversation ID.
+
+IMPORTANT: The `ChatMemory.CONVERSATION_ID` parameter is *required* for all memory advisors. Calls that omit this parameter will throw an `IllegalArgumentException` at runtime. There is no default conversation ID.
 
 [source,java]
 ----
@@ -658,19 +576,6 @@ chatClient.prompt()
     .call()
     .content();
 ----
-
-=== PromptChatMemoryAdvisor
-
-==== Custom Template
-
-The `PromptChatMemoryAdvisor` uses a default template to augment the system message with the retrieved conversation memory. You can customize this behavior by providing your own `PromptTemplate` object via the `.promptTemplate()` builder method.
-
-NOTE: The `PromptTemplate` provided here customizes how the advisor merges retrieved memory with the system message. This is distinct from configuring a `TemplateRenderer` on the `ChatClient` itself (using `.templateRenderer()`), which affects the rendering of the initial user/system prompt content *before* the advisor runs. See xref:api/chatclient.adoc#_prompt_templates[ChatClient Prompt Templates] for more details on client-level template rendering.
-
-The custom `PromptTemplate` can use any `TemplateRenderer` implementation (by default, it uses `StPromptTemplate` based on the https://www.stringtemplate.org/[StringTemplate] engine). The important requirement is that the template must contain the following two placeholders:
-
-* an `instructions` placeholder to receive the original system message.
-* a `memory` placeholder to receive the retrieved conversation memory.
 
 === VectorStoreChatMemoryAdvisor
 

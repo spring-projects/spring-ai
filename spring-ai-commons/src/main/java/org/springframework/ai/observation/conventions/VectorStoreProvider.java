@@ -48,10 +48,6 @@ public enum VectorStoreProvider {
 	CHROMA("chroma"),
 
 	/**
-	 * Vector store provided by CosmosDB.
-	 */
-	COSMOSDB("cosmosdb"),
-	/**
 	 * Vector store provided by Couchbase.
 	 */
 	COUCHBASE("couchbase"),
@@ -64,16 +60,6 @@ public enum VectorStoreProvider {
 	 * Vector store provided by GemFire.
 	 */
 	GEMFIRE("gemfire"),
-
-	/**
-	 * Vector store provided by HANA.
-	 */
-	HANA("hana"),
-
-	/**
-	 * Vector store provided by Infinispan.
-	 */
-	INFINISPAN("infinispan"),
 
 	/**
 	 * Vector store provided by MariaDB.

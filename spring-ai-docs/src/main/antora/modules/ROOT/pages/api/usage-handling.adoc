@@ -22,16 +22,11 @@ Here's a complete example showing how to track usage with OpenAI's ChatModel:
 public class Configuration {
 
         @Bean
-        public OpenAiApi chatCompletionApi() {
-            return OpenAiApi.builder()
-                .apiKey(System.getenv("OPENAI_API_KEY"))
-                .build();
-        }
-
-        @Bean
-        public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
+        public OpenAiChatModel openAiChatModel() {
             return OpenAiChatModel.builder()
-                .openAiApi(openAiApi)
+                .options(OpenAiChatOptions.builder()
+                    .apiKey(System.getenv("OPENAI_API_KEY"))
+                    .build())
                 .build();
         }
 
@@ -62,21 +57,25 @@ public class ChatService {
         System.out.println("Total Tokens: " + usage.getTotalTokens());
 
         // Access native OpenAI usage data with detailed token information
-        if (usage.getNativeUsage() instanceof org.springframework.ai.openai.api.OpenAiApi.Usage) {
-            org.springframework.ai.openai.api.OpenAiApi.Usage nativeUsage =
-                (org.springframework.ai.openai.api.OpenAiApi.Usage) usage.getNativeUsage();
+        if (usage.getNativeUsage() instanceof com.openai.models.completions.CompletionUsage) {
+            com.openai.models.completions.CompletionUsage nativeUsage =
+                (com.openai.models.completions.CompletionUsage) usage.getNativeUsage();
 
             // Detailed prompt token information
-            System.out.println("Prompt Tokens Details:");
-            System.out.println("- Audio Tokens: " + nativeUsage.promptTokensDetails().audioTokens());
-            System.out.println("- Cached Tokens: " + nativeUsage.promptTokensDetails().cachedTokens());
+            nativeUsage.promptTokensDetails().ifPresent(details -> {
+                System.out.println("Prompt Tokens Details:");
+                details.audioTokens().ifPresent(tokens -> System.out.println("- Audio Tokens: " + tokens));
+                details.cachedTokens().ifPresent(tokens -> System.out.println("- Cached Tokens: " + tokens));
+            });
 
             // Detailed completion token information
-            System.out.println("Completion Tokens Details:");
-            System.out.println("- Reasoning Tokens: " + nativeUsage.completionTokenDetails().reasoningTokens());
-            System.out.println("- Accepted Prediction Tokens: " + nativeUsage.completionTokenDetails().acceptedPredictionTokens());
-            System.out.println("- Audio Tokens: " + nativeUsage.completionTokenDetails().audioTokens());
-            System.out.println("- Rejected Prediction Tokens: " + nativeUsage.completionTokenDetails().rejectedPredictionTokens());
+            nativeUsage.completionTokensDetails().ifPresent(details -> {
+                System.out.println("Completion Tokens Details:");
+                details.reasoningTokens().ifPresent(tokens -> System.out.println("- Reasoning Tokens: " + tokens));
+                details.acceptedPredictionTokens().ifPresent(tokens -> System.out.println("- Accepted Prediction Tokens: " + tokens));
+                details.audioTokens().ifPresent(tokens -> System.out.println("- Audio Tokens: " + tokens));
+                details.rejectedPredictionTokens().ifPresent(tokens -> System.out.println("- Rejected Prediction Tokens: " + tokens));
+            });
         }
     }
 }
@@ -102,6 +101,44 @@ ChatResponse response = chatClient.prompt(prompt)
 Usage usage = response.getMetadata().getUsage();
 ```
 
+== Prompt Cache Usage Metrics
+
+For providers that support prompt caching, the `Usage` interface provides unified access to cache metrics without requiring provider-specific casting:
+
+```java
+Usage usage = response.getMetadata().getUsage();
+
+// Unified cache metrics — works across all providers
+Long cacheReadTokens = usage.getCacheReadInputTokens();
+Long cacheWriteTokens = usage.getCacheWriteInputTokens();
+
+if (cacheReadTokens != null && cacheReadTokens > 0) {
+    System.out.println("Cache hit: " + cacheReadTokens + " tokens read from cache");
+}
+if (cacheWriteTokens != null && cacheWriteTokens > 0) {
+    System.out.println("Cache write: " + cacheWriteTokens + " tokens written to cache");
+}
+```
+
+These methods return `null` for providers that do not support prompt caching.
+
+The following table shows prompt cache metrics availability by provider:
+
+[cols="1,1,1"]
+|===
+|Provider |Cache Read Tokens |Cache Write Tokens
+
+|Anthropic |Yes |Yes (`cacheCreationInputTokens`)
+|AWS Bedrock |Yes |Yes
+|OpenAI |Yes (`cachedTokens`) |No
+|Google Gemini |Yes (`cachedContentTokenCount`) |No
+|DeepSeek |No |No
+|Mistral |No |No
+|Ollama |No |No
+|===
+
+NOTE: For detailed provider-specific cache metrics (such as per-modality cache breakdowns in Gemini), use `getNativeUsage()` to access the provider's native usage object.
+
 == Benefits
 
 **Standardization**: Provides a consistent way to handle usage across different AI models
@@ -114,9 +151,9 @@ Usage usage = response.getMetadata().getUsage();
 When working with native usage data, consider type casting carefully:
 ```java
 // Safe way to access native usage
-if (usage.getNativeUsage() instanceof org.springframework.ai.openai.api.OpenAiApi.Usage) {
-    org.springframework.ai.openai.api.OpenAiApi.Usage nativeUsage =
-        (org.springframework.ai.openai.api.OpenAiApi.Usage) usage.getNativeUsage();
+if (usage.getNativeUsage() instanceof com.openai.models.completions.CompletionUsage) {
+    com.openai.models.completions.CompletionUsage nativeUsage =
+        (com.openai.models.completions.CompletionUsage) usage.getNativeUsage();
     // Work with native usage data
 }
 ```

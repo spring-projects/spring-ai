@@ -24,7 +24,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -36,25 +38,30 @@ import org.springframework.context.annotation.Configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+/**
+ * @author Sebastien Deleuze
+ */
 public class OpenAiFunctionCallback2IT {
 
 	private final Logger logger = LoggerFactory.getLogger(OpenAiFunctionCallback2IT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
-				"spring.ai.openai.chat.options.model=" + "gpt-4o-mini")
+				"spring.ai.openai.chat.model=" + "gpt-4o-mini")
 		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class,
 				org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test
 	void functionCallTest() {
-		this.contextRunner.withPropertyValues("spring.ai.openai.chat.options.temperature=0.1").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.openai.chat.temperature=0.1").run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 			// @formatter:off
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 			ChatClient chatClient = ChatClient.builder(chatModel)
+				.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(toolCallingManager).build())
 				.defaultToolNames("WeatherInfo")
 				.defaultUser(u -> u.text("What's the weather like in {cities}? Please use the provided tools to get the weather for all 3 cities."))
 				.build();
@@ -72,12 +79,15 @@ public class OpenAiFunctionCallback2IT {
 
 	@Test
 	void streamFunctionCallTest() {
-		this.contextRunner.withPropertyValues("spring.ai.openai.chat.options.temperature=0.1").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.openai.chat.temperature=0.1").run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 			// @formatter:off
-			String content = ChatClient.builder(chatModel).build().prompt()
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+			String content = ChatClient.builder(chatModel)
+				.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(toolCallingManager).build())
+				.build().prompt()
 				.toolNames("WeatherInfo")
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.")
 				.stream().content()

@@ -16,6 +16,8 @@
 
 package org.springframework.ai.minimax;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.embedding.EmbeddingOptions;
 
 /**
@@ -31,6 +33,7 @@ public class MiniMaxEmbeddingOptions implements EmbeddingOptions {
 	/**
 	 * ID of the model to use.
 	 */
+	@SuppressWarnings("NullAway.Init")
 	private String model;
 	// @formatter:on
 
@@ -48,7 +51,7 @@ public class MiniMaxEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	@Override
-	public Integer getDimensions() {
+	public @Nullable Integer getDimensions() {
 		return null;
 	}
 

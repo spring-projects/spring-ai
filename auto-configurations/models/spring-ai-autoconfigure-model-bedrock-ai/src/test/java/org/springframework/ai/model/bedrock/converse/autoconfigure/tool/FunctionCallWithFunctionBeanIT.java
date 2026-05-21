@@ -57,7 +57,7 @@ class FunctionCallWithFunctionBeanIT {
 
 		this.contextRunner
 			.withPropertyValues(
-					"spring.ai.bedrock.converse.chat.options.model=" + "us.anthropic.claude-haiku-4-5-20251001-v1:0")
+					"spring.ai.bedrock.converse.chat.model=" + "us.anthropic.claude-haiku-4-5-20251001-v1:0")
 			.run(context -> {
 
 				BedrockProxyChatModel chatModel = context.getBean(BedrockProxyChatModel.class);
@@ -86,7 +86,7 @@ class FunctionCallWithFunctionBeanIT {
 
 		this.contextRunner
 			.withPropertyValues(
-					"spring.ai.bedrock.converse.chat.options.model=" + "us.anthropic.claude-haiku-4-5-20251001-v1:0")
+					"spring.ai.bedrock.converse.chat.model=" + "us.anthropic.claude-haiku-4-5-20251001-v1:0")
 			.run(context -> {
 
 				BedrockProxyChatModel chatModel = context.getBean(BedrockProxyChatModel.class);

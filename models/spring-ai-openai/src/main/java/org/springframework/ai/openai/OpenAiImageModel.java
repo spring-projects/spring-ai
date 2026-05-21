@@ -175,7 +175,7 @@ public class OpenAiImageModel implements ImageModel {
 
 		var observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(imagePrompt)
-			.provider(AiProvider.OPENAI_SDK.value())
+			.provider(AiProvider.OPENAI.value())
 			.build();
 
 		return Objects.requireNonNull(

@@ -36,7 +36,6 @@ import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.util.Assert;
 
 /**
  * Options for the Mistral AI Chat API.
@@ -215,41 +214,21 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 		return this.model;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
-	}
-
 	@Override
 	public @Nullable Integer getMaxTokens() {
 		return this.maxTokens;
-	}
-
-	public void setMaxTokens(@Nullable Integer maxTokens) {
-		this.maxTokens = maxTokens;
 	}
 
 	public Boolean getSafePrompt() {
 		return this.safePrompt;
 	}
 
-	public void setSafePrompt(Boolean safePrompt) {
-		this.safePrompt = safePrompt;
-	}
-
 	public @Nullable Integer getRandomSeed() {
 		return this.randomSeed;
 	}
 
-	public void setRandomSeed(@Nullable Integer randomSeed) {
-		this.randomSeed = randomSeed;
-	}
-
 	public @Nullable ResponseFormat getResponseFormat() {
 		return this.responseFormat;
-	}
-
-	public void setResponseFormat(@Nullable ResponseFormat responseFormat) {
-		this.responseFormat = responseFormat;
 	}
 
 	@Override
@@ -257,32 +236,16 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 		return getStop();
 	}
 
-	public void setStopSequences(List<String> stopSequences) {
-		setStop(stopSequences);
-	}
-
 	public @Nullable List<String> getStop() {
 		return this.stop;
-	}
-
-	public void setStop(@Nullable List<String> stop) {
-		this.stop = stop;
 	}
 
 	public @Nullable List<FunctionTool> getTools() {
 		return this.tools;
 	}
 
-	public void setTools(@Nullable List<FunctionTool> tools) {
-		this.tools = tools;
-	}
-
 	public @Nullable ToolChoice getToolChoice() {
 		return this.toolChoice;
-	}
-
-	public void setToolChoice(@Nullable ToolChoice toolChoice) {
-		this.toolChoice = toolChoice;
 	}
 
 	@Override
@@ -290,17 +253,9 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 		return this.temperature;
 	}
 
-	public void setTemperature(@Nullable Double temperature) {
-		this.temperature = temperature;
-	}
-
 	@Override
 	public Double getTopP() {
 		return this.topP;
-	}
-
-	public void setTopP(Double topP) {
-		this.topP = topP;
 	}
 
 	@Override
@@ -308,25 +263,13 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 		return this.frequencyPenalty;
 	}
 
-	public void setFrequencyPenalty(Double frequencyPenalty) {
-		this.frequencyPenalty = frequencyPenalty;
-	}
-
 	@Override
 	public Double getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
-	public void setPresencePenalty(Double presencePenalty) {
-		this.presencePenalty = presencePenalty;
-	}
-
 	public @Nullable Integer getN() {
 		return this.n;
-	}
-
-	public void setN(@Nullable Integer n) {
-		this.n = n;
 	}
 
 	@Override
@@ -335,33 +278,13 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	}
 
 	@Override
-	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
-		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-		this.toolCallbacks = toolCallbacks;
-	}
-
-	@Override
 	public Set<String> getToolNames() {
 		return this.toolNames;
 	}
 
 	@Override
-	public void setToolNames(Set<String> toolNames) {
-		Assert.notNull(toolNames, "toolNames cannot be null");
-		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
-		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
-		this.toolNames = toolNames;
-	}
-
-	@Override
 	@Nullable public Boolean getInternalToolExecutionEnabled() {
 		return this.internalToolExecutionEnabled;
-	}
-
-	@Override
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
 	@Override
@@ -375,22 +298,11 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	}
 
 	@Override
-	public void setToolContext(Map<String, Object> toolContext) {
-		this.toolContext = toolContext;
-	}
-
-	@Override
 	public @Nullable String getOutputSchema() {
 		if (this.responseFormat == null || this.responseFormat.getJsonSchema() == null) {
 			return null;
 		}
 		return ModelOptionsUtils.toJsonString(this.responseFormat.getJsonSchema().getSchema());
-	}
-
-	@Override
-	public void setOutputSchema(String outputSchema) {
-		this.setResponseFormat(
-				ResponseFormat.builder().type(ResponseFormat.Type.JSON_SCHEMA).jsonSchema(outputSchema).build());
 	}
 
 	@Override

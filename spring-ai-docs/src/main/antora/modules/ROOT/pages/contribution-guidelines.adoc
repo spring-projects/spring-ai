@@ -24,7 +24,7 @@ To contribute a new model, adhere to the following steps:
 
 . *Create a Low-Level Client API Class*: If no existing Java client suits the AI model,
 you'll need to develop a low-level client API class. This often involves utilizing the
-`RestClient` class from the Spring Framework, similar to the `OpenAiApi` class.
+`RestClient` class from the Spring Framework, similar to the `AnthropicApi` class.
 
 . *Create a Model implementation*
 Ensure your client conforms to the link:https://docs.spring.io/spring-ai/reference/api/generic-model.html[Generic Model API].

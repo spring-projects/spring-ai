@@ -41,8 +41,10 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.model.KotlinModule;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.util.json.JsonParser;
+import org.springframework.core.KotlinDetector;
 import org.springframework.core.Nullness;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
@@ -70,6 +72,7 @@ import org.springframework.util.StringUtils;
  * <p>
  *
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public final class JsonSchemaGenerator {
@@ -90,7 +93,8 @@ public final class JsonSchemaGenerator {
 	 * Initialize JSON Schema generators.
 	 */
 	static {
-		Module jacksonModule = new JacksonSchemaModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
+		Module jacksonModule = new JacksonSchemaModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
+				JacksonOption.RESPECT_JSONPROPERTY_ORDER);
 		Module openApiModule = new Swagger2Module();
 		Module springAiSchemaModule = PROPERTY_REQUIRED_BY_DEFAULT ? new SpringAiSchemaModule()
 				: new SpringAiSchemaModule(SpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
@@ -102,6 +106,10 @@ public final class JsonSchemaGenerator {
 			.with(springAiSchemaModule)
 			.with(Option.EXTRA_OPEN_API_FORMAT_VALUES)
 			.with(Option.PLAIN_DEFINITION_KEYS);
+
+		if (KotlinDetector.isKotlinReflectPresent()) {
+			schemaGeneratorConfigBuilder.with(new KotlinModule());
+		}
 
 		SchemaGeneratorConfig typeSchemaGeneratorConfig = schemaGeneratorConfigBuilder.build();
 		TYPE_SCHEMA_GENERATOR = new SchemaGenerator(typeSchemaGeneratorConfig);
@@ -122,6 +130,7 @@ public final class JsonSchemaGenerator {
 		ObjectNode schema = JsonParser.getJsonMapper().createObjectNode();
 		schema.put("$schema", SchemaVersion.DRAFT_2020_12.getIdentifier());
 		schema.put("type", "object");
+		ObjectNode defs = schema.putObject("$defs");
 
 		ObjectNode properties = schema.putObject("properties");
 		List<String> required = new ArrayList<>();
@@ -141,6 +150,12 @@ public final class JsonSchemaGenerator {
 				required.add(parameterName);
 			}
 			ObjectNode parameterNode = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
+			// victools generates self-contained schemas where $defs and the $ref
+			// pointers into them are rooted at the sub-schema. Inlining the
+			// sub-schema under properties.<paramName> re-parents existing
+			// "#/$defs/<Name>" refs to the outer root, leaving them unresolvable.
+			// Hoist $defs to the outer root so those refs resolve again.
+			JsonSchemaUtils.hoistDefsToRoot(schema, parameterNode);
 			// Remove OpenAPI format as some LLMs (like Mistral) don't handle them.
 			parameterNode.remove("format");
 			String parameterDescription = getMethodParameterDescription(method, i);
@@ -148,6 +163,10 @@ public final class JsonSchemaGenerator {
 				parameterNode.put("description", parameterDescription);
 			}
 			properties.set(parameterName, parameterNode);
+		}
+
+		if (defs.isEmpty()) {
+			schema.remove("$defs");
 		}
 
 		var requiredArray = schema.putArray("required");
@@ -174,7 +193,7 @@ public final class JsonSchemaGenerator {
 	private static void processSchemaOptions(SchemaOption[] schemaOptions, ObjectNode schema) {
 		if (Stream.of(schemaOptions)
 			.noneMatch(option -> option == SchemaOption.ALLOW_ADDITIONAL_PROPERTIES_BY_DEFAULT)) {
-			schema.put("additionalProperties", false);
+			forbidAdditionalProperties(schema);
 		}
 		if (Stream.of(schemaOptions).anyMatch(option -> option == SchemaOption.UPPER_CASE_TYPE_VALUES)) {
 			convertTypeValuesToUpperCase(schema);
@@ -254,6 +273,31 @@ public final class JsonSchemaGenerator {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Recursively adds {@code "additionalProperties": false} to all object schemas (nodes
+	 * with a {@code "properties"} key) that do not already define
+	 * {@code "additionalProperties"}. The guard preserves {@code Map<K,V>} schemas where
+	 * {@code "additionalProperties"} is a type reference rather than a boolean.
+	 */
+	private static void forbidAdditionalProperties(ObjectNode node) {
+		if (node.has("properties") && !node.has("additionalProperties")) {
+			node.put("additionalProperties", false);
+		}
+		node.properties().forEach(entry -> {
+			JsonNode value = entry.getValue();
+			if (value.isObject()) {
+				forbidAdditionalProperties((ObjectNode) value);
+			}
+			else if (value.isArray()) {
+				value.forEach(element -> {
+					if (element.isObject()) {
+						forbidAdditionalProperties((ObjectNode) element);
+					}
+				});
+			}
+		});
 	}
 
 	// Based on the method in ModelOptionsUtils.

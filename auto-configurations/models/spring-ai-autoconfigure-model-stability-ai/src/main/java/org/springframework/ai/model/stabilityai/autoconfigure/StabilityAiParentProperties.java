@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.stabilityai.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Internal parent properties for the StabilityAI properties.
  *
@@ -24,23 +26,23 @@ package org.springframework.ai.model.stabilityai.autoconfigure;
  */
 class StabilityAiParentProperties {
 
-	private String apiKey;
+	private @Nullable String apiKey;
 
-	private String baseUrl;
+	private @Nullable String baseUrl;
 
-	public String getApiKey() {
+	public @Nullable String getApiKey() {
 		return this.apiKey;
 	}
 
-	public void setApiKey(String apiKey) {
+	public void setApiKey(@Nullable String apiKey) {
 		this.apiKey = apiKey;
 	}
 
-	public String getBaseUrl() {
+	public @Nullable String getBaseUrl() {
 		return this.baseUrl;
 	}
 
-	public void setBaseUrl(String baseUrl) {
+	public void setBaseUrl(@Nullable String baseUrl) {
 		this.baseUrl = baseUrl;
 	}
 

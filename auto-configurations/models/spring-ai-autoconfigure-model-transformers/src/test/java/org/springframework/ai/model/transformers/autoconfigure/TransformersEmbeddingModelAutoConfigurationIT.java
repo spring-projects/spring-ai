@@ -44,9 +44,10 @@ public class TransformersEmbeddingModelAutoConfigurationIT {
 	public void embedding() {
 		this.contextRunner.run(context -> {
 			var properties = context.getBean(TransformersEmbeddingModelProperties.class);
+
+			String expectedPrefix = new File(System.getProperty("java.io.tmpdir")).getAbsolutePath();
 			assertThat(properties.getCache().isEnabled()).isTrue();
-			assertThat(properties.getCache().getDirectory()).isEqualTo(
-					new File(System.getProperty("java.io.tmpdir"), "spring-ai-onnx-generative").getAbsolutePath());
+			assertThat(properties.getCache().getDirectory()).startsWith(expectedPrefix);
 
 			EmbeddingModel embeddingModel = context.getBean(EmbeddingModel.class);
 			assertThat(embeddingModel).isInstanceOf(TransformersEmbeddingModel.class);

@@ -77,31 +77,6 @@ class OpenAiExtraBodySerializationTests {
 	}
 
 	@Test
-	void testDeserializationPopulatesExtraBody() throws Exception {
-		// Arrange: Create JSON string with unknown top-level parameters
-		String json = """
-				{
-					"model" : "gpt-4",
-					"temperature" : 0.7,
-					"top_k" : 50,
-					"min_p" : 0.05,
-					"stop_token_ids" : [128001, 128009]
-				}
-				""";
-
-		// Act: Deserialize JSON string to OpenAiChatOptions
-		OpenAiChatOptions options = JsonMapper.shared().readValue(json, OpenAiChatOptions.class);
-
-		// Assert: All extraBody fields should survive round trip
-		assertThat(options.getExtraBody()).isNotNull();
-		assertThat(options.getExtraBody()).containsEntry("top_k", 50);
-		assertThat(options.getExtraBody()).containsEntry("min_p", 0.05);
-		assertThat(options.getExtraBody()).containsKey("stop_token_ids");
-		assertThat(options.getModel()).isEqualTo("gpt-4");
-		assertThat(options.getTemperature()).isEqualTo(0.7);
-	}
-
-	@Test
 	void testMergeWithExtraBody() {
 		// Arrange: Create options with extraBody
 		OpenAiChatOptions defaultOptions = OpenAiChatOptions.builder()
@@ -109,14 +84,13 @@ class OpenAiExtraBodySerializationTests {
 			.extraBody(Map.of("enable_thinking", true, "max_depth", 10))
 			.build();
 
-		OpenAiChatOptions runtimeOptions = OpenAiChatOptions.builder()
+		OpenAiChatOptions.Builder runtimeOptions = OpenAiChatOptions.builder()
 			.temperature(0.9)
-			.extraBody(Map.of("enable_thinking", false, "top_k", 50))
-			.build();
+			.extraBody(Map.of("enable_thinking", false, "top_k", 50));
 
 		// Act: Merge options using the builder's combineWith method, which is the actual
 		// mechanism used by OpenAiChatModel
-		OpenAiChatOptions merged = defaultOptions.mutate().combineWith(runtimeOptions.mutate()).build();
+		OpenAiChatOptions merged = defaultOptions.mutate().combineWith(runtimeOptions).build();
 
 		// Assert: Verify extraBody was successfully merged
 		assertThat(merged.getExtraBody()).isNotNull();

@@ -17,6 +17,7 @@
 package org.springframework.ai.model.minimax.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.minimax.MiniMaxEmbeddingModel;
@@ -73,8 +74,9 @@ public class MiniMaxEmbeddingAutoConfiguration {
 		return embeddingModel;
 	}
 
-	private MiniMaxApi miniMaxApi(String baseUrl, String commonBaseUrl, String apiKey, String commonApiKey,
-			RestClient.Builder restClientBuilder, ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
+	private MiniMaxApi miniMaxApi(@Nullable String baseUrl, @Nullable String commonBaseUrl, @Nullable String apiKey,
+			@Nullable String commonApiKey, RestClient.Builder restClientBuilder,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		String resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
 		Assert.hasText(resolvedBaseUrl, "MiniMax base URL must be set");

@@ -19,6 +19,7 @@ package org.springframework.ai.google.genai.metadata;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.genai.types.MediaModality;
 import com.google.genai.types.ModalityTokenCount;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents token count information for a specific modality (text, image, audio, video).
@@ -47,7 +48,7 @@ public class GoogleGenAiModalityTokenCount {
 	 * @param modalityTokenCount the SDK modality token count
 	 * @return a new GoogleGenAiModalityTokenCount instance
 	 */
-	public static GoogleGenAiModalityTokenCount from(ModalityTokenCount modalityTokenCount) {
+	public static @Nullable GoogleGenAiModalityTokenCount from(@Nullable ModalityTokenCount modalityTokenCount) {
 		if (modalityTokenCount == null) {
 			return null;
 		}

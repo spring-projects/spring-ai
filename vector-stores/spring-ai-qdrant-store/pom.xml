@@ -75,6 +75,21 @@
 				<artifactId>grpc-stub</artifactId>
 				<version>${grpc-netty-shaded.version}</version>
 			</dependency>
+			<dependency>
+				<groupId>io.grpc</groupId>
+				<artifactId>grpc-core</artifactId>
+				<version>${grpc-netty-shaded.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>io.grpc</groupId>
+				<artifactId>grpc-context</artifactId>
+				<version>${grpc-netty-shaded.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>io.grpc</groupId>
+				<artifactId>grpc-util</artifactId>
+				<version>${grpc-netty-shaded.version}</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 
@@ -83,11 +98,6 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-vector-store</artifactId>
             <version>${project.parent.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
         </dependency>
 
         <dependency>

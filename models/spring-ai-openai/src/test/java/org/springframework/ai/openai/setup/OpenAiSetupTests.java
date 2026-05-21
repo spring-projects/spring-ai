@@ -133,7 +133,8 @@ public class OpenAiSetupTests {
 		field.setAccessible(true);
 		ClientOptions options = (ClientOptions) field.get(client);
 		assertInstanceOf(AzureApiKeyCredential.class, options.credential());
-		assertThat(options.headers().values("api-key")).containsExactly("my-foundry-key");
+		AzureApiKeyCredential credential = (AzureApiKeyCredential) options.credential();
+		assertEquals("my-foundry-key", credential.apiKey());
 		assertThat(options.headers().values("Authorization")).isEmpty();
 	}
 

@@ -31,7 +31,11 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
+import org.springframework.ai.chat.client.advisor.observation.DefaultAdvisorObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -243,6 +247,48 @@ class DefaultAroundAdvisorChainTests {
 		CallAdvisorChain newChain = chain.copy(advisor1);
 
 		assertThat(newChain.getObservationRegistry()).isSameAs(customRegistry);
+	}
+
+	@Test
+	void whenCopyingChainThenCustomObservationConventionIsPreserved() {
+		CallAdvisor advisor1 = createMockAdvisor("advisor1", 1);
+		CallAdvisor advisor2 = createMockAdvisor("advisor2", 2);
+
+		AdvisorObservationConvention customConvention = new AdvisorObservationConvention() {
+			@Override
+			public String getName() {
+				return "custom.advisor";
+			}
+
+			@Override
+			public boolean supportsContext(io.micrometer.observation.Observation.Context context) {
+				return context instanceof AdvisorObservationContext;
+			}
+		};
+
+		CallAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.observationConvention(customConvention)
+			.pushAll(List.of(advisor1, advisor2))
+			.build();
+
+		CallAdvisorChain newChain = chain.copy(advisor1);
+
+		assertThat(ReflectionTestUtils.getField(newChain, "observationConvention")).isSameAs(customConvention);
+	}
+
+	@Test
+	void whenCopyingChainWithoutCustomObservationConventionThenDefaultIsPreserved() {
+		CallAdvisor advisor1 = createMockAdvisor("advisor1", 1);
+		CallAdvisor advisor2 = createMockAdvisor("advisor2", 2);
+
+		CallAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor1, advisor2))
+			.build();
+
+		CallAdvisorChain newChain = chain.copy(advisor1);
+
+		assertThat(ReflectionTestUtils.getField(newChain, "observationConvention"))
+			.isInstanceOf(DefaultAdvisorObservationConvention.class);
 	}
 
 	private CallAdvisor createMockAdvisor(String name, int order) {

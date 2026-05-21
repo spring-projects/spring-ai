@@ -118,11 +118,15 @@ public class MongoDBAtlasFilterConverterTest {
 	@Test
 	public void testComplexIdentifiers() {
 		String vectorExpr = this.converter
-			.convertExpression(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
+			.convertExpression(new Expression(EQ, new Key("country 1 2 3"), new Value("BG")));
 		assertThat(vectorExpr).isEqualTo("{\"metadata.country 1 2 3\":{$eq:\"BG\"}}");
 
+		vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
+		assertThat(vectorExpr).isEqualTo("{\"metadata.\\\"country 1 2 3\\\"\":{$eq:\"BG\"}}");
+
 		vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("'country 1 2 3'"), new Value("BG")));
-		assertThat(vectorExpr).isEqualTo("{\"metadata.country 1 2 3\":{$eq:\"BG\"}}");
+		assertThat(vectorExpr).isEqualTo("{\"metadata.'country 1 2 3'\":{$eq:\"BG\"}}");
 	}
 
 	@Test
@@ -291,6 +295,27 @@ public class MongoDBAtlasFilterConverterTest {
 		String vectorExpr = this.converter
 			.convertExpression(new Expression(EQ, new Key("content"), new Value(longValue)));
 		assertThat(vectorExpr).isEqualTo("{\"metadata.content\":{$eq:\"" + longValue + "\"}}");
+	}
+
+	@Test
+	public void testKeyWithSingleQuote() {
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("x' OR 1=1--"), new Value("dummy")));
+		assertThat(vectorExpr).isEqualTo("{\"metadata.x' OR 1=1--\":{$eq:\"dummy\"}}");
+	}
+
+	@Test
+	public void testKeyWithDoubleQuote() {
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("key\"inject"), new Value("v")));
+		assertThat(vectorExpr).isEqualTo("{\"metadata.key\\\"inject\":{$eq:\"v\"}}");
+	}
+
+	@Test
+	public void testKeyWithBackslash() {
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("key\\inject"), new Value("v")));
+		assertThat(vectorExpr).isEqualTo("{\"metadata.key\\\\inject\":{$eq:\"v\"}}");
 	}
 
 }

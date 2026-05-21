@@ -97,6 +97,16 @@ public enum ToolCallingObservationDocumentation implements ObservationDocumentat
 			}
 		},
 
+		/**
+		 * The type of the tool.
+		 */
+		TOOL_TYPE {
+			@Override
+			public String asString() {
+				return "spring.ai.tool.type";
+			}
+		},
+
 	}
 
 	/**
@@ -121,6 +131,16 @@ public enum ToolCallingObservationDocumentation implements ObservationDocumentat
 			@Override
 			public String asString() {
 				return "spring.ai.tool.definition.schema";
+			}
+		},
+
+		/**
+		 * The ID of the tool call.
+		 */
+		TOOL_CALL_ID {
+			@Override
+			public String asString() {
+				return "spring.ai.tool.call.id";
 			}
 		},
 

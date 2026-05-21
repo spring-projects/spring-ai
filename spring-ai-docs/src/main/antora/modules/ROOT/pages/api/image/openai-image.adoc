@@ -139,7 +139,7 @@ The prefix `spring.ai.openai.image` is the property prefix that lets you configu
 | spring.ai.openai.image.organization-id | Optionally you can specify which organization  used for an API request. |  -
 | spring.ai.openai.image.project-id      | Optionally, you can specify which project is used for an API request. |  -
 | spring.ai.openai.image.options.n            | The number of images to generate. Must be between 1 and 10. For dall-e-3, only n=1 is supported.  | -
-| spring.ai.openai.image.options.model        | The model to use for image generation.  | OpenAiImageApi.DEFAULT_IMAGE_MODEL
+| spring.ai.openai.image.options.model        | The model to use for image generation.  | ImageModel.GPT_IMAGE_1_MINI.toString()
 | spring.ai.openai.image.options.quality      | The quality of the image that will be generated. HD creates images with finer details and greater consistency across the image. This parameter is only supported for dall-e-3. | -
 | spring.ai.openai.image.options.response_format | The format in which the generated images are returned. Must be one of URL or b64_json. | -
 | `spring.ai.openai.image.options.size`       | The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024 for dall-e-2. Must be one of 1024x1024, 1792x1024, or 1024x1792 for dall-e-3 models. | -
@@ -159,7 +159,7 @@ TIP: All properties prefixed with `spring.ai.openai.image.options` can be overri
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiImageOptions.java[OpenAiImageOptions.java] provides model configurations, such as the model to use, the quality, the size, etc.
 
-On start-up, the default options can be configured with the `OpenAiImageModel(OpenAiImageApi openAiImageApi)` constructor and the `withDefaultOptions(OpenAiImageOptions defaultOptions)` method.  Alternatively, use the `spring.ai.openai.image.options.*` properties described previously.
+On start-up, the default options can be configured by passing `OpenAiImageOptions` to the `OpenAiImageModel` constructor. Alternatively, use the `spring.ai.openai.image.options.*` properties described previously.
 
 At runtime you can override the default options by adding new, request specific, options to the `ImagePrompt` call.
 For example to override the OpenAI specific options such as quality and the number of images to create, use the following code example:

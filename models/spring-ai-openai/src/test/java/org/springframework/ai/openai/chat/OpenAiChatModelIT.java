@@ -98,7 +98,7 @@ public class OpenAiChatModelIT {
 
 	// It would be better to use ChatModel.GPT_4O_AUDIO_PREVIEW.asString(); but it can't
 	// be used as a constant.
-	public static final String DEFAULT_CHAT_MODEL_AUDIO = "gpt-4o-audio-preview";
+	public static final String DEFAULT_CHAT_MODEL_AUDIO = "gpt-audio";
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
@@ -243,7 +243,8 @@ public class OpenAiChatModelIT {
 			.build();
 
 		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
-		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
+		var streamingResponse = this.chatModel.stream(prompt).blockLast();
+		var streamingTokenUsage = streamingResponse.getMetadata().getUsage();
 		var referenceTokenUsage = this.chatModel.call(prompt).getMetadata().getUsage();
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
@@ -257,6 +258,9 @@ public class OpenAiChatModelIT {
 		assertThat(streamingTokenUsage.getTotalTokens()).isCloseTo(referenceTokenUsage.getTotalTokens(),
 				Percentage.withPercentage(25));
 
+		// Verify metadata fields are preserved during chunk aggregation
+		assertThat(streamingResponse.getMetadata().getRateLimit()).isNotNull();
+		assertThat(streamingResponse.getMetadata().getPromptMetadata()).isNotNull();
 	}
 
 	@Test
@@ -681,7 +685,7 @@ public class OpenAiChatModelIT {
 	}
 
 	@Test
-	void testOpenAiApiRejectsUnknownParameter() {
+	void testOpenAiRejectsUnknownParameter() {
 		OpenAiChatOptions options = OpenAiChatOptions.builder()
 			.extraBody(Map.of("extra_body", Map.of("num_ctx", 4096, "num_predict", 10, "top_k", 40)))
 			.build();

@@ -120,8 +120,10 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				MistralAiApi.EmbeddingList<MistralAiApi.Embedding> apiEmbeddingResponse = RetryUtils
-					.execute(this.retryTemplate, () -> this.mistralAiApi.embeddings(apiRequest).getBody());
+				var embeddingResponseEntity = RetryUtils.execute(this.retryTemplate,
+						() -> this.mistralAiApi.embeddings(apiRequest));
+				MistralAiApi.EmbeddingList<MistralAiApi.Embedding> apiEmbeddingResponse = embeddingResponseEntity
+					.getBody();
 
 				if (apiEmbeddingResponse == null) {
 					logger.warn("No embeddings returned for request: {}", request);

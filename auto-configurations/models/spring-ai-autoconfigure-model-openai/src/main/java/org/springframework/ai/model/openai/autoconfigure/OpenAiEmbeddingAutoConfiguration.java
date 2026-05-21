@@ -40,21 +40,25 @@ import org.springframework.context.annotation.Bean;
  * @author Yanming Zhou
  * @author Issam El-atif
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 @AutoConfiguration
 @ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.OPENAI,
 		matchIfMissing = true)
-@EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiEmbeddingProperties.class })
+@EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiEmbeddingProperties.class })
 public class OpenAiEmbeddingAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiEmbeddingModel openAiEmbeddingModel(OpenAiConnectionProperties commonProperties,
+	public OpenAiEmbeddingModel openAiEmbeddingModel(OpenAiCommonProperties commonProperties,
 			OpenAiEmbeddingProperties embeddingProperties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
-		var embeddingModel = new OpenAiEmbeddingModel(this.openAiClient(commonProperties, embeddingProperties),
-				embeddingProperties.getMetadataMode(), embeddingProperties.getOptions(),
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
+				embeddingProperties);
+
+		var embeddingModel = new OpenAiEmbeddingModel(this.openAiClient(resolvedProperties),
+				embeddingProperties.getMetadataMode(), embeddingProperties.toOptions(),
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
@@ -62,17 +66,14 @@ public class OpenAiEmbeddingAutoConfiguration {
 		return embeddingModel;
 	}
 
-	private OpenAIClient openAiClient(OpenAiConnectionProperties commonProperties,
-			OpenAiEmbeddingProperties embeddingProperties) {
+	private OpenAIClient openAiClient(OpenAiCommonProperties commonProperties) {
 
-		OpenAiAutoConfigurationUtil.ResolvedConnectionProperties resolved = OpenAiAutoConfigurationUtil
-			.resolveConnectionProperties(commonProperties, embeddingProperties);
-
-		return OpenAiSetup.setupSyncClient(resolved.getBaseUrl(), resolved.getApiKey(), resolved.getCredential(),
-				resolved.getMicrosoftDeploymentName(), resolved.getMicrosoftFoundryServiceVersion(),
-				resolved.getOrganizationId(), resolved.isMicrosoftFoundry(), resolved.isGitHubModels(),
-				resolved.getModel(), resolved.getTimeout(), resolved.getMaxRetries(), resolved.getProxy(),
-				resolved.getCustomHeaders());
+		return OpenAiSetup.setupSyncClient(commonProperties.getBaseUrl(), commonProperties.getApiKey(),
+				commonProperties.getCredential(), commonProperties.getMicrosoftDeploymentName(),
+				commonProperties.getMicrosoftFoundryServiceVersion(), commonProperties.getOrganizationId(),
+				commonProperties.isMicrosoftFoundry(), commonProperties.isGitHubModels(), commonProperties.getModel(),
+				commonProperties.getTimeout(), commonProperties.getMaxRetries(), commonProperties.getProxy(),
+				commonProperties.getCustomHeaders());
 	}
 
 }

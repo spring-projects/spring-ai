@@ -28,7 +28,9 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.client.ChatClient.Builder;
 import org.springframework.ai.chat.client.ChatClient.PromptSystemSpec;
 import org.springframework.ai.chat.client.ChatClient.PromptUserSpec;
+import org.springframework.ai.chat.client.ChatClient.ToolSpec;
 import org.springframework.ai.chat.client.DefaultChatClient.DefaultChatClientRequestSpec;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
@@ -61,14 +63,24 @@ public class DefaultChatClientBuilder implements Builder {
 		this(chatModel, ObservationRegistry.NOOP, null, null);
 	}
 
+	@Deprecated(since = "2.0.0", forRemoval = true)
 	public DefaultChatClientBuilder(ChatModel chatModel, ObservationRegistry observationRegistry,
 			@Nullable ChatClientObservationConvention chatClientObservationConvention,
 			@Nullable AdvisorObservationConvention advisorObservationConvention) {
+		this(chatModel, observationRegistry, chatClientObservationConvention, advisorObservationConvention, null);
+	}
+
+	public DefaultChatClientBuilder(ChatModel chatModel, ObservationRegistry observationRegistry,
+			@Nullable ChatClientObservationConvention chatClientObservationConvention,
+			@Nullable AdvisorObservationConvention advisorObservationConvention,
+			ToolCallAdvisor.@Nullable Builder<?> toolCallAdvisorBuilder) {
 		Assert.notNull(chatModel, "the " + ChatModel.class.getName() + " must be non-null");
 		Assert.notNull(observationRegistry, "the " + ObservationRegistry.class.getName() + " must be non-null");
+
 		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, null, Map.of(), Map.of(), null, Map.of(),
 				Map.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(),
-				observationRegistry, chatClientObservationConvention, Map.of(), null, advisorObservationConvention);
+				observationRegistry, chatClientObservationConvention, Map.of(), null, advisorObservationConvention,
+				toolCallAdvisorBuilder);
 	}
 
 	public ChatClient build() {
@@ -152,20 +164,19 @@ public class DefaultChatClientBuilder implements Builder {
 	}
 
 	@Override
+	public Builder defaultTools(Consumer<ToolSpec> consumer) {
+		this.defaultRequest.tools(consumer);
+		return this;
+	}
+
+	/**
+	 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)}. To be removed
+	 * in 3.0.0.
+	 */
+	@Deprecated(since = "2.0.0", forRemoval = true)
+	@Override
 	public Builder defaultToolNames(String... toolNames) {
 		this.defaultRequest.toolNames(toolNames);
-		return this;
-	}
-
-	@Override
-	public Builder defaultToolCallbacks(ToolCallback... toolCallbacks) {
-		this.defaultRequest.toolCallbacks(toolCallbacks);
-		return this;
-	}
-
-	@Override
-	public Builder defaultToolCallbacks(List<ToolCallback> toolCallbacks) {
-		this.defaultRequest.toolCallbacks(toolCallbacks);
 		return this;
 	}
 
@@ -175,12 +186,45 @@ public class DefaultChatClientBuilder implements Builder {
 		return this;
 	}
 
+	/**
+	 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)}. To be removed
+	 * in 3.0.0.
+	 */
+	@Deprecated(since = "2.0.0", forRemoval = true)
+	@Override
+	public Builder defaultToolCallbacks(ToolCallback... toolCallbacks) {
+		this.defaultRequest.toolCallbacks(toolCallbacks);
+		return this;
+	}
+
+	/**
+	 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)}. To be removed
+	 * in 3.0.0.
+	 */
+	@Deprecated(since = "2.0.0", forRemoval = true)
+	@Override
+	public Builder defaultToolCallbacks(List<ToolCallback> toolCallbacks) {
+		this.defaultRequest.toolCallbacks(toolCallbacks);
+		return this;
+	}
+
+	/**
+	 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)}. To be removed
+	 * in 3.0.0.
+	 */
+	@Deprecated(since = "2.0.0", forRemoval = true)
 	@Override
 	public Builder defaultToolCallbacks(ToolCallbackProvider... toolCallbackProviders) {
 		this.defaultRequest.toolCallbacks(toolCallbackProviders);
 		return this;
 	}
 
+	/**
+	 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)}. To be removed
+	 * in 3.0.0.
+	 */
+	@Deprecated(since = "2.0.0", forRemoval = true)
+	@Override
 	public Builder defaultToolContext(Map<String, Object> toolContext) {
 		this.defaultRequest.toolContext(toolContext);
 		return this;

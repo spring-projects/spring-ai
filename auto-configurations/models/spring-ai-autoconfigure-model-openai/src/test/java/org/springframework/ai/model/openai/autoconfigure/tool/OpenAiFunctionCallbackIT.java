@@ -43,20 +43,23 @@ import org.springframework.context.annotation.Configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+/**
+ * @author Sebastien Deleuze
+ */
 public class OpenAiFunctionCallbackIT {
 
 	private final Logger logger = LoggerFactory.getLogger(OpenAiFunctionCallbackIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
-				"spring.ai.openai.chat.options.model=" + "gpt-4o-mini")
+				"spring.ai.openai.chat.model=" + "gpt-4o-mini")
 		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class,
 				org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test
 	void functionCallTest() {
-		this.contextRunner.withPropertyValues("spring.ai.openai.chat.options.temperature=0.1").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.openai.chat.temperature=0.1").run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
@@ -75,7 +78,7 @@ public class OpenAiFunctionCallbackIT {
 
 	@Test
 	void streamFunctionCallTest() {
-		this.contextRunner.withPropertyValues("spring.ai.openai.chat.options.temperature=0.1").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.openai.chat.temperature=0.1").run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 

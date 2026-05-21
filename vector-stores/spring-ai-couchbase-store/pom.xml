@@ -55,11 +55,6 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-testcontainers</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers-couchbase</artifactId>
 			<scope>test</scope>

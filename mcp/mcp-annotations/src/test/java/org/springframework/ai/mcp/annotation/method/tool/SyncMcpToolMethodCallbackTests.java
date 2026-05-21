@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.annotation.method.tool;
 
 import java.lang.reflect.Method;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -535,6 +536,24 @@ public class SyncMcpToolMethodCallbackTests {
 				["test", "42"]"""));
 	}
 
+	@Test
+	public void testToolWithDateParameter() throws Exception {
+		TestToolProvider provider = new TestToolProvider();
+		Method method = TestToolProvider.class.getMethod("dateTool", LocalDate.class);
+		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
+
+		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+		CallToolRequest request = new CallToolRequest("date-tool", Map.of("date", "2026-04-22"));
+
+		CallToolResult result = callback.apply(exchange, request);
+
+		assertThat(result).isNotNull();
+		assertThat(result.isError()).isFalse();
+		assertThat(result.content()).hasSize(1);
+		assertThat(result.content().get(0)).isInstanceOf(TextContent.class);
+		assertThat(((TextContent) result.content().get(0)).text()).isEqualTo("Date: 2026-04-22");
+	}
+
 	private static class TestToolProvider {
 
 		@McpTool(name = "simple-tool", description = "A simple tool")
@@ -632,6 +651,11 @@ public class SyncMcpToolMethodCallbackTests {
 		@McpTool(name = "return-list-string-tool", description = "Tool that returns a list of complex objects")
 		public List<String> returnListStringTool(String name, int value) {
 			return List.of(name, String.valueOf(value));
+		}
+
+		@McpTool(name = "local-date-tool", description = "Tool with date input")
+		public String dateTool(@McpToolParam LocalDate date) {
+			return "Date: " + date.toString();
 		}
 
 	}

@@ -25,8 +25,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: '17'
+          distribution: 'liberica'
           cache: 'maven'
 
       - name: Setup Maven Build-Cache (~/.m2/build-cache)
@@ -76,8 +76,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: '17'
+          distribution: 'liberica'
           cache: 'maven'
 
       - name: Setup Maven Build-Cache (~/.m2/build-cache)
@@ -123,8 +123,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: '17'
+          distribution: 'liberica'
           cache: 'maven'
 
       - name: Setup Maven Build-Cache (~/.m2/build-cache)
@@ -169,8 +169,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: '17 '
+          distribution: 'liberica'
           cache: 'maven'
 
       - name: Setup Maven Build-Cache (~/.m2/build-cache)
@@ -222,8 +222,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: '17'
+          distribution: 'liberica'
           cache: 'maven'
 
       # NOT setting up maven build-cache b/c javadoc:aggregate-jar is forking lifecyle and can't benefit from it anyway
@@ -260,8 +260,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: '17'
+          distribution: 'liberica'
           cache: 'maven'
 
       - name: Setup Maven Build-Cache (~/.m2/build-cache)

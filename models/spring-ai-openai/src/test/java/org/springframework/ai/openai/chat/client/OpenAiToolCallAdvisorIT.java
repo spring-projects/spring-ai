@@ -31,7 +31,7 @@ import org.springframework.test.context.ActiveProfiles;
  *
  * @author Christian Tzolov
  */
-@SpringBootTest
+@SpringBootTest(classes = OpenAiToolCallAdvisorIT.TestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 @ActiveProfiles("logging-test")
 class OpenAiToolCallAdvisorIT extends AbstractToolCallAdvisorIT {

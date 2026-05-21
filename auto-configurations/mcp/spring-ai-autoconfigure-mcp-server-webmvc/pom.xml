@@ -27,11 +27,7 @@
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-mcp-server-common</artifactId>
 			<version>${project.parent.version}</version>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter</artifactId>
+			<optional>true</optional>
 		</dependency>
 
 		<dependency>
@@ -57,10 +53,14 @@
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-autoconfigure</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-configuration-processor</artifactId>
 			<optional>true</optional>
 		</dependency>
-
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-autoconfigure-processor</artifactId>
@@ -73,6 +73,12 @@
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-test</artifactId>
 			<version>${project.parent.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 

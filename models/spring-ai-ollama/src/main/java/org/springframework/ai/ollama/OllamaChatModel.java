@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -52,7 +53,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -133,6 +133,8 @@ public class OllamaChatModel implements ChatModel {
 	 * executed.
 	 */
 	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+
+	private final AtomicBoolean internalToolExecutionWarned = new AtomicBoolean(false);
 
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
@@ -234,6 +236,7 @@ public class OllamaChatModel implements ChatModel {
 		// Before moving any further, build the final request Prompt,
 		// merging runtime and default options.
 		Prompt requestPrompt = buildRequestPrompt(prompt);
+		verifyPromptChatOptions(requestPrompt);
 		return this.internalCall(requestPrompt, null);
 	}
 
@@ -258,7 +261,8 @@ public class OllamaChatModel implements ChatModel {
 						: ollamaResponse.message()
 							.toolCalls()
 							.stream()
-							.map(toolCall -> new AssistantMessage.ToolCall("", "function", toolCall.function().name(),
+							.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
+									toolCall.function().name(),
 									ModelOptionsUtils.toJsonString(toolCall.function().arguments())))
 							.toList();
 
@@ -292,6 +296,11 @@ public class OllamaChatModel implements ChatModel {
 		ChatOptions options = prompt.getOptions();
 		Assert.state(options != null, "ChatOptions must not be null");
 		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(options, response)) {
+			if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
+				logger.warn(
+						"Internal tool execution in OllamaChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
+								+ "Use ChatClient with ToolCallAdvisor instead.");
+			}
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -314,6 +323,7 @@ public class OllamaChatModel implements ChatModel {
 		// Before moving any further, build the final request Prompt,
 		// merging runtime and default options.
 		Prompt requestPrompt = buildRequestPrompt(prompt);
+		verifyPromptChatOptions(requestPrompt);
 		return this.internalStream(requestPrompt, null);
 	}
 
@@ -324,6 +334,7 @@ public class OllamaChatModel implements ChatModel {
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(OllamaApiConstants.PROVIDER_NAME)
+				.streaming(true)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
@@ -344,7 +355,8 @@ public class OllamaChatModel implements ChatModel {
 					toolCalls = chunk.message()
 						.toolCalls()
 						.stream()
-						.map(toolCall -> new AssistantMessage.ToolCall("", "function", toolCall.function().name(),
+						.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
+								toolCall.function().name(),
 								ModelOptionsUtils.toJsonString(toolCall.function().arguments())))
 						.toList();
 				}
@@ -384,6 +396,11 @@ public class OllamaChatModel implements ChatModel {
 					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult toolExecutionResult;
 						try {
+							if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
+								logger.warn(
+										"Internal tool execution in OllamaChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
+												+ "Use ChatClient with ToolCallAdvisor instead.");
+							}
 							ToolCallReactiveContextHolder.setContext(ctx);
 							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 						}
@@ -418,19 +435,12 @@ public class OllamaChatModel implements ChatModel {
 		});
 	}
 
-	Prompt buildRequestPrompt(Prompt prompt) {
+	private void verifyPromptChatOptions(Prompt prompt) {
+		var chatOptions = prompt.getOptions();
 
-		var requestOptions = (OllamaChatOptions) prompt.getOptions();
-		requestOptions = requestOptions == null ? this.defaultOptions : requestOptions;
-
-		// Validate request options
-		if (!StringUtils.hasText(requestOptions.getModel())) {
+		if (chatOptions != null && !StringUtils.hasText(chatOptions.getModel())) {
 			throw new IllegalArgumentException("model cannot be null or empty");
 		}
-
-		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
-
-		return prompt.mutate().chatOptions(requestOptions).build();
 	}
 
 	/**
@@ -463,7 +473,7 @@ public class OllamaChatModel implements ChatModel {
 						var function = new ToolCallFunction(toolCall.name(),
 								JsonParser.fromJson(toolCall.arguments(), new TypeReference<>() {
 								}));
-						return new ToolCall(function);
+						return new ToolCall(toolCall.id(), function);
 					}).toList();
 				}
 				return List.of(OllamaApi.Message.builder(Role.ASSISTANT)
@@ -587,11 +597,31 @@ public class OllamaChatModel implements ChatModel {
 			return this;
 		}
 
+		/**
+		 * Sets the tool calling manager used for internal tool execution.
+		 * @param toolCallingManager the tool calling manager
+		 * @return this builder
+		 * @deprecated since 2.0.0 for removal in 3.0.0 — internal tool execution in
+		 * {@link OllamaChatModel} is superseded by
+		 * {@link org.springframework.ai.chat.client.advisor.ToolCallAdvisor} used via
+		 * {@link org.springframework.ai.chat.client.ChatClient}.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
 			this.toolCallingManager = toolCallingManager;
 			return this;
 		}
 
+		/**
+		 * Sets the predicate to determine tool execution eligibility.
+		 * @param toolExecutionEligibilityPredicate the predicate
+		 * @return this builder
+		 * @deprecated since 2.0.0 for removal in 3.0.0 — internal tool execution in
+		 * {@link OllamaChatModel} is superseded by
+		 * {@link org.springframework.ai.chat.client.advisor.ToolCallAdvisor} used via
+		 * {@link org.springframework.ai.chat.client.ChatClient}.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public Builder toolExecutionEligibilityPredicate(
 				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
