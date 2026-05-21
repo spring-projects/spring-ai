@@ -23,6 +23,7 @@ import org.springframework.ai.chat.client.DefaultChatClient;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -59,6 +60,15 @@ class ChatClientAutoConfigurationTests {
 		this.contextRunner.withBean(ToolCallingManager.class, () -> manager).run(context -> {
 			var advisorBuilder = context.getBean(ToolCallAdvisor.Builder.class);
 			assertThat(ReflectionTestUtils.getField(advisorBuilder, "toolCallingManager")).isSameAs(manager);
+		});
+	}
+
+	@Test
+	void toolCallAdvisorBuilderUsesAutoConfiguredToolCallingManager() {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class)).run(context -> {
+			var toolCallingManager = context.getBean(ToolCallingManager.class);
+			var advisorBuilder = context.getBean(ToolCallAdvisor.Builder.class);
+			assertThat(ReflectionTestUtils.getField(advisorBuilder, "toolCallingManager")).isSameAs(toolCallingManager);
 		});
 	}
 
