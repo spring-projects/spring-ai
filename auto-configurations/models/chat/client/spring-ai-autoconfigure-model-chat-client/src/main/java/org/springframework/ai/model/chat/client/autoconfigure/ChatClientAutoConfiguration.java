@@ -94,7 +94,8 @@ public class ChatClientAutoConfiguration {
 			ToolCallingManager toolCallingManager) {
 		return ToolCallAdvisor.builder()
 			.toolCallingManager(toolCallingManager)
-			.advisorOrder(properties.getToolCalling().getAdvisorOrder());
+			.advisorOrder(properties.getToolCalling().getAdvisorOrder())
+			.streamToolCallResponses(properties.getToolCalling().isStreamToolCallResponses());
 	}
 
 	@Bean

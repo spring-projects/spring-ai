@@ -826,6 +826,16 @@ spring.ai.chat.client.tool-calling.advisor-order=0
 The value must be lower than the order of any advisor that should run _inside_ the tool-call loop (i.e., repeated on every iteration), and higher than any advisor that should run _outside_ it (i.e., executed only once per user request).
 The default is `ToolCallAdvisor.DEFAULT_ORDER`.
 
+===== Spring Boot: streaming intermediate tool-call responses
+
+By default, only the final answer is emitted during a `.stream()` call — intermediate tool-call chunks are suppressed until the last LLM iteration completes.
+Set `spring.ai.chat.client.tool-calling.stream-tool-call-responses=true` to stream each iteration's chunks in real time as they arrive:
+
+[source,properties]
+----
+spring.ai.chat.client.tool-calling.stream-tool-call-responses=true
+----
+
 ===== Spring Boot: custom `ToolCallAdvisor.Builder` bean
 
 For deeper customisation — for example to supply a custom `ToolCallingManager` — declare a `ToolCallAdvisor.Builder<?>` bean.
