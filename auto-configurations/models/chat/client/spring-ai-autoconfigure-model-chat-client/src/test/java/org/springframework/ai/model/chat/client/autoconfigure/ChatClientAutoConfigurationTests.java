@@ -100,6 +100,19 @@ class ChatClientAutoConfigurationTests {
 	}
 
 	@Test
+	void streamToolCallResponsesPropertyIsAppliedToToolCallAdvisorBuilder() {
+		var manager = mock(ToolCallingManager.class);
+
+		this.contextRunner.withBean(ToolCallingManager.class, () -> manager)
+			.withPropertyValues("spring.ai.chat.client.tool-calling.stream-tool-call-responses=true")
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				var advisorBuilder = context.getBean(ToolCallAdvisor.Builder.class);
+				assertThat(ReflectionTestUtils.getField(advisorBuilder, "streamToolCallResponses")).isEqualTo(true);
+			});
+	}
+
+	@Test
 	void customToolCallAdvisorBuilderBeanSuppressesAutoConfiguration() {
 		var manager = mock(ToolCallingManager.class);
 		var customAdvisorBuilder = ToolCallAdvisor.builder().toolCallingManager(manager);

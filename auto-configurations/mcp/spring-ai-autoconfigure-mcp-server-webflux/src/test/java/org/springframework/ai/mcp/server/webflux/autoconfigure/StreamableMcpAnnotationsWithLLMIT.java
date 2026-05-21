@@ -150,8 +150,8 @@ public class StreamableMcpAnnotationsWithLLMIT {
 
 						assertThat(builder).isNotNull();
 
-						ChatClient chatClient = builder.defaultToolCallbacks(tcp)
-							.defaultToolContext(Map.of("progressToken", "test-progress-token"))
+						ChatClient chatClient = builder
+							.defaultTools(t -> t.callbacks(tcp).context(Map.of("progressToken", "test-progress-token")))
 							.build();
 
 						String cResponse = chatClient.prompt()

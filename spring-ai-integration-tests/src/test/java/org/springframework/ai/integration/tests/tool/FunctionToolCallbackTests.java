@@ -85,11 +85,11 @@ public class FunctionToolCallbackTests {
 			.build()
 			.prompt()
 			.user("Welcome the users to the library")
-			.toolCallbacks(FunctionToolCallback.builder("sayWelcome",
+			.tools(t -> t.callbacks(FunctionToolCallback.builder("sayWelcome",
 							(Consumer<Object>) input -> logger.info("CALLBACK - Welcoming users to the library"))
 					.description("Welcome users to the library")
 					.inputType(Void.class)
-					.build())
+					.build()))
 			.call()
 			.content();
 		assertThat(content).isNotEmpty();
@@ -115,11 +115,11 @@ public class FunctionToolCallbackTests {
 			.build()
 			.prompt()
 			.user("Welcome %s to the library".formatted("James Bond"))
-			.toolCallbacks(FunctionToolCallback.builder("welcomeUser",
+			.tools(t -> t.callbacks(FunctionToolCallback.builder("welcomeUser",
 							(Consumer<Object>) user -> logger.info("CALLBACK - Welcoming {} to the library", ((User) user).name()))
 					.description("Welcome a specific user to the library")
 					.inputType(User.class)
-					.build())
+					.build()))
 			.call()
 			.content();
 		assertThat(content).contains("Bond");
@@ -152,10 +152,10 @@ public class FunctionToolCallbackTests {
 			.build()
 			.prompt()
 			.user("What books written by %s are available in the library?".formatted("J.R.R. Tolkien"))
-			.toolCallbacks(FunctionToolCallback.builder("availableBooksByAuthor", function)
+			.tools(t -> t.callbacks(FunctionToolCallback.builder("availableBooksByAuthor", function)
 				.description("Get the list of books written by the given author available in the library")
 				.inputType(Author.class)
-				.build())
+				.build()))
 			.call()
 			.content();
 		assertThat(content).isNotEmpty()
@@ -188,10 +188,10 @@ public class FunctionToolCallbackTests {
 			.build()
 			.prompt()
 			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit", "The Lion, the Witch and the Wardrobe"))
-			.toolCallbacks(FunctionToolCallback.builder("authorsByAvailableBooks", function)
+			.tools(t -> t.callbacks(FunctionToolCallback.builder("authorsByAvailableBooks", function)
 				.description("Get the list of authors who wrote the given books available in the library")
 				.inputType(Books.class)
-				.build())
+				.build()))
 			.call()
 			.content();
 		assertThat(content).isNotEmpty().contains("J.R.R. Tolkien").contains("C.S. Lewis");

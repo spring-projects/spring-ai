@@ -491,18 +491,6 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 		 * Disables internal conversation history. You need a ChatMemory Advisor
 		 * registered next in the chain.
 		 * @return this Builder instance for method chaining
-		 * @deprecated since 2.0.0-M3 in favor of
-		 * {@link #disableInternalConversationHistory()}
-		 */
-		@Deprecated(since = "2.0.0-M3", forRemoval = true)
-		public T disableMemory() {
-			return disableInternalConversationHistory();
-		}
-
-		/**
-		 * Disables internal conversation history. You need a ChatMemory Advisor
-		 * registered next in the chain.
-		 * @return this Builder instance for method chaining
 		 */
 		public T disableInternalConversationHistory() {
 			this.conversationHistoryEnabled = false;
@@ -520,16 +508,6 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 		 */
 		public T streamToolCallResponses(boolean streamToolCallResponses) {
 			this.streamToolCallResponses = streamToolCallResponses;
-			return self();
-		}
-
-		/**
-		 * Disables streaming of intermediate tool call responses. Only the final answer
-		 * will be streamed to downstream consumers.
-		 * @return this Builder instance for method chaining
-		 */
-		public T suppressToolCallStreaming() {
-			this.streamToolCallResponses = false;
 			return self();
 		}
 

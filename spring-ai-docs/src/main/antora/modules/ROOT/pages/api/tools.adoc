@@ -1152,6 +1152,7 @@ The `ToolCallAdvisor.Builder` supports the following configuration options:
 - `toolCallingManager`: The `ToolCallingManager` instance to use for executing tool calls. If not provided, a default instance is used.
 - `advisorOrder`: The order in which the advisor is applied in the chain. Must be between `BaseAdvisor.HIGHEST_PRECEDENCE` and `BaseAdvisor.LOWEST_PRECEDENCE`.
 - `conversationHistoryEnabled`: Controls whether the advisor maintains conversation history internally during tool call iterations. Default is `true`.
+- `streamToolCallResponses`: When `true`, each tool-call iteration streams its chunks in real time during a `.stream()` call. When `false` (default), only the final answer is streamed.
 
 ==== Conversation History Management
 

@@ -67,8 +67,8 @@ class OpenAiChatModelFunctionCallingIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("Turn the light on in the living room")
-				.toolCallbacks(FunctionToolCallback.builder("turnsLightOnInTheLivingRoom", () -> state.put("Light", "ON"))
-						.build())
+				.tools(t -> t.callbacks(FunctionToolCallback.builder("turnsLightOnInTheLivingRoom", () -> state.put("Light", "ON"))
+						.build()))
 				.call()
 				.content();
 		// @formatter:on

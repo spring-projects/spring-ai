@@ -240,7 +240,7 @@ class DefaultChatClientUtilsTests {
 			.create(chatModel)
 			.prompt()
 			.options(chatOptions)
-			.toolCallbacks(toolCallback);
+			.tools(t -> t.callbacks(toolCallback));
 
 		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
 
@@ -261,7 +261,7 @@ class DefaultChatClientUtilsTests {
 			.create(chatModel)
 			.prompt()
 			.options(chatOptions)
-			.toolContext(toolContext);
+			.tools(t -> t.context(toolContext));
 
 		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
 
@@ -305,7 +305,7 @@ class DefaultChatClientUtilsTests {
 			.create(chatModel)
 			.prompt()
 			.options(chatOptions)
-			.toolCallbacks(toolCallback2);
+			.tools(t -> t.callbacks(toolCallback2));
 
 		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
 
@@ -326,7 +326,7 @@ class DefaultChatClientUtilsTests {
 			.create(chatModel)
 			.prompt()
 			.options(ToolCallingChatOptions.builder().toolContext(toolContext1))
-			.toolContext(toolContext2);
+			.tools(t -> t.context(toolContext2));
 
 		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
 
@@ -369,7 +369,7 @@ class DefaultChatClientUtilsTests {
 			.create(chatModel)
 			.prompt()
 			.options(chatOptions)
-			.toolCallbacks(toolCallback1);
+			.tools(t -> t.callbacks(toolCallback1));
 
 		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
 
@@ -390,7 +390,7 @@ class DefaultChatClientUtilsTests {
 			.create(chatModel)
 			.prompt()
 			.options(chatOptions)
-			.toolContext(toolContext1);
+			.tools(t -> t.context(toolContext1));
 
 		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
 		assertThat(result.prompt().getOptions()).isInstanceOf(ToolCallingChatOptions.class);
@@ -466,8 +466,7 @@ class DefaultChatClientUtilsTests {
 			.user(u -> u.text(userText).params(userParams).media(media))
 			.messages(messages)
 			.toolNames(toolNames.toArray(new String[0]))
-			.toolCallbacks(toolCallback)
-			.toolContext(toolContext)
+			.tools(t -> t.callbacks(toolCallback).context(toolContext))
 			.options(chatOptions)
 			.advisors(a -> a.params(advisorParams));
 

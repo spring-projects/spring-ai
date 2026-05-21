@@ -70,12 +70,28 @@ public class ChatClientBuilderProperties {
 		 */
 		private int advisorOrder = ToolCallAdvisor.DEFAULT_ORDER;
 
+		/**
+		 * Whether intermediate tool-call responses are streamed back to the caller during
+		 * a {@code stream()} invocation. When {@code true}, each tool-call iteration
+		 * emits its chunks in real time before the recursive call is made. When
+		 * {@code false} (default), only the final answer is streamed.
+		 */
+		private boolean streamToolCallResponses = false;
+
 		public int getAdvisorOrder() {
 			return this.advisorOrder;
 		}
 
 		public void setAdvisorOrder(int advisorOrder) {
 			this.advisorOrder = advisorOrder;
+		}
+
+		public boolean isStreamToolCallResponses() {
+			return this.streamToolCallResponses;
+		}
+
+		public void setStreamToolCallResponses(boolean streamToolCallResponses) {
+			this.streamToolCallResponses = streamToolCallResponses;
 		}
 
 	}
