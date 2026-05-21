@@ -759,6 +759,49 @@
 			</build>
 		</profile>
 		<profile>
+			<id>auto-configuration-all-optional</id>
+			<!-- This profile tightens the enforcer rule bannedDependencies to make sure all non-test -->
+			<!-- deps are optional for auto-configuration modules. -->
+			<activation>
+				<file>
+					<exists>src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</exists>
+				</file>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-enforcer-plugin</artifactId>
+						<version>${maven-enforcer-plugin.version}</version>
+						<executions>
+							<execution>
+								<id>maven-enforcer</id>
+								<configuration>
+									<rules>
+										<bannedDependencies>
+											<excludes>
+												<!-- Since this rule doesn't "see" optional deps, we pretend that autoconfs should depend on NOTHING, -->
+												<!-- except tests (and the weird netty hiccup) -->
+												<exclude>*:*</exclude>
+											</excludes>
+											<includes>
+												<include>*:*:*:*:test:*</include>
+												<!-- for some reason, which likely has to do with classifiers, without this include, the rule fails -->
+												<!-- with a false positive on spring-ai-autoconfigure-mcp-server-webflux. Did not find a better way to fix. -->
+												<include>io.netty:netty-*</include>
+											</includes>
+											<message>auto-configuration modules should have all their dependencies declared as optional</message>
+										</bannedDependencies>
+									</rules>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
+		<profile>
 			<id>license</id>
 			<activation>
 				<activeByDefault>false</activeByDefault>
