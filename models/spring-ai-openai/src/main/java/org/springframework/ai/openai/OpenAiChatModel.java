@@ -304,12 +304,13 @@ public class OpenAiChatModel implements ChatModel {
 			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
 			// the function call handling logic.
 			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
-				.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
+//				.switchMap(chatCompletion2 -> Mono.just(chatCompletion2).map(chatCompletion -> {
+				.map(chatCompletion -> {
 					try {
 						// If an id is not provided, set to "NO_ID" (for compatible APIs).
-						String id = chatCompletion2.id() == null ? "NO_ID" : chatCompletion2.id();
+						String id = chatCompletion.id() == null ? "NO_ID" : chatCompletion.id();
 
-						List<Generation> generations = chatCompletion2.choices().stream().map(choice -> { // @formatter:off
+						List<Generation> generations = chatCompletion.choices().stream().map(choice -> { // @formatter:off
 							if (choice.message().role() != null) {
 								roleMap.putIfAbsent(id, choice.message().role().name());
 							}
@@ -324,11 +325,11 @@ public class OpenAiChatModel implements ChatModel {
 							return buildGeneration(choice, metadata, request);
 						}).toList();
 						// @formatter:on
-						OpenAiApi.Usage usage = chatCompletion2.usage();
+						OpenAiApi.Usage usage = chatCompletion.usage();
 						Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
 						Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
 								previousChatResponse);
-						return new ChatResponse(generations, from(chatCompletion2, null, accumulatedUsage));
+						return new ChatResponse(generations, from(chatCompletion, null, accumulatedUsage));
 					}
 					catch (Exception e) {
 						logger.error("Error processing chat completion", e);
@@ -339,7 +340,8 @@ public class OpenAiChatModel implements ChatModel {
 					// final response. Hence, the following overlapping buffer is
 					// created to store both the current and the subsequent response
 					// to accumulate the usage from the subsequent response.
-				}))
+				})
+//				}))
 				.buffer(2, 1)
 				.map(bufferList -> {
 					ChatResponse firstResponse = bufferList.get(0);
@@ -363,7 +365,7 @@ public class OpenAiChatModel implements ChatModel {
 				});
 
 			// @formatter:off
-			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
+			Flux<ChatResponse> flux = chatResponse.concatMap(response -> {
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					//  is currently only synchronous

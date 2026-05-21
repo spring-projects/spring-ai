@@ -275,15 +275,10 @@ public class OpenAiApi {
 			// Merging the window chunks into a single chunk.
 			// Reduce the inner Flux<ChatCompletionChunk> window into a single
 			// Mono<ChatCompletionChunk>,
-			// Flux<Flux<ChatCompletionChunk>> -> Flux<Mono<ChatCompletionChunk>>
-			.concatMapIterable(window -> {
-				Mono<ChatCompletionChunk> monoChunk = window.reduce(
-						new ChatCompletionChunk(null, null, null, null, null, null, null, null),
-						(previous, current) -> this.chunkMerger.merge(previous, current));
-				return List.of(monoChunk);
-			})
-			// Flux<Mono<ChatCompletionChunk>> -> Flux<ChatCompletionChunk>
-			.flatMap(mono -> mono);
+			// Flux<Flux<ChatCompletionChunk>> -> Flux<ChatCompletionChunk>>
+			.concatMap(window -> window.reduce(
+					new ChatCompletionChunk(null, null, null, null, null, null, null, null),
+					(previous, current) -> this.chunkMerger.merge(previous, current)));
 	}
 
 	/**
