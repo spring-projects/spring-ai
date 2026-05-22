@@ -818,7 +818,7 @@ public class BedrockProxyChatModel implements ChatModel {
 			ChatOptions options = prompt.getOptions();
 			Assert.state(options != null, "Prompt options must not be null");
 
-			Flux<ChatResponse> chatResponseFlux = chatResponses.switchMap(chatResponse -> {
+			Flux<ChatResponse> chatResponseFlux = chatResponses.concatMap(chatResponse -> {
 
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(options, chatResponse)
 						&& chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
