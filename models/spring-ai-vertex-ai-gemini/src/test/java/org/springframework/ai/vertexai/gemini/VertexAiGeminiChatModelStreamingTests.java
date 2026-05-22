@@ -129,7 +129,8 @@ public class VertexAiGeminiChatModelStreamingTests {
 		ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
 		this.chatModel = VertexAiGeminiChatModel.builder()
 			.vertexAI(this.vertexAi)
-			.defaultOptions(VertexAiGeminiChatOptions.builder().build())
+			.defaultOptions(
+					VertexAiGeminiChatOptions.builder().model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO).build())
 			.toolCallingManager(toolCallingManager)
 			.observationRegistry(ObservationRegistry.NOOP)
 			.build();
