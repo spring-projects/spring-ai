@@ -408,7 +408,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		ChatResponse response = ChatClient.create(this.chatModel)
 			.prompt("Tell me joke about Spring Framework")
 			.options(OpenAiChatOptions.builder()
-				.model(OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW)
+				.model(OpenAiApi.ChatModel.GPT_AUDIO_1_5)
 				.outputAudio(new AudioParameters(AudioParameters.Voice.ALLOY, AudioParameters.AudioResponseFormat.WAV))
 				.outputModalities(List.of("text", "audio"))
 				.build())

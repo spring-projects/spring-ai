@@ -466,9 +466,9 @@ public class OpenAiChatModelIT extends AbstractIT {
 		assertThat(usage).isNotNull();
 		assertThat(usage).isNotInstanceOf(EmptyUsage.class);
 		assertThat(usage).isInstanceOf(DefaultUsage.class);
-		assertThat(usage.getPromptTokens()).isGreaterThan(450).isLessThan(600);
-		assertThat(usage.getCompletionTokens()).isGreaterThan(230).isLessThan(360);
-		assertThat(usage.getTotalTokens()).isGreaterThan(680).isLessThan(960);
+		assertThat(usage.getPromptTokens()).isGreaterThan(75).isLessThan(150);
+		assertThat(usage.getCompletionTokens()).isGreaterThan(100).isLessThan(300);
+		assertThat(usage.getTotalTokens()).isGreaterThan(180).isLessThan(300);
 	}
 
 	@Test

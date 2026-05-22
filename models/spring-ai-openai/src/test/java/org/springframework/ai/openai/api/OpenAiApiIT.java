@@ -114,7 +114,7 @@ class OpenAiApiIT {
 							ChatCompletionMessage.MediaContent.InputAudio.Format.MP3)));
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage(content, Role.USER);
 		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(List.of(chatCompletionMessage),
-				OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW.getValue(), 0.0);
+				OpenAiApi.ChatModel.GPT_AUDIO_1_5.getValue(), 0.0);
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(chatCompletionRequest);
 
 		assertThat(response).isNotNull();
@@ -133,7 +133,7 @@ class OpenAiApiIT {
 				ChatCompletionRequest.AudioParameters.Voice.NOVA,
 				ChatCompletionRequest.AudioParameters.AudioResponseFormat.MP3);
 		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(List.of(chatCompletionMessage),
-				OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW.getValue(), audioParameters, false);
+				OpenAiApi.ChatModel.GPT_AUDIO_1_5.getValue(), audioParameters, false);
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(chatCompletionRequest);
 
 		assertThat(response).isNotNull();
@@ -155,7 +155,7 @@ class OpenAiApiIT {
 				ChatCompletionRequest.AudioParameters.Voice.NOVA,
 				ChatCompletionRequest.AudioParameters.AudioResponseFormat.MP3);
 		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(List.of(chatCompletionMessage),
-				OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW.getValue(), audioParameters, true);
+				OpenAiApi.ChatModel.GPT_AUDIO_1_5.getValue(), audioParameters, true);
 
 		Flux<ChatCompletionChunk> response = this.openAiApi.chatCompletionStream(chatCompletionRequest);
 
