@@ -18,9 +18,7 @@ package org.springframework.ai.model;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.github.victools.jsonschema.generator.Option;
@@ -67,10 +65,6 @@ public abstract class ModelOptionsUtils {
 			.addModules(JacksonUtils.instantiateAvailableModules())
 			.build();
 	}
-
-	private static final List<String> BEAN_MERGE_FIELD_EXCISIONS = List.of("class");
-
-	private static final ConcurrentHashMap<Class<?>, List<String>> REQUEST_FIELD_NAMES_PER_CLASS = new ConcurrentHashMap<>();
 
 	private static final AtomicReference<@Nullable SchemaGenerator> SCHEMA_GENERATOR_CACHE = new AtomicReference<>();
 
@@ -180,9 +174,6 @@ public abstract class ModelOptionsUtils {
 	}
 
 	public static void toUpperCaseTypeValues(ObjectNode node) {
-		if (node == null) {
-			return;
-		}
 		if (node.isObject()) {
 			node.properties().forEach(entry -> {
 				JsonNode value = entry.getValue();
@@ -196,9 +187,9 @@ public abstract class ModelOptionsUtils {
 						}
 					});
 				}
-				else if (value.isTextual() && entry.getKey().equals("type")) {
-					String oldValue = ((ObjectNode) node).get("type").asText();
-					((ObjectNode) node).put("type", oldValue.toUpperCase());
+				else if (value.isString() && entry.getKey().equals("type")) {
+					String oldValue = node.get("type").asString();
+					node.put("type", oldValue.toUpperCase());
 				}
 			});
 		}
