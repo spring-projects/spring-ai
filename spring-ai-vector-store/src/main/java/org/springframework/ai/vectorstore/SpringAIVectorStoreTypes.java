@@ -28,8 +28,6 @@ public final class SpringAIVectorStoreTypes {
 
 	public static final String AZURE = "azure";
 
-	public static final String AZURE_COSMOS_DB = "azure-cosmos-db";
-
 	public static final String CASSANDRA = "cassandra";
 
 	public static final String CHROMA = "chroma";

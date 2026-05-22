@@ -46,9 +46,7 @@ public final class ResourceAdapter {
 		}
 		var meta = MetaUtils.getMeta(mcpResourceAnnotation.metaProvider());
 
-		var resourceBuilder = McpSchema.Resource.builder()
-			.uri(mcpResourceAnnotation.uri())
-			.name(name)
+		var resourceBuilder = McpSchema.Resource.builder(mcpResourceAnnotation.uri(), name)
 			.title(mcpResourceAnnotation.title())
 			.description(mcpResourceAnnotation.description())
 			.mimeType(mcpResourceAnnotation.mimeType())
@@ -75,9 +73,7 @@ public final class ResourceAdapter {
 		}
 		var meta = MetaUtils.getMeta(mcpResource.metaProvider());
 
-		return McpSchema.ResourceTemplate.builder()
-			.uriTemplate(mcpResource.uri())
-			.name(name)
+		return McpSchema.ResourceTemplate.builder(mcpResource.uri(), name)
 			.description(mcpResource.description())
 			.mimeType(mcpResource.mimeType())
 			.meta(meta)

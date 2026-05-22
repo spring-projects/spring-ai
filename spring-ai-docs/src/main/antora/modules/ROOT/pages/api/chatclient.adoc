@@ -175,7 +175,7 @@ public class MultiModelService {
             // Create a new OpenAiChatModel for Groq (Llama3)
             OpenAiChatModel groqModel = OpenAiChatModel.builder()
                 .options(OpenAiChatOptions.builder()
-                    .baseUrl("https://api.groq.com/openai")
+                    .baseUrl("https://api.groq.com/openai/v1")
                     .apiKey(System.getenv("GROQ_API_KEY"))
                     .model("llama3-70b-8192")
                     .temperature(0.5)
@@ -754,7 +754,7 @@ TIP: Be cautious about logging sensitive information in production environments.
 
 === Tool Calling
 
-When tools are registered on a `ChatClient` call — via `.tools(...)`, `.toolCallbacks(...)`, `.toolNames(...)`, defaults set on the builder, tools pre-configured in the `ChatModel`'s default options, or tools passed through `.options(...)` — the `ChatClient` automatically registers a `ToolCallAdvisor` in the advisor chain to handle the tool execution lifecycle.
+When tools are registered on a `ChatClient` call (via `.tools(...)` or defaults set on the builder), the `ChatClient` automatically registers a `ToolCallAdvisor` in the advisor chain to handle the tool execution lifecycle.
 This means you do not need to add a `ToolCallAdvisor` manually for the common case.
 
 [source,java]
@@ -782,7 +782,9 @@ chatClient.prompt("What day is tomorrow?")
     .content();
 ----
 
-Or you can provide your own `ToolCallAdvisor` (or any other advisor implementing `ToolAdvisor`) — in that case auto-registration is suppressed automatically because the chain already contains a `ToolAdvisor`:
+Or you can provide your own `ToolCallAdvisor` (or any other advisor implementing `ToolAdvisor`) — in that case auto-registration is suppressed automatically because the chain already contains a `ToolAdvisor`.
+
+The preferred way is to pass the advisor directly inside the `ToolSpec` consumer, keeping tools and their advisor co-located:
 
 [source,java]
 ----
@@ -790,6 +792,18 @@ var customAdvisor = ToolCallAdvisor.builder()
     .toolCallingManager(myToolCallingManager)
     .build();
 
+chatClient.prompt("What day is tomorrow?")
+    .tools(t -> t
+        .instances(new DateTimeTools())
+        .advisor(customAdvisor))   // auto-registration suppressed
+    .call()
+    .content();
+----
+
+Alternatively, you can pass the advisor separately via `.advisors()`:
+
+[source,java]
+----
 chatClient.prompt("What day is tomorrow?")
     .tools(new DateTimeTools())
     .advisors(customAdvisor)    // auto-registration suppressed
@@ -811,6 +825,16 @@ spring.ai.chat.client.tool-calling.advisor-order=0
 
 The value must be lower than the order of any advisor that should run _inside_ the tool-call loop (i.e., repeated on every iteration), and higher than any advisor that should run _outside_ it (i.e., executed only once per user request).
 The default is `ToolCallAdvisor.DEFAULT_ORDER`.
+
+===== Spring Boot: streaming intermediate tool-call responses
+
+By default, only the final answer is emitted during a `.stream()` call — intermediate tool-call chunks are suppressed until the last LLM iteration completes.
+Set `spring.ai.chat.client.tool-calling.stream-tool-call-responses=true` to stream each iteration's chunks in real time as they arrive:
+
+[source,properties]
+----
+spring.ai.chat.client.tool-calling.stream-tool-call-responses=true
+----
 
 ===== Spring Boot: custom `ToolCallAdvisor.Builder` bean
 
@@ -870,7 +894,7 @@ If a new system message is added, all previous system messages are removed from 
 This ensures that the most recent context is always available for the conversation while keeping memory usage bounded.
 
 The `MessageWindowChatMemory` is backed by the `ChatMemoryRepository` abstraction which provides storage implementations for the chat conversation memory.
-There are several implementations available, including the `InMemoryChatMemoryRepository`, `JdbcChatMemoryRepository`, `CassandraChatMemoryRepository`, `Neo4jChatMemoryRepository`, `CosmosDBChatMemoryRepository`, `MongoChatMemoryRepository`, and `RedisChatMemoryRepository`.
+There are several implementations available, including the `InMemoryChatMemoryRepository`, `JdbcChatMemoryRepository`, `CassandraChatMemoryRepository`, `Neo4jChatMemoryRepository`, `MongoChatMemoryRepository`, and `RedisChatMemoryRepository`.
 
 IMPORTANT: The `ChatMemory.CONVERSATION_ID` parameter is *required* for all memory advisors. It must be supplied on every call via `.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))`. Omitting it throws an `IllegalArgumentException`. There is no default conversation ID.
 

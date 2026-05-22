@@ -227,9 +227,9 @@ class AnthropicChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco (California, USA), Tokyo (Japan), and Paris (France)? Use Celsius.")
-				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
-					.build())
+					.build()))
 				.call()
 				.content();
 		// @formatter:on
@@ -243,9 +243,9 @@ class AnthropicChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Use Celsius.")
-				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeatherInLocation", new MockWeatherService())
+				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeatherInLocation", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
-					.build())
+					.build()))
 				.call()
 				.content();
 		// @formatter:on
@@ -258,10 +258,10 @@ class AnthropicChatClientIT {
 	void defaultFunctionCallTest() {
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultToolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.defaultTools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build())
+					.build()))
 				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Use Celsius."))
 				.build()
 			.prompt()
@@ -278,10 +278,10 @@ class AnthropicChatClientIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Use Celsius.")
-				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build())
+					.build()))
 				.stream()
 				.content();
 		// @formatter:on

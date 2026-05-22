@@ -48,10 +48,6 @@ public enum VectorStoreProvider {
 	CHROMA("chroma"),
 
 	/**
-	 * Vector store provided by CosmosDB.
-	 */
-	COSMOSDB("cosmosdb"),
-	/**
 	 * Vector store provided by Couchbase.
 	 */
 	COUCHBASE("couchbase"),

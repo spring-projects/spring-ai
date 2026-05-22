@@ -24,7 +24,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -57,7 +59,9 @@ public class OpenAiFunctionCallback2IT {
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 			// @formatter:off
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 			ChatClient chatClient = ChatClient.builder(chatModel)
+				.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(toolCallingManager).build())
 				.defaultToolNames("WeatherInfo")
 				.defaultUser(u -> u.text("What's the weather like in {cities}? Please use the provided tools to get the weather for all 3 cities."))
 				.build();
@@ -80,7 +84,10 @@ public class OpenAiFunctionCallback2IT {
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 			// @formatter:off
-			String content = ChatClient.builder(chatModel).build().prompt()
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+			String content = ChatClient.builder(chatModel)
+				.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(toolCallingManager).build())
+				.build().prompt()
 				.toolNames("WeatherInfo")
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.")
 				.stream().content()

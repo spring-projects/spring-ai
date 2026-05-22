@@ -41,7 +41,6 @@
 			<groupId>${coherence.groupId}</groupId>
 			<artifactId>coherence</artifactId>
 			<version>${coherence.version}</version>
-			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>${coherence.groupId}</groupId>

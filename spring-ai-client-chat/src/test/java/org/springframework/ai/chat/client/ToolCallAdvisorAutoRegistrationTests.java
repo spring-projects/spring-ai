@@ -50,7 +50,9 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -87,7 +89,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 
 	@BeforeEach
 	void setup() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(DefaultToolCallingChatOptions.builder().build());
+		lenient().when(this.chatModel.getDefaultOptions()).thenReturn(DefaultToolCallingChatOptions.builder().build());
 		this.weatherTool = FunctionToolCallback.builder("getWeather", (CityInput in) -> in.city() + ": 25C")
 			.description("Get weather for a city")
 			.inputType(CityInput.class)
@@ -147,7 +149,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 				.prompt()
 				.advisors(counter)
 				.user("weather?")
-				.toolCallbacks(weatherTool)
+				.tools(t -> t.callbacks(weatherTool))
 				.call()
 				.content();
 
@@ -172,7 +174,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 				.advisors(counter)
 				.advisors(a -> a.param(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey(), false))
 				.user("weather?")
-				.toolCallbacks(weatherTool)
+				.tools(t -> t.callbacks(weatherTool))
 				.call()
 				.content();
 
@@ -242,7 +244,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 				.prompt()
 				.advisors(ToolCallAdvisor.builder().build(), counter)
 				.user("weather?")
-				.toolCallbacks(weatherTool)
+				.tools(t -> t.callbacks(weatherTool))
 				.call()
 				.content();
 
@@ -267,13 +269,24 @@ class ToolCallAdvisorAutoRegistrationTests {
 				.build()
 				.prompt()
 				.user("weather?")
-				.toolCallbacks(weatherTool)
+				.tools(t -> t.callbacks(weatherTool))
 				.call()
 				.content();
 
 			// The injected manager — not the default — handled the tool call
 			verify(customManager).executeToolCalls(any(), any());
 			verify(chatModel, times(2)).call(any(Prompt.class));
+		}
+
+		@Test
+		void throwsWhenMultipleToolAdvisorsRegistered() {
+			assertThatThrownBy(() -> ChatClient.create(chatModel)
+				.prompt()
+				.advisors(ToolCallAdvisor.builder().build(), ToolCallAdvisor.builder().build())
+				.user("weather?")
+				.tools(t -> t.callbacks(weatherTool))
+				.call()
+				.content()).isInstanceOf(IllegalStateException.class).hasMessageContaining("At most one ToolAdvisor");
 		}
 
 		@Test
@@ -286,7 +299,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 				.prompt()
 				.advisors(new NoOpToolCallHandlingAdvisor(), counter)
 				.user("weather?")
-				.toolCallbacks(weatherTool)
+				.tools(t -> t.callbacks(weatherTool))
 				.call()
 				.content();
 
@@ -312,7 +325,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 				.prompt()
 				.advisors(counter)
 				.user("weather?")
-				.toolCallbacks(weatherTool)
+				.tools(t -> t.callbacks(weatherTool))
 				.stream()
 				.content()
 				.collectList()
@@ -334,7 +347,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 				.advisors(counter)
 				.advisors(a -> a.param(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey(), false))
 				.user("weather?")
-				.toolCallbacks(weatherTool)
+				.tools(t -> t.callbacks(weatherTool))
 				.stream()
 				.content()
 				.collectList()

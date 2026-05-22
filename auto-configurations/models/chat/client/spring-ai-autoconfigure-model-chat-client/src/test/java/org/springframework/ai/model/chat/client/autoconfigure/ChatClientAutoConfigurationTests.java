@@ -23,6 +23,7 @@ import org.springframework.ai.chat.client.DefaultChatClient;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -63,6 +64,15 @@ class ChatClientAutoConfigurationTests {
 	}
 
 	@Test
+	void toolCallAdvisorBuilderUsesAutoConfiguredToolCallingManager() {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class)).run(context -> {
+			var toolCallingManager = context.getBean(ToolCallingManager.class);
+			var advisorBuilder = context.getBean(ToolCallAdvisor.Builder.class);
+			assertThat(ReflectionTestUtils.getField(advisorBuilder, "toolCallingManager")).isSameAs(toolCallingManager);
+		});
+	}
+
+	@Test
 	void toolCallAdvisorBuilderIsWiredIntoChatClientBuilder() {
 		var manager = mock(ToolCallingManager.class);
 
@@ -86,6 +96,19 @@ class ChatClientAutoConfigurationTests {
 				assertThat(context).hasNotFailed();
 				var advisorBuilder = context.getBean(ToolCallAdvisor.Builder.class);
 				assertThat(advisorBuilder.getAdvisorOrder()).isEqualTo(500);
+			});
+	}
+
+	@Test
+	void streamToolCallResponsesPropertyIsAppliedToToolCallAdvisorBuilder() {
+		var manager = mock(ToolCallingManager.class);
+
+		this.contextRunner.withBean(ToolCallingManager.class, () -> manager)
+			.withPropertyValues("spring.ai.chat.client.tool-calling.stream-tool-call-responses=true")
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				var advisorBuilder = context.getBean(ToolCallAdvisor.Builder.class);
+				assertThat(ReflectionTestUtils.getField(advisorBuilder, "streamToolCallResponses")).isEqualTo(true);
 			});
 	}
 

@@ -197,12 +197,6 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-model-chat-memory-repository-cosmos-db</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-model-chat-memory-repository-jdbc</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -326,12 +320,6 @@
 			</dependency>
 
             <!-- Spring AI Vector Stores -->
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-azure-cosmos-db-store</artifactId>
-				<version>${project.version}</version>
-			</dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
@@ -493,12 +481,6 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-model-chat-memory-repository-cassandra</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-autoconfigure-model-chat-memory-repository-cosmos-db</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -690,12 +672,6 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-autoconfigure-vector-store-azure-cosmos-db</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-vector-store-cassandra</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -830,12 +806,6 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-vector-store-azure</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-starter-vector-store-azure-cosmos-db</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -1105,12 +1075,6 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-chat-memory-repository-cassandra</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-starter-model-chat-memory-repository-cosmos-db</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 

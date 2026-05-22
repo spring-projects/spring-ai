@@ -636,6 +636,98 @@ public class DefaultChatClient implements ChatClient {
 
 	}
 
+	public static class DefaultToolSpec implements ToolSpec {
+
+		private final Map<String, Object> context = new HashMap<>();
+
+		private final List<ToolCallback> toolCallbacks = new ArrayList<>();
+
+		private final List<ToolCallbackProvider> toolCallbackProviders = new ArrayList<>();
+
+		private @Nullable ToolAdvisor toolAdvisor;
+
+		public Map<String, Object> getContext() {
+			return this.context;
+		}
+
+		public List<ToolCallback> getToolCallbacks() {
+			return this.toolCallbacks;
+		}
+
+		public List<ToolCallbackProvider> getToolCallbackProviders() {
+			return this.toolCallbackProviders;
+		}
+
+		public @Nullable ToolAdvisor getAdvisor() {
+			return this.toolAdvisor;
+		}
+
+		@Override
+		public ToolSpec context(String key, Object value) {
+			Assert.hasText(key, "context key cannot be null or empty");
+			Assert.notNull(value, "context value cannot be null");
+			this.context.put(key, value);
+			return this;
+		}
+
+		@Override
+		public ToolSpec context(Map<String, Object> context) {
+			Assert.notNull(context, "context cannot be null");
+			Assert.noNullElements(context.keySet(), "context keys cannot contain null elements");
+			Assert.noNullElements(context.values(), "context values cannot contain null elements");
+			this.context.putAll(context);
+			return this;
+		}
+
+		@Override
+		public ToolSpec instances(Object... toolObjects) {
+			Assert.notNull(toolObjects, "toolObjects cannot be null");
+			Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
+			this.toolCallbacks.addAll(Arrays.asList(ToolCallbacks.from(toolObjects)));
+			return this;
+		}
+
+		@Override
+		public ToolSpec instances(List<Object> toolObjects) {
+			Assert.notNull(toolObjects, "toolObjects cannot be null");
+			Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
+			this.toolCallbacks.addAll(Arrays.asList(ToolCallbacks.from(toolObjects.toArray(new Object[0]))));
+			return this;
+		}
+
+		@Override
+		public ToolSpec callbacks(ToolCallback... toolCallbacks) {
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
+			this.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
+			return this;
+		}
+
+		@Override
+		public ToolSpec callbacks(List<ToolCallback> toolCallbacks) {
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
+			this.toolCallbacks.addAll(toolCallbacks);
+			return this;
+		}
+
+		@Override
+		public ToolSpec callbacks(ToolCallbackProvider... toolCallbackProvider) {
+			Assert.notNull(toolCallbackProvider, "toolCallbackProvider cannot be null");
+			Assert.noNullElements(toolCallbackProvider, "toolCallbackProvider cannot contain null elements");
+			this.toolCallbackProviders.addAll(Arrays.asList(toolCallbackProvider));
+			return this;
+		}
+
+		@Override
+		public ToolSpec advisor(ToolAdvisor toolAdvisor) {
+			Assert.notNull(toolAdvisor, "toolAdvisor cannot be null");
+			this.toolAdvisor = toolAdvisor;
+			return this;
+		}
+
+	}
+
 	public static class DefaultChatClientRequestSpec implements ChatClientRequestSpec {
 
 		private final ObservationRegistry observationRegistry;
@@ -837,9 +929,9 @@ public class DefaultChatClient implements ChatClient {
 				.builder(this.chatModel, this.observationRegistry, this.chatClientObservationConvention,
 						this.advisorObservationConvention, this.toolCallAdvisorBuilder)
 				.defaultTemplateRenderer(this.templateRenderer)
-				.defaultToolCallbacks(this.toolCallbacks)
-				.defaultToolCallbacks(this.toolCallbackProviders.toArray(new ToolCallbackProvider[0]))
-				.defaultToolContext(this.toolContext)
+				.defaultTools(t -> t.callbacks(this.toolCallbacks)
+					.callbacks(this.toolCallbackProviders.toArray(new ToolCallbackProvider[0]))
+					.context(this.toolContext))
 				.defaultToolNames(StringUtils.toStringArray(this.toolNames));
 
 			if (!CollectionUtils.isEmpty(this.advisors)) {
@@ -866,6 +958,22 @@ public class DefaultChatClient implements ChatClient {
 			builder.addMessages(this.messages);
 
 			return builder;
+		}
+
+		@Override
+		public ChatClientRequestSpec tools(Consumer<ToolSpec> consumer) {
+			Assert.notNull(consumer, "consumer cannot be null");
+			var toolSpec = new DefaultToolSpec();
+			consumer.accept(toolSpec);
+
+			this.toolContext.putAll(toolSpec.getContext());
+			this.toolCallbacks.addAll(toolSpec.getToolCallbacks());
+			this.toolCallbackProviders.addAll(toolSpec.getToolCallbackProviders());
+			if (toolSpec.getAdvisor() != null) {
+				this.advisors.add(toolSpec.getAdvisor());
+			}
+
+			return this;
 		}
 
 		@Override
@@ -927,18 +1035,12 @@ public class DefaultChatClient implements ChatClient {
 
 		@Override
 		public ChatClientRequestSpec toolCallbacks(ToolCallback... toolCallbacks) {
-			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-			Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-			this.toolCallbacks.addAll(List.of(toolCallbacks));
-			return this;
+			return tools(t -> t.callbacks(toolCallbacks));
 		}
 
 		@Override
 		public ChatClientRequestSpec toolCallbacks(List<ToolCallback> toolCallbacks) {
-			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-			Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-			this.toolCallbacks.addAll(toolCallbacks);
-			return this;
+			return tools(t -> t.callbacks(toolCallbacks));
 		}
 
 		@Override
@@ -951,19 +1053,12 @@ public class DefaultChatClient implements ChatClient {
 
 		@Override
 		public ChatClientRequestSpec toolCallbacks(ToolCallbackProvider... toolCallbackProviders) {
-			Assert.notNull(toolCallbackProviders, "toolCallbackProviders cannot be null");
-			Assert.noNullElements(toolCallbackProviders, "toolCallbackProviders cannot contain null elements");
-			this.toolCallbackProviders.addAll(List.of(toolCallbackProviders));
-			return this;
+			return tools(t -> t.callbacks(toolCallbackProviders));
 		}
 
 		@Override
 		public ChatClientRequestSpec toolContext(Map<String, Object> toolContext) {
-			Assert.notNull(toolContext, "toolContext cannot be null");
-			Assert.noNullElements(toolContext.keySet(), "toolContext keys cannot contain null elements");
-			Assert.noNullElements(toolContext.values(), "toolContext values cannot contain null elements");
-			this.toolContext.putAll(toolContext);
-			return this;
+			return tools(t -> t.context(toolContext));
 		}
 
 		@Override
@@ -1054,20 +1149,21 @@ public class DefaultChatClient implements ChatClient {
 
 		@Override
 		public CallResponseSpec call() {
-			BaseAdvisorChain advisorChain = buildAdvisorChain(false);
+			BaseAdvisorChain advisorChain = buildAdvisorChain();
 			return new DefaultCallResponseSpec(DefaultChatClientUtils.toChatClientRequest(this), advisorChain,
 					this.observationRegistry, this.chatClientObservationConvention);
 		}
 
 		@Override
 		public StreamResponseSpec stream() {
-			BaseAdvisorChain advisorChain = buildAdvisorChain(true);
+			BaseAdvisorChain advisorChain = buildAdvisorChain();
 			return new DefaultStreamResponseSpec(DefaultChatClientUtils.toChatClientRequest(this), advisorChain,
 					this.observationRegistry, this.chatClientObservationConvention);
 		}
 
-		private BaseAdvisorChain buildAdvisorChain(boolean streaming) {
-			autoRegisterToolCallAdvisor(streaming);
+		private BaseAdvisorChain buildAdvisorChain() {
+			autoRegisterToolCallAdvisor();
+			validateSingleToolAdvisor();
 			warnOnMemoryAdvisorOrderMismatch();
 
 			// At the stack bottom add the model call advisors.
@@ -1088,10 +1184,10 @@ public class DefaultChatClient implements ChatClient {
 		 * downstream in the request direction) is already registered, since that memory
 		 * advisor will handle history for every tool-call iteration.
 		 * <p>
-		 * {@code streamToolCallResponses} is set automatically: {@code true} for
-		 * {@link #stream()} calls, {@code false} for {@link #call()}.
+		 * {@code streamToolCallResponses} must be pre-configured on the
+		 * {@code toolCallAdvisorBuilder} passed to {@link DefaultChatClient}.
 		 */
-		private void autoRegisterToolCallAdvisor(boolean streaming) {
+		private void autoRegisterToolCallAdvisor() {
 
 			boolean autoRegisterDisabled = Boolean.FALSE
 				.equals(this.advisorParams.get(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey()));
@@ -1116,10 +1212,8 @@ public class DefaultChatClient implements ChatClient {
 			boolean hasDownstreamMemoryAdvisor = this.advisors.stream()
 				.anyMatch(a -> a instanceof MemoryAdvisor && a.getOrder() > configuredOrder);
 
-			this.advisors.add(this.toolCallAdvisorBuilder.copy()
-				.conversationHistoryEnabled(!hasDownstreamMemoryAdvisor)
-				.streamToolCallResponses(streaming)
-				.build());
+			this.advisors.add(
+					this.toolCallAdvisorBuilder.copy().conversationHistoryEnabled(!hasDownstreamMemoryAdvisor).build());
 		}
 
 		private static boolean hasToolsInChatOptions(@Nullable Object options) {
@@ -1132,6 +1226,16 @@ public class DefaultChatClient implements ChatClient {
 			}
 			return tco != null && ((tco.getToolCallbacks() != null && !tco.getToolCallbacks().isEmpty())
 					|| (tco.getToolNames() != null && !tco.getToolNames().isEmpty()));
+		}
+
+		private void validateSingleToolAdvisor() {
+			List<Advisor> toolAdvisors = this.advisors.stream().filter(a -> a instanceof ToolAdvisor).toList();
+			if (toolAdvisors.size() > 1) {
+				String names = String.join(", ",
+						toolAdvisors.stream().map(a -> a.getName() + " (order=" + a.getOrder() + ")").toList());
+				throw new IllegalStateException("At most one ToolAdvisor is allowed in the advisor chain, but found "
+						+ toolAdvisors.size() + ": [" + names + "]");
+			}
 		}
 
 		/**
