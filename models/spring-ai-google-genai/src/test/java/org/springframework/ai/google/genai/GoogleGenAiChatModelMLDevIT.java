@@ -112,8 +112,8 @@ class GoogleGenAiChatModelMLDevIT {
 				.build()))
 			.build();
 
-		Prompt prompt = new Prompt(new UserMessage(
-				"What's the weather like in San Francisco? Return the temperature in Celsius. Also, search online for the latest news about San Francisco."),
+		Prompt prompt = new Prompt(
+				new UserMessage("What's the weather like in San Francisco? Return the temperature in Celsius"),
 				promptOptions);
 
 		ChatResponse response = this.chatModel.call(prompt);
@@ -136,7 +136,7 @@ class GoogleGenAiChatModelMLDevIT {
 	@SuppressWarnings("unchecked")
 	void functionCallingWithGoogleSearchAndServerSideToolInvocationsGemini3x() {
 		var promptOptions = GoogleGenAiChatOptions.builder()
-			.model(ChatModel.GEMINI_3_FLASH_PREVIEW)
+			.model(ChatModel.GEMINI_3_5_FLASH)
 			.googleSearchRetrieval(true)
 			.includeServerSideToolInvocations(true)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
@@ -178,9 +178,8 @@ class GoogleGenAiChatModelMLDevIT {
 		public GoogleGenAiChatModel googleGenAiChatModel(Client genAiClient) {
 			return GoogleGenAiChatModel.builder()
 				.genAiClient(genAiClient)
-				.defaultOptions(GoogleGenAiChatOptions.builder()
-					.model(GoogleGenAiChatModel.ChatModel.GEMINI_3_FLASH_PREVIEW)
-					.build())
+				.defaultOptions(
+						GoogleGenAiChatOptions.builder().model(GoogleGenAiChatModel.ChatModel.GEMINI_3_5_FLASH).build())
 				.toolCallingManager(ToolCallingManager.builder().build())
 				.build();
 		}
