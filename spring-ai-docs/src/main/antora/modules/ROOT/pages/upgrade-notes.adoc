@@ -399,6 +399,10 @@ The `spring-ai-openai-sdk` module (and its associated Spring Boot starter `sprin
 
 Existing users should use the `spring-ai-openai` module (and related starter and auto-configuration) instead and adapt class names accordingly (by removing the `Sdk` suffix for example) and configuration properties accordingly.
 
+==== `spring-ai-oci-genai` module removal
+
+The related modules can now be found at https://github.com/oracle/spring-cloud-oracle/tree/main/spring-ai-oracle.
+
 === ChatOptions Handling
 Users can interact with ChatModels in two ways:
 
