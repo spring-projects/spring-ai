@@ -44,7 +44,6 @@ public final class OracleChatMemoryRepository implements ChatMemoryRepository {
 
 	@Override
 	public List<String> findConversationIds() {
-		System.out.println("Calling findConversationIds----------------");
 		return this.delegate.findConversationIds();
 	}
 
