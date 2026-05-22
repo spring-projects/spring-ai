@@ -430,14 +430,24 @@ public class DeepSeekChatModel implements ChatModel {
 					}).toList();
 				}
 				Boolean isPrefixAssistantMessage = null;
-				if (message instanceof DeepSeekAssistantMessage
-						&& Boolean.TRUE.equals(((DeepSeekAssistantMessage) message).getPrefix())) {
-					isPrefixAssistantMessage = true;
+				// In thinking mode, DeepSeek requires the previous assistant message's
+				// reasoning_content to be passed back; otherwise subsequent turns
+				// (especially the second hop of a tool-calling round) fail with
+				// "The reasoning_content in the thinking mode must be passed back to
+				// the API." (400). buildGeneration already captures reasoningContent
+				// into DeepSeekAssistantMessage; this outbound path must forward it
+				// instead of passing null.
+				String reasoningContent = null;
+				if (message instanceof DeepSeekAssistantMessage deepSeekAssistantMessage) {
+					if (Boolean.TRUE.equals(deepSeekAssistantMessage.getPrefix())) {
+						isPrefixAssistantMessage = true;
+					}
+					reasoningContent = deepSeekAssistantMessage.getReasoningContent();
 				}
 				String text = assistantMessage.getText();
 				Assert.state(text != null, "text must not be null");
 				return List.of(new ChatCompletionMessage(text, ChatCompletionMessage.Role.ASSISTANT, null, null,
-						toolCalls, isPrefixAssistantMessage, null));
+						toolCalls, isPrefixAssistantMessage, reasoningContent));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
