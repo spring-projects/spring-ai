@@ -95,6 +95,8 @@ public class GoogleGenAiChatProperties {
 
 	private @Nullable Map<String, String> labels;
 
+	private @Nullable String serviceTier;
+
 	public @Nullable List<String> getStopSequences() {
 		return this.stopSequences;
 	}
@@ -295,6 +297,14 @@ public class GoogleGenAiChatProperties {
 		this.labels = labels;
 	}
 
+	public @Nullable String getServiceTier() {
+		return this.serviceTier;
+	}
+
+	public void setServiceTier(@Nullable String serviceTier) {
+		this.serviceTier = serviceTier;
+	}
+
 	public GoogleGenAiChatOptions toOptions() {
 		GoogleGenAiChatOptions.Builder builder = GoogleGenAiChatOptions.builder();
 		builder.model(this.model);
@@ -369,6 +379,9 @@ public class GoogleGenAiChatProperties {
 		}
 		if (this.labels != null) {
 			builder.labels(this.labels);
+		}
+		if (this.serviceTier != null) {
+			builder.serviceTier(this.serviceTier);
 		}
 		return builder.build();
 	}
@@ -636,6 +649,16 @@ public class GoogleGenAiChatProperties {
 
 		public void setLabels(@Nullable Map<String, String> labels) {
 			GoogleGenAiChatProperties.this.setLabels(labels);
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.google.genai.chat.service-tier")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable String getServiceTier() {
+			return GoogleGenAiChatProperties.this.getServiceTier();
+		}
+
+		public void setServiceTier(@Nullable String serviceTier) {
+			GoogleGenAiChatProperties.this.setServiceTier(serviceTier);
 		}
 
 	}
