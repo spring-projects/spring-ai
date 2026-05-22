@@ -87,6 +87,7 @@ public class GoogleGenAiChatModelStreamingTests {
 			}
 			return r;
 		}).iterator());
+		given(iterable.spliterator()).willCallRealMethod();
 
 		given(models.generateContentStream(any(String.class), any(List.class), any())).willReturn(iterable);
 
@@ -133,7 +134,8 @@ public class GoogleGenAiChatModelStreamingTests {
 		ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 		this.chatModel = GoogleGenAiChatModel.builder()
 			.genAiClient(this.client)
-			.defaultOptions(GoogleGenAiChatOptions.builder().build())
+			.defaultOptions(
+					GoogleGenAiChatOptions.builder().model(GoogleGenAiChatModel.ChatModel.GEMINI_1_5_PRO).build())
 			.toolCallingManager(toolCallingManager)
 			.observationRegistry(ObservationRegistry.NOOP)
 			.build();
