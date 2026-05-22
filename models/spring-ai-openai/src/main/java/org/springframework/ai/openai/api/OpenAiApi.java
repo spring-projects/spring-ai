@@ -567,8 +567,18 @@ public class OpenAiApi {
 		 * <p>
 		 * See: <a href=
 		 * "https://platform.openai.com/docs/models/gpt-4o-audio-preview">gpt-4o-audio-preview</a>
+		 * @deprecated Use {@link #GPT_AUDIO_1_5} instead.
 		 */
+		@Deprecated
 		GPT_4_O_AUDIO_PREVIEW("gpt-4o-audio-preview"),
+
+		/**
+		 * <b>GPT-Audio-1.5</b> models accept audio inputs and outputs via the Chat
+		 * Completions REST API.
+		 * <p>
+		 * Model ID: gpt-audio-1.5
+		 */
+		GPT_AUDIO_1_5("gpt-audio-1.5"),
 
 		// --- Cost-Optimized Models ---
 
@@ -627,8 +637,18 @@ public class OpenAiApi {
 		 * <p>
 		 * See: <a href=
 		 * "https://platform.openai.com/docs/models/gpt-4o-mini-audio-preview">gpt-4o-mini-audio-preview</a>
+		 * @deprecated Use {@link #GPT_AUDIO_MINI} instead.
 		 */
+		@Deprecated
 		GPT_4_O_MINI_AUDIO_PREVIEW("gpt-4o-mini-audio-preview"),
+
+		/**
+		 * <b>GPT-Audio-Mini</b> is a smaller model that accepts audio inputs and outputs
+		 * via the Chat Completions REST API.
+		 * <p>
+		 * Model ID: gpt-audio-mini
+		 */
+		GPT_AUDIO_MINI("gpt-audio-mini"),
 
 		// --- Realtime Models ---
 
@@ -643,8 +663,18 @@ public class OpenAiApi {
 		 * <p>
 		 * See: <a href=
 		 * "https://platform.openai.com/docs/models/gpt-4o-realtime-preview">gpt-4o-realtime-preview</a>
+		 * @deprecated Use {@link #GPT_REALTIME_1_5} instead.
 		 */
+		@Deprecated
 		GPT_4O_REALTIME_PREVIEW("gpt-4o-realtime-preview"),
+
+		/**
+		 * <b>GPT-Realtime-1.5</b> model, is capable of responding to audio and text
+		 * inputs in realtime over WebRTC or a WebSocket interface.
+		 * <p>
+		 * Model ID: gpt-realtime-1.5
+		 */
+		GPT_REALTIME_1_5("gpt-realtime-1.5"),
 
 		/**
 		 * <b>GPT-4o-mini Realtime</b> model, is capable of responding to audio and text
@@ -657,8 +687,18 @@ public class OpenAiApi {
 		 * <p>
 		 * See: <a href=
 		 * "https://platform.openai.com/docs/models/gpt-4o-mini-realtime-preview">gpt-4o-mini-realtime-preview</a>
+		 * @deprecated Use {@link #GPT_REALTIME_MINI} instead.
 		 */
-		GPT_4O_MINI_REALTIME_PREVIEW("gpt-4o-mini-realtime-preview\n"),
+		@Deprecated
+		GPT_4O_MINI_REALTIME_PREVIEW("gpt-4o-mini-realtime-preview"),
+
+		/**
+		 * <b>GPT-Realtime-Mini</b> model, is capable of responding to audio and text
+		 * inputs in realtime over WebRTC or a WebSocket interface.
+		 * <p>
+		 * Model ID: gpt-realtime-mini
+		 */
+		GPT_REALTIME_MINI("gpt-realtime-mini"),
 
 		// --- Older GPT Models ---
 
@@ -1049,9 +1089,9 @@ public class OpenAiApi {
 	 * choices. Keep n as 1 to minimize costs.
 	 * @param outputModalities Output types that you would like the model to generate for
 	 * this request. Most models are capable of generating text, which is the default:
-	 * ["text"]. The gpt-4o-audio-preview model can also be used to generate audio. To
-	 * request that this model generate both text and audio responses, you can use:
-	 * ["text", "audio"].
+	 * ["text"]. The gpt-audio-1.5 model can also be used to generate audio. To request
+	 * that this model generate both text and audio responses, you can use: ["text",
+	 * "audio"].
 	 * @param audioParameters Parameters for audio output. Required when audio output is
 	 * requested with outputModalities: ["audio"].
 	 * @param presencePenalty Number between -2.0 and 2.0. Positive values penalize new

@@ -126,10 +126,10 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 	/**
 	 * Output types that you would like the model to generate for this request.
 	 * Most models are capable of generating text, which is the default.
-	 * The gpt-4o-audio-preview model can also be used to generate audio.
+	 * The gpt-audio-1.5 model can also be used to generate audio.
 	 * To request that this model generate both text and audio responses,
 	 * you can use: ["text", "audio"].
-	 * Note that the audio modality is only available for the gpt-4o-audio-preview model
+	 * Note that the audio modality is only available for the gpt-audio-1.5 model
 	 * and is not supported for streaming completions.
 	 */
 	private @JsonProperty("modalities") List<String> outputModalities;
@@ -137,7 +137,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 	/**
 	 * Audio parameters for the audio generation. Required when audio output is requested with
 	 * modalities: ["audio"]
-	 * Note: that the audio modality is only available for the gpt-4o-audio-preview model
+	 * Note: that the audio modality is only available for the gpt-audio-1.5 model
 	 * and is not supported for streaming completions.
 	 *
 	 */

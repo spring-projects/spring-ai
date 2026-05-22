@@ -97,7 +97,7 @@ public class OpenAiSdkChatModelIT {
 
 	// It would be better to use ChatModel.GPT_4O_AUDIO_PREVIEW.asString(); but it can't
 	// be used as a constant.
-	public static final String DEFAULT_CHAT_MODEL_AUDIO = "gpt-4o-audio-preview";
+	public static final String DEFAULT_CHAT_MODEL_AUDIO = "gpt-audio-1.5";
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
