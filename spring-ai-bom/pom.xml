@@ -215,6 +215,12 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-model-chat-memory-repository-oracle</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-model-chat-memory-repository-redis</artifactId>
 				<version>${project.version}</version>
 			</dependency>
