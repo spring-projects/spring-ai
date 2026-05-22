@@ -775,4 +775,24 @@ public class CreateGeminiRequestTests {
 		assertThat(request.config().toolConfig().get().includeServerSideToolInvocations().get()).isTrue();
 	}
 
+	@Test
+	public void createRequestWithServiceTier() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.defaultOptions(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").serviceTier("priority").build())
+			.build();
+
+		GeminiRequest request = client
+			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+
+		assertThat(request.config().serviceTier()).isPresent();
+		assertThat(request.config().serviceTier().get().toString()).isEqualTo("priority");
+
+		request = client.createGeminiRequest(client.buildRequestPrompt(
+				new Prompt("Test message content", GoogleGenAiChatOptions.builder().serviceTier("standard").build())));
+
+		assertThat(request.config().serviceTier()).isPresent();
+		assertThat(request.config().serviceTier().get().toString()).isEqualTo("standard");
+	}
+
 }

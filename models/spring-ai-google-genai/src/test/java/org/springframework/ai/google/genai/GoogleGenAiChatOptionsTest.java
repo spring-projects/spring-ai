@@ -289,4 +289,74 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 		assertThat(options1).isNotEqualTo(options3);
 	}
 
+	@Test
+	public void testServiceTierWithBuilder() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier("priority")
+			.build();
+
+		assertThat(options.getModel()).isEqualTo("test-model");
+		assertThat(options.getServiceTier()).isEqualTo("priority");
+	}
+
+	@Test
+	public void testFromOptionsWithServiceTier() {
+		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier("standard")
+			.build();
+
+		GoogleGenAiChatOptions copy = GoogleGenAiChatOptions.fromOptions(original);
+
+		assertThat(copy.getServiceTier()).isEqualTo("standard");
+		assertThat(copy).isNotSameAs(original);
+	}
+
+	@Test
+	public void testCopyWithServiceTier() {
+		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier("flex")
+			.build();
+
+		GoogleGenAiChatOptions copy = original.copy();
+
+		assertThat(copy.getServiceTier()).isEqualTo("flex");
+		assertThat(copy).isNotSameAs(original);
+	}
+
+	@Test
+	public void testEqualsAndHashCodeWithServiceTier() {
+		GoogleGenAiChatOptions options1 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier("priority")
+			.build();
+
+		GoogleGenAiChatOptions options2 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier("priority")
+			.build();
+
+		GoogleGenAiChatOptions options3 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier("standard")
+			.build();
+
+		assertThat(options1).isEqualTo(options2);
+		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
+		assertThat(options1).isNotEqualTo(options3);
+	}
+
+	@Test
+	public void testToStringWithServiceTier() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier("priority")
+			.build();
+
+		String toString = options.toString();
+		assertThat(toString).contains("serviceTier='priority'");
+	}
+
 }

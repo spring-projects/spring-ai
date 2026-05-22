@@ -829,6 +829,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			configBuilder.labels(requestOptions.getLabels());
 		}
 
+		if (requestOptions.getServiceTier() != null) {
+			configBuilder.serviceTier(requestOptions.getServiceTier());
+		}
+
 		// Add safety settings
 		if (!CollectionUtils.isEmpty(requestOptions.getSafetySettings())) {
 			configBuilder.safetySettings(toGeminiSafetySettings(requestOptions.getSafetySettings()));
