@@ -28,7 +28,6 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -264,8 +263,9 @@ public class DeepSeekChatModel implements ChatModel {
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
 
+			// @formatter:off
 			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
-				.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
+				.map(chatCompletion2 -> {
 					try {
 						String id = chatCompletion2.id();
 
@@ -294,7 +294,7 @@ public class DeepSeekChatModel implements ChatModel {
 						return new ChatResponse(List.of());
 					}
 
-				}));
+				});
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
