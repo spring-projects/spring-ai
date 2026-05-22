@@ -75,13 +75,13 @@ class GoogleGenAiThinkingLevelIT {
 
 	static Stream<Arguments> flashModelAllLevels() {
 		return Stream.of(
-				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_FLASH_PREVIEW.getValue(),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_5_FLASH.getValue(),
 						GoogleGenAiThinkingLevel.MINIMAL),
-				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_FLASH_PREVIEW.getValue(),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_5_FLASH.getValue(),
 						GoogleGenAiThinkingLevel.LOW),
-				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_FLASH_PREVIEW.getValue(),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_5_FLASH.getValue(),
 						GoogleGenAiThinkingLevel.MEDIUM),
-				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_FLASH_PREVIEW.getValue(),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_5_FLASH.getValue(),
 						GoogleGenAiThinkingLevel.HIGH));
 	}
 
