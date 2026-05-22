@@ -87,17 +87,17 @@ public ReadResourceResult getSecureData(String id, McpMeta meta) {
     
     // Check access permissions using metadata
     if (!"admin".equals(accessLevel)) {
-        return new ReadResourceResult(List.of(
-            new TextResourceContents("secure-data://" + id, 
+        return ReadResourceResult.builder(List.of(
+            new TextResourceContents("secure-data://" + id,
                 "text/plain", "Access denied")
-        ));
+        )).build();
     }
-    
+
     String data = loadSecureData(id);
-    return new ReadResourceResult(List.of(
-        new TextResourceContents("secure-data://" + id, 
+    return ReadResourceResult.builder(List.of(
+        new TextResourceContents("secure-data://" + id,
             "text/plain", data)
-    ));
+    )).build();
 }
 ----
 
@@ -116,9 +116,9 @@ public GetPromptResult localizedPrompt(
     // Generate localized content based on metadata
     String message = generateLocalizedMessage(topic, language, region);
     
-    return new GetPromptResult("Localized Prompt",
-        List.of(new PromptMessage(Role.ASSISTANT, new TextContent(message)))
-    );
+    return GetPromptResult.builder(List.of(new PromptMessage(Role.ASSISTANT, TextContent.builder(message).build())))
+        .description("Localized Prompt")
+        .build();
 }
 ----
 
@@ -147,17 +147,16 @@ public String performLongOperation(
     
     if (progressToken != null) {
         // Send initial progress
-        exchange.progressNotification(new ProgressNotification(
-            progressToken, 0.0, 1.0, "Starting " + operation));
-        
+        exchange.progressNotification(ProgressNotification.builder(progressToken, 0.0)
+            .total(1.0).message("Starting " + operation).build());
+
         // Simulate work with progress updates
         for (int i = 1; i <= duration; i++) {
             Thread.sleep(1000);
             double progress = (double) i / duration;
-            
-            exchange.progressNotification(new ProgressNotification(
-                progressToken, progress, 1.0, 
-                String.format("Processing... %d%%", (int)(progress * 100))));
+
+            exchange.progressNotification(ProgressNotification.builder(progressToken, progress)
+                .total(1.0).message(String.format("Processing... %d%%", (int)(progress * 100))).build());
         }
     }
     
@@ -180,20 +179,20 @@ public ReadResourceResult getLargeFile(
     
     if (progressToken != null) {
         // Track file reading progress
-        exchange.progressNotification(new ProgressNotification(
-            progressToken, 0.0, fileSize, "Reading file"));
+        exchange.progressNotification(ProgressNotification.builder(progressToken, 0.0)
+            .total(fileSize).message("Reading file").build());
     }
-    
+
     String content = readFileWithProgress(file, progressToken, exchange);
-    
+
     if (progressToken != null) {
-        exchange.progressNotification(new ProgressNotification(
-            progressToken, fileSize, fileSize, "File read complete"));
+        exchange.progressNotification(ProgressNotification.builder(progressToken, fileSize)
+            .total(fileSize).message("File read complete").build());
     }
-    
-    return new ReadResourceResult(List.of(
+
+    return ReadResourceResult.builder(List.of(
         new TextResourceContents("large-file://" + path, "text/plain", content)
-    ));
+    )).build();
 }
 ----
 
@@ -360,9 +359,9 @@ public ReadResourceResult statelessResource(
     // Access transport context if needed
     String data = loadData(id);
     
-    return new ReadResourceResult(List.of(
+    return ReadResourceResult.builder(List.of(
         new TextResourceContents("stateless://" + id, "text/plain", data)
-    ));
+    )).build();
 }
 ----
 
@@ -444,18 +443,18 @@ public CallToolResult flexibleWithProgress(
     Map<String, Object> args = request.arguments();
     
     if (progressToken != null) {
-        exchange.progressNotification(new ProgressNotification(
-            progressToken, 0.0, 1.0, "Processing dynamic request"));
+        exchange.progressNotification(ProgressNotification.builder(progressToken, 0.0)
+            .total(1.0).message("Processing dynamic request").build());
     }
-    
+
     // Process dynamic arguments
     String result = processDynamicArgs(args);
-    
+
     if (progressToken != null) {
-        exchange.progressNotification(new ProgressNotification(
-            progressToken, 1.0, 1.0, "Complete"));
+        exchange.progressNotification(ProgressNotification.builder(progressToken, 1.0)
+            .total(1.0).message("Complete").build());
     }
-    
+
     return CallToolResult.builder()
         .addTextContent(result)
         .build();
@@ -523,15 +522,15 @@ public String safeProgress(
     
     // Always check if progress token is available
     if (progressToken != null) {
-        exchange.progressNotification(new ProgressNotification(
-            progressToken, 0.0, 1.0, "Starting"));
+        exchange.progressNotification(ProgressNotification.builder(progressToken, 0.0)
+            .total(1.0).message("Starting").build());
     }
-    
+
     // Perform work...
-    
+
     if (progressToken != null) {
-        exchange.progressNotification(new ProgressNotification(
-            progressToken, 1.0, 1.0, "Complete"));
+        exchange.progressNotification(ProgressNotification.builder(progressToken, 1.0)
+            .total(1.0).message("Complete").build());
     }
     
     return "Task completed";

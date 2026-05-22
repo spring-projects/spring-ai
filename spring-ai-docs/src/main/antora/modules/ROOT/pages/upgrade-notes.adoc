@@ -185,6 +185,55 @@ The Azure Cosmos DB vector store (`spring-ai-azure-cosmos-db-store`) and chat me
 Azure Cosmos DB support is now available as an external module maintained by the Azure Cosmos DB team.
 See https://azurecosmosdb.github.io/spring-ai/docs/index.html for documentation and dependency coordinates.
 
+=== MCP SDK 2.0.0-M3
+
+Spring AI now depends on MCP SDK 2.0.0-M3, which makes previously optional fields mandatory and enforces them at construction time via `Assert.notNull()` in compact record constructors.
+
+==== Breaking: `CreateMessageResult` — `model` now required
+
+[source,java]
+----
+// Before
+CreateMessageResult.builder()
+    .content(new TextContent(response))
+    .build();
+
+// After
+CreateMessageResult.builder(Role.ASSISTANT, response, modelHint)
+    .build();
+----
+
+==== Breaking: `CreateMessageRequest` — `maxTokens` now required
+
+[source,java]
+----
+// Before
+CreateMessageRequest.builder()
+    .messages(messages)
+    .build();
+
+// After
+CreateMessageRequest.builder(messages, 500)
+    .build();
+----
+
+==== Deprecated Builder APIs
+
+The following no-arg constructors and `builder()` methods are deprecated in favour of factory methods that require mandatory arguments upfront:
+
+[cols="1,1"]
+|===
+|Deprecated |Replacement
+
+|`new TextContent(text)` |`TextContent.builder(text).build()`
+|`new ReadResourceResult(contents)` |`ReadResourceResult.builder(contents).build()`
+|`new GetPromptResult(description, messages)` |`GetPromptResult.builder(messages).description(description).build()`
+|`new ProgressNotification(token, progress, total, message)` |`ProgressNotification.builder(token, progress).total(total).message(message).build()`
+|`LoggingMessageNotification.builder()` |`LoggingMessageNotification.builder(level, data)`
+|`ElicitRequest.builder()` |`ElicitRequest.builder(message, requestedSchema)`
+|`CallToolRequest.builder()` |`CallToolRequest.builder(name)`
+|===
+
 [[upgrading-to-2-0-0-M6]]
 == Upgrading to 2.0.0-M6
 

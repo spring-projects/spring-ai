@@ -145,10 +145,7 @@ public class StatelessWebClientWebFluxServerIT {
 							.build());
 
 						// Call a tool that sends progress notifications
-						CallToolRequest toolRequest = CallToolRequest.builder()
-							.name("tool1")
-							.arguments(Map.of())
-							.build();
+						CallToolRequest toolRequest = CallToolRequest.builder("tool1").arguments(Map.of()).build();
 
 						CallToolResult response = mcpClient.callTool(toolRequest);
 
@@ -269,8 +266,9 @@ public class StatelessWebClientWebFluxServerIT {
 							"properties": {}
 						}
 						""").build())
-				.callHandler((exchange,
-						request) -> CallToolResult.builder().content(List.of(new TextContent("CALL RESPONSE"))).build())
+				.callHandler((exchange, request) -> CallToolResult.builder()
+					.content(List.of(TextContent.builder("CALL RESPONSE").build()))
+					.build())
 				.build();
 
 			// Tool 2
@@ -327,8 +325,11 @@ public class StatelessWebClientWebFluxServerIT {
 						}
 
 						var userMessage = new PromptMessage(Role.USER,
-								new TextContent("Hello " + languageArgument + "! How can I assist you today?"));
-						return new GetPromptResult("A personalized greeting message", List.of(userMessage));
+								TextContent.builder("Hello " + languageArgument + "! How can I assist you today?")
+									.build());
+						return GetPromptResult.builder(List.of(userMessage))
+							.description("A personalized greeting message")
+							.build();
 					});
 
 			return List.of(promptSpecification);
@@ -363,8 +364,10 @@ public class StatelessWebClientWebFluxServerIT {
 									System.getProperty("os.version"), "java_version",
 									System.getProperty("java.version"));
 							String jsonContent = new JsonMapper().writeValueAsString(systemInfo);
-							return new McpSchema.ReadResourceResult(List.of(new McpSchema.TextResourceContents(
-									request.uri(), "application/json", jsonContent)));
+							return McpSchema.ReadResourceResult
+								.builder(List.of(new McpSchema.TextResourceContents(request.uri(), "application/json",
+										jsonContent)))
+								.build();
 						}
 						catch (Exception e) {
 							throw new RuntimeException("Failed to generate system info", e);
