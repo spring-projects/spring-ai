@@ -58,11 +58,9 @@ public class OpenAiImageModelObservationIT {
 	@Test
 	void observationForImageOperation() {
 		var options = OpenAiImageOptions.builder()
-			.model(OpenAiImageApi.ImageModel.DALL_E_3.getValue())
+			.model(OpenAiImageApi.ImageModel.GTP_IMAGE_1_MINI.getValue())
 			.height(1024)
 			.width(1024)
-			.responseFormat("url")
-			.style("natural")
 			.build();
 
 		var instructions = "Here comes the sun";
@@ -76,14 +74,13 @@ public class OpenAiImageModelObservationIT {
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultImageModelObservationConvention.DEFAULT_NAME)
 			.that()
-			.hasContextualNameEqualTo("image " + OpenAiImageApi.ImageModel.DALL_E_3.getValue())
+			.hasContextualNameEqualTo("image " + OpenAiImageApi.ImageModel.GTP_IMAGE_1_MINI.getValue())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.IMAGE.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.OPENAI.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					OpenAiImageApi.ImageModel.DALL_E_3.getValue())
+					OpenAiImageApi.ImageModel.GTP_IMAGE_1_MINI.getValue())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_IMAGE_SIZE.asString(), "1024x1024")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_IMAGE_RESPONSE_FORMAT.asString(), "url")
 			.hasBeenStarted()
 			.hasBeenStopped();
 	}

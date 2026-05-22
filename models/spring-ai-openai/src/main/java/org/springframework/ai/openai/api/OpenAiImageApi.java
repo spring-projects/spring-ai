@@ -45,7 +45,7 @@ import org.springframework.web.client.RestClient;
  */
 public class OpenAiImageApi {
 
-	public static final String DEFAULT_IMAGE_MODEL = ImageModel.DALL_E_3.getValue();
+	public static final String DEFAULT_IMAGE_MODEL = ImageModel.GTP_IMAGE_1_MINI.getValue();
 
 	private final RestClient restClient;
 
@@ -99,21 +99,14 @@ public class OpenAiImageApi {
 
 	/**
 	 * OpenAI Image API model.
-	 * <a href="https://platform.openai.com/docs/models/dall-e">DALL·E</a>
+	 * <a href="https://platform.openai.com/docs/models/gpt-image">GPT Image</a>
 	 */
 	public enum ImageModel {
 
 		/**
-		 * The latest DALL·E model released in Nov 2023.
+		 * The latest GPT Image model released
 		 */
-		DALL_E_3("dall-e-3"),
-
-		/**
-		 * The previous DALL·E model released in Nov 2022. The 2nd iteration of DALL·E
-		 * with more realistic, accurate, and 4x greater resolution images than the
-		 * original model.
-		 */
-		DALL_E_2("dall-e-2");
+		GTP_IMAGE_1_MINI("gpt-image-1-mini");
 
 		private final String value;
 
@@ -134,13 +127,11 @@ public class OpenAiImageApi {
 		@JsonProperty("model") String model,
 		@JsonProperty("n") Integer n,
 		@JsonProperty("quality") String quality,
-		@JsonProperty("response_format") String responseFormat,
 		@JsonProperty("size") String size,
-		@JsonProperty("style") String style,
 		@JsonProperty("user") String user) {
 
 		public OpenAiImageRequest(String prompt, String model) {
-			this(prompt, model, null, null, null, null, null, null);
+			this(prompt, model, null, null, null, null);
 		}
 	}
 

@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class OpenAiImageModelIT extends AbstractIT {
 
 	@Test
-	void imageAsUrlTest() {
+	void imageAsB64JsonTest() {
 		var options = ImageOptionsBuilder.builder().height(1024).width(1024).build();
 
 		var instructions = """
@@ -54,9 +54,8 @@ public class OpenAiImageModelIT extends AbstractIT {
 
 		var generation = imageResponse.getResult();
 		Image image = generation.getOutput();
-		assertThat(image.getUrl()).isNotEmpty();
-		// System.out.println(image.getUrl());
-		assertThat(image.getB64Json()).isNull();
+		assertThat(image.getB64Json()).isNotEmpty();
+		assertThat(image.getUrl()).isNull();
 
 		var imageGenerationMetadata = generation.getMetadata();
 		Assertions.assertThat(imageGenerationMetadata).isInstanceOf(OpenAiImageGenerationMetadata.class);
@@ -64,7 +63,6 @@ public class OpenAiImageModelIT extends AbstractIT {
 		OpenAiImageGenerationMetadata openAiImageGenerationMetadata = (OpenAiImageGenerationMetadata) imageGenerationMetadata;
 
 		assertThat(openAiImageGenerationMetadata).isNotNull();
-		assertThat(openAiImageGenerationMetadata.getRevisedPrompt()).isNotBlank();
 	}
 
 }
