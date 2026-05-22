@@ -64,6 +64,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * provider.
  *
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 @Testcontainers
 @SpringBootTest(classes = OllamaWithOpenAiChatModelIT.Config.class)
@@ -309,6 +310,7 @@ class OllamaWithOpenAiChatModelIT {
 			return OpenAiChatModel.builder()
 				.options(OpenAiChatOptions.builder()
 					.baseUrl(getBaseUrl())
+					.apiKey("ollama") // required but ignored
 					.model(DEFAULT_OLLAMA_MODEL)
 					.timeout(Duration.ofMinutes(5))
 					.build())
