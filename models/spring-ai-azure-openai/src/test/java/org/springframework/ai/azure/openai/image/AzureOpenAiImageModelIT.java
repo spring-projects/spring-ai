@@ -42,7 +42,7 @@ import org.springframework.context.annotation.Bean;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * NOTE: use deployment ID dall-e-3
+ * NOTE: use deployment ID gpt-image-1-mini
  */
 @Disabled("Disabling until the default image model is configured in the test environment.")
 @SpringBootTest(classes = AzureOpenAiImageModelIT.TestConfiguration.class)

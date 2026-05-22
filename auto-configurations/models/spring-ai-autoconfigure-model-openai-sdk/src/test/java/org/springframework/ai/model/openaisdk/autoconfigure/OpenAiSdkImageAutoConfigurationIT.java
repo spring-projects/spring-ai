@@ -39,30 +39,29 @@ public class OpenAiSdkImageAutoConfigurationIT {
 
 	@Test
 	void generateImage() {
-		this.contextRunner.withPropertyValues("spring.ai.openai-sdk.image.options.size=1024x1024")
+		this.contextRunner
+			.withPropertyValues("spring.ai.openai-sdk.image.options.size=1024x1024",
+					"spring.ai.openai-sdk.image.options.model=gpt-image-1-mini")
 			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
 			.run(context -> {
 				OpenAiSdkImageModel imageModel = context.getBean(OpenAiSdkImageModel.class);
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("forest"));
 				assertThat(imageResponse.getResults()).hasSize(1);
-				assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
-				logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
+				assertThat(imageResponse.getResult().getOutput().getB64Json()).isNotEmpty();
 			});
 	}
 
 	@Test
 	void generateImageWithModel() {
-		// The 256x256 size is supported by dall-e-2, but not by dall-e-3.
 		this.contextRunner
-			.withPropertyValues("spring.ai.openai-sdk.image.options.model=dall-e-2",
-					"spring.ai.openai-sdk.image.options.size=256x256")
+			.withPropertyValues("spring.ai.openai-sdk.image.options.model=gpt-image-1-mini",
+					"spring.ai.openai-sdk.image.options.size=1024x1024")
 			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
 			.run(context -> {
 				OpenAiSdkImageModel imageModel = context.getBean(OpenAiSdkImageModel.class);
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("forest"));
 				assertThat(imageResponse.getResults()).hasSize(1);
-				assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
-				logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
+				assertThat(imageResponse.getResult().getOutput().getB64Json()).isNotEmpty();
 			});
 	}
 
@@ -106,7 +105,7 @@ public class OpenAiSdkImageAutoConfigurationIT {
 			"spring.ai.openai-sdk.image.options.n=3",
 			"spring.ai.openai-sdk.image.options.model=MODEL_XYZ",
 			"spring.ai.openai-sdk.image.options.quality=hd",
-			"spring.ai.openai-sdk.image.options.response_format=url",
+			"spring.ai.openai-sdk.image.options.responseFormat=url",
 			"spring.ai.openai-sdk.image.options.size=1024x1024",
 			"spring.ai.openai-sdk.image.options.width=1024",
 			"spring.ai.openai-sdk.image.options.height=1024",

@@ -31,7 +31,7 @@ import org.springframework.ai.image.ImagePrompt;
  */
 public class OpenAiSdkImageOptions extends AbstractOpenAiSdkOptions implements ImageOptions {
 
-	public static final String DEFAULT_IMAGE_MODEL = ImageModel.DALL_E_3.toString();
+	public static final String DEFAULT_IMAGE_MODEL = ImageModel.GPT_IMAGE_1_MINI.toString();
 
 	/**
 	 * The number of images to generate. Must be between 1 and 10. For dall-e-3, only n=1

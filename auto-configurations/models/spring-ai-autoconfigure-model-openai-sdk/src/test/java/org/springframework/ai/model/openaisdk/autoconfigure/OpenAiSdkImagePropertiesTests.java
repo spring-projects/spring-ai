@@ -99,7 +99,7 @@ public class OpenAiSdkImagePropertiesTests {
 				"spring.ai.openai-sdk.image.options.width=1024",
 				"spring.ai.openai-sdk.image.options.height=1792",
 				"spring.ai.openai-sdk.image.options.quality=hd",
-				"spring.ai.openai-sdk.image.options.responseFormat=url",
+				"spring.ai.openai-sdk.image.options.response-format=url",
 				"spring.ai.openai-sdk.image.options.size=1024x1792",
 				"spring.ai.openai-sdk.image.options.style=vivid",
 				"spring.ai.openai-sdk.image.options.user=userXYZ"

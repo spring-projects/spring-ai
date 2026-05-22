@@ -19,8 +19,6 @@ package org.springframework.ai.openaisdk.image;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageOptionsBuilder;
@@ -44,14 +42,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiSdkImageModelIT {
 
-	private final Logger logger = LoggerFactory.getLogger(OpenAiSdkImageModelIT.class);
-
 	@Autowired
 	private OpenAiSdkImageModel imageModel;
 
 	@Test
 	void imageAsUrlTest() {
-		var options = ImageOptionsBuilder.builder().height(1024).width(1024).build();
+		var options = ImageOptionsBuilder.builder()
+			.model(com.openai.models.images.ImageModel.GPT_IMAGE_1_MINI.asString())
+			.height(1024)
+			.width(1024)
+			.build();
 
 		var instructions = """
 				A cup of coffee at a restaurant table in Paris, France.
@@ -68,9 +68,8 @@ public class OpenAiSdkImageModelIT {
 
 		var generation = imageResponse.getResult();
 		Image image = generation.getOutput();
-		assertThat(image.getUrl()).isNotEmpty();
-		logger.info("Generated image URL: {}", image.getUrl());
-		assertThat(image.getB64Json()).isNull();
+		assertThat(image.getUrl()).isNull();
+		assertThat(image.getB64Json()).isNotEmpty();
 
 		var imageGenerationMetadata = generation.getMetadata();
 		Assertions.assertThat(imageGenerationMetadata).isInstanceOf(OpenAiSdkImageGenerationMetadata.class);
@@ -78,7 +77,6 @@ public class OpenAiSdkImageModelIT {
 		OpenAiSdkImageGenerationMetadata openAiSdkImageGenerationMetadata = (OpenAiSdkImageGenerationMetadata) imageGenerationMetadata;
 
 		assertThat(openAiSdkImageGenerationMetadata).isNotNull();
-		assertThat(openAiSdkImageGenerationMetadata.getRevisedPrompt()).isNotBlank();
 
 	}
 
