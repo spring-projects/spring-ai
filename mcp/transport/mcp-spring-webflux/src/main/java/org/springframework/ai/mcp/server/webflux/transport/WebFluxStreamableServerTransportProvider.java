@@ -525,7 +525,7 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 		/**
 		 * Sets the context extractor that allows providing the MCP feature
 		 * implementations to inspect HTTP transport level metadata that was present at
-		 * HTTP request processing time. This allows to extract custom headers and other
+		 * HTTP request processing time. This allows extracting custom headers and other
 		 * useful data for use during execution later on in the process.
 		 * @param contextExtractor The contextExtractor to fill in a
 		 * {@link McpTransportContext}.

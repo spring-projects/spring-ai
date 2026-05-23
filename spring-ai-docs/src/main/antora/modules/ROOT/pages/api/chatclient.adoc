@@ -838,7 +838,7 @@ spring.ai.chat.client.tool-calling.stream-tool-call-responses=true
 
 ===== Spring Boot: custom `ToolCallAdvisor.Builder` bean
 
-For deeper customisation — for example to supply a custom `ToolCallingManager` — declare a `ToolCallAdvisor.Builder<?>` bean.
+For deeper customization — for example to supply a custom `ToolCallingManager` — declare a `ToolCallAdvisor.Builder<?>` bean.
 Spring Boot's `@ConditionalOnMissingBean` on the auto-configured bean means your bean takes precedence:
 
 [source,java]

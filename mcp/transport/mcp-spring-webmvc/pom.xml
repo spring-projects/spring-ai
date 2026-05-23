@@ -57,7 +57,7 @@
 		</dependency>
 
 
-		<!-- The Spring Context is required due to the reactor-netty connector being dependant on
+		<!-- The Spring Context is required due to the reactor-netty connector being dependent on
 		the Spring Lifecycle, as discussed here:
 		https://github.com/spring-projects/spring-framework/issues/31180 -->
 		<dependency>
