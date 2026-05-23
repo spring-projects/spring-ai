@@ -40,6 +40,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for MiniMax Chat Model.
@@ -61,15 +62,16 @@ public class MiniMaxChatAutoConfiguration {
 	@ConditionalOnMissingBean
 	public MiniMaxChatModel miniMaxChatModel(MiniMaxConnectionProperties commonProperties,
 			MiniMaxChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ToolCallingManager toolCallingManager, ObjectProvider<RetryTemplate> retryTemplate,
-			ObjectProvider<ResponseErrorHandler> responseErrorHandler,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ToolCallingManager toolCallingManager,
+			ObjectProvider<RetryTemplate> retryTemplate, ObjectProvider<ResponseErrorHandler> responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
 			ObjectProvider<ToolExecutionEligibilityPredicate> openAiToolExecutionEligibilityPredicate) {
 
 		var miniMaxApi = miniMaxApi(chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
 				chatProperties.getApiKey(), commonProperties.getApiKey(),
-				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
+				restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler);
 
 		var chatModel = new MiniMaxChatModel(miniMaxApi, chatProperties.toOptions(), toolCallingManager,
 				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE),
@@ -81,7 +83,7 @@ public class MiniMaxChatAutoConfiguration {
 	}
 
 	private MiniMaxApi miniMaxApi(@Nullable String baseUrl, @Nullable String commonBaseUrl, @Nullable String apiKey,
-			@Nullable String commonApiKey, RestClient.Builder restClientBuilder,
+			@Nullable String commonApiKey, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		String resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
@@ -90,7 +92,7 @@ public class MiniMaxChatAutoConfiguration {
 		String resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
 		Assert.hasText(resolvedApiKey, "MiniMax API key must be set");
 
-		return new MiniMaxApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder,
+		return new MiniMaxApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder, webClientBuilder,
 				responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER));
 	}
 

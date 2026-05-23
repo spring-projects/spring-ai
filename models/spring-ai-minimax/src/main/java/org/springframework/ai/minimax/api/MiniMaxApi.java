@@ -93,7 +93,7 @@ public class MiniMaxApi {
 	 * @param restClientBuilder RestClient builder.
 	 */
 	public MiniMaxApi(String baseUrl, String miniMaxToken, RestClient.Builder restClientBuilder) {
-		this(baseUrl, miniMaxToken, restClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+		this(baseUrl, miniMaxToken, restClientBuilder, WebClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
 	/**
@@ -104,7 +104,22 @@ public class MiniMaxApi {
 	 * @param restClientBuilder RestClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public MiniMaxApi(String baseUrl, String miniMaxToken, RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+	public MiniMaxApi(String baseUrl, String miniMaxToken, RestClient.Builder restClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
+		this(baseUrl, miniMaxToken, restClientBuilder, WebClient.builder(), responseErrorHandler);
+	}
+
+	/**
+	 * Create a new chat completion api.
+	 *
+	 * @param baseUrl api base URL.
+	 * @param miniMaxToken MiniMax apiKey.
+	 * @param restClientBuilder RestClient builder.
+	 * @param webClientBuilder WebClient builder.
+	 * @param responseErrorHandler Response error handler.
+	 */
+	public MiniMaxApi(String baseUrl, String miniMaxToken, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> authHeaders = headers -> {
 			headers.setBearerAuth(miniMaxToken);
@@ -117,7 +132,7 @@ public class MiniMaxApi {
 				.defaultStatusHandler(responseErrorHandler)
 				.build();
 
-		this.webClient = WebClient.builder() // FIXME: use a bean instead
+		this.webClient = webClientBuilder.clone()
 				.baseUrl(baseUrl)
 				.defaultHeaders(authHeaders)
 				.build();
