@@ -22,6 +22,7 @@
 
 	<properties>
 		<org.maven.antora-version>1.0.0-alpha.4</org.maven.antora-version>
+		<node.version>24.15.0</node.version>
 	</properties>
 
 
