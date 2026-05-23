@@ -1,6 +1,5 @@
 antora:
   extensions:
-  - '@antora/collector-extension'
   - require: '@springio/antora-extensions'
     root_component_name: 'ai'
 site:
