@@ -85,7 +85,6 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
@@ -95,6 +94,7 @@ import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
@@ -575,7 +575,7 @@ public final class OpenAiChatModel implements ChatModel {
 
 		result._additionalProperties().forEach((key, jsonValue) -> {
 			try {
-				Object value = ModelOptionsUtils.JSON_MAPPER.convertValue(jsonValue, Object.class);
+				Object value = JacksonUtils.getDefaultJsonMapper().convertValue(jsonValue, Object.class);
 				metadataBuilder.keyValue(key, value);
 			}
 			catch (Exception e) {
@@ -1018,7 +1018,7 @@ public final class OpenAiChatModel implements ChatModel {
 				}
 				else {
 					try {
-						var node = ModelOptionsUtils.JSON_MAPPER.readTree(json);
+						var node = JacksonUtils.getDefaultJsonMapper().readTree(json);
 						builder.toolChoice(parseToolChoice(node));
 					}
 					catch (Exception e) {

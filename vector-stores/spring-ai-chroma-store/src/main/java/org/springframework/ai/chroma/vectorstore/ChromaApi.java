@@ -31,7 +31,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chroma.vectorstore.ChromaApi.QueryRequest.Include;
 import org.springframework.ai.chroma.vectorstore.common.ChromaApiConstants;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.support.BasicAuthenticationInterceptor;
@@ -51,6 +51,8 @@ import org.springframework.web.client.RestClient;
  * @author Jonghoon Park
  */
 public class ChromaApi {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	public static Builder builder() {
 		return new Builder();
@@ -441,7 +443,7 @@ public class ChromaApi {
 						processed.put(entry.getKey(), value);
 					}
 					else {
-						processed.put(entry.getKey(), JsonParser.toJson(value));
+						processed.put(entry.getKey(), jsonHelper.toJson(value));
 					}
 				}
 				processedMetadatas.add(processed);

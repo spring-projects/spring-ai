@@ -25,10 +25,12 @@ import io.modelcontextprotocol.spec.McpSchema.ElicitRequest;
 import io.modelcontextprotocol.spec.McpSchema.ElicitResult;
 import io.modelcontextprotocol.spec.McpSchema.ListRootsResult;
 import io.modelcontextprotocol.spec.McpSchema.ProgressNotification;
-import tools.jackson.core.type.TypeReference;
+
+import org.springframework.core.ParameterizedTypeReference;
 
 /**
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 public interface McpSyncRequestContext extends McpRequestContextTypes<McpSyncServerExchange> {
 
@@ -46,11 +48,11 @@ public interface McpSyncRequestContext extends McpRequestContextTypes<McpSyncSer
 
 	<T> StructuredElicitResult<T> elicit(Class<T> type);
 
-	<T> StructuredElicitResult<T> elicit(TypeReference<T> type);
+	<T> StructuredElicitResult<T> elicit(ParameterizedTypeReference<T> type);
 
 	<T> StructuredElicitResult<T> elicit(Consumer<ElicitationSpec> params, Class<T> returnType);
 
-	<T> StructuredElicitResult<T> elicit(Consumer<ElicitationSpec> params, TypeReference<T> returnType);
+	<T> StructuredElicitResult<T> elicit(Consumer<ElicitationSpec> params, ParameterizedTypeReference<T> returnType);
 
 	ElicitResult elicit(ElicitRequest elicitRequest);
 

@@ -34,9 +34,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.model.ChatModelDescription;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -68,6 +68,8 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @since 1.0.0
  */
 public class MistralAiApi {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	public static Builder builder() {
 		return new Builder();
@@ -174,6 +176,7 @@ public class MistralAiApi {
 	 * to true.
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
+	@SuppressWarnings("NullAway")
 	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
@@ -188,7 +191,7 @@ public class MistralAiApi {
 			.bodyToFlux(String.class)
 			.takeUntil(SSE_DONE_PREDICATE)
 			.filter(SSE_DONE_PREDICATE.negate())
-			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
+			.mapNotNull(content -> jsonHelper.fromJson(content, ChatCompletionChunk.class))
 			.map(chunk -> {
 				if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
 					isInsideTool.set(true);
@@ -434,7 +437,7 @@ public class MistralAiApi {
 			 * @param jsonSchema tool function schema as json.
 			 */
 			public Function(String description, String name, String jsonSchema) {
-				this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
+				this(description, name, jsonHelper.fromJsonToMap(jsonSchema));
 			}
 
 			public String getDescription() {
@@ -468,7 +471,7 @@ public class MistralAiApi {
 			public void setJsonSchema(@Nullable String jsonSchema) {
 				this.jsonSchema = jsonSchema;
 				if (jsonSchema != null) {
-					this.parameters = ModelOptionsUtils.jsonToMap(jsonSchema);
+					this.parameters = jsonHelper.fromJsonToMap(jsonSchema);
 				}
 			}
 
@@ -1085,7 +1088,7 @@ public class MistralAiApi {
 					}
 
 					public Builder schema(String schema) {
-						this.schema = ModelOptionsUtils.jsonToMap(schema);
+						this.schema = jsonHelper.fromJsonToMap(schema);
 						return this;
 					}
 

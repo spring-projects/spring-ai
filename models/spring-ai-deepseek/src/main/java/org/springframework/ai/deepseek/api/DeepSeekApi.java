@@ -35,9 +35,9 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -53,6 +53,8 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Geng Rong
  */
 public class DeepSeekApi {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	public static final DeepSeekApi.ChatModel DEFAULT_CHAT_MODEL = ChatModel.DEEPSEEK_CHAT;
 
@@ -161,6 +163,7 @@ public class DeepSeekApi {
 	 * request.
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
+	@SuppressWarnings("NullAway")
 	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest,
 			HttpHeaders additionalHttpHeader) {
 
@@ -179,7 +182,7 @@ public class DeepSeekApi {
 			.takeUntil(SSE_DONE_PREDICATE)
 			// filters out the "[DONE]" message.
 			.filter(SSE_DONE_PREDICATE.negate())
-			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
+			.mapNotNull(content -> jsonHelper.fromJson(content, ChatCompletionChunk.class))
 			// Detect is the chunk is part of a streaming function call.
 			.map(chunk -> {
 				if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
@@ -405,7 +408,7 @@ public class DeepSeekApi {
 			 * @param jsonSchema tool function schema as json.
 			 */
 			public Function(String description, String name, String jsonSchema) {
-				this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema), null);
+				this(description, name, jsonHelper.fromJsonToMap(jsonSchema), null);
 			}
 
 			public String getDescription() {

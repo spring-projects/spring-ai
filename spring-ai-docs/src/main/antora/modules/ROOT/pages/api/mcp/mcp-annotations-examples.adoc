@@ -574,7 +574,7 @@ public class WeatherService {
             var samplingMessages = List.of(new McpSchema.SamplingMessage(McpSchema.Role.USER,
                     McpSchema.TextContent.builder(
                             "Please write a poem about this weather forecast (temperature is in Celsius). Use markdown format :\n "
-                                    + ModelOptionsUtils.toJsonStringPrettyPrinter(weatherResponse)).build()));
+                                    + new JsonHelper().toJson(weatherResponse)).build()));
             var messageRequestBuilder = McpSchema.CreateMessageRequest.builder(samplingMessages, 500)
                     .systemPrompt("You are a poet!");
 
@@ -599,7 +599,7 @@ public class WeatherService {
         // Combine results
         String responseWithPoems = "OpenAI poem about the weather: " + openAiWeatherPoem.toString() + "\n\n" +
                 "Anthropic poem about the weather: " + anthropicWeatherPoem.toString() + "\n"
-                + ModelOptionsUtils.toJsonStringPrettyPrinter(weatherResponse);
+                + new JsonHelper().toJson(weatherResponse);
 
         return responseWithPoems;
     }

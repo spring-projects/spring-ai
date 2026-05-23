@@ -44,7 +44,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JacksonUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -569,7 +569,7 @@ public class ChatClientNativeStructuredResponseTests {
 
 		@Override
 		public JsonNode convert(String source) {
-			return JsonParser.getJsonMapper().readTree(source);
+			return JacksonUtils.getDefaultJsonMapper().readTree(source);
 		}
 
 	}
