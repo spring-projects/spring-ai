@@ -33,6 +33,10 @@
 		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
 	</scm>
 
+	<properties>
+		<node.version>24.15.0</node.version>
+	</properties>
+
     <build>
         <plugins>
 			<plugin>
