@@ -24,6 +24,7 @@ import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -42,6 +43,13 @@ class ChatClientAutoConfigurationTests {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(ChatClientAutoConfiguration.class))
 		.withBean(ChatModel.class, () -> mock(ChatModel.class));
+
+	@Test
+	void autoConfigurationOrdersAfterToolCallingAutoConfiguration() {
+		AutoConfiguration autoConfiguration = ChatClientAutoConfiguration.class.getAnnotation(AutoConfiguration.class);
+
+		assertThat(autoConfiguration.after()).containsExactly(ToolCallingAutoConfiguration.class);
+	}
 
 	@Test
 	void toolCallAdvisorBuilderBeanIsAutoConfigured() {
