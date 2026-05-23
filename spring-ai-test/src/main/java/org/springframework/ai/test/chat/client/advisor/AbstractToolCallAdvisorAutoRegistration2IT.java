@@ -48,7 +48,7 @@ import org.springframework.ai.tool.metadata.ToolMetadata;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Abstract integration-test base for {@link ToolCallAdvisor} auto-registration behaviour.
+ * Abstract integration-test base for {@link ToolCallAdvisor} auto-registration behavior.
  *
  * <p>
  * Covers functional correctness (do the right temperatures come back?) and structural

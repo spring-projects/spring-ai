@@ -241,7 +241,7 @@ public final class MediaFetcher {
 	/**
 	 * Plain-HTTP socket factory that blocks connections to internal addresses at connect
 	 * time. Extends {@link PlainConnectionSocketFactory} and delegates to it after the
-	 * address check, preserving all default socket behaviour.
+	 * address check, preserving all default socket behavior.
 	 */
 	private static final class SsrfBlockingPlainSocketFactory extends PlainConnectionSocketFactory {
 
