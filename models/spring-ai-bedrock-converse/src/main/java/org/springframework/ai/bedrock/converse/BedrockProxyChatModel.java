@@ -104,7 +104,6 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
@@ -112,6 +111,7 @@ import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -147,6 +147,8 @@ import org.springframework.web.client.RestClientException;
  * @since 1.0.0
  */
 public class BedrockProxyChatModel implements ChatModel {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final Logger logger = LoggerFactory.getLogger(BedrockProxyChatModel.class);
 
@@ -372,7 +374,7 @@ public class BedrockProxyChatModel implements ChatModel {
 					for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 
 						var argumentsDocument = ConverseApiUtils
-							.convertObjectToDocument(ModelOptionsUtils.jsonToMap(toolCall.arguments()));
+							.convertObjectToDocument(jsonHelper.fromJsonToMap(toolCall.arguments()));
 
 						contentBlocks.add(ContentBlock.fromToolUse(ToolUseBlock.builder()
 							.toolUseId(toolCall.id())
@@ -462,8 +464,8 @@ public class BedrockProxyChatModel implements ChatModel {
 					.toolSpec(ToolSpecification.builder()
 						.name(name)
 						.description(description)
-						.inputSchema(ToolInputSchema.fromJson(
-								ConverseApiUtils.convertObjectToDocument(ModelOptionsUtils.jsonToMap(inputSchema))))
+						.inputSchema(ToolInputSchema
+							.fromJson(ConverseApiUtils.convertObjectToDocument(jsonHelper.fromJsonToMap(inputSchema))))
 						.build())
 					.build();
 				bedrockTools.add(tool);

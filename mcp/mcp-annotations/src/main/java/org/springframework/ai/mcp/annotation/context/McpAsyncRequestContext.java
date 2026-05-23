@@ -26,12 +26,14 @@ import io.modelcontextprotocol.spec.McpSchema.ElicitResult;
 import io.modelcontextprotocol.spec.McpSchema.ListRootsResult;
 import io.modelcontextprotocol.spec.McpSchema.ProgressNotification;
 import reactor.core.publisher.Mono;
-import tools.jackson.core.type.TypeReference;
+
+import org.springframework.core.ParameterizedTypeReference;
 
 /**
  * Async (Reactor) version of McpSyncRequestContext that returns Mono of value types.
  *
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 public interface McpAsyncRequestContext extends McpRequestContextTypes<McpAsyncServerExchange> {
 
@@ -49,9 +51,10 @@ public interface McpAsyncRequestContext extends McpRequestContextTypes<McpAsyncS
 
 	<T> Mono<StructuredElicitResult<T>> elicit(Class<T> type);
 
-	<T> Mono<StructuredElicitResult<T>> elicit(TypeReference<T> type);
+	<T> Mono<StructuredElicitResult<T>> elicit(ParameterizedTypeReference<T> type);
 
-	<T> Mono<StructuredElicitResult<T>> elicit(Consumer<ElicitationSpec> spec, TypeReference<T> returnType);
+	<T> Mono<StructuredElicitResult<T>> elicit(Consumer<ElicitationSpec> spec,
+			ParameterizedTypeReference<T> returnType);
 
 	<T> Mono<StructuredElicitResult<T>> elicit(Consumer<ElicitationSpec> spec, Class<T> returnType);
 

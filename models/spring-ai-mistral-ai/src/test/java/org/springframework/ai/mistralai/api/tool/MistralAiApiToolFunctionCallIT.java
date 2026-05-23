@@ -33,7 +33,7 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.T
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.mistralai.api.MistralAiApi.FunctionTool.Type;
-import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.ObjectUtils;
 
@@ -46,6 +46,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 public class MistralAiApiToolFunctionCallIT {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	static final String MISTRAL_AI_CHAT_MODEL = MistralAiApi.ChatModel.MISTRAL_LARGE.getValue();
 
@@ -71,7 +73,7 @@ public class MistralAiApiToolFunctionCallIT {
 		var functionTool = new MistralAiApi.FunctionTool(Type.FUNCTION,
 				new MistralAiApi.FunctionTool.Function(
 						"Get the weather in location. Return temperature in 30°F or 30°C format.", "getCurrentWeather",
-						ModelOptionsUtils.jsonToMap("""
+						jsonHelper.fromJsonToMap("""
 								{
 									"type": "object",
 									"properties": {

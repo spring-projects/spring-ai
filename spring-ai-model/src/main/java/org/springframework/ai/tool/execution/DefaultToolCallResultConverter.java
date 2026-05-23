@@ -29,7 +29,7 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 
 /**
  * A default implementation of {@link ToolCallResultConverter}.
@@ -39,13 +39,15 @@ import org.springframework.ai.util.json.JsonParser;
  */
 public final class DefaultToolCallResultConverter implements ToolCallResultConverter {
 
+	private static final JsonHelper jsonHelper = new JsonHelper();
+
 	private static final Logger logger = LoggerFactory.getLogger(DefaultToolCallResultConverter.class);
 
 	@Override
 	public String convert(@Nullable Object result, @Nullable Type returnType) {
 		if (returnType == Void.TYPE) {
 			logger.debug("The tool has no return type. Converting to conventional response.");
-			return JsonParser.toJson("Done");
+			return jsonHelper.toJson("Done");
 		}
 		if (result instanceof RenderedImage) {
 			final var buf = new ByteArrayOutputStream(1024 * 4);
@@ -56,11 +58,11 @@ public final class DefaultToolCallResultConverter implements ToolCallResultConve
 				return "Failed to convert tool result to a base64 image: " + e.getMessage();
 			}
 			final var imgB64 = Base64.getEncoder().encodeToString(buf.toByteArray());
-			return JsonParser.toJson(Map.of("mimeType", "image/png", "data", imgB64));
+			return jsonHelper.toJson(Map.of("mimeType", "image/png", "data", imgB64));
 		}
 		else {
 			logger.debug("Converting tool result to JSON.");
-			return JsonParser.toJson(result);
+			return jsonHelper.toJson(result, true);
 		}
 	}
 

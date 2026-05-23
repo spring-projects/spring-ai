@@ -31,11 +31,11 @@ import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.mistralai.api.MistralAiApi.FunctionTool;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.util.JsonHelper;
 
 /**
  * Options for the Mistral AI Chat API.
@@ -49,6 +49,8 @@ import org.springframework.ai.tool.ToolCallback;
  * @since 0.8.1
  */
 public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	/**
 	 * ID of the model to use
@@ -302,7 +304,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 		if (this.responseFormat == null || this.responseFormat.getJsonSchema() == null) {
 			return null;
 		}
-		return ModelOptionsUtils.toJsonString(this.responseFormat.getJsonSchema().getSchema());
+		return jsonHelper.toJson(this.responseFormat.getJsonSchema().getSchema());
 	}
 
 	@Override

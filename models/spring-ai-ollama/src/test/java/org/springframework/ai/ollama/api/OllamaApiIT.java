@@ -25,7 +25,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.ollama.BaseOllamaIT;
 import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
 import org.springframework.ai.ollama.api.OllamaApi.ChatResponse;
@@ -33,6 +32,7 @@ import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsRequest;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
 import org.springframework.ai.ollama.api.OllamaApi.Message;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.ai.util.ResourceUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,6 +45,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * @author Nicolas Krier
  */
 class OllamaApiIT extends BaseOllamaIT {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final String CHAT_MODEL = OllamaModel.QWEN_2_5_3B.getName();
 
@@ -87,7 +89,7 @@ class OllamaApiIT extends BaseOllamaIT {
 	@Test
 	void jsonStructuredOutput() {
 		var jsonSchemaAsText = ResourceUtils.getText("classpath:country-json-schema.json");
-		var jsonSchema = ModelOptionsUtils.jsonToMap(jsonSchemaAsText);
+		var jsonSchema = jsonHelper.fromJsonToMap(jsonSchemaAsText);
 		var messages = List.of(Message.builder(Role.USER).content("Tell me about Canada.").build());
 		var request = ChatRequest.builder(CHAT_MODEL).format(jsonSchema).messages(messages).build();
 

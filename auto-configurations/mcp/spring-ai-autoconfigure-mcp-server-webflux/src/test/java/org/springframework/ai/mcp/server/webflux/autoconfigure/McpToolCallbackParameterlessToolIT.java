@@ -42,10 +42,10 @@ import org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConver
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.mcp.server.webflux.transport.WebFluxStreamableServerTransportProvider;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -66,6 +66,8 @@ import static org.awaitility.Awaitility.await;
  * @author Ilayaperumal Gopinathan
  */
 class McpToolCallbackParameterlessToolIT {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private final ApplicationContextRunner syncServerContextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.server.protocol=STREAMABLE", "spring.ai.mcp.server.type=SYNC")
@@ -162,7 +164,7 @@ class McpToolCallbackParameterlessToolIT {
 						String inputSchema = toolDefinition.inputSchema();
 						assertThat(inputSchema).isNotNull().isNotEmpty();
 
-						Map<String, Object> schemaMap = ModelOptionsUtils.jsonToMap(inputSchema);
+						Map<String, Object> schemaMap = jsonHelper.fromJsonToMap(inputSchema);
 						assertThat(schemaMap).isNotNull();
 						assertThat(schemaMap).containsKey("type");
 						assertThat(schemaMap.get("type")).isEqualTo("object");

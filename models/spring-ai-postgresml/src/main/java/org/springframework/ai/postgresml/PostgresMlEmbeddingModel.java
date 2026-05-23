@@ -35,6 +35,7 @@ import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -50,6 +51,8 @@ import org.springframework.util.StringUtils;
  * @author Soby Chacko
  */
 public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements InitializingBean {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	public static final String DEFAULT_TRANSFORMER_MODEL = "distilbert-base-uncased";
 
@@ -95,7 +98,7 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 		return this.jdbcTemplate.queryForObject(
 				"SELECT pgml.embed(?, ?, ?::JSONB)" + this.defaultOptions.getVectorType().cast + " AS embedding",
 				this.defaultOptions.getVectorType().rowMapper, this.defaultOptions.getTransformer(), text,
-				ModelOptionsUtils.toJsonString(this.defaultOptions.getKwargs()));
+				jsonHelper.toJson(this.defaultOptions.getKwargs()));
 	}
 
 	@Override
@@ -123,7 +126,7 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 				PreparedStatement preparedStatement = connection.prepareStatement("SELECT pgml.embed(?, text, ?::JSONB)"
 						+ optionsToUse.getVectorType().cast + " AS embedding FROM (SELECT unnest(?) AS text) AS texts");
 				preparedStatement.setString(1, optionsToUse.getTransformer());
-				preparedStatement.setString(2, ModelOptionsUtils.toJsonString(optionsToUse.getKwargs()));
+				preparedStatement.setString(2, jsonHelper.toJson(optionsToUse.getKwargs()));
 				preparedStatement.setArray(3, connection.createArrayOf("TEXT", texts.toArray(Object[]::new)));
 				return preparedStatement;
 			}, rs -> {
@@ -142,8 +145,7 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 		}
 
 		Map<String, Object> embeddingMetadata = Map.of("transformer", optionsToUse.getTransformer(), "vector-type",
-				optionsToUse.getVectorType().name(), "kwargs",
-				ModelOptionsUtils.toJsonString(optionsToUse.getKwargs()));
+				optionsToUse.getVectorType().name(), "kwargs", jsonHelper.toJson(optionsToUse.getKwargs()));
 		var embeddingResponseMetadata = new EmbeddingResponseMetadata("unknown", new EmptyUsage(), embeddingMetadata);
 		return new EmbeddingResponse(data, embeddingResponseMetadata);
 	}

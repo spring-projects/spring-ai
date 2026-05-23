@@ -29,12 +29,11 @@ import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 
 /**
  * Helper class for creating strongly-typed Ollama options.
@@ -50,6 +49,8 @@ import org.springframework.ai.util.json.JsonParser;
  * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama Types</a>
  */
 public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate");
 
@@ -627,7 +628,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 			return (String) this.format;
 		}
 		// Otherwise, serialize the Map/Object to JSON string (JSON Schema case)
-		return JsonParser.toJson(this.format);
+		return jsonHelper.toJson(this.format);
 	}
 
 	/**
@@ -1155,7 +1156,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 				this.format = null;
 			}
 			else {
-				this.format = ModelOptionsUtils.jsonToMap(outputSchema);
+				this.format = jsonHelper.fromJsonToMap(outputSchema);
 			}
 			return self();
 		}
