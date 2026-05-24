@@ -240,16 +240,16 @@ class OpenAiChatModelTests {
 		prepareStreamingResponse(streamResponse);
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
-				.openAiClient(this.openAiClient)
-				.openAiClientAsync(this.openAiClientAsync)
-				.options(options)
-				.build();
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
 		AtomicReference<String> firstContent = new AtomicReference<>();
 
 		chatModel.stream(new Prompt("hi", options))
-				.mapNotNull(response -> response.getResult().getOutput().getText())
-				.filter(content -> !content.isEmpty())
-				.subscribe(firstContent::set);
+			.mapNotNull(response -> response.getResult().getOutput().getText())
+			.filter(content -> !content.isEmpty())
+			.subscribe(firstContent::set);
 
 		streamResponse.emit(contentChunk("hel"));
 
@@ -262,14 +262,14 @@ class OpenAiChatModelTests {
 		TestAsyncStreamResponse streamResponse = new TestAsyncStreamResponse();
 		prepareStreamingResponse(streamResponse);
 		OpenAiChatOptions options = OpenAiChatOptions.builder()
-				.model("test-model")
-				.internalToolExecutionEnabled(false)
-				.build();
+			.model("test-model")
+			.internalToolExecutionEnabled(false)
+			.build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
-				.openAiClient(this.openAiClient)
-				.openAiClientAsync(this.openAiClientAsync)
-				.options(options)
-				.build();
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
 		AtomicReference<ChatResponse> toolCallResponse = new AtomicReference<>();
 
 		chatModel.stream(new Prompt("hi", options)).filter(ChatResponse::hasToolCalls).subscribe(toolCallResponse::set);
