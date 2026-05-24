@@ -120,7 +120,11 @@ class AnthropicSkillsIT {
 
 		@Bean
 		public AnthropicChatModel anthropicChatModel(AnthropicClient client) {
-			return AnthropicChatModel.builder().anthropicClient(client).build();
+			String apiKey = System.getenv("ANTHROPIC_API_KEY");
+			return AnthropicChatModel.builder()
+				.anthropicClient(client)
+				.options(AnthropicChatOptions.builder().apiKey(apiKey).build())
+				.build();
 		}
 
 	}

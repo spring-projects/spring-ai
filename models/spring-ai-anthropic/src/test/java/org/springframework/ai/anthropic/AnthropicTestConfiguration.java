@@ -29,7 +29,8 @@ public class AnthropicTestConfiguration {
 
 	@Bean
 	public AnthropicChatModel anthropicChatModel() {
-		return AnthropicChatModel.builder().build();
+		String apiKey = System.getenv("ANTHROPIC_API_KEY");
+		return AnthropicChatModel.builder().options(AnthropicChatOptions.builder().apiKey(apiKey).build()).build();
 	}
 
 }
