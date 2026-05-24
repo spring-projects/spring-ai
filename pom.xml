@@ -783,6 +783,7 @@
 											</excludes>
 											<includes>
 												<include>*:*:*:*:test:*</include>
+												<include>org.springframework.ai:spring-ai-autoconfigure-*</include>
 												<!-- for some reason, which likely has to do with classifiers, without this include, the rule fails -->
 												<!-- with a false positive on spring-ai-autoconfigure-mcp-server-webflux. Did not find a better way to fix. -->
 												<include>io.netty:netty-*</include>

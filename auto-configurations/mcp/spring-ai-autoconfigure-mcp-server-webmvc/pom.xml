@@ -27,7 +27,6 @@
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-mcp-server-common</artifactId>
 			<version>${project.parent.version}</version>
-			<optional>true</optional>
 		</dependency>
 
 		<dependency>
