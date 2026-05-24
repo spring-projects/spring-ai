@@ -30,32 +30,56 @@ public class OpenAiTestConfiguration {
 
 	@Bean
 	public OpenAiEmbeddingModel openAiEmbeddingModel() {
-		return new OpenAiEmbeddingModel();
+		String apiKey = System.getenv("OPENAI_API_KEY");
+		return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder()
+			.apiKey(apiKey)
+			.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
+			.build());
 	}
 
 	@Bean
 	public OpenAiImageModel openAiImageModel() {
-		return new OpenAiImageModel();
+		String apiKey = System.getenv("OPENAI_API_KEY");
+		return new OpenAiImageModel(
+				OpenAiImageOptions.builder().apiKey(apiKey).model(OpenAiImageOptions.DEFAULT_IMAGE_MODEL).build());
 	}
 
 	@Bean
 	public OpenAiChatModel openAiChatModel() {
-		return OpenAiChatModel.builder().build();
+		String apiKey = System.getenv("OPENAI_API_KEY");
+		return OpenAiChatModel.builder()
+			.options(OpenAiChatOptions.builder().apiKey(apiKey).model(OpenAiChatOptions.DEFAULT_CHAT_MODEL).build())
+			.build();
 	}
 
 	@Bean
 	public OpenAiAudioTranscriptionModel openAiSdkAudioTranscriptionModel() {
-		return OpenAiAudioTranscriptionModel.builder().build();
+		String apiKey = System.getenv("OPENAI_API_KEY");
+		return OpenAiAudioTranscriptionModel.builder()
+			.options(OpenAiAudioTranscriptionOptions.builder().apiKey(apiKey).build())
+			.build();
 	}
 
 	@Bean
 	public OpenAiAudioSpeechModel openAiAudioSpeechModel() {
-		return OpenAiAudioSpeechModel.builder().build();
+		String apiKey = System.getenv("OPENAI_API_KEY");
+		return OpenAiAudioSpeechModel.builder()
+			.defaultOptions(OpenAiAudioSpeechOptions.builder()
+				.apiKey(apiKey)
+				.model(OpenAiAudioSpeechOptions.DEFAULT_SPEECH_MODEL)
+				.build())
+			.build();
 	}
 
 	@Bean
 	public OpenAiModerationModel openAiModerationModel() {
-		return OpenAiModerationModel.builder().build();
+		String apiKey = System.getenv("OPENAI_API_KEY");
+		return OpenAiModerationModel.builder()
+			.options(OpenAiModerationOptions.builder()
+				.apiKey(apiKey)
+				.model(OpenAiModerationOptions.DEFAULT_MODERATION_MODEL)
+				.build())
+			.build();
 	}
 
 }

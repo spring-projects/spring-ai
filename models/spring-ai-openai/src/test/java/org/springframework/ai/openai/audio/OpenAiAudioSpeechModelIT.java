@@ -45,7 +45,14 @@ class OpenAiAudioSpeechModelIT {
 
 	@Test
 	void testSimpleSpeechGeneration() {
-		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().build();
+		String apiKey = System.getenv("OPENAI_API_KEY");
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder()
+			.defaultOptions(OpenAiAudioSpeechOptions.builder()
+				.apiKey(apiKey)
+				.model(OpenAiAudioSpeechOptions.DEFAULT_SPEECH_MODEL)
+				.voice(OpenAiAudioSpeechOptions.Voice.ALLOY)
+				.build())
+			.build();
 		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Hello world");
 
 		TextToSpeechResponse response = model.call(prompt);
@@ -60,7 +67,9 @@ class OpenAiAudioSpeechModelIT {
 
 	@Test
 	void testCustomOptions() {
+		String apiKey = System.getenv("OPENAI_API_KEY");
 		OpenAiAudioSpeechOptions options = OpenAiAudioSpeechOptions.builder()
+			.apiKey(apiKey)
 			.model("tts-1-hd")
 			.voice(OpenAiAudioSpeechOptions.Voice.NOVA)
 			.responseFormat(OpenAiAudioSpeechOptions.AudioResponseFormat.OPUS)
@@ -87,7 +96,9 @@ class OpenAiAudioSpeechModelIT {
 
 	@Test
 	void testNewVoiceOptions() {
+		String apiKey = System.getenv("OPENAI_API_KEY");
 		OpenAiAudioSpeechOptions options = OpenAiAudioSpeechOptions.builder()
+			.apiKey(apiKey)
 			.model("gpt-4o-mini-tts")
 			.voice(OpenAiAudioSpeechOptions.Voice.BALLAD)
 			.build();
@@ -103,7 +114,9 @@ class OpenAiAudioSpeechModelIT {
 
 	@Test
 	void testNewFormatOptions() {
+		String apiKey = System.getenv("OPENAI_API_KEY");
 		OpenAiAudioSpeechOptions options = OpenAiAudioSpeechOptions.builder()
+			.apiKey(apiKey)
 			.model("gpt-4o-mini-tts")
 			.voice(OpenAiAudioSpeechOptions.Voice.ALLOY)
 			.responseFormat(OpenAiAudioSpeechOptions.AudioResponseFormat.WAV)
@@ -120,7 +133,14 @@ class OpenAiAudioSpeechModelIT {
 
 	@Test
 	void testSimpleStringInput() {
-		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().build();
+		String apiKey = System.getenv("OPENAI_API_KEY");
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder()
+			.defaultOptions(OpenAiAudioSpeechOptions.builder()
+				.apiKey(apiKey)
+				.model(OpenAiAudioSpeechOptions.DEFAULT_SPEECH_MODEL)
+				.voice(OpenAiAudioSpeechOptions.Voice.ALLOY)
+				.build())
+			.build();
 		byte[] audioBytes = model.call("Today is a wonderful day to build something people love!");
 
 		assertThat(audioBytes).isNotEmpty();
@@ -128,7 +148,14 @@ class OpenAiAudioSpeechModelIT {
 
 	@Test
 	void testStreamingBehavior() {
-		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().build();
+		String apiKey = System.getenv("OPENAI_API_KEY");
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder()
+			.defaultOptions(OpenAiAudioSpeechOptions.builder()
+				.apiKey(apiKey)
+				.model(OpenAiAudioSpeechOptions.DEFAULT_SPEECH_MODEL)
+				.voice(OpenAiAudioSpeechOptions.Voice.ALLOY)
+				.build())
+			.build();
 		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Today is a wonderful day to build something people love!");
 
 		Flux<TextToSpeechResponse> responseFlux = model.stream(prompt);
@@ -145,7 +172,9 @@ class OpenAiAudioSpeechModelIT {
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "alloy", "echo", "fable", "onyx", "nova", "shimmer", "sage", "coral", "ash" })
 	void testAllVoices(String voice) {
+		String apiKey = System.getenv("OPENAI_API_KEY");
 		OpenAiAudioSpeechOptions options = OpenAiAudioSpeechOptions.builder()
+			.apiKey(apiKey)
 			.model("gpt-4o-mini-tts")
 			.voice(voice)
 			.build();
@@ -163,7 +192,14 @@ class OpenAiAudioSpeechModelIT {
 	@Test
 	void testRateLimitMetadata() {
 		// Verify that SDK extracts rate limit metadata from response headers
-		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().build();
+		String apiKey = System.getenv("OPENAI_API_KEY");
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder()
+			.defaultOptions(OpenAiAudioSpeechOptions.builder()
+				.apiKey(apiKey)
+				.model(OpenAiAudioSpeechOptions.DEFAULT_SPEECH_MODEL)
+				.voice(OpenAiAudioSpeechOptions.Voice.ALLOY)
+				.build())
+			.build();
 		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Today is a wonderful day to build something people love!");
 
 		TextToSpeechResponse response = model.call(prompt);
@@ -181,7 +217,9 @@ class OpenAiAudioSpeechModelIT {
 
 	@Test
 	void testTts1Model() {
+		String apiKey = System.getenv("OPENAI_API_KEY");
 		OpenAiAudioSpeechOptions options = OpenAiAudioSpeechOptions.builder()
+			.apiKey(apiKey)
 			.model("tts-1")
 			.voice(OpenAiAudioSpeechOptions.Voice.ALLOY)
 			.responseFormat(OpenAiAudioSpeechOptions.AudioResponseFormat.WAV)
@@ -200,7 +238,9 @@ class OpenAiAudioSpeechModelIT {
 
 	@Test
 	void testTts1HdModel() {
+		String apiKey = System.getenv("OPENAI_API_KEY");
 		OpenAiAudioSpeechOptions options = OpenAiAudioSpeechOptions.builder()
+			.apiKey(apiKey)
 			.model("tts-1-hd")
 			.voice(OpenAiAudioSpeechOptions.Voice.SHIMMER)
 			.responseFormat(OpenAiAudioSpeechOptions.AudioResponseFormat.OPUS)

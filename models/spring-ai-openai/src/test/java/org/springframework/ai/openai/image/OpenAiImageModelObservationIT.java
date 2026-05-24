@@ -107,8 +107,9 @@ public class OpenAiImageModelObservationIT {
 
 		@Bean
 		public OpenAiImageModel openAiImageModel(TestObservationRegistry observationRegistry) {
+			String apiKey = System.getenv("OPENAI_API_KEY");
 			return new OpenAiImageModel(
-					OpenAiImageOptions.builder().model(OpenAiImageOptions.DEFAULT_IMAGE_MODEL).build(),
+					OpenAiImageOptions.builder().apiKey(apiKey).model(OpenAiImageOptions.DEFAULT_IMAGE_MODEL).build(),
 					observationRegistry);
 		}
 

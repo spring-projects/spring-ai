@@ -108,8 +108,12 @@ public class OpenAiEmbeddingModelObservationIT {
 
 		@Bean
 		public OpenAiEmbeddingModel openAiEmbeddingModel(TestObservationRegistry observationRegistry) {
+			String apiKey = System.getenv("OPENAI_API_KEY");
 			return new OpenAiEmbeddingModel(MetadataMode.EMBED,
-					OpenAiEmbeddingOptions.builder().model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL).build(),
+					OpenAiEmbeddingOptions.builder()
+						.apiKey(apiKey)
+						.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
+						.build(),
 					observationRegistry);
 		}
 

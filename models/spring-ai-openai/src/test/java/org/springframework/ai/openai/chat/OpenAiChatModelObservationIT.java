@@ -154,8 +154,9 @@ public class OpenAiChatModelObservationIT {
 
 		@Bean
 		public OpenAiChatModel openAiChatModel(TestObservationRegistry observationRegistry) {
+			String apiKey = System.getenv("OPENAI_API_KEY");
 			return OpenAiChatModel.builder()
-				.options(OpenAiChatOptions.builder().model(OpenAiChatOptions.DEFAULT_CHAT_MODEL).build())
+				.options(OpenAiChatOptions.builder().apiKey(apiKey).model(OpenAiChatOptions.DEFAULT_CHAT_MODEL).build())
 				.observationRegistry(observationRegistry)
 				.build();
 		}
