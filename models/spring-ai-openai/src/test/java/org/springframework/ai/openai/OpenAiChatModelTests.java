@@ -21,14 +21,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
+import com.openai.core.http.AsyncStreamResponse;
 import com.openai.models.chat.completions.ChatCompletion;
+import com.openai.models.chat.completions.ChatCompletionChunk;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
 import com.openai.models.chat.completions.ChatCompletionMessage;
 import com.openai.models.completions.CompletionUsage;
+import com.openai.services.async.ChatServiceAsync;
+import com.openai.services.async.chat.ChatCompletionServiceAsync;
 import com.openai.services.blocking.ChatService;
 import com.openai.services.blocking.chat.ChatCompletionService;
 import org.junit.jupiter.api.Test;
@@ -36,6 +43,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.PromptMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
@@ -224,6 +232,141 @@ class OpenAiChatModelTests {
 		assertThat(aggregatedMetadata.getRateLimit()).isSameAs(rateLimit);
 		assertThat(aggregatedMetadata.getPromptMetadata()).isSameAs(promptMetadata);
 		assertThat((String) aggregatedMetadata.get("custom-key")).isEqualTo("custom-value");
+	}
+
+	@Test
+	void streamContentChunksAsTheyArrive() {
+		TestAsyncStreamResponse streamResponse = new TestAsyncStreamResponse();
+		prepareStreamingResponse(streamResponse);
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+				.openAiClient(this.openAiClient)
+				.openAiClientAsync(this.openAiClientAsync)
+				.options(options)
+				.build();
+		AtomicReference<String> firstContent = new AtomicReference<>();
+
+		chatModel.stream(new Prompt("hi", options))
+				.mapNotNull(response -> response.getResult().getOutput().getText())
+				.filter(content -> !content.isEmpty())
+				.subscribe(firstContent::set);
+
+		streamResponse.emit(contentChunk("hel"));
+
+		assertThat(firstContent).hasValue("hel");
+		assertThat(streamResponse.onCompleteFuture()).isNotDone();
+	}
+
+	@Test
+	void emitMergedToolCallAfterStreamCompletes() {
+		TestAsyncStreamResponse streamResponse = new TestAsyncStreamResponse();
+		prepareStreamingResponse(streamResponse);
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+				.model("test-model")
+				.internalToolExecutionEnabled(false)
+				.build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+				.openAiClient(this.openAiClient)
+				.openAiClientAsync(this.openAiClientAsync)
+				.options(options)
+				.build();
+		AtomicReference<ChatResponse> toolCallResponse = new AtomicReference<>();
+
+		chatModel.stream(new Prompt("hi", options)).filter(ChatResponse::hasToolCalls).subscribe(toolCallResponse::set);
+
+		streamResponse.emit(toolCallChunk("call-1", "getWeather", "{\"city\""));
+		assertThat(toolCallResponse).hasNullValue();
+
+		streamResponse.emit(toolCallChunk("", "", ":\"Paris\"}"));
+		streamResponse.complete();
+
+		assertThat(toolCallResponse.get()).isNotNull();
+		AssistantMessage.ToolCall toolCall = toolCallResponse.get().getResult().getOutput().getToolCalls().get(0);
+		assertThat(toolCall.id()).isEqualTo("call-1");
+		assertThat(toolCall.name()).isEqualTo("getWeather");
+		assertThat(toolCall.arguments()).isEqualTo("{\"city\":\"Paris\"}");
+	}
+
+	private void prepareStreamingResponse(TestAsyncStreamResponse streamResponse) {
+		ChatServiceAsync chatService = mock(ChatServiceAsync.class);
+		ChatCompletionServiceAsync completionService = mock(ChatCompletionServiceAsync.class);
+		when(this.openAiClientAsync.chat()).thenReturn(chatService);
+		when(chatService.completions()).thenReturn(completionService);
+		when(completionService.createStreaming(any(ChatCompletionCreateParams.class))).thenReturn(streamResponse);
+	}
+
+	private ChatCompletionChunk contentChunk(String content) {
+		return ChatCompletionChunk.builder()
+			.id("chatcmpl-test")
+			.created(1)
+			.model("test-model")
+			.addChoice(ChatCompletionChunk.Choice.builder()
+				.index(0)
+				.finishReason(Optional.empty())
+				.delta(ChatCompletionChunk.Choice.Delta.builder().content(content).build())
+				.build())
+			.build();
+	}
+
+	private ChatCompletionChunk toolCallChunk(String id, String name, String arguments) {
+		return ChatCompletionChunk.builder()
+			.id("chatcmpl-test")
+			.created(1)
+			.model("test-model")
+			.addChoice(ChatCompletionChunk.Choice.builder()
+				.index(0)
+				.finishReason(Optional.empty())
+				.delta(ChatCompletionChunk.Choice.Delta.builder()
+					.addToolCall(ChatCompletionChunk.Choice.Delta.ToolCall.builder()
+						.index(0)
+						.id(id)
+						.function(ChatCompletionChunk.Choice.Delta.ToolCall.Function.builder()
+							.name(name)
+							.arguments(arguments)
+							.build())
+						.build())
+					.build())
+				.build())
+			.build();
+	}
+
+	private static final class TestAsyncStreamResponse implements AsyncStreamResponse<ChatCompletionChunk> {
+
+		private final CompletableFuture<Void> completeFuture = new CompletableFuture<>();
+
+		private Handler<? super ChatCompletionChunk> handler;
+
+		@Override
+		public AsyncStreamResponse<ChatCompletionChunk> subscribe(Handler<? super ChatCompletionChunk> handler) {
+			this.handler = handler;
+			return this;
+		}
+
+		@Override
+		public AsyncStreamResponse<ChatCompletionChunk> subscribe(Handler<? super ChatCompletionChunk> handler,
+				Executor executor) {
+			this.handler = value -> executor.execute(() -> handler.onNext(value));
+			return this;
+		}
+
+		@Override
+		public CompletableFuture<Void> onCompleteFuture() {
+			return this.completeFuture;
+		}
+
+		@Override
+		public void close() {
+			this.completeFuture.complete(null);
+		}
+
+		void emit(ChatCompletionChunk chunk) {
+			this.handler.onNext(chunk);
+		}
+
+		void complete() {
+			this.completeFuture.complete(null);
+		}
+
 	}
 
 }
