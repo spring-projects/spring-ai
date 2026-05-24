@@ -34,20 +34,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Helps configure the OpenAI Java SDK, depending on the platform used. This code is
- * inspired by LangChain4j's
- * `dev.langchain4j.model.openaiofficial.InternalOpenAiOfficialHelper` class, which is
- * coded by the same author (Julien Dubois, from Microsoft).
+ * Helps configure the OpenAI Java SDK, depending on the platform used.
  *
  * @author Julien Dubois
+ * @author Sebastien Deleuze
  */
 public final class OpenAiSetup {
 
 	static final String OPENAI_URL = "https://api.openai.com/v1";
-	static final String OPENAI_API_KEY = "OPENAI_API_KEY";
-	static final String MICROSOFT_FOUNDRY_API_KEY = "MICROSOFT_FOUNDRY_API_KEY";
 	static final String GITHUB_MODELS_URL = "https://models.github.ai/inference";
-	static final String GITHUB_TOKEN = "GITHUB_TOKEN";
 	static final String DEFAULT_USER_AGENT = "spring-ai-openai";
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiSetup.class);
@@ -67,19 +62,17 @@ public final class OpenAiSetup {
 			boolean isAzure, boolean isGitHubModels, @Nullable String modelName, Duration timeout, int maxRetries,
 			@Nullable Proxy proxy, @Nullable Map<String, String> customHeaders) {
 
-		baseUrl = detectBaseUrlFromEnv(baseUrl);
 		var modelProvider = detectModelProvider(isAzure, isGitHubModels, baseUrl, azureDeploymentName,
 				azureOpenAiServiceVersion);
 		OpenAIOkHttpClient.Builder builder = OpenAIOkHttpClient.builder();
 		builder.baseUrl(calculateBaseUrl(baseUrl, modelProvider, modelName, azureDeploymentName));
 
-		String calculatedApiKey = apiKey != null ? apiKey : detectApiKey(modelProvider);
-		if (calculatedApiKey != null) {
+		if (apiKey != null) {
 			if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY) {
-				builder.credential(AzureApiKeyCredential.create(calculatedApiKey));
+				builder.credential(AzureApiKeyCredential.create(apiKey));
 			}
 			else {
-				builder.apiKey(calculatedApiKey);
+				builder.apiKey(apiKey);
 			}
 		}
 		else {
@@ -125,19 +118,17 @@ public final class OpenAiSetup {
 			boolean isAzure, boolean isGitHubModels, @Nullable String modelName, Duration timeout, int maxRetries,
 			@Nullable Proxy proxy, @Nullable Map<String, String> customHeaders) {
 
-		baseUrl = detectBaseUrlFromEnv(baseUrl);
 		var modelProvider = detectModelProvider(isAzure, isGitHubModels, baseUrl, azureDeploymentName,
 				azureOpenAiServiceVersion);
 		OpenAIOkHttpClientAsync.Builder builder = OpenAIOkHttpClientAsync.builder();
 		builder.baseUrl(calculateBaseUrl(baseUrl, modelProvider, modelName, azureDeploymentName));
 
-		String calculatedApiKey = apiKey != null ? apiKey : detectApiKey(modelProvider);
-		if (calculatedApiKey != null) {
+		if (apiKey != null) {
 			if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY) {
-				builder.credential(AzureApiKeyCredential.create(calculatedApiKey));
+				builder.credential(AzureApiKeyCredential.create(apiKey));
 			}
 			else {
-				builder.apiKey(calculatedApiKey);
+				builder.apiKey(apiKey);
 			}
 		}
 		else {
@@ -171,22 +162,6 @@ public final class OpenAiSetup {
 		builder.timeout(timeout);
 		builder.maxRetries(maxRetries);
 		return builder.build();
-	}
-
-	static @Nullable String detectBaseUrlFromEnv(@Nullable String baseUrl) {
-		if (baseUrl == null) {
-			var openAiBaseUrl = System.getenv("OPENAI_BASE_URL");
-			if (openAiBaseUrl != null) {
-				baseUrl = openAiBaseUrl;
-				logger.debug("OpenAI Base URL detected from environment variable OPENAI_BASE_URL.");
-			}
-			var azureOpenAiBaseUrl = System.getenv("AZURE_OPENAI_BASE_URL");
-			if (azureOpenAiBaseUrl != null) {
-				baseUrl = azureOpenAiBaseUrl;
-				logger.debug("Microsoft Foundry Base URL detected from environment variable AZURE_OPENAI_BASE_URL.");
-			}
-		}
-		return baseUrl;
 	}
 
 	public static ModelProvider detectModelProvider(boolean isMicrosoftFoundry, boolean isGitHubModels,
@@ -257,22 +232,6 @@ public final class OpenAiSetup {
 			throw new IllegalArgumentException("Microsoft Foundry was detected, but no credential was provided. "
 					+ "If you want to use passwordless authentication, you need to add the Azure Identity library (groupId=`com.azure`, artifactId=`azure-identity`) to your classpath.");
 		}
-	}
-
-	static @Nullable String detectApiKey(ModelProvider modelProvider) {
-		if (modelProvider == ModelProvider.OPEN_AI && System.getenv(OPENAI_API_KEY) != null) {
-			return System.getenv(OPENAI_API_KEY);
-		}
-		else if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY && System.getenv(MICROSOFT_FOUNDRY_API_KEY) != null) {
-			return System.getenv(MICROSOFT_FOUNDRY_API_KEY);
-		}
-		else if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY && System.getenv(OPENAI_API_KEY) != null) {
-			return System.getenv(OPENAI_API_KEY);
-		}
-		else if (modelProvider == ModelProvider.GITHUB_MODELS && System.getenv(GITHUB_TOKEN) != null) {
-			return System.getenv(GITHUB_TOKEN);
-		}
-		return null;
 	}
 
 }
