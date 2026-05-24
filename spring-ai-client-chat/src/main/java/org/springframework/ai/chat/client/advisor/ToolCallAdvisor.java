@@ -33,6 +33,7 @@ import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.ToolAdvisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -108,8 +109,8 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 		Assert.notNull(callAdvisorChain, "callAdvisorChain must not be null");
 		Assert.notNull(chatClientRequest, "chatClientRequest must not be null");
 
-		if (chatClientRequest.prompt().getOptions() == null
-				|| !(chatClientRequest.prompt().getOptions() instanceof ToolCallingChatOptions)) {
+		ChatOptions options = chatClientRequest.prompt().getOptions();
+		if (!(options instanceof ToolCallingChatOptions)) {
 			throw new IllegalArgumentException(
 					"ToolCall Advisor requires ToolCallingChatOptions to be set in the ChatClientRequest options.");
 		}
@@ -118,9 +119,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 
 		// Overwrite the ToolCallingChatOptions to disable internal tool execution.
 		// Disable internal tool execution to allow ToolCallAdvisor to handle tool calls
-		var optionsCopy = ((ToolCallingChatOptions.Builder<?>) chatClientRequest.prompt().getOptions().mutate())
-			.internalToolExecutionEnabled(false)
-			.build();
+		var optionsCopy = ((ToolCallingChatOptions) options).mutate().internalToolExecutionEnabled(false).build();
 
 		var instructions = chatClientRequest.prompt().getInstructions();
 
