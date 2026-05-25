@@ -30,56 +30,32 @@ public class OpenAiTestConfiguration {
 
 	@Bean
 	public OpenAiEmbeddingModel openAiEmbeddingModel() {
-		String apiKey = System.getenv("OPENAI_API_KEY");
-		return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder()
-			.apiKey(apiKey)
-			.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
-			.build());
+		return new OpenAiEmbeddingModel();
 	}
 
 	@Bean
 	public OpenAiImageModel openAiImageModel() {
-		String apiKey = System.getenv("OPENAI_API_KEY");
-		return new OpenAiImageModel(
-				OpenAiImageOptions.builder().apiKey(apiKey).model(OpenAiImageOptions.DEFAULT_IMAGE_MODEL).build());
+		return new OpenAiImageModel();
 	}
 
 	@Bean
 	public OpenAiChatModel openAiChatModel() {
-		String apiKey = System.getenv("OPENAI_API_KEY");
-		return OpenAiChatModel.builder()
-			.options(OpenAiChatOptions.builder().apiKey(apiKey).model(OpenAiChatOptions.DEFAULT_CHAT_MODEL).build())
-			.build();
+		return OpenAiChatModel.builder().build();
 	}
 
 	@Bean
 	public OpenAiAudioTranscriptionModel openAiSdkAudioTranscriptionModel() {
-		String apiKey = System.getenv("OPENAI_API_KEY");
-		return OpenAiAudioTranscriptionModel.builder()
-			.options(OpenAiAudioTranscriptionOptions.builder().apiKey(apiKey).build())
-			.build();
+		return OpenAiAudioTranscriptionModel.builder().build();
 	}
 
 	@Bean
 	public OpenAiAudioSpeechModel openAiAudioSpeechModel() {
-		String apiKey = System.getenv("OPENAI_API_KEY");
-		return OpenAiAudioSpeechModel.builder()
-			.defaultOptions(OpenAiAudioSpeechOptions.builder()
-				.apiKey(apiKey)
-				.model(OpenAiAudioSpeechOptions.DEFAULT_SPEECH_MODEL)
-				.build())
-			.build();
+		return OpenAiAudioSpeechModel.builder().build();
 	}
 
 	@Bean
 	public OpenAiModerationModel openAiModerationModel() {
-		String apiKey = System.getenv("OPENAI_API_KEY");
-		return OpenAiModerationModel.builder()
-			.options(OpenAiModerationOptions.builder()
-				.apiKey(apiKey)
-				.model(OpenAiModerationOptions.DEFAULT_MODERATION_MODEL)
-				.build())
-			.build();
+		return OpenAiModerationModel.builder().build();
 	}
 
 }
