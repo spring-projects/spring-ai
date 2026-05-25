@@ -32,6 +32,7 @@ import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -95,6 +96,11 @@ public class AsyncMcpToolCallback implements ToolCallback {
 		return McpToolUtils.createToolDefinition(this.prefixedToolName, this.tool);
 	}
 
+	@Override
+	public ToolMetadata getToolMetadata() {
+		return McpToolMetadata.from(this.tool.annotations());
+	}
+
 	public String getOriginalToolName() {
 		return this.tool.name();
 	}
@@ -142,6 +148,11 @@ public class AsyncMcpToolCallback implements ToolCallback {
 			logger.error("Error calling tool: {}", response.content());
 			throw new ToolExecutionException(this.getToolDefinition(),
 					new IllegalStateException("Error calling tool: " + response.content()));
+		}
+		// Prefer structuredContent (MCP 2025-06-18) when available, as it provides
+		// machine-readable output conforming to the tool's outputSchema.
+		if (response.structuredContent() != null) {
+			return ModelOptionsUtils.toJsonString(response.structuredContent());
 		}
 		return ModelOptionsUtils.toJsonString(response.content());
 	}

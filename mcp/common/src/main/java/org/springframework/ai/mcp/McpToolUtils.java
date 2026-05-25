@@ -236,9 +236,15 @@ public final class McpToolUtils {
 	 * @return a ToolDefinition with normalized input schema
 	 */
 	public static ToolDefinition createToolDefinition(String prefixedToolName, McpSchema.Tool tool) {
+		// Use tool title (MCP 2025-06-18) as description when the description is missing,
+		// or use description as-is when available
+		String description = tool.description();
+		if (StringUtils.isEmpty(description) && !StringUtils.isEmpty(tool.title())) {
+			description = tool.title();
+		}
 		return DefaultToolDefinition.builder()
 			.name(prefixedToolName)
-			.description(tool.description())
+			.description(description)
 			.inputSchema(JsonSchemaUtils.ensureValidInputSchema(ModelOptionsUtils.toJsonString(tool.inputSchema())))
 			.build();
 	}
@@ -246,23 +252,41 @@ public final class McpToolUtils {
 	private static SharedSyncToolSpecification toSharedSyncToolSpecification(ToolCallback toolCallback,
 			@Nullable MimeType mimeType) {
 
-		var tool = McpSchema.Tool.builder()
+		var toolBuilder = McpSchema.Tool.builder()
 			.name(toolCallback.getToolDefinition().name())
 			.description(toolCallback.getToolDefinition().description())
 			.inputSchema(ModelOptionsUtils.jsonToObject(toolCallback.getToolDefinition().inputSchema(),
-					McpSchema.JsonSchema.class))
-			.build();
+					McpSchema.JsonSchema.class));
+
+		// Propagate returnDirect from ToolMetadata as MCP ToolAnnotations (MCP
+		// 2025-03-26)
+		if (toolCallback.getToolMetadata().returnDirect()) {
+			toolBuilder.annotations(McpSchema.ToolAnnotations.builder().returnDirect(true).build());
+		}
+
+		var tool = toolBuilder.build();
 
 		return new SharedSyncToolSpecification(tool, (exchangeOrContext, request) -> {
 			try {
 				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request.arguments()),
 						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchangeOrContext)));
-				if (mimeType != null && mimeType.toString().startsWith("image")) {
+				if (mimeType != null) {
 					McpSchema.Annotations annotations = new McpSchema.Annotations(List.of(Role.ASSISTANT), null);
-					return McpSchema.CallToolResult.builder()
-						.content(List.of(new McpSchema.ImageContent(annotations, callResult, mimeType.toString())))
-						.isError(false)
-						.build();
+					String mimeTypeStr = mimeType.toString();
+					if (mimeTypeStr.startsWith("image")) {
+						return McpSchema.CallToolResult.builder()
+							.content(
+									List.of(new McpSchema.ImageContent(annotations, callResult, mimeTypeStr)))
+							.isError(false)
+							.build();
+					}
+					if (mimeTypeStr.startsWith("audio")) {
+						return McpSchema.CallToolResult.builder()
+							.content(
+									List.of(new McpSchema.AudioContent(annotations, callResult, mimeTypeStr)))
+							.isError(false)
+							.build();
+					}
 				}
 				return McpSchema.CallToolResult.builder()
 					.content(List.of(new McpSchema.TextContent(callResult)))

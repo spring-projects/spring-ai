@@ -27,8 +27,10 @@ import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.spec.McpSchema.AudioContent;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.ClientCapabilities;
+import io.modelcontextprotocol.spec.McpSchema.ImageContent;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
@@ -337,6 +339,106 @@ class ToolUtilsTests {
 		when(callback.getToolDefinition()).thenReturn(definition);
 		when(callback.call(anyString(), any())).thenThrow(error);
 		return callback;
+	}
+
+	@Test
+	void toSyncToolSpecificationShouldHandleAudioMimeType() {
+		ToolCallback callback = createMockToolCallback("audioTool", "base64AudioData");
+
+		SyncToolSpecification toolSpecification = McpToolUtils
+			.toSyncToolSpecification(callback, org.springframework.util.MimeType.valueOf("audio/wav"));
+
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpSyncServerExchange.class), new McpSchema.CallToolRequest("audioTool", Map.of()));
+
+		assertThat(result.content()).hasSize(1);
+		assertThat(result.content().get(0)).isInstanceOf(AudioContent.class);
+		AudioContent audioContent = (AudioContent) result.content().get(0);
+		assertThat(audioContent.data()).isEqualTo("base64AudioData");
+		assertThat(audioContent.mimeType()).isEqualTo("audio/wav");
+		assertThat(result.isError()).isFalse();
+	}
+
+	@Test
+	void toSyncToolSpecificationShouldHandleImageMimeType() {
+		ToolCallback callback = createMockToolCallback("imageTool", "base64ImageData");
+
+		SyncToolSpecification toolSpecification = McpToolUtils
+			.toSyncToolSpecification(callback, org.springframework.util.MimeType.valueOf("image/png"));
+
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpSyncServerExchange.class), new McpSchema.CallToolRequest("imageTool", Map.of()));
+
+		assertThat(result.content()).hasSize(1);
+		assertThat(result.content().get(0)).isInstanceOf(ImageContent.class);
+		ImageContent imageContent = (ImageContent) result.content().get(0);
+		assertThat(imageContent.data()).isEqualTo("base64ImageData");
+		assertThat(imageContent.mimeType()).isEqualTo("image/png");
+		assertThat(result.isError()).isFalse();
+	}
+
+	@Test
+	void toSyncToolSpecificationShouldDefaultToTextForUnknownMimeType() {
+		ToolCallback callback = createMockToolCallback("textTool", "plain text data");
+
+		SyncToolSpecification toolSpecification = McpToolUtils
+			.toSyncToolSpecification(callback, org.springframework.util.MimeType.valueOf("application/json"));
+
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpSyncServerExchange.class), new McpSchema.CallToolRequest("textTool", Map.of()));
+
+		assertThat(result.content()).hasSize(1);
+		assertThat(result.content().get(0)).isInstanceOf(TextContent.class);
+		TextContent textContent = (TextContent) result.content().get(0);
+		assertThat(textContent.text()).isEqualTo("plain text data");
+	}
+
+	@Test
+	void toSyncToolSpecificationShouldPropagateReturnDirectAnnotation() {
+		ToolCallback callback = mock(ToolCallback.class);
+		ToolDefinition definition = DefaultToolDefinition.builder()
+			.name("directTool")
+			.description("Tool with returnDirect")
+			.inputSchema("{}")
+			.build();
+		when(callback.getToolDefinition()).thenReturn(definition);
+		when(callback.call(anyString(), any())).thenReturn("result");
+		when(callback.getToolMetadata())
+			.thenReturn(org.springframework.ai.tool.metadata.ToolMetadata.builder().returnDirect(true).build());
+
+		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
+
+		assertThat(toolSpecification.tool().annotations()).isNotNull();
+		assertThat(toolSpecification.tool().annotations().returnDirect()).isTrue();
+	}
+
+	@Test
+	void createToolDefinitionShouldUseTitleAsFallbackDescription() {
+		Tool tool = McpSchema.Tool.builder()
+			.name("myTool")
+			.title("My Awesome Tool")
+			.inputSchema(McpSchema.JsonSchema.builder().build())
+			.build();
+
+		ToolDefinition toolDef = McpToolUtils.createToolDefinition("prefix_myTool", tool);
+
+		// When description is null, title should be used as fallback
+		assertThat(toolDef.name()).isEqualTo("prefix_myTool");
+		assertThat(toolDef.description()).isEqualTo("My Awesome Tool");
+	}
+
+	@Test
+	void createToolDefinitionShouldPreferDescriptionOverTitle() {
+		Tool tool = McpSchema.Tool.builder()
+			.name("myTool")
+			.title("My Title")
+			.description("My detailed description")
+			.inputSchema(McpSchema.JsonSchema.builder().build())
+			.build();
+
+		ToolDefinition toolDef = McpToolUtils.createToolDefinition("prefix_myTool", tool);
+
+		assertThat(toolDef.description()).isEqualTo("My detailed description");
 	}
 
 	@Test
