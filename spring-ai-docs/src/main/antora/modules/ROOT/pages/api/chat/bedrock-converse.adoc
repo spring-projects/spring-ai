@@ -775,20 +775,19 @@ String response = ChatClient.create(this.chatModel)
         .content();
 ----
 
-You can use the java.util.function beans as tools as well:
+You can also use `FunctionToolCallback` to register a function as a tool:
 
 [source,java]
 ----
-@Bean
-@Description("Get the weather in location. Return temperature in 36°F or 36°C format.")
-public Function<Request, Response> weatherFunction() {
-    return new MockWeatherService();
-}
+ToolCallback weatherTool = FunctionToolCallback
+        .builder("weatherFunction", new MockWeatherService())
+        .description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+        .inputType(Request.class)
+        .build();
 
 String response = ChatClient.create(this.chatModel)
         .prompt("What's the weather like in Boston?")
-        .toolNames("weatherFunction")
-        .inputType(Request.class)
+        .tools(weatherTool)
         .call()
         .content();
 ----

@@ -17,19 +17,14 @@
 package org.springframework.ai.model.ollama.autoconfigure.tool;
 
 import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ollama.autoconfigure.BaseOllamaIT;
 import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration;
@@ -41,7 +36,6 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Description;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -55,12 +49,6 @@ class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 	private static final Logger logger = LoggerFactory.getLogger(OllamaFunctionToolBeanIT.class);
 
 	private static final String MODEL_NAME = OllamaModel.QWEN_2_5_3B.getName();
-
-	private static final String USER_MESSAGE_TEXT = "What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.";
-
-	private static final String WEATHER_INFO_TOOL_DESCRIPTION = "Find the weather conditions, forecasts, and temperatures for a location, like a city or state, represented by its geographical coordinates.";
-
-	private static final String WEATHER_INFO_TOOL_NAME = "weatherInfo";
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
 	// @formatter:off
@@ -101,54 +89,6 @@ class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 
 	}
 
-	@Test
-	void functionCallTest() {
-		this.contextRunner.run(context -> {
-
-			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
-
-			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
-
-			OllamaChatOptions options = mergeOptions(chatModel,
-					OllamaChatOptions.builder().toolNames(WEATHER_INFO_TOOL_NAME));
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), options));
-
-			logger.info("Response: {}", response);
-
-			var result = response.getResult();
-			assertThat(result).isNotNull();
-			assertThat(result.getOutput().getText()).contains("30", "10", "15");
-		});
-	}
-
-	@Test
-	void streamFunctionCallTest() {
-		this.contextRunner.run(context -> {
-
-			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
-
-			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
-
-			OllamaChatOptions options = mergeOptions(chatModel,
-					OllamaChatOptions.builder().toolNames(WEATHER_INFO_TOOL_NAME));
-			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage), options));
-
-			String content = response.collectList()
-				.blockOptional()
-				.stream()
-				.flatMap(List::stream)
-				.map(ChatResponse::getResults)
-				.flatMap(List::stream)
-				.map(Generation::getOutput)
-				.map(AssistantMessage::getText)
-				.collect(Collectors.joining());
-
-			logger.info("Response: {}", content);
-
-			assertThat(content).contains("30", "10", "15");
-		});
-	}
-
 	static class MyTools {
 
 		@SuppressWarnings("unused")
@@ -168,12 +108,6 @@ class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 
 	@Configuration
 	static class Config {
-
-		@Bean
-		@Description(WEATHER_INFO_TOOL_DESCRIPTION)
-		Function<MockWeatherService.Request, MockWeatherService.Response> weatherInfo() {
-			return new MockWeatherService();
-		}
 
 		@Bean
 		MyTools myTools() {

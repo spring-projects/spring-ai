@@ -211,7 +211,6 @@ class DefaultChatModelObservationConventionTests {
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(generatePrompt(ToolCallingChatOptions.builder()
 				.model("mistral")
-				.toolNames("toolA", "toolB")
 				.toolCallbacks(new TestToolCallback("tool1", true), new TestToolCallback("tool2", false),
 						new TestToolCallback("toolB"))
 				.build()))
@@ -219,7 +218,7 @@ class DefaultChatModelObservationConventionTests {
 			.build();
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).anySatisfy(keyValue -> {
 			assertThat(keyValue.getKey()).isEqualTo(HighCardinalityKeyNames.REQUEST_TOOL_NAMES.asString());
-			assertThat(keyValue.getValue()).contains("toolA", "toolB", "tool1", "tool2");
+			assertThat(keyValue.getValue()).contains("toolB", "tool1", "tool2");
 		});
 	}
 

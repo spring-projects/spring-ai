@@ -38,8 +38,6 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
-import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
-import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.beans.factory.ObjectProvider;
@@ -47,7 +45,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.support.GenericApplicationContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -175,16 +172,10 @@ public class GoogleGenAiPaymentTransactionToolsIT {
 		}
 
 		@Bean
-		ToolCallingManager toolCallingManager(GenericApplicationContext applicationContext,
-				List<ToolCallback> toolCallbacks, ObjectProvider<ObservationRegistry> observationRegistry) {
+		ToolCallingManager toolCallingManager(List<ToolCallback> toolCallbacks,
+				ObjectProvider<ObservationRegistry> observationRegistry) {
 
-			var staticToolCallbackResolver = new StaticToolCallbackResolver(toolCallbacks);
-			var springBeanToolCallbackResolver = SpringBeanToolCallbackResolver.builder()
-				.applicationContext(applicationContext)
-				.build();
-
-			ToolCallbackResolver toolCallbackResolver = new DelegatingToolCallbackResolver(
-					List.of(staticToolCallbackResolver, springBeanToolCallbackResolver));
+			ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(toolCallbacks);
 
 			return ToolCallingManager.builder()
 				.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))

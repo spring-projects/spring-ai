@@ -141,7 +141,6 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 			.topK(getTopK())
 			.topP(getTopP())
 			.toolCallbacks(getToolCallbacks())
-			.toolNames(getToolNames())
 			.toolContext(getToolContext())
 			.internalToolExecutionEnabled(getInternalToolExecutionEnabled());
 	}
@@ -195,27 +194,6 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		}
 
 		@Override
-		public B toolNames(@Nullable Set<String> toolNames) {
-			if (toolNames != null) {
-				this.toolNames = new HashSet<>(toolNames);
-			}
-			else {
-				this.toolNames = null;
-			}
-			return self();
-		}
-
-		@Override
-		public B toolNames(String... toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			if (this.toolNames == null) {
-				this.toolNames = new HashSet<>();
-			}
-			this.toolNames.addAll(Set.of(toolNames));
-			return self();
-		}
-
-		@Override
 		public B toolContext(@Nullable Map<String, Object> context) {
 			if (context != null) {
 				if (this.toolContext == null) {
@@ -251,9 +229,6 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 			DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 			if (this.toolCallbacks != null) {
 				options.toolCallbacks = this.toolCallbacks;
-			}
-			if (this.toolNames != null) {
-				options.toolNames = this.toolNames;
 			}
 			if (this.toolContext != null) {
 				options.toolContext = this.toolContext;

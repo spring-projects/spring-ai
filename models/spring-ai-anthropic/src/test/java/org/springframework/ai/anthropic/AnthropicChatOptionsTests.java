@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.anthropic.core.JsonValue;
 import com.anthropic.models.messages.JsonOutputFormat;
@@ -77,7 +76,6 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 			.maxRetries(5)
 			.toolChoice(ToolChoice.ofAuto(ToolChoiceAuto.builder().build()))
 			.disableParallelToolUse(true)
-			.toolNames("tool1", "tool2")
 			.toolContext(Map.of("key", "value"))
 			.internalToolExecutionEnabled(true)
 			.build();
@@ -94,7 +92,6 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		assertThat(options.getMaxRetries()).isEqualTo(5);
 		assertThat(options.getToolChoice()).isNotNull();
 		assertThat(options.getDisableParallelToolUse()).isTrue();
-		assertThat(options.getToolNames()).containsExactlyInAnyOrder("tool1", "tool2");
 		assertThat(options.getToolContext()).containsEntry("key", "value");
 		assertThat(options.getInternalToolExecutionEnabled()).isTrue();
 	}
@@ -176,13 +173,11 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 	void testCombineWithCollections() {
 		AnthropicChatOptions base = AnthropicChatOptions.builder()
 			.stopSequences(List.of("base-stop"))
-			.toolNames(Set.of("base-tool"))
 			.toolContext(Map.of("base-key", "base-value"))
 			.build();
 
 		AnthropicChatOptions override = AnthropicChatOptions.builder()
 			.stopSequences(List.of("override-stop1", "override-stop2"))
-			.toolNames(Set.of("override-tool"))
 			// toolContext is empty, should not override
 			.build();
 
@@ -190,7 +185,6 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 
 		// Non-empty collections from override take precedence
 		assertThat(merged.getStopSequences()).containsExactly("override-stop1", "override-stop2");
-		assertThat(merged.getToolNames()).containsExactly("override-tool");
 		// Empty collections don't override
 		assertThat(merged.getToolContext()).containsEntry("base-key", "base-value");
 	}
@@ -233,13 +227,6 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 				() -> AnthropicChatOptions.builder().toolCallbacks((org.springframework.ai.tool.ToolCallback[]) null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("toolCallbacks cannot be null");
-	}
-
-	@Test
-	void testToolNamesValidationRejectsNull() {
-		assertThatThrownBy(() -> AnthropicChatOptions.builder().toolNames((String[]) null))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("toolNames cannot be null");
 	}
 
 	@Test

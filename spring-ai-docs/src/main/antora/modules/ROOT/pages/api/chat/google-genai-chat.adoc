@@ -119,7 +119,6 @@ The prefix `spring.ai.google.genai.chat` is the property prefix that lets you co
 | spring.ai.google.genai.chat.thinking-budget | Thinking budget for the thinking process. See <<thinking-config>>. | -
 | spring.ai.google.genai.chat.thinking-level | The level of thinking tokens the model should generate. Valid values: `LOW`, `HIGH`, `THINKING_LEVEL_UNSPECIFIED`. See <<thinking-config>>. | -
 | spring.ai.google.genai.chat.include-thoughts | Enable thought signatures for function calling. **Required** for Gemini 3 Pro to avoid validation errors during the internal tool execution loop. See <<thought-signatures>>. | false
-| spring.ai.google.genai.chat.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
 | spring.ai.google.genai.chat.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
 | spring.ai.google.genai.chat.internal-tool-execution-enabled | If true, the tool execution should be performed, otherwise the response from the model is returned back to the user. Default is null, but if it's null, `ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_ENABLED` which is true will take into account | -
 | spring.ai.google.genai.chat.safety-settings | List of safety settings to control safety filters, as defined by https://ai.google.dev/gemini-api/docs/safety-settings[Google GenAI Safety Settings]. Each safety setting can have a method, threshold, and category. | -
@@ -178,20 +177,19 @@ String response = ChatClient.create(this.chatModel)
         .content();
 ----
 
-You can use the java.util.function beans as tools as well:
+You can also use `FunctionToolCallback` to register a function as a tool:
 
 [source,java]
 ----
-@Bean
-@Description("Get the weather in location. Return temperature in 36°F or 36°C format.")
-public Function<Request, Response> weatherFunction() {
-    return new MockWeatherService();
-}
+ToolCallback weatherTool = FunctionToolCallback
+        .builder("weatherFunction", new MockWeatherService())
+        .description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+        .inputType(Request.class)
+        .build();
 
 String response = ChatClient.create(this.chatModel)
         .prompt("What's the weather like in Boston?")
-        .toolNames("weatherFunction")
-        .inputType(Request.class)
+        .tools(weatherTool)
         .call()
         .content();
 ----
@@ -501,11 +499,11 @@ You don't need to manually manage thought signatures - Spring AI ensures they ar
 
 [source,java]
 ----
-@Bean
-@Description("Get the weather in a location")
-public Function<WeatherRequest, WeatherResponse> weatherFunction() {
-    return new WeatherService();
-}
+ToolCallback weatherTool = FunctionToolCallback
+        .builder("weatherFunction", new WeatherService())
+        .description("Get the weather in a location")
+        .inputType(WeatherRequest.class)
+        .build();
 
 // Enable includeThoughts for Gemini 3 Pro with function calling
 String response = ChatClient.create(this.chatModel)
@@ -514,7 +512,7 @@ String response = ChatClient.create(this.chatModel)
             .model("gemini-3-pro-preview")
             .includeThoughts(true)
             .build())
-        .toolNames("weatherFunction")
+        .tools(weatherTool)
         .call()
         .content();
 ----

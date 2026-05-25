@@ -323,7 +323,6 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 			.topK(this.getTopK()) // always null but here for consistency
 			// ToolCallingChatOptions
 			.toolCallbacks(new ArrayList<>(this.getToolCallbacks()))
-			.toolNames(new HashSet<>(this.getToolNames()))
 			.toolContext(new HashMap<>(this.getToolContext()))
 			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
 			// Mistral AI specific

@@ -16,10 +16,8 @@
 
 package org.springframework.ai.ollama.api;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import tools.jackson.core.JacksonException;
@@ -161,86 +159,39 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 
 	@Test
 	void testFunctionAndToolOptions() {
-		var options = OllamaChatOptions.builder()
-			.toolNames("function1")
-			.toolNames("function2")
-			.toolNames("function3")
-			.toolContext(Map.of("key1", "value1", "key2", "value2"))
-			.build();
+		var options = OllamaChatOptions.builder().toolContext(Map.of("key1", "value1", "key2", "value2")).build();
 
 		// Function-related fields are not included in the map due to @JsonIgnore
 		var optionsMap = options.toMap();
 		assertThat(optionsMap).doesNotContainKey("functions");
 		assertThat(optionsMap).doesNotContainKey("tool_context");
 
-		// But they are accessible through getters
-		assertThat(options.getToolNames()).containsExactlyInAnyOrder("function1", "function2", "function3");
 		assertThat(options.getToolContext())
 			.containsExactlyInAnyOrderEntriesOf(Map.of("key1", "value1", "key2", "value2"));
 	}
 
 	@Test
-	void testFunctionOptionsWithMutableSet() {
-		Set<String> functionSet = new HashSet<>();
-		functionSet.add("function1");
-		functionSet.add("function2");
-
-		var options = OllamaChatOptions.builder().toolNames(functionSet).toolNames("function3").build();
-
-		assertThat(options.getToolNames()).containsExactlyInAnyOrder("function1", "function2", "function3");
-	}
-
-	@Test
 	void testFromOptions() {
-		var originalOptions = OllamaChatOptions.builder()
-			.model("llama2")
-			.temperature(0.7)
-			.topK(40)
-			.toolNames(Set.of("function1"))
-			.build();
+		var originalOptions = OllamaChatOptions.builder().model("llama2").temperature(0.7).topK(40).build();
 
 		var copiedOptions = OllamaChatOptions.fromOptions(originalOptions);
 
-		// Test the copied options directly rather than through toMap()
 		assertThat(copiedOptions.getModel()).isEqualTo("llama2");
 		assertThat(copiedOptions.getTemperature()).isEqualTo(0.7);
 		assertThat(copiedOptions.getTopK()).isEqualTo(40);
-		assertThat(copiedOptions.getToolNames()).containsExactly("function1");
 	}
 
 	@Test
 	void testFunctionOptionsNotInMap() {
-		var options = OllamaChatOptions.builder().model("llama2").toolNames(Set.of("function1")).build();
+		var options = OllamaChatOptions.builder().model("llama2").build();
 
 		var optionsMap = options.toMap();
 
-		// Verify function-related fields are not included in the map due to @JsonIgnore
 		assertThat(optionsMap).containsEntry("model", "llama2");
 		assertThat(optionsMap).doesNotContainKey("functions");
 		assertThat(optionsMap).doesNotContainKey("toolCallbacks");
 		assertThat(optionsMap).doesNotContainKey("proxyToolCalls");
 		assertThat(optionsMap).doesNotContainKey("toolContext");
-
-		// But verify they are still accessible through getters
-		assertThat(options.getToolNames()).containsExactly("function1");
-	}
-
-	@Test
-	void testDeprecatedMethods() {
-		var options = OllamaChatOptions.builder()
-			.model("llama2")
-			.temperature(0.7)
-			.topK(40)
-			.toolNames("function1")
-			.build();
-
-		var optionsMap = options.toMap();
-		assertThat(optionsMap).containsEntry("model", "llama2");
-		assertThat(optionsMap).containsEntry("temperature", 0.7);
-		assertThat(optionsMap).containsEntry("top_k", 40);
-
-		// Function is not in map but accessible via getter
-		assertThat(options.getToolNames()).containsExactly("function1");
 	}
 
 	@Test

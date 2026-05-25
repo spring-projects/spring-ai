@@ -208,7 +208,6 @@ ChatResponse response = chatModel.call(
 
 | toolChoice | Controls which tool (if any) is called by the model. Use `ToolChoiceAuto`, `ToolChoiceAny`, `ToolChoiceTool`, or `ToolChoiceNone`. | AUTO
 | toolCallbacks | List of tool callbacks to register with the model. | -
-| toolNames | Set of tool names to be resolved at runtime. | -
 | internalToolExecutionEnabled | If false, tool calls are proxied to the client for manual handling. If true, Spring AI handles tool calls internally. | true
 | disableParallelToolUse | When true, the model will use at most one tool per response. | false
 |====

@@ -225,25 +225,6 @@ public class CreateGeminiRequestTests {
 		assertThat(request.config().tools()).isPresent();
 		assertThat(request.config().tools().get()).hasSize(1);
 
-		// Explicitly enable the function
-
-		requestPrompt = client.buildRequestPrompt(new Prompt("Test message content",
-				GoogleGenAiChatOptions.builder().toolNames(TOOL_FUNCTION_NAME).build()));
-
-		request = client.createGeminiRequest(requestPrompt);
-
-		assertThat(request.config().tools()).isPresent();
-		assertThat(request.config().tools().get()).hasSize(1);
-		var tool = request.config().tools().get().get(0);
-		assertThat(tool.functionDeclarations()).isPresent();
-		assertThat(tool.functionDeclarations().get()).hasSize(1);
-
-		// When using .toolName() to filter, Spring AI may wrap the name with "Optional[]"
-		String actualName = tool.functionDeclarations().get().get(0).name().orElse("");
-		assertThat(actualName).as("Explicitly enabled function")
-			.satisfiesAnyOf(name -> assertThat(name).isEqualTo(TOOL_FUNCTION_NAME),
-					name -> assertThat(name).isEqualTo("Optional[" + TOOL_FUNCTION_NAME + "]"));
-
 		// Override the default options function with one from the prompt
 		requestPrompt = client.buildRequestPrompt(new Prompt("Test message content",
 				GoogleGenAiChatOptions.builder()
@@ -256,7 +237,7 @@ public class CreateGeminiRequestTests {
 
 		assertThat(request.config().tools()).isPresent();
 		assertThat(request.config().tools().get()).hasSize(1);
-		tool = request.config().tools().get().get(0);
+		var tool = request.config().tools().get().get(0);
 		assertThat(tool.functionDeclarations()).isPresent();
 		assertThat(tool.functionDeclarations().get()).hasSize(1);
 		assertThat(tool.functionDeclarations().get().get(0).name().orElse("")).as("Explicitly enabled function")

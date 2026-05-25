@@ -18,7 +18,6 @@ package org.springframework.ai.model.tool;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -97,15 +96,6 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		return internalToolExecutionEnabled;
 	}
 
-	static Set<String> mergeToolNames(Set<String> runtimeToolNames, Set<String> defaultToolNames) {
-		Assert.notNull(runtimeToolNames, "runtimeToolNames cannot be null");
-		Assert.notNull(defaultToolNames, "defaultToolNames cannot be null");
-		if (CollectionUtils.isEmpty(runtimeToolNames)) {
-			return new HashSet<>(defaultToolNames);
-		}
-		return new HashSet<>(runtimeToolNames);
-	}
-
 	static List<ToolCallback> mergeToolCallbacks(List<ToolCallback> runtimeToolCallbacks,
 			List<ToolCallback> defaultToolCallbacks) {
 		Assert.notNull(runtimeToolCallbacks, "runtimeToolCallbacks cannot be null");
@@ -149,16 +139,6 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		 * ToolCallbacks to be registered with the ChatModel.
 		 */
 		B toolCallbacks(ToolCallback... toolCallbacks);
-
-		/**
-		 * Names of the tools to register with the ChatModel.
-		 */
-		B toolNames(@Nullable Set<String> toolNames);
-
-		/**
-		 * Names of the tools to register with the ChatModel.
-		 */
-		B toolNames(String... toolNames);
 
 		/**
 		 * Whether the {@link ChatModel} is responsible for executing the tools requested

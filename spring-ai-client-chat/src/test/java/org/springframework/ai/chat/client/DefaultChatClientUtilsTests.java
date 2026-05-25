@@ -18,7 +18,6 @@ package org.springframework.ai.chat.client;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -210,27 +209,6 @@ class DefaultChatClientUtilsTests {
 	}
 
 	@Test
-	void whenToolCallingChatOptionsIsProvidedThenToolNamesAreSet() {
-		var chatOptions = ToolCallingChatOptions.builder();
-		List<String> toolNames = List.of("tool1", "tool2");
-		ChatModel chatModel = mock(ChatModel.class);
-		when(chatModel.getDefaultOptions()).thenReturn(ToolCallingChatOptions.builder().build());
-		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
-			.create(chatModel)
-			.prompt()
-			.options(chatOptions)
-			.toolNames(toolNames.toArray(new String[0]));
-
-		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
-
-		assertThat(result).isNotNull();
-		assertThat(result.prompt().getOptions()).isInstanceOf(ToolCallingChatOptions.class);
-		ToolCallingChatOptions resultOptions = (ToolCallingChatOptions) result.prompt().getOptions();
-		assertThat(resultOptions).isNotNull();
-		assertThat(resultOptions.getToolNames()).containsExactlyInAnyOrderElementsOf(toolNames);
-	}
-
-	@Test
 	void whenToolCallingChatOptionsIsProvidedThenToolCallbacksAreSet() {
 		var chatOptions = ToolCallingChatOptions.builder();
 		ToolCallback toolCallback = new TestToolCallback("tool1");
@@ -270,28 +248,6 @@ class DefaultChatClientUtilsTests {
 		ToolCallingChatOptions resultOptions = (ToolCallingChatOptions) result.prompt().getOptions();
 		assertThat(resultOptions).isNotNull();
 		assertThat(resultOptions.getToolContext()).containsAllEntriesOf(toolContext);
-	}
-
-	@Test
-	void whenToolNamesAndChatOptionsAreProvidedThenTheToolNamesOverride() {
-		Set<String> toolNames1 = Set.of("toolA", "toolB");
-		var chatOptions = ToolCallingChatOptions.builder().toolNames(toolNames1);
-		List<String> toolNames2 = List.of("tool1", "tool2");
-		ChatModel chatModel = mock(ChatModel.class);
-		when(chatModel.getDefaultOptions()).thenReturn(ToolCallingChatOptions.builder().build());
-		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
-			.create(chatModel)
-			.prompt()
-			.options(chatOptions)
-			.toolNames(toolNames2.toArray(new String[0]));
-
-		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
-
-		assertThat(result).isNotNull();
-		assertThat(result.prompt().getOptions()).isInstanceOf(ToolCallingChatOptions.class);
-		ToolCallingChatOptions resultOptions = (ToolCallingChatOptions) result.prompt().getOptions();
-		assertThat(resultOptions).isNotNull();
-		assertThat(resultOptions.getToolNames()).containsExactlyInAnyOrderElementsOf(toolNames2);
 	}
 
 	@Test
@@ -336,27 +292,6 @@ class DefaultChatClientUtilsTests {
 		assertThat(resultOptions).isNotNull();
 		assertThat(resultOptions.getToolContext()).containsAllEntriesOf(toolContext1)
 			.containsAllEntriesOf(toolContext2);
-	}
-
-	@Test
-	void whenToolNamesAndChatOptionsAreDefaultChatOptions() {
-		Set<String> toolNames1 = Set.of("toolA", "toolB");
-		var chatOptions = ChatOptions.builder();
-		ChatModel chatModel = mock(ChatModel.class);
-		when(chatModel.getDefaultOptions()).thenReturn(ToolCallingChatOptions.builder().build());
-		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
-			.create(chatModel)
-			.prompt()
-			.options(chatOptions)
-			.toolNames(toolNames1.toArray(new String[0]));
-
-		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
-
-		assertThat(result).isNotNull();
-		assertThat(result.prompt().getOptions()).isInstanceOf(ToolCallingChatOptions.class);
-		ToolCallingChatOptions resultOptions = (ToolCallingChatOptions) result.prompt().getOptions();
-		assertThat(resultOptions).isNotNull();
-		assertThat(resultOptions.getToolNames()).containsExactlyInAnyOrderElementsOf(toolNames1);
 	}
 
 	@Test
@@ -451,7 +386,6 @@ class DefaultChatClientUtilsTests {
 		List<Message> messages = List.of(new UserMessage("Intermediate message"));
 
 		var chatOptions = ToolCallingChatOptions.builder();
-		List<String> toolNames = List.of("tool1", "tool2");
 		ToolCallback toolCallback = new TestToolCallback("tool3");
 		Map<String, Object> toolContext = Map.of("toolKey", "toolValue");
 
@@ -465,7 +399,6 @@ class DefaultChatClientUtilsTests {
 			.system(s -> s.text(systemText).params(systemParams))
 			.user(u -> u.text(userText).params(userParams).media(media))
 			.messages(messages)
-			.toolNames(toolNames.toArray(new String[0]))
 			.tools(t -> t.callbacks(toolCallback).context(toolContext))
 			.options(chatOptions)
 			.advisors(a -> a.params(advisorParams));
@@ -486,7 +419,6 @@ class DefaultChatClientUtilsTests {
 		assertThat(result.prompt().getOptions()).isInstanceOf(ToolCallingChatOptions.class);
 		ToolCallingChatOptions resultOptions = (ToolCallingChatOptions) result.prompt().getOptions();
 		assertThat(resultOptions).isNotNull();
-		assertThat(resultOptions.getToolNames()).containsExactlyInAnyOrderElementsOf(toolNames);
 		assertThat(resultOptions.getToolCallbacks()).contains(toolCallback);
 		assertThat(resultOptions.getToolContext()).containsAllEntriesOf(toolContext);
 

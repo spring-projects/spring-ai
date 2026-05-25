@@ -18,7 +18,6 @@ package org.springframework.ai.minimax;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -150,15 +149,12 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 			.tools(new java.util.ArrayList<>(List.of(new MiniMaxApi.FunctionTool(MiniMaxApi.FunctionTool.Type.FUNCTION,
 					new MiniMaxApi.FunctionTool.Function("name", "desc", (Map<String, Object>) null)))))
 			.toolCallbacks(new java.util.ArrayList<>(List.of()))
-			.toolNames(new java.util.HashSet<>(Set.of("tool")))
 			.toolContext(new java.util.HashMap<>(Map.of("key", "value")))
 			.build();
 
 		assertThatThrownBy(() -> options.getStop().add("another")).isInstanceOf(UnsupportedOperationException.class);
 		assertThatThrownBy(() -> options.getTools().add(null)).isInstanceOf(UnsupportedOperationException.class);
 		assertThatThrownBy(() -> options.getToolCallbacks().add(null))
-			.isInstanceOf(UnsupportedOperationException.class);
-		assertThatThrownBy(() -> options.getToolNames().add("another"))
 			.isInstanceOf(UnsupportedOperationException.class);
 		assertThatThrownBy(() -> options.getToolContext().put("another", "value"))
 			.isInstanceOf(UnsupportedOperationException.class);

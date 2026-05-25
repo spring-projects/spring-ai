@@ -14,7 +14,7 @@ These changes are part of a broader effort to improve and extend the tool callin
 4. `FunctionCallingOptions` → `ToolCallingChatOptions`
 5. `ChatClient.builder().defaultFunctions()` → `ChatClient.builder().defaultTools()`
 6. `ChatClient.functions()` → `ChatClient.tools()`
-7. `FunctionCallingOptions.builder().functions()` → `ToolCallingChatOptions.builder().toolNames()`
+7. `FunctionCallingOptions.builder().functions()` → `ToolCallingChatOptions.builder().toolCallbacks()`
 8. `FunctionCallingOptions.builder().functionCallbacks()` → `ToolCallingChatOptions.builder().toolCallbacks()`
 
 == Migration Examples
@@ -152,9 +152,19 @@ FunctionCallingOptions.builder()
 After:
 [source,java]
 ----
+// Declare the tool as a ToolCallback bean first:
+@Bean
+ToolCallback weatherFunction() {
+    return FunctionToolCallback.builder("weatherFunction", weatherService::getWeather)
+        .description("Get the weather in location")
+        .inputType(WeatherRequest.class)
+        .build();
+}
+
+// Then pass it via toolCallbacks():
 ToolCallingChatOptions.builder()
     .model(modelName)
-    .toolNames("weatherFunction")
+    .toolCallbacks(weatherFunctionCallback)
     .build()
 ----
 

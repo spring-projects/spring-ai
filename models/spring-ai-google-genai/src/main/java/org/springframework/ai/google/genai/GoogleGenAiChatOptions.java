@@ -479,7 +479,6 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			.topP(this.topP)
 			// ToolCallingChatOptions
 			.toolCallbacks(this.getToolCallbacks())
-			.toolNames(this.getToolNames())
 			.toolContext(this.getToolContext())
 			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
 			// StructuredOutputChatOptions

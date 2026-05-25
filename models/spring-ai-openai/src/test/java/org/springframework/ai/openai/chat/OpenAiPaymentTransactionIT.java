@@ -19,13 +19,11 @@ package org.springframework.ai.openai.chat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -41,8 +39,8 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
-import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.beans.factory.ObjectProvider;
@@ -51,8 +49,6 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Description;
-import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.ParameterizedTypeReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -73,12 +69,17 @@ public class OpenAiPaymentTransactionIT {
 	@Autowired
 	ChatClient chatClient;
 
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "paymentStatus", "paymentStatuses" })
-	public void transactionPaymentStatuses(String functionName) {
+	@Autowired
+	ToolCallback paymentStatus;
+
+	@Autowired
+	ToolCallback paymentStatuses;
+
+	@Test
+	public void transactionPaymentStatusesSingle() {
 		List<TransactionStatusResponse> content = this.chatClient.prompt()
 			.advisors(new SimpleLoggerAdvisor())
-			.toolNames(functionName)
+			.tools(t -> t.callbacks(this.paymentStatus))
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
 					""")
@@ -99,9 +100,33 @@ public class OpenAiPaymentTransactionIT {
 		assertThat(content.get(2).status()).isEqualTo("rejected");
 	}
 
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "paymentStatus", "paymentStatuses" })
-	public void streamingPaymentStatuses(String functionName) {
+	@Test
+	public void transactionPaymentStatusesList() {
+		List<TransactionStatusResponse> content = this.chatClient.prompt()
+			.advisors(new SimpleLoggerAdvisor())
+			.tools(t -> t.callbacks(this.paymentStatuses))
+			.user("""
+					What is the status of my payment transactions 001, 002 and 003?
+					""")
+			.call()
+			.entity(new ParameterizedTypeReference<List<TransactionStatusResponse>>() {
+
+			});
+
+		logger.info("" + content);
+
+		assertThat(content.get(0).id()).isEqualTo("001");
+		assertThat(content.get(0).status()).isEqualTo("pending");
+
+		assertThat(content.get(1).id()).isEqualTo("002");
+		assertThat(content.get(1).status()).isEqualTo("approved");
+
+		assertThat(content.get(2).id()).isEqualTo("003");
+		assertThat(content.get(2).status()).isEqualTo("rejected");
+	}
+
+	@Test
+	public void streamingPaymentStatusesSingle() {
 
 		var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<List<TransactionStatusResponse>>() {
 
@@ -109,7 +134,40 @@ public class OpenAiPaymentTransactionIT {
 
 		Flux<String> flux = this.chatClient.prompt()
 			.advisors(new SimpleLoggerAdvisor())
-			.toolNames(functionName)
+			.tools(t -> t.callbacks(this.paymentStatus))
+			.user(u -> u.text("""
+					What is the status of my payment transactions 001, 002 and 003?
+
+					{format}
+					""").param("format", converter.getFormat()))
+			.stream()
+			.content();
+
+		String content = flux.collectList().block().stream().collect(Collectors.joining());
+
+		List<TransactionStatusResponse> structure = converter.convert(content);
+		logger.info("" + content);
+
+		assertThat(structure.get(0).id()).isEqualTo("001");
+		assertThat(structure.get(0).status()).isEqualTo("pending");
+
+		assertThat(structure.get(1).id()).isEqualTo("002");
+		assertThat(structure.get(1).status()).isEqualTo("approved");
+
+		assertThat(structure.get(2).id()).isEqualTo("003");
+		assertThat(structure.get(2).status()).isEqualTo("rejected");
+	}
+
+	@Test
+	public void streamingPaymentStatusesList() {
+
+		var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<List<TransactionStatusResponse>>() {
+
+		});
+
+		Flux<String> flux = this.chatClient.prompt()
+			.advisors(new SimpleLoggerAdvisor())
+			.tools(t -> t.callbacks(this.paymentStatuses))
 			.user(u -> u.text("""
 					What is the status of my payment transactions 001, 002 and 003?
 
@@ -157,21 +215,22 @@ public class OpenAiPaymentTransactionIT {
 	public static class TestConfiguration {
 
 		@Bean
-		@Description("Get the status of a single payment transaction")
-		public Function<Transaction, Status> paymentStatus() {
-			return transaction -> {
+		public ToolCallback paymentStatus() {
+			return FunctionToolCallback.builder("paymentStatus", (Transaction transaction) -> {
 				logger.info("Single transaction: " + transaction);
 				return DATASET.get(transaction);
-			};
+			}).description("Get the status of a single payment transaction").inputType(Transaction.class).build();
 		}
 
 		@Bean
-		@Description("Get the list statuses of a list of payment transactions")
-		public Function<Transactions, Statuses> paymentStatuses() {
-			return transactions -> {
+		public ToolCallback paymentStatuses() {
+			return FunctionToolCallback.builder("paymentStatuses", (Transactions transactions) -> {
 				logger.info("List of transactions: " + transactions);
 				return new Statuses(transactions.transactions().stream().map(t -> DATASET.get(t)).toList());
-			};
+			})
+				.description("Get the list statuses of a list of payment transactions")
+				.inputType(Transactions.class)
+				.build();
 		}
 
 		@Bean
@@ -196,22 +255,16 @@ public class OpenAiPaymentTransactionIT {
 
 		@Bean
 		@ConditionalOnMissingBean
-		ToolCallbackResolver toolCallbackResolver(GenericApplicationContext applicationContext,
-				List<ToolCallback> toolCallback, List<ToolCallbackProvider> tcbProviders) {
+		ToolCallbackResolver toolCallbackResolver(List<ToolCallback> toolCallback,
+				List<ToolCallbackProvider> tcbProviders) {
 
 			List<ToolCallback> allFunctionAndToolCallbacks = new ArrayList<>(toolCallback);
 			tcbProviders.stream()
 				.map(pr -> List.of(pr.getToolCallbacks()))
 				.forEach(allFunctionAndToolCallbacks::addAll);
 
-			var staticToolCallbackResolver = new StaticToolCallbackResolver(allFunctionAndToolCallbacks);
-
-			var springBeanToolCallbackResolver = SpringBeanToolCallbackResolver.builder()
-				.applicationContext(applicationContext)
-				.build();
-
 			return new DelegatingToolCallbackResolver(
-					List.of(staticToolCallbackResolver, springBeanToolCallbackResolver));
+					List.of(new StaticToolCallbackResolver(allFunctionAndToolCallbacks)));
 		}
 
 		@Bean

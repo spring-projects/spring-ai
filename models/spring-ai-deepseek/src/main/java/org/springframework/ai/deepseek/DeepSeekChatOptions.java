@@ -275,7 +275,6 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 			.topK(this.getTopK()) // always null but here for consistency
 			// ToolCallingChatOptions
 			.toolCallbacks(this.getToolCallbacks())
-			.toolNames(this.getToolNames())
 			.toolContext(this.getToolContext())
 			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
 			// DeepSeek Specific

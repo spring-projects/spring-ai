@@ -18,7 +18,6 @@ package org.springframework.ai.google.genai.tool;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.google.genai.Client;
@@ -38,8 +37,7 @@ import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
-import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
-import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.beans.factory.ObjectProvider;
@@ -47,8 +45,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Description;
-import org.springframework.context.support.GenericApplicationContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -70,12 +66,15 @@ public class GoogleGenAiPaymentTransactionIT {
 	@Autowired
 	ChatClient chatClient;
 
+	@Autowired
+	ToolCallback paymentStatus;
+
 	@Test
 	public void paymentStatuses() {
 		// @formatter:off
 		String content = this.chatClient.prompt()
 				.advisors(new SimpleLoggerAdvisor())
-				.toolNames("paymentStatus")
+				.tools(t -> t.callbacks(this.paymentStatus))
 				.user("""
 				What is the status of my payment transactions 001, 002 and 003?
 				If required invoke the function per transaction.
@@ -92,7 +91,7 @@ public class GoogleGenAiPaymentTransactionIT {
 
 		Flux<String> streamContent = this.chatClient.prompt()
 			.advisors(new SimpleLoggerAdvisor())
-			.toolNames("paymentStatus")
+			.tools(t -> t.callbacks(this.paymentStatus))
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
 					If required invoke the function per transaction.
@@ -135,21 +134,11 @@ public class GoogleGenAiPaymentTransactionIT {
 	public static class TestConfiguration {
 
 		@Bean
-		@Description("Get the status of a single payment transaction")
-		public Function<Transaction, Status> paymentStatus() {
-			return transaction -> {
+		public ToolCallback paymentStatus() {
+			return FunctionToolCallback.builder("paymentStatus", (Transaction transaction) -> {
 				logger.info("Single Transaction: " + transaction);
 				return DATASET.get(transaction);
-			};
-		}
-
-		@Bean
-		@Description("Get the list statuses of a list of payment transactions")
-		public Function<Transactions, Statuses> paymentStatuses() {
-			return transactions -> {
-				logger.info("Transactions: " + transactions);
-				return new Statuses(transactions.transactions().stream().map(t -> DATASET.get(t)).toList());
-			};
+			}).description("Get the status of a single payment transaction").inputType(Transaction.class).build();
 		}
 
 		@Bean
@@ -183,16 +172,10 @@ public class GoogleGenAiPaymentTransactionIT {
 		}
 
 		@Bean
-		ToolCallingManager toolCallingManager(GenericApplicationContext applicationContext,
-				List<ToolCallback> toolCallbacks, ObjectProvider<ObservationRegistry> observationRegistry) {
+		ToolCallingManager toolCallingManager(List<ToolCallback> toolCallbacks,
+				ObjectProvider<ObservationRegistry> observationRegistry) {
 
-			var staticToolCallbackResolver = new StaticToolCallbackResolver(toolCallbacks);
-			var springBeanToolCallbackResolver = SpringBeanToolCallbackResolver.builder()
-				.applicationContext(applicationContext)
-				.build();
-
-			ToolCallbackResolver toolCallbackResolver = new DelegatingToolCallbackResolver(
-					List.of(staticToolCallbackResolver, springBeanToolCallbackResolver));
+			ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(toolCallbacks);
 
 			return ToolCallingManager.builder()
 				.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))

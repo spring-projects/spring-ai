@@ -325,7 +325,6 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 			.topP(this.topP)
 			// ToolCallingChatOptions
 			.toolCallbacks(this.getToolCallbacks())
-			.toolNames(this.getToolNames())
 			.toolContext(this.getToolContext())
 			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
 			// MiniMax Specific

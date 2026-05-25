@@ -19,7 +19,6 @@ package org.springframework.ai.model.google.genai.autoconfigure.chat;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.jspecify.annotations.Nullable;
 
@@ -351,9 +350,6 @@ public class GoogleGenAiChatProperties {
 		}
 		if (this.autoCacheTtl != null) {
 			builder.autoCacheTtl(this.autoCacheTtl);
-		}
-		if (this.toolNames != null) {
-			builder.toolNames(Set.copyOf(this.toolNames));
 		}
 		if (this.internalToolExecutionEnabled != null) {
 			builder.internalToolExecutionEnabled(this.internalToolExecutionEnabled);

@@ -226,13 +226,6 @@ public interface ChatClient {
 		ChatClientRequestSpec tools(Object... toolObjects);
 
 		/**
-		 * @deprecated as of 2.0.0, in favor of {@link #tools(Consumer)}. To be removed in
-		 * 3.0.0.
-		 */
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		ChatClientRequestSpec toolNames(String... toolNames);
-
-		/**
 		 * @deprecated as of 2.0.0, in favor of {@link #tools(Consumer)} and
 		 * {@link #tools(Consumer<ToolSpec>)} To be removed in 3.0.0.
 		 */
@@ -338,13 +331,6 @@ public interface ChatClient {
 		Builder defaultTools(Consumer<ToolSpec> consumer);
 
 		Builder defaultTools(Object... toolObjects);
-
-		/**
-		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)}. To be
-		 * removed in 3.0.0.
-		 */
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		Builder defaultToolNames(String... toolNames);
 
 		/**
 		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)} and

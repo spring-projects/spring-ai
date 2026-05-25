@@ -482,7 +482,6 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 			.topP(this.topP)
 			// ToolCallingChatOptions
 			.toolCallbacks(this.getToolCallbacks())
-			.toolNames(this.getToolNames())
 			.toolContext(this.getToolContext())
 			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
 			// Anthropic Specific

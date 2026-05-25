@@ -66,19 +66,6 @@ public class FunctionToolCallbackTests {
 	ToolCallingManager toolCallingManager;
 
 	@Test
-	void chatVoidInputFromBean() {
-		var content = ChatClient.builder(this.openAiChatModel)
-			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
-			.build()
-			.prompt()
-			.user("Welcome the users to the library")
-			.toolNames(Tools.WELCOME)
-			.call()
-			.content();
-		assertThat(content).isNotEmpty();
-	}
-
-	@Test
 	void chatVoidInputFromCallback() {
 		var content = ChatClient.builder(this.openAiChatModel)
 			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
@@ -90,19 +77,6 @@ public class FunctionToolCallbackTests {
 					.description("Welcome users to the library")
 					.inputType(Void.class)
 					.build()))
-			.call()
-			.content();
-		assertThat(content).isNotEmpty();
-	}
-
-	@Test
-	void chatVoidOutputFromBean() {
-		var content = ChatClient.builder(this.openAiChatModel)
-			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
-			.build()
-			.prompt()
-			.user("Welcome %s to the library".formatted("James Bond"))
-			.toolNames(Tools.WELCOME_USER)
 			.call()
 			.content();
 		assertThat(content).isNotEmpty();
@@ -126,22 +100,6 @@ public class FunctionToolCallbackTests {
 	}
 
 	@Test
-	void chatSingleFromBean() {
-		var content = ChatClient.builder(this.openAiChatModel)
-			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
-			.build()
-			.prompt()
-			.user("What books written by %s are available in the library?".formatted("J.R.R. Tolkien"))
-			.toolNames(Tools.BOOKS_BY_AUTHOR)
-			.call()
-			.content();
-		assertThat(content).isNotEmpty()
-			.contains("The Hobbit")
-			.contains("The Lord of The Rings")
-			.contains("The Silmarillion");
-	}
-
-	@Test
 	void chatSingleFromCallback() {
 		Function<Author, List<Book>> function = author -> {
 			logger.info("CALLBACK - Getting books by author: {}", author.name());
@@ -162,19 +120,6 @@ public class FunctionToolCallbackTests {
 			.contains("The Hobbit")
 			.contains("The Lord of The Rings")
 			.contains("The Silmarillion");
-	}
-
-	@Test
-	void chatListFromBean() {
-		var content = ChatClient.builder(this.openAiChatModel)
-			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
-			.build()
-			.prompt()
-			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit", "The Lion, the Witch and the Wardrobe"))
-			.toolNames(Tools.AUTHORS_BY_BOOKS)
-			.call()
-			.content();
-		assertThat(content).isNotEmpty().contains("J.R.R. Tolkien").contains("C.S. Lewis");
 	}
 
 	@Test

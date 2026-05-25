@@ -18,7 +18,6 @@ package org.springframework.ai.chat.prompt;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -108,7 +107,6 @@ public class ChatOptionsBuilderTests {
 			.topP(1.0)
 			.topK(40)
 			.stopSequences(List.of("stop1", "stop2"))
-			.toolNames(Set.of("function1", "function2"))
 			.toolCallbacks(List.of(callback))
 			.build();
 

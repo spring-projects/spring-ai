@@ -18,7 +18,6 @@ package org.springframework.ai.model.tool;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -52,38 +51,6 @@ class ToolCallingChatOptionsTests {
 	void whenToolCallingChatOptionsAndExecutionEnabledDefault() {
 		ToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options)).isTrue();
-	}
-
-	@Test
-	void whenMergeRuntimeAndDefaultToolNames() {
-		Set<String> runtimeToolNames = Set.of("toolA");
-		Set<String> defaultToolNames = Set.of("toolB");
-		Set<String> mergedToolNames = ToolCallingChatOptions.mergeToolNames(runtimeToolNames, defaultToolNames);
-		assertThat(mergedToolNames).containsExactlyInAnyOrder("toolA");
-	}
-
-	@Test
-	void whenMergeRuntimeAndEmptyDefaultToolNames() {
-		Set<String> runtimeToolNames = Set.of("toolA");
-		Set<String> defaultToolNames = Set.of();
-		Set<String> mergedToolNames = ToolCallingChatOptions.mergeToolNames(runtimeToolNames, defaultToolNames);
-		assertThat(mergedToolNames).containsExactlyInAnyOrder("toolA");
-	}
-
-	@Test
-	void whenMergeEmptyRuntimeAndDefaultToolNames() {
-		Set<String> runtimeToolNames = Set.of();
-		Set<String> defaultToolNames = Set.of("toolB");
-		Set<String> mergedToolNames = ToolCallingChatOptions.mergeToolNames(runtimeToolNames, defaultToolNames);
-		assertThat(mergedToolNames).containsExactlyInAnyOrder("toolB");
-	}
-
-	@Test
-	void whenMergeEmptyRuntimeAndEmptyDefaultToolNames() {
-		Set<String> runtimeToolNames = Set.of();
-		Set<String> defaultToolNames = Set.of();
-		Set<String> mergedToolNames = ToolCallingChatOptions.mergeToolNames(runtimeToolNames, defaultToolNames);
-		assertThat(mergedToolNames).containsExactlyInAnyOrder();
 	}
 
 	@Test

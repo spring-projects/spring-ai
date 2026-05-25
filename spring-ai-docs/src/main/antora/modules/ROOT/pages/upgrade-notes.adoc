@@ -1,6 +1,49 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-2-0-0-RC1]]
+== Upgrading to 2.0.0-RC1
+
+=== ChatClient Tool Calling
+
+==== Removed: Spring Bean Tool Resolution (`SpringBeanToolCallbackResolver`)
+
+`SpringBeanToolCallbackResolver` and the pattern of declaring bare `Function` / `Supplier` / `Consumer` beans and referencing them by name via `toolNames()` have been removed in 2.0.0-RC1.
+
+===== Migration
+
+Declare `ToolCallback` beans directly instead of raw functional beans:
+
+[source,java]
+----
+// Before — bare Function bean resolved by name at runtime
+@Bean
+@Description("Get the weather in location")
+Function<WeatherRequest, WeatherResponse> currentWeather() {
+    return weatherService::getWeather;
+}
+
+// After — explicit ToolCallback bean
+@Bean
+ToolCallback currentWeather() {
+    return FunctionToolCallback.builder("currentWeather", weatherService::getWeather)
+        .description("Get the weather in location")
+        .inputType(WeatherRequest.class)
+        .build();
+}
+----
+
+Then register the bean via the `ToolSpec` consumer:
+
+[source,java]
+----
+chatClient.prompt("What's the weather like in Copenhagen?")
+    .tools(t -> t.callbacks(currentWeather))
+    .call().content();
+----
+
+Alternatively, use `@Tool`-annotated methods for the declarative approach (see xref:api/tools.adoc[Tools API]).
+
 [[upgrading-to-2-0-0-M7]]
 == Upgrading to 2.0.0-M7
 
@@ -70,9 +113,9 @@ Spring Boot users should prefer one of the following instead:
 * Set `spring.ai.chat.client.tool-calling.advisor-order` to control the advisor's position in the chain.
 * Declare a `ToolCallAdvisor.Builder<?>` bean to fully replace the auto-configured builder (suppressed via `@ConditionalOnMissingBean`).
 
-==== Deprecated: Scattered Tool Methods on `ChatClient`
+==== Removed: Scattered Tool Methods on `ChatClient`
 
-The individual `toolCallbacks()`, `toolContext()`, and `toolNames()` methods on `ChatClientRequestSpec`, and their `defaultToolCallbacks()`, `defaultToolContext()`, and `defaultToolNames()` counterparts on `ChatClient.Builder`, are deprecated in favour of the unified `tools(Consumer<ToolSpec>)` / `defaultTools(Consumer<ToolSpec>)` API.
+The individual `toolCallbacks()`, `toolContext()`, and `toolNames()` methods on `ChatClientRequestSpec`, and their `defaultToolCallbacks()`, `defaultToolContext()`, and `defaultToolNames()` counterparts on `ChatClient.Builder`, have been removed in favour of the unified `tools(Consumer<ToolSpec>)` / `defaultTools(Consumer<ToolSpec>)` API.
 
 ===== Migration
 
@@ -89,44 +132,6 @@ chatClient.prompt()
     .tools(t -> t.callbacks(myCallback).context("tenantId", "acme"))
     .call().content();
 ----
-
-==== Deprecated: Spring Bean Tool Resolution (`SpringBeanToolCallbackResolver`)
-
-`SpringBeanToolCallbackResolver` and the pattern of declaring bare `Function` / `Supplier` / `Consumer` beans and referencing them by name via `toolNames()` are deprecated since 2.0.0 and will be removed in 3.0.0.
-
-===== Migration
-
-Declare `ToolCallback` beans directly instead of raw functional beans:
-
-[source,java]
-----
-// Before — bare Function bean resolved by name at runtime
-@Bean
-@Description("Get the weather in location")
-Function<WeatherRequest, WeatherResponse> currentWeather() {
-    return weatherService::getWeather;
-}
-
-// After — explicit ToolCallback bean
-@Bean
-ToolCallback currentWeather() {
-    return FunctionToolCallback.builder("currentWeather", weatherService::getWeather)
-        .description("Get the weather in location")
-        .inputType(WeatherRequest.class)
-        .build();
-}
-----
-
-Then register the bean via the `ToolSpec` consumer:
-
-[source,java]
-----
-chatClient.prompt("What's the weather like in Copenhagen?")
-    .tools(t -> t.callbacks(currentWeather))
-    .call().content();
-----
-
-Alternatively, use `@Tool`-annotated methods for the declarative approach (see xref:api/tools.adoc[Tools API]).
 
 === Cloud Bindings
 

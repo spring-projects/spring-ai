@@ -147,7 +147,6 @@ class DefaultChatClientObservationConventionTests {
 		var request = ChatClientRequest.builder()
 			.prompt(new Prompt("",
 					ToolCallingChatOptions.builder()
-						.toolNames("tool1", "tool2")
 						.toolCallbacks(dummyFunction("toolCallback1"), dummyFunction("toolCallback2"))
 						.build()))
 			.context(ChatMemory.CONVERSATION_ID, "007")
@@ -165,7 +164,7 @@ class DefaultChatClientObservationConventionTests {
 						["advisor1", "advisor2"]"""),
 				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_CONVERSATION_ID.asString(), "007"),
 				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_TOOL_NAMES.asString(), """
-						["tool1", "tool2", "toolCallback1", "toolCallback2"]"""));
+						["toolCallback1", "toolCallback2"]"""));
 	}
 
 }

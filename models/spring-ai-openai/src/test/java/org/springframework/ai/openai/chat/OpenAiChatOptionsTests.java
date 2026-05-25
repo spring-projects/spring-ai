@@ -17,10 +17,8 @@
 package org.springframework.ai.openai.chat;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -164,7 +162,6 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 		assertThat(copiedOptions.getStop()).isNotSameAs(originalOptions.getStop());
 		assertThat(copiedOptions.getCustomHeaders()).isNotSameAs(originalOptions.getCustomHeaders());
 		assertThat(copiedOptions.getToolCallbacks()).isNotSameAs(originalOptions.getToolCallbacks());
-		assertThat(copiedOptions.getToolNames()).isNotSameAs(originalOptions.getToolNames());
 		assertThat(copiedOptions.getToolContext()).isNotSameAs(originalOptions.getToolContext());
 	}
 
@@ -260,7 +257,6 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 		assertThat(options.getVerbosity()).isNull();
 		assertThat(options.getServiceTier()).isNull();
 		assertThat(options.getToolCallbacks()).isNotNull().isEmpty();
-		assertThat(options.getToolNames()).isNotNull().isEmpty();
 		assertThat(options.getInternalToolExecutionEnabled()).isNull();
 		assertThat(options.getCustomHeaders()).isNotNull().isEmpty();
 		assertThat(options.getToolContext()).isNotNull().isEmpty();
@@ -440,49 +436,6 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 	}
 
 	@Test
-	void testToolCallbacksAndNames() {
-		ToolCallback callback1 = new ToolCallback() {
-			@Override
-			public org.springframework.ai.tool.definition.ToolDefinition getToolDefinition() {
-				return org.springframework.ai.tool.definition.DefaultToolDefinition.builder()
-					.name("tool1")
-					.description("desc1")
-					.inputSchema("{}")
-					.build();
-			}
-
-			@Override
-			public String call(String toolInput) {
-				return "result1";
-			}
-		};
-
-		ToolCallback callback2 = new ToolCallback() {
-			@Override
-			public org.springframework.ai.tool.definition.ToolDefinition getToolDefinition() {
-				return org.springframework.ai.tool.definition.DefaultToolDefinition.builder()
-					.name("tool2")
-					.description("desc2")
-					.inputSchema("{}")
-					.build();
-			}
-
-			@Override
-			public String call(String toolInput) {
-				return "result2";
-			}
-		};
-
-		OpenAiChatOptions options = OpenAiChatOptions.builder()
-			.toolCallbacks(callback1, callback2)
-			.toolNames("tool1", "tool2")
-			.build();
-
-		assertThat(options.getToolCallbacks()).hasSize(2).containsExactly(callback1, callback2);
-		assertThat(options.getToolNames()).hasSize(2).contains("tool1", "tool2");
-	}
-
-	@Test
 	void testToolCallbacksList() {
 		ToolCallback callback = new ToolCallback() {
 			@Override
@@ -507,26 +460,10 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 	}
 
 	@Test
-	void testToolNamesSet() {
-		Set<String> toolNames = new HashSet<>(Set.of("tool1", "tool2", "tool3"));
-
-		OpenAiChatOptions options = OpenAiChatOptions.builder().toolNames(toolNames).build();
-
-		assertThat(options.getToolNames()).hasSize(3).containsExactlyInAnyOrder("tool1", "tool2", "tool3");
-	}
-
-	@Test
 	void testToolCallbacksBuilderValidation() {
 		// Test null validation
 		OpenAiChatOptions options1 = OpenAiChatOptions.builder().toolCallbacks((List<ToolCallback>) null).build();
 		assertThat(options1.getToolCallbacks()).isEmpty();
-	}
-
-	@Test
-	void testToolNamesBuilderValidation() {
-		// Test null validation
-		OpenAiChatOptions options1 = OpenAiChatOptions.builder().toolNames((Set<String>) null).build();
-		assertThat(options1.getToolNames()).isEmpty();
 	}
 
 	@Test
@@ -546,13 +483,11 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 			.combineWith(ToolCallingChatOptions.builder()
 				.model("override-model")
 				.temperature(0.9)
-				.toolNames("tool1")
 				.internalToolExecutionEnabled(true))
 			.build();
 
 		assertThat(merged.getModel()).isEqualTo("override-model");
 		assertThat(merged.getTemperature()).isEqualTo(0.9);
-		assertThat(merged.getToolNames()).containsExactly("tool1");
 		assertThat(merged.getInternalToolExecutionEnabled()).isTrue();
 	}
 

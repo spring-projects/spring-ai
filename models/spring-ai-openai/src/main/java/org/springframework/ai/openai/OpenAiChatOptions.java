@@ -21,7 +21,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -574,7 +573,6 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			.topP(this.topP)
 			// ToolCallingChatOptions
 			.toolCallbacks(new ArrayList<>(this.getToolCallbacks()))
-			.toolNames(new HashSet<>(this.getToolNames()))
 			.toolContext(new HashMap<>(this.getToolContext()))
 			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
 			// OpenAI SDK specific
@@ -843,21 +841,6 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 				this.toolCallbacks = new ArrayList<>();
 			}
 			this.toolCallbacks.addAll(java.util.Arrays.asList(toolCallbacks));
-			return self();
-		}
-
-		@Override
-		public B toolNames(@Nullable Set<String> toolNames) {
-			this.toolNames = toolNames != null ? new HashSet<>(toolNames) : null;
-			return self();
-		}
-
-		@Override
-		public B toolNames(String... toolNames) {
-			if (this.toolNames == null) {
-				this.toolNames = new HashSet<>();
-			}
-			this.toolNames.addAll(Set.of(toolNames));
 			return self();
 		}
 

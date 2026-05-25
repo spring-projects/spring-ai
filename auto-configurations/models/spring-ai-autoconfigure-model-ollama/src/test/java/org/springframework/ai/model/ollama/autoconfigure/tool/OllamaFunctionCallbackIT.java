@@ -97,10 +97,11 @@ class OllamaFunctionCallbackIT extends BaseOllamaIT {
 		this.contextRunner.run(context -> {
 
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
+			ToolCallback weatherTool = context.getBean(ToolCallback.class);
 
 			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			Builder delta = OllamaChatOptions.builder().toolNames(TOOL_NAME);
+			Builder delta = OllamaChatOptions.builder().toolCallbacks(weatherTool);
 			OllamaChatOptions options = mergeOptions(chatModel, delta);
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), options));
 
@@ -117,10 +118,11 @@ class OllamaFunctionCallbackIT extends BaseOllamaIT {
 		this.contextRunner.run(context -> {
 
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
+			ToolCallback weatherTool = context.getBean(ToolCallback.class);
 
 			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			Builder delta = OllamaChatOptions.builder().toolNames(TOOL_NAME);
+			Builder delta = OllamaChatOptions.builder().toolCallbacks(weatherTool);
 			OllamaChatOptions options = mergeOptions(chatModel, delta);
 
 			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage), options));
