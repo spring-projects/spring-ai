@@ -36,8 +36,8 @@ import org.slf4j.LoggerFactory;
  * <p>
  * This utility class provides static factory methods for creating both synchronous
  * ({@link AnthropicClient}) and asynchronous ({@link AnthropicClientAsync}) clients with
- * comprehensive configuration support. It provides sensible defaults for timeouts and
- * retry behavior.
+ * comprehensive configuration support. It handles API key detection from environment
+ * variables and provides sensible defaults for timeouts and retry behavior.
  *
  * <p>
  * <b>Client Types:</b>
@@ -46,6 +46,14 @@ import org.slf4j.LoggerFactory;
  * {@link #setupSyncClient}</li>
  * <li><b>Asynchronous Client:</b> Used for streaming responses via
  * {@link #setupAsyncClient}</li>
+ * </ul>
+ *
+ * <p>
+ * <b>Environment Variable Support:</b>
+ * <ul>
+ * <li>{@code ANTHROPIC_API_KEY} - Primary API key for authentication</li>
+ * <li>{@code ANTHROPIC_AUTH_TOKEN} - Alternative authentication token</li>
+ * <li>{@code ANTHROPIC_BASE_URL} - Override the default API endpoint</li>
  * </ul>
  *
  * <p>
@@ -61,13 +69,18 @@ import org.slf4j.LoggerFactory;
  * to create client instances.
  *
  * @author Soby Chacko
- * @author Sebastien Deleuze
  * @since 2.0.0
  * @see org.springframework.ai.anthropic.AnthropicChatModel
  */
 public final class AnthropicSetup {
 
 	static final String ANTHROPIC_URL = "https://api.anthropic.com";
+
+	static final String ANTHROPIC_API_KEY = "ANTHROPIC_API_KEY";
+
+	static final String ANTHROPIC_AUTH_TOKEN = "ANTHROPIC_AUTH_TOKEN";
+
+	static final String ANTHROPIC_BASE_URL = "ANTHROPIC_BASE_URL";
 
 	static final String DEFAULT_USER_AGENT = "spring-ai-anthropic-sdk";
 
@@ -82,8 +95,9 @@ public final class AnthropicSetup {
 
 	/**
 	 * Creates a synchronous Anthropic client with the specified configuration.
-	 * @param baseUrl the base URL for the API (null to use default)
-	 * @param apiKey the API key
+	 * @param baseUrl the base URL for the API (null to use default or environment
+	 * variable)
+	 * @param apiKey the API key (null to detect from environment)
 	 * @param timeout the request timeout (null to use default of 60 seconds)
 	 * @param maxRetries the maximum number of retries (null to use default of 2)
 	 * @param proxy the proxy to use (null for no proxy)
@@ -93,6 +107,8 @@ public final class AnthropicSetup {
 	public static AnthropicClient setupSyncClient(@Nullable String baseUrl, @Nullable String apiKey,
 			@Nullable Duration timeout, @Nullable Integer maxRetries, @Nullable Proxy proxy,
 			@Nullable Map<String, String> customHeaders) {
+
+		baseUrl = detectBaseUrlFromEnv(baseUrl);
 
 		if (timeout == null) {
 			timeout = DEFAULT_TIMEOUT;
@@ -107,8 +123,9 @@ public final class AnthropicSetup {
 			builder.baseUrl(baseUrl);
 		}
 
-		if (apiKey != null) {
-			builder.apiKey(apiKey);
+		String resolvedApiKey = apiKey != null ? apiKey : detectApiKey();
+		if (resolvedApiKey != null) {
+			builder.apiKey(resolvedApiKey);
 		}
 
 		if (proxy != null) {
@@ -131,8 +148,9 @@ public final class AnthropicSetup {
 	/**
 	 * Creates an asynchronous Anthropic client with the specified configuration. The
 	 * async client is used for streaming responses.
-	 * @param baseUrl the base URL for the API (null to use default)
-	 * @param apiKey the API key
+	 * @param baseUrl the base URL for the API (null to use default or environment
+	 * variable)
+	 * @param apiKey the API key (null to detect from environment)
 	 * @param timeout the request timeout (null to use default of 60 seconds)
 	 * @param maxRetries the maximum number of retries (null to use default of 2)
 	 * @param proxy the proxy to use (null for no proxy)
@@ -142,6 +160,8 @@ public final class AnthropicSetup {
 	public static AnthropicClientAsync setupAsyncClient(@Nullable String baseUrl, @Nullable String apiKey,
 			@Nullable Duration timeout, @Nullable Integer maxRetries, @Nullable Proxy proxy,
 			@Nullable Map<String, String> customHeaders) {
+
+		baseUrl = detectBaseUrlFromEnv(baseUrl);
 
 		if (timeout == null) {
 			timeout = DEFAULT_TIMEOUT;
@@ -156,8 +176,9 @@ public final class AnthropicSetup {
 			builder.baseUrl(baseUrl);
 		}
 
-		if (apiKey != null) {
-			builder.apiKey(apiKey);
+		String resolvedApiKey = apiKey != null ? apiKey : detectApiKey();
+		if (resolvedApiKey != null) {
+			builder.apiKey(resolvedApiKey);
 		}
 
 		if (proxy != null) {
@@ -175,6 +196,42 @@ public final class AnthropicSetup {
 		builder.maxRetries(maxRetries);
 
 		return builder.build();
+	}
+
+	/**
+	 * Detects the base URL from environment variable if not explicitly provided.
+	 * @param baseUrl the explicitly provided base URL (may be null)
+	 * @return the base URL to use
+	 */
+	static @Nullable String detectBaseUrlFromEnv(@Nullable String baseUrl) {
+		if (baseUrl == null) {
+			String envBaseUrl = System.getenv(ANTHROPIC_BASE_URL);
+			if (envBaseUrl != null) {
+				logger.debug("Anthropic Base URL detected from environment variable {}.", ANTHROPIC_BASE_URL);
+				return envBaseUrl;
+			}
+		}
+		return baseUrl;
+	}
+
+	/**
+	 * Detects the API key from environment variables.
+	 * @return the API key, or null if not found
+	 */
+	static @Nullable String detectApiKey() {
+		String apiKey = System.getenv(ANTHROPIC_API_KEY);
+		if (apiKey != null) {
+			logger.debug("Anthropic API key detected from environment variable {}.", ANTHROPIC_API_KEY);
+			return apiKey;
+		}
+
+		String authToken = System.getenv(ANTHROPIC_AUTH_TOKEN);
+		if (authToken != null) {
+			logger.debug("Anthropic auth token detected from environment variable {}.", ANTHROPIC_AUTH_TOKEN);
+			return authToken;
+		}
+
+		return null;
 	}
 
 }
