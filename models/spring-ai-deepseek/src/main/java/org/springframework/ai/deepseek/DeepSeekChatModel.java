@@ -453,14 +453,17 @@ public class DeepSeekChatModel implements ChatModel {
 					}).toList();
 				}
 				Boolean isPrefixAssistantMessage = null;
-				if (message instanceof DeepSeekAssistantMessage
-						&& Boolean.TRUE.equals(((DeepSeekAssistantMessage) message).getPrefix())) {
-					isPrefixAssistantMessage = true;
+				String reasoningContent = null;
+				if (message instanceof DeepSeekAssistantMessage deepSeekAssistantMessage) {
+					reasoningContent = deepSeekAssistantMessage.getReasoningContent();
+					if (Boolean.TRUE.equals(deepSeekAssistantMessage.getPrefix())) {
+						isPrefixAssistantMessage = true;
+					}
 				}
 				String text = assistantMessage.getText();
 				Assert.state(text != null, "text must not be null");
 				return List.of(new ChatCompletionMessage(text, ChatCompletionMessage.Role.ASSISTANT, null, null,
-						toolCalls, isPrefixAssistantMessage, null));
+						toolCalls, isPrefixAssistantMessage, reasoningContent));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
