@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
+import com.openai.errors.OpenAIInvalidDataException;
 import com.openai.models.FunctionDefinition;
 import com.openai.models.FunctionParameters;
 import com.openai.models.ReasoningEffort;
@@ -587,7 +588,7 @@ public final class OpenAiChatModel implements ChatModel {
 			.id(result.id())
 			.usage(usage)
 			.model(result.model())
-			.keyValue("created", result.created());
+			.keyValue("created", getCreated(result));
 
 		result._additionalProperties().forEach((key, jsonValue) -> {
 			try {
@@ -615,6 +616,33 @@ public final class OpenAiChatModel implements ChatModel {
 		chatResponseMetadata.entrySet().forEach(e -> builder.keyValue(e.getKey(), e.getValue()));
 
 		return builder.build();
+	}
+
+	/**
+	 * Extract the created timestamp from a ChatCompletion result, returning 0 if the
+	 * field is absent. Some OpenAI-compatible providers (e.g. GitHub Copilot) do not
+	 * include the created field in their response.
+	 */
+	private long getCreated(ChatCompletion result) {
+		try {
+			return result.created();
+		}
+		catch (OpenAIInvalidDataException ex) {
+			return 0L;
+		}
+	}
+
+	/**
+	 * Extract the created timestamp from a ChatCompletionChunk result, returning 0 if the
+	 * field is absent.
+	 */
+	private long getCreated(ChatCompletionChunk chunk) {
+		try {
+			return chunk.created();
+		}
+		catch (OpenAIInvalidDataException ex) {
+			return 0L;
+		}
 	}
 
 	/**
@@ -664,7 +692,7 @@ public final class OpenAiChatModel implements ChatModel {
 		return ChatCompletion.builder()
 			.id(chunk.id())
 			.choices(choices)
-			.created(chunk.created())
+			.created(getCreated(chunk))
 			.model(chunk.model())
 			.usage(chunk.usage()
 				.orElse(CompletionUsage.builder().promptTokens(0).completionTokens(0).totalTokens(0).build()))
