@@ -17,6 +17,7 @@
 package org.springframework.ai.model.ollama.autoconfigure;
 
 import java.util.List;
+import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
 
@@ -108,6 +109,8 @@ public class OllamaChatProperties {
 	private @Nullable List<String> stop;
 
 	private @Nullable Boolean internalToolExecutionEnabled;
+
+	private @Nullable Map<String, Object> extraOptions;
 
 	public String getModel() {
 		return this.model;
@@ -397,6 +400,14 @@ public class OllamaChatProperties {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
+	public @Nullable Map<String, Object> getExtraOptions() {
+		return this.extraOptions;
+	}
+
+	public void setExtraOptions(@Nullable Map<String, Object> extraOptions) {
+		this.extraOptions = extraOptions;
+	}
+
 	public OllamaChatOptions toOptions() {
 		OllamaChatOptions.Builder builder = OllamaChatOptions.builder();
 		builder.model(this.model);
@@ -504,6 +515,9 @@ public class OllamaChatProperties {
 		}
 		if (this.internalToolExecutionEnabled != null) {
 			builder.internalToolExecutionEnabled(this.internalToolExecutionEnabled);
+		}
+		if (this.extraOptions != null) {
+			builder.extraOptions(this.extraOptions);
 		}
 		return builder.build();
 	}
@@ -880,6 +894,16 @@ public class OllamaChatProperties {
 
 		public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			OllamaChatProperties.this.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.ollama.chat.extra-options")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable Map<String, Object> getExtraOptions() {
+			return OllamaChatProperties.this.getExtraOptions();
+		}
+
+		public void setExtraOptions(@Nullable Map<String, Object> extraOptions) {
+			OllamaChatProperties.this.setExtraOptions(extraOptions);
 		}
 
 	}

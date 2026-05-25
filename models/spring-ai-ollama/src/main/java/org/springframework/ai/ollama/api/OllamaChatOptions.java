@@ -65,7 +65,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 			@Nullable Object format, @Nullable String keepAlive, @Nullable Boolean truncate,
 			@Nullable ThinkOption thinkOption, @Nullable Boolean internalToolExecutionEnabled,
 			@Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames,
-			@Nullable Map<String, Object> toolContext) {
+			@Nullable Map<String, Object> toolContext, @Nullable Map<String, Object> extraOptions) {
 		this.useNUMA = useNUMA;
 		this.numCtx = numCtx;
 		this.numBatch = numBatch;
@@ -105,6 +105,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.toolCallbacks = toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(toolCallbacks);
 		this.toolNames = toolNames == null ? new HashSet<>() : new HashSet<>(toolNames);
 		this.toolContext = toolContext == null ? new HashMap<>() : new HashMap<>(toolContext);
+		this.extraOptions = extraOptions == null ? null : new HashMap<>(extraOptions);
 	}
 
 	// Following fields are options which must be set when the model is loaded into
@@ -335,6 +336,11 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * Defaults to true.
 	 */
 	private @Nullable Boolean truncate;
+
+	/**
+	 * Additional Ollama options sent under the request-level {@code options} object.
+	 */
+	private @Nullable Map<String, Object> extraOptions;
 
 	/**
 	 * The model should think before responding, if supported.
@@ -597,6 +603,11 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 
+	public @Nullable Map<String, Object> getExtraOptions() {
+		return this.extraOptions;
+	}
+
+
 	@Override
 	public List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
@@ -671,6 +682,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		map.put("format", this.format);
 		map.put("keep_alive", this.keepAlive);
 		map.put("truncate", this.truncate);
+		if (this.extraOptions != null) {
+			map.putAll(this.extraOptions);
+		}
 		return map.entrySet().stream().filter(kv -> kv.getValue() != null).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 		//return ModelOptionsUtils.objectToMap(this);
 	}
@@ -702,6 +716,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 			// Ollama Specific
 			.keepAlive(this.keepAlive)
 			.truncate(this.truncate)
+			.extraOptions(this.extraOptions != null ? new HashMap<>(this.extraOptions) : null)
 			.thinkOption(this.thinkOption)
 			.useNUMA(this.useNUMA)
 			.numCtx(this.numCtx)
@@ -758,6 +773,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 				&& Objects.equals(this.mirostat, that.mirostat) && Objects.equals(this.mirostatTau, that.mirostatTau)
 				&& Objects.equals(this.mirostatEta, that.mirostatEta)
 				&& Objects.equals(this.penalizeNewline, that.penalizeNewline) && Objects.equals(this.stop, that.stop)
+				&& Objects.equals(this.extraOptions, that.extraOptions)
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext);
@@ -771,7 +787,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 				this.topK, this.topP, this.minP, this.tfsZ, this.typicalP, this.repeatLastN, this.temperature,
 				this.repeatPenalty, this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau,
 				this.mirostatEta, this.penalizeNewline, this.stop, this.toolCallbacks, this.toolNames,
-				this.internalToolExecutionEnabled, this.toolContext);
+				this.internalToolExecutionEnabled, this.toolContext, this.extraOptions);
 	}
 
 	// public Builder class exposed to users. Avoids having to deal with noisy generic
@@ -836,6 +852,8 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		protected @Nullable Boolean truncate;
 
 		protected @Nullable ThinkOption thinkOption;
+
+		protected @Nullable Map<String, Object> extraOptions;
 
 		@Override
 		public B combineWith(ChatOptions.Builder<?> other) {
@@ -922,6 +940,12 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 				if (options.penalizeNewline != null) {
 					this.penalizeNewline = options.penalizeNewline;
 				}
+				if (options.extraOptions != null) {
+					if (this.extraOptions == null) {
+						this.extraOptions = new HashMap<>();
+					}
+					this.extraOptions.putAll(options.extraOptions);
+				}
 			}
 			return self();
 		}
@@ -960,6 +984,11 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 		public B truncate(@Nullable Boolean truncate) {
 			this.truncate = truncate;
+			return self();
+		}
+
+		public B extraOptions(@Nullable Map<String, Object> extraOptions) {
+			this.extraOptions = extraOptions;
 			return self();
 		}
 
@@ -1167,7 +1196,8 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 					this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty, this.presencePenalty,
 					this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta, this.penalizeNewline,
 					this.stopSequences, this.model, this.format, this.keepAlive, this.truncate, this.thinkOption,
-					this.internalToolExecutionEnabled, this.toolCallbacks, this.toolNames, this.toolContext);
+					this.internalToolExecutionEnabled, this.toolCallbacks, this.toolNames, this.toolContext,
+					this.extraOptions);
 		}
 
 	}
