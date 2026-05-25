@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
@@ -139,11 +140,18 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 					DEFAULT_OBSERVATION_CONVENTION, () -> observationContext, this.observationRegistry);
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
+			AtomicBoolean observationStopped = new AtomicBoolean();
+			Runnable stopObservation = () -> {
+				if (observationStopped.compareAndSet(false, true)) {
+					observation.stop();
+				}
+			};
 
 			// @formatter:off
 			Flux<ChatClientResponse> chatClientResponse = Flux.defer(() -> advisor.adviseStream(chatClientRequest, this)
 						.doOnError(observation::error)
-						.doFinally(s -> observation.stop())
+						.doOnTerminate(stopObservation)
+						.doOnCancel(stopObservation)
 						.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation)));
 			// @formatter:on
 			return CHAT_CLIENT_MESSAGE_AGGREGATOR.aggregateChatClientResponse(chatClientResponse,
