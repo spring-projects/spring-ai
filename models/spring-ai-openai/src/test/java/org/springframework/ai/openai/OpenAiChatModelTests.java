@@ -226,4 +226,45 @@ class OpenAiChatModelTests {
 		assertThat((String) aggregatedMetadata.get("custom-key")).isEqualTo("custom-value");
 	}
 
+	@Test
+	void createdFieldPassedThroughInMetadata() {
+		ChatService chatService = mock(ChatService.class);
+		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
+		when(this.openAiClient.chat()).thenReturn(chatService);
+		when(chatService.completions()).thenReturn(chatCompletionService);
+		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
+			.id("test-id")
+			.created(1234567890L)
+			.model("test-model")
+			.usage(CompletionUsage.builder().promptTokens(10).completionTokens(20).totalTokens(30).build())
+			.addChoice(ChatCompletion.Choice.builder()
+				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+				.index(0)
+				.logprobs(Optional.empty())
+				.message(ChatCompletionMessage.builder()
+					.content("hello")
+					.refusal(Optional.empty())
+					.role(JsonValue.from("assistant"))
+					.annotations(List.of())
+					.toolCalls(List.of())
+					.build())
+				.build())
+			.build());
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.call(new Prompt("hi", options));
+
+		ChatResponseMetadata metadata = response.getMetadata();
+		assertThat(metadata).isNotNull();
+		assertThat(metadata.getId()).isEqualTo("test-id");
+		assertThat(metadata.getModel()).isEqualTo("test-model");
+		assertThat((Object) metadata.get("created")).isEqualTo(1234567890L);
+	}
+
 }
