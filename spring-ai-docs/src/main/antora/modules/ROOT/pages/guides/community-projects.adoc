@@ -1,0 +1,67 @@
+= Community Projects
+
+Spring AI is complemented by a broader ecosystem of community-driven and
+externally maintained projects. This page highlights a few useful starting
+points when you are looking for integrations, extensions, samples, and other
+resources beyond the core Spring AI repository.
+
+IMPORTANT: These projects are maintained outside the main `spring-projects/spring-ai`
+repository. Check each project's documentation for the latest compatibility
+information, supported Spring AI versions, and support channels.
+
+== Community Hubs
+
+* link:https://github.com/spring-ai-community[Spring AI Community] - Community
+organization for Spring AI related integrations, tools, and sample projects.
+* link:https://github.com/spring-ai-community/awesome-spring-ai[Awesome Spring AI]
+- Curated collection of articles, videos, tools, example applications, and
+learning resources built around Spring AI.
+
+== Integrations and Extensions
+
+=== Azure Cosmos DB Support
+
+Azure Cosmos DB vector store and chat memory repository support are maintained
+externally by the Azure Cosmos DB team.
+
+* link:https://azurecosmosdb.github.io/spring-ai/docs/index.html[Documentation]
+* link:https://github.com/azurecosmosdb[Azure Cosmos DB GitHub Organization]
+
+=== OCI GenAI
+
+OCI GenAI resources are available in the published Spring AI reference
+documentation for users integrating with Oracle Cloud Infrastructure.
+
+* link:https://docs.spring.io/spring-ai/reference/api/embeddings/oci-genai-embeddings.html[OCI GenAI Embeddings Reference]
+* link:https://docs.spring.io/spring-ai/docs/current/api/org/springframework/ai/oci/package-summary.html[OCI GenAI API Javadoc]
+
+=== MCP Security
+
+The MCP Security project provides security-focused extensions for Spring AI MCP
+servers and clients.
+
+* xref:api/mcp/mcp-security.adoc[Reference Guide]
+* link:https://github.com/spring-ai-community/mcp-security[GitHub Project]
+
+=== Tool Search Tool
+
+The Tool Search Tool project implements dynamic tool discovery for large tool
+registries and multi-server MCP setups.
+
+* xref:guides/dynamic-tool-search.adoc[Reference Guide]
+* link:https://github.com/spring-ai-community/spring-ai-tool-search-tool[GitHub Project]
+
+== Provider Community Projects
+
+Some provider integrations are maintained in the community organization rather
+than in the core Spring AI repository.
+
+* link:https://github.com/spring-ai-community/qianfan[QianFan]
+* link:https://github.com/spring-ai-community/moonshot[Moonshot AI]
+
+== More Resources
+
+If you are looking for additional examples, tutorials, or reusable building
+blocks, start with the Spring AI Community organization and the Awesome Spring
+AI list. Those two entry points are the best places to discover newly published
+projects across the broader ecosystem.
