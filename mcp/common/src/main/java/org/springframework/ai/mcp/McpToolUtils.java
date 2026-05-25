@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -255,8 +256,13 @@ public final class McpToolUtils {
 
 		return new SharedSyncToolSpecification(tool, (exchangeOrContext, request) -> {
 			try {
+				Map<String, Object> context = new HashMap<>();
+				context.put(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchangeOrContext);
+				if (request.meta() != null) {
+					context.putAll(request.meta());
+				}
 				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request.arguments()),
-						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchangeOrContext)));
+						new ToolContext(context));
 				if (mimeType != null && mimeType.toString().startsWith("image")) {
 					McpSchema.Annotations annotations = new McpSchema.Annotations(List.of(Role.ASSISTANT), null);
 					return McpSchema.CallToolResult.builder()
