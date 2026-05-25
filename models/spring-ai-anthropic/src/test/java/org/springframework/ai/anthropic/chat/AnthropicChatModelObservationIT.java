@@ -168,9 +168,8 @@ public class AnthropicChatModelObservationIT {
 
 		@Bean
 		public AnthropicChatModel anthropicSdkChatModel(TestObservationRegistry observationRegistry) {
-			String apiKey = System.getenv("ANTHROPIC_API_KEY");
 			return AnthropicChatModel.builder()
-				.options(AnthropicChatOptions.builder().apiKey(apiKey).build())
+				.options(AnthropicChatOptions.builder().build())
 				.observationRegistry(observationRegistry)
 				.build();
 		}
