@@ -279,6 +279,39 @@ class DeepSeekChatModelIT {
 		assertThat(deepSeekAssistantMessage2.getText()).isNotEmpty();
 	}
 
+	/**
+	 * Multi-round conversation with deepseek-reasoner model where the reasoningContent is
+	 * preserved across rounds by adding the DeepSeekAssistantMessage directly instead of
+	 * converting to a plain AssistantMessage. This verifies that reasoningContent is
+	 * correctly passed through to subsequent requests.
+	 */
+	@Test
+	void reasonerModelMultiRoundWithReasoningContentPreserved() {
+		List<Message> messages = new ArrayList<>();
+		messages.add(new UserMessage("9.11 and 9.8, which is greater?"));
+		var promptOptions = DeepSeekChatOptions.builder()
+			.model(DeepSeekApi.ChatModel.DEEPSEEK_REASONER.getValue())
+			.build();
+
+		Prompt prompt = new Prompt(messages, promptOptions);
+		ChatResponse response = this.chatModel.call(prompt);
+
+		DeepSeekAssistantMessage firstMessage = (DeepSeekAssistantMessage) response.getResult().getOutput();
+		assertThat(firstMessage.getReasoningContent()).isNotEmpty();
+		assertThat(firstMessage.getText()).isNotEmpty();
+
+		// Preserve reasoningContent by adding the DeepSeekAssistantMessage directly
+		messages.add(firstMessage);
+		messages.add(new UserMessage("How many Rs are there in the word 'strawberry'?"));
+
+		Prompt prompt2 = new Prompt(messages, promptOptions);
+		ChatResponse response2 = this.chatModel.call(prompt2);
+
+		DeepSeekAssistantMessage secondMessage = (DeepSeekAssistantMessage) response2.getResult().getOutput();
+		assertThat(secondMessage.getReasoningContent()).isNotEmpty();
+		assertThat(secondMessage.getText()).isNotEmpty();
+	}
+
 	record ActorsFilmsRecord(String actor, List<String> movies) {
 	}
 

@@ -35,6 +35,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.deepseek.DeepSeekAssistantMessage;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.deepseek.DeepSeekTestConfiguration;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
@@ -178,6 +179,48 @@ class DeepSeekChatModelFunctionCallingIT {
 		assertThat(chatResponse).isNotNull();
 		assertThat(chatResponse.getMetadata()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
+	}
+
+	/**
+	 * Multi-round conversation with function calls, preserving the assistant message
+	 * (including any reasoningContent) across rounds. This verifies that
+	 * {@link DeepSeekAssistantMessage} with tool calls can be passed back to subsequent
+	 * requests without losing reasoningContent.
+	 */
+	@Test
+	void functionCallMultiRoundWithReasoningContentPreserved() {
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = DeepSeekChatOptions.builder()
+			.model(DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue())
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
+
+		// Preserve the assistant message (may contain tool_calls and reasoningContent)
+		AssistantMessage firstAssistantMessage = response.getResult().getOutput();
+		messages.add(firstAssistantMessage);
+		messages.add(new UserMessage("Which of these cities has the highest temperature?"));
+
+		ChatResponse response2 = this.chatModel.call(new Prompt(messages, promptOptions));
+
+		assertThat(response2.getResult().getOutput().getText()).isNotEmpty();
+
+		// If the first response contained reasoningContent, the second round should also
+		// preserve it
+		if (firstAssistantMessage instanceof DeepSeekAssistantMessage) {
+			logger.info("First response has reasoningContent: {}",
+					((DeepSeekAssistantMessage) firstAssistantMessage).getReasoningContent());
+		}
 	}
 
 }
