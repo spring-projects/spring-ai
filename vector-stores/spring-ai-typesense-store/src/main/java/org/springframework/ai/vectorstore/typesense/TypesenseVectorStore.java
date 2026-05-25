@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -236,11 +235,8 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		multiSearchCollectionParameters.collection(this.collectionName);
 		multiSearchCollectionParameters.q("*");
 
-		Stream<Float> floatStream = IntStream.range(0, embedding.length).mapToObj(i -> embedding[i]);
 		// typesense uses only cosine similarity
-		String vectorQuery = EMBEDDING_FIELD_NAME + ":(" + "["
-				+ String.join(",", floatStream.map(String::valueOf).toList()) + "], " + "k: " + request.getTopK() + ", "
-				+ "distance_threshold: " + (1 - request.getSimilarityThreshold()) + ")";
+		String vectorQuery = buildVectorQuery(embedding, request.getTopK(), request.getSimilarityThreshold());
 
 		multiSearchCollectionParameters.vectorQuery(vectorQuery);
 		multiSearchCollectionParameters.filterBy(nativeFilterExpressions);
@@ -278,6 +274,23 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			logger.error("Failed to search documents", e);
 			return List.of();
 		}
+	}
+
+	static String buildVectorQuery(float[] embedding, int topK, double similarityThreshold) {
+		StringBuilder vectorQueryBuilder = new StringBuilder(EMBEDDING_FIELD_NAME.length() + embedding.length * 8 + 64);
+		vectorQueryBuilder.append(EMBEDDING_FIELD_NAME).append(":([");
+		for (int i = 0; i < embedding.length; i++) {
+			if (i > 0) {
+				vectorQueryBuilder.append(',');
+			}
+			vectorQueryBuilder.append(embedding[i]);
+		}
+		return vectorQueryBuilder.append("], k: ")
+			.append(topK)
+			.append(", distance_threshold: ")
+			.append(1 - similarityThreshold)
+			.append(')')
+			.toString();
 	}
 
 	int embeddingDimensions() {
