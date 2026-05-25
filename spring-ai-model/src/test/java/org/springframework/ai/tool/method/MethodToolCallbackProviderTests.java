@@ -32,6 +32,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
+import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.core.annotation.AliasFor;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -128,6 +129,20 @@ class MethodToolCallbackProviderTests {
 		ToolCallback[] toolCallbacks = provider.getToolCallbacks();
 		assertEquals(1, toolCallbacks.length);
 		assertInstanceOf(MethodToolCallback.class, toolCallbacks[0]);
+	}
+
+	@Test
+	void emptyStringForLongParamThrowsClearException() {
+		ToolCallback callback = MethodToolCallbackProvider.builder()
+			.toolObjects(new IdTool())
+			.build()
+			.getToolCallbacks()[0];
+
+		assertThatThrownBy(() -> callback.call("""
+				{ "id": "" }
+				""")).isInstanceOf(ToolExecutionException.class)
+			.hasRootCauseInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Cannot convert blank or empty string to numeric type 'Long'");
 	}
 
 	abstract class TestObjectClass<T> {
@@ -255,6 +270,15 @@ class MethodToolCallbackProviderTests {
 		@EnhanceTool
 		public Function<String, String> functionTool() {
 			return input -> "Function result: " + input;
+		}
+
+	}
+
+	static class IdTool {
+
+		@Tool(description = "Lookup by id")
+		public String lookup(Long id) {
+			return "id=" + id;
 		}
 
 	}
