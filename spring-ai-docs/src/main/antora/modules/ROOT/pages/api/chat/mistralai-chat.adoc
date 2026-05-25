@@ -265,7 +265,7 @@ Mistral AI supports text and vision modalities.
 
 === Vision
 
-Mistral AI models that offer vision multimodal support include `pixtral-large-latest`.
+Mistral AI models offer vision multimodal support.
 Refer to the link:https://docs.mistral.ai/capabilities/vision/[Vision] guide for more information.
 
 The Mistral AI link:https://docs.mistral.ai/api/#tag/chat/operation/chat_completion_v1_chat_completions_post[User Message API] can incorporate a list of base64-encoded images or image urls with the message.
@@ -282,7 +282,7 @@ var userMessage = new UserMessage("Explain what do you see on this picture?",
         new Media(MimeTypeUtils.IMAGE_PNG, this.imageResource));
 
 ChatResponse response = chatModel.call(new Prompt(this.userMessage,
-        ChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build()));
+        ChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()).build()));
 ----
 
 or the image URL equivalent:
@@ -294,7 +294,7 @@ var userMessage = new UserMessage("Explain what do you see on this picture?",
                 URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png")));
 
 ChatResponse response = chatModel.call(new Prompt(this.userMessage,
-        ChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build()));
+        ChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()).build()));
 ----
 
 TIP: You can pass multiple images as well.
