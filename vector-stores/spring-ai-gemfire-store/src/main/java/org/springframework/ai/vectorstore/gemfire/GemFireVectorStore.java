@@ -139,7 +139,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		String base = UriComponentsBuilder.fromUriString(DEFAULT_URI)
 			.build(builder.sslEnabled ? "s" : "", builder.host, builder.port)
 			.toString();
-		WebClient.Builder webClientBuilder = WebClient.builder().baseUrl(base);
+		WebClient.Builder webClientBuilder = builder.webClientBuilder.clone().baseUrl(base);
 
 		ExchangeFilterFunction authenticationFilterFunction = null;
 
@@ -590,8 +590,21 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 		private @Nullable String token;
 
+		private WebClient.Builder webClientBuilder = WebClient.builder();
+
 		private Builder(EmbeddingModel embeddingModel) {
 			super(embeddingModel);
+		}
+
+		/**
+		 * Sets the WebClient.Builder to use.
+		 * @param webClientBuilder the webClientBuilder to use
+		 * @return the builder instance
+		 */
+		public Builder webClientBuilder(WebClient.Builder webClientBuilder) {
+			Assert.notNull(webClientBuilder, "webClientBuilder must not be null");
+			this.webClientBuilder = webClientBuilder;
+			return this;
 		}
 
 		/**
