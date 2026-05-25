@@ -16,24 +16,37 @@
 
 package org.springframework.ai.bedrock.converse;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.reactivestreams.Subscription;
+import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.core.document.internal.MapDocument;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockDelta;
+import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockStart;
 import software.amazon.awssdk.services.bedrockruntime.model.ConversationRole;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseMetrics;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseOutput;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamOutput;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamRequest;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamResponseHandler;
 import software.amazon.awssdk.services.bedrockruntime.model.Message;
 import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
 import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlockDelta;
+import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlockStart;
 
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.ToolCallback;
@@ -155,7 +168,98 @@ public class BedrockConverseUsageAggregationTests {
 
 	@Test
 	public void streamWithToolUse() {
-		// TODO: Implement the test
+		List<ConverseStreamOutput> toolUseEvents = List.of(
+				ConverseStreamOutput.contentBlockStartBuilder()
+					.contentBlockIndex(0)
+					.start(ContentBlockStart.builder()
+						.toolUse(ToolUseBlockStart.builder()
+							.toolUseId("tooluse_2SZuiUDkRbeGysun8O2Wag")
+							.name("getCurrentWeather")
+							.build())
+						.build())
+					.build(),
+				ConverseStreamOutput.contentBlockDeltaBuilder()
+					.contentBlockIndex(0)
+					.delta(ContentBlockDelta.builder()
+						.toolUse(ToolUseBlockDelta.builder()
+							.input("{\"location\":\"Paris, France\",\"unit\":\"C\"}")
+							.build())
+						.build())
+					.build(),
+				ConverseStreamOutput.messageStopBuilder().stopReason(StopReason.TOOL_USE).build(),
+				ConverseStreamOutput.metadataBuilder()
+					.usage(TokenUsage.builder().inputTokens(445).outputTokens(119).totalTokens(564).build())
+					.build());
+
+		List<ConverseStreamOutput> finalResponseEvents = List.of(
+				ConverseStreamOutput.contentBlockDeltaBuilder()
+					.contentBlockIndex(0)
+					.delta(ContentBlockDelta.builder().text("The weather in Paris is 15.0°C.").build())
+					.build(),
+				ConverseStreamOutput.messageStopBuilder().stopReason(StopReason.END_TURN).build(),
+				ConverseStreamOutput.metadataBuilder()
+					.usage(TokenUsage.builder().inputTokens(540).outputTokens(106).totalTokens(646).build())
+					.build());
+
+		given(this.bedrockRuntimeAsyncClient.converseStream(isA(ConverseStreamRequest.class),
+				isA(ConverseStreamResponseHandler.class)))
+			.willAnswer(invocation -> {
+				ConverseStreamResponseHandler handler = invocation.getArgument(1);
+				return publishEventsAsync(handler, toolUseEvents);
+			})
+			.willAnswer(invocation -> {
+				ConverseStreamResponseHandler handler = invocation.getArgument(1);
+				return publishEventsAsync(handler, finalResponseEvents);
+			});
+
+		ToolCallback toolCallback = FunctionToolCallback.builder("getCurrentWeather", (Request request) -> "15.0°C")
+			.description("Gets the weather in location")
+			.inputType(Request.class)
+			.build();
+
+		var result = this.chatModel
+			.stream(new Prompt("What is the weather in Paris?",
+					BedrockChatOptions.builder().toolCallbacks(toolCallback).build()))
+			.blockLast();
+
+		assertThat(result).isNotNull();
+		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(445 + 540);
+		assertThat(result.getMetadata().getUsage().getCompletionTokens()).isEqualTo(119 + 106);
+		assertThat(result.getMetadata().getUsage().getTotalTokens()).isEqualTo(564 + 646);
+	}
+
+	private static CompletableFuture<Void> publishEventsAsync(ConverseStreamResponseHandler handler,
+			List<ConverseStreamOutput> events) {
+		handler.onEventStream(
+				(SdkPublisher<ConverseStreamOutput>) subscriber -> subscriber.onSubscribe(new Subscription() {
+
+					private final AtomicBoolean published = new AtomicBoolean(false);
+
+					@Override
+					public void request(long n) {
+						if (!this.published.compareAndSet(false, true)) {
+							return;
+						}
+						CompletableFuture.runAsync(() -> {
+							try {
+								Thread.sleep(50);
+							}
+							catch (InterruptedException e) {
+								Thread.currentThread().interrupt();
+								throw new IllegalStateException(e);
+							}
+							events.forEach(subscriber::onNext);
+							subscriber.onComplete();
+							handler.complete();
+						});
+					}
+
+					@Override
+					public void cancel() {
+					}
+
+				}));
+		return CompletableFuture.completedFuture(null);
 	}
 
 	@Test
