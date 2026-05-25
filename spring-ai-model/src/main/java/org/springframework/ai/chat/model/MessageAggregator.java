@@ -116,7 +116,9 @@ public class MessageAggregator {
 				}
 				AssistantMessage outputMessage = chatResponse.getResult().getOutput();
 				if (!CollectionUtils.isEmpty(outputMessage.getToolCalls())) {
-					toolCallsRef.get().addAll(outputMessage.getToolCalls());
+					for (ToolCall chunk : outputMessage.getToolCalls()) {
+						mergeToolCallChunk(toolCallsRef.get(), chunk);
+					}
 				}
 
 			}
@@ -205,6 +207,23 @@ public class MessageAggregator {
 			metadataRateLimitRef.set(new EmptyRateLimit());
 
 		}).doOnError(e -> logger.error("Aggregation Error", e));
+	}
+
+	/**
+	 * Merges a streaming tool call chunk into the accumulated tool call list. If the
+	 * chunk has a non-empty {@code id}, it starts a new tool call entry. Otherwise, its
+	 * {@code arguments} are appended to the most recently added tool call.
+	 */
+	private static void mergeToolCallChunk(List<ToolCall> toolCalls, ToolCall chunk) {
+		if (StringUtils.hasText(chunk.id())) {
+			toolCalls.add(chunk);
+		}
+		else if (!toolCalls.isEmpty()) {
+			ToolCall last = toolCalls.remove(toolCalls.size() - 1);
+			String merged = (last.arguments() != null ? last.arguments() : "")
+					+ (chunk.arguments() != null ? chunk.arguments() : "");
+			toolCalls.add(new ToolCall(last.id(), last.type(), last.name(), merged));
+		}
 	}
 
 	public record DefaultUsage(Integer promptTokens, Integer completionTokens, Integer totalTokens) implements Usage {
