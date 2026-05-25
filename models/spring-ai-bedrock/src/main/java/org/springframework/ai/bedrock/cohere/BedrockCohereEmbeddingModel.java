@@ -22,23 +22,27 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi;
+import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingModelResponse;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest.InputType;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest.Truncate;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingResponse;
+import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.Assert;
 
 /**
  * {@link org.springframework.ai.embedding.EmbeddingModel} implementation that uses the
- * Bedrock Cohere Embedding API. Note: The invocation metrics are not exposed by AWS for
- * this API. If this change in the future we will add it as metadata.
+ * Bedrock Cohere Embedding API. Token usage is extracted from the
+ * {@code x-amzn-bedrock-input-token-count} HTTP response header provided by Bedrock.
  *
  * @author Christian Tzolov
  * @author Soby Chacko
@@ -117,13 +121,18 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 		}).toList();
 
 		var apiRequest = new CohereEmbeddingRequest(truncatedInstructions, inputType, truncate);
-		CohereEmbeddingResponse apiResponse = this.embeddingApi.embedding(apiRequest);
+		CohereEmbeddingModelResponse modelResponse = this.embeddingApi.embeddingForModel(apiRequest);
+		CohereEmbeddingResponse apiResponse = modelResponse.response();
 		var indexCounter = new AtomicInteger(0);
 		List<Embedding> embeddings = apiResponse.embeddings()
 			.stream()
 			.map(e -> new Embedding(e, indexCounter.getAndIncrement()))
 			.toList();
-		return new EmbeddingResponse(embeddings);
+
+		Usage usage = modelResponse.inputTokenCount() != null ? new DefaultUsage(modelResponse.inputTokenCount(), 0)
+				: new DefaultUsage(0, 0);
+		EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata("", usage);
+		return new EmbeddingResponse(embeddings, metadata);
 	}
 
 	/**
