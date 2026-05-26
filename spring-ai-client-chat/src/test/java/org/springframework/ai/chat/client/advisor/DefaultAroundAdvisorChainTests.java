@@ -27,6 +27,7 @@ import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
@@ -289,6 +290,37 @@ class DefaultAroundAdvisorChainTests {
 
 		assertThat(ReflectionTestUtils.getField(newChain, "observationConvention"))
 			.isInstanceOf(DefaultAdvisorObservationConvention.class);
+	}
+
+	@Test
+	void mutateCopiesAllAdvisorsToNewChain() {
+		CallAdvisor advisor1 = createMockAdvisor("advisor1", 1);
+		CallAdvisor advisor2 = createMockAdvisor("advisor2", 2);
+
+		DefaultAroundAdvisorChain chain = (DefaultAroundAdvisorChain) DefaultAroundAdvisorChain
+			.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor1, advisor2))
+			.build();
+
+		BaseAdvisorChain mutated = chain.mutate().build();
+
+		assertThat(mutated.getCallAdvisors()).containsExactlyInAnyOrderElementsOf(chain.getCallAdvisors());
+	}
+
+	@Test
+	void mutateDoesNotAffectOriginalChain() {
+		CallAdvisor advisor1 = createMockAdvisor("advisor1", 1);
+		CallAdvisor advisor2 = createMockAdvisor("advisor2", 2);
+
+		DefaultAroundAdvisorChain chain = (DefaultAroundAdvisorChain) DefaultAroundAdvisorChain
+			.builder(ObservationRegistry.NOOP)
+			.push(advisor1)
+			.build();
+
+		chain.mutate().push(advisor2).build();
+
+		assertThat(chain.getCallAdvisors()).hasSize(1);
+		assertThat(chain.getCallAdvisors().get(0).getName()).isEqualTo("advisor1");
 	}
 
 	private CallAdvisor createMockAdvisor(String name, int order) {
