@@ -189,6 +189,48 @@ ChatResponse response = chatModel.call(
 
 TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/AnthropicChatOptions.java[AnthropicChatOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
 
+== Rate Limit Metadata
+
+The Anthropic API includes https://docs.anthropic.com/en/api/rate-limits#response-headers[rate limit headers] on every response that report your current request and token budgets along with when each window resets.
+Spring AI surfaces this data through the standard `ChatResponseMetadata#getRateLimit()` accessor, which returns an `AnthropicRateLimit` populated from the response headers.
+
+The portable `RateLimit` interface exposes the request and token families:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(prompt);
+
+RateLimit rateLimit = response.getMetadata().getRateLimit();
+rateLimit.getRequestsLimit();      // overall request ceiling
+rateLimit.getRequestsRemaining();  // requests left in the current window
+rateLimit.getRequestsReset();      // time until the request window resets
+
+rateLimit.getTokensLimit();        // overall token ceiling
+rateLimit.getTokensRemaining();    // tokens left in the current window
+rateLimit.getTokensReset();        // time until the token window resets
+----
+
+Anthropic also reports separate buckets for input tokens and output tokens.
+These are exposed by the `AnthropicRateLimit` concrete type:
+
+[source,java]
+----
+if (response.getMetadata().getRateLimit() instanceof AnthropicRateLimit anthropic) {
+    anthropic.getInputTokensLimit();
+    anthropic.getInputTokensRemaining();
+    anthropic.getInputTokensReset();
+
+    anthropic.getOutputTokensLimit();
+    anthropic.getOutputTokensRemaining();
+    anthropic.getOutputTokensReset();
+}
+----
+
+If Anthropic does not return any rate-limit headers on a given response, `getRateLimit()` returns an `EmptyRateLimit` instance instead, matching the convention used by other Spring AI providers.
+
+NOTE: Rate-limit metadata is only surfaced on the synchronous `call(Prompt)` path.
+The streaming `stream(Prompt)` path uses Server-Sent Events, and the underlying transport does not expose the initial HTTP response headers to the streaming callback; `getRateLimit()` therefore resolves to `EmptyRateLimit` for streamed responses.
+
 == Prompt Caching
 
 Anthropic's https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching[prompt caching feature] allows you to cache frequently used prompts to reduce costs and improve response times for repeated interactions.
