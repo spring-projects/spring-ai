@@ -211,7 +211,5 @@ class OracleChatMemoryRepositoryIT {
 		ChatMemoryRepository chatMemoryRepository(DataSource dataSource) {
 			return OracleChatMemoryRepository.builder().dataSource(dataSource).build();
 		}
-
 	}
-
 }

@@ -9,6 +9,7 @@
 If `ORACLE_DATABASE_URL` is set, tests use that database instead of Testcontainers.
 
 Optional credentials:
+
 - `ORACLE_DATABASE_USERNAME`
 - `ORACLE_DATABASE_PASSWORD`
 
