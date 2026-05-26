@@ -89,13 +89,6 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 		return this.dimensions;
 	}
 
-	@Override
-	public String toString() {
-		return "OpenAiEmbeddingOptions{" + "user='" + this.user + '\'' + ", model='" + this.getModel() + '\''
-				+ ", deploymentName='" + this.getDeploymentName() + '\'' + ", encodingFormat='" + this.encodingFormat
-				+ '\'' + ", dimensions=" + this.dimensions + '}';
-	}
-
 	public EmbeddingCreateParams toOpenAiCreateParams(List<String> instructions) {
 
 		EmbeddingCreateParams.Builder builder = EmbeddingCreateParams.builder();

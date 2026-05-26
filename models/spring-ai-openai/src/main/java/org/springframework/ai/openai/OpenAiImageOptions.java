@@ -171,13 +171,6 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 				this.user);
 	}
 
-	@Override
-	public String toString() {
-		return "OpenAiImageOptions{" + "n=" + this.n + ", width=" + this.width + ", height=" + this.height
-				+ ", quality='" + this.quality + '\'' + ", responseFormat='" + this.responseFormat + '\'' + ", size='"
-				+ this.size + '\'' + ", style='" + this.style + '\'' + ", user='" + this.user + '\'' + '}';
-	}
-
 	public ImageGenerateParams toOpenAiImageGenerateParams(ImagePrompt imagePrompt) {
 		if (imagePrompt.getInstructions().isEmpty()) {
 			throw new IllegalArgumentException("Image prompt instructions cannot be empty");
