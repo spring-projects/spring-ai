@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.generator.Option;
 import com.github.victools.jsonschema.generator.OptionPreset;
@@ -35,9 +33,7 @@ import com.github.victools.jsonschema.generator.SchemaVersion;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.jackson.JacksonSchemaModule;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
-import io.swagger.v3.oas.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.chat.model.ToolContext;
@@ -45,7 +41,6 @@ import org.springframework.ai.model.KotlinModule;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.core.KotlinDetector;
-import org.springframework.core.Nullness;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
@@ -75,15 +70,9 @@ import org.springframework.util.StringUtils;
  * @author Sebastien Deleuze
  * @since 1.0.0
  */
-public final class JsonSchemaGenerator {
+public final class JsonSchemaGenerator extends AbstractJsonSchemaGenerator {
 
-	/**
-	 * To ensure consistency and robustness across different model providers, all
-	 * properties in the JSON Schema are considered required by default. This behavior can
-	 * be overridden by setting the {@link ToolParam#required()},
-	 * {@link JsonProperty#required()}, or {@link Schema#requiredMode()}} annotation.
-	 */
-	private static final boolean PROPERTY_REQUIRED_BY_DEFAULT = true;
+	private static final JsonSchemaGenerator INSTANCE = new JsonSchemaGenerator();
 
 	private static final SchemaGenerator TYPE_SCHEMA_GENERATOR;
 
@@ -123,6 +112,21 @@ public final class JsonSchemaGenerator {
 	private JsonSchemaGenerator() {
 	}
 
+	@Override
+	protected @Nullable Boolean getToolAnnotationRequired(Parameter parameter) {
+		var toolParamAnnotation = parameter.getAnnotation(ToolParam.class);
+		return toolParamAnnotation != null ? toolParamAnnotation.required() : null;
+	}
+
+	@Override
+	protected @Nullable String getToolAnnotationDescription(Parameter parameter) {
+		var toolParamAnnotation = parameter.getAnnotation(ToolParam.class);
+		if (toolParamAnnotation != null && StringUtils.hasText(toolParamAnnotation.description())) {
+			return toolParamAnnotation.description();
+		}
+		return null;
+	}
+
 	/**
 	 * Generate a JSON Schema for a method's input parameters.
 	 */
@@ -146,7 +150,7 @@ public final class JsonSchemaGenerator {
 				// outside the model interaction flow.
 				continue;
 			}
-			if (isMethodParameterRequired(method, i)) {
+			if (INSTANCE.isMethodParameterRequired(method, i)) {
 				required.add(parameterName);
 			}
 			ObjectNode parameterNode = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
@@ -158,7 +162,7 @@ public final class JsonSchemaGenerator {
 			JsonSchemaUtils.hoistDefsToRoot(schema, parameterNode);
 			// Remove OpenAPI format as some LLMs (like Mistral) don't handle them.
 			parameterNode.remove("format");
-			String parameterDescription = getMethodParameterDescription(method, i);
+			String parameterDescription = INSTANCE.getMethodParameterDescription(method, i);
 			if (StringUtils.hasText(parameterDescription)) {
 				parameterNode.put("description", parameterDescription);
 			}
@@ -197,135 +201,6 @@ public final class JsonSchemaGenerator {
 		}
 		if (Stream.of(schemaOptions).anyMatch(option -> option == SchemaOption.UPPER_CASE_TYPE_VALUES)) {
 			convertTypeValuesToUpperCase(schema);
-		}
-	}
-
-	/**
-	 * Determines whether a property is required based on the presence of a series of *
-	 * annotations.
-	 *
-	 * <p>
-	 * <ul>
-	 * <li>{@code @ToolParam(required = ...)}</li>
-	 * <li>{@code @JsonProperty(required = ...)}</li>
-	 * <li>{@code @Schema(required = ...)}</li>
-	 * <li>{@code @Nullable}</li>
-	 * </ul>
-	 * <p>
-	 *
-	 * If none of these annotations are present, the default behavior is to consider the *
-	 * property as required.
-	 */
-	private static boolean isMethodParameterRequired(Method method, int index) {
-		Parameter parameter = method.getParameters()[index];
-
-		var toolParamAnnotation = parameter.getAnnotation(ToolParam.class);
-		if (toolParamAnnotation != null) {
-			return toolParamAnnotation.required();
-		}
-
-		var propertyAnnotation = parameter.getAnnotation(JsonProperty.class);
-		if (propertyAnnotation != null) {
-			return propertyAnnotation.required();
-		}
-
-		var schemaAnnotation = parameter.getAnnotation(Schema.class);
-		if (schemaAnnotation != null) {
-			return schemaAnnotation.requiredMode() == Schema.RequiredMode.REQUIRED
-					|| schemaAnnotation.requiredMode() == Schema.RequiredMode.AUTO || schemaAnnotation.required();
-		}
-
-		Nullness nullness = Nullness.forParameter(parameter);
-		if (nullness == Nullness.NULLABLE) {
-			return false;
-		}
-
-		return PROPERTY_REQUIRED_BY_DEFAULT;
-	}
-
-	/**
-	 * Determines a property description based on the presence of a series of annotations.
-	 *
-	 * <p>
-	 * <ul>
-	 * <li>{@code @ToolParam(description = ...)}</li>
-	 * <li>{@code @JsonPropertyDescription(...)}</li>
-	 * <li>{@code @Schema(description = ...)}</li>
-	 * </ul>
-	 * <p>
-	 */
-	private static @Nullable String getMethodParameterDescription(Method method, int index) {
-		Parameter parameter = method.getParameters()[index];
-
-		var toolParamAnnotation = parameter.getAnnotation(ToolParam.class);
-		if (toolParamAnnotation != null && StringUtils.hasText(toolParamAnnotation.description())) {
-			return toolParamAnnotation.description();
-		}
-
-		var jacksonAnnotation = parameter.getAnnotation(JsonPropertyDescription.class);
-		if (jacksonAnnotation != null && StringUtils.hasText(jacksonAnnotation.value())) {
-			return jacksonAnnotation.value();
-		}
-
-		var schemaAnnotation = parameter.getAnnotation(Schema.class);
-		if (schemaAnnotation != null && StringUtils.hasText(schemaAnnotation.description())) {
-			return schemaAnnotation.description();
-		}
-
-		return null;
-	}
-
-	/**
-	 * Recursively adds {@code "additionalProperties": false} to all object schemas (nodes
-	 * with a {@code "properties"} key) that do not already define
-	 * {@code "additionalProperties"}. The guard preserves {@code Map<K,V>} schemas where
-	 * {@code "additionalProperties"} is a type reference rather than a boolean.
-	 */
-	private static void forbidAdditionalProperties(ObjectNode node) {
-		if (node.has("properties") && !node.has("additionalProperties")) {
-			node.put("additionalProperties", false);
-		}
-		node.properties().forEach(entry -> {
-			JsonNode value = entry.getValue();
-			if (value.isObject()) {
-				forbidAdditionalProperties((ObjectNode) value);
-			}
-			else if (value.isArray()) {
-				value.forEach(element -> {
-					if (element.isObject()) {
-						forbidAdditionalProperties((ObjectNode) element);
-					}
-				});
-			}
-		});
-	}
-
-	public static void convertTypeValuesToUpperCase(ObjectNode node) {
-		if (node.isObject()) {
-			node.properties().forEach(entry -> {
-				JsonNode value = entry.getValue();
-				if (value.isObject()) {
-					convertTypeValuesToUpperCase((ObjectNode) value);
-				}
-				else if (value.isArray()) {
-					value.forEach(element -> {
-						if (element.isObject() || element.isArray()) {
-							convertTypeValuesToUpperCase((ObjectNode) element);
-						}
-					});
-				}
-				else if (value.isTextual() && entry.getKey().equals("type")) {
-					String oldValue = node.get("type").asText();
-					node.put("type", oldValue.toUpperCase());
-				}
-			});
-		}
-		else if (node.isArray()) {
-			node.forEach(element -> {
-				if (element.isObject() || element.isArray()) {
-					convertTypeValuesToUpperCase((ObjectNode) element);
-				}
-			});
 		}
 	}
 

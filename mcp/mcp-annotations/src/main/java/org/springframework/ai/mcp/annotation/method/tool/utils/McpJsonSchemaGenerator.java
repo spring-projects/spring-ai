@@ -24,8 +24,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.generator.Option;
 import com.github.victools.jsonschema.generator.OptionPreset;
@@ -41,8 +39,6 @@ import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.util.Assert;
-import io.modelcontextprotocol.util.Utils;
-import io.swagger.v3.oas.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.node.ObjectNode;
 
@@ -53,16 +49,17 @@ import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 import org.springframework.ai.model.KotlinModule;
 import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.util.json.schema.AbstractJsonSchemaGenerator;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator.SchemaOption;
 import org.springframework.ai.util.json.schema.JsonSchemaUtils;
 import org.springframework.core.KotlinDetector;
-import org.springframework.core.Nullness;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ConcurrentReferenceHashMap;
+import org.springframework.util.StringUtils;
 
-public final class McpJsonSchemaGenerator {
+public final class McpJsonSchemaGenerator extends AbstractJsonSchemaGenerator {
 
-	private static final boolean PROPERTY_REQUIRED_BY_DEFAULT = true;
+	private static final McpJsonSchemaGenerator INSTANCE = new McpJsonSchemaGenerator();
 
 	/**
 	 * Schema generator for method parameter types. Used by
@@ -108,6 +105,21 @@ public final class McpJsonSchemaGenerator {
 	}
 
 	private McpJsonSchemaGenerator() {
+	}
+
+	@Override
+	protected @Nullable Boolean getToolAnnotationRequired(Parameter parameter) {
+		var toolParamAnnotation = parameter.getAnnotation(McpToolParam.class);
+		return toolParamAnnotation != null ? toolParamAnnotation.required() : null;
+	}
+
+	@Override
+	protected @Nullable String getToolAnnotationDescription(Parameter parameter) {
+		var toolParamAnnotation = parameter.getAnnotation(McpToolParam.class);
+		if (toolParamAnnotation != null && StringUtils.hasText(toolParamAnnotation.description())) {
+			return toolParamAnnotation.description();
+		}
+		return null;
 	}
 
 	public static String generateForMethodInput(Method method) {
@@ -177,7 +189,7 @@ public final class McpJsonSchemaGenerator {
 				continue;
 			}
 
-			if (isMethodParameterRequired(method, i)) {
+			if (INSTANCE.isMethodParameterRequired(method, i)) {
 				required.add(parameterName);
 			}
 			ObjectNode parameterNode = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
@@ -187,8 +199,8 @@ public final class McpJsonSchemaGenerator {
 			// "#/$defs/<Name>" refs to the outer root, leaving them unresolvable.
 			// Hoist $defs to the outer root so those refs resolve again.
 			JsonSchemaUtils.hoistDefsToRoot(schema, parameterNode);
-			String parameterDescription = getMethodParameterDescription(method, i);
-			if (Utils.hasText(parameterDescription)) {
+			String parameterDescription = INSTANCE.getMethodParameterDescription(method, i);
+			if (StringUtils.hasText(parameterDescription)) {
 				parameterNode.put("description", parameterDescription);
 			}
 			properties.set(parameterName, parameterNode);
@@ -238,53 +250,6 @@ public final class McpJsonSchemaGenerator {
 	 */
 	public static boolean hasCallToolRequestParameter(Method method) {
 		return Arrays.stream(method.getParameterTypes()).anyMatch(type -> CallToolRequest.class.isAssignableFrom(type));
-	}
-
-	private static boolean isMethodParameterRequired(Method method, int index) {
-		Parameter parameter = method.getParameters()[index];
-
-		var toolParamAnnotation = parameter.getAnnotation(McpToolParam.class);
-		if (toolParamAnnotation != null) {
-			return toolParamAnnotation.required();
-		}
-
-		var propertyAnnotation = parameter.getAnnotation(JsonProperty.class);
-		if (propertyAnnotation != null) {
-			return propertyAnnotation.required();
-		}
-
-		var schemaAnnotation = parameter.getAnnotation(Schema.class);
-		if (schemaAnnotation != null) {
-			return schemaAnnotation.requiredMode() == Schema.RequiredMode.REQUIRED
-					|| schemaAnnotation.requiredMode() == Schema.RequiredMode.AUTO || schemaAnnotation.required();
-		}
-
-		if (Nullness.forParameter(parameter) == Nullness.NULLABLE) {
-			return false;
-		}
-
-		return PROPERTY_REQUIRED_BY_DEFAULT;
-	}
-
-	private static @Nullable String getMethodParameterDescription(Method method, int index) {
-		Parameter parameter = method.getParameters()[index];
-
-		var toolParamAnnotation = parameter.getAnnotation(McpToolParam.class);
-		if (toolParamAnnotation != null && Utils.hasText(toolParamAnnotation.description())) {
-			return toolParamAnnotation.description();
-		}
-
-		var jacksonAnnotation = parameter.getAnnotation(JsonPropertyDescription.class);
-		if (jacksonAnnotation != null && Utils.hasText(jacksonAnnotation.value())) {
-			return jacksonAnnotation.value();
-		}
-
-		var schemaAnnotation = parameter.getAnnotation(Schema.class);
-		if (schemaAnnotation != null && Utils.hasText(schemaAnnotation.description())) {
-			return schemaAnnotation.description();
-		}
-
-		return null;
 	}
 
 }
