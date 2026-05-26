@@ -162,6 +162,7 @@ public final class JsonSchemaGenerator {
 			if (StringUtils.hasText(parameterDescription)) {
 				parameterNode.put("description", parameterDescription);
 			}
+			applySchemaConstraints(method.getParameters()[i], parameterNode);
 			properties.set(parameterName, parameterNode);
 		}
 
@@ -298,6 +299,61 @@ public final class JsonSchemaGenerator {
 				});
 			}
 		});
+	}
+
+	/**
+	 * Applies constraint attributes from a parameter-level {@code @Schema} annotation
+	 * (e.g. minimum, maximum, pattern, example, allowableValues) to the generated schema
+	 * node. Description and required/requiredMode are handled separately and are not
+	 * re-applied here.
+	 */
+	private static void applySchemaConstraints(Parameter parameter, ObjectNode parameterNode) {
+		var schemaAnnotation = parameter.getAnnotation(Schema.class);
+		if (schemaAnnotation == null) {
+			return;
+		}
+		if (StringUtils.hasText(schemaAnnotation.minimum())) {
+			tryParseDouble(schemaAnnotation.minimum(), parameterNode, "minimum");
+		}
+		if (StringUtils.hasText(schemaAnnotation.maximum())) {
+			tryParseDouble(schemaAnnotation.maximum(), parameterNode, "maximum");
+		}
+		if (schemaAnnotation.exclusiveMinimum()) {
+			parameterNode.put("exclusiveMinimum", true);
+		}
+		if (schemaAnnotation.exclusiveMaximum()) {
+			parameterNode.put("exclusiveMaximum", true);
+		}
+		if (schemaAnnotation.minLength() > 0) {
+			parameterNode.put("minLength", schemaAnnotation.minLength());
+		}
+		if (schemaAnnotation.maxLength() < Integer.MAX_VALUE) {
+			parameterNode.put("maxLength", schemaAnnotation.maxLength());
+		}
+		if (StringUtils.hasText(schemaAnnotation.pattern())) {
+			parameterNode.put("pattern", schemaAnnotation.pattern());
+		}
+		if (StringUtils.hasText(schemaAnnotation.example())) {
+			parameterNode.put("example", schemaAnnotation.example());
+		}
+		if (schemaAnnotation.allowableValues().length > 0) {
+			var enumArray = parameterNode.putArray("enum");
+			for (String value : schemaAnnotation.allowableValues()) {
+				enumArray.add(value);
+			}
+		}
+		if (schemaAnnotation.multipleOf() > 0) {
+			parameterNode.put("multipleOf", schemaAnnotation.multipleOf());
+		}
+	}
+
+	private static void tryParseDouble(String value, ObjectNode node, String fieldName) {
+		try {
+			node.put(fieldName, Double.parseDouble(value));
+		}
+		catch (NumberFormatException ignored) {
+			// If the value isn't a valid number, skip it.
+		}
 	}
 
 	// Based on the method in ModelOptionsUtils.

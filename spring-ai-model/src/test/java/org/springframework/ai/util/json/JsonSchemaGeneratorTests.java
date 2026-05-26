@@ -162,6 +162,32 @@ class JsonSchemaGeneratorTests {
 	}
 
 	@Test
+	void generateSchemaForMethodWithOpenApiSchemaConstraints() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("schemaConstraintsMethod", int.class, String.class,
+				String.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		JsonNode schemaNode = JsonParser.getJsonMapper().readTree(schema);
+		JsonNode properties = schemaNode.get("properties");
+
+		JsonNode chanceNode = properties.get("chance");
+		assertThat(chanceNode.get("description").asText()).isEqualTo("Chance percentage");
+		assertThat(chanceNode.get("minimum").asDouble()).isEqualTo(0.0);
+		assertThat(chanceNode.get("maximum").asDouble()).isEqualTo(100.0);
+
+		JsonNode codeNode = properties.get("code");
+		assertThat(codeNode.get("minLength").asInt()).isEqualTo(3);
+		assertThat(codeNode.get("maxLength").asInt()).isEqualTo(10);
+		assertThat(codeNode.get("pattern").asText()).isEqualTo("[A-Z]+");
+
+		JsonNode statusNode = properties.get("status");
+		assertThat(statusNode.get("enum")).isNotNull();
+		List<String> enumValues = new java.util.ArrayList<>();
+		statusNode.get("enum").forEach(n -> enumValues.add(n.asText()));
+		assertThat(enumValues).containsExactly("ACTIVE", "INACTIVE", "PENDING");
+	}
+
+	@Test
 	void generateSchemaForMethodWithObjectParam() throws Exception {
 		Method method = TestMethods.class.getDeclaredMethod("objectParamMethod", Object.class);
 
@@ -914,6 +940,12 @@ class JsonSchemaGeneratorTests {
 		}
 
 		public void nullableMethod(@Nullable String username, String password) {
+		}
+
+		public void schemaConstraintsMethod(
+				@Schema(description = "Chance percentage", minimum = "0", maximum = "100") int chance,
+				@Schema(minLength = 3, maxLength = 10, pattern = "[A-Z]+") String code,
+				@Schema(allowableValues = { "ACTIVE", "INACTIVE", "PENDING" }) String status) {
 		}
 
 		public void complexMethod(List<String> items, TestData data, MoreTestData moreData) {
