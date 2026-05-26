@@ -65,6 +65,12 @@ public class AnthropicRateLimit implements RateLimit {
 	private final Duration outputTokensReset;
 
 	public AnthropicRateLimit(Long requestsLimit, Long requestsRemaining, Duration requestsReset, Long tokensLimit,
+			Long tokensRemaining, Duration tokensReset) {
+		this(requestsLimit, requestsRemaining, requestsReset, tokensLimit, tokensRemaining, tokensReset, null, null,
+				null, null, null, null);
+	}
+
+	public AnthropicRateLimit(Long requestsLimit, Long requestsRemaining, Duration requestsReset, Long tokensLimit,
 			Long tokensRemaining, Duration tokensReset, @Nullable Long inputTokensLimit,
 			@Nullable Long inputTokensRemaining, @Nullable Duration inputTokensReset, @Nullable Long outputTokensLimit,
 			@Nullable Long outputTokensRemaining, @Nullable Duration outputTokensReset) {

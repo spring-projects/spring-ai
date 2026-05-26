@@ -89,21 +89,17 @@ class AnthropicChatModelIT {
 		assertThat(metadata.getUsage().getPromptTokens()).isPositive();
 		assertThat(metadata.getUsage().getCompletionTokens()).isPositive();
 		assertThat(metadata.getUsage().getTotalTokens()).isPositive();
+	}
 
-		if (metadata.getRateLimit() instanceof AnthropicRateLimit rateLimit) {
-			assertThat(rateLimit.getRequestsLimit()).isPositive();
-			assertThat(rateLimit.getRequestsRemaining()).isPositive();
-			assertThat(rateLimit.getRequestsReset()).isNotNull();
-			assertThat(rateLimit.getTokensLimit()).isPositive();
-			assertThat(rateLimit.getTokensRemaining()).isPositive();
-			assertThat(rateLimit.getTokensReset()).isNotNull();
-			assertThat(rateLimit.getInputTokensLimit()).isPositive();
-			assertThat(rateLimit.getInputTokensRemaining()).isPositive();
-			assertThat(rateLimit.getInputTokensReset()).isNotNull();
-			assertThat(rateLimit.getOutputTokensLimit()).isPositive();
-			assertThat(rateLimit.getOutputTokensRemaining()).isPositive();
-			assertThat(rateLimit.getOutputTokensReset()).isNotNull();
-		}
+	private static void validateRateLimitMetadata(ChatResponse response) {
+		assertThat(response.getMetadata().getRateLimit()).isInstanceOf(AnthropicRateLimit.class);
+		AnthropicRateLimit rateLimit = (AnthropicRateLimit) response.getMetadata().getRateLimit();
+		assertThat(rateLimit.getRequestsLimit()).isPositive();
+		assertThat(rateLimit.getRequestsRemaining()).isNotNegative();
+		assertThat(rateLimit.getRequestsReset()).isNotNull();
+		assertThat(rateLimit.getTokensLimit()).isPositive();
+		assertThat(rateLimit.getTokensRemaining()).isNotNegative();
+		assertThat(rateLimit.getTokensReset()).isNotNull();
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -396,6 +392,7 @@ class AnthropicChatModelIT {
 
 		logger.info(response.toString());
 		validateChatResponseMetadata(response, model);
+		validateRateLimitMetadata(response);
 	}
 
 	@Test
