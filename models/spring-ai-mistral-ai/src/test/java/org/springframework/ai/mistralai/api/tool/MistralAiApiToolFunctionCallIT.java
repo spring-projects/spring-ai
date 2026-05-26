@@ -45,17 +45,19 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Jason Smith
  */
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
-public class MistralAiApiToolFunctionCallIT {
+class MistralAiApiToolFunctionCallIT {
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
 
-	static final String MISTRAL_AI_CHAT_MODEL = MistralAiApi.ChatModel.MISTRAL_LARGE.getValue();
+	private static final String MISTRAL_AI_CHAT_MODEL = MistralAiApi.ChatModel.MISTRAL_LARGE.getValue();
 
 	private final Logger logger = LoggerFactory.getLogger(MistralAiApiToolFunctionCallIT.class);
 
-	MockWeatherService weatherService = new MockWeatherService();
+	private final MockWeatherService weatherService = new MockWeatherService();
 
-	MistralAiApi completionApi = MistralAiApi.builder().apiKey(System.getenv("MISTRAL_AI_API_KEY")).build();
+	private final MistralAiApi completionApi = MistralAiApi.builder()
+		.apiKey(System.getenv("MISTRAL_AI_API_KEY"))
+		.build();
 
 	private static <T> T fromJson(String json, Class<T> targetClass) {
 		return JsonMapper.shared().readValue(json, targetClass);
@@ -63,7 +65,7 @@ public class MistralAiApiToolFunctionCallIT {
 
 	@Test
 	@SuppressWarnings("null")
-	public void toolFunctionCall() {
+	void toolFunctionCall() {
 
 		// Step 1: send the conversation and available functions to the model
 		var message = new ChatCompletionMessage(
@@ -140,16 +142,17 @@ public class MistralAiApiToolFunctionCallIT {
 			ResponseEntity<ChatCompletion> chatCompletion2 = this.completionApi
 				.chatCompletionEntity(functionResponseRequest);
 
-			logger.info("Final response: " + chatCompletion2.getBody());
+			logger.info("Final response: {}", chatCompletion2.getBody());
 
 			assertThat(chatCompletion2.getBody().choices()).isNotEmpty();
 
 			assertThat(chatCompletion2.getBody().choices().get(0).message().role()).isEqualTo(Role.ASSISTANT);
-			assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("San Francisco")
+			assertThat(chatCompletion2.getBody().choices().get(0).message().extractTextContent())
+				.contains("San Francisco")
 				.containsAnyOf("30.0", "30");
-			assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("Tokyo")
+			assertThat(chatCompletion2.getBody().choices().get(0).message().extractTextContent()).contains("Tokyo")
 				.containsAnyOf("10.0", "10");
-			assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("Paris")
+			assertThat(chatCompletion2.getBody().choices().get(0).message().extractTextContent()).contains("Paris")
 				.containsAnyOf("15.0", "15");
 		}
 

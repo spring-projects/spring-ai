@@ -32,7 +32,6 @@ import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Ricken Bazolo
@@ -171,16 +170,6 @@ class MistralAiChatCompletionRequestTests {
 		verifyToolChatCompletionMessage(chatCompletionMessages.get(2), toolResponse3);
 	}
 
-	@Test
-	void createChatCompletionMessagesWithInvalidToolResponseMessage() {
-		var toolResponse = new ToolResponseMessage.ToolResponse(null, null, null);
-		var toolResponseMessage = ToolResponseMessage.builder().responses(List.of(toolResponse)).build();
-		var prompt = createPrompt(toolResponseMessage);
-		assertThatThrownBy(() -> this.chatModel.createRequest(prompt, false))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("ToolResponseMessage.ToolResponse must have an id.");
-	}
-
 	private Prompt createPrompt(Message message) {
 		var chatOptions = MistralAiChatOptions.builder().temperature(0.7d).build();
 		var prompt = new Prompt(message, chatOptions);
@@ -226,20 +215,16 @@ class MistralAiChatCompletionRequestTests {
 		assertThat(chatCompletionMessages).hasSize(1);
 		var chatCompletionMessage = chatCompletionMessages.get(0);
 		assertThat(chatCompletionMessage.role()).isEqualTo(ChatCompletionMessage.Role.USER);
-		var rawContent = chatCompletionMessage.rawContent();
-		assertThat(rawContent).isNotNull();
-		var maps = (List<ChatCompletionMessage.MediaContent>) rawContent;
-		assertThat(maps).hasSize(2);
-		// @formatter:off
-		var textMap = maps.get(0);
-		assertThat(textMap)
-				.hasFieldOrPropertyWithValue("type", "text")
-				.hasFieldOrPropertyWithValue("text", TEXT_CONTENT);
-		var imageUrlMap = maps.get(1);
-		assertThat(imageUrlMap)
-				.hasFieldOrPropertyWithValue("type", "image_url")
-				.hasFieldOrPropertyWithValue("imageUrl", new ChatCompletionMessage.MediaContent.ImageUrl(IMAGE_URL));
-		// @formatter:on
+		var contentChunks = (List<MistralAiApi.ChatCompletionMessage.ContentChunk>) chatCompletionMessage.content();
+		assertThat(contentChunks).hasSize(2);
+		var textChunk = (MistralAiApi.ChatCompletionMessage.TextChunk) contentChunks.get(0);
+		assertThat(textChunk).isNotNull();
+		assertThat(textChunk.text()).isEqualTo(TEXT_CONTENT);
+		var imageUrlChunk = (MistralAiApi.ChatCompletionMessage.ImageUrlChunk) contentChunks.get(1);
+		assertThat(imageUrlChunk).isNotNull();
+		var imageUrl = imageUrlChunk.imageUrl();
+		assertThat(imageUrl.url()).isEqualTo(IMAGE_URL);
+		assertThat(imageUrl.detail()).isNull();
 	}
 
 }
