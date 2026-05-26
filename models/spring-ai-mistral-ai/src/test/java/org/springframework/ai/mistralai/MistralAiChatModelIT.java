@@ -178,7 +178,7 @@ class MistralAiChatModelIT {
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
-		logger.info("" + actorsFilms);
+		logger.info(actorsFilms.toString());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -201,8 +201,9 @@ class MistralAiChatModelIT {
 
 		String generationTextFromStream = this.streamingChatModel.stream(prompt)
 			.collectList()
-			.block()
+			.blockOptional()
 			.stream()
+			.flatMap(List::stream)
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
@@ -259,8 +260,9 @@ class MistralAiChatModelIT {
 		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(messages, promptOptions));
 
 		String content = response.collectList()
-			.block()
+			.blockOptional()
 			.stream()
+			.flatMap(List::stream)
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
@@ -272,7 +274,7 @@ class MistralAiChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "pixtral-large-latest" })
+	@ValueSource(strings = { "mistral-large-latest" })
 	void multiModalityEmbeddedImage(String modelName) {
 		var imageData = new ClassPathResource("/test.png");
 
@@ -290,7 +292,7 @@ class MistralAiChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "pixtral-large-latest" })
+	@ValueSource(strings = { "mistral-large-latest" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 		var userMessage = UserMessage.builder()
 			.text("Explain what do you see on this picture?")
@@ -319,11 +321,12 @@ class MistralAiChatModelIT {
 			.build();
 
 		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(List.of(userMessage),
-				ChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build()));
+				ChatOptions.builder().model(MistralAiApi.ChatModel.LARGE.getValue()).build()));
 
 		String content = response.collectList()
-			.block()
+			.blockOptional()
 			.stream()
+			.flatMap(List::stream)
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
