@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import io.micrometer.observation.Observation;
@@ -598,12 +599,19 @@ public class DefaultChatClient implements ChatClient {
 
 				observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null))
 					.start();
+				AtomicBoolean observationStopped = new AtomicBoolean();
+				Runnable stopObservation = () -> {
+					if (observationStopped.compareAndSet(false, true)) {
+						observation.stop();
+					}
+				};
 
 				// @formatter:off
 				// Apply the advisor chain that terminates with the ChatModelStreamAdvisor.
 				Flux<ChatClientResponse> chatClientResponse = this.advisorChain.nextStream(chatClientRequest)
 						.doOnError(observation::error)
-						.doFinally(s -> observation.stop())
+						.doOnTerminate(stopObservation)
+						.doOnCancel(stopObservation)
 						.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 				// @formatter:on
 				return CHAT_CLIENT_MESSAGE_AGGREGATOR.aggregateChatClientResponse(chatClientResponse,

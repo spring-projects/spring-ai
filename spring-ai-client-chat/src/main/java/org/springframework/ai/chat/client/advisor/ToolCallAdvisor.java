@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.context.ContextView;
 
 import org.springframework.ai.chat.client.ChatClientMessageAggregator;
 import org.springframework.ai.chat.client.ChatClientRequest;
@@ -262,7 +263,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 			AtomicReference<ChatClientResponse> aggregatedResponseRef = new AtomicReference<>();
 
 			return streamWithToolCallResponses(responseFlux, aggregatedResponseRef, finalRequest, streamAdvisorChain,
-					originalRequest, optionsCopy);
+					originalRequest, optionsCopy, contextView);
 		});
 	}
 
@@ -273,7 +274,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 	private Flux<ChatClientResponse> streamWithToolCallResponses(Flux<ChatClientResponse> responseFlux,
 			AtomicReference<ChatClientResponse> aggregatedResponseRef, ChatClientRequest finalRequest,
 			StreamAdvisorChain streamAdvisorChain, ChatClientRequest originalRequest,
-			ToolCallingChatOptions optionsCopy) {
+			ToolCallingChatOptions optionsCopy, ContextView toolCallContext) {
 
 		return responseFlux.publish(shared -> {
 			// Branch 1: Stream chunks immediately for real-time streaming UX
@@ -284,7 +285,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 			// potentially recurse.
 			Flux<ChatClientResponse> recursionBranch = Flux
 				.defer(() -> this.handleToolCallRecursion(aggregatedResponseRef.get(), finalRequest, streamAdvisorChain,
-						originalRequest, optionsCopy));
+						originalRequest, optionsCopy, toolCallContext));
 
 			// Emit all streaming chunks first, then append any recursive results
 			return streamingBranch.concatWith(recursionBranch);
@@ -299,7 +300,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 	 */
 	private Flux<ChatClientResponse> handleToolCallRecursion(ChatClientResponse aggregatedResponse,
 			ChatClientRequest finalRequest, StreamAdvisorChain streamAdvisorChain, ChatClientRequest originalRequest,
-			ToolCallingChatOptions optionsCopy) {
+			ToolCallingChatOptions optionsCopy, ContextView toolCallContext) {
 
 		if (aggregatedResponse == null) {
 			return Flux.empty();
@@ -322,7 +323,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 		Flux<ChatClientResponse> toolCallFlux = Flux.deferContextual(ctx -> {
 			ToolExecutionResult toolExecutionResult;
 			try {
-				ToolCallReactiveContextHolder.setContext(ctx);
+				ToolCallReactiveContextHolder.setContext(toolCallContext);
 				toolExecutionResult = this.toolCallingManager.executeToolCalls(finalRequest.prompt(), chatResponse);
 			}
 			finally {
