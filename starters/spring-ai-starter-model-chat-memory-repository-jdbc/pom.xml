@@ -59,6 +59,11 @@
             <artifactId>spring-ai-model-chat-memory-repository-jdbc</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-jdbc</artifactId>
+		</dependency>
+
     </dependencies>
 
 </project>

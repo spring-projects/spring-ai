@@ -80,10 +80,7 @@ public final class ChatModelCallAdvisor implements CallAdvisor {
 		if (usesNativeStructuredOutput && StringUtils.hasText(outputSchema) && chatClientRequest.prompt()
 			.getOptions() instanceof StructuredOutputChatOptions structuredOutputChatOptions) {
 
-			// Cast is necessary because of non-linear hierarchy in options interfaces
-			var augmentedOptions = ((StructuredOutputChatOptions.Builder<?>) structuredOutputChatOptions.mutate())
-				.outputSchema(outputSchema)
-				.build();
+			var augmentedOptions = structuredOutputChatOptions.mutate().outputSchema(outputSchema).build();
 			Prompt augmentedPrompt = chatClientRequest.prompt().mutate().chatOptions(augmentedOptions).build();
 
 			return ChatClientRequest.builder()

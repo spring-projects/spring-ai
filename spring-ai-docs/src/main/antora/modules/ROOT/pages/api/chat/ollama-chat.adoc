@@ -12,7 +12,6 @@ You first need access to an Ollama instance. There are a few options, including 
 
 * link:https://ollama.com/download[Download and install Ollama] on your local machine.
 * Configure and xref:api/testcontainers.adoc[run Ollama via Testcontainers].
-* Bind to an Ollama instance via xref:api/cloud-bindings.adoc[Kubernetes Service Bindings].
 
 You can pull the models you want to use in your application from the link:https://ollama.com/library[Ollama model library]:
 
@@ -607,7 +606,7 @@ The `.format(Map)` approach is also supported but requires manual JSON parsing.
 == OpenAI API Compatibility
 
 Ollama is OpenAI API-compatible and you can use the xref:api/chat/openai-chat.adoc[Spring AI OpenAI] client to talk to Ollama and use tools.
-For this, you need to configure the OpenAI base URL to your Ollama instance: `spring.ai.openai.chat.base-url=http://localhost:11434` and select one of the provided Ollama models: `spring.ai.openai.chat.model=mistral`.
+For this, you need to configure the OpenAI base URL to your Ollama instance: `spring.ai.openai.chat.base-url=http://localhost:11434/v1` and select one of the provided Ollama models: `spring.ai.openai.chat.model=mistral`.
 
 TIP: When using the OpenAI client with Ollama, you can pass Ollama-specific parameters (like `top_k`, `repeat_penalty`, `num_predict`) using the xref:api/chat/openai-chat.adoc#openai-compatible-servers[`extraBody` option].
 This allows you to leverage Ollama's full capabilities while using the OpenAI client.
@@ -631,11 +630,13 @@ Here's an example of accessing reasoning content from Ollama through the OpenAI 
 class OllamaConfig {
     @Bean
     OpenAiChatModel ollamaChatModel() {
-        var openAiApi = new OpenAiApi("http://localhost:11434", "ollama");
-        return new OpenAiChatModel(openAiApi,
-            OpenAiChatOptions.builder()
+        return OpenAiChatModel.builder()
+            .options(OpenAiChatOptions.builder()
+                .baseUrl("http://localhost:11434/v1")
+                .apiKey("ollama")
                 .model("deepseek-r1")  // or qwen3, deepseek-v3.1, etc.
-                .build());
+                .build())
+            .build();
     }
 }
 

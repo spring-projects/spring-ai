@@ -27,7 +27,6 @@
 
 	<suppress files=".*BeanOutputConverterTest\.java$" checks="RegexpSinglelineJava"/>
 	<suppress  files="BaseOllamaIT.java" checks="HideUtilityClassConstructor"/>
-	<suppress  files="OpenAiApiBuilderTests.java" checks="RegexpSinglelineJava"/>
 	<suppress  files="AnthropicApiBuilderTests.java" checks="RegexpSinglelineJava"/>
 	<suppress  files="OpenAiChatModelResponseFormatIT.java" checks="RegexpSinglelineJava"/>
 	<suppress files="ClientIT.java" checks="RegexpSinglelineJava"/>
@@ -41,13 +40,10 @@
 	<suppress files="CouchbaseSearchVectorStore.java" checks="RegexpSinglelineJava"/>
 	<suppress files="DeepSeekChatModelIT.java" checks="RegexpSinglelineJava"/>
 	<suppress files="OpenAiSdk*.java" checks="RegexpSinglelineJava"/>
-	<suppress files="OpenAiApi.java" checks="AnnotationLocation"/>
 
 	<suppress files="AzureVectorStore.java" checks="FinalClass"/>
 	<suppress files="CassandraVectorStore.java" checks="FinalClass"/>
 	<suppress files="CoherenceVectorStore.java" checks="FinalClass"/>
-	<suppress files="CosmosDBChatMemoryRepository.java" checks="FinalClass"/>
-	<suppress files="CosmosDBVectorStore.java" checks="FinalClass"/>
 	<suppress files="CouchbaseSearchVectorStore.java" checks="FinalClass"/>
 	<suppress files="GemFireVectorStore.java" checks="FinalClass"/>
 	<suppress files="MilvusVectorStore.java" checks="FinalClass"/>

@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model.chat.client.autoconfigure;
 
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -41,8 +42,14 @@ public class ChatClientBuilderProperties {
 
 	private final Observations observations = new Observations();
 
+	private final ToolCalling toolCalling = new ToolCalling();
+
 	public Observations getObservations() {
 		return this.observations;
+	}
+
+	public ToolCalling getToolCalling() {
+		return this.toolCalling;
 	}
 
 	public boolean isEnabled() {
@@ -51,6 +58,42 @@ public class ChatClientBuilderProperties {
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
+	}
+
+	public static class ToolCalling {
+
+		/**
+		 * Order of the auto-registered {@link ToolCallAdvisor} in the advisor chain.
+		 * Controls which advisors are inside the recursive tool-call loop: only advisors
+		 * with a higher order value (i.e. downstream in the request direction)
+		 * participate in each tool-call iteration.
+		 */
+		private int advisorOrder = ToolCallAdvisor.DEFAULT_ORDER;
+
+		/**
+		 * Whether intermediate tool-call responses are streamed back to the caller during
+		 * a {@code stream()} invocation. When {@code true}, each tool-call iteration
+		 * emits its chunks in real time before the recursive call is made. When
+		 * {@code false} (default), only the final answer is streamed.
+		 */
+		private boolean streamToolCallResponses = false;
+
+		public int getAdvisorOrder() {
+			return this.advisorOrder;
+		}
+
+		public void setAdvisorOrder(int advisorOrder) {
+			this.advisorOrder = advisorOrder;
+		}
+
+		public boolean isStreamToolCallResponses() {
+			return this.streamToolCallResponses;
+		}
+
+		public void setStreamToolCallResponses(boolean streamToolCallResponses) {
+			this.streamToolCallResponses = streamToolCallResponses;
+		}
+
 	}
 
 	public static class Observations {

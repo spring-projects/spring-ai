@@ -3,7 +3,7 @@
 https://docs.docker.com/desktop/features/model-runner/[Docker Model Runner] is an AI Inference Engine offering a wide range of models from link:https://hub.docker.com/u/ai[various providers].
 
 Spring AI integrates with the Docker Model Runner by reusing the existing xref::api/chat/openai-chat.adoc[OpenAI] backed `ChatClient`.
-To do this, set the base URL to `http://localhost:12434/engines` and select one of the provided https://hub.docker.com/u/ai[LLM models].
+To do this, set the base URL to `http://localhost:12434/engines/v1` and select one of the provided https://hub.docker.com/u/ai[LLM models].
 
 Check the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/proxy/DockerModelRunnerWithOpenAiChatModelIT.java[DockerModelRunnerWithOpenAiChatModelIT.java] tests
 for examples of how to use the Docker Model Runner with Spring AI.
@@ -17,7 +17,7 @@ Choose one of the following options to enable the Model Runner:
 Option 1:
 
 * Enable Model Runner `docker desktop enable model-runner --tcp 12434`.
-* Set the base-url to `http://localhost:12434/engines`
+* Set the base-url to `http://localhost:12434/engines/v1`
 
 Option 2:
 
@@ -30,9 +30,11 @@ Option 2:
 private static final DockerModelRunnerContainer DMR = new DockerModelRunnerContainer("alpine/socat:1.7.4.3-r0");
 
 @Bean
-public OpenAiApi chatCompletionApi() {
+public OpenAiChatModel chatModel() {
 	var baseUrl = DMR.getOpenAIEndpoint();
-	return OpenAiApi.builder().baseUrl(baseUrl).apiKey("test").build();
+	return OpenAiChatModel.builder()
+		.options(OpenAiChatOptions.builder().baseUrl(baseUrl).apiKey("test").build())
+		.build();
 }
 ----
 
@@ -95,7 +97,7 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 |====
 | Property | Description | Default
 
-| spring.ai.openai.base-url   | The URL to connect to. Must be set to `https://hub.docker.com/u/ai` | -
+| spring.ai.openai.base-url   | The URL to connect to. Must be set to `http://localhost:12434/engines/v1` | -
 | spring.ai.openai.api-key    | Any string           |  -
 |====
 
@@ -120,7 +122,7 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 
 | spring.ai.openai.chat.enabled (Removed and no longer valid) | Enable OpenAI chat model.  | true
 | spring.ai.model.chat | Enable OpenAI chat model.  | openai
-| spring.ai.openai.chat.base-url   | Optional overrides the `spring.ai.openai.base-url` to provide a chat specific url. Must be set to `http://localhost:12434/engines` |  -
+| spring.ai.openai.chat.base-url   | Optional overrides the `spring.ai.openai.base-url` to provide a chat specific url. Must be set to `http://localhost:12434/engines/v1` |  -
 | spring.ai.openai.chat.api-key   | Optional overrides the spring.ai.openai.api-key to provide chat specific api-key |  -
 | spring.ai.openai.chat.model | The link:https://hub.docker.com/u/ai[LLM model] to use | -
 | spring.ai.openai.chat.temperature | The sampling temperature that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
@@ -179,7 +181,7 @@ Here's a simple example of how to use Docker Model Runner function calling with 
 [source,application.properties]
 ----
 spring.ai.openai.api-key=test
-spring.ai.openai.base-url=http://localhost:12434/engines
+spring.ai.openai.base-url=http://localhost:12434/engines/v1
 spring.ai.openai.chat.model=ai/gemma3:4B-F16
 ----
 
@@ -242,7 +244,7 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 [source,application.properties]
 ----
 spring.ai.openai.api-key=test
-spring.ai.openai.base-url=http://localhost:12434/engines
+spring.ai.openai.base-url=http://localhost:12434/engines/v1
 spring.ai.openai.chat.model=ai/gemma3:4B-F16
 
 # Docker Model Runner doesn't support embeddings, so we need to disable them.

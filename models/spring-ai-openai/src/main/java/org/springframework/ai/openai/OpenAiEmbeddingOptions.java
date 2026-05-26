@@ -89,13 +89,6 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 		return this.dimensions;
 	}
 
-	@Override
-	public String toString() {
-		return "OpenAiEmbeddingOptions{" + "user='" + this.user + '\'' + ", model='" + this.getModel() + '\''
-				+ ", deploymentName='" + this.getDeploymentName() + '\'' + ", encodingFormat='" + this.encodingFormat
-				+ '\'' + ", dimensions=" + this.dimensions + '}';
-	}
-
 	public EmbeddingCreateParams toOpenAiCreateParams(List<String> instructions) {
 
 		EmbeddingCreateParams.Builder builder = EmbeddingCreateParams.builder();
@@ -177,8 +170,13 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 			if (from == null) {
 				return this;
 			}
-			if (from instanceof OpenAiEmbeddingOptions castFrom) {
-				// Parent class fields
+			if (from.getModel() != null) {
+				this.model = from.getModel();
+			}
+			if (from.getDimensions() != null) {
+				this.dimensions = from.getDimensions();
+			}
+			if (from instanceof AbstractOpenAiOptions castFrom) {
 				if (castFrom.getBaseUrl() != null) {
 					this.baseUrl = castFrom.getBaseUrl();
 				}
@@ -187,9 +185,6 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 				}
 				if (castFrom.getCredential() != null) {
 					this.credential = castFrom.getCredential();
-				}
-				if (castFrom.getModel() != null) {
-					this.model = castFrom.getModel();
 				}
 				if (castFrom.getDeploymentName() != null) {
 					this.microsoftDeploymentName = castFrom.getDeploymentName();
@@ -212,15 +207,13 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 				if (castFrom.getCustomHeaders() != null) {
 					this.customHeaders = castFrom.getCustomHeaders();
 				}
-				// Child class fields
+			}
+			if (from instanceof OpenAiEmbeddingOptions castFrom) {
 				if (castFrom.getUser() != null) {
 					this.user = castFrom.getUser();
 				}
 				if (castFrom.getEncodingFormat() != null) {
 					this.encodingFormat = castFrom.getEncodingFormat();
-				}
-				if (castFrom.getDimensions() != null) {
-					this.dimensions = castFrom.getDimensions();
 				}
 			}
 			return this;

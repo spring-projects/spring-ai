@@ -154,13 +154,6 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 				this.timestampGranularities);
 	}
 
-	@Override
-	public String toString() {
-		return "OpenAiAudioTranscriptionOptions{" + "model='" + this.model + '\'' + ", responseFormat="
-				+ this.responseFormat + ", prompt='" + this.prompt + '\'' + ", language='" + this.language + '\''
-				+ ", temperature=" + this.temperature + ", timestampGranularities=" + this.timestampGranularities + '}';
-	}
-
 	public static final class Builder extends AbstractBuilder<OpenAiAudioTranscriptionOptions, Builder> {
 
 		private @Nullable AudioResponseFormat responseFormat;
@@ -205,7 +198,7 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 			if (from.getModel() != null) {
 				this.model = from.getModel();
 			}
-			if (from instanceof OpenAiAudioTranscriptionOptions castFrom) {
+			if (from instanceof AbstractOpenAiOptions castFrom) {
 				if (castFrom.getBaseUrl() != null) {
 					this.baseUrl = castFrom.getBaseUrl();
 				}
@@ -236,6 +229,8 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 				if (castFrom.getCustomHeaders() != null) {
 					this.customHeaders = castFrom.getCustomHeaders();
 				}
+			}
+			if (from instanceof OpenAiAudioTranscriptionOptions castFrom) {
 				if (castFrom.getResponseFormat() != null) {
 					this.responseFormat = castFrom.getResponseFormat();
 				}

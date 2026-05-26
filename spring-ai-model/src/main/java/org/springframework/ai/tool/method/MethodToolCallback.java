@@ -27,7 +27,6 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.core.JacksonException;
-import tools.jackson.core.type.TypeReference;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
@@ -36,7 +35,8 @@ import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.metadata.ToolMetadata;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
@@ -48,6 +48,8 @@ import org.springframework.util.CollectionUtils;
  * @since 1.0.0
  */
 public final class MethodToolCallback implements ToolCallback {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final Logger logger = LoggerFactory.getLogger(MethodToolCallback.class);
 
@@ -103,6 +105,7 @@ public final class MethodToolCallback implements ToolCallback {
 		this.validateToolContextSupport(toolContext);
 
 		Map<String, Object> toolArguments = this.extractToolArguments(toolInput);
+		Assert.state(toolArguments != null, "toolArguments must not be null");
 
 		Object[] methodArguments = this.buildMethodArguments(toolArguments, toolContext);
 
@@ -124,9 +127,9 @@ public final class MethodToolCallback implements ToolCallback {
 		}
 	}
 
-	private Map<String, Object> extractToolArguments(String toolInput) {
+	private @Nullable Map<String, Object> extractToolArguments(String toolInput) {
 		try {
-			return JsonParser.fromJson(toolInput, new TypeReference<>() {
+			return jsonHelper.fromJson(toolInput, new ParameterizedTypeReference<>() {
 			});
 		}
 		catch (Exception ex) {
@@ -154,13 +157,12 @@ public final class MethodToolCallback implements ToolCallback {
 		}
 		try {
 			if (type instanceof Class<?>) {
-				return JsonParser.toTypedObject(value, (Class<?>) type);
+				return jsonHelper.convertToTypedObject(value, (Class<?>) type);
 			}
 
 			// For generic types, use the fromJson method that accepts Type
-
-			String json = JsonParser.toJson(value);
-			return JsonParser.fromJson(json, type);
+			String json = jsonHelper.toJson(value, true);
+			return jsonHelper.fromJson(json, type);
 		}
 		catch (Exception ex) {
 			logger.warn("Conversion from JSON failed", ex);

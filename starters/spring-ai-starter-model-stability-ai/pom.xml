@@ -63,6 +63,8 @@
             <artifactId>spring-ai-stability-ai</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+
+
     </dependencies>
 
 </project>

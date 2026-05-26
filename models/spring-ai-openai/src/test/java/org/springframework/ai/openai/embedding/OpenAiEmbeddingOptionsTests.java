@@ -63,4 +63,18 @@ class OpenAiEmbeddingOptionsTests {
 		assertThat(merged.getEncodingFormat()).isEqualTo(OpenAiEmbeddingOptions.EncodingFormat.FLOAT);
 	}
 
+	@Test
+	void genericEmbeddingOptionsAreMerged() {
+		org.springframework.ai.embedding.EmbeddingOptions source = org.springframework.ai.embedding.EmbeddingOptions
+			.builder()
+			.model("generic-model")
+			.dimensions(1024)
+			.build();
+
+		OpenAiEmbeddingOptions merged = OpenAiEmbeddingOptions.builder().merge(source).build();
+
+		assertThat(merged.getModel()).isEqualTo("generic-model");
+		assertThat(merged.getDimensions()).isEqualTo(1024);
+	}
+
 }

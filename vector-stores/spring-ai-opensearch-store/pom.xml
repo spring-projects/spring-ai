@@ -54,11 +54,6 @@
 			<version>${opensearch-client.version}</version>
 		</dependency>
 
-		<dependency>
-			<groupId>org.apache.httpcomponents.client5</groupId>
-			<artifactId>httpclient5</artifactId>
-		</dependency>
-
 		<!-- TESTING -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>

@@ -34,9 +34,9 @@ import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.ollama.api.common.OllamaApiConstants;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -57,6 +57,8 @@ import org.springframework.web.reactive.function.client.WebClient;
  */
 // @formatter:off
 public final class OllamaApi {
+	private static final JsonHelper jsonHelper = new JsonHelper();
+
 
 	public static Builder builder() {
 		return new Builder();
@@ -463,7 +465,7 @@ public final class OllamaApi {
 				 * @param jsonSchema tool function schema as json.
 				 */
 				public Function(String description, String name, String jsonSchema) {
-					this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
+					this(description, name, jsonHelper.fromJsonToMap(jsonSchema));
 				}
 			}
 		}

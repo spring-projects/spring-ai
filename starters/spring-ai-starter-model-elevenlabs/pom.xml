@@ -49,6 +49,8 @@
 			<artifactId>spring-ai-elevenlabs</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
+
+
 	</dependencies>
 
 </project>

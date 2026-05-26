@@ -155,7 +155,6 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 | spring.ai.openai.chat.enabled (Removed and no longer valid) | Enable OpenAI chat model.  | true
 | spring.ai.model.chat | Enable OpenAI chat model.  | openai
 | spring.ai.openai.chat.base-url   | Optional override for the `spring.ai.openai.base-url` property to provide a chat-specific URL. |  -
-| spring.ai.openai.chat.completions-path   | The path to append to the base URL. |  `/v1/chat/completions`
 | spring.ai.openai.chat.api-key   | Optional override for the `spring.ai.openai.api-key` to provide a chat-specific API Key. |  -
 | spring.ai.openai.chat.organization-id | Optionally, you can specify which organization to use for an API request. |  -
 | spring.ai.openai.chat.project-id      | Optionally, you can specify which project to use for an API request. |  -
@@ -169,10 +168,10 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 | spring.ai.openai.chat.store | Whether to store the output of this chat completion request for use in our model | false
 | spring.ai.openai.chat.metadata | Developer-defined tags and values used for filtering completions in the chat completion dashboard | empty map
 | spring.ai.openai.chat.output-modalities | Output types that you would like the model to generate for this request. Most models are capable of generating text, which is the default.
-The `gpt-4o-audio-preview` model can also be used to generate audio. To request that this model generate both text and audio responses,
+The `gpt-audio` model can also be used to generate audio. To request that this model generate both text and audio responses,
 you can use: `text`, `audio`. Not supported for streaming. | -
 | spring.ai.openai.chat.output-audio | Audio parameters for the audio generation. Required when audio output is requested with `output-modalities`: `audio`.
-Requires the `gpt-4o-audio-preview` model and is not supported for streaming completions. | -
+Requires the `gpt-audio` model and is not supported for streaming completions. | -
 | spring.ai.openai.chat.presencePenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. | -
 | spring.ai.openai.chat.responseFormat.type | Compatible with `GPT-4o`, `GPT-4o mini`, `GPT-4 Turbo` and all `GPT-3.5 Turbo` models newer than `gpt-3.5-turbo-1106`. The `JSON_OBJECT` type enables JSON mode, which guarantees the message the model generates is valid JSON.
 The `JSON_SCHEMA` type enables link:https://platform.openai.com/docs/guides/structured-outputs[Structured Outputs] which guarantees the model will match your supplied JSON schema. The JSON_SCHEMA type requires setting the `responseFormat.schema` property as well. | -
@@ -196,6 +195,12 @@ The `JSON_SCHEMA` type enables link:https://platform.openai.com/docs/guides/stru
 | spring.ai.openai.chat.service-tier | Specifies the link:https://platform.openai.com/docs/api-reference/responses/create#responses_create-service_tier[processing type] used for serving the request. | -
 | spring.ai.openai.chat.extra-body | Additional parameters to include in the request. Accepts any key-value pairs that are flattened to the top level of the JSON request. Intended for use with OpenAI-compatible servers (vLLM, Ollama, etc.) that support parameters beyond the standard OpenAI API. The official OpenAI API rejects unknown parameters with a 400 error. See <<openai-compatible-servers>> for details. | -
 |====
+
+[NOTE]
+====
+When using a local Docker Model Runner that exposes an OpenAI-compatible API, you may need to append `/v1` to your base URL if the server expects it.
+For example: `spring.ai.openai.chat.base-url=http://localhost:12434/engines/v1` instead of `http://localhost:12434/engines`.
+====
 
 [NOTE]
 ====
@@ -320,7 +325,7 @@ var userMessage = new UserMessage("Explain what do you see on this picture?",
         new Media(MimeTypeUtils.IMAGE_PNG, this.imageResource));
 
 ChatResponse response = chatModel.call(new Prompt(this.userMessage,
-        OpenAiChatOptions.builder().model(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
+        OpenAiChatOptions.builder().model("gpt-4o").build()));
 ----
 
 TIP: GPT_4_VISION_PREVIEW will continue to be available only to existing users of this model starting June 17, 2024. If you are not an existing user, please use the GPT_4_O or GPT_4_TURBO models. More details https://platform.openai.com/docs/deprecations/2024-06-06-gpt-4-32k-and-vision-preview-models[here]
@@ -334,7 +339,7 @@ var userMessage = new UserMessage("Explain what do you see on this picture?",
                 URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png")));
 
 ChatResponse response = chatModel.call(new Prompt(this.userMessage,
-        OpenAiChatOptions.builder().model(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
+        OpenAiChatOptions.builder().model("gpt-4o").build()));
 ----
 
 TIP: You can pass multiple images as well.
@@ -356,7 +361,7 @@ view of the fruit inside.
 
 === Audio
 
-OpenAI models that offer input audio multimodal support include `gpt-4o-audio-preview`.
+OpenAI models that offer input audio multimodal support include `gpt-audio`.
 Refer to the link:https://platform.openai.com/docs/guides/audio[Audio] guide for more information.
 
 The OpenAI link:https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages[User Message API] can incorporate a list of base64-encoded audio files with the message.
@@ -364,7 +369,7 @@ Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring
 This type encompasses data and details regarding media attachments in messages, utilizing Spring’s `org.springframework.util.MimeType` and a `org.springframework.core.io.Resource` for the raw media data.
 Currently, OpenAI support only the following media types: `audio/mp3` and `audio/wav`.
 
-Below is a code example excerpted from link:https://github.com/spring-projects/spring-ai/blob/c9a3e66f90187ce7eae7eb78c462ec622685de6c/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatModelIT.java#L442[OpenAiChatModelIT.java], illustrating the fusion of user text with an audio file using the `gpt-4o-audio-preview` model.
+Below is a code example excerpted from link:https://github.com/spring-projects/spring-ai/blob/c9a3e66f90187ce7eae7eb78c462ec622685de6c/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatModelIT.java#L442[OpenAiChatModelIT.java], illustrating the fusion of user text with an audio file using the `gpt-audio` model.
 
 [source,java]
 ----
@@ -374,14 +379,14 @@ var userMessage = new UserMessage("What is this recording about?",
         List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)));
 
 ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-        OpenAiChatOptions.builder().model(OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW).build()));
+        OpenAiChatOptions.builder().model("gpt-audio").build()));
 ----
 
 TIP: You can pass multiple audio files as well.
 
 === Output Audio
 
-OpenAI models that offer input audio multimodal support include `gpt-4o-audio-preview`.
+OpenAI models that offer input audio multimodal support include `gpt-audio`.
 Refer to the link:https://platform.openai.com/docs/guides/audio[Audio] guide for more information.
 
 The OpenAI link:https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages[Assistant Message API] can contain a list of base64-encoded audio files with the message.
@@ -389,7 +394,7 @@ Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring
 This type encompasses data and details regarding media attachments in messages, utilizing Spring’s `org.springframework.util.MimeType` and a `org.springframework.core.io.Resource` for the raw media data.
 Currently, OpenAI support only the following audio types: `audio/mp3` and `audio/wav`.
 
-Below is a code example, illustrating the response of user text along with an audio byte array, using the `gpt-4o-audio-preview` model:
+Below is a code example, illustrating the response of user text along with an audio byte array, using the `gpt-audio` model:
 
 [source,java]
 ----
@@ -397,7 +402,7 @@ var userMessage = new UserMessage("Tell me joke about Spring Framework");
 
 ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
         OpenAiChatOptions.builder()
-            .model(OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW)
+            .model("gpt-audio")
             .outputModalities(List.of("text", "audio"))
             .outputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
             .build()));
@@ -624,15 +629,14 @@ Next, create an `OpenAiChatModel` and use it for text generations:
 
 [source,java]
 ----
-var openAiApi = OpenAiApi.builder()
-            .apiKey(System.getenv("OPENAI_API_KEY"))
-            .build();
-var openAiChatOptions = OpenAiChatOptions.builder()
-            .model("gpt-3.5-turbo")
-            .temperature(0.4)
-            .maxTokens(200)
-            .build();
-var chatModel = new OpenAiChatModel(this.openAiApi, this.openAiChatOptions);
+var chatModel = OpenAiChatModel.builder()
+    .options(OpenAiChatOptions.builder()
+        .apiKey(System.getenv("OPENAI_API_KEY"))
+        .model("gpt-3.5-turbo")
+        .temperature(0.4)
+        .maxTokens(200)
+        .build())
+    .build();
 
 ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
@@ -643,84 +647,7 @@ Flux<ChatResponse> response = this.chatModel.stream(
 ----
 
 The `OpenAiChatOptions` provides the configuration information for the chat requests.
-The `OpenAiApi.Builder` and `OpenAiChatOptions.Builder` are fluent options-builders for API client and chat config respectively.
-
-== Low-level OpenAiApi Client [[low-level-api]]
-
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/api/OpenAiApi.java[OpenAiApi] provides is lightweight Java client for OpenAI Chat API link:https://platform.openai.com/docs/api-reference/chat[OpenAI Chat API].
-
-Following class diagram illustrates the `OpenAiApi` chat interfaces and building blocks:
-
-image::openai-chat-api.jpg[OpenAiApi Chat API Diagram, width=1000, align="center"]
-
-Here is a simple snippet showing how to use the API programmatically:
-
-[source,java]
-----
-OpenAiApi openAiApi = OpenAiApi.builder()
-            .apiKey(System.getenv("OPENAI_API_KEY"))
-            .build();
-
-ChatCompletionMessage chatCompletionMessage =
-    new ChatCompletionMessage("Hello world", Role.USER);
-
-// Sync request
-ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(this.chatCompletionMessage), "gpt-3.5-turbo", 0.8, false));
-
-// Streaming request
-Flux<ChatCompletionChunk> streamResponse = this.openAiApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(this.chatCompletionMessage), "gpt-3.5-turbo", 0.8, true));
-----
-
-Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/api/OpenAiApi.java[OpenAiApi.java]'s JavaDoc for further information.
-
-=== Low-level API Examples
-
-* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/api/OpenAiApiIT.java[OpenAiApiIT.java] tests provide some general examples of how to use the lightweight library.
-
-* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/api/tool/OpenAiApiToolFunctionCallIT.java[OpenAiApiToolFunctionCallIT.java] tests show how to use the low-level API to call tool functions.
-Based on the link:https://platform.openai.com/docs/guides/function-calling/parallel-function-calling[OpenAI Function Calling] tutorial.
-
-== Low-level OpenAiFileApi Client [[low-level-file-api]]
-
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/api/OpenAiFileApi.java[OpenAiFileApi] provides a lightweight Java client for the OpenAI Files API, enabling file management operations such as uploading, listing, retrieving, deleting files, and accessing file contents. link:https://platform.openai.com/docs/api-reference/files[OpenAI File API]
-
-Here is a simple snippet showing how to use the API programmatically:
-
-[source,java]
-----
-OpenAiFileApi openAiFileApi = OpenAiFileApi.builder()
-			.apiKey(new SimpleApiKey(System.getenv("OPENAI_API_KEY")))
-			.build();
-
-// Upload a file
-byte[] fileBytes = Files.readAllBytes(Paths.get("evals.jsonl")); 
-OpenAiFileApi.UploadFileRequest uploadRequest = OpenAiFileApi.UploadFileRequest.builder()
-			.file(fileBytes)
-			.fileName("evals-data.jsonl")
-			.purpose(OpenAiFileApi.Purpose.EVALS)
-			.build();
-ResponseEntity<OpenAiFileApi.FileObject> uploadResponse = openAiFileApi.uploadFile(uploadRequest);
-
-// List files
-OpenAiFileApi.ListFileRequest listRequest = OpenAiFileApi.ListFileRequest.builder()
-			.purpose(OpenAiFileApi.Purpose.EVALS)
-			.build();
-ResponseEntity<OpenAiFileApi.FileObjectResponse> listResponse = openAiFileApi.listFiles(listRequest);
-
-// Retrieve file information
-ResponseEntity<OpenAiFileApi.FileObject> fileInfo = openAiFileApi.retrieveFile("file-id");
-
-// Delete a file
-ResponseEntity<OpenAiFileApi.DeleteFileResponse> deleteResponse = openAiFileApi.deleteFile("file-id");
-
-// Retrieve file content
-ResponseEntity<String> fileContent = openAiFileApi.retrieveFileContent("file-id");
-----
-
-=== Low-level File API Examples
-* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/api/OpenAiFileApiIT.java[OpenAiFileApiIT.java] tests provide some general examples of how to use the lightweight file api library.
+The `OpenAiChatOptions.Builder` is a fluent options-builder for the chat config.
 
 == API Key Management
 
@@ -737,7 +664,7 @@ spring.ai.openai.api-key=your-api-key-here
 
 === Custom API Key Configuration
 
-You can create a custom instance of `OpenAiApi` with your own `ApiKey` implementation using the builder pattern:
+You can create a custom instance of `OpenAiChatModel` with your own `ApiKey` implementation using the builder pattern:
 
 [source,java]
 ----
@@ -749,13 +676,11 @@ ApiKey customApiKey = new ApiKey() {
     }
 };
 
-OpenAiApi openAiApi = OpenAiApi.builder()
-    .apiKey(customApiKey)
-    .build();
-
-// Create a chat model with the custom OpenAiApi instance
+// Create a chat model with the custom API key
 OpenAiChatModel chatModel = OpenAiChatModel.builder()
-    .openAiApi(openAiApi)
+    .options(OpenAiChatOptions.builder()
+        .apiKey(customApiKey.getValue())
+        .build())
     .build();
 // Build the ChatClient using the custom chat model
 ChatClient openAiChatClient = ChatClient.builder(chatModel).build();

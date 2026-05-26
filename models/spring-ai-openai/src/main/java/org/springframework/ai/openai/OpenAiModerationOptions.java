@@ -85,14 +85,6 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 				getTimeout(), getMaxRetries(), getProxy(), getCustomHeaders());
 	}
 
-	@Override
-	public String toString() {
-		return "OpenAiModerationOptions{" + "model='" + getModel() + '\'' + ", baseUrl='" + getBaseUrl() + '\''
-				+ ", organizationId='" + getOrganizationId() + '\'' + ", microsoftDeploymentName='"
-				+ getMicrosoftDeploymentName() + '\'' + ", timeout=" + getTimeout() + ", maxRetries=" + getMaxRetries()
-				+ '}';
-	}
-
 	public static final class Builder extends AbstractBuilder<OpenAiModerationOptions, Builder> {
 
 		private Builder() {
@@ -124,7 +116,8 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 			if (options.getModel() != null) {
 				this.model = options.getModel();
 			}
-			if (options instanceof OpenAiModerationOptions castFrom) {
+			if (options instanceof AbstractOpenAiOptions castFrom) {
+
 				if (castFrom.getBaseUrl() != null) {
 					this.baseUrl = castFrom.getBaseUrl();
 				}
@@ -134,8 +127,8 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 				if (castFrom.getCredential() != null) {
 					this.credential = castFrom.getCredential();
 				}
-				if (castFrom.getMicrosoftDeploymentName() != null) {
-					this.microsoftDeploymentName = castFrom.getMicrosoftDeploymentName();
+				if (castFrom.getDeploymentName() != null) {
+					this.microsoftDeploymentName = castFrom.getDeploymentName();
 				}
 				if (castFrom.getMicrosoftFoundryServiceVersion() != null) {
 					this.microsoftFoundryServiceVersion = castFrom.getMicrosoftFoundryServiceVersion();
@@ -155,6 +148,9 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 				if (castFrom.getCustomHeaders() != null) {
 					this.customHeaders = castFrom.getCustomHeaders();
 				}
+			}
+			if (options instanceof OpenAiModerationOptions castFrom) {
+				// No specific properties to merge for now
 			}
 			return this;
 		}

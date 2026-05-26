@@ -137,7 +137,7 @@ public EmbeddingModel embeddingModel() {
     String apiKey = System.getenv("OPENAI_API_KEY");
 
     // Can be any other EmbeddingModel implementation
-    return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(apiKey).build());
+    return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder().apiKey(apiKey).build());
 }
 ----
 

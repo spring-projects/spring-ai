@@ -58,7 +58,6 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -66,6 +65,7 @@ import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -85,6 +85,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(classes = MistralAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 class MistralAiChatModelIT {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final Logger logger = LoggerFactory.getLogger(MistralAiChatModelIT.class);
 
@@ -503,7 +505,7 @@ class MistralAiChatModelIT {
 					.get(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey());
 
 				if (Boolean.TRUE.equals(nativeFlag) && schemaString != null) {
-					var actualSchemaMap = ModelOptionsUtils.jsonToMap(schemaString);
+					var actualSchemaMap = jsonHelper.fromJsonToMap(schemaString);
 					if (expectedOutputSchemaMap.equals(actualSchemaMap)) {
 						nativeStructuredOutputUsed.set(true);
 					}

@@ -89,6 +89,13 @@
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-mcp-client-common</artifactId>
+			<version>${project.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-mcp-client-httpclient</artifactId>
 			<version>${project.version}</version>
 			<optional>true</optional>
@@ -103,10 +110,6 @@
 
         <!-- production dependencies -->
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
-        </dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-mongodb</artifactId>
@@ -229,4 +232,31 @@
         </dependency>
 
     </dependencies>
+
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>${maven-enforcer-plugin.version}</version>
+				<executions>
+					<execution>
+						<id>maven-enforcer</id>
+						<configuration>
+							<rules>
+								<bannedDependencies>
+									<includes combine.children="append">
+										<!-- allow a compile-time, non-optional dependency to boot. this overrides conf from the parent pom -->
+										<include>org.springframework.boot</include>
+									</includes>
+								</bannedDependencies>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
 </project>

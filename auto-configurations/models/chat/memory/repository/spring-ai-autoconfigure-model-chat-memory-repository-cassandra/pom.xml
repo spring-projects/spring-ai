@@ -27,6 +27,7 @@
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-model-chat-memory-repository-cassandra</artifactId>
 			<version>${project.parent.version}</version>
+			<optional>true</optional>
 		</dependency>
 
 		<dependency>
@@ -38,24 +39,20 @@
 		<!-- Boot dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter</artifactId>
+			<artifactId>spring-boot-autoconfigure</artifactId>
+			<optional>true</optional>
 		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-cassandra</artifactId>
-		</dependency>
-
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-configuration-processor</artifactId>
 			<optional>true</optional>
 		</dependency>
-
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-autoconfigure-processor</artifactId>
 			<optional>true</optional>
 		</dependency>
+
 
 		<!-- Test dependencies -->
 		<dependency>
@@ -82,6 +79,12 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-cassandra</artifactId>
 			<scope>test</scope>
 		</dependency>
 

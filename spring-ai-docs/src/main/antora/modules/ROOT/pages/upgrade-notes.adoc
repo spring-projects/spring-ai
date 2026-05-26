@@ -1,6 +1,395 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-2-0-0-RC1]]
+== Upgrading to 2.0.0-RC1
+
+=== JSON Utilities Refactoring
+
+==== New: `JsonHelper` and Updated `JacksonUtils`
+
+A new `JsonHelper` class has been introduced in `spring-ai-commons` as the canonical way to perform JSON serialization and deserialization.
+It is instantiable and accepts a custom `JsonMapper`, making it straightforward to customize JSON behavior per use case.
+`JacksonUtils` gains a new `getDefaultJsonMapper()` static method that returns a shared, pre-configured `JsonMapper` instance.
+
+`JsonHelper` centralizes JSON operations previously spread across `JsonParser`, `ModelOptionsUtils`, and `McpJsonParser`.
+The default constructor uses the shared mapper from `JacksonUtils.getDefaultJsonMapper()`.
+Inject a custom `JsonMapper` if you need different serialization settings:
+
+[source,java]
+----
+// Default — uses the shared JsonMapper from JacksonUtils
+JsonHelper jsonHelper = new JsonHelper();
+
+// Custom — supply your own JsonMapper
+JsonMapper myMapper = JsonMapper.builder()
+    .addModule(new JavaTimeModule())
+    .build();
+JsonHelper customHelper = new JsonHelper(myMapper);
+----
+
+==== Deprecated: `JsonParser`
+
+`JsonParser` (in `org.springframework.ai.util.json`) is deprecated for removal. All methods now delegate to `JsonHelper`.
+
+===== Impact
+
+Code that calls `JsonParser` methods will see deprecation warnings at compile time.
+
+===== Migration
+
+[cols="1,1", options="header"]
+|===
+| Before | After
+| `JsonParser.getJsonMapper()` | `JacksonUtils.getDefaultJsonMapper()`
+| `JsonParser.fromJson(json, MyType.class)` | `jsonHelper.fromJson(json, MyType.class)`
+| `JsonParser.fromJson(json, type)` | `jsonHelper.fromJson(json, type)`
+| `JsonParser.toJson(object)` | `jsonHelper.toJson(object)`
+| `JsonParser.toTypedObject(value, type)` | `jsonHelper.convertToTypedObject(value, type)`
+|===
+
+==== Removed: JSON Methods from `ModelOptionsUtils`
+
+The following members of `ModelOptionsUtils` have been removed, since model options no longer depend on Jackson directly.
+
+[cols="1,1", options="header"]
+|===
+| Removed member | Replacement
+| `ModelOptionsUtils.JSON_MAPPER` | `JacksonUtils.getDefaultJsonMapper()`
+| `ModelOptionsUtils.jsonToMap(String)` | `jsonHelper.fromJsonToMap(json)`
+| `ModelOptionsUtils.jsonToObject(String, Class<T>)` | `jsonHelper.fromJson(json, type)`
+| `ModelOptionsUtils.toJsonString(Object)` | `jsonHelper.toJson(object)`
+| `ModelOptionsUtils.toJsonStringPrettyPrinter(Object)` | `JacksonUtils.getDefaultJsonMapper().writerWithDefaultPrettyPrinter().writeValueAsString(object)`
+| `ModelOptionsUtils.getJsonSchema(Type, boolean)` | `JsonSchemaUtils.getJsonSchema(type, toUpperCase)`
+| `ModelOptionsUtils.getJsonSchema(Type)` | `JsonSchemaUtils.getJsonSchema(type)`
+| `ModelOptionsUtils.toUpperCaseTypeValues(ObjectNode)` | `JsonSchemaUtils.toUpperCaseTypeValues(node)`
+|===
+
+===== Impact
+
+Code that references the removed fields or methods will fail to compile.
+
+===== Migration
+
+[source,java]
+----
+// Before
+import org.springframework.ai.model.ModelOptionsUtils;
+
+Map<String, Object> map = ModelOptionsUtils.jsonToMap(jsonString);
+String json = ModelOptionsUtils.toJsonString(myObject);
+JsonMapper mapper = ModelOptionsUtils.JSON_MAPPER;
+
+// After
+import org.springframework.ai.util.JsonHelper;
+import org.springframework.ai.util.JacksonUtils;
+
+private static final JsonHelper jsonHelper = new JsonHelper();
+
+Map<String, Object> map = jsonHelper.fromJsonToMap(jsonString);
+String json = jsonHelper.toJson(myObject);
+JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+----
+
+==== Removed: `McpJsonParser`
+
+`McpJsonParser` (in `org.springframework.ai.mcp.annotation.method.tool.utils`) has been deleted.
+Its functionality is now covered by `JsonHelper`.
+
+===== Migration
+
+[cols="1,1", options="header"]
+|===
+| Before | After
+| `McpJsonParser.toMap(object)` | `jsonHelper.convertToMap(object)`
+| `McpJsonParser.fromMap(map, MyType.class)` | `jsonHelper.convertFromMap(map, MyType.class)`
+| `McpJsonParser.fromMap(map, typeReference)` | `jsonHelper.convertFromMap(map, parameterizedTypeReference)`
+|===
+
+=== MCP Elicitation API: `TypeReference` Replaced by `ParameterizedTypeReference`
+
+The `elicit(...)` overloads that previously accepted `tools.jackson.core.type.TypeReference<T>` in `McpAsyncRequestContext` and `McpSyncRequestContext` now accept `org.springframework.core.ParameterizedTypeReference<T>`.
+
+==== Impact
+
+Any code that calls these methods with a Jackson `TypeReference` will fail to compile.
+
+Affected method signatures:
+
+* `McpAsyncRequestContext.elicit(TypeReference<T>)`
+* `McpAsyncRequestContext.elicit(Consumer<ElicitationSpec>, TypeReference<T>)`
+* `McpSyncRequestContext.elicit(TypeReference<T>)`
+* `McpSyncRequestContext.elicit(Consumer<ElicitationSpec>, TypeReference<T>)`
+
+==== Migration
+
+Replace the Jackson `TypeReference` anonymous class with a Spring `ParameterizedTypeReference` anonymous class:
+
+[source,java]
+----
+// Before
+import tools.jackson.core.type.TypeReference;
+
+Mono<StructuredElicitResult<Map<String, Object>>> result =
+    context.elicit(e -> e.message("Please fill in the form"),
+        new TypeReference<Map<String, Object>>() {});
+
+// After
+import org.springframework.core.ParameterizedTypeReference;
+
+Mono<StructuredElicitResult<Map<String, Object>>> result =
+    context.elicit(e -> e.message("Please fill in the form"),
+        new ParameterizedTypeReference<Map<String, Object>>() {});
+----
+
+The same change applies to `McpSyncRequestContext`:
+
+[source,java]
+----
+// Before
+StructuredElicitResult<Person> result =
+    context.elicit(e -> e.message("Provide your details"),
+        new TypeReference<Person>() {});
+
+// After
+StructuredElicitResult<Person> result =
+    context.elicit(e -> e.message("Provide your details"),
+        new ParameterizedTypeReference<Person>() {});
+----
+
+[[upgrading-to-2-0-0-M7]]
+== Upgrading to 2.0.0-M7
+
+=== ChatClient Tool Calling
+
+==== New: Automatic `ToolCallAdvisor` Registration
+
+`ChatClient` now automatically registers a `ToolCallAdvisor` in the advisor chain whenever tools are configured on a call (via `.tools(...)`, `.toolCallbacks(...)`, or defaults set on the builder). Previously, callers had to add `ToolCallAdvisor` manually.
+
+===== Impact
+
+Existing code that already adds a `ToolCallAdvisor` explicitly will have the advisor present in the chain twice — once from the explicit add and once from auto-registration.
+
+===== Migration
+
+Remove the explicit `ToolCallAdvisor` from the chain and let auto-registration handle it. If you need a custom configuration, either supply a pre-configured `ToolCallAdvisor.Builder` at `ChatClient` construction time (see the xref:api/chatclient.adoc#_customizing_the_default_toolcalladvisor[Customizing the Default ToolCallAdvisor] section), or disable auto-registration and register the advisor manually:
+
+[source,java]
+----
+// Before — manual registration
+chatClient.prompt("What's the weather?")
+    .tools(weatherTool)
+    .advisors(ToolCallAdvisor.builder().build())
+    .call().content();
+
+// After — auto-registration handles it; no explicit advisor needed
+chatClient.prompt("What's the weather?")
+    .tools(weatherTool)
+    .call().content();
+
+// Or, to keep full control, disable auto-registration explicitly
+chatClient.prompt("What's the weather?")
+    .tools(weatherTool)
+    .advisors(
+        AdvisorParams.toolCallAdvisorAutoRegister(false),
+        ToolCallAdvisor.builder().build()
+    )
+    .call().content();
+----
+
+==== New: `ToolAdvisor` Marker Interface
+
+A `ToolAdvisor` marker interface has been added. `ToolCallAdvisor` implements it. `DefaultChatClient` checks for this marker to decide whether to auto-register a `ToolCallAdvisor` — if any advisor in the chain already implements `ToolAdvisor`, auto-registration is skipped.
+
+Custom advisors that own the tool-call lifecycle should implement `ToolAdvisor` to prevent a duplicate `ToolCallAdvisor` from being added automatically.
+
+==== New: `MemoryAdvisor` Marker Interface
+
+A `MemoryAdvisor` marker interface has been added. `BaseChatMemoryAdvisor` now extends it. `DefaultChatClient` uses this marker to detect downstream memory advisors and disable the `ToolCallAdvisor`'s internal conversation history when one is present.
+
+Custom memory advisors that do not extend `BaseChatMemoryAdvisor` but should integrate with the tool-call auto-registration logic should implement `MemoryAdvisor`.
+
+==== New: `ChatClient.builder()` Overload for Custom `ToolCallAdvisor` Configuration
+
+A new 5-argument `ChatClient.builder()` static method and a matching `DefaultChatClientBuilder` constructor accept a `ToolCallAdvisor.Builder<?>` to configure the advisor used during auto-registration:
+
+[source,java]
+----
+ChatClient chatClient = ChatClient
+    .builder(chatModel, observationRegistry, null, null,
+            ToolCallAdvisor.builder().toolCallingManager(myToolCallingManager))
+    .build();
+----
+
+Spring Boot users should prefer one of the following instead:
+
+* Set `spring.ai.chat.client.tool-calling.advisor-order` to control the advisor's position in the chain.
+* Declare a `ToolCallAdvisor.Builder<?>` bean to fully replace the auto-configured builder (suppressed via `@ConditionalOnMissingBean`).
+
+==== Deprecated: Scattered Tool Methods on `ChatClient`
+
+The individual `toolCallbacks()`, `toolContext()`, and `toolNames()` methods on `ChatClientRequestSpec`, and their `defaultToolCallbacks()`, `defaultToolContext()`, and `defaultToolNames()` counterparts on `ChatClient.Builder`, are deprecated in favour of the unified `tools(Consumer<ToolSpec>)` / `defaultTools(Consumer<ToolSpec>)` API.
+
+===== Migration
+
+[source,java]
+----
+// Before
+chatClient.prompt()
+    .toolCallbacks(myCallback)
+    .toolContext(Map.of("tenantId", "acme"))
+    .call().content();
+
+// After
+chatClient.prompt()
+    .tools(t -> t.callbacks(myCallback).context("tenantId", "acme"))
+    .call().content();
+----
+
+==== Deprecated: Spring Bean Tool Resolution (`SpringBeanToolCallbackResolver`)
+
+`SpringBeanToolCallbackResolver` and the pattern of declaring bare `Function` / `Supplier` / `Consumer` beans and referencing them by name via `toolNames()` are deprecated since 2.0.0 and will be removed in 3.0.0.
+
+===== Migration
+
+Declare `ToolCallback` beans directly instead of raw functional beans:
+
+[source,java]
+----
+// Before — bare Function bean resolved by name at runtime
+@Bean
+@Description("Get the weather in location")
+Function<WeatherRequest, WeatherResponse> currentWeather() {
+    return weatherService::getWeather;
+}
+
+// After — explicit ToolCallback bean
+@Bean
+ToolCallback currentWeather() {
+    return FunctionToolCallback.builder("currentWeather", weatherService::getWeather)
+        .description("Get the weather in location")
+        .inputType(WeatherRequest.class)
+        .build();
+}
+----
+
+Then register the bean via the `ToolSpec` consumer:
+
+[source,java]
+----
+chatClient.prompt("What's the weather like in Copenhagen?")
+    .tools(t -> t.callbacks(currentWeather))
+    .call().content();
+----
+
+Alternatively, use `@Tool`-annotated methods for the declarative approach (see xref:api/tools.adoc[Tools API]).
+
+=== Cloud Bindings
+
+The `spring-ai-spring-cloud-bindings` module that provided integration for https://github.com/spring-cloud/spring-cloud-bindings has been removed.
+
+=== BeanOutputConverter JSON Schema Generation
+
+`BeanOutputConverter` now delegates JSON Schema generation to `JsonSchemaGenerator`, aligning structured output conversion with the JSON Schema behavior used for tool calling.
+
+==== Impact
+
+* Kotlin properties that are optional in their primary constructor (nullable or declared with a default value) are no longer included in the JSON Schema `required` array.
+* Properties annotated with `@JsonProperty(required = false)`, including `@JsonProperty` declarations where `required` is not specified, are no longer treated as required.
+* Generated schemas now include OpenAPI-style `format` hints for primitive types (e.g., `int32` for `int`, `int64` for `long`, `date-time` for `LocalDateTime`), matching the format conventions used for tool calling.
+* The `BeanOutputConverter.postProcessSchema(JsonNode)` extension point has been removed. Custom subclasses overriding this method will fail to compile.
+
+==== Migration
+
+To customize JSON Schema generation, override `BeanOutputConverter.generateSchema()` instead. Subclasses can post-process the default schema by delegating to `super.generateSchema()`.
+
+[source,java]
+----
+// Before
+class CustomConverter extends BeanOutputConverter<MyType> {
+
+    CustomConverter() {
+        super(MyType.class);
+    }
+
+    @Override
+    protected void postProcessSchema(JsonNode schema) {
+        // mutate schema
+    }
+}
+
+// After
+class CustomConverter extends BeanOutputConverter<MyType> {
+
+    CustomConverter() {
+        super(MyType.class);
+    }
+
+    @Override
+    protected String generateSchema() {
+        String schema = super.generateSchema();
+        // post-process schema
+        return schema;
+    }
+}
+----
+
+=== Azure Cosmos DB Support
+
+The Azure Cosmos DB vector store (`spring-ai-azure-cosmos-db-store`) and chat memory repository (`spring-ai-model-chat-memory-repository-cosmos-db`) modules, along with their corresponding auto-configurations and starters, have been removed from the Spring AI project.
+
+Azure Cosmos DB support is now available as an external module maintained by the Azure Cosmos DB team.
+See https://azurecosmosdb.github.io/spring-ai/docs/index.html for documentation and dependency coordinates.
+
+=== MCP SDK 2.0.0-M3
+
+Spring AI now depends on MCP SDK 2.0.0-M3, which makes previously optional fields mandatory and enforces them at construction time via `Assert.notNull()` in compact record constructors.
+
+==== Breaking: `CreateMessageResult` — `model` now required
+
+[source,java]
+----
+// Before
+CreateMessageResult.builder()
+    .content(new TextContent(response))
+    .build();
+
+// After
+CreateMessageResult.builder(Role.ASSISTANT, response, modelHint)
+    .build();
+----
+
+==== Breaking: `CreateMessageRequest` — `maxTokens` now required
+
+[source,java]
+----
+// Before
+CreateMessageRequest.builder()
+    .messages(messages)
+    .build();
+
+// After
+CreateMessageRequest.builder(messages, 500)
+    .build();
+----
+
+==== Deprecated Builder APIs
+
+The following no-arg constructors and `builder()` methods are deprecated in favour of factory methods that require mandatory arguments upfront:
+
+[cols="1,1"]
+|===
+|Deprecated |Replacement
+
+|`new TextContent(text)` |`TextContent.builder(text).build()`
+|`new ReadResourceResult(contents)` |`ReadResourceResult.builder(contents).build()`
+|`new GetPromptResult(description, messages)` |`GetPromptResult.builder(messages).description(description).build()`
+|`new ProgressNotification(token, progress, total, message)` |`ProgressNotification.builder(token, progress).total(total).message(message).build()`
+|`LoggingMessageNotification.builder()` |`LoggingMessageNotification.builder(level, data)`
+|`ElicitRequest.builder()` |`ElicitRequest.builder(message, requestedSchema)`
+|`CallToolRequest.builder()` |`CallToolRequest.builder(name)`
+|===
+
 [[upgrading-to-2-0-0-M6]]
 == Upgrading to 2.0.0-M6
 
@@ -165,6 +554,10 @@ Existing users should use the `spring-ai-openai` module (and related starter and
 The `spring-ai-openai-sdk` module (and its associated Spring Boot starter `spring-ai-starter-model-openai-sdk` and auto-configuration `spring-ai-autoconfigure-model-openai-sdk`) have been **removed** from Spring AI as of version `2.0.0-M5`.
 
 Existing users should use the `spring-ai-openai` module (and related starter and auto-configuration) instead and adapt class names accordingly (by removing the `Sdk` suffix for example) and configuration properties accordingly.
+
+==== `spring-ai-oci-genai` module removal
+
+The related modules can now be found at https://github.com/oracle/spring-cloud-oracle/tree/main/spring-ai-oracle.
 
 === ChatOptions Handling
 Users can interact with ChatModels in two ways:

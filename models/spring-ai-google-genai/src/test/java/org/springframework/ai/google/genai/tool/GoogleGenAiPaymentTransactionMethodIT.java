@@ -32,6 +32,7 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -152,8 +153,11 @@ public class GoogleGenAiPaymentTransactionMethodIT {
 		}
 
 		@Bean
-		public ChatClient chatClient(GoogleGenAiChatModel chatModel) {
-			return ChatClient.builder(chatModel).build();
+		public ChatClient chatClient(GoogleGenAiChatModel chatModel, ToolCallingManager toolCallingManager) {
+			return ChatClient
+				.builder(chatModel, ObservationRegistry.NOOP, null, null,
+						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+				.build();
 		}
 
 		@Bean

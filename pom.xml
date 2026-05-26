@@ -42,25 +42,20 @@
 		<module>advisors/spring-ai-advisors-vector-store</module>
 
 		<module>memory/repository/spring-ai-model-chat-memory-repository-cassandra</module>
-		<module>memory/repository/spring-ai-model-chat-memory-repository-cosmos-db</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-jdbc</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-mongodb</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-neo4j</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-redis</module>
 
-
-
 		<module>spring-ai-retry</module>
 		<module>spring-ai-spring-boot-docker-compose</module>
 		<module>spring-ai-spring-boot-testcontainers</module>
-		<module>spring-ai-spring-cloud-bindings</module>
 
 		<module>document-readers/jsoup-reader</module>
 		<module>document-readers/markdown-reader</module>
 		<module>document-readers/pdf-reader</module>
 		<module>document-readers/tika-reader</module>
 
-		<module>vector-stores/spring-ai-azure-cosmos-db-store</module>
 		<module>vector-stores/spring-ai-azure-store</module>
 		<module>vector-stores/spring-ai-cassandra-store</module>
 		<module>vector-stores/spring-ai-chroma-store</module>
@@ -92,7 +87,6 @@
 
 		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory</module>
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-cassandra</module>
-		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-cosmos-db</module>
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-jdbc</module>
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-mongodb</module>
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-neo4j</module>
@@ -110,7 +104,6 @@
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-minimax</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-mistral-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-ollama</module>
-
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-postgresml-embedding</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-stability-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-transformers</module>
@@ -127,7 +120,6 @@
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux</module>
 
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure-cosmos-db</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-cassandra</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-chroma</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-couchbase</module>
@@ -152,7 +144,6 @@
 
 		<module>starters/spring-ai-starter-vector-store-aws-opensearch</module>
 		<module>starters/spring-ai-starter-vector-store-azure</module>
-		<module>starters/spring-ai-starter-vector-store-azure-cosmos-db</module>
 		<module>starters/spring-ai-starter-vector-store-cassandra</module>
 		<module>starters/spring-ai-starter-vector-store-chroma</module>
 		<module>starters/spring-ai-starter-vector-store-couchbase</module>
@@ -207,7 +198,6 @@
 
 		<module>starters/spring-ai-starter-model-chat-memory</module>
 		<module>starters/spring-ai-starter-model-chat-memory-repository-cassandra</module>
-		<module>starters/spring-ai-starter-model-chat-memory-repository-cosmos-db</module>
 		<module>starters/spring-ai-starter-model-chat-memory-repository-jdbc</module>
 		<module>starters/spring-ai-starter-model-chat-memory-repository-mongodb</module>
 		<module>starters/spring-ai-starter-model-chat-memory-repository-neo4j</module>
@@ -271,87 +261,76 @@
 
 		<!-- production dependencies -->
 		<spring-boot.version>4.1.0-RC1</spring-boot.version>
-		<ST4.version>4.3.4</ST4.version>
-		<azure-identity.version>1.18.2</azure-identity.version>
-		<openai-sdk.version>4.34.0</openai-sdk.version>
-		<anthropic-sdk.version>2.30.0</anthropic-sdk.version>
-		<jtokkit.version>1.1.0</jtokkit.version>
-		<kotlin.version>2.3.20</kotlin.version>
 
-		<!-- NOTE: keep bedrockruntime and awssdk versions aligned -->
-		<bedrockruntime.version>2.41.22</bedrockruntime.version>
-		<awssdk.version>2.41.22</awssdk.version>
-
-		<djl.version>0.32.0</djl.version>
-		<com.google.cloud.version>26.72.0</com.google.cloud.version>
-		<com.google.genai.version>1.44.0</com.google.genai.version>
-		<jsonschema.version>5.0.0</jsonschema.version>
-		<swagger-annotations.version>2.2.38</swagger-annotations.version>
-		<mockk-jvm.version>1.13.13</mockk-jvm.version>
-		<spring-cloud-bindings.version>2.0.3</spring-cloud-bindings.version>
-
-		<jsoup.version>1.22.1</jsoup.version>
-
-		<!-- Protobuf -->
-		<protobuf-java.version>3.25.8</protobuf-java.version>
-
-		<!-- GRPC netty shaded -->
-		<grpc-netty-shaded.version>1.76.0</grpc-netty-shaded.version>
-
-		<!-- readers/writer/stores dependencies-->
-		<pdfbox.version>3.0.7</pdfbox.version>
-		<pgvector.version>0.1.6</pgvector.version>
-		<sap.hanadb.version>2.20.11</sap.hanadb.version>
-		<coherence.version>24.09</coherence.version>
-		<milvus.version>2.5.8</milvus.version>
-		<gemfire.testcontainers.version>2.3.3</gemfire.testcontainers.version>
-
-		<pinecone.version>4.0.1</pinecone.version>
-		<pinecone.protobuf-java-util.version>4.29.3</pinecone.protobuf-java-util.version>
-
-		<fastjson2.version>2.0.46</fastjson2.version>
+		<!-- Third-party dependencies -->
+		<anthropic-sdk.version>2.34.0</anthropic-sdk.version>
 		<azure-core.version>1.57.1</azure-core.version>
+		<azure-identity.version>1.18.2</azure-identity.version>
 		<azure-json.version>1.5.1</azure-json.version>
 		<azure-search.version>11.7.6</azure-search.version>
-		<azure-cosmos.version>5.22.0</azure-cosmos.version>
-		<weaviate-client.version>5.2.0</weaviate-client.version>
-		<qdrant.version>1.17.0</qdrant.version>
-		<typesense.version>1.3.0</typesense.version>
+		<!-- NOTE: keep awssdk and bedrockruntime versions aligned -->
+		<awssdk.version>2.41.22</awssdk.version>
+		<bedrockruntime.version>2.41.22</bedrockruntime.version>
+		<coherence.version>24.09</coherence.version>
+		<com.google.cloud.version>26.83.0</com.google.cloud.version>
+		<com.google.genai.version>1.54.0</com.google.genai.version>
+		<commonmark.version>0.22.0</commonmark.version>
+		<couchbase.version>3.9.1</couchbase.version>
+		<djl.version>0.32.0</djl.version>
+		<fastjson2.version>2.0.46</fastjson2.version>
+		<gemfire.testcontainers.version>2.3.3</gemfire.testcontainers.version>
+		<grpc-netty-shaded.version>1.76.0</grpc-netty-shaded.version>
+		<jsonschema.version>5.0.0</jsonschema.version>
+		<jsoup.version>1.22.1</jsoup.version>
+		<jtokkit.version>1.1.0</jtokkit.version>
+		<kotlin.version>2.3.20</kotlin.version>
+		<milvus.version>2.5.8</milvus.version>
+		<mockk-jvm.version>1.13.13</mockk-jvm.version>
+		<neo4j-cypher-dsl-bom.version>2024.5.1</neo4j-cypher-dsl-bom.version>
+		<openai-sdk.version>4.36.0</openai-sdk.version>
 		<opensearch-client.version>3.6.0</opensearch-client.version>
 		<opensearch-testcontainers.version>4.1.0</opensearch-testcontainers.version>
-		<commonmark.version>0.22.0</commonmark.version>
-
-		<couchbase.version>3.9.1</couchbase.version>
-		<neo4j-cypher-dsl-bom.version>2024.5.1</neo4j-cypher-dsl-bom.version>
+		<pdfbox.version>3.0.7</pdfbox.version>
+		<pgvector.version>0.1.6</pgvector.version>
+		<pinecone.version>4.0.1</pinecone.version>
+		<pinecone.protobuf-java-util.version>4.29.3</pinecone.protobuf-java-util.version>
+		<protobuf-java.version>3.25.8</protobuf-java.version>
+		<qdrant.version>1.17.0</qdrant.version>
+		<swagger-annotations.version>2.2.38</swagger-annotations.version>
+		<ST4.version>4.3.4</ST4.version>
+		<typesense.version>1.3.0</typesense.version>
+		<weaviate-client.version>5.2.0</weaviate-client.version>
 
 		<!-- testing dependencies -->
-		<okhttp3.version>4.12.0</okhttp3.version>
-		<rest-assured-bom.version>5.5.6</rest-assured-bom.version>
 		<json-unit-assertj.version>5.1.0</json-unit-assertj.version>
 		<json-schema-validator.version>3.0.1</json-schema-validator.version>
+		<okhttp3.version>4.12.0</okhttp3.version>
+		<rest-assured-bom.version>5.5.6</rest-assured-bom.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>2.0.0-M2</mcp.sdk.version>
+		<mcp.sdk.version>2.0.0-M3</mcp.sdk.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>
-		<maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
-		<maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
+		<antora-maven-plugin.version>1.0.0-alpha.5</antora-maven-plugin.version>
+		<antora-component-version-maven-plugin.version>0.0.4</antora-component-version-maven-plugin.version>
+
 		<!-- The version (range) of the JDK we want to use to compile -->
 		<compiler.jdk.version>[17.0.19,)</compiler.jdk.version>
+
+		<flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
+		<jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
+		<maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+		<maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
 		<maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
 		<maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
 		<maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
 		<maven-source-plugin.version>3.3.0</maven-source-plugin.version>
-		<jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
-		<flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
 		<maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
 		<maven-assembly-plugin.version>3.7.0</maven-assembly-plugin.version>
 		<maven-site-plugin.version>4.0.0-M13</maven-site-plugin.version>
 		<maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
 		<spring-javaformat-maven-plugin.version>0.0.47</spring-javaformat-maven-plugin.version>
-		<antora-maven-plugin.version>1.0.0-alpha.5</antora-maven-plugin.version>
-		<antora-component-version-maven-plugin.version>0.0.4</antora-component-version-maven-plugin.version>
 		<maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
 		<maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
 		<maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
@@ -393,6 +372,21 @@
 								<requireMavenVersion>
 									<version>[3.9.1,)</version>
 								</requireMavenVersion>
+
+								<bannedDependencies>
+									<!-- Spring AI should NOT depend on boot. There are only 4 exceptions to this: -->
+									<!-- 1. test code can currently depend on boot (includes element below)-->
+									<!-- 2. auto-configurations module CAN depend on boot, but should use optional=true on all deps. This enforcer rule sadly can't see those dependencies, so no particular config here -->
+									<!-- 3. starters obviously depend on boot. There is a special profile below in this pom that relaxes the following rule, see further below. -->
+									<!-- 4. docker-compose and testcontainers projects depend on boot and have an override in their respective poms. -->
+									<excludes>
+										<exclude>org.springframework.boot</exclude>
+									</excludes>
+									<includes>
+										<include>org.springframework.boot:*:*:jar:test</include>
+									</includes>
+									<message>Spring AI code should NOT depend on Spring boot. The only exception to this is autoconfigure and starter modules.</message>
+								</bannedDependencies>
 							</rules>
 						</configuration>
 					</execution>
@@ -463,6 +457,10 @@
 						<path>
 							<groupId>org.springframework.boot</groupId>
 							<artifactId>spring-boot-configuration-processor</artifactId>
+						</path>
+						<path>
+							<groupId>org.springframework.boot</groupId>
+							<artifactId>spring-boot-autoconfigure-processor</artifactId>
 						</path>
 					</annotationProcessorPaths>
 				</configuration>
@@ -723,78 +721,84 @@
 			</build>
 		</profile>
 		<profile>
-			<id>license</id>
+			<id>starter-banned-dependency-relaxation</id>
+			<!-- This profile relaxes the enforcer rule that prohibits code to depend on boot, for starters/ only. -->
 			<activation>
-				<activeByDefault>false</activeByDefault>
+				<file>
+					<!-- Trick: since profiles can't be activated via properties in children projects, -->
+					<!-- this profile leverages the fact that starters are the only project type that -->
+					<!-- do not contain source files. -->
+					<missing>src/main</missing>
+				</file>
 			</activation>
 			<build>
 				<plugins>
 					<plugin>
-						<groupId>com.mycila</groupId>
-						<artifactId>license-maven-plugin</artifactId>
-						<version>4.1</version>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-enforcer-plugin</artifactId>
+						<version>${maven-enforcer-plugin.version}</version>
 						<executions>
 							<execution>
-								<phase>validate</phase>
-								<goals>
-									<goal>check</goal>
-								</goals>
+								<id>maven-enforcer</id>
+								<configuration>
+									<rules>
+										<bannedDependencies>
+											<includes combine.children="append">
+												<include>org.springframework.boot</include>
+											</includes>
+										</bannedDependencies>
+									</rules>
+								</configuration>
 							</execution>
 						</executions>
-						<configuration>
-							<properties>
-								<owner>the original author or authors.</owner>
-								<email />
-								<year>2024</year>
-							</properties>
-							<licenseSets>
-								<licenseSet>
-									<inlineHeader>
-										<!-- @formatter:off --> Copyright 2023 - ${year} the original author or
-										authors. Licensed under the Apache License, Version 2.0 (the
-										"License"); you may not use this file except in compliance
-										with the License. You may obtain a copy of the License at
-										https://www.apache.org/licenses/LICENSE-2.0 Unless required
-										by applicable law or agreed to in writing, software
-										distributed under the License is distributed on an "AS IS"
-										BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-										express or implied. See the License for the specific
-										language governing permissions and limitations under the
-										License. <!-- @formatter:on -->
-									</inlineHeader>
-									<excludes>
-										<exclude>**/.antlr/**</exclude>
-										<exclude>**/aot.factories</exclude>
-										<exclude>**/.sdkmanrc</exclude>
-										<exclude>**/*.adoc</exclude>
-										<exclude>**/*.puml</exclude>
-										<exclude>**/pom.xml</exclude>
-										<exclude>**/*.properties</exclude>
-										<exclude>**/*.yaml</exclude>
-										<exclude>**/*.yml</exclude>
-										<exclude>**/*.map</exclude>
-										<exclude>**/*.html</exclude>
-										<exclude>**/*.xhtml</exclude>
-										<exclude>**/*.jsp</exclude>
-										<exclude>**/*.js</exclude>
-										<exclude>**/*.css</exclude>
-										<exclude>**/*.txt</exclude>
-										<exclude>**/*.xjb</exclude>
-										<exclude>**/*.ftl</exclude>
-										<exclude>**/*.xsd</exclude>
-										<exclude>**/*.xml</exclude>
-										<exclude>**/*.sh</exclude>
-										<exclude>**/generated/**</exclude>
-										<exclude>**/Dockerfile</exclude>
-									</excludes>
-								</licenseSet>
-							</licenseSets>
-						</configuration>
 					</plugin>
-
 				</plugins>
 			</build>
 		</profile>
+		<profile>
+			<id>auto-configuration-all-optional</id>
+			<!-- This profile tightens the enforcer rule bannedDependencies to make sure all non-test -->
+			<!-- deps are optional for auto-configuration modules. -->
+			<activation>
+				<file>
+					<exists>src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</exists>
+				</file>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-enforcer-plugin</artifactId>
+						<version>${maven-enforcer-plugin.version}</version>
+						<executions>
+							<execution>
+								<id>maven-enforcer</id>
+								<configuration>
+									<rules>
+										<bannedDependencies>
+											<excludes>
+												<!-- Since this rule doesn't "see" optional deps, we pretend that autoconfs should depend on NOTHING, -->
+												<!-- except tests (and the weird netty hiccup) -->
+												<exclude>*:*</exclude>
+											</excludes>
+											<includes>
+												<include>*:*:*:*:test:*</include>
+												<include>org.springframework.ai:spring-ai-autoconfigure-*</include>
+												<!-- for some reason, which likely has to do with classifiers, without this include, the rule fails -->
+												<!-- with a false positive on spring-ai-autoconfigure-mcp-server-webflux. Did not find a better way to fix. -->
+												<include>io.netty:netty-*</include>
+											</includes>
+											<message>auto-configuration modules should have all their dependencies declared as optional</message>
+										</bannedDependencies>
+									</rules>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
 		<profile>
 			<id>integration-tests</id>
 			<activation>
@@ -856,7 +860,6 @@
 								<exclude>org.springframework.ai.vertexai.gemini/**/*IT.java</exclude>
 
 								<!-- Vector Stores -->
-								<exclude>org.springframework.ai.vectorstore**/CosmosDB**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore.azure/**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Cassandra**IT.java</exclude>
 								<exclude>org.springframework.ai.chroma/**IT.java</exclude>
@@ -864,8 +867,6 @@
 								<exclude>org.springframework.ai.vectorstore**/Coherence**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Elasticsearch**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/GemFire**IT.java</exclude>
-								<exclude>org.springframework.ai.vectorstore**/Hana**IT.java</exclude>
-								<exclude>org.springframework.ai.vectorstore**/Hana**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Milvus**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/MariaDB**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Mongo**IT.java</exclude>

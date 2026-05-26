@@ -26,7 +26,7 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.context.McpRequestContextTypes;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 
 /**
  * Abstract base class for creating Function callbacks around async tool methods.
@@ -38,9 +38,12 @@ import org.springframework.ai.util.json.JsonParser;
  * @param <T> The type of the context parameter (e.g., McpAsyncServerExchange or
  * McpTransportContext)
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpRequestContextTypes<?>>
 		extends AbstractMcpToolMethodCallback<T, RC> {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	protected final Class<? extends Throwable> toolCallExceptionClass;
 
@@ -69,7 +72,7 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 			// Handle Mono<Void> for VOID return type
 			if (ReactiveUtils.isReactiveReturnTypeOfVoid(this.toolMethod)) {
 				return monoResult
-					.then(Mono.just(CallToolResult.builder().addTextContent(JsonParser.toJson("Done")).build()));
+					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()));
 			}
 
 			// Handle other Mono types - map the emitted value to CallToolResult
@@ -92,7 +95,7 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 			// Handle Mono<Void> for VOID return type
 			if (ReactiveUtils.isReactiveReturnTypeOfVoid(this.toolMethod)) {
 				return fluxResult
-					.then(Mono.just(CallToolResult.builder().addTextContent(JsonParser.toJson("Done")).build()));
+					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()));
 			}
 
 			// Handle other Flux types by taking the first element and mapping
@@ -117,7 +120,7 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 			// Handle Mono<Void> for VOID return type
 			if (ReactiveUtils.isReactiveReturnTypeOfVoid(this.toolMethod)) {
 				return monoFromPublisher
-					.then(Mono.just(CallToolResult.builder().addTextContent(JsonParser.toJson("Done")).build()));
+					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()));
 			}
 
 			// Handle other Publisher types by mapping the emitted value

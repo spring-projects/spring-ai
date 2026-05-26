@@ -18,7 +18,6 @@ package org.springframework.ai.bedrock.cohere;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
 
@@ -115,7 +114,7 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 				default -> text.substring(0, COHERE_MAX_CHARACTERS); // Default to END
 																		// behavior
 			};
-		}).collect(Collectors.toList());
+		}).toList();
 
 		var apiRequest = new CohereEmbeddingRequest(truncatedInstructions, inputType, truncate);
 		CohereEmbeddingResponse apiResponse = this.embeddingApi.embedding(apiRequest);

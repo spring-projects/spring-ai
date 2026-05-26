@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -29,7 +30,6 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -122,6 +122,8 @@ public class MiniMaxChatModel implements ChatModel {
 	 * executed.
 	 */
 	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+
+	private final AtomicBoolean internalToolExecutionWarned = new AtomicBoolean(false);
 
 	/**
 	 * Conventions to use for generating observations.
@@ -302,6 +304,11 @@ public class MiniMaxChatModel implements ChatModel {
 
 		ChatOptions promptOptions = Objects.requireNonNull(requestPrompt.getOptions());
 		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(promptOptions, response)) {
+			if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
+				logger.warn(
+						"Internal tool execution in MiniMaxChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
+								+ "Use ChatClient with ToolCallAdvisor instead.");
+			}
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(requestPrompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -353,8 +360,9 @@ public class MiniMaxChatModel implements ChatModel {
 
 			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
 			// the function call handling logic.
+			// @formatter:off
 			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
-				.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
+				.map(chatCompletion2 -> {
 					try {
 						String id = chatCompletion2.id() != null ? chatCompletion2.id() : "";
 						List<Choice> chunkChoices = chatCompletion2.choices() != null
@@ -378,7 +386,7 @@ public class MiniMaxChatModel implements ChatModel {
 							logger.error("Error processing chat completion", e);
 							return new ChatResponse(List.of());
 						}
-					}));
+					});
 
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 						ChatOptions promptOptions = Objects.requireNonNull(requestPrompt.getOptions());
@@ -388,6 +396,11 @@ public class MiniMaxChatModel implements ChatModel {
 							return Flux.deferContextual(ctx -> {
 								ToolExecutionResult toolExecutionResult;
 								try {
+									if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
+										logger.warn(
+												"Internal tool execution in MiniMaxChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
+														+ "Use ChatClient with ToolCallAdvisor instead.");
+									}
 									ToolCallReactiveContextHolder.setContext(ctx);
 									toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 								}

@@ -23,9 +23,9 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxEmbeddingModel;
 import org.springframework.ai.minimax.api.MiniMaxApi;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -41,6 +41,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Sebastien Deleuze
  */
 public class MiniMaxPropertiesTests {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	@Test
 	public void chatProperties() {
@@ -173,7 +175,7 @@ public class MiniMaxPropertiesTests {
 				"spring.ai.minimax.chat.topP=0.56",
 
 				// "spring.ai.minimax.chat.toolChoice.functionName=toolChoiceFunctionName",
-				"spring.ai.minimax.chat.toolChoice=" + ModelOptionsUtils.toJsonString(MiniMaxApi.ChatCompletionRequest.ToolChoiceBuilder.function("toolChoiceFunctionName")),
+				"spring.ai.minimax.chat.toolChoice=" + jsonHelper.toJson(MiniMaxApi.ChatCompletionRequest.ToolChoiceBuilder.function("toolChoiceFunctionName")),
 
 				"spring.ai.minimax.chat.tools[0].function.name=myFunction1",
 				"spring.ai.minimax.chat.tools[0].function.description=function description",

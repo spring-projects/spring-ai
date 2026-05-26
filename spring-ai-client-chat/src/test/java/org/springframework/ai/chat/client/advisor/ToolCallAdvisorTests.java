@@ -614,13 +614,6 @@ public class ToolCallAdvisorTests {
 	}
 
 	@Test
-	void testSuppressToolCallStreamingBuilderMethod() {
-		ToolCallAdvisor.Builder<?> builder = ToolCallAdvisor.builder().suppressToolCallStreaming();
-
-		assertThat(builder.isStreamToolCallResponses()).isFalse();
-	}
-
-	@Test
 	void testAdviseStreamWithToolCallResponsesEnabled() {
 		// Create advisor with tool call streaming explicitly enabled
 		ToolCallAdvisor advisor = ToolCallAdvisor.builder()
@@ -935,7 +928,7 @@ public class ToolCallAdvisorTests {
 		private final int[] hookCallCounts;
 
 		TestableToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder, int[] hookCallCounts) {
-			super(toolCallingManager, advisorOrder, true);
+			super(toolCallingManager, advisorOrder, true, true);
 			this.hookCallCounts = hookCallCounts;
 		}
 

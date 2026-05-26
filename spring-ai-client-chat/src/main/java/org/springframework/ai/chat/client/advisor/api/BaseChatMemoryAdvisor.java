@@ -30,7 +30,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @since 1.0
  */
-public interface BaseChatMemoryAdvisor extends BaseAdvisor {
+public interface BaseChatMemoryAdvisor extends BaseAdvisor, MemoryAdvisor {
 
 	/**
 	 * Retrieve the conversation ID from the given context.

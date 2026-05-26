@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -83,7 +84,6 @@ import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.google.genai.metadata.GoogleGenAiUsage;
 import org.springframework.ai.google.genai.schema.GoogleGenAiToolCallingManager;
 import org.springframework.ai.model.ChatModelDescription;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
@@ -92,6 +92,7 @@ import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
@@ -187,7 +188,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	 */
 	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
 
-	private final JsonMapper jsonMapper = ModelOptionsUtils.JSON_MAPPER.rebuild()
+	private final AtomicBoolean internalToolExecutionWarned = new AtomicBoolean(false);
+
+	private final JsonMapper jsonMapper = JacksonUtils.getDefaultJsonMapper()
+		.rebuild()
 		.addMixIn(Schema.class, SchemaMixin.class)
 		.build();
 
@@ -472,6 +476,11 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			});
 
 		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(options, response)) {
+			if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
+				logger.warn(
+						"Internal tool execution in GoogleGenAiChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
+								+ "Use ChatClient with ToolCallAdvisor instead.");
+			}
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -554,6 +563,11 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 						// is currently only synchronous
 						ToolExecutionResult toolExecutionResult;
 						try {
+							if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
+								logger.warn(
+										"Internal tool execution in GoogleGenAiChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
+												+ "Use ChatClient with ToolCallAdvisor instead.");
+							}
 							ToolCallReactiveContextHolder.setContext(ctx);
 							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, aggregatedResponse);
 						}
@@ -1050,11 +1064,31 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			return this;
 		}
 
+		/**
+		 * Sets the tool calling manager used for internal tool execution.
+		 * @param toolCallingManager the tool calling manager
+		 * @return this builder
+		 * @deprecated since 2.0.0 for removal in 3.0.0 — internal tool execution in
+		 * {@link GoogleGenAiChatModel} is superseded by
+		 * {@link org.springframework.ai.chat.client.advisor.ToolCallAdvisor} used via
+		 * {@link org.springframework.ai.chat.client.ChatClient}.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
 			this.toolCallingManager = toolCallingManager;
 			return this;
 		}
 
+		/**
+		 * Sets the predicate to determine tool execution eligibility.
+		 * @param toolExecutionEligibilityPredicate the predicate
+		 * @return this builder
+		 * @deprecated since 2.0.0 for removal in 3.0.0 — internal tool execution in
+		 * {@link GoogleGenAiChatModel} is superseded by
+		 * {@link org.springframework.ai.chat.client.advisor.ToolCallAdvisor} used via
+		 * {@link org.springframework.ai.chat.client.ChatClient}.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public Builder toolExecutionEligibilityPredicate(
 				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
@@ -1188,9 +1222,9 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 		GEMINI_3_PRO_PREVIEW("gemini-3.1-pro-preview"),
 
-		GEMINI_3_FLASH_PREVIEW("gemini-3-flash-preview"),
+		GEMINI_3_5_FLASH("gemini-3.5-flash"),
 
-		GEMINI_3_1_FLASH_LITE_PREVIEW("gemini-3.1-flash-lite-preview");
+		GEMINI_3_1_FLASH_LITE("gemini-3.1-flash-lite");
 
 		public final String value;
 
