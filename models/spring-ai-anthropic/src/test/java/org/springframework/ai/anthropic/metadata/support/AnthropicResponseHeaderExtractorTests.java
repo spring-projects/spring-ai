@@ -23,6 +23,7 @@ import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
+import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -89,13 +90,14 @@ class AnthropicResponseHeaderExtractorTests {
 
 		RateLimit rateLimit = AnthropicResponseHeaderExtractor.extractAiResponseHeaders(response);
 
+		assertThat(rateLimit).isInstanceOf(AnthropicRateLimit.class);
 		assertThat(rateLimit.getRequestsLimit()).isEqualTo(1000L);
 		assertThat(rateLimit.getRequestsRemaining()).isEqualTo(999L);
 		assertThat(rateLimit.getRequestsReset()).isNotNull();
 
-		assertThat(rateLimit.getTokensLimit()).isEqualTo(0L);
-		assertThat(rateLimit.getTokensRemaining()).isEqualTo(0L);
-		assertThat(rateLimit.getTokensReset()).isEqualTo(Duration.ZERO);
+		assertThat(rateLimit.getTokensLimit()).isNull();
+		assertThat(rateLimit.getTokensRemaining()).isNull();
+		assertThat(rateLimit.getTokensReset()).isNull();
 
 		AnthropicRateLimit anthropicRateLimit = (AnthropicRateLimit) rateLimit;
 		assertThat(anthropicRateLimit.getInputTokensLimit()).isNull();
@@ -109,20 +111,7 @@ class AnthropicResponseHeaderExtractorTests {
 
 		RateLimit rateLimit = AnthropicResponseHeaderExtractor.extractAiResponseHeaders(response);
 
-		assertThat(rateLimit.getRequestsLimit()).isEqualTo(0L);
-		assertThat(rateLimit.getRequestsRemaining()).isEqualTo(0L);
-		assertThat(rateLimit.getRequestsReset()).isEqualTo(Duration.ZERO);
-		assertThat(rateLimit.getTokensLimit()).isEqualTo(0L);
-		assertThat(rateLimit.getTokensRemaining()).isEqualTo(0L);
-		assertThat(rateLimit.getTokensReset()).isEqualTo(Duration.ZERO);
-
-		AnthropicRateLimit anthropicRateLimit = (AnthropicRateLimit) rateLimit;
-		assertThat(anthropicRateLimit.getInputTokensLimit()).isNull();
-		assertThat(anthropicRateLimit.getInputTokensRemaining()).isNull();
-		assertThat(anthropicRateLimit.getInputTokensReset()).isNull();
-		assertThat(anthropicRateLimit.getOutputTokensLimit()).isNull();
-		assertThat(anthropicRateLimit.getOutputTokensRemaining()).isNull();
-		assertThat(anthropicRateLimit.getOutputTokensReset()).isNull();
+		assertThat(rateLimit).isInstanceOf(EmptyRateLimit.class);
 	}
 
 	@Test
@@ -166,7 +155,7 @@ class AnthropicResponseHeaderExtractorTests {
 
 		RateLimit rateLimit = AnthropicResponseHeaderExtractor.extractAiResponseHeaders(response);
 
-		assertThat(rateLimit.getRequestsReset()).isEqualTo(Duration.ZERO);
+		assertThat(rateLimit).isInstanceOf(EmptyRateLimit.class);
 	}
 
 	@Test
@@ -178,7 +167,7 @@ class AnthropicResponseHeaderExtractorTests {
 
 		RateLimit rateLimit = AnthropicResponseHeaderExtractor.extractAiResponseHeaders(response);
 
-		assertThat(rateLimit.getRequestsLimit()).isEqualTo(0L);
+		assertThat(rateLimit).isInstanceOf(EmptyRateLimit.class);
 	}
 
 	@Test
@@ -191,8 +180,7 @@ class AnthropicResponseHeaderExtractorTests {
 
 		RateLimit rateLimit = AnthropicResponseHeaderExtractor.extractAiResponseHeaders(response);
 
-		assertThat(rateLimit.getRequestsLimit()).isEqualTo(0L);
-		assertThat(rateLimit.getRequestsReset()).isEqualTo(Duration.ZERO);
+		assertThat(rateLimit).isInstanceOf(EmptyRateLimit.class);
 	}
 
 	@Test

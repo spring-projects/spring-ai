@@ -249,6 +249,14 @@ public class AnthropicChatModel implements ChatModel {
 		return this.internalStream(requestPrompt, null);
 	}
 
+	/**
+	 * Note: rate-limit headers are not surfaced on the streaming path. The
+	 * RestClient-based SSE plumbing here does not expose the initial HTTP response
+	 * headers to the per-chunk callback, so {@code ChatResponseMetadata.getRateLimit()}
+	 * resolves to {@link org.springframework.ai.chat.metadata.EmptyRateLimit} for
+	 * streamed responses. Use the synchronous {@link #call(Prompt)} path if rate-limit
+	 * metadata is required.
+	 */
 	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionRequest request = createRequest(prompt, true);

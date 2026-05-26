@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
+import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.CollectionUtils;
@@ -37,6 +38,30 @@ public final class AnthropicResponseHeaderExtractor {
 
 	private static final Logger logger = LoggerFactory.getLogger(AnthropicResponseHeaderExtractor.class);
 
+	private static final String REQUESTS_LIMIT_HEADER = "anthropic-ratelimit-requests-limit";
+
+	private static final String REQUESTS_REMAINING_HEADER = "anthropic-ratelimit-requests-remaining";
+
+	private static final String REQUESTS_RESET_HEADER = "anthropic-ratelimit-requests-reset";
+
+	private static final String TOKENS_LIMIT_HEADER = "anthropic-ratelimit-tokens-limit";
+
+	private static final String TOKENS_REMAINING_HEADER = "anthropic-ratelimit-tokens-remaining";
+
+	private static final String TOKENS_RESET_HEADER = "anthropic-ratelimit-tokens-reset";
+
+	private static final String INPUT_TOKENS_LIMIT_HEADER = "anthropic-ratelimit-input-tokens-limit";
+
+	private static final String INPUT_TOKENS_REMAINING_HEADER = "anthropic-ratelimit-input-tokens-remaining";
+
+	private static final String INPUT_TOKENS_RESET_HEADER = "anthropic-ratelimit-input-tokens-reset";
+
+	private static final String OUTPUT_TOKENS_LIMIT_HEADER = "anthropic-ratelimit-output-tokens-limit";
+
+	private static final String OUTPUT_TOKENS_REMAINING_HEADER = "anthropic-ratelimit-output-tokens-remaining";
+
+	private static final String OUTPUT_TOKENS_RESET_HEADER = "anthropic-ratelimit-output-tokens-reset";
+
 	private AnthropicResponseHeaderExtractor() {
 	}
 
@@ -44,42 +69,34 @@ public final class AnthropicResponseHeaderExtractor {
 
 		Instant now = Instant.now();
 
-		Long requestsLimit = getHeaderAsLongOrDefault(response,
-				AnthropicApiResponseHeaders.REQUESTS_LIMIT_HEADER.getName());
-		Long requestsRemaining = getHeaderAsLongOrDefault(response,
-				AnthropicApiResponseHeaders.REQUESTS_REMAINING_HEADER.getName());
-		Duration requestsReset = getHeaderAsDurationOrDefault(response,
-				AnthropicApiResponseHeaders.REQUESTS_RESET_HEADER.getName(), now);
+		Long requestsLimit = getHeaderAsLong(response, REQUESTS_LIMIT_HEADER);
+		Long requestsRemaining = getHeaderAsLong(response, REQUESTS_REMAINING_HEADER);
+		Duration requestsReset = getHeaderAsDuration(response, REQUESTS_RESET_HEADER, now);
 
-		Long tokensLimit = getHeaderAsLongOrDefault(response,
-				AnthropicApiResponseHeaders.TOKENS_LIMIT_HEADER.getName());
-		Long tokensRemaining = getHeaderAsLongOrDefault(response,
-				AnthropicApiResponseHeaders.TOKENS_REMAINING_HEADER.getName());
-		Duration tokensReset = getHeaderAsDurationOrDefault(response,
-				AnthropicApiResponseHeaders.TOKENS_RESET_HEADER.getName(), now);
+		Long tokensLimit = getHeaderAsLong(response, TOKENS_LIMIT_HEADER);
+		Long tokensRemaining = getHeaderAsLong(response, TOKENS_REMAINING_HEADER);
+		Duration tokensReset = getHeaderAsDuration(response, TOKENS_RESET_HEADER, now);
 
-		Long inputTokensLimit = getHeaderAsLong(response,
-				AnthropicApiResponseHeaders.INPUT_TOKENS_LIMIT_HEADER.getName());
-		Long inputTokensRemaining = getHeaderAsLong(response,
-				AnthropicApiResponseHeaders.INPUT_TOKENS_REMAINING_HEADER.getName());
-		Duration inputTokensReset = getHeaderAsDuration(response,
-				AnthropicApiResponseHeaders.INPUT_TOKENS_RESET_HEADER.getName(), now);
+		Long inputTokensLimit = getHeaderAsLong(response, INPUT_TOKENS_LIMIT_HEADER);
+		Long inputTokensRemaining = getHeaderAsLong(response, INPUT_TOKENS_REMAINING_HEADER);
+		Duration inputTokensReset = getHeaderAsDuration(response, INPUT_TOKENS_RESET_HEADER, now);
 
-		Long outputTokensLimit = getHeaderAsLong(response,
-				AnthropicApiResponseHeaders.OUTPUT_TOKENS_LIMIT_HEADER.getName());
-		Long outputTokensRemaining = getHeaderAsLong(response,
-				AnthropicApiResponseHeaders.OUTPUT_TOKENS_REMAINING_HEADER.getName());
-		Duration outputTokensReset = getHeaderAsDuration(response,
-				AnthropicApiResponseHeaders.OUTPUT_TOKENS_RESET_HEADER.getName(), now);
+		Long outputTokensLimit = getHeaderAsLong(response, OUTPUT_TOKENS_LIMIT_HEADER);
+		Long outputTokensRemaining = getHeaderAsLong(response, OUTPUT_TOKENS_REMAINING_HEADER);
+		Duration outputTokensReset = getHeaderAsDuration(response, OUTPUT_TOKENS_RESET_HEADER, now);
+
+		boolean allAbsent = requestsLimit == null && requestsRemaining == null && requestsReset == null
+				&& tokensLimit == null && tokensRemaining == null && tokensReset == null && inputTokensLimit == null
+				&& inputTokensRemaining == null && inputTokensReset == null && outputTokensLimit == null
+				&& outputTokensRemaining == null && outputTokensReset == null;
+
+		if (allAbsent) {
+			return new EmptyRateLimit();
+		}
 
 		return new AnthropicRateLimit(requestsLimit, requestsRemaining, requestsReset, tokensLimit, tokensRemaining,
 				tokensReset, inputTokensLimit, inputTokensRemaining, inputTokensReset, outputTokensLimit,
 				outputTokensRemaining, outputTokensReset);
-	}
-
-	private static Duration getHeaderAsDurationOrDefault(ResponseEntity<?> response, String headerName, Instant now) {
-		Duration duration = getHeaderAsDuration(response, headerName, now);
-		return duration != null ? duration : Duration.ZERO;
 	}
 
 	private static Duration getHeaderAsDuration(ResponseEntity<?> response, String headerName, Instant now) {
@@ -89,11 +106,6 @@ public final class AnthropicResponseHeaderExtractor {
 			return parseRfc3339ToDuration(headerName, values.get(0), now);
 		}
 		return null;
-	}
-
-	private static Long getHeaderAsLongOrDefault(ResponseEntity<?> response, String headerName) {
-		Long value = getHeaderAsLong(response, headerName);
-		return value != null ? value : 0L;
 	}
 
 	private static Long getHeaderAsLong(ResponseEntity<?> response, String headerName) {
