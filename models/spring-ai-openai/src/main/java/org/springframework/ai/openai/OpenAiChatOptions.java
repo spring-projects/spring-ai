@@ -641,23 +641,6 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 				this.toolNames, this.internalToolExecutionEnabled, this.toolContext);
 	}
 
-	@Override
-	public String toString() {
-		return "OpenAiChatOptions{" + "model='" + this.getModel() + ", frequencyPenalty=" + this.frequencyPenalty
-				+ ", logitBias=" + this.logitBias + ", logprobs=" + this.logprobs + ", topLogprobs=" + this.topLogprobs
-				+ ", maxTokens=" + this.maxTokens + ", maxCompletionTokens=" + this.maxCompletionTokens + ", n="
-				+ this.n + ", outputModalities=" + this.outputModalities + ", outputAudio=" + this.outputAudio
-				+ ", presencePenalty=" + this.presencePenalty + ", responseFormat=" + this.responseFormat
-				+ ", streamOptions=" + this.streamOptions + ", streamUsage=" + ", seed=" + this.seed + ", stop="
-				+ this.stop + ", temperature=" + this.temperature + ", topP=" + this.topP + ", toolChoice="
-				+ this.toolChoice + ", user='" + this.user + '\'' + ", parallelToolCalls=" + this.parallelToolCalls
-				+ ", store=" + this.store + ", metadata=" + this.metadata + ", reasoningEffort='" + this.reasoningEffort
-				+ '\'' + ", verbosity='" + this.verbosity + '\'' + ", serviceTier='" + this.serviceTier + '\''
-				+ ", extraBody=" + this.extraBody + ", toolCallbacks=" + this.toolCallbacks + ", toolNames="
-				+ this.toolNames + ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled
-				+ ", toolContext=" + this.toolContext + '}';
-	}
-
 	public record AudioParameters(@Nullable Voice voice, @Nullable AudioResponseFormat format) {
 
 		/**

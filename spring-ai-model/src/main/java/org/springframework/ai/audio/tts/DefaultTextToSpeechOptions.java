@@ -87,12 +87,6 @@ public final class DefaultTextToSpeechOptions implements TextToSpeechOptions {
 	}
 
 	@Override
-	public String toString() {
-		return "DefaultTextToSpeechOptions{" + "model='" + this.model + '\'' + ", voice='" + this.voice + '\''
-				+ ", format='" + this.format + '\'' + ", speed=" + this.speed + '}';
-	}
-
-	@Override
 	@SuppressWarnings("unchecked")
 	public DefaultTextToSpeechOptions copy() {
 		return new Builder(this).build();

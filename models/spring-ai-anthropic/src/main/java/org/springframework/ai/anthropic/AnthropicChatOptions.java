@@ -538,20 +538,6 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 				this.webSearchTool, this.serviceTier);
 	}
 
-	@Override
-	public String toString() {
-		return "AnthropicChatOptions{" + "model='" + this.getModel() + '\'' + ", maxTokens=" + this.maxTokens
-				+ ", metadata=" + this.metadata + ", stopSequences=" + this.stopSequences + ", temperature="
-				+ this.temperature + ", topP=" + this.topP + ", topK=" + this.topK + ", toolChoice=" + this.toolChoice
-				+ ", thinking=" + this.thinking + ", disableParallelToolUse=" + this.disableParallelToolUse
-				+ ", toolCallbacks=" + this.toolCallbacks + ", toolNames=" + this.toolNames
-				+ ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled + ", toolContext="
-				+ this.toolContext + ", citationDocuments=" + this.citationDocuments + ", cacheOptions="
-				+ this.cacheOptions + ", outputConfig=" + this.outputConfig + ", httpHeaders=" + this.httpHeaders
-				+ ", skillContainer=" + this.skillContainer + ", inferenceGeo=" + this.inferenceGeo + ", webSearchTool="
-				+ this.webSearchTool + ", serviceTier=" + this.serviceTier + '}';
-	}
-
 	/**
 	 * Builder for creating {@link AnthropicChatOptions} instances.
 	 */

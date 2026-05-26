@@ -228,18 +228,6 @@ class OpenAiAudioTranscriptionModelTests {
 	}
 
 	@Test
-	void optionsToStringContainsFields() {
-		OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
-			.model("whisper-1")
-			.language("en")
-			.build();
-
-		String str = options.toString();
-		assertThat(str).contains("whisper-1");
-		assertThat(str).contains("en");
-	}
-
-	@Test
 	void optionsBuilderWithAzureConfiguration() {
 		OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
 			.model("whisper-1")

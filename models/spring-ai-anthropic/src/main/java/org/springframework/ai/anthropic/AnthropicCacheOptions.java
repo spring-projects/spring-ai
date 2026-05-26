@@ -122,14 +122,6 @@ public class AnthropicCacheOptions {
 				this.multiBlockSystemCaching);
 	}
 
-	@Override
-	public String toString() {
-		return "AnthropicCacheOptions{" + "strategy=" + this.strategy + ", contentLengthFunction="
-				+ this.contentLengthFunction + ", messageTypeTtl=" + this.messageTypeTtl
-				+ ", messageTypeMinContentLengths=" + this.messageTypeMinContentLengths + ", multiBlockSystemCaching="
-				+ this.multiBlockSystemCaching + '}';
-	}
-
 	public static final class Builder {
 
 		private final AnthropicCacheOptions options = new AnthropicCacheOptions();
