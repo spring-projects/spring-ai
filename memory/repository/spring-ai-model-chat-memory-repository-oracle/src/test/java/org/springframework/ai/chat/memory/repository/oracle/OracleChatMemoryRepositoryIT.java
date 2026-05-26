@@ -150,7 +150,8 @@ class OracleChatMemoryRepositoryIT {
 
 		var replacement = List.<Message>of(new UserMessage("replacement"));
 		this.chatMemoryRepository.saveAll(conversationId, replacement);
-		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).containsExactlyElementsOf(replacement);
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId))
+			.containsExactlyElementsOf(replacement);
 	}
 
 	@Test
