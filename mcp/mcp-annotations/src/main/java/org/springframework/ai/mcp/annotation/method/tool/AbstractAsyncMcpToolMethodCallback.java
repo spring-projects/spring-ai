@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.Content;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -80,24 +81,40 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 					.build()));
 		}
 
-		// Handle Flux by taking the first element
+		// Handle Flux by collecting all elements
 		if (result instanceof Flux) {
 			Flux<?> fluxResult = (Flux<?>) result;
 
-			// Check if the Flux contains CallToolResult
+			// Check if the Flux contains CallToolResult — merge all content items
 			if (ReactiveUtils.isReactiveReturnTypeOfCallToolResult(this.toolMethod)) {
-				return ((Flux<CallToolResult>) fluxResult).next();
+				return ((Flux<CallToolResult>) fluxResult).collectList().map(results -> {
+					var builder = CallToolResult.builder();
+					for (CallToolResult r : results) {
+						for (Content c : r.content()) {
+							builder.addContent(c);
+						}
+					}
+					return builder.build();
+				});
 			}
 
-			// Handle Mono<Void> for VOID return type
+			// Handle Flux<Void> for VOID return type
 			if (ReactiveUtils.isReactiveReturnTypeOfVoid(this.toolMethod)) {
 				return fluxResult
 					.then(Mono.just(CallToolResult.builder().addTextContent(JsonParser.toJson("Done")).build()));
 			}
 
-			// Handle other Flux types by taking the first element and mapping
-			return fluxResult.next()
-				.map(this::mapValueToCallToolResult)
+			// Handle other Flux types by collecting all elements
+			return fluxResult.collectList().map(items -> {
+				var builder = CallToolResult.builder();
+				for (Object item : items) {
+					CallToolResult itemResult = this.mapValueToCallToolResult(item);
+					for (Content c : itemResult.content()) {
+						builder.addContent(c);
+					}
+				}
+				return builder.build();
+			})
 				.onErrorResume(e -> Mono.just(CallToolResult.builder()
 					.isError(true)
 					.addTextContent("Error invoking method: %s".formatted(e.getMessage()))

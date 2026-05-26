@@ -452,13 +452,18 @@ public class AsyncMcpToolMethodCallbackTests {
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
 		CallToolRequest request = new CallToolRequest("multiple-flux-tool", Map.of("prefix", "item"));
 
-		// Flux tools should take the first element
+		// Flux tools should collect all elements and return them as separate content
+		// items
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
 			assertThat(result.isError()).isFalse();
-			assertThat(result.content()).hasSize(1);
+			assertThat(result.content()).hasSize(3);
 			assertThat(result.content().get(0)).isInstanceOf(TextContent.class);
 			assertThat(((TextContent) result.content().get(0)).text()).isEqualTo("item1");
+			assertThat(result.content().get(1)).isInstanceOf(TextContent.class);
+			assertThat(((TextContent) result.content().get(1)).text()).isEqualTo("item2");
+			assertThat(result.content().get(2)).isInstanceOf(TextContent.class);
+			assertThat(((TextContent) result.content().get(2)).text()).isEqualTo("item3");
 		}).verifyComplete();
 	}
 

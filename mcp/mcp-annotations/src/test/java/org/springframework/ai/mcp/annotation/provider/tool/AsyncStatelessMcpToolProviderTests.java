@@ -529,11 +529,13 @@ public class AsyncStatelessMcpToolProviderTests {
 		StepVerifier.create(result).assertNext(callToolResult -> {
 			assertThat(callToolResult).isNotNull();
 			assertThat(callToolResult.isError()).isFalse();
-			assertThat(callToolResult.content()).hasSize(1);
+			assertThat(callToolResult.content()).hasSize(3);
 			assertThat(callToolResult.content().get(0)).isInstanceOf(TextContent.class);
-			// Flux results are typically concatenated or collected into a single response
-			String content = ((TextContent) callToolResult.content().get(0)).text();
-			assertThat(content).contains("test");
+			assertThat(((TextContent) callToolResult.content().get(0)).text()).isEqualTo("Item1: test");
+			assertThat(callToolResult.content().get(1)).isInstanceOf(TextContent.class);
+			assertThat(((TextContent) callToolResult.content().get(1)).text()).isEqualTo("Item2: test");
+			assertThat(callToolResult.content().get(2)).isInstanceOf(TextContent.class);
+			assertThat(((TextContent) callToolResult.content().get(2)).text()).isEqualTo("Item3: test");
 		}).verifyComplete();
 	}
 
