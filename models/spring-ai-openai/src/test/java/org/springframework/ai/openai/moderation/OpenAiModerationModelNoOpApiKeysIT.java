@@ -19,8 +19,10 @@ package org.springframework.ai.openai.moderation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.moderation.ModerationPrompt;
 import org.springframework.ai.openai.OpenAiModerationModel;
+import org.springframework.ai.openai.OpenAiModerationOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -53,7 +55,7 @@ public class OpenAiModerationModelNoOpApiKeysIT {
 		@Bean
 		public OpenAiModerationModel openAiModerationClient() {
 			return OpenAiModerationModel.builder()
-				.options(org.springframework.ai.openai.OpenAiModerationOptions.builder().apiKey("noop").build())
+				.options(OpenAiModerationOptions.builder().apiKey(new NoopApiKey()).build())
 				.build();
 		}
 
