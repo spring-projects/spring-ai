@@ -420,13 +420,13 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
-		public EntityParamSpec useProviderStructuredOutput() {
+		public EntityParamSpec delegateToProvider() {
 			this.enableNative = true;
 			return this;
 		}
 
 		@Override
-		public EntityParamSpec withSchemaValidation() {
+		public EntityParamSpec schemaValidation() {
 			this.validated = true;
 			return this;
 		}

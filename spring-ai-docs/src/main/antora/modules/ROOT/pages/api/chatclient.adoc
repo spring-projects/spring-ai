@@ -280,7 +280,7 @@ All three `entity()` overloads accept an optional `Consumer<EntityParamSpec>` th
 ===== Provider-Native Structured Output
 
 By default, the JSON schema is appended to the user message as text instructions.
-When `useProviderStructuredOutput()` is set, the schema is instead passed directly to the AI provider API as a structured constraint (equivalent to setting `AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT`).
+When `delegateToProvider()` is set, the schema is instead passed directly to the AI provider API as a structured constraint (equivalent to setting `AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT`).
 This requires the underlying model to support `StructuredOutputChatOptions`.
 
 [source,java]
@@ -307,7 +307,7 @@ ActorFilms actorFilms = chatClient.prompt()
 
 ===== Schema Validation with Retry
 
-`withSchemaValidation()` validates the model's JSON response against the entity schema before returning it.
+`schemaValidation()` validates the model's JSON response against the entity schema before returning it.
 If validation fails, the error message is appended to the user prompt and the model is retried, up to `maxRepeatAttempts` times (default: 3).
 This uses xref:api/advisors-recursive.adoc#structured-output-validation-advisor[StructuredOutputValidationAdvisor] internally.
 
@@ -316,7 +316,7 @@ This uses xref:api/advisors-recursive.adoc#structured-output-validation-advisor[
 ActorFilms actorFilms = chatClient.prompt()
     .user("Generate the filmography for a random actor.")
     .call()
-    .entity(ActorFilms.class, spec -> spec.withSchemaValidation());
+    .entity(ActorFilms.class, spec -> spec.schemaValidation());
 ----
 
 Both options can be combined:
@@ -327,11 +327,11 @@ ActorFilms actorFilms = chatClient.prompt()
     .user("Generate the filmography for a random actor.")
     .call()
     .entity(ActorFilms.class, spec -> spec
-        .useProviderStructuredOutput()
-        .withSchemaValidation());
+        .delegateToProvider()
+        .schemaValidation());
 ----
 
-NOTE: Streaming is not supported when `withSchemaValidation()` is active.
+NOTE: Streaming is not supported when `schemaValidation()` is active.
 
 === Streaming Responses
 

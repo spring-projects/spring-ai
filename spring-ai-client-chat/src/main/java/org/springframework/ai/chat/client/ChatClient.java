@@ -182,14 +182,14 @@ public interface ChatClient {
 		 * {@link org.springframework.ai.chat.model.ChatModel} does not support
 		 * {@link org.springframework.ai.model.tool.StructuredOutputChatOptions}.
 		 */
-		EntityParamSpec useProviderStructuredOutput();
+		EntityParamSpec delegateToProvider();
 
 		/**
 		 * Validates the model's JSON response against the entity schema and retries with
 		 * the error feedback on failure, up to {@code maxRepeatAttempts} times (default:
 		 * 3). Streaming is not supported.
 		 */
-		EntityParamSpec withSchemaValidation();
+		EntityParamSpec schemaValidation();
 
 	}
 
@@ -200,8 +200,8 @@ public interface ChatClient {
 		 * via the {@code entityParamSpecConsumer}.
 		 * @param type the target parameterized type
 		 * @param entityParamSpecConsumer configures options such as
-		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
-		 * {@link EntityParamSpec#withSchemaValidation()}
+		 * {@link EntityParamSpec#delegateToProvider()} and
+		 * {@link EntityParamSpec#schemaValidation()}
 		 * @return the deserialized entity, or {@code null} if the response is empty
 		 */
 		<T> @Nullable T entity(ParameterizedTypeReference<T> type, Consumer<EntityParamSpec> entityParamSpecConsumer);
@@ -219,8 +219,8 @@ public interface ChatClient {
 		 * @param structuredOutputConverter the converter for parsing and schema
 		 * resolution
 		 * @param entityParamSpecConsumer configures options such as
-		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
-		 * {@link EntityParamSpec#withSchemaValidation()}
+		 * {@link EntityParamSpec#delegateToProvider()} and
+		 * {@link EntityParamSpec#schemaValidation()}
 		 * @return the deserialized entity, or {@code null} if the response is empty
 		 */
 		<T> @Nullable T entity(StructuredOutputConverter<T> structuredOutputConverter,
@@ -239,8 +239,8 @@ public interface ChatClient {
 		 * via the {@code entityParamSpecConsumer}.
 		 * @param type the target class
 		 * @param entityParamSpecConsumer configures options such as
-		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
-		 * {@link EntityParamSpec#withSchemaValidation()}
+		 * {@link EntityParamSpec#delegateToProvider()} and
+		 * {@link EntityParamSpec#schemaValidation()}
 		 * @return the deserialized entity, or {@code null} if the response is empty
 		 */
 		<T> @Nullable T entity(Class<T> type, Consumer<EntityParamSpec> entityParamSpecConsumer);
@@ -264,8 +264,8 @@ public interface ChatClient {
 		 * configured via the {@code entityParamSpecConsumer}.
 		 * @param type the target class
 		 * @param entityParamSpecConsumer configures options such as
-		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
-		 * {@link EntityParamSpec#withSchemaValidation()}
+		 * {@link EntityParamSpec#delegateToProvider()} and
+		 * {@link EntityParamSpec#schemaValidation()}
 		 * @return the {@link ResponseEntity} containing both the complete
 		 * {@link ChatResponse} object and the deserialized entity
 		 */
@@ -287,8 +287,8 @@ public interface ChatClient {
 		 * configured via the {@code entityParamSpecConsumer}.
 		 * @param type the target parameterized type
 		 * @param entityParamSpecConsumer configures options such as
-		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
-		 * {@link EntityParamSpec#withSchemaValidation()}
+		 * {@link EntityParamSpec#delegateToProvider()} and
+		 * {@link EntityParamSpec#schemaValidation()}
 		 * @return the {@link ResponseEntity} containing both the complete
 		 * {@link ChatResponse} object and the deserialized entity
 		 */
@@ -312,8 +312,8 @@ public interface ChatClient {
 		 * @param structuredOutputConverter the converter for parsing and schema
 		 * resolution
 		 * @param entityParamSpecConsumer configures options such as
-		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
-		 * {@link EntityParamSpec#withSchemaValidation()}
+		 * {@link EntityParamSpec#delegateToProvider()} and
+		 * {@link EntityParamSpec#schemaValidation()}
 		 * @return the {@link ResponseEntity} containing both the complete
 		 * {@link ChatResponse} object and the deserialized entity
 		 */

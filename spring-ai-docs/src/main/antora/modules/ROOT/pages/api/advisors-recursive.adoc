@@ -169,5 +169,5 @@ Alternatively, you can enable schema validation directly on an `entity()` call w
 ActorFilms actorFilms = chatClient.prompt()
     .user("Generate the filmography for a random actor.")
     .call()
-    .entity(ActorFilms.class, spec -> spec.withSchemaValidation());
+    .entity(ActorFilms.class, spec -> spec.schemaValidation());
 ----
