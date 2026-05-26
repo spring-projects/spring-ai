@@ -264,8 +264,8 @@ public class OllamaChatModel implements ChatModel {
 							.toList();
 
 				String thinking = ollamaResponse.message().thinking();
-				Map<String, Object> messageProperties = thinking != null
-						? Map.of(THINKING_METADATA_KEY, thinking) : Map.of();
+				Map<String, Object> messageProperties = thinking != null ? Map.of(THINKING_METADATA_KEY, thinking)
+						: Map.of();
 				var assistantMessage = AssistantMessage.builder()
 					.content(ollamaResponse.message().content())
 					.properties(messageProperties)
@@ -357,8 +357,8 @@ public class OllamaChatModel implements ChatModel {
 
 				boolean hasEvalCount = chunk.promptEvalCount() != null && chunk.evalCount() != null;
 				String thinking = chunk.message().thinking();
-				Map<String, Object> messageProperties = thinking != null
-						? Map.of(THINKING_METADATA_KEY, thinking) : Map.of();
+				Map<String, Object> messageProperties = thinking != null ? Map.of(THINKING_METADATA_KEY, thinking)
+						: Map.of();
 				var assistantMessage = AssistantMessage.builder()
 					.content(content)
 					.properties(messageProperties)
