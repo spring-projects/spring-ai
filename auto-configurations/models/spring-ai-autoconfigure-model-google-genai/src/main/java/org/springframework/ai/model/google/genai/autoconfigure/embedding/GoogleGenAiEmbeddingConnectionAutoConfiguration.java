@@ -27,6 +27,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -45,6 +46,7 @@ public class GoogleGenAiEmbeddingConnectionAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@Conditional(OnGoogleGenAiEmbeddingCredentials.class)
 	public GoogleGenAiEmbeddingConnectionDetails googleGenAiEmbeddingConnectionDetails(
 			GoogleGenAiEmbeddingConnectionProperties connectionProperties) throws IOException {
 

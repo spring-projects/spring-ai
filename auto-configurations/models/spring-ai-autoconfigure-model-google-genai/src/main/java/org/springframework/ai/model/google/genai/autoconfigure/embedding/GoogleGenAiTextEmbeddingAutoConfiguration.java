@@ -26,6 +26,7 @@ import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -51,6 +52,7 @@ public class GoogleGenAiTextEmbeddingAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnBean(GoogleGenAiEmbeddingConnectionDetails.class)
 	public GoogleGenAiTextEmbeddingModel googleGenAiTextEmbedding(
 			GoogleGenAiEmbeddingConnectionDetails connectionDetails,
 			GoogleGenAiTextEmbeddingProperties textEmbeddingProperties, ObjectProvider<RetryTemplate> retryTemplate,
