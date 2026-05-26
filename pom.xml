@@ -45,6 +45,7 @@
 		<module>memory/repository/spring-ai-model-chat-memory-repository-jdbc</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-mongodb</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-neo4j</module>
+		<module>memory/repository/spring-ai-model-chat-memory-repository-oracle</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-redis</module>
 
 		<module>spring-ai-retry</module>
