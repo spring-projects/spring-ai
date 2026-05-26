@@ -36,6 +36,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.ApiKey;
+import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -947,6 +949,17 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 		public B apiKey(@Nullable String apiKey) {
 			this.apiKey = apiKey;
+			return self();
+		}
+
+		/**
+		 * Sets the API key using an {@link ApiKey} instance. Pass a {@link NoopApiKey} to
+		 * disable authentication (no {@code Authorization} header will be sent), which is
+		 * the same behavior as setting an empty string via {@link #apiKey(String)}.
+		 * @param apiKey the API key instance; if {@code null}, the key is cleared
+		 */
+		public B apiKey(@Nullable ApiKey apiKey) {
+			this.apiKey = (apiKey != null) ? apiKey.getValue() : null;
 			return self();
 		}
 
