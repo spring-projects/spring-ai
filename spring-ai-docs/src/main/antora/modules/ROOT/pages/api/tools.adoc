@@ -659,6 +659,8 @@ For method-based tools, `ToolDefinitions.from(method)` generates a definition au
 
 The input schema tells the model how to call the tool. Spring AI's `JsonSchemaGenerator` produces the schema from a method or function's parameter list and supports several customization annotations.
 
+NOTE: The same `JsonSchemaGenerator` is also used by xref:api/structured-output/converters.adoc#json-schema-customization[`BeanOutputConverter`] for structured output conversion. The Jackson, Swagger, and nullability annotations described below apply to both tool calling and structured output schemas (`@ToolParam` applies to tool calling only).
+
 **Parameter descriptions**
 
 Use any of these (Spring AI's annotation has highest precedence):

@@ -155,6 +155,51 @@ Generation generation = chatModel.call(
 ActorsFilms actorsFilms = this.beanOutputConverter.convert(this.generation.getOutput().getText());
 ----
 
+[[json-schema-customization]]
+==== JSON Schema Customization
+
+`BeanOutputConverter` delegates JSON Schema generation to `JsonSchemaGenerator`, the same class used by xref:api/tools.adoc#json-schema[Tool Calling]. This means you can customize the generated schema using the same set of annotations.
+
+**Descriptions**
+
+You can provide a description for the properties of the target type using one of the following annotations:
+
+* `@JsonClassDescription(description = "...")` — Jackson
+* `@JsonPropertyDescription(description = "...")` — Jackson
+* `@Schema(description = "...")` — Swagger
+
+This also works recursively for nested types.
+
+[source,java]
+----
+@JsonClassDescription("Represents an actor and their filmography")
+record ActorsFilms(
+        @JsonPropertyDescription("The name of the actor") String actor,
+        @JsonPropertyDescription("List of movies") List<String> movies) {
+}
+----
+
+**Required vs optional**
+
+By default, each property is considered required. You can make a property optional using one of the following annotations, in this order of precedence:
+
+* `@JsonProperty(required = false)` — Jackson
+* `@Schema(required = false)` — Swagger
+* `@Nullable` — Spring Framework / JSpecify
+
+This also works recursively for nested types.
+
+[source,java]
+----
+record CustomerInfo(
+        String name,
+        @JsonProperty(required = false) String email,
+        @Nullable String phone) {
+}
+----
+
+NOTE: For the full reference on JSON Schema generation, including additional examples, see xref:api/tools.adoc#json-schema[JSON Schema] in the Tool Calling documentation.
+
 ==== Property Ordering in Generated Schema
 
 The `BeanOutputConverter` supports custom property ordering in the generated JSON schema through the `@JsonPropertyOrder` annotation.
