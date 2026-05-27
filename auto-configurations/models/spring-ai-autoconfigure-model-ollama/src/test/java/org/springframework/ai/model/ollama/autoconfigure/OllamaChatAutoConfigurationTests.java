@@ -36,8 +36,8 @@ public class OllamaChatAutoConfigurationTests {
 				"spring.ai.ollama.base-url=TEST_BASE_URL",
 				"spring.ai.ollama.chat.model=MODEL_XYZ",
 				"spring.ai.ollama.chat.temperature=0.55",
-				"spring.ai.ollama.chat.topP=0.56",
-				"spring.ai.ollama.chat.topK=123")
+				"spring.ai.ollama.chat.top-p=0.56",
+				"spring.ai.ollama.chat.top-k=123")
 			// @formatter:on
 
 			.withConfiguration(BaseOllamaIT.ollamaAutoConfig(OllamaChatAutoConfiguration.class))

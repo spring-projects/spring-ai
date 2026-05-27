@@ -67,10 +67,10 @@ public class TypesenseVectorStoreAutoConfigurationIT {
 	@Test
 	public void addAndSearch() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.vectorstore.typesense.embeddingDimension=384",
-					"spring.ai.vectorstore.typesense.collectionName=myTestCollection",
+			.withPropertyValues("spring.ai.vectorstore.typesense.embedding-dimension=384",
+					"spring.ai.vectorstore.typesense.collection-name=myTestCollection",
 					"spring.ai.vectorstore.typesense.initialize-schema=true",
-					"spring.ai.vectorstore.typesense.client.apiKey=" + typesense.getApiKey(),
+					"spring.ai.vectorstore.typesense.client.api-key=" + typesense.getApiKey(),
 					"spring.ai.vectorstore.typesense.client.protocol=http",
 					"spring.ai.vectorstore.typesense.client.host=" + typesense.getHost(),
 					"spring.ai.vectorstore.typesense.client.port=" + typesense.getHttpPort())

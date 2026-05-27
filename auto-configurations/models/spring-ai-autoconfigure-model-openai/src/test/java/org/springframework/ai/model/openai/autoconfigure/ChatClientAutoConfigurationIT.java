@@ -44,7 +44,7 @@ public class ChatClientAutoConfigurationIT {
 	private static final Log logger = LogFactory.getLog(ChatClientAutoConfigurationIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
+		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"),
 				"spring.ai.openai.chat.model=gpt-4o")
 		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ChatClientAutoConfiguration.class,
 				ToolCallingAutoConfiguration.class));

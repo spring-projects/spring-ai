@@ -163,19 +163,19 @@ public class MiniMaxPropertiesTests {
 				"spring.ai.minimax.base-url=TEST_BASE_URL",
 
 				"spring.ai.minimax.chat.model=MODEL_XYZ",
-				"spring.ai.minimax.chat.frequencyPenalty=-1.5",
-				"spring.ai.minimax.chat.logitBias.myTokenId=-5",
-				"spring.ai.minimax.chat.maxTokens=123",
+				"spring.ai.minimax.chat.frequency-penalty=-1.5",
+				"spring.ai.minimax.chat.logit-bias.myTokenId=-5",
+				"spring.ai.minimax.chat.max-tokens=123",
 				"spring.ai.minimax.chat.n=10",
-				"spring.ai.minimax.chat.presencePenalty=0",
-				"spring.ai.minimax.chat.responseFormat.type=json",
+				"spring.ai.minimax.chat.presence-penalty=0",
+				"spring.ai.minimax.chat.response-format.type=json",
 				"spring.ai.minimax.chat.seed=66",
 				"spring.ai.minimax.chat.stop=boza,koza",
 				"spring.ai.minimax.chat.temperature=0.55",
-				"spring.ai.minimax.chat.topP=0.56",
+				"spring.ai.minimax.chat.top-p=0.56",
 
-				// "spring.ai.minimax.chat.toolChoice.functionName=toolChoiceFunctionName",
-				"spring.ai.minimax.chat.toolChoice=" + jsonHelper.toJson(MiniMaxApi.ChatCompletionRequest.ToolChoiceBuilder.function("toolChoiceFunctionName")),
+				// "spring.ai.minimax.chat.tool-choice.function-name=toolChoiceFunctionName",
+				"spring.ai.minimax.chat.tool-choice=" + jsonHelper.toJson(MiniMaxApi.ChatCompletionRequest.ToolChoiceBuilder.function("toolChoiceFunctionName")),
 
 				"spring.ai.minimax.chat.tools[0].function.name=myFunction1",
 				"spring.ai.minimax.chat.tools[0].function.description=function description",
@@ -249,7 +249,7 @@ public class MiniMaxPropertiesTests {
 				"spring.ai.minimax.base-url=TEST_BASE_URL",
 
 				"spring.ai.minimax.embedding.options.model=MODEL_XYZ",
-				"spring.ai.minimax.embedding.options.encodingFormat=MyEncodingFormat"
+				"spring.ai.minimax.embedding.options.encoding-format=MyEncodingFormat"
 				)
 			// @formatter:on
 			.withConfiguration(AutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class,

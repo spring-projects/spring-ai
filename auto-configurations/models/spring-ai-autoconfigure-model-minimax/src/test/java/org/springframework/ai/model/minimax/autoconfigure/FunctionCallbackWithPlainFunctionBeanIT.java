@@ -56,7 +56,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackWithPlainFunctionBeanIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.minimax.apiKey=" + System.getenv("MINIMAX_API_KEY"))
+		.withPropertyValues("spring.ai.minimax.api-key=" + System.getenv("MINIMAX_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(MiniMaxChatAutoConfiguration.class, RestClientAutoConfiguration.class,
 				SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 		.withUserConfiguration(Config.class);

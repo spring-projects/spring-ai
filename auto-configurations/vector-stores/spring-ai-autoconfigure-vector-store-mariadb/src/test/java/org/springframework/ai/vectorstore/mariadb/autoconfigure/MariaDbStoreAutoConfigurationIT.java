@@ -68,7 +68,7 @@ public class MariaDbStoreAutoConfigurationIT {
 				org.springframework.ai.vectorstore.mariadb.autoconfigure.MariaDbStoreAutoConfiguration.class,
 				JdbcTemplateAutoConfiguration.class, DataSourceAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.ai.vectorstore.mariadb.distanceType=COSINE",
+		.withPropertyValues("spring.ai.vectorstore.mariadb.distance-type=COSINE",
 				"spring.ai.vectorstore.mariadb.initialize-schema=true",
 				// JdbcTemplate configuration
 				"spring.datasource.url=" + mariadbContainer.getJdbcUrl(),

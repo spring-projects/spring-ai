@@ -63,7 +63,7 @@ class PaymentStatusBeanOpenAiIT {
 	private final Logger logger = LoggerFactory.getLogger(PaymentStatusBeanIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"),
+		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"),
 				"spring.ai.openai.chat.base-url=https://api.mistral.ai")
 		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class, RestClientAutoConfiguration.class,
 				SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class,
