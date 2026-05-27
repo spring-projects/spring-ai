@@ -243,6 +243,13 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	/**
 	 * Internal method to handle streaming chat completion calls with tool execution
 	 * support. This method is called recursively to support multi-turn tool calling.
+	 *
+	 * <p>
+	 * Note: rate-limit headers are not currently surfaced on the streaming path. The SDK
+	 * supports it via {@code withRawResponse().createStreaming(...)} but the wire-up is
+	 * deferred to a follow-up. For rate-limit metadata, use the synchronous
+	 * {@link #call(Prompt)} path; {@code getRateLimit()} resolves to
+	 * {@link org.springframework.ai.chat.metadata.EmptyRateLimit} for streamed responses.
 	 * @param prompt The prompt for the chat completion. In a recursive tool-call
 	 * scenario, this prompt will contain the full conversation history including the tool
 	 * results.
