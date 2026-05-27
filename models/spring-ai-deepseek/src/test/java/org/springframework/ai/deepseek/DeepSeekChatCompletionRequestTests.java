@@ -16,8 +16,11 @@
 
 package org.springframework.ai.deepseek;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 
@@ -52,6 +55,41 @@ public class DeepSeekChatCompletionRequestTests {
 
 		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
 		assertThat(request.temperature()).isEqualTo(99.9D);
+	}
+
+	@Test
+	public void reasoningContentIsPassedBackForDeepSeekAssistantMessage() {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		DeepSeekAssistantMessage assistantMessage = new DeepSeekAssistantMessage.Builder().content("The answer is 42.")
+			.reasoningContent("I reasoned through the problem step by step.")
+			.build();
+
+		var prompt = new Prompt(
+				List.of(new UserMessage("What is the answer?"), assistantMessage, new UserMessage("Are you sure?")),
+				DeepSeekChatOptions.builder().model("deepseek-reasoner").build());
+
+		var request = client.createRequest(prompt, false);
+
+		assertThat(request.messages()).hasSize(3);
+		var assistantMsg = request.messages().get(1);
+		assertThat(assistantMsg.role()).isEqualTo(DeepSeekApi.ChatCompletionMessage.Role.ASSISTANT);
+		assertThat(assistantMsg.reasoningContent()).isEqualTo("I reasoned through the problem step by step.");
+	}
+
+	@Test
+	public void nullReasoningContentIsOmittedForPlainAssistantMessage() {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		var prompt = new Prompt(List.of(new UserMessage("Hello"),
+				new org.springframework.ai.chat.messages.AssistantMessage("Hi!"), new UserMessage("How are you?")),
+				DeepSeekChatOptions.builder().model("deepseek-chat").build());
+
+		var request = client.createRequest(prompt, false);
+
+		assertThat(request.messages()).hasSize(3);
+		var assistantMsg = request.messages().get(1);
+		assertThat(assistantMsg.reasoningContent()).isNull();
 	}
 
 }
