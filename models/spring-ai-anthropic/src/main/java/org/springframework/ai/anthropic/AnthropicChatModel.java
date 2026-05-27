@@ -157,6 +157,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 	private final ToolCallingManager toolCallingManager;
 
+	@SuppressWarnings({ "deprecation", "removal" })
 	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
 
 	private final AtomicBoolean internalToolExecutionWarned = new AtomicBoolean(false);
@@ -174,6 +175,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	/**
 	 * Private constructor - use {@link #builder()} to create instances.
 	 */
+	@SuppressWarnings({ "deprecation", "removal" })
 	private AnthropicChatModel(@Nullable AnthropicClient anthropicClient,
 			@Nullable AnthropicClientAsync anthropicClientAsync, @Nullable AnthropicChatOptions options,
 			@Nullable ToolCallingManager toolCallingManager, @Nullable ObservationRegistry observationRegistry,
@@ -328,6 +330,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * this Flux is the stream of the model's final answer. Otherwise, it's the original
 	 * response.
 	 */
+	@SuppressWarnings({ "deprecation", "removal" })
 	private Flux<ChatResponse> handleStreamingToolExecution(Prompt prompt, ChatResponse chatResponse) {
 		ChatOptions promptOptions = prompt.getOptions();
 		if (promptOptions != null
@@ -557,6 +560,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * turn.
 	 * @return The final {@link ChatResponse} after all tool calls (if any) are resolved.
 	 */
+	@SuppressWarnings({ "deprecation", "removal" })
 	public ChatResponse internalCall(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
 
 		MessageCreateParams request = createRequest(prompt, false);
@@ -1593,6 +1597,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		private @Nullable ObservationRegistry observationRegistry;
 
+		@SuppressWarnings({ "deprecation", "removal" })
 		private @Nullable ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
 
 		private Builder() {
@@ -1633,9 +1638,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		 * @param toolCallingManager the tool calling manager
 		 * @return this builder
 		 * @deprecated since 2.0.0 for removal in 3.0.0 — internal tool execution in
-		 * {@link AnthropicChatModel} is superseded by
-		 * {@link org.springframework.ai.chat.client.advisor.ToolCallAdvisor} used via
-		 * {@link org.springframework.ai.chat.client.ChatClient}.
+		 * {@link AnthropicChatModel} is superseded by {@code ToolCallAdvisor} used via
+		 * {@code ChatClient}.
 		 */
 		@Deprecated(since = "2.0.0", forRemoval = true)
 		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
@@ -1658,11 +1662,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		 * @param toolExecutionEligibilityPredicate the predicate
 		 * @return this builder
 		 * @deprecated since 2.0.0 for removal in 3.0.0 — internal tool execution in
-		 * {@link AnthropicChatModel} is superseded by
-		 * {@link org.springframework.ai.chat.client.advisor.ToolCallAdvisor} used via
-		 * {@link org.springframework.ai.chat.client.ChatClient}.
+		 * {@link AnthropicChatModel} is superseded by {@code ToolCallAdvisor} used via
+		 * {@code ChatClient}.
 		 */
 		@Deprecated(since = "2.0.0", forRemoval = true)
+		@SuppressWarnings({ "deprecation", "removal" })
 		public Builder toolExecutionEligibilityPredicate(
 				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;

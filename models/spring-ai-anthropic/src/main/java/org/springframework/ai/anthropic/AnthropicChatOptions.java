@@ -688,7 +688,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 
 		/**
 		 * Convenience method to enable thinking with a specific budget in tokens.
-		 * @param budgetTokens the thinking budget (must be >= 1024 and < maxTokens)
+		 * @param budgetTokens the thinking budget (must be &gt;= 1024 and &lt; maxTokens)
 		 */
 		public B thinkingEnabled(long budgetTokens) {
 			return thinking(
@@ -698,7 +698,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		/**
 		 * Convenience method to enable thinking with a specific budget and display
 		 * setting.
-		 * @param budgetTokens the thinking budget (must be >= 1024 and < maxTokens)
+		 * @param budgetTokens the thinking budget (must be &gt;= 1024 and &lt; maxTokens)
 		 * @param display controls how thinking content appears in the response
 		 * (SUMMARIZED or OMITTED)
 		 */
