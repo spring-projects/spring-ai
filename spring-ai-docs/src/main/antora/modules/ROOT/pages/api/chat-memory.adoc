@@ -321,12 +321,12 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
 [cols="2,5,1",stripes=even]
 |===
 |Property | Description | Default Value
-| `spring.ai.chat.memory.repository.neo4j.sessionLabel` | The label for the nodes that store conversation sessions | `Session`
-| `spring.ai.chat.memory.repository.neo4j.messageLabel` | The label for the nodes that store messages | `Message`
-| `spring.ai.chat.memory.repository.neo4j.toolCallLabel` | The label for nodes that store tool calls (e.g. in Assistant Messages) | `ToolCall`
-| `spring.ai.chat.memory.repository.neo4j.metadataLabel` | The label for nodes that store message metadata | `Metadata`
-| `spring.ai.chat.memory.repository.neo4j.toolResponseLabel` | The label for the nodes that store tool responses | `ToolResponse`
-| `spring.ai.chat.memory.repository.neo4j.mediaLabel` | The label for the nodes that store media associated with a message | `Media`
+| `spring.ai.chat.memory.repository.neo4j.session-label` | The label for the nodes that store conversation sessions | `Session`
+| `spring.ai.chat.memory.repository.neo4j.message-label` | The label for the nodes that store messages | `Message`
+| `spring.ai.chat.memory.repository.neo4j.tool-call-label` | The label for nodes that store tool calls (e.g. in Assistant Messages) | `ToolCall`
+| `spring.ai.chat.memory.repository.neo4j.metadata-label` | The label for nodes that store message metadata | `Metadata`
+| `spring.ai.chat.memory.repository.neo4j.tool-response-label` | The label for the nodes that store tool responses | `ToolResponse`
+| `spring.ai.chat.memory.repository.neo4j.media-label` | The label for the nodes that store media associated with a message | `Media`
 |===
 
 ==== Index Initialization
