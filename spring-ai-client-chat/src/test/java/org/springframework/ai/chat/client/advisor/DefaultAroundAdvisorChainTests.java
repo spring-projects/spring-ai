@@ -31,6 +31,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.ToolAdvisor;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.advisor.observation.DefaultAdvisorObservationConvention;
@@ -41,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -135,6 +137,30 @@ class DefaultAroundAdvisorChainTests {
 
 		chain.nextStream(ChatClientRequest.builder().prompt(new Prompt("Hello")).build()).blockLast();
 		assertThat(chain.getStreamAdvisors()).containsExactlyInAnyOrder(advisors.toArray(new StreamAdvisor[0]));
+	}
+
+	@Test
+	void whenStreamAdvisorIsToolAdvisorThenOuterObservationIsSkipped() {
+		// A StreamAdvisor that also implements ToolAdvisor must bypass the outer
+		// observation + aggregation wrapper in nextStream() so it can manage per-round
+		// spans itself.
+		interface ToolStreamAdvisor extends StreamAdvisor, ToolAdvisor {
+
+		}
+		ToolStreamAdvisor toolAdvisor = mock(ToolStreamAdvisor.class);
+		ChatClientResponse expectedResponse = ChatClientResponse.builder().build();
+		when(toolAdvisor.adviseStream(any(), any())).thenReturn(Flux.just(expectedResponse));
+
+		StreamAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.push(toolAdvisor)
+			.build();
+
+		var responses = chain.nextStream(ChatClientRequest.builder().prompt(new Prompt("Hello")).build())
+			.collectList()
+			.block();
+
+		assertThat(responses).containsExactly(expectedResponse);
+		verify(toolAdvisor).adviseStream(any(), any());
 	}
 
 	@Test

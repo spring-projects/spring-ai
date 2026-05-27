@@ -17,9 +17,14 @@
 package org.springframework.ai.chat.client.advisor;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.SignalType;
 import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.client.ChatClientMessageAggregator;
@@ -31,6 +36,10 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.ToolAdvisor;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationDocumentation;
+import org.springframework.ai.chat.client.advisor.observation.DefaultAdvisorObservationConvention;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -54,6 +63,10 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  */
 public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor {
+
+	private static final ChatClientMessageAggregator CHAT_CLIENT_MESSAGE_AGGREGATOR = new ChatClientMessageAggregator();
+
+	private static final AdvisorObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultAdvisorObservationConvention();
 
 	/**
 	 * Default advisor order. Placed early in the chain so that all downstream advisors
@@ -79,8 +92,11 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 
 	private final boolean streamToolCallResponses;
 
+	private final AdvisorObservationConvention observationConvention;
+
 	protected ToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder,
-			boolean conversationHistoryEnabled, boolean streamToolCallResponses) {
+			boolean conversationHistoryEnabled, boolean streamToolCallResponses,
+			@Nullable AdvisorObservationConvention observationConvention) {
 		Assert.notNull(toolCallingManager, "toolCallingManager must not be null");
 		Assert.isTrue(advisorOrder > BaseAdvisor.HIGHEST_PRECEDENCE && advisorOrder < BaseAdvisor.LOWEST_PRECEDENCE,
 				"advisorOrder must be between HIGHEST_PRECEDENCE and LOWEST_PRECEDENCE");
@@ -89,6 +105,8 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 		this.advisorOrder = advisorOrder;
 		this.conversationHistoryEnabled = conversationHistoryEnabled;
 		this.streamToolCallResponses = streamToolCallResponses;
+		this.observationConvention = observationConvention != null ? observationConvention
+				: DEFAULT_OBSERVATION_CONVENTION;
 	}
 
 	@Override
@@ -255,40 +273,58 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 
 			final ChatClientRequest finalRequest = processedRequest;
 
-			// Get the streaming response
-			Flux<ChatClientResponse> responseFlux = chainCopy.nextStream(processedRequest);
+			// Create a per-round observation. The chain skips the outer observation for
+			// ToolAdvisor, so each internalStream() call is responsible for its own span.
+			AdvisorObservationContext obsCtx = AdvisorObservationContext.builder()
+				.advisorName(getName())
+				.chatClientRequest(processedRequest)
+				.order(getOrder())
+				.build();
 
-			// Holder for aggregated response (set when aggregation completes)
-			AtomicReference<ChatClientResponse> aggregatedResponseRef = new AtomicReference<>();
+			Observation obs = AdvisorObservationDocumentation.AI_ADVISOR.observation(this.observationConvention,
+					DEFAULT_OBSERVATION_CONVENTION, () -> obsCtx, streamAdvisorChain.getObservationRegistry());
 
-			return streamWithToolCallResponses(responseFlux, aggregatedResponseRef, finalRequest, streamAdvisorChain,
-					originalRequest, optionsCopy);
+			obs.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
+
+			// Propagate this round's observation as the parent for inner-chain advisors
+			// (e.g. ChatModelStreamAdvisor) so their spans are correctly nested.
+			Flux<ChatClientResponse> responseFlux = chainCopy.nextStream(processedRequest)
+				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, obs));
+
+			return streamWithToolCallResponses(responseFlux, finalRequest, streamAdvisorChain, originalRequest,
+					optionsCopy, obs, obsCtx);
 		});
 	}
 
-	/**
-	 * Streams all chunks immediately including intermediate tool call responses. Uses
-	 * publish() to multicast the stream for parallel streaming and aggregation.
-	 */
 	private Flux<ChatClientResponse> streamWithToolCallResponses(Flux<ChatClientResponse> responseFlux,
-			AtomicReference<ChatClientResponse> aggregatedResponseRef, ChatClientRequest finalRequest,
-			StreamAdvisorChain streamAdvisorChain, ChatClientRequest originalRequest,
-			ToolCallingChatOptions optionsCopy) {
+			ChatClientRequest finalRequest, StreamAdvisorChain streamAdvisorChain, ChatClientRequest originalRequest,
+			ToolCallingChatOptions optionsCopy, Observation observation, AdvisorObservationContext obsCtx) {
 
-		return responseFlux.publish(shared -> {
-			// Branch 1: Stream chunks immediately for real-time streaming UX
-			Flux<ChatClientResponse> streamingBranch = new ChatClientMessageAggregator()
-				.aggregateChatClientResponse(shared, aggregatedResponseRef::set);
+		AtomicReference<ChatClientResponse> aggregatedResponseRef = new AtomicReference<>();
 
-			// Branch 2: After streaming completes, check for tool calls and
-			// potentially recurse.
-			Flux<ChatClientResponse> recursionBranch = Flux
-				.defer(() -> this.handleToolCallRecursion(aggregatedResponseRef.get(), finalRequest, streamAdvisorChain,
-						originalRequest, optionsCopy));
+		// Guard against double-stop: the success path stops the observation inside the
+		// aggregation callback (doOnComplete), which fires before concatWith starts the
+		// next round. doFinally handles the error/cancel paths.
+		AtomicBoolean observationStopped = new AtomicBoolean(false);
 
-			// Emit all streaming chunks first, then append any recursive results
-			return streamingBranch.concatWith(recursionBranch);
+		return CHAT_CLIENT_MESSAGE_AGGREGATOR.aggregateChatClientResponse(responseFlux, ccr -> {
+			aggregatedResponseRef.set(ccr);
+			obsCtx.setChatClientResponse(ccr);
+			// Stop NOW — inside doOnComplete, before concatWith subscribes to round N+1.
+			// This ensures the span covers only this round and carries the correct
+			// response (including tool calls that will be filtered from the output stream
+			// below).
+			if (observationStopped.compareAndSet(false, true)) {
+				observation.stop();
+			}
+		}).doOnError(observation::error).doFinally(signal -> {
+			// Covers error and cancel; success is already handled above.
+			if (signal != SignalType.ON_COMPLETE && observationStopped.compareAndSet(false, true)) {
+				observation.stop();
+			}
 		})
+			.concatWith(Flux.defer(() -> this.handleToolCallRecursion(aggregatedResponseRef.get(), finalRequest,
+					streamAdvisorChain, originalRequest, optionsCopy)))
 			.filter(ccr -> this.streamToolCallResponses
 					|| !(ccr.chatResponse() != null && ccr.chatResponse().hasToolCalls()));
 	}
@@ -441,6 +477,8 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 
 		private boolean streamToolCallResponses = false;
 
+		private @Nullable AdvisorObservationConvention observationConvention;
+
 		protected Builder() {
 		}
 
@@ -511,6 +549,19 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 		}
 
 		/**
+		 * Sets a custom {@link AdvisorObservationConvention} for the per-round
+		 * observations created by this advisor. When {@code null} (the default), the
+		 * {@link DefaultAdvisorObservationConvention} is used.
+		 * @param observationConvention the convention to use, or {@code null} for the
+		 * default
+		 * @return this Builder instance for method chaining
+		 */
+		public T observationConvention(@Nullable AdvisorObservationConvention observationConvention) {
+			this.observationConvention = observationConvention;
+			return self();
+		}
+
+		/**
 		 * Returns the configured ToolCallingManager.
 		 * @return the ToolCallingManager instance
 		 */
@@ -537,7 +588,8 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 			return new Builder<>().toolCallingManager(this.toolCallingManager)
 				.advisorOrder(this.advisorOrder)
 				.conversationHistoryEnabled(this.conversationHistoryEnabled)
-				.streamToolCallResponses(this.streamToolCallResponses);
+				.streamToolCallResponses(this.streamToolCallResponses)
+				.observationConvention(this.observationConvention);
 		}
 
 		/**
@@ -565,7 +617,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 		 */
 		public ToolCallAdvisor build() {
 			return new ToolCallAdvisor(this.toolCallingManager, this.advisorOrder, this.conversationHistoryEnabled,
-					this.streamToolCallResponses);
+					this.streamToolCallResponses, this.observationConvention);
 		}
 
 	}
