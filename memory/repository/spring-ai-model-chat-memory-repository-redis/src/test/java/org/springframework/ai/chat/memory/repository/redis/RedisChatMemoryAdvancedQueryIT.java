@@ -416,7 +416,7 @@ class RedisChatMemoryAdvancedQueryIT {
 			chatMemory.add(conversationId2, new SystemMessage("System initialized"));
 
 			// Test custom query for USER messages containing "Redis"
-			String customQuery = "@type:USER @content:Redis";
+			String customQuery = "@type:{USER} @content:Redis";
 			List<AdvancedRedisChatMemoryRepository.MessageWithConversation> redisUserMessages = ((AdvancedRedisChatMemoryRepository) chatMemory)
 				.executeQuery(customQuery, 10);
 
@@ -436,7 +436,7 @@ class RedisChatMemoryAdvancedQueryIT {
 			assertThat(conv1Messages.stream().allMatch(m -> m.conversationId().equals(conversationId1))).isTrue();
 
 			// Test complex query combining type and content
-			String complexQuery = "(@type:USER | @type:ASSISTANT) @content:Redis";
+			String complexQuery = "@type:{USER | ASSISTANT} @content:Redis";
 			List<AdvancedRedisChatMemoryRepository.MessageWithConversation> complexResults = ((AdvancedRedisChatMemoryRepository) chatMemory)
 				.executeQuery(complexQuery, 10);
 
@@ -512,7 +512,7 @@ class RedisChatMemoryAdvancedQueryIT {
 
 			// Test custom query with no matches
 			List<AdvancedRedisChatMemoryRepository.MessageWithConversation> noQueryMatch = ((AdvancedRedisChatMemoryRepository) chatMemory)
-				.executeQuery("@type:FUNCTION", 10);
+				.executeQuery("@type:{FUNCTION}", 10);
 			assertThat(noQueryMatch).isEmpty();
 
 			// Clean up
