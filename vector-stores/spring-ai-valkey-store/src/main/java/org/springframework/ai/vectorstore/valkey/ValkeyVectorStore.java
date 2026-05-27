@@ -148,6 +148,7 @@ public class ValkeyVectorStore extends AbstractObservationVectorStore implements
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
+
 		if (!this.initializeSchema) {
 			return;
 		}

@@ -235,6 +235,7 @@ class ValkeyVectorStoreDistanceMetricIT {
 		@Bean
 		public GlideClient glideClient() throws Exception {
 			GlideClientConfiguration config = GlideClientConfiguration.builder()
+				.clientName("spring_ai_vector_store_client")
 				.address(NodeAddress.builder().host(valkeyContainer.getHost()).port(valkeyContainer.getPort()).build())
 				.build();
 			return GlideClient.createClient(config).get();
