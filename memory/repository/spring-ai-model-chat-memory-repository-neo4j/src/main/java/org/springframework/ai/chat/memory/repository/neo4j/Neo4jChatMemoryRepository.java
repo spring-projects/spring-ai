@@ -262,7 +262,7 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 					CREATE (msg)-[:HAS_METADATA]->(metadataNode)
 					SET metadataNode = $metadata
 					""");
-			Map<String, Object> metadataCopy = new HashMap<>(message.getMetadata());
+			Map<String, Object> metadataCopy = sanitizeMetadata(message.getMetadata());
 			metadataCopy.remove("messageType");
 			queryParameters.put("metadata", metadataCopy);
 			queryParameters.put("metadataLabel", this.config.getMetadataLabel());
@@ -318,6 +318,20 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 			queryParameters.put("mediaLabel", this.config.getMediaLabel());
 		}
 		t.run(statementBuilder.toString(), queryParameters);
+	}
+
+	private static Map<String, Object> sanitizeMetadata(Map<String, Object> metadata) {
+		Map<String, Object> result = new HashMap<>();
+		for (Map.Entry<String, Object> entry : metadata.entrySet()) {
+			Object value = entry.getValue();
+			if (value instanceof Optional<?> optional) {
+				value = optional.orElse(null);
+			}
+			if (value != null) {
+				result.put(entry.getKey(), value);
+			}
+		}
+		return result;
 	}
 
 	private List<Map<String, Object>> convertMediaToMap(List<Media> media) {
