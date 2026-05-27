@@ -16,6 +16,7 @@
 
 package org.springframework.ai.bedrock.converse;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +26,7 @@ import org.slf4j.LoggerFactory;
  * user-provided value by appending rather than replacing.
  *
  * @author Matt Meckes
+ * @since 2.0.0
  */
 final class UserAgentProvider {
 
@@ -35,7 +37,7 @@ final class UserAgentProvider {
 	private static final String APP_ID;
 
 	static {
-		String version = UserAgentProvider.class.getPackage().getImplementationVersion();
+		@Nullable String version = UserAgentProvider.class.getPackage().getImplementationVersion();
 		if (version == null) {
 			version = "unknown";
 		}

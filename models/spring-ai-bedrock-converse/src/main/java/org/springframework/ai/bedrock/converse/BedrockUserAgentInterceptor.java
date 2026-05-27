@@ -16,9 +16,6 @@
 
 package org.springframework.ai.bedrock.converse;
 
-import software.amazon.awssdk.core.SdkRequest;
-import software.amazon.awssdk.core.interceptor.Context;
-import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
 import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
 
 /**
@@ -26,16 +23,12 @@ import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
  * User-Agent app ID in its static initializer so every SDK client picks it up.
  *
  * @author Matt Meckes
+ * @since 2.0.0
  */
 public final class BedrockUserAgentInterceptor implements ExecutionInterceptor {
 
 	static {
 		UserAgentProvider.configure();
-	}
-
-	@Override
-	public SdkRequest modifyRequest(Context.ModifyRequest context, ExecutionAttributes executionAttributes) {
-		return context.request();
 	}
 
 }
