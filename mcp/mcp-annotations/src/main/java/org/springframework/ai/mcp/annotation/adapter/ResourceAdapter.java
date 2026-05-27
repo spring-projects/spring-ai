@@ -29,12 +29,19 @@ import org.springframework.ai.mcp.annotation.common.MetaUtils;
  * {@link McpSchema.ResourceTemplate} instances from annotation metadata, including URI,
  * name, description, MIME type, annotations, and optional {@code _meta} fields.
  *
+ * <p>
+ * Enforces SEP-1865 (MCP Apps) constraints: resources with a {@code ui://} URI must use
+ * the MIME type {@code text/html;profile=mcp-app}, and resources with that MIME type must
+ * use a {@code ui://} URI.
+ *
  * @author Christian Tzolov
  * @author Alexandros Pappas
  * @author Vadzim Shurmialiou
  * @author Craig Walls
  */
 public final class ResourceAdapter {
+
+	private static final String MCP_APP_MIME_TYPE = "text/html;profile=mcp-app";
 
 	private ResourceAdapter() {
 	}
@@ -45,6 +52,17 @@ public final class ResourceAdapter {
 			name = "resource"; // Default name when not specified
 		}
 		var meta = MetaUtils.getMeta(mcpResourceAnnotation.metaProvider());
+
+		String uri = mcpResourceAnnotation.uri();
+		String mimeType = mcpResourceAnnotation.mimeType();
+		if (uri.startsWith("ui://") && !MCP_APP_MIME_TYPE.equals(mimeType)) {
+			throw new IllegalArgumentException(
+					"Resource with ui:// URI must use MIME type 'text/html;profile=mcp-app', but got: " + mimeType);
+		}
+		if (MCP_APP_MIME_TYPE.equals(mimeType) && !uri.startsWith("ui://")) {
+			throw new IllegalArgumentException(
+					"Resource with MIME type 'text/html;profile=mcp-app' must use a ui:// URI, but got: " + uri);
+		}
 
 		var resourceBuilder = McpSchema.Resource.builder(mcpResourceAnnotation.uri(), name)
 			.title(mcpResourceAnnotation.title())
@@ -72,6 +90,17 @@ public final class ResourceAdapter {
 			name = "resource"; // Default name when not specified
 		}
 		var meta = MetaUtils.getMeta(mcpResource.metaProvider());
+
+		String uri = mcpResource.uri();
+		String mimeType = mcpResource.mimeType();
+		if (uri.startsWith("ui://") && !MCP_APP_MIME_TYPE.equals(mimeType)) {
+			throw new IllegalArgumentException(
+					"Resource with ui:// URI must use MIME type 'text/html;profile=mcp-app', but got: " + mimeType);
+		}
+		if (MCP_APP_MIME_TYPE.equals(mimeType) && !uri.startsWith("ui://")) {
+			throw new IllegalArgumentException(
+					"Resource with MIME type 'text/html;profile=mcp-app' must use a ui:// URI, but got: " + uri);
+		}
 
 		return McpSchema.ResourceTemplate.builder(mcpResource.uri(), name)
 			.description(mcpResource.description())

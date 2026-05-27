@@ -83,7 +83,10 @@ public class AsyncMcpToolProvider extends AbstractMcpToolProvider {
 
 					String inputSchema = McpJsonSchemaGenerator.generateForMethodInput(mcpToolMethod);
 
-					var meta = MetaUtils.getMeta(toolJavaAnnotation.metaProvider());
+					var providerMeta = MetaUtils.getMeta(toolJavaAnnotation.metaProvider());
+					var annotationMeta = MetaUtils.buildUiMeta(toolJavaAnnotation.resourceUri(),
+							toolJavaAnnotation.visibility(), toolJavaAnnotation.csp());
+					var meta = MetaUtils.mergeMeta(providerMeta, annotationMeta);
 
 					var toolBuilder = McpSchema.Tool.builder()
 						.name(toolName)

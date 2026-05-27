@@ -34,7 +34,9 @@ import net.javacrumbs.jsonunit.core.Option;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.mcp.annotation.McpCsp;
 import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.Visibility;
 import org.springframework.ai.mcp.annotation.context.MetaProvider;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -915,6 +917,158 @@ public class SyncMcpToolProviderTests {
 
 		// The input schema should be minimal when only CallToolRequest is present
 		assertThat(toolSpec.tool().inputSchema()).isNotNull();
+	}
+
+	@Test
+	void testToolWithResourceUri() {
+		class ResourceUriTool {
+
+			@McpTool(name = "uri-tool", description = "Tool with resourceUri",
+					resourceUri = "ui://test-server/app.html")
+			public String uriTool(String input) {
+				return "result: " + input;
+			}
+
+		}
+
+		ResourceUriTool toolObject = new ResourceUriTool();
+		SyncMcpToolProvider provider = new SyncMcpToolProvider(List.of(toolObject));
+
+		List<SyncToolSpecification> toolSpecs = provider.getToolSpecifications();
+
+		assertThat(toolSpecs).hasSize(1);
+		McpSchema.Tool tool = toolSpecs.get(0).tool();
+		assertThat(tool.meta()).isNotNull();
+		assertThat(tool.meta()).containsKey("ui");
+		assertThat(tool.meta()).containsKey("ui/resourceUri");
+		assertThat(tool.meta().get("ui/resourceUri")).isEqualTo("ui://test-server/app.html");
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> ui = (Map<String, Object>) tool.meta().get("ui");
+		assertThat(ui.get("resourceUri")).isEqualTo("ui://test-server/app.html");
+	}
+
+	@Test
+	void testToolWithResourceUriAndVisibility() {
+		class ResourceUriVisibilityTool {
+
+			@McpTool(name = "vis-tool", description = "Tool with resourceUri and visibility",
+					resourceUri = "ui://test-server/app.html", visibility = Visibility.APP)
+			public String visTool(String input) {
+				return "result: " + input;
+			}
+
+		}
+
+		ResourceUriVisibilityTool toolObject = new ResourceUriVisibilityTool();
+		SyncMcpToolProvider provider = new SyncMcpToolProvider(List.of(toolObject));
+
+		List<SyncToolSpecification> toolSpecs = provider.getToolSpecifications();
+
+		assertThat(toolSpecs).hasSize(1);
+		McpSchema.Tool tool = toolSpecs.get(0).tool();
+		assertThat(tool.meta()).isNotNull();
+		assertThat(tool.meta()).containsKey("ui/resourceUri");
+		assertThat(tool.meta().get("ui/resourceUri")).isEqualTo("ui://test-server/app.html");
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> ui = (Map<String, Object>) tool.meta().get("ui");
+		assertThat(ui.get("resourceUri")).isEqualTo("ui://test-server/app.html");
+		assertThat(ui.get("visibility")).isInstanceOf(List.class);
+		@SuppressWarnings("unchecked")
+		List<String> visibility = (List<String>) ui.get("visibility");
+		assertThat(visibility).containsExactly("app");
+	}
+
+	@Test
+	void testToolWithResourceUriAndCsp() {
+		class ResourceUriCspTool {
+
+			@McpTool(name = "csp-tool", description = "Tool with resourceUri and CSP",
+					resourceUri = "ui://test-server/app.html", csp = @McpCsp(connectDomains = "api.example.com"))
+			public String cspTool(String input) {
+				return "result: " + input;
+			}
+
+		}
+
+		ResourceUriCspTool toolObject = new ResourceUriCspTool();
+		SyncMcpToolProvider provider = new SyncMcpToolProvider(List.of(toolObject));
+
+		List<SyncToolSpecification> toolSpecs = provider.getToolSpecifications();
+
+		assertThat(toolSpecs).hasSize(1);
+		McpSchema.Tool tool = toolSpecs.get(0).tool();
+		assertThat(tool.meta()).isNotNull();
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> ui = (Map<String, Object>) tool.meta().get("ui");
+		assertThat(ui.get("resourceUri")).isEqualTo("ui://test-server/app.html");
+		assertThat(ui).containsKey("csp");
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> csp = (Map<String, Object>) ui.get("csp");
+		assertThat(csp.get("connectDomains")).isInstanceOf(List.class);
+		@SuppressWarnings("unchecked")
+		List<String> connectDomains = (List<String>) csp.get("connectDomains");
+		assertThat(connectDomains).containsExactly("api.example.com");
+	}
+
+	@Test
+	void testToolWithResourceUriAndMetaProviderMerge() {
+		class MergeTool {
+
+			@McpTool(name = "merge-tool", description = "Tool with merged meta",
+					resourceUri = "ui://test-server/app.html", visibility = Visibility.APP,
+					metaProvider = UiMetaProvider.class)
+			public String mergeTool(String input) {
+				return "result: " + input;
+			}
+
+		}
+
+		MergeTool toolObject = new MergeTool();
+		SyncMcpToolProvider provider = new SyncMcpToolProvider(List.of(toolObject));
+
+		List<SyncToolSpecification> toolSpecs = provider.getToolSpecifications();
+
+		assertThat(toolSpecs).hasSize(1);
+		McpSchema.Tool tool = toolSpecs.get(0).tool();
+		assertThat(tool.meta()).isNotNull();
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> ui = (Map<String, Object>) tool.meta().get("ui");
+		// Annotation-derived fields should be present
+		assertThat(ui.get("resourceUri")).isEqualTo("ui://test/view.html"); // provider
+																			// wins
+		assertThat(ui).containsKey("visibility");
+		// Provider's extra key should also be present (deep-merged)
+		assertThat(ui.get("visibility")).isInstanceOf(List.class);
+		// Provider wins on conflict — provider has ["model", "app"], annotation has
+		// ["app"]
+		@SuppressWarnings("unchecked")
+		List<String> mergedVisibility = (List<String>) ui.get("visibility");
+		assertThat(mergedVisibility).containsExactly("model", "app");
+	}
+
+	@Test
+	void testToolWithNoResourceUriKeepsBehavior() {
+		class PlainTool {
+
+			@McpTool(name = "plain-tool", description = "Plain tool, no resourceUri")
+			public String plainTool(String input) {
+				return "result: " + input;
+			}
+
+		}
+
+		PlainTool toolObject = new PlainTool();
+		SyncMcpToolProvider provider = new SyncMcpToolProvider(List.of(toolObject));
+
+		List<SyncToolSpecification> toolSpecs = provider.getToolSpecifications();
+
+		assertThat(toolSpecs).hasSize(1);
+		assertThat(toolSpecs.get(0).tool().meta()).isNull();
 	}
 
 	public static class UiMetaProvider implements MetaProvider {

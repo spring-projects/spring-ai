@@ -28,6 +28,7 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.ai.mcp.annotation.McpAppResult;
 import org.springframework.ai.mcp.annotation.McpMeta;
 import org.springframework.ai.mcp.annotation.McpProgressToken;
 import org.springframework.ai.mcp.annotation.McpTool;
@@ -184,6 +185,18 @@ public abstract class AbstractMcpToolMethodCallback<T, RC extends McpRequestCont
 		// Default to text output
 		if (result == null) {
 			return CallToolResult.builder().addTextContent("null").build();
+		}
+
+		// For McpAppResult, split text into content[] and structuredContent
+		if (result instanceof McpAppResult appResult) {
+			var builder = CallToolResult.builder();
+			if (appResult.text() != null) {
+				builder.addTextContent(appResult.text());
+			}
+			if (appResult.structuredContent() != null) {
+				builder.structuredContent(appResult.structuredContent());
+			}
+			return builder.build();
 		}
 
 		// For string results in TEXT mode, return the string directly without JSON
