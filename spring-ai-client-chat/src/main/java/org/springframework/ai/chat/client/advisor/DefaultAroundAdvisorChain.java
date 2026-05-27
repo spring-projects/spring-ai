@@ -36,6 +36,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.ToolAdvisor;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationDocumentation;
@@ -128,6 +129,13 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 			}
 
 			var advisor = this.streamAdvisors.pop();
+
+			// ToolAdvisor owns a multi-round stream and manages per-round observations
+			// internally. Skip the outer observation + aggregation wrapper so the chain
+			// does not produce a single span that incorrectly spans all rounds.
+			if (advisor instanceof ToolAdvisor) {
+				return advisor.adviseStream(chatClientRequest, this);
+			}
 
 			AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
 				.advisorName(advisor.getName())

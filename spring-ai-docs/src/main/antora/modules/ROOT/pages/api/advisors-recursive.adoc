@@ -39,6 +39,7 @@ Key features:
 * Uses `callAdvisorChain.copy(this)` to create a sub-chain for recursive calls
 * Includes null safety checks to handle cases where the chat response might be null
 * Supports configurable conversation history management via `conversationHistoryEnabled`
+* Supports a custom `AdvisorObservationConvention` for per-round streaming observations via `observationConvention`
 
 Example usage:
 
@@ -107,6 +108,19 @@ spring.ai.chat.client.tool-calling.stream-tool-call-responses=true
 ----
 
 NOTE: Enabling this option increases the number of chunks the client receives but may interleave tool-call fragments with the final answer depending on how the client processes the stream.
+
+==== Custom Observation Convention
+
+Each LLM round in the streaming tool-call loop produces an independent Micrometer observation.
+By default, `DefaultAdvisorObservationConvention` is used.
+Set a custom `AdvisorObservationConvention` on the builder to control observation names, tags, or other attributes:
+
+[source,java]
+----
+var toolCallAdvisor = ToolCallAdvisor.builder()
+    .observationConvention(new MyAdvisorObservationConvention())
+    .build();
+----
 
 ==== Return Direct Functionality
 

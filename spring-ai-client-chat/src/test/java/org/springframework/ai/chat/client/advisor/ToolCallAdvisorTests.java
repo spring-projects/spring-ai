@@ -37,6 +37,9 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
+import org.springframework.ai.chat.client.advisor.observation.DefaultAdvisorObservationConvention;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -50,6 +53,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -614,6 +618,52 @@ public class ToolCallAdvisorTests {
 	}
 
 	@Test
+	void testObservationConventionDefaultsToDefaultConvention() {
+		ToolCallAdvisor advisor = ToolCallAdvisor.builder().build();
+
+		assertThat(ReflectionTestUtils.getField(advisor, "observationConvention"))
+			.isInstanceOf(DefaultAdvisorObservationConvention.class);
+	}
+
+	@Test
+	void testObservationConventionBuilderMethod() {
+		AdvisorObservationConvention customConvention = new AdvisorObservationConvention() {
+			@Override
+			public String getName() {
+				return "custom.advisor";
+			}
+
+			@Override
+			public boolean supportsContext(io.micrometer.observation.Observation.Context context) {
+				return context instanceof AdvisorObservationContext;
+			}
+		};
+
+		ToolCallAdvisor advisor = ToolCallAdvisor.builder().observationConvention(customConvention).build();
+
+		assertThat(ReflectionTestUtils.getField(advisor, "observationConvention")).isSameAs(customConvention);
+	}
+
+	@Test
+	void testBuilderCopyPreservesObservationConvention() {
+		AdvisorObservationConvention customConvention = new AdvisorObservationConvention() {
+			@Override
+			public String getName() {
+				return "custom.advisor";
+			}
+
+			@Override
+			public boolean supportsContext(io.micrometer.observation.Observation.Context context) {
+				return context instanceof AdvisorObservationContext;
+			}
+		};
+
+		ToolCallAdvisor copy = ToolCallAdvisor.builder().observationConvention(customConvention).copy().build();
+
+		assertThat(ReflectionTestUtils.getField(copy, "observationConvention")).isSameAs(customConvention);
+	}
+
+	@Test
 	void testAdviseStreamWithToolCallResponsesEnabled() {
 		// Create advisor with tool call streaming explicitly enabled
 		ToolCallAdvisor advisor = ToolCallAdvisor.builder()
@@ -928,7 +978,7 @@ public class ToolCallAdvisorTests {
 		private final int[] hookCallCounts;
 
 		TestableToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder, int[] hookCallCounts) {
-			super(toolCallingManager, advisorOrder, true, true);
+			super(toolCallingManager, advisorOrder, true, true, null);
 			this.hookCallCounts = hookCallCounts;
 		}
 
