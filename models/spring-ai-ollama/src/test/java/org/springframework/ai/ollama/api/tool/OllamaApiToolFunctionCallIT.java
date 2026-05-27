@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.ollama.BaseOllamaIT;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.ChatResponse;
@@ -35,6 +34,7 @@ import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
 import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCall;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.tool.MockWeatherService.Unit;
+import org.springframework.ai.util.JsonHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,6 +43,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  */
 public class OllamaApiToolFunctionCallIT extends BaseOllamaIT {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final String MODEL = OllamaModel.QWEN_2_5_3B.getName();
 
@@ -68,7 +70,7 @@ public class OllamaApiToolFunctionCallIT extends BaseOllamaIT {
 
 		var functionTool = new OllamaApi.ChatRequest.Tool(new OllamaApi.ChatRequest.Tool.Function("getCurrentWeather",
 				"Find the current weather conditions, forecasts, and temperatures for a location, like a city or state.",
-				ModelOptionsUtils.jsonToMap("""
+				jsonHelper.fromJsonToMap("""
 						{
 							"type": "object",
 							"properties": {

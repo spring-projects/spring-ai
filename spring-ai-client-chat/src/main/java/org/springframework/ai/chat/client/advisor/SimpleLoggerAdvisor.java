@@ -31,7 +31,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.util.JacksonUtils;
 
 /**
  * A simple logger advisor that logs the request and response messages.
@@ -44,7 +44,7 @@ public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 			? chatClientRequest.toString() : "null";
 
 	public static final Function<@Nullable ChatResponse, String> DEFAULT_RESPONSE_TO_STRING = object -> object != null
-			? ModelOptionsUtils.toJsonStringPrettyPrinter(object) : "null";
+			? JacksonUtils.getDefaultJsonMapper().writerWithDefaultPrettyPrinter().writeValueAsString(object) : "null";
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleLoggerAdvisor.class);
 

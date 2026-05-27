@@ -19,6 +19,7 @@ package org.springframework.ai.openai.chat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -48,7 +49,7 @@ public class OpenAiChatModelNoOpApiKeysIT {
 		@Bean
 		public OpenAiChatModel openAiClient() {
 			return OpenAiChatModel.builder()
-				.options(org.springframework.ai.openai.OpenAiChatOptions.builder().apiKey("noop").build())
+				.options(org.springframework.ai.openai.OpenAiChatOptions.builder().apiKey(new NoopApiKey()).build())
 				.build();
 		}
 

@@ -138,14 +138,15 @@ The prefix `spring.ai.mistralai.chat` is the property prefix that lets you confi
 | spring.ai.mistralai.chat.api-key   | Optional override for the `spring.ai.mistralai.api-key` to provide chat-specific API Key. |  -
 | spring.ai.mistralai.chat.model | This is the Mistral AI Chat model to use | `open-mistral-7b`, `open-mixtral-8x7b`, `open-mixtral-8x22b`, `mistral-small-latest`, `mistral-large-latest`
 | spring.ai.mistralai.chat.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify `temperature` and `top_p` for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
-| spring.ai.mistralai.chat.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
-| spring.ai.mistralai.chat.safePrompt | Indicates whether to inject a security prompt before all conversations. | false
-| spring.ai.mistralai.chat.randomSeed | This feature is in Beta. If specified, our system will make a best effort to sample deterministically, such that repeated requests with the same seed and parameters should return the same result. | -
+| spring.ai.mistralai.chat.max-tokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
+| spring.ai.mistralai.chat.safe-prompt | Indicates whether to inject a security prompt before all conversations. | false
+| spring.ai.mistralai.chat.random-seed | This feature is in Beta. If specified, our system will make a best effort to sample deterministically, such that repeated requests with the same seed and parameters should return the same result. | -
 | spring.ai.mistralai.chat.stop | Stop generation if this token is detected. Or if one of these tokens is detected when providing an array. | -
-| spring.ai.mistralai.chat.topP | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or `temperature` but not both. | -
-| spring.ai.mistralai.chat.responseFormat | An object specifying the format that the model must output. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON. Setting to `{ "type": "json_schema" }` with a supplied schema enables native structured outputs, which guarantees the model will match your supplied JSON schema. See the <<structured-output>> section for more details.| -
+| spring.ai.mistralai.chat.top-p | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or `temperature` but not both. | -
+| spring.ai.mistralai.chat.response-format | An object specifying the format that the model must output. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON. Setting to `{ "type": "json_schema" }` with a supplied schema enables native structured outputs, which guarantees the model will match your supplied JSON schema. See the <<structured-output>> section for more details.| -
+| spring.ai.mistralai.chat.reasoning-effort | Controls the reasoning effort level for reasoning models. Valid values include `high` or `none`. | -
 | spring.ai.mistralai.chat.tools | A list of tools the model may call. Currently, only functions are supported as a tool. Use this to provide a list of functions the model may generate JSON inputs for. | -
-| spring.ai.mistralai.chat.toolChoice | Controls which (if any) function is called by the model. `none` means the model will not call a function and instead generates a message. `auto` means the model can pick between generating a message or calling a function. Specifying a particular function via `{"type: "function", "function": {"name": "my_function"}}` forces the model to call that function. `none` is the default when no functions are present. `auto` is the default if functions are present. | -
+| spring.ai.mistralai.chat.tool-choice | Controls which (if any) function is called by the model. `none` means the model will not call a function and instead generates a message. `auto` means the model can pick between generating a message or calling a function. Specifying a particular function via `{"type: "function", "function": {"name": "my_function"}}` forces the model to call that function. `none` is the default when no functions are present. `auto` is the default if functions are present. | -
 | spring.ai.mistralai.chat.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
 | spring.ai.mistralai.chat.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
 | spring.ai.mistralai.chat.internal-tool-execution-enabled | If false, the Spring AI will not handle the tool calls internally, but will proxy them to the client. Then it is the client's responsibility to handle the tool calls, dispatch them to the appropriate function, and return the results. If true (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | true
@@ -257,6 +258,52 @@ var structuredOutput = MistralAiChatOptions.builder()
 ----
 
 For more information about structured outputs, see the xref:api/structured-output-converter.adoc[Structured Output Converter] documentation.
+
+== Reasoning Models
+
+Mistral AI provides reasoning models that can perform complex reasoning tasks before returning a response.
+When using these models, you can control the level of reasoning effort and access the model's internal reasoning process.
+
+=== Reasoning Effort
+
+You can configure the reasoning effort using the `reasoningEffort` property in `MistralAiChatOptions`.
+This allows you to adjust the amount of computational effort the model spends on reasoning before generating a response.
+
+[source,java]
+----
+var options = MistralAiChatOptions.builder()
+    .model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue()) // Or any reasoning model
+    .reasoningEffort(MistralAiApi.ChatCompletionRequest.ReasoningEffort.HIGH)
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt("Solve this complex math problem...", options));
+----
+
+=== Reasoning Content
+
+Mistral reasoning models expose their internal chain of thought and references.
+Spring AI maps these from the API responses to the message metadata.
+
+You can access the following metadata keys from the `AssistantMessage` when using a reasoning model:
+
+* `thinking_content`: The step-by-step reasoning process the model used to arrive at its final answer.
+* `reference_thinking_content`: The reference thinking content.
+* `reference_content`: The reference content.
+
+[source,java]
+----
+ChatResponse response = chatModel.call(new Prompt("Solve this complex math problem..."));
+
+AssistantMessage message = response.getResult().getOutput();
+
+// Access the thinking content from metadata
+String thinking = (String) message.getMetadata().get("thinking_content");
+if (thinking != null && !thinking.isEmpty()) {
+    System.out.println("Model's thinking process:");
+    System.out.println(thinking);
+}
+----
 
 == Multimodal
 

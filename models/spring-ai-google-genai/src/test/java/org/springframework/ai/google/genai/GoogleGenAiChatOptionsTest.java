@@ -132,30 +132,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
-	public void testToStringWithThinkingBudget() {
-		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.thinkingBudget(12853)
-			.build();
-
-		String toString = options.toString();
-		assertThat(toString).contains("thinkingBudget=12853");
-		assertThat(toString).contains("test-model");
-	}
-
-	@Test
-	public void testToStringWithLabels() {
-		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.labels(Map.of("org", "my-org"))
-			.build();
-
-		String toString = options.toString();
-		assertThat(toString).contains("labels={org=my-org}");
-		assertThat(toString).contains("test-model");
-	}
-
-	@Test
 	public void testThinkingBudgetWithZeroValue() {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().thinkingBudget(0).build();
 
@@ -226,17 +202,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 		assertThat(options1).isEqualTo(options2);
 		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
 		assertThat(options1).isNotEqualTo(options3);
-	}
-
-	@Test
-	public void testToStringWithThinkingLevel() {
-		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
-			.build();
-
-		String toString = options.toString();
-		assertThat(toString).contains("thinkingLevel=HIGH");
 	}
 
 	@Test
@@ -325,17 +290,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
-	public void testToStringWithIncludeServerSideToolInvocations() {
-		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.includeServerSideToolInvocations(true)
-			.build();
-
-		String toString = options.toString();
-		assertThat(toString).contains("includeServerSideToolInvocations=true");
-	}
-
-	@Test
 	public void testServiceTierWithBuilder() {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
 			.model("test-model")
@@ -404,5 +358,4 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 		String toString = options.toString();
 		assertThat(toString).contains("serviceTier='priority'");
 	}
-
 }

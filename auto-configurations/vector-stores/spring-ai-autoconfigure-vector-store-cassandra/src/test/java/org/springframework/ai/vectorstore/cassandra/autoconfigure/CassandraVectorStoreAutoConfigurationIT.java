@@ -64,7 +64,7 @@ class CassandraVectorStoreAutoConfigurationIT {
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.ai.vectorstore.cassandra.initialize-schema=true")
 		.withPropertyValues("spring.ai.vectorstore.cassandra.keyspace=test_autoconfigure")
-		.withPropertyValues("spring.ai.vectorstore.cassandra.contentColumnName=doc_chunk");
+		.withPropertyValues("spring.ai.vectorstore.cassandra.content-column-name=doc_chunk");
 
 	List<Document> documents = List.of(
 			new Document(ResourceUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),
@@ -76,7 +76,7 @@ class CassandraVectorStoreAutoConfigurationIT {
 		this.contextRunner.withPropertyValues("spring.cassandra.contactPoints=" + getContactPointHost())
 			.withPropertyValues("spring.cassandra.port=" + getContactPointPort())
 			.withPropertyValues("spring.cassandra.localDatacenter=" + cassandraContainer.getLocalDatacenter())
-			.withPropertyValues("spring.ai.vectorstore.cassandra.fixedThreadPoolExecutorSize=8")
+			.withPropertyValues("spring.ai.vectorstore.cassandra.fixed-thread-pool-executor-size=8")
 
 			.run(context -> {
 				VectorStore vectorStore = context.getBean(VectorStore.class);
@@ -126,7 +126,7 @@ class CassandraVectorStoreAutoConfigurationIT {
 		this.contextRunner.withPropertyValues("spring.cassandra.contactPoints=" + getContactPointHost())
 			.withPropertyValues("spring.cassandra.port=" + getContactPointPort())
 			.withPropertyValues("spring.cassandra.localDatacenter=" + cassandraContainer.getLocalDatacenter())
-			.withPropertyValues("spring.ai.vectorstore.cassandra.fixedThreadPoolExecutorSize=8")
+			.withPropertyValues("spring.ai.vectorstore.cassandra.fixed-thread-pool-executor-size=8")
 			.run(context -> {
 				assertThat(context.getBeansOfType(CassandraVectorStoreProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
@@ -140,7 +140,7 @@ class CassandraVectorStoreAutoConfigurationIT {
 			.withPropertyValues("spring.cassandra.contactPoints=" + getContactPointHost())
 			.withPropertyValues("spring.cassandra.port=" + getContactPointPort())
 			.withPropertyValues("spring.cassandra.localDatacenter=" + cassandraContainer.getLocalDatacenter())
-			.withPropertyValues("spring.ai.vectorstore.cassandra.fixedThreadPoolExecutorSize=8")
+			.withPropertyValues("spring.ai.vectorstore.cassandra.fixed-thread-pool-executor-size=8")
 			.run(context -> {
 				assertThat(context.getBeansOfType(CassandraVectorStoreProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();

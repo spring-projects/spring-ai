@@ -44,6 +44,7 @@ import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.anthropic.AnthropicWebSearchResult;
 import org.springframework.ai.anthropic.AnthropicWebSearchTool;
 import org.springframework.ai.anthropic.Citation;
+import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -92,6 +93,17 @@ class AnthropicChatModelIT {
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
+	}
+
+	private static void validateRateLimitMetadata(ChatResponse response) {
+		assertThat(response.getMetadata().getRateLimit()).isInstanceOf(AnthropicRateLimit.class);
+		AnthropicRateLimit rateLimit = (AnthropicRateLimit) response.getMetadata().getRateLimit();
+		assertThat(rateLimit.getRequestsLimit()).isPositive();
+		assertThat(rateLimit.getRequestsRemaining()).isNotNegative();
+		assertThat(rateLimit.getRequestsReset()).isNotNull();
+		assertThat(rateLimit.getTokensLimit()).isPositive();
+		assertThat(rateLimit.getTokensRemaining()).isNotNegative();
+		assertThat(rateLimit.getTokensReset()).isNotNull();
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -214,6 +226,7 @@ class AnthropicChatModelIT {
 
 		logger.info(response.toString());
 		validateChatResponseMetadata(response, model);
+		validateRateLimitMetadata(response);
 	}
 
 	@Test

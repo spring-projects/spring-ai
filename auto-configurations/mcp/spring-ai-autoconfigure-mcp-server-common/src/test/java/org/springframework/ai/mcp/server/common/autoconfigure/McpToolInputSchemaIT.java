@@ -33,7 +33,7 @@ import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.method.tool.utils.McpJsonSchemaGenerator;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.stereotype.Component;
@@ -61,7 +61,7 @@ public class McpToolInputSchemaIT {
 		Method method = JiraToolMethods.class.getDeclaredMethod("toolWithMixedParams", String.class, String.class);
 		String schemaJson = McpJsonSchemaGenerator.generateForMethodInput(method);
 
-		JsonNode schema = JsonParser.getJsonMapper().readTree(schemaJson);
+		JsonNode schema = JacksonUtils.getDefaultJsonMapper().readTree(schemaJson);
 		List<String> required = requiredList(schema);
 
 		assertThat(required).as("non-nullable top-level param must be required").contains("requiredParam");
@@ -77,7 +77,7 @@ public class McpToolInputSchemaIT {
 		Method method = JiraToolMethods.class.getDeclaredMethod("createIssue", JiraCreateIssueRequest.class);
 		String schemaJson = McpJsonSchemaGenerator.generateForMethodInput(method);
 
-		JsonNode schema = JsonParser.getJsonMapper().readTree(schemaJson);
+		JsonNode schema = JacksonUtils.getDefaultJsonMapper().readTree(schemaJson);
 
 		// The single method parameter "request" is not @Nullable → required at top level
 		assertThat(requiredList(schema)).as("'request' param must be required at top level").contains("request");
@@ -120,7 +120,7 @@ public class McpToolInputSchemaIT {
 				JiraCreateIssueRequestWorkaround.class);
 		String schemaJson = McpJsonSchemaGenerator.generateForMethodInput(method);
 
-		JsonNode schema = JsonParser.getJsonMapper().readTree(schemaJson);
+		JsonNode schema = JacksonUtils.getDefaultJsonMapper().readTree(schemaJson);
 		JsonNode requestSchema = schema.at("/properties/request");
 
 		List<String> projectRequired = requiredList(requestSchema.at("/properties/project"));

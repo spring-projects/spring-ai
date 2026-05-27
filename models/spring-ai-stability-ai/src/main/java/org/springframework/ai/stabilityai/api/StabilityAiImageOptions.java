@@ -351,15 +351,6 @@ public class StabilityAiImageOptions implements ImageOptions {
 				this.clipGuidancePreset, this.sampler, this.seed, this.steps, this.stylePreset);
 	}
 
-	@Override
-	public String toString() {
-		return "StabilityAiImageOptions{" + "n=" + this.n + ", model='" + this.model + '\'' + ", width=" + this.width
-				+ ", height=" + this.height + ", responseFormat='" + this.responseFormat + '\'' + ", cfgScale="
-				+ this.cfgScale + ", clipGuidancePreset='" + this.clipGuidancePreset + '\'' + ", sampler='"
-				+ this.sampler + '\'' + ", seed=" + this.seed + ", steps=" + this.steps + ", stylePreset='"
-				+ this.stylePreset + '\'' + '}';
-	}
-
 	public static final class Builder {
 
 		private @Nullable Integer n;

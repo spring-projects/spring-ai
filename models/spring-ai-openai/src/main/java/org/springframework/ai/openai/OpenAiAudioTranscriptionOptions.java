@@ -154,13 +154,6 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 				this.timestampGranularities);
 	}
 
-	@Override
-	public String toString() {
-		return "OpenAiAudioTranscriptionOptions{" + "model='" + this.model + '\'' + ", responseFormat="
-				+ this.responseFormat + ", prompt='" + this.prompt + '\'' + ", language='" + this.language + '\''
-				+ ", temperature=" + this.temperature + ", timestampGranularities=" + this.timestampGranularities + '}';
-	}
-
 	public static final class Builder extends AbstractBuilder<OpenAiAudioTranscriptionOptions, Builder> {
 
 		private @Nullable AudioResponseFormat responseFormat;

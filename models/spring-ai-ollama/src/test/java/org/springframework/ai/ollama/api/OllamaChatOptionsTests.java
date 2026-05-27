@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
-import tools.jackson.core.JacksonException;
 
 import org.springframework.ai.ollama.api.OllamaChatOptions.Builder;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
@@ -155,8 +154,9 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 
 	@Test
 	void testOutputSchemaOptionWithJsonAsString() {
-		assertThatThrownBy(() -> OllamaChatOptions.builder().outputSchema("json")).isInstanceOf(JacksonException.class)
-			.hasMessageContaining("Unrecognized token 'json'");
+		assertThatThrownBy(() -> OllamaChatOptions.builder().outputSchema("json"))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Conversion from JSON to java.util.Map<java.lang.String, java.lang.Object> failed");
 	}
 
 	@Test

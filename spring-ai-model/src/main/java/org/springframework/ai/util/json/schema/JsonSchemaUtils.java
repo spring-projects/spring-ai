@@ -16,17 +16,31 @@
 
 package org.springframework.ai.util.json.schema;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
+import com.github.victools.jsonschema.generator.Option;
+import com.github.victools.jsonschema.generator.OptionPreset;
+import com.github.victools.jsonschema.generator.SchemaGenerator;
+import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
+import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
+import com.github.victools.jsonschema.generator.SchemaVersion;
+import com.github.victools.jsonschema.module.jackson.JacksonOption;
+import com.github.victools.jsonschema.module.jackson.JacksonSchemaModule;
+import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
+import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ObjectNode;
 
-import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.KotlinModule;
+import org.springframework.ai.util.JsonHelper;
+import org.springframework.core.KotlinDetector;
 import org.springframework.util.StringUtils;
 
 /**
@@ -34,9 +48,14 @@ import org.springframework.util.StringUtils;
  *
  * @author Guangdong Liu
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public final class JsonSchemaUtils {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
+
+	private static final AtomicReference<@Nullable SchemaGenerator> SCHEMA_GENERATOR_CACHE = new AtomicReference<>();
 
 	private JsonSchemaUtils() {
 	}
@@ -109,15 +128,15 @@ public final class JsonSchemaUtils {
 		return candidate;
 	}
 
-	private static void rewriteDefsRefs(JsonNode node, Map<String, String> renames) {
+	private static void rewriteDefsRefs(@Nullable JsonNode node, Map<String, String> renames) {
 		if (node == null) {
 			return;
 		}
 		if (node.isObject()) {
 			ObjectNode object = (ObjectNode) node;
 			JsonNode refNode = object.get("$ref");
-			if (refNode != null && refNode.isTextual()) {
-				String ref = refNode.asText();
+			if (refNode != null && refNode.isString()) {
+				String ref = refNode.asString();
 				String prefix = "#/$defs/";
 				if (ref.startsWith(prefix)) {
 					String rest = ref.substring(prefix.length());
@@ -149,14 +168,14 @@ public final class JsonSchemaUtils {
 			return inputSchema;
 		}
 
-		Map<String, Object> schemaMap = ModelOptionsUtils.jsonToMap(inputSchema);
+		Map<String, Object> schemaMap = jsonHelper.fromJsonToMap(inputSchema);
 
-		if (schemaMap == null || schemaMap.isEmpty()) {
+		if (schemaMap.isEmpty()) {
 			// Create a minimal valid schema
 			schemaMap = new java.util.HashMap<>();
 			schemaMap.put("type", "object");
 			schemaMap.put("properties", new java.util.HashMap<>());
-			return ModelOptionsUtils.toJsonString(schemaMap);
+			return jsonHelper.toJson(schemaMap);
 		}
 
 		// Ensure "type" field exists
@@ -169,7 +188,46 @@ public final class JsonSchemaUtils {
 			schemaMap.put("properties", new java.util.HashMap<>());
 		}
 
-		return ModelOptionsUtils.toJsonString(schemaMap);
+		return jsonHelper.toJson(schemaMap);
+	}
+
+	/**
+	 * Generates JSON Schema (version 2020_12) for the given class.
+	 * @param inputType the input {@link Type} to generate JSON Schema from.
+	 * @return the generated JSON Schema as a String.
+	 * @since 2.0.0
+	 */
+	public static ObjectNode getJsonSchema(Type inputType) {
+
+		if (SCHEMA_GENERATOR_CACHE.get() == null) {
+
+			JacksonSchemaModule jacksonModule = new JacksonSchemaModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
+			Swagger2Module swaggerModule = new Swagger2Module();
+
+			SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12,
+					OptionPreset.PLAIN_JSON)
+				.with(Option.EXTRA_OPEN_API_FORMAT_VALUES)
+				.with(Option.PLAIN_DEFINITION_KEYS)
+				.with(swaggerModule)
+				.with(jacksonModule);
+
+			if (KotlinDetector.isKotlinReflectPresent()) {
+				configBuilder.with(new KotlinModule());
+			}
+
+			SchemaGeneratorConfig config = configBuilder.build();
+			SchemaGenerator generator = new SchemaGenerator(config);
+			SCHEMA_GENERATOR_CACHE.compareAndSet(null, generator);
+		}
+
+		@SuppressWarnings("NullAway")
+		ObjectNode node = SCHEMA_GENERATOR_CACHE.get().generateSchema(inputType);
+
+		if ((inputType == Void.class) && !node.has("properties")) {
+			node.putObject("properties");
+		}
+
+		return node;
 	}
 
 }

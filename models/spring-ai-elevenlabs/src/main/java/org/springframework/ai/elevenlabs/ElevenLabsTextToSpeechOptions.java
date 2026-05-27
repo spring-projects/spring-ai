@@ -294,17 +294,6 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 	}
 
 	@Override
-	public String toString() {
-		return "ElevenLabsSpeechOptions{" + "modelId='" + this.modelId + '\'' + ", voiceId='" + this.voiceId + '\''
-				+ ", outputFormat='" + this.outputFormat + '\'' + ", voiceSettings=" + this.voiceSettings
-				+ ", languageCode='" + this.languageCode + '\'' + ", pronunciationDictionaryLocators="
-				+ this.pronunciationDictionaryLocators + ", seed=" + this.seed + ", previousText='" + this.previousText
-				+ '\'' + ", nextText='" + this.nextText + '\'' + ", previousRequestIds=" + this.previousRequestIds
-				+ ", nextRequestIds=" + this.nextRequestIds + ", applyTextNormalization=" + this.applyTextNormalization
-				+ ", applyLanguageTextNormalization=" + this.applyLanguageTextNormalization + '}';
-	}
-
-	@Override
 	@SuppressWarnings("unchecked")
 	public ElevenLabsTextToSpeechOptions copy() {
 		return ElevenLabsTextToSpeechOptions.builder()

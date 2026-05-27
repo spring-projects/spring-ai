@@ -67,6 +67,16 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	Map<String, Object> getToolContext();
 
 	/**
+	 * Returns a new {@link ToolCallingChatOptions.Builder} initialized with the values of
+	 * this {@link ToolCallingChatOptions}.
+	 *
+	 * Narrows the return type of {@link ChatOptions#mutate()} so generic tool calling
+	 * code can chain methods without casting.
+	 */
+	@Override
+	ToolCallingChatOptions.Builder<?> mutate();
+
+	/**
 	 * A builder to create a new {@link ToolCallingChatOptions} instance.
 	 */
 	static ToolCallingChatOptions.Builder<?> builder() {

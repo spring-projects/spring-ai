@@ -84,7 +84,6 @@ import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.google.genai.metadata.GoogleGenAiUsage;
 import org.springframework.ai.google.genai.schema.GoogleGenAiToolCallingManager;
 import org.springframework.ai.model.ChatModelDescription;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
@@ -93,6 +92,7 @@ import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
@@ -190,7 +190,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 	private final AtomicBoolean internalToolExecutionWarned = new AtomicBoolean(false);
 
-	private final JsonMapper jsonMapper = ModelOptionsUtils.JSON_MAPPER.rebuild()
+	private final JsonMapper jsonMapper = JacksonUtils.getDefaultJsonMapper()
+		.rebuild()
 		.addMixIn(Schema.class, SchemaMixin.class)
 		.build();
 

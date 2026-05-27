@@ -64,7 +64,7 @@ To configure it, use the `spring.ai.embedding.transformer.*` properties.
 For example, add this to your _application.properties_ file to configure the client with the https://huggingface.co/intfloat/e5-small-v2[intfloat/e5-small-v2] text embedding model:
 
 ----
-spring.ai.embedding.transformer.onnx.modelUri=https://huggingface.co/intfloat/e5-small-v2/resolve/main/model.onnx
+spring.ai.embedding.transformer.onnx.model-uri=https://huggingface.co/intfloat/e5-small-v2/resolve/main/model.onnx
 spring.ai.embedding.transformer.tokenizer.uri=https://huggingface.co/intfloat/e5-small-v2/raw/main/tokenizer.json
 ----
 
@@ -93,10 +93,10 @@ This change is done to allow configuration of multiple models.
 | spring.ai.embedding.transformer.tokenizer.options  | HuggingFaceTokenizer options such as '`addSpecialTokens`', '`modelMaxLength`', '`truncation`', '`padding`', '`maxLength`', '`stride`', '`padToMultipleOf`'. Leave empty to fallback to the defaults. | empty
 | spring.ai.embedding.transformer.cache.enabled  | Enable remote Resource caching.  | true
 | spring.ai.embedding.transformer.cache.directory  | Directory path to cache remote resources, such as the ONNX models   | ${java.io.tmpdir}/spring-ai-onnx-model
-| spring.ai.embedding.transformer.onnx.modelUri  | Existing, pre-trained ONNX model.  | onnx/all-MiniLM-L6-v2/model.onnx
-| spring.ai.embedding.transformer.onnx.modelOutputName | The ONNX model's output node name, which we'll use for embedding calculation.  | last_hidden_state
-| spring.ai.embedding.transformer.onnx.gpuDeviceId  |  The GPU device ID to execute on. Only applicable if >= 0. Ignored otherwise.(Requires additional onnxruntime_gpu dependency) |  -1
-| spring.ai.embedding.transformer.metadataMode  |  Specifies what parts of the Documents content and metadata will be used for computing the embeddings.  |  NONE
+| spring.ai.embedding.transformer.onnx.model-uri  | Existing, pre-trained ONNX model.  | onnx/all-MiniLM-L6-v2/model.onnx
+| spring.ai.embedding.transformer.onnx.model-output-name | The ONNX model's output node name, which we'll use for embedding calculation.  | last_hidden_state
+| spring.ai.embedding.transformer.onnx.gpu-device-id  |  The GPU device ID to execute on. Only applicable if >= 0. Ignored otherwise.(Requires additional onnxruntime_gpu dependency) |  -1
+| spring.ai.embedding.transformer.metadata-mode  |  Specifies what parts of the Documents content and metadata will be used for computing the embeddings.  |  NONE
 |===
 
 
@@ -118,7 +118,7 @@ Consider the names listed in the error message.
 For example:
 
 ----
-spring.ai.embedding.transformer.onnx.modelOutputName=token_embeddings
+spring.ai.embedding.transformer.onnx.model-output-name=token_embeddings
 ----
 ====
 
@@ -135,7 +135,7 @@ Currently the only workaround is to copy the large `model.onnx_data` in the fold
 [NOTE]
 ====
 If you get an error like `ai.onnxruntime.OrtException: Error code - ORT_EP_FAIL - message: Failed to find CUDA shared provider`,
-that means that you are using the GPU parameters `spring.ai.embedding.transformer.onnx.gpuDeviceId` , but the onnxruntime_gpu dependency are missing.
+that means that you are using the GPU parameters `spring.ai.embedding.transformer.onnx.gpu-device-id` , but the onnxruntime_gpu dependency are missing.
 ----
 <dependency>
     <groupId>com.microsoft.onnxruntime</groupId>

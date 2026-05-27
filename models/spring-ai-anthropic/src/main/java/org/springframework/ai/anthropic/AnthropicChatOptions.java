@@ -538,20 +538,6 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 				this.webSearchTool, this.serviceTier);
 	}
 
-	@Override
-	public String toString() {
-		return "AnthropicChatOptions{" + "model='" + this.getModel() + '\'' + ", maxTokens=" + this.maxTokens
-				+ ", metadata=" + this.metadata + ", stopSequences=" + this.stopSequences + ", temperature="
-				+ this.temperature + ", topP=" + this.topP + ", topK=" + this.topK + ", toolChoice=" + this.toolChoice
-				+ ", thinking=" + this.thinking + ", disableParallelToolUse=" + this.disableParallelToolUse
-				+ ", toolCallbacks=" + this.toolCallbacks + ", toolNames=" + this.toolNames
-				+ ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled + ", toolContext="
-				+ this.toolContext + ", citationDocuments=" + this.citationDocuments + ", cacheOptions="
-				+ this.cacheOptions + ", outputConfig=" + this.outputConfig + ", httpHeaders=" + this.httpHeaders
-				+ ", skillContainer=" + this.skillContainer + ", inferenceGeo=" + this.inferenceGeo + ", webSearchTool="
-				+ this.webSearchTool + ", serviceTier=" + this.serviceTier + '}';
-	}
-
 	/**
 	 * Builder for creating {@link AnthropicChatOptions} instances.
 	 */
@@ -702,7 +688,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 
 		/**
 		 * Convenience method to enable thinking with a specific budget in tokens.
-		 * @param budgetTokens the thinking budget (must be >= 1024 and < maxTokens)
+		 * @param budgetTokens the thinking budget (must be &gt;= 1024 and &lt; maxTokens)
 		 */
 		public B thinkingEnabled(long budgetTokens) {
 			return thinking(
@@ -712,7 +698,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		/**
 		 * Convenience method to enable thinking with a specific budget and display
 		 * setting.
-		 * @param budgetTokens the thinking budget (must be >= 1024 and < maxTokens)
+		 * @param budgetTokens the thinking budget (must be &gt;= 1024 and &lt; maxTokens)
 		 * @param display controls how thinking content appears in the response
 		 * (SUMMARIZED or OMITTED)
 		 */

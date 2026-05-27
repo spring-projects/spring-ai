@@ -45,6 +45,7 @@ import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.embedding.EmbeddingResultMetadata;
 import org.springframework.ai.embedding.EmbeddingResultMetadata.ModalityType;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.ImageBuilder;
@@ -64,6 +65,8 @@ import org.springframework.util.StringUtils;
  * @since 1.0.0
  */
 public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final Logger logger = LoggerFactory.getLogger(VertexAiMultimodalEmbeddingModel.class);
 
@@ -210,7 +213,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 
 		PredictRequest.Builder predictRequestBuilder = PredictRequest.newBuilder()
 			.setEndpoint(endpointName.toString())
-			.setParameters(VertexAiEmbeddingUtils.jsonToValue(ModelOptionsUtils.toJsonString(Map.of())))
+			.setParameters(VertexAiEmbeddingUtils.jsonToValue(jsonHelper.toJson(Map.of())))
 			.addAllInstances(instances);
 
 		PredictResponse embeddingResponse = client.predict(predictRequestBuilder.build());

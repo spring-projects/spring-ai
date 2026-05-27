@@ -75,9 +75,9 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 
 | spring.ai.bedrock.aws.region     | AWS region to use  | us-east-1
 | spring.ai.bedrock.aws.timeout    | AWS max duration for entire API call | 5m
-| spring.ai.bedrock.aws.connectionTimeout | Max duration to wait while establishing connection | 5s
-| spring.ai.bedrock.aws.connectionAcquisitionTimeout | Max duration to wait for new connection from the pool | 30s
-| spring.ai.bedrock.aws.asyncReadTimeout | Max duration spent reading asynchronous responses | 30s
+| spring.ai.bedrock.aws.connection-timeout | Max duration to wait while establishing connection | 5s
+| spring.ai.bedrock.aws.connection-acquisition-timeout | Max duration to wait for new connection from the pool | 30s
+| spring.ai.bedrock.aws.async-read-timeout | Max duration spent reading asynchronous responses | 30s
 | spring.ai.bedrock.aws.access-key | AWS access key  | -
 | spring.ai.bedrock.aws.secret-key | AWS secret key  | -
 | spring.ai.bedrock.aws.session-token | AWS session token for temporary credentials | -

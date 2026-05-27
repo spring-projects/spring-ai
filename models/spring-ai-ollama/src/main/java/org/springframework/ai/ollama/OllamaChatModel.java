@@ -32,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
-import tools.jackson.core.type.TypeReference;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
@@ -51,7 +50,6 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
@@ -70,7 +68,7 @@ import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.tool.definition.ToolDefinition;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -93,6 +91,8 @@ import org.springframework.util.StringUtils;
  * @since 1.0.0
  */
 public class OllamaChatModel implements ChatModel {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final Logger logger = LoggerFactory.getLogger(OllamaChatModel.class);
 
@@ -262,8 +262,7 @@ public class OllamaChatModel implements ChatModel {
 							.toolCalls()
 							.stream()
 							.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
-									toolCall.function().name(),
-									ModelOptionsUtils.toJsonString(toolCall.function().arguments())))
+									toolCall.function().name(), jsonHelper.toJson(toolCall.function().arguments())))
 							.toList();
 
 				var assistantMessage = AssistantMessage.builder()
@@ -356,8 +355,7 @@ public class OllamaChatModel implements ChatModel {
 						.toolCalls()
 						.stream()
 						.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
-								toolCall.function().name(),
-								ModelOptionsUtils.toJsonString(toolCall.function().arguments())))
+								toolCall.function().name(), jsonHelper.toJson(toolCall.function().arguments())))
 						.toList();
 				}
 
@@ -471,8 +469,7 @@ public class OllamaChatModel implements ChatModel {
 				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 					toolCalls = assistantMessage.getToolCalls().stream().map(toolCall -> {
 						var function = new ToolCallFunction(toolCall.name(),
-								JsonParser.fromJson(toolCall.arguments(), new TypeReference<>() {
-								}));
+								jsonHelper.fromJsonToMap(toolCall.arguments()));
 						return new ToolCall(toolCall.id(), function);
 					}).toList();
 				}
