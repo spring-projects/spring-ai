@@ -26,11 +26,12 @@ import org.springframework.util.Assert;
  * Interface for determining when tool execution should be performed based on model
  * responses.
  *
+ * @deprecated since 2.0.0 for removal in 3.0.0 — replaced by
+ * {@link ToolExecutionEligibilityChecker}, which separates the response check from the
+ * options-based policy check. For the recommended long-term approach, internal tool
+ * execution in {@link org.springframework.ai.chat.model.ChatModel} implementations is
+ * superseded by {@code ToolCallAdvisor} used via {@code ChatClient}.
  * @author Christian Tzolov
- * @deprecated since 2.0.0 for removal in 3.0.0 — internal tool execution in
- * {@link org.springframework.ai.chat.model.ChatModel} implementations is superseded by
- * {@link org.springframework.ai.chat.client.advisor.ToolCallAdvisor} used via
- * {@link org.springframework.ai.chat.client.ChatClient}.
  */
 @Deprecated(since = "2.0.0", forRemoval = true)
 public interface ToolExecutionEligibilityPredicate extends BiPredicate<ChatOptions, ChatResponse> {
