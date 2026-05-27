@@ -64,7 +64,7 @@ public class OracleVectorStoreAutoConfigurationIT {
 		.withConfiguration(AutoConfigurations.of(OracleVectorStoreAutoConfiguration.class,
 				JdbcTemplateAutoConfiguration.class, DataSourceAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE",
+		.withPropertyValues("test.spring.ai.vectorstore.oracle.distance-type=COSINE",
 				"spring.ai.vectorstore.oracle.initialize-schema=true",
 				"test.spring.ai.vectorstore.oracle.dimensions=384",
 				// JdbcTemplate configuration

@@ -132,7 +132,7 @@ public class MistralAiPropertiesTests {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.mistralai.api-key=API_KEY", "spring.ai.mistralai.base-url=TEST_BASE_URL",
 					"spring.ai.mistralai.embedding.options.model=MODEL_XYZ",
-					"spring.ai.mistralai.embedding.options.encodingFormat=MyEncodingFormat")
+					"spring.ai.mistralai.embedding.options.encoding-format=MyEncodingFormat")
 			.withConfiguration(AutoConfigurations.of(MistralAiEmbeddingAutoConfiguration.class,
 					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class))
 			.run(context -> {

@@ -63,7 +63,7 @@ class McpServerStreamableHttpWebMvcAutoConfigurationIT {
 
 	@Test
 	void serverBaseUrlConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.mcpEndpoint=/test")
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.mcp-endpoint=/test")
 			.run(context -> assertThat(context.getBean(WebMvcStreamableServerTransportProvider.class))
 				.extracting("mcpEndpoint")
 				.isEqualTo("/test"));
@@ -163,7 +163,7 @@ class McpServerStreamableHttpWebMvcAutoConfigurationIT {
 	@Test
 	void allPropertiesConfiguration() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.mcp.server.streamable-http.mcpEndpoint=/custom-endpoint",
+			.withPropertyValues("spring.ai.mcp.server.streamable-http.mcp-endpoint=/custom-endpoint",
 					"spring.ai.mcp.server.streamable-http.keep-alive-interval=PT45S",
 					"spring.ai.mcp.server.streamable-http.disallow-delete=true")
 			.run(context -> {

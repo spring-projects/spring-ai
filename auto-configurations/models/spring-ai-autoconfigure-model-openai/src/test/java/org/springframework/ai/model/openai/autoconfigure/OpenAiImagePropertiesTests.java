@@ -69,7 +69,7 @@ public class OpenAiImagePropertiesTests {
 				"spring.ai.openai.image.options.width=1024",
 				"spring.ai.openai.image.options.height=1792",
 				"spring.ai.openai.image.options.quality=hd",
-				"spring.ai.openai.image.options.responseFormat=url",
+				"spring.ai.openai.image.options.response-format=url",
 				"spring.ai.openai.image.options.size=1024x1792",
 				"spring.ai.openai.image.options.style=vivid",
 				"spring.ai.openai.image.options.user=userXYZ"
