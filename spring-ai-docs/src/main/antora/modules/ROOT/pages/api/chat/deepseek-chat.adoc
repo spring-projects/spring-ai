@@ -119,7 +119,7 @@ The prefix `spring.ai.deepseek.chat` is the property prefix that lets you config
 | spring.ai.deepseek.chat.api-key | Optionally overrides the spring.ai.deepseek.api-key to provide a chat-specific API key | -
 | spring.ai.deepseek.chat.completions-path | The path to the chat completions endpoint | `/chat/completions`
 | spring.ai.deepseek.chat.beta-prefix-path | The prefix path to the beta feature endpoint | `/beta`
-| spring.ai.deepseek.chat.model | ID of the model to use. You can use either deepseek-reasoner or deepseek-chat. | deepseek-chat
+| spring.ai.deepseek.chat.model | ID of the model to use. You can use deepseek-chat, deepseek-reasoner, deepseek-v4-flash, or deepseek-v4-pro. | deepseek-chat
 | spring.ai.deepseek.chat.frequency-penalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | 0.0f
 | spring.ai.deepseek.chat.max-tokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
 | spring.ai.deepseek.chat.presence-penalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. |  0.0f
@@ -154,7 +154,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates. Please provide the JSON response without any code block markers such as ```json```.",
         DeepSeekChatOptions.builder()
-            .withModel(DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue())
+            .withModel(DeepSeekApi.ChatModel.DEEPSEEK_V4_FLASH.getValue())
             .withTemperature(0.8f)
         .build()
     ));
@@ -171,7 +171,7 @@ Add an `application.properties` file under the `src/main/resources` directory to
 [source,application.properties]
 ----
 spring.ai.deepseek.api-key=YOUR_API_KEY
-spring.ai.deepseek.chat.model=deepseek-chat
+spring.ai.deepseek.chat.model=deepseek-v4-flash
 spring.ai.deepseek.chat.temperature=0.8
 ----
 
@@ -320,7 +320,7 @@ DeepSeekApi deepSeekApi = DeepSeekApi.builder()
         .apiKey(System.getenv("DEEPSEEK_API_KEY"))
         .build();
 DeepSeekChatOptions options = DeepSeekChatOptions.builder()
-        .model(DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue())
+        .model(DeepSeekApi.ChatModel.DEEPSEEK_V4_FLASH.getValue())
         .temperature(0.4)
         .maxTokens(200)
         .build();
@@ -355,11 +355,11 @@ ChatCompletionMessage chatCompletionMessage =
 
 // Sync request
 ResponseEntity<ChatCompletion> response = deepSeekApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(chatCompletionMessage), DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue(), 0.7, false));
+    new ChatCompletionRequest(List.of(chatCompletionMessage), DeepSeekApi.ChatModel.DEEPSEEK_V4_FLASH.getValue(), 0.7, false));
 
 // Streaming request
 Flux<ChatCompletionChunk> streamResponse = deepSeekApi.chatCompletionStream(
-    new ChatCompletionRequest(List.of(chatCompletionMessage), DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue(), 0.7, true));
+    new ChatCompletionRequest(List.of(chatCompletionMessage), DeepSeekApi.ChatModel.DEEPSEEK_V4_FLASH.getValue(), 0.7, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-deepseek/src/main/java/org/springframework/ai/deepseek/api/DeepSeekApi.java[DeepSeekApi.java]'s JavaDoc for further information.
