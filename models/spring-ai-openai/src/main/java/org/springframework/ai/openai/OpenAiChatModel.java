@@ -458,11 +458,16 @@ public final class OpenAiChatModel implements ChatModel {
 					}
 					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult tetoolExecutionResult;
+						Observation parentObs = ctx.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
+						Observation.Scope scope = parentObs != null ? parentObs.openScope() : null;
 						try {
 							ToolCallReactiveContextHolder.setContext(ctx);
 							tetoolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, aggregated);
 						}
 						finally {
+							if (scope != null) {
+								scope.close();
+							}
 							ToolCallReactiveContextHolder.clearContext();
 						}
 						if (tetoolExecutionResult.returnDirect()) {

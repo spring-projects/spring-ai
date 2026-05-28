@@ -22,6 +22,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
+import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.jspecify.annotations.Nullable;
@@ -142,10 +143,18 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
 
 			// @formatter:off
-			Flux<ChatClientResponse> chatClientResponse = Flux.defer(() -> advisor.adviseStream(chatClientRequest, this)
+			Flux<ChatClientResponse> chatClientResponse = Flux.defer(() -> {
+				// Open the scope so child observations created during the synchronous
+				// subscription chain find this observation in ThreadLocal and parent correctly.
+				Observation.Scope scope = observation.openScope();
+				return advisor.adviseStream(chatClientRequest, this)
 						.doOnError(observation::error)
-						.doFinally(s -> observation.stop())
-						.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation)));
+						.doFinally(s -> {
+							scope.close();
+							observation.stop();
+						})
+						.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+			});
 			// @formatter:on
 			return CHAT_CLIENT_MESSAGE_AGGREGATOR.aggregateChatClientResponse(chatClientResponse,
 					observationContext::setChatClientResponse);

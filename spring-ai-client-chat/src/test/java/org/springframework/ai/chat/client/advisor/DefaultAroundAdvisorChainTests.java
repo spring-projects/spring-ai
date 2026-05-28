@@ -18,7 +18,9 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
+import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
@@ -321,6 +323,43 @@ class DefaultAroundAdvisorChainTests {
 
 		assertThat(chain.getCallAdvisors()).hasSize(1);
 		assertThat(chain.getCallAdvisors().get(0).getName()).isEqualTo("advisor1");
+
+	@Test
+	void whenNextStreamCalledThenObservationScopeIsOpenDuringAdviseStream() {
+		// Fix C: nextStream() opens the observation scope inside Flux.defer so child
+		// observations created synchronously during subscription assembly find the
+		// correct parent in the Micrometer/OTel ThreadLocal.
+		ObservationRegistry registry = ObservationRegistry.create();
+		AtomicReference<Observation> currentObsWhenAdviseStreamCalled = new AtomicReference<>();
+
+		StreamAdvisor advisor = new StreamAdvisor() {
+			@Override
+			public Flux<ChatClientResponse> adviseStream(ChatClientRequest request, StreamAdvisorChain chain) {
+				currentObsWhenAdviseStreamCalled.set(registry.getCurrentObservation());
+				return Flux.just(ChatClientResponse.builder().build());
+			}
+
+			@Override
+			public String getName() {
+				return "test-advisor";
+			}
+
+			@Override
+			public int getOrder() {
+				return 0;
+			}
+		};
+
+		DefaultAroundAdvisorChain.builder(registry)
+			.push(advisor)
+			.build()
+			.nextStream(ChatClientRequest.builder().prompt(new Prompt("test")).build())
+			.blockLast();
+
+		assertThat(currentObsWhenAdviseStreamCalled.get())
+			.as("Fix C: chain observation must be in scope when adviseStream is invoked")
+			.isNotNull();
+>>>>>>> b4e8021d0 (Fix streaming observability for tool calling: open observation scope across reactive thread boundaries)
 	}
 
 	private CallAdvisor createMockAdvisor(String name, int order) {

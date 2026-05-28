@@ -337,6 +337,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			if (chatResponse.hasFinishReasons(java.util.Set.of("tool_use"))) {
 				return Flux.deferContextual(ctx -> {
 					ToolExecutionResult toolExecutionResult;
+					Observation parentObs = ctx.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
+					Observation.Scope scope = parentObs != null ? parentObs.openScope() : null;
 					try {
 						if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
 							logger.warn(
@@ -347,6 +349,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 						toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
 					}
 					finally {
+						if (scope != null) {
+							scope.close();
+						}
 						org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder.clearContext();
 					}
 					if (toolExecutionResult.returnDirect()) {

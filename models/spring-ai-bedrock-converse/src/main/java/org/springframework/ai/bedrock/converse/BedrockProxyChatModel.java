@@ -867,6 +867,8 @@ public class BedrockProxyChatModel implements ChatModel {
 					// is currently only synchronous
 					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult toolExecutionResult;
+						Observation parentObs = ctx.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
+						Observation.Scope scope = parentObs != null ? parentObs.openScope() : null;
 						try {
 							if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
 								logger.warn(
@@ -877,6 +879,8 @@ public class BedrockProxyChatModel implements ChatModel {
 							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
 						}
 						finally {
+							if (scope != null)
+								scope.close();
 							ToolCallReactiveContextHolder.clearContext();
 						}
 

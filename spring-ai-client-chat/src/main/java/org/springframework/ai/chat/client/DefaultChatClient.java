@@ -719,10 +719,19 @@ public class DefaultChatClient implements ChatClient {
 
 				// @formatter:off
 				// Apply the advisor chain that terminates with the ChatModelStreamAdvisor.
-				Flux<ChatClientResponse> chatClientResponse = this.advisorChain.nextStream(chatClientRequest)
-						.doOnError(observation::error)
-						.doFinally(s -> observation.stop())
-						.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+				Flux<ChatClientResponse> chatClientResponse = Flux.defer(() -> {
+					// Open observation scope at subscription time, ensuring
+					// advisor observations created during the synchronous subscription chain
+					// find this observation in ThreadLocal and attach to it as parent.
+					Observation.Scope scope = observation.openScope();
+					return this.advisorChain.nextStream(chatClientRequest)
+							.doOnError(observation::error)
+							.doFinally(s -> {
+								scope.close();
+								observation.stop();
+							})
+							.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+				});
 				// @formatter:on
 				return CHAT_CLIENT_MESSAGE_AGGREGATOR.aggregateChatClientResponse(chatClientResponse,
 						observationContext::setResponse);

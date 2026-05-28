@@ -415,6 +415,8 @@ public class OllamaChatModel implements ChatModel {
 					//  is currently only synchronous
 					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult toolExecutionResult;
+						Observation parentObs = ctx.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
+						Observation.Scope scope = parentObs != null ? parentObs.openScope() : null;
 						try {
 							if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
 								logger.warn(
@@ -425,6 +427,9 @@ public class OllamaChatModel implements ChatModel {
 							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 						}
 						finally {
+							if (scope != null) {
+								scope.close();
+							}
 							ToolCallReactiveContextHolder.clearContext();
 						}
 						if (toolExecutionResult.returnDirect()) {

@@ -18,8 +18,10 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
+import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -413,6 +415,45 @@ public class ToolCallAdvisorTests {
 		assertThat(results).isNotNull().hasSize(1);
 		assertThat(callCount[0]).isEqualTo(2);
 		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
+	@Test
+	void toolExecutionDuringStreamingShouldHaveObservationInScope() {
+		// Fix B: handleToolCallRecursion opens the observation scope before executing
+		// blocking tool calls on the boundedElastic scheduler thread.
+		ObservationRegistry registry = ObservationRegistry.create();
+		ToolCallAdvisor advisor = ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		int[] callCount = { 0 };
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			callCount[0]++;
+			return Flux.just(callCount[0] == 1 ? responseWithToolCall : finalResponse);
+		});
+
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(registry)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		AtomicReference<Observation> observationDuringTool = new AtomicReference<>();
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class))).thenAnswer(inv -> {
+			observationDuringTool.set(registry.getCurrentObservation());
+			return toolExecutionResult;
+		});
+
+		advisor.adviseStream(request, realChain).collectList().block();
+
+		assertThat(observationDuringTool.get())
+			.as("Fix B: observation must be in scope on the boundedElastic thread during tool execution")
+			.isNotNull();
 	}
 
 	@Test

@@ -19,6 +19,8 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -305,11 +307,20 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 		// Execute tool calls on bounded elastic scheduler (tool execution is blocking)
 		Flux<ChatClientResponse> toolCallFlux = Flux.deferContextual(ctx -> {
 			ToolExecutionResult toolExecutionResult;
+
+			// Restore observation scope on the boundedElastic thread so tool execution
+			// can correctly parent any child spans it creates.
+			Observation parentObs = ctx.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
+			Observation.Scope scope = parentObs != null ? parentObs.openScope() : null;
+
 			try {
 				ToolCallReactiveContextHolder.setContext(ctx);
 				toolExecutionResult = this.toolCallingManager.executeToolCalls(finalRequest.prompt(), chatResponse);
 			}
 			finally {
+				if (scope != null) {
+					scope.close();
+				}
 				ToolCallReactiveContextHolder.clearContext();
 			}
 
