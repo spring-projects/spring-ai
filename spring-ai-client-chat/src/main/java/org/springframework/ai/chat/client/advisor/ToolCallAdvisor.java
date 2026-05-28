@@ -257,8 +257,6 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 
 			final ChatClientRequest finalRequest = processedRequest;
 
-			// Propagate this round's observation as the parent for inner-chain advisors
-			// (e.g. ChatModelStreamAdvisor) so their spans are correctly nested.
 			Flux<ChatClientResponse> responseFlux = chainCopy.nextStream(processedRequest);
 
 			return streamWithToolCallResponses(responseFlux, finalRequest, streamAdvisorChain, originalRequest,
