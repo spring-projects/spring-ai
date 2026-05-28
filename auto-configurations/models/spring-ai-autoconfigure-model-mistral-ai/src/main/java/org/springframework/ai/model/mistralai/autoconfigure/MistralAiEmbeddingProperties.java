@@ -20,12 +20,12 @@ import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.mistralai.MistralAiEmbeddingOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * Configuration properties for MistralAI embedding model.
  *
  * @author Ricken Bazolo
+ * @author Sebastien Deleuze
  * @since 0.8.1
  */
 @ConfigurationProperties(MistralAiEmbeddingProperties.CONFIG_PREFIX)
@@ -39,17 +39,13 @@ public class MistralAiEmbeddingProperties extends MistralAiParentProperties {
 
 	public MetadataMode metadataMode = MetadataMode.EMBED;
 
-	@NestedConfigurationProperty
-	private final MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder()
-		.withModel(DEFAULT_EMBEDDING_MODEL)
-		.withEncodingFormat(DEFAULT_ENCODING_FORMAT)
-		.build();
+	private final Options options = new Options();
 
 	public MistralAiEmbeddingProperties() {
 		super.setBaseUrl(MistralAiCommonProperties.DEFAULT_BASE_URL);
 	}
 
-	public MistralAiEmbeddingOptions getOptions() {
+	public Options getOptions() {
 		return this.options;
 	}
 
@@ -59,6 +55,34 @@ public class MistralAiEmbeddingProperties extends MistralAiParentProperties {
 
 	public void setMetadataMode(MetadataMode metadataMode) {
 		this.metadataMode = metadataMode;
+	}
+
+	public static class Options {
+
+		private String model = DEFAULT_EMBEDDING_MODEL;
+
+		private String encodingFormat = DEFAULT_ENCODING_FORMAT;
+
+		public String getModel() {
+			return this.model;
+		}
+
+		public void setModel(String model) {
+			this.model = model;
+		}
+
+		public String getEncodingFormat() {
+			return this.encodingFormat;
+		}
+
+		public void setEncodingFormat(String encodingFormat) {
+			this.encodingFormat = encodingFormat;
+		}
+
+		public MistralAiEmbeddingOptions toOptions() {
+			return MistralAiEmbeddingOptions.builder().model(this.model).encodingFormat(this.encodingFormat).build();
+		}
+
 	}
 
 }

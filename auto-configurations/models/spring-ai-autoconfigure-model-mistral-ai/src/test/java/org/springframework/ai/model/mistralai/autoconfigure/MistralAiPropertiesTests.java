@@ -52,6 +52,7 @@ public class MistralAiPropertiesTests {
 				assertThat(embeddingProperties.getBaseUrl()).isEqualTo(MistralAiCommonProperties.DEFAULT_BASE_URL);
 
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.getOptions().toOptions().getModel()).isEqualTo("MODEL_XYZ");
 			});
 	}
 
@@ -123,6 +124,7 @@ public class MistralAiPropertiesTests {
 				assertThat(embeddingProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
 
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.getOptions().toOptions().getModel()).isEqualTo("MODEL_XYZ");
 			});
 	}
 
@@ -143,7 +145,10 @@ public class MistralAiPropertiesTests {
 				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
 
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.getOptions().toOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(embeddingProperties.getOptions().getEncodingFormat()).isEqualTo("MyEncodingFormat");
+				assertThat(embeddingProperties.getOptions().toOptions().getEncodingFormat())
+					.isEqualTo("MyEncodingFormat");
 			});
 	}
 
@@ -161,6 +166,7 @@ public class MistralAiPropertiesTests {
 				assertThat(moderationProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 				assertThat(moderationProperties.getApiKey()).isEqualTo("abc123");
 				assertThat(moderationProperties.getOptions().getModel()).isEqualTo("MODERATION_MODEL");
+				assertThat(moderationProperties.getOptions().toOptions().getModel()).isEqualTo("MODERATION_MODEL");
 			});
 	}
 

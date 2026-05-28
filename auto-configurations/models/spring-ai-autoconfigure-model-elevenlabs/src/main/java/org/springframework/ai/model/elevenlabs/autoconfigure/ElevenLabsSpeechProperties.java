@@ -209,9 +209,10 @@ public class ElevenLabsSpeechProperties {
 	}
 
 	public ElevenLabsTextToSpeechOptions toOptions() {
-		ElevenLabsTextToSpeechOptions optionsObject = ElevenLabsTextToSpeechOptions.builder()
+		return ElevenLabsTextToSpeechOptions.builder()
 			.modelId(this.modelId)
 			.voiceId(this.voiceId)
+			.enableLogging(this.enableLogging)
 			.outputFormat(this.outputFormat)
 			.voiceSettings(this.voiceSettings)
 			.languageCode(this.languageCode)
@@ -224,8 +225,6 @@ public class ElevenLabsSpeechProperties {
 			.applyTextNormalization(this.applyTextNormalization)
 			.applyLanguageTextNormalization(this.applyLanguageTextNormalization)
 			.build();
-		optionsObject.setEnableLogging(this.enableLogging);
-		return optionsObject;
 	}
 
 	private Options options = new Options();

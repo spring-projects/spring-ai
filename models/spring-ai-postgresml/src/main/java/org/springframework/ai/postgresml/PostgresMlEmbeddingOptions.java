@@ -55,12 +55,12 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 	 */
 	private final MetadataMode metadataMode;
 
-	protected PostgresMlEmbeddingOptions(String transformer, VectorType vectorType, Map<String, Object> kwargs,
-			MetadataMode metadataMode) {
-		this.transformer = transformer;
-		this.vectorType = vectorType;
-		this.kwargs = kwargs;
-		this.metadataMode = metadataMode;
+	protected PostgresMlEmbeddingOptions(@Nullable String transformer, @Nullable VectorType vectorType,
+			@Nullable Map<String, Object> kwargs, @Nullable MetadataMode metadataMode) {
+		this.transformer = transformer != null ? transformer : PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL;
+		this.vectorType = vectorType != null ? vectorType : VectorType.PG_ARRAY;
+		this.kwargs = kwargs != null ? kwargs : Map.of();
+		this.metadataMode = metadataMode != null ? metadataMode : MetadataMode.EMBED;
 	}
 
 	public String getTransformer() {
@@ -95,13 +95,13 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 
 	public static final class Builder {
 
-		private String transformer = PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL;
+		private @Nullable String transformer;
 
-		private VectorType vectorType = VectorType.PG_ARRAY;
+		private @Nullable VectorType vectorType;
 
-		private Map<String, Object> kwargs = Map.of();
+		private @Nullable Map<String, Object> kwargs;
 
-		private MetadataMode metadataMode = MetadataMode.EMBED;
+		private @Nullable MetadataMode metadataMode;
 
 		public Builder transformer(String transformer) {
 			this.transformer = transformer;

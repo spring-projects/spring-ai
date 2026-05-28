@@ -53,6 +53,7 @@ import org.springframework.util.Assert;
  * @author Jason Smith
  * @author Nicolas Krier
  * @author Soby Chacko
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
@@ -152,14 +153,14 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 		if (requestOptions != null) {
 			MistralAiEmbeddingOptions.Builder builder = MistralAiEmbeddingOptions.builder()
-				.withModel(ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.defaultOptions.getModel()));
+				.model(ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.defaultOptions.getModel()));
 
 			if (requestOptions instanceof MistralAiEmbeddingOptions mistralOptions) {
-				builder.withEncodingFormat(ModelOptionsUtils.mergeOption(mistralOptions.getEncodingFormat(),
+				builder.encodingFormat(ModelOptionsUtils.mergeOption(mistralOptions.getEncodingFormat(),
 						this.defaultOptions.getEncodingFormat()));
 			}
 			else {
-				builder.withEncodingFormat(this.defaultOptions.getEncodingFormat());
+				builder.encodingFormat(this.defaultOptions.getEncodingFormat());
 			}
 			mergedOptions = builder.build();
 		}
@@ -214,9 +215,7 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 		private MetadataMode metadataMode = MetadataMode.EMBED;
 
-		private MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder()
-			.withModel(MistralAiApi.EmbeddingModel.EMBED.getValue())
-			.build();
+		private MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder().build();
 
 		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
 

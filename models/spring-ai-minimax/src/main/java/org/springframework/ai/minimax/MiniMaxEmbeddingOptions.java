@@ -19,35 +19,38 @@ package org.springframework.ai.minimax;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.minimax.api.MiniMaxApi;
 
 /**
  * This class represents the options for MiniMax embedding.
  *
  * @author Geng Rong
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  * @since 1.0.0 M1
  */
 public class MiniMaxEmbeddingOptions implements EmbeddingOptions {
+
+	public static final String DEFAULT_EMBEDDING_MODEL = MiniMaxApi.EmbeddingModel.Embo_01.value;
 
 	// @formatter:off
 	/**
 	 * ID of the model to use.
 	 */
-	@SuppressWarnings("NullAway.Init")
-	private String model;
+	private final String model;
 	// @formatter:on
 
-	public static Builder builder() {
+	protected MiniMaxEmbeddingOptions(@Nullable String model) {
+		this.model = (model != null ? model : DEFAULT_EMBEDDING_MODEL);
+	}
+
+	public static MiniMaxEmbeddingOptions.Builder builder() {
 		return new Builder();
 	}
 
 	@Override
 	public String getModel() {
 		return this.model;
-	}
-
-	public void setModel(String model) {
-		this.model = model;
 	}
 
 	@Override
@@ -57,19 +60,18 @@ public class MiniMaxEmbeddingOptions implements EmbeddingOptions {
 
 	public static final class Builder {
 
-		protected MiniMaxEmbeddingOptions options;
+		private @Nullable String model;
 
 		public Builder() {
-			this.options = new MiniMaxEmbeddingOptions();
 		}
 
 		public Builder model(String model) {
-			this.options.setModel(model);
+			this.model = model;
 			return this;
 		}
 
 		public MiniMaxEmbeddingOptions build() {
-			return this.options;
+			return new MiniMaxEmbeddingOptions(this.model);
 		}
 
 	}

@@ -1,0 +1,4 @@
+**/build
+**/target
+**/*.jar
+**/*.class

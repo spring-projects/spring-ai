@@ -16,14 +16,16 @@
 
 package org.springframework.ai.model.vertexai.autoconfigure.embedding;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.vertexai.embedding.text.VertexAiTextEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * Configuration properties for Vertex AI Gemini Chat.
  *
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 @ConfigurationProperties(VertexAiTextEmbeddingProperties.CONFIG_PREFIX)
@@ -34,14 +36,63 @@ public class VertexAiTextEmbeddingProperties {
 	/**
 	 * Vertex AI Text Embedding API options.
 	 */
-	@NestedConfigurationProperty
-	private final VertexAiTextEmbeddingOptions options = VertexAiTextEmbeddingOptions.builder()
-		.taskType(VertexAiTextEmbeddingOptions.TaskType.RETRIEVAL_DOCUMENT)
-		.model(VertexAiTextEmbeddingOptions.DEFAULT_MODEL_NAME)
-		.build();
+	private final Options options = new Options();
 
-	public VertexAiTextEmbeddingOptions getOptions() {
+	public Options getOptions() {
 		return this.options;
+	}
+
+	public static class Options {
+
+		private String model = VertexAiTextEmbeddingOptions.DEFAULT_MODEL_NAME;
+
+		private VertexAiTextEmbeddingOptions.TaskType taskType = VertexAiTextEmbeddingOptions.TaskType.RETRIEVAL_DOCUMENT;
+
+		private @Nullable Integer outputDimensionality;
+
+		private @Nullable String title;
+
+		public String getModel() {
+			return this.model;
+		}
+
+		public void setModel(String model) {
+			this.model = model;
+		}
+
+		public VertexAiTextEmbeddingOptions.TaskType getTaskType() {
+			return this.taskType;
+		}
+
+		public void setTaskType(VertexAiTextEmbeddingOptions.TaskType taskType) {
+			this.taskType = taskType;
+		}
+
+		public @Nullable Integer getOutputDimensionality() {
+			return this.outputDimensionality;
+		}
+
+		public void setOutputDimensionality(@Nullable Integer outputDimensionality) {
+			this.outputDimensionality = outputDimensionality;
+		}
+
+		public @Nullable String getTitle() {
+			return this.title;
+		}
+
+		public void setTitle(@Nullable String title) {
+			this.title = title;
+		}
+
+		public VertexAiTextEmbeddingOptions toOptions() {
+			return VertexAiTextEmbeddingOptions.builder()
+				.model(this.model)
+				.taskType(this.taskType)
+				.dimensions(this.outputDimensionality)
+				.title(this.title)
+				.build();
+		}
+
 	}
 
 }

@@ -61,6 +61,7 @@ import org.springframework.util.StringUtils;
  * @author Mark Pollack
  * @author Rodrigo Malara
  * @author Soby Chacko
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
@@ -104,7 +105,7 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 		Assert.notNull(defaultEmbeddingOptions, "VertexAiTextEmbeddingOptions must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
-		this.defaultOptions = defaultEmbeddingOptions.initializeDefaults();
+		this.defaultOptions = defaultEmbeddingOptions;
 		this.connectionDetails = connectionDetails;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;

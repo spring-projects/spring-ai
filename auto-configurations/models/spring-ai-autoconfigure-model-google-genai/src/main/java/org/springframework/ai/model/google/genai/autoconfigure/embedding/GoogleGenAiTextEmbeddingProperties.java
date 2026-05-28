@@ -16,10 +16,10 @@
 
 package org.springframework.ai.model.google.genai.autoconfigure.embedding;
 
-import org.springframework.ai.google.genai.text.GoogleGenAiTextEmbeddingModelName;
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.google.genai.text.GoogleGenAiTextEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * Configuration properties for Google GenAI Text Embedding.
@@ -27,6 +27,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * @author Christian Tzolov
  * @author Mark Pollack
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  * @since 1.1.0
  */
 @ConfigurationProperties(GoogleGenAiTextEmbeddingProperties.CONFIG_PREFIX)
@@ -34,18 +35,66 @@ public class GoogleGenAiTextEmbeddingProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.google.genai.embedding.text";
 
-	public static final String DEFAULT_MODEL = GoogleGenAiTextEmbeddingModelName.GEMINI_EMBEDDING_001.getName();
-
 	/**
 	 * Google GenAI Text Embedding API options.
 	 */
-	@NestedConfigurationProperty
-	private final GoogleGenAiTextEmbeddingOptions options = GoogleGenAiTextEmbeddingOptions.builder()
-		.model(DEFAULT_MODEL)
-		.build();
+	private final Options options = new Options();
 
-	public GoogleGenAiTextEmbeddingOptions getOptions() {
+	public Options getOptions() {
 		return this.options;
+	}
+
+	public static class Options {
+
+		private @Nullable String model;
+
+		private GoogleGenAiTextEmbeddingOptions.@Nullable TaskType taskType;
+
+		private @Nullable Integer dimensions;
+
+		private @Nullable String title;
+
+		public @Nullable String getModel() {
+			return this.model;
+		}
+
+		public void setModel(@Nullable String model) {
+			this.model = model;
+		}
+
+		public GoogleGenAiTextEmbeddingOptions.@Nullable TaskType getTaskType() {
+			return this.taskType;
+		}
+
+		public void setTaskType(GoogleGenAiTextEmbeddingOptions.@Nullable TaskType taskType) {
+			this.taskType = taskType;
+		}
+
+		public @Nullable Integer getDimensions() {
+			return this.dimensions;
+		}
+
+		public void setDimensions(@Nullable Integer dimensions) {
+			this.dimensions = dimensions;
+		}
+
+		public @Nullable String getTitle() {
+			return this.title;
+		}
+
+		public void setTitle(@Nullable String title) {
+			this.title = title;
+		}
+
+		public GoogleGenAiTextEmbeddingOptions toOptions() {
+			return GoogleGenAiTextEmbeddingOptions.builder()
+				.model(this.model)
+				.taskType(this.taskType)
+				.dimensions(this.dimensions)
+				.title(this.title)
+				.build();
+		}
+
 	}
 
 }

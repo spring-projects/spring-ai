@@ -86,151 +86,193 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	 * The base URL to connect to the Anthropic API. Defaults to
 	 * "https://api.anthropic.com" if not specified.
 	 */
-	private @Nullable String baseUrl;
+	private final @Nullable String baseUrl;
 
 	/**
 	 * The API key to authenticate with the Anthropic API. Can also be set via the
 	 * ANTHROPIC_API_KEY environment variable.
 	 */
-	private @Nullable String apiKey;
+	private final @Nullable String apiKey;
 
 	/**
 	 * The model name to use for requests.
 	 */
-	private @Nullable String model;
+	private final @Nullable String model;
 
 	/**
 	 * Request timeout for the Anthropic client. Defaults to 60 seconds if not specified.
 	 */
-	private @Nullable Duration timeout;
+	private final @Nullable Duration timeout;
 
 	/**
 	 * Maximum number of retries for failed requests. Defaults to 2 if not specified.
 	 */
-	private @Nullable Integer maxRetries;
+	private final @Nullable Integer maxRetries;
 
 	/**
 	 * Proxy settings for the Anthropic client.
 	 */
-	private @Nullable Proxy proxy;
+	private final @Nullable Proxy proxy;
 
 	/**
 	 * Custom HTTP headers to add to Anthropic client requests.
 	 */
-	private Map<String, String> customHeaders = new HashMap<>();
+	private final Map<String, String> customHeaders;
 
 	/**
 	 * Maximum number of tokens to generate in the response.
 	 */
-	private @Nullable Integer maxTokens;
+	private final @Nullable Integer maxTokens;
 
 	/**
 	 * Request metadata containing user ID for abuse detection.
 	 */
-	private @Nullable Metadata metadata;
+	private final @Nullable Metadata metadata;
 
 	/**
 	 * Sequences that will cause the model to stop generating.
 	 */
-	private @Nullable List<String> stopSequences;
+	private final @Nullable List<String> stopSequences;
 
 	/**
 	 * Sampling temperature between 0 and 1. Higher values make output more random.
 	 */
-	private @Nullable Double temperature;
+	private final @Nullable Double temperature;
 
 	/**
 	 * Nucleus sampling parameter. The model considers tokens with top_p probability mass.
 	 */
-	private @Nullable Double topP;
+	private final @Nullable Double topP;
 
 	/**
 	 * Only sample from the top K options for each subsequent token.
 	 */
-	private @Nullable Integer topK;
+	private final @Nullable Integer topK;
 
 	/**
 	 * Tool choice configuration for controlling tool usage behavior.
 	 */
-	private @Nullable ToolChoice toolChoice;
+	private final @Nullable ToolChoice toolChoice;
 
 	/**
 	 * Extended thinking configuration for Claude's reasoning capabilities.
 	 */
-	private @Nullable ThinkingConfigParam thinking;
+	private final @Nullable ThinkingConfigParam thinking;
 
 	/**
 	 * Whether to disable parallel tool use. When true, the model will use at most one
 	 * tool per response.
 	 */
-	private @Nullable Boolean disableParallelToolUse;
+	private final @Nullable Boolean disableParallelToolUse;
 
 	/**
 	 * Collection of tool callbacks for tool calling.
 	 */
-	private List<ToolCallback> toolCallbacks = new ArrayList<>();
+	private final List<ToolCallback> toolCallbacks;
 
 	/**
 	 * Collection of tool names to be resolved at runtime.
 	 */
-	private Set<String> toolNames = new java.util.HashSet<>();
+	private final Set<String> toolNames;
 
 	/**
 	 * Whether to enable internal tool execution in the chat model.
 	 */
-	private @Nullable Boolean internalToolExecutionEnabled;
+	private final @Nullable Boolean internalToolExecutionEnabled;
 
 	/**
 	 * Context to be passed to tools during execution.
 	 */
-	private Map<String, Object> toolContext = new HashMap<>();
+	private final Map<String, Object> toolContext;
 
 	/**
 	 * Citation documents to include in the request for citation-enabled responses.
 	 */
-	private List<AnthropicCitationDocument> citationDocuments = new ArrayList<>();
+	private final List<AnthropicCitationDocument> citationDocuments;
 
 	/**
 	 * Cache options for configuring prompt caching behavior.
 	 */
-	private AnthropicCacheOptions cacheOptions = AnthropicCacheOptions.disabled();
+	private final AnthropicCacheOptions cacheOptions;
 
 	/**
 	 * Output configuration for controlling response format and effort level. Includes
 	 * structured output (JSON schema) and effort control (LOW, MEDIUM, HIGH, MAX).
 	 */
-	private @Nullable OutputConfig outputConfig;
+	private final @Nullable OutputConfig outputConfig;
 
 	/**
 	 * Per-request HTTP headers to include in the API call. Merged with model-level
 	 * defaults (runtime headers take precedence). Used for beta feature headers, custom
 	 * tracking, etc.
 	 */
-	private Map<String, String> httpHeaders = new HashMap<>();
+	private final Map<String, String> httpHeaders;
 
 	/**
 	 * Skills container for configuring Claude Skills in the request.
 	 */
-	private @Nullable AnthropicSkillContainer skillContainer;
+	private final @Nullable AnthropicSkillContainer skillContainer;
 
 	/**
 	 * Controls the geographic region for inference processing. Supported values: "us",
 	 * "eu". Used for data residency compliance.
 	 */
-	private @Nullable String inferenceGeo;
+	private final @Nullable String inferenceGeo;
 
 	/**
 	 * Configuration for Anthropic's built-in web search tool. When set, Claude can search
 	 * the web during the conversation.
 	 */
-	private @Nullable AnthropicWebSearchTool webSearchTool;
+	private final @Nullable AnthropicWebSearchTool webSearchTool;
 
 	/**
 	 * Determines whether to use priority capacity (if available) or standard capacity for
 	 * this request. See <a href="https://docs.claude.com/en/api/service-tiers">Service
 	 * Tiers</a>.
 	 */
-	private @Nullable AnthropicServiceTier serviceTier;
+	private final @Nullable AnthropicServiceTier serviceTier;
+
+	protected AnthropicChatOptions(@Nullable String baseUrl, @Nullable String apiKey, @Nullable String model,
+			@Nullable Duration timeout, @Nullable Integer maxRetries, @Nullable Proxy proxy,
+			Map<String, String> customHeaders, @Nullable Integer maxTokens, @Nullable Metadata metadata,
+			@Nullable List<String> stopSequences, @Nullable Double temperature, @Nullable Double topP,
+			@Nullable Integer topK, @Nullable ToolChoice toolChoice, @Nullable ThinkingConfigParam thinking,
+			@Nullable Boolean disableParallelToolUse, List<ToolCallback> toolCallbacks, Set<String> toolNames,
+			@Nullable Boolean internalToolExecutionEnabled, Map<String, Object> toolContext,
+			List<AnthropicCitationDocument> citationDocuments, AnthropicCacheOptions cacheOptions,
+			@Nullable OutputConfig outputConfig, Map<String, String> httpHeaders,
+			@Nullable AnthropicSkillContainer skillContainer, @Nullable String inferenceGeo,
+			@Nullable AnthropicWebSearchTool webSearchTool, @Nullable AnthropicServiceTier serviceTier) {
+		this.baseUrl = baseUrl;
+		this.apiKey = apiKey;
+		this.model = model;
+		this.timeout = timeout;
+		this.maxRetries = maxRetries;
+		this.proxy = proxy;
+		this.customHeaders = customHeaders;
+		this.maxTokens = maxTokens;
+		this.metadata = metadata;
+		this.stopSequences = stopSequences;
+		this.temperature = temperature;
+		this.topP = topP;
+		this.topK = topK;
+		this.toolChoice = toolChoice;
+		this.thinking = thinking;
+		this.disableParallelToolUse = disableParallelToolUse;
+		this.toolCallbacks = toolCallbacks;
+		this.toolNames = toolNames;
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+		this.toolContext = toolContext;
+		this.citationDocuments = citationDocuments;
+		this.cacheOptions = cacheOptions;
+		this.outputConfig = outputConfig;
+		this.httpHeaders = httpHeaders;
+		this.skillContainer = skillContainer;
+		this.inferenceGeo = inferenceGeo;
+		this.webSearchTool = webSearchTool;
+		this.serviceTier = serviceTier;
+		validateCitationConsistency();
+	}
 
 	/**
 	 * Creates a new builder for AnthropicChatOptions.
@@ -945,42 +987,18 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 
 		@SuppressWarnings("NullAway")
 		public AnthropicChatOptions build() {
-			AnthropicChatOptions options = new AnthropicChatOptions();
-			// AbstractAnthropicOptions fields
-			options.model = this.model;
-			options.baseUrl = this.baseUrl;
-			options.apiKey = this.apiKey;
-			options.timeout = this.timeout;
-			options.maxRetries = this.maxRetries;
-			options.proxy = this.proxy;
-			options.customHeaders = this.customHeaders;
-			// ChatOptions fields
-			options.maxTokens = this.maxTokens;
-			options.stopSequences = this.stopSequences;
-			options.temperature = this.temperature;
-			options.topP = this.topP;
-			options.topK = this.topK;
-			// ToolCallingChatOptions fields
-			options.toolCallbacks = this.toolCallbacks == null ? new ArrayList<>()
-					: new ArrayList<>(this.toolCallbacks);
-			options.toolNames = this.toolNames == null ? new HashSet<>() : new HashSet<>(this.toolNames);
-			options.internalToolExecutionEnabled = this.internalToolExecutionEnabled;
-			options.toolContext = this.toolContext == null ? new HashMap<>() : new HashMap<>(this.toolContext);
-			// Anthropic-specific fields
-			options.metadata = this.metadata;
-			options.toolChoice = this.toolChoice;
-			options.thinking = this.thinking;
-			options.disableParallelToolUse = this.disableParallelToolUse;
-			options.citationDocuments = this.citationDocuments;
-			options.cacheOptions = this.cacheOptions;
-			options.outputConfig = this.outputConfig;
-			options.httpHeaders = this.httpHeaders;
-			options.skillContainer = this.skillContainer;
-			options.inferenceGeo = this.inferenceGeo;
-			options.webSearchTool = this.webSearchTool;
-			options.serviceTier = this.serviceTier;
-			options.validateCitationConsistency();
-			return options;
+			return new AnthropicChatOptions(this.baseUrl, this.apiKey, this.model, this.timeout, this.maxRetries,
+					this.proxy, this.customHeaders == null ? new HashMap<>() : new HashMap<>(this.customHeaders),
+					this.maxTokens, this.metadata, this.stopSequences, this.temperature, this.topP, this.topK,
+					this.toolChoice, this.thinking, this.disableParallelToolUse,
+					this.toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(this.toolCallbacks),
+					this.toolNames == null ? new HashSet<>() : new HashSet<>(this.toolNames),
+					this.internalToolExecutionEnabled,
+					this.toolContext == null ? new HashMap<>() : new HashMap<>(this.toolContext),
+					this.citationDocuments == null ? new ArrayList<>() : new ArrayList<>(this.citationDocuments),
+					this.cacheOptions, this.outputConfig,
+					this.httpHeaders == null ? new HashMap<>() : new HashMap<>(this.httpHeaders), this.skillContainer,
+					this.inferenceGeo, this.webSearchTool, this.serviceTier);
 		}
 
 	}

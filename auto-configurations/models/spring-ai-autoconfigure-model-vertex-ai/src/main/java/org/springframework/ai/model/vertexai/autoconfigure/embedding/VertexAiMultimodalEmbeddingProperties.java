@@ -16,14 +16,16 @@
 
 package org.springframework.ai.model.vertexai.autoconfigure.embedding;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.vertexai.embedding.multimodal.VertexAiMultimodalEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * Configuration properties for Vertex AI Gemini Chat.
  *
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 @ConfigurationProperties(VertexAiMultimodalEmbeddingProperties.CONFIG_PREFIX)
@@ -34,13 +36,41 @@ public class VertexAiMultimodalEmbeddingProperties {
 	/**
 	 * Vertex AI Text Embedding API options.
 	 */
-	@NestedConfigurationProperty
-	private final VertexAiMultimodalEmbeddingOptions options = VertexAiMultimodalEmbeddingOptions.builder()
-		.model(VertexAiMultimodalEmbeddingOptions.DEFAULT_MODEL_NAME)
-		.build();
+	private final Options options = new Options();
 
-	public VertexAiMultimodalEmbeddingOptions getOptions() {
+	public Options getOptions() {
 		return this.options;
+	}
+
+	public static class Options {
+
+		private String model = VertexAiMultimodalEmbeddingOptions.DEFAULT_MODEL_NAME;
+
+		private @Nullable Integer outputDimensionality;
+
+		public String getModel() {
+			return this.model;
+		}
+
+		public void setModel(String model) {
+			this.model = model;
+		}
+
+		public @Nullable Integer getOutputDimensionality() {
+			return this.outputDimensionality;
+		}
+
+		public void setOutputDimensionality(@Nullable Integer outputDimensionality) {
+			this.outputDimensionality = outputDimensionality;
+		}
+
+		public VertexAiMultimodalEmbeddingOptions toOptions() {
+			return VertexAiMultimodalEmbeddingOptions.builder()
+				.model(this.model)
+				.dimensions(this.outputDimensionality)
+				.build();
+		}
+
 	}
 
 }

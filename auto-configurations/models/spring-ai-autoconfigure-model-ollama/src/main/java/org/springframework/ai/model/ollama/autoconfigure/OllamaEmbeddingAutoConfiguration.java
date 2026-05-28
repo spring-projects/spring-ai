@@ -40,6 +40,7 @@ import org.springframework.context.annotation.Bean;
  * @author Eddú Meléndez
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  * @since 0.8.0
  */
 @AutoConfiguration
@@ -59,7 +60,7 @@ public class OllamaEmbeddingAutoConfiguration {
 
 		var embeddingModel = OllamaEmbeddingModel.builder()
 			.ollamaApi(ollamaApi)
-			.defaultOptions(properties.getOptions())
+			.defaultOptions(properties.getOptions().toOptions())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.modelManagementOptions(new ModelManagementOptions(embeddingModelPullStrategy,
 					initProperties.getEmbedding().getAdditionalModels(), initProperties.getTimeout(),

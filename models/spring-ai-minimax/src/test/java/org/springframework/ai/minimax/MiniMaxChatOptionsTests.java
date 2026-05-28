@@ -33,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Tests for {@link MiniMaxChatOptions}.
  *
  * @author Alexandros Pappas
+ * @author Sebastien Deleuze
  */
 class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOptions, Builder> {
 
@@ -201,7 +202,7 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 
 	@Test
 	void testDefaultValues() {
-		MiniMaxChatOptions options = new MiniMaxChatOptions();
+		MiniMaxChatOptions options = MiniMaxChatOptions.builder().build();
 		assertThat(options.getModel()).isNull();
 		assertThat(options.getFrequencyPenalty()).isNull();
 		assertThat(options.getMaxTokens()).isNull();

@@ -39,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * @author Alexandros Pappas
  * @author Nicolas Krier
+ * @author Sebastien Deleuze
  */
 class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOptions, Builder> {
 
@@ -178,7 +179,7 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 
 	@Test
 	void testCopyWithEmptyOptions() {
-		MistralAiChatOptions emptyOptions = new MistralAiChatOptions();
+		MistralAiChatOptions emptyOptions = MistralAiChatOptions.builder().build();
 		MistralAiChatOptions copiedOptions = emptyOptions.copy();
 
 		assertThat(copiedOptions).isNotSameAs(emptyOptions).isEqualTo(emptyOptions);
@@ -415,13 +416,13 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 	@Test
 	void testStructuredOutputChatOptionsInterface() {
 		// Verify that MistralAiChatOptions implements StructuredOutputChatOptions
-		MistralAiChatOptions options = new MistralAiChatOptions();
+		MistralAiChatOptions options = MistralAiChatOptions.builder().build();
 		assertThat(options).isInstanceOf(StructuredOutputChatOptions.class);
 	}
 
 	@Test
 	void testGetOutputSchemaReturnsNullWhenNoResponseFormat() {
-		MistralAiChatOptions options = new MistralAiChatOptions();
+		MistralAiChatOptions options = MistralAiChatOptions.builder().build();
 		assertThat(options.getOutputSchema()).isNull();
 	}
 

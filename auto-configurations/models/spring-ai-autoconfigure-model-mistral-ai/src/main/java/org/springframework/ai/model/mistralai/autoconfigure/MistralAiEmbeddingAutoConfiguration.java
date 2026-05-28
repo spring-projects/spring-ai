@@ -46,6 +46,7 @@ import org.springframework.web.client.RestClient;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author Yanming Zhou
+ * @author Sebastien Deleuze
  * @since 0.8.1
  */
 @AutoConfiguration
@@ -71,7 +72,7 @@ public class MistralAiEmbeddingAutoConfiguration {
 		var embeddingModel = MistralAiEmbeddingModel.builder()
 			.mistralAiApi(mistralAiApi)
 			.metadataMode(embeddingProperties.getMetadataMode())
-			.options(embeddingProperties.getOptions())
+			.options(embeddingProperties.getOptions().toOptions())
 			.retryTemplate(retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.build();
