@@ -47,11 +47,6 @@ public enum AiObservationAttributes {
 	 * OpenTelemetry GenAI semantic conventions.
 	 */
 	INPUT_MESSAGES("gen_ai.input.messages"),
-	/**
-	 * The output messages received from the model, serialized as a JSON array following
-	 * the OpenTelemetry GenAI semantic conventions.
-	 */
-	OUTPUT_MESSAGES("gen_ai.output.messages"),
 
 	// GenAI Request
 
