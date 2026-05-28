@@ -23,7 +23,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
 import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.deepseek.api.ResponseFormat;
