@@ -23,9 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
 import org.jspecify.annotations.Nullable;
-
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.deepseek.api.ResponseFormat;
@@ -44,7 +42,9 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 
 	// @formatter:off
 	/**
-	 * ID of the model to use. You can use either use deepseek-reasoner or deepseek-chat.
+	 * ID of the model to use.
+	 * You can use DeepSeek legacy model names (deepseek-chat, deepseek-reasoner) or the
+	 * newer DeepSeek V4 model names (deepseek-v4-flash, deepseek-v4-pro).
 	 */
 	@SuppressWarnings("NullAway.Init")
 	private String model;
