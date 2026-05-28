@@ -879,8 +879,9 @@ public class BedrockProxyChatModel implements ChatModel {
 							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
 						}
 						finally {
-							if (scope != null)
+							if (scope != null) {
 								scope.close();
+							}
 							ToolCallReactiveContextHolder.clearContext();
 						}
 
