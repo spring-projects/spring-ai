@@ -36,12 +36,8 @@
     </scm>
 
     <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
-        </dependency>
 
-		<!-- TODO: needed? -->
+		<!-- TODO: needed? replace it with spring-boot-starter if not needed-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-restclient</artifactId>
