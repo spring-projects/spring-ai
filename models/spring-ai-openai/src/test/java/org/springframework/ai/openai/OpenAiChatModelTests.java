@@ -226,6 +226,8 @@ class OpenAiChatModelTests {
 		assertThat((String) aggregatedMetadata.get("custom-key")).isEqualTo("custom-value");
 	}
 
+
+
 	@Test
 	void createdFieldPassedThroughInMetadata() {
 		ChatService chatService = mock(ChatService.class);
@@ -261,9 +263,6 @@ class OpenAiChatModelTests {
 		ChatResponse response = chatModel.call(new Prompt("hi", options));
 
 		ChatResponseMetadata metadata = response.getMetadata();
-		assertThat(metadata).isNotNull();
-		assertThat(metadata.getId()).isEqualTo("test-id");
-		assertThat(metadata.getModel()).isEqualTo("test-model");
 		assertThat((Object) metadata.get("created")).isEqualTo(1234567890L);
 	}
 

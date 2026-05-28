@@ -606,11 +606,7 @@ public final class OpenAiChatModel implements ChatModel {
 		return builder.build();
 	}
 
-	/**
-	 * Convert the ChatCompletionChunk into a ChatCompletion. The Usage is set to null.
-	 * @param chunk the ChatCompletionChunk to convert
-	 * @return the ChatCompletion
-	 */
+
 	/**
 	 * Extract the created timestamp from a ChatCompletion result, returning 0 if the
 	 * field is absent. Some OpenAI-compatible providers (e.g. GitHub Copilot) do not
@@ -638,6 +634,11 @@ public final class OpenAiChatModel implements ChatModel {
 		}
 	}
 
+	/**
+	 * Convert the ChatCompletionChunk into a ChatCompletion. The Usage is set to null.
+	 * @param chunk the ChatCompletionChunk to convert
+	 * @return the ChatCompletion
+	 */
 	private ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
 
 		List<ChatCompletion.Choice> choices = (chunk._choices().isMissing()) ? List.of()
