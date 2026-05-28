@@ -792,7 +792,7 @@ public class MistralAiApi {
 
 		/**
 		 * <p>
-		 * Controls the reasoning effort level for reasoning models.
+		 * Controls the reasoning effort level for adjustable reasoning models.
 		 * {@link ReasoningEffort#HIGH} enables comprehensive reasoning traces,
 		 * {@link ReasoningEffort#NONE} disables reasoning effort.
 		 * </p>
