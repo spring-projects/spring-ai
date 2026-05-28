@@ -243,6 +243,10 @@ public abstract class AbstractFilterExpressionConverter implements FilterExpress
 				case '<':
 				case '>':
 				case ' ':
+				case '\t':
+				case '\n':
+				case '\r':
+				case '\u3000':
 					context.append('\\').append(c);
 					break;
 				default:

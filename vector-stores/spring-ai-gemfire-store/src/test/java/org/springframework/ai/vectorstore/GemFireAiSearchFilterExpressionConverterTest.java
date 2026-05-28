@@ -144,4 +144,11 @@ class GemFireAiSearchFilterExpressionConverterTest {
 		assertThat(vectorExpr).isEqualTo("genre\\\"\\ OR\\ country\\:evil:drama");
 	}
 
+	@Test
+	public void metadataKeyContainingTabsNewlinesAndCarriageReturnsIsEscaped() {
+		String vectorExpr = this.converter.convertExpression(
+				new Filter.Expression(EQ, new Filter.Key("foo\tOR\nbar\rbaz\u3000qux"), new Filter.Value("x")));
+		assertThat(vectorExpr).isEqualTo("foo\\\tOR\\\nbar\\\rbaz\\\u3000qux:x");
+	}
+
 }
