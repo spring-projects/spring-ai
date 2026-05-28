@@ -44,6 +44,7 @@ import org.springframework.web.client.RestClient;
  * @author Geng Rong
  * @author Ilayaperumal Gopinathan
  * @author Yanming Zhou
+ * @author Sebastien Deleuze
  */
 @AutoConfiguration
 @ConditionalOnClass(MiniMaxApi.class)
@@ -66,7 +67,8 @@ public class MiniMaxEmbeddingAutoConfiguration {
 				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
 
 		var embeddingModel = new MiniMaxEmbeddingModel(miniMaxApi, embeddingProperties.getMetadataMode(),
-				embeddingProperties.getOptions(), retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE),
+				embeddingProperties.getOptions().toOptions(),
+				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE),
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(embeddingModel::setObservationConvention);

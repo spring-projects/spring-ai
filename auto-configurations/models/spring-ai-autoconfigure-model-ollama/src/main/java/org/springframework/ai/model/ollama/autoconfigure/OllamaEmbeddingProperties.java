@@ -21,12 +21,12 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * Ollama Embedding autoconfiguration properties.
  *
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  * @since 0.8.0
  */
 @ConfigurationProperties(OllamaEmbeddingProperties.CONFIG_PREFIX)
@@ -39,10 +39,7 @@ public class OllamaEmbeddingProperties {
 	 * topK and topP and alike parameters. The null values are ignored defaulting to the
 	 * generative's defaults.
 	 */
-	@NestedConfigurationProperty
-	private final OllamaEmbeddingOptions options = OllamaEmbeddingOptions.builder()
-		.model(OllamaModel.MXBAI_EMBED_LARGE.id())
-		.build();
+	private final Options options = new Options();
 
 	public @Nullable String getModel() {
 		return this.options.getModel();
@@ -52,8 +49,50 @@ public class OllamaEmbeddingProperties {
 		this.options.setModel(model);
 	}
 
-	public OllamaEmbeddingOptions getOptions() {
+	public Options getOptions() {
 		return this.options;
+	}
+
+	public static class Options {
+
+		private @Nullable String model = OllamaModel.MXBAI_EMBED_LARGE.id();
+
+		private @Nullable Boolean truncate;
+
+		private @Nullable String keepAlive;
+
+		public @Nullable String getModel() {
+			return this.model;
+		}
+
+		public void setModel(@Nullable String model) {
+			this.model = model;
+		}
+
+		public @Nullable Boolean getTruncate() {
+			return this.truncate;
+		}
+
+		public void setTruncate(@Nullable Boolean truncate) {
+			this.truncate = truncate;
+		}
+
+		public @Nullable String getKeepAlive() {
+			return this.keepAlive;
+		}
+
+		public void setKeepAlive(@Nullable String keepAlive) {
+			this.keepAlive = keepAlive;
+		}
+
+		public OllamaEmbeddingOptions toOptions() {
+			return OllamaEmbeddingOptions.builder()
+				.model(this.model)
+				.truncate(this.truncate)
+				.keepAlive(this.keepAlive)
+				.build();
+		}
+
 	}
 
 }

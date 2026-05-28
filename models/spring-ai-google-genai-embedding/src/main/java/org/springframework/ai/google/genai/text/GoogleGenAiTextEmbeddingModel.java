@@ -59,6 +59,7 @@ import org.springframework.util.StringUtils;
  * @author Rodrigo Malara
  * @author Soby Chacko
  * @author Dan Dobrin
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
@@ -108,7 +109,7 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 		Assert.notNull(defaultEmbeddingOptions, "GoogleGenAiTextEmbeddingOptions must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
-		this.defaultOptions = defaultEmbeddingOptions.initializeDefaults();
+		this.defaultOptions = defaultEmbeddingOptions;
 		this.connectionDetails = connectionDetails;
 		this.genAiClient = connectionDetails.getGenAiClient();
 		this.retryTemplate = retryTemplate;

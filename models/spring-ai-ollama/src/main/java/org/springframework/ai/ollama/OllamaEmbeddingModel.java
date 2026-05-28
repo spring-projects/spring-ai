@@ -27,7 +27,6 @@ import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
@@ -59,6 +58,7 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author Jonghoon Park
+ * @author Sebastien Deleuze
  * @since 0.8.0
  */
 public class OllamaEmbeddingModel extends AbstractEmbeddingModel {

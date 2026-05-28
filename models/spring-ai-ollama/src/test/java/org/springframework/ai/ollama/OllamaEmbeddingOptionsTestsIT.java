@@ -35,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Yokior
+ * @author Sebastien Deleuze
  */
 @SpringBootTest(classes = OllamaEmbeddingOptionsTestsIT.TestConfiguration.class)
 public class OllamaEmbeddingOptionsTestsIT extends BaseOllamaIT {
@@ -63,9 +64,10 @@ public class OllamaEmbeddingOptionsTestsIT extends BaseOllamaIT {
 		// Test setting dimensions parameter using setter method
 		Integer expectedDimensions = 768;
 
-		OllamaEmbeddingOptions options = new OllamaEmbeddingOptions();
-		options.setDimensions(expectedDimensions);
-		options.setModel(MODEL);
+		OllamaEmbeddingOptions options = OllamaEmbeddingOptions.builder()
+			.model(MODEL)
+			.dimensions(expectedDimensions)
+			.build();
 
 		assertThat(options.getDimensions()).isEqualTo(expectedDimensions);
 		assertThat(options.getModel()).isEqualTo(MODEL);

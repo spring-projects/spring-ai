@@ -40,6 +40,7 @@ import org.springframework.web.client.RestClient;
  *
  * @author Ricken Bazolo
  * @author Yanming Zhou
+ * @author Sebastien Deleuze
  */
 @AutoConfiguration
 @EnableConfigurationProperties({ MistralAiCommonProperties.class, MistralAiModerationProperties.class })
@@ -74,7 +75,7 @@ public class MistralAiModerationAutoConfiguration {
 		return MistralAiModerationModel.builder()
 			.mistralAiModerationApi(mistralAiModerationApi)
 			.retryTemplate(retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))
-			.options(moderationProperties.getOptions())
+			.options(moderationProperties.getOptions().toOptions())
 			.build();
 	}
 

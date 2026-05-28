@@ -19,10 +19,10 @@ package org.springframework.ai.model.mistralai.autoconfigure;
 import org.springframework.ai.mistralai.api.MistralAiModerationApi;
 import org.springframework.ai.mistralai.moderation.MistralAiModerationOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * @author Ricken Bazolo
+ * @author Sebastien Deleuze
  */
 @ConfigurationProperties(MistralAiModerationProperties.CONFIG_PREFIX)
 public class MistralAiModerationProperties extends MistralAiParentProperties {
@@ -31,17 +31,32 @@ public class MistralAiModerationProperties extends MistralAiParentProperties {
 
 	private static final String DEFAULT_MODERATION_MODEL = MistralAiModerationApi.Model.MISTRAL_MODERATION.getValue();
 
-	@NestedConfigurationProperty
-	private final MistralAiModerationOptions options = MistralAiModerationOptions.builder()
-		.model(DEFAULT_MODERATION_MODEL)
-		.build();
+	private final Options options = new Options();
 
 	public MistralAiModerationProperties() {
 		super.setBaseUrl(MistralAiCommonProperties.DEFAULT_BASE_URL);
 	}
 
-	public MistralAiModerationOptions getOptions() {
+	public Options getOptions() {
 		return this.options;
+	}
+
+	public static class Options {
+
+		private String model = DEFAULT_MODERATION_MODEL;
+
+		public String getModel() {
+			return this.model;
+		}
+
+		public void setModel(String model) {
+			this.model = model;
+		}
+
+		public MistralAiModerationOptions toOptions() {
+			return MistralAiModerationOptions.builder().model(this.model).build();
+		}
+
 	}
 
 }

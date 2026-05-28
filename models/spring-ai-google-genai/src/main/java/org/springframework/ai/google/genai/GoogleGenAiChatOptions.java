@@ -58,78 +58,67 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	/**
 	 * Optional. Stop sequences.
 	 */
-	@Nullable private List<String> stopSequences;
+	private final @Nullable List<String> stopSequences;
 
 	// @formatter:off
 
 	/**
 	 * Optional. Controls the randomness of predictions.
 	 */
-	@Nullable
-	private Double temperature;
+	private final @Nullable Double temperature;
 
 	/**
 	 * Optional. If specified, nucleus sampling will be used.
 	 */
-	@Nullable
-	private Double topP;
+	private final @Nullable Double topP;
 
 	/**
 	 * Optional. If specified, top k sampling will be used.
 	 */
-	@Nullable
-	private Integer topK;
+	private final @Nullable Integer topK;
 
 	/**
 	 * Optional. The maximum number of tokens to generate.
 	 */
-	@Nullable
-	private Integer candidateCount;
+	private final @Nullable Integer candidateCount;
 
 	/**
 	 * Optional. The maximum number of tokens to generate.
 	 */
-	@Nullable
-	private Integer maxOutputTokens;
+	private final @Nullable Integer maxOutputTokens;
 
 	/**
 	 * Gemini model name.
 	 */
-	@Nullable
-	private String model;
+	private final @Nullable String model;
 
 	/**
 	 * Optional. Output response mimetype of the generated candidate text.
 	 * - text/plain: (default) Text output.
 	 * - application/json: JSON response in the candidates.
 	 */
-	@Nullable
-	private String responseMimeType;
+	private final @Nullable String responseMimeType;
 
 	/**
 	 * Optional. Gemini response schema.
 	 */
-	@Nullable
-	private String responseSchema;
+	private final @Nullable String responseSchema;
 
 	/**
 	 * Optional. Frequency penalties.
 	 */
-	@Nullable
-	private Double frequencyPenalty;
+	private final @Nullable Double frequencyPenalty;
 
 	/**
 	 * Optional. Positive penalties.
 	 */
-	@Nullable
-	private Double presencePenalty;
+	private final @Nullable Double presencePenalty;
 
 	/**
 	 * Optional. Thinking budget for the thinking process.
 	 * This is part of the thinkingConfig in GenerationConfig.
 	 */
-	@Nullable
-	private Integer thinkingBudget;
+	private final @Nullable Integer thinkingBudget;
 
 	/**
 	 * Optional. Whether to include thoughts in the response.
@@ -142,78 +131,70 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	 * <p>Note: Enabling thoughts increases token usage and API costs.
 	 * This is part of the thinkingConfig in GenerationConfig.
 	 */
-	@Nullable
-	private Boolean includeThoughts;
+	private final @Nullable Boolean includeThoughts;
 
 	/**
 	 * Optional. The level of thinking tokens the model should generate.
 	 * LOW = minimal thinking, HIGH = extensive thinking.
 	 * This is part of the thinkingConfig in GenerationConfig.
 	 */
-	@Nullable
-	private GoogleGenAiThinkingLevel thinkingLevel;
+	private final @Nullable GoogleGenAiThinkingLevel thinkingLevel;
 
 	/**
 	 * Optional. Whether to include extended usage metadata in responses.
 	 * When true, includes thinking tokens, cached content, tool-use tokens, and modality details.
 	 * Defaults to true for full metadata access.
 	 */
-	@Nullable
-	private Boolean includeExtendedUsageMetadata;
+	private final @Nullable Boolean includeExtendedUsageMetadata;
 
 	/**
 	 * Optional. The name of cached content to use for this request.
 	 * When set, the cached content will be used as context for the request.
 	 */
-	@Nullable
-	private String cachedContentName;
+	private final @Nullable String cachedContentName;
 
 	/**
 	 * Optional. Whether to use cached content if available.
 	 * When true and cachedContentName is set, the system will use the cached content.
 	 */
-	@Nullable
-	private Boolean useCachedContent;
+	private final @Nullable Boolean useCachedContent;
 
 	/**
 	 * Optional. Automatically cache prompts that exceed this token threshold.
 	 * When set, prompts larger than this value will be automatically cached for reuse.
 	 * Set to null to disable auto-caching.
 	 */
-	@Nullable
-	private Integer autoCacheThreshold;
+	private final @Nullable Integer autoCacheThreshold;
 
 	/**
 	 * Optional. Time-to-live for auto-cached content.
 	 * Used when auto-caching is enabled. Defaults to 1 hour if not specified.
 	 */
-	@Nullable
-	private Duration autoCacheTtl;
+	private final @Nullable Duration autoCacheTtl;
 
 	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
 	 * completion requests.
 	 */
-	private List<ToolCallback> toolCallbacks = new ArrayList<>();
+	private final List<ToolCallback> toolCallbacks;
 
 	/**
      * Collection of tool names to be resolved at runtime and used for tool calling in the
 	 * chat completion requests.
 	 */
-	private Set<String> toolNames = new HashSet<>();
+	private final Set<String> toolNames;
 
 	/**
 	 * Whether to enable the tool execution lifecycle internally in ChatModel.
 	 */
-	@Nullable
-	private Boolean internalToolExecutionEnabled;
+	private final @Nullable Boolean internalToolExecutionEnabled;
 
-	private Map<String, Object> toolContext = new HashMap<>();
+	private final Map<String, Object> toolContext;
 
 	/**
 	 * Use Google search Grounding feature
 	 */
-	private Boolean googleSearchRetrieval = false;
+	private final Boolean googleSearchRetrieval;
 
 	/**
 	 * Optional. When true, the API response will include server-side tool calls and
@@ -221,22 +202,17 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	 * This allows clients to observe the server's tool invocations without executing them.
 	 * Only supported with MLDev (Google AI) API, not Vertex AI.
 	 */
-	private Boolean includeServerSideToolInvocations = false;
+	private final Boolean includeServerSideToolInvocations;
 
-	private List<GoogleGenAiSafetySetting> safetySettings = new ArrayList<>();
+	private final List<GoogleGenAiSafetySetting> safetySettings;
 
-	private Map<String, String> labels = new HashMap<>();
+	private final Map<String, String> labels;
 
 	/**
 	 * Optional. The service tier to use for the request.
 	 */
-	@Nullable
-	private GoogleGenAiServiceTier serviceTier;
+	private final @Nullable GoogleGenAiServiceTier serviceTier;
 	// @formatter:on
-
-	// TODO: left here for ModelOptionUtils.merge*()
-	public GoogleGenAiChatOptions() {
-	}
 
 	protected GoogleGenAiChatOptions(@Nullable String model, @Nullable Double frequencyPenalty,
 			@Nullable Integer maxOutputTokens, @Nullable Double presencePenalty, @Nullable List<String> stopSequences,

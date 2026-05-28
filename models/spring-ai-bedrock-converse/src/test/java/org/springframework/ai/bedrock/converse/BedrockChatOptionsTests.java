@@ -94,7 +94,7 @@ class BedrockChatOptionsTests extends AbstractChatOptionsTests<BedrockChatOption
 
 	@Test
 	void testDefaultValues() {
-		BedrockChatOptions options = new BedrockChatOptions();
+		BedrockChatOptions options = BedrockChatOptions.builder().build();
 		assertThat(options.getModel()).isNull();
 		assertThat(options.getFrequencyPenalty()).isNull();
 		assertThat(options.getMaxTokens()).isNull();
@@ -108,7 +108,7 @@ class BedrockChatOptionsTests extends AbstractChatOptionsTests<BedrockChatOption
 
 	@Test
 	void testImplementsStructuredOutputChatOptions() {
-		BedrockChatOptions options = new BedrockChatOptions();
+		BedrockChatOptions options = BedrockChatOptions.builder().build();
 
 		assertThat(options).isInstanceOf(StructuredOutputChatOptions.class);
 	}

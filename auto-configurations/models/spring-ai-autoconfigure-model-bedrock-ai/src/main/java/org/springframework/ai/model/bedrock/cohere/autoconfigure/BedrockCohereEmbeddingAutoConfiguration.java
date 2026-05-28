@@ -40,6 +40,7 @@ import org.springframework.context.annotation.Import;
  *
  * @author Christian Tzolov
  * @author Wei Jiang
+ * @author Sebastien Deleuze
  * @since 0.8.0
  */
 @AutoConfiguration
@@ -66,7 +67,7 @@ public class BedrockCohereEmbeddingAutoConfiguration {
 	public BedrockCohereEmbeddingModel cohereEmbeddingModel(CohereEmbeddingBedrockApi cohereEmbeddingApi,
 			BedrockCohereEmbeddingProperties properties) {
 
-		return new BedrockCohereEmbeddingModel(cohereEmbeddingApi, properties.getOptions());
+		return new BedrockCohereEmbeddingModel(cohereEmbeddingApi, properties.getOptions().toOptions());
 	}
 
 }

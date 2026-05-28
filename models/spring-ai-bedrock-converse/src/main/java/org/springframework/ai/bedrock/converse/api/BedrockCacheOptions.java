@@ -16,6 +16,8 @@
 
 package org.springframework.ai.bedrock.converse.api;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * AWS Bedrock cache options for configuring prompt caching behavior.
  *
@@ -41,6 +43,7 @@ package org.springframework.ai.bedrock.converse.api;
  * }</pre>
  *
  * @author Soby Chacko
+ * @author Sebastien Deleuze
  * @since 1.1.0
  * @see BedrockCacheStrategy
  * @see <a href=
@@ -49,13 +52,17 @@ package org.springframework.ai.bedrock.converse.api;
  */
 public class BedrockCacheOptions {
 
-	private BedrockCacheStrategy strategy = BedrockCacheStrategy.NONE;
+	private final BedrockCacheStrategy strategy;
+
+	protected BedrockCacheOptions(@Nullable BedrockCacheStrategy strategy) {
+		this.strategy = (strategy != null ? strategy : BedrockCacheStrategy.NONE);
+	}
 
 	/**
 	 * Creates a new builder for constructing BedrockCacheOptions.
 	 * @return a new Builder instance
 	 */
-	public static Builder builder() {
+	public static BedrockCacheOptions.Builder builder() {
 		return new Builder();
 	}
 
@@ -68,19 +75,11 @@ public class BedrockCacheOptions {
 	}
 
 	/**
-	 * Sets the caching strategy.
-	 * @param strategy the BedrockCacheStrategy to use
-	 */
-	public void setStrategy(BedrockCacheStrategy strategy) {
-		this.strategy = strategy;
-	}
-
-	/**
 	 * Builder for constructing BedrockCacheOptions instances.
 	 */
 	public static class Builder {
 
-		private final BedrockCacheOptions options = new BedrockCacheOptions();
+		private BedrockCacheStrategy strategy = BedrockCacheStrategy.NONE;
 
 		/**
 		 * Sets the caching strategy.
@@ -88,7 +87,7 @@ public class BedrockCacheOptions {
 		 * @return this Builder instance
 		 */
 		public Builder strategy(BedrockCacheStrategy strategy) {
-			this.options.setStrategy(strategy);
+			this.strategy = strategy;
 			return this;
 		}
 
@@ -97,7 +96,7 @@ public class BedrockCacheOptions {
 		 * @return the configured BedrockCacheOptions
 		 */
 		public BedrockCacheOptions build() {
-			return this.options;
+			return new BedrockCacheOptions(this.strategy);
 		}
 
 	}

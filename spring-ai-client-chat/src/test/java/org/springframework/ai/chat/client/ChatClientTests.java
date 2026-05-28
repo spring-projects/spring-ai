@@ -57,6 +57,7 @@ import static org.springframework.ai.chat.messages.MessageType.USER;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  */
 @ExtendWith(MockitoExtension.class)
 public class ChatClientTests {
@@ -247,7 +248,7 @@ public class ChatClientTests {
 	@Test
 	void mutateDefaults() {
 
-		ToolCallingChatOptions options = new DefaultToolCallingChatOptions();
+		ToolCallingChatOptions options = DefaultToolCallingChatOptions.builder().build();
 		given(this.chatModel.getDefaultOptions()).willReturn(options);
 
 		given(this.chatModel.call(this.promptCaptor.capture()))
@@ -415,7 +416,7 @@ public class ChatClientTests {
 	@Test
 	void mutatePrompt() {
 
-		ToolCallingChatOptions options = new DefaultToolCallingChatOptions();
+		ToolCallingChatOptions options = DefaultToolCallingChatOptions.builder().build();
 		given(this.chatModel.getDefaultOptions()).willReturn(options);
 
 		given(this.chatModel.call(this.promptCaptor.capture()))

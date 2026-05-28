@@ -39,6 +39,7 @@ import org.springframework.ai.tool.ToolCallback;
  * chat completion</a>
  *
  * @author Geng Rong
+ * @author Sebastien Deleuze
  */
 public class DeepSeekChatOptions implements ToolCallingChatOptions {
 
@@ -47,58 +48,58 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	 * ID of the model to use. You can use either use deepseek-reasoner or deepseek-chat.
 	 */
 	@SuppressWarnings("NullAway.Init")
-	private String model;
+	private final String model;
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
 	 * frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
 	 */
-	private @Nullable Double frequencyPenalty;
+	private final @Nullable Double frequencyPenalty;
 	/**
 	 * The maximum number of tokens that can be generated in the chat completion.
 	 * The total length of input tokens and generated tokens is limited by the model's context length.
 	 */
-	private @Nullable Integer maxTokens;
+	private final @Nullable Integer maxTokens;
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
 	 * appear in the text so far, increasing the model's likelihood to talk about new topics.
 	 */
-	private @Nullable Double presencePenalty;
+	private final @Nullable Double presencePenalty;
 	/**
 	 * An object specifying the format that the model must output. Setting to { "type":
 	 * "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 	 */
-	private @Nullable ResponseFormat responseFormat;
+	private final @Nullable ResponseFormat responseFormat;
 	/**
 	 * A string or a list containing up to 4 strings, upon encountering these words, the API will cease generating more tokens.
 	 */
-	private @Nullable List<String> stop;
+	private final @Nullable List<String> stop;
 	/**
 	 * What sampling temperature to use, between 0 and 2.
 	 * Higher values like 0.8 will make the output more random,
 	 * while lower values like 0.2 will make it more focused and deterministic.
 	 * We generally recommend altering this or top_p but not both.
 	 */
-	private @Nullable Double temperature;
+	private final @Nullable Double temperature;
 	/**
 	 * An alternative to sampling with temperature, called nucleus sampling,
 	 * where the model considers the results of the tokens with top_p probability mass.
 	 * So 0.1 means only the tokens comprising the top 10% probability mass are considered.
 	 * We generally recommend altering this or temperature but not both.
 	 */
-	private @Nullable Double topP;
+	private final @Nullable Double topP;
 	/**
 	 * Whether to return log probabilities of the output tokens or not.
 	 * If true, returns the log probabilities of each output token returned in the content of message.
 	 */
-	private @Nullable Boolean logprobs;
+	private final @Nullable Boolean logprobs;
 	/**
 	 * An integer between 0 and 20 specifying the number of most likely tokens to return at each token position,
 	 * each with an associated log probability. logprobs must be set to true if this parameter is used.
 	 */
-	private @Nullable Integer topLogprobs;
+	private final @Nullable Integer topLogprobs;
 
 
-	private @Nullable List<DeepSeekApi.FunctionTool> tools;
+	private final @Nullable List<DeepSeekApi.FunctionTool> tools;
 
 	/**
 	 * Controls which (if any) function is called by the model. none means the model will
@@ -110,12 +111,12 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	 * {@link DeepSeekApi.ChatCompletionRequest.ToolChoiceBuilder} to create a tool choice
 	 * object.
 	 */
-	private @Nullable Object toolChoice;
+	private final @Nullable Object toolChoice;
 
 	/**
 	 * Whether to enable the tool execution lifecycle internally in ChatModel.
 	 */
-	private @Nullable Boolean internalToolExecutionEnabled;
+	private final @Nullable Boolean internalToolExecutionEnabled;
 
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
@@ -123,7 +124,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	 * For Default Options the toolCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
 	 * from the registry to be used by the ChatModel chat completion requests.
 	 */
-	private List<ToolCallback> toolCallbacks = new ArrayList<>();
+	private final List<ToolCallback> toolCallbacks;
 
 	/**
 	 * List of functions, identified by their names, to configure for function calling in
@@ -133,13 +134,9 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
 	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
 	 */
-	private Set<String> toolNames = new HashSet<>();
+	private final Set<String> toolNames;
 
-	private Map<String, Object> toolContext = new HashMap<>();
-
-	// TODO: left here for ModelOptionUtils.merge*() for now
-	public DeepSeekChatOptions() {
-	}
+	private final Map<String, Object> toolContext;
 
 	protected DeepSeekChatOptions(String model, @Nullable Double frequencyPenalty,
 			@Nullable Integer maxTokens, @Nullable Double presencePenalty,

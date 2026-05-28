@@ -32,6 +32,7 @@ import static org.mockito.Mockito.mock;
  * Unit tests for {@link DefaultToolCallingChatOptions}.
  *
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  */
 class DefaultToolCallingChatOptionsTests {
 
@@ -183,7 +184,8 @@ class DefaultToolCallingChatOptionsTests {
 
 	@Test
 	void defaultConstructorShouldInitializeWithEmptyCollections() {
-		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
+		DefaultToolCallingChatOptions options = (DefaultToolCallingChatOptions) DefaultToolCallingChatOptions.builder()
+			.build();
 
 		assertThat(options.getToolCallbacks()).isEmpty();
 		assertThat(options.getToolNames()).isEmpty();

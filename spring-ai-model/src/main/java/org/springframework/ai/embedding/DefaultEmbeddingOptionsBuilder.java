@@ -20,26 +20,27 @@ package org.springframework.ai.embedding;
  * Default implementation of {@link EmbeddingOptions.Builder}.
  *
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  */
 public class DefaultEmbeddingOptionsBuilder implements EmbeddingOptions.Builder {
 
-	private final DefaultEmbeddingOptions embeddingOptions = new DefaultEmbeddingOptions();
+	private final DefaultEmbeddingOptions.Builder builder = DefaultEmbeddingOptions.builder();
 
 	@Override
 	public EmbeddingOptions.Builder model(String model) {
-		this.embeddingOptions.setModel(model);
+		this.builder.model(model);
 		return this;
 	}
 
 	@Override
 	public EmbeddingOptions.Builder dimensions(Integer dimensions) {
-		this.embeddingOptions.setDimensions(dimensions);
+		this.builder.dimensions(dimensions);
 		return this;
 	}
 
 	@Override
 	public EmbeddingOptions build() {
-		return this.embeddingOptions;
+		return this.builder.build();
 	}
 
 }

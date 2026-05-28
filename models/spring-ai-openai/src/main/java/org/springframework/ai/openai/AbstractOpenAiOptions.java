@@ -43,73 +43,70 @@ public class AbstractOpenAiOptions {
 	/**
 	 * The deployment URL to connect to OpenAI.
 	 */
-	private @Nullable String baseUrl;
+	private final @Nullable String baseUrl;
 
 	/**
 	 * The API key to connect to OpenAI.
 	 */
-	private @Nullable String apiKey;
+	private final @Nullable String apiKey;
 
 	/**
 	 * Credentials used to connect to Microsoft Foundry.
 	 */
-	private @Nullable Credential credential;
+	private final @Nullable Credential credential;
 
 	/**
 	 * The model name used. When using Microsoft Foundry, this is also used as the default
 	 * deployment name.
 	 */
-	private @Nullable String model;
+	private final @Nullable String model;
 
 	/**
 	 * The deployment name as defined in Microsoft Foundry. On Microsoft Foundry, the
 	 * default deployment name is the same as the model name. When using OpenAI directly,
 	 * this value isn't used.
 	 */
-	private @Nullable String microsoftDeploymentName;
+	private final @Nullable String microsoftDeploymentName;
 
 	/**
 	 * The Service version to use when connecting to Microsoft Foundry.
 	 */
-	private @Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion;
+	private final @Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion;
 
 	/**
 	 * The organization ID to use when connecting to Microsoft Foundry.
 	 */
-	private @Nullable String organizationId;
+	private final @Nullable String organizationId;
 
 	/**
 	 * Whether Microsoft Foundry is detected.
 	 */
-	private boolean isMicrosoftFoundry;
+	private final boolean isMicrosoftFoundry;
 
 	/**
 	 * Whether GitHub Models is detected.
 	 */
-	private boolean isGitHubModels;
+	private final boolean isGitHubModels;
 
 	/**
 	 * Request timeout for OpenAI client.
 	 */
-	private Duration timeout = DEFAULT_TIMEOUT;
+	private final Duration timeout;
 
 	/**
 	 * Maximum number of retries for OpenAI client.
 	 */
-	private int maxRetries = DEFAULT_MAX_RETRIES;
+	private final int maxRetries;
 
 	/**
 	 * Proxy settings for OpenAI client.
 	 */
-	private @Nullable Proxy proxy;
+	private final @Nullable Proxy proxy;
 
 	/**
 	 * Custom HTTP headers to add to OpenAI client requests.
 	 */
-	private Map<String, String> customHeaders = new HashMap<>();
-
-	protected AbstractOpenAiOptions() {
-	}
+	private final Map<String, String> customHeaders;
 
 	protected AbstractOpenAiOptions(@Nullable String baseUrl, @Nullable String apiKey, @Nullable Credential credential,
 			@Nullable String model, @Nullable String microsoftDeploymentName,

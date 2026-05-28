@@ -35,6 +35,7 @@ import org.springframework.context.annotation.Bean;
  * @author Christian Tzolov
  * @author Mark Pollack
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 @AutoConfiguration
@@ -49,7 +50,8 @@ public class VertexAiMultiModalEmbeddingAutoConfiguration {
 	public VertexAiMultimodalEmbeddingModel multimodalEmbedding(VertexAiEmbeddingConnectionDetails connectionDetails,
 			VertexAiMultimodalEmbeddingProperties multimodalEmbeddingProperties) throws IOException {
 
-		return new VertexAiMultimodalEmbeddingModel(connectionDetails, multimodalEmbeddingProperties.getOptions());
+		return new VertexAiMultimodalEmbeddingModel(connectionDetails,
+				multimodalEmbeddingProperties.getOptions().toOptions());
 	}
 
 }

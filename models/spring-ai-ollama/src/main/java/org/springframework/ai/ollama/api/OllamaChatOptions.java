@@ -42,6 +42,7 @@ import org.springframework.ai.util.JsonHelper;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author Nicolas Krier
+ * @author Sebastien Deleuze
  * @since 0.8.0
  * @see <a href=
  * "https://github.com/ollama/ollama/blob/main/docs/modelfile.mdx#valid-parameters-and-values">Ollama
@@ -117,24 +118,24 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	/**
 	 * Whether to use NUMA. (Default: false)
 	 */
-	private @Nullable Boolean useNUMA;
+	private final @Nullable Boolean useNUMA;
 
 	/**
 	 * Sets the size of the context window used to generate the next token. (Default: 2048)
 	 */
-	private @Nullable Integer numCtx;
+	private final @Nullable Integer numCtx;
 
 	/**
 	 * Prompt processing maximum batch size. (Default: 512)
 	 */
-	private @Nullable Integer numBatch;
+	private final @Nullable Integer numBatch;
 
 	/**
 	 * The number of layers to send to the GPU(s). On macOS, it defaults to 1
 	 * to enable metal support, 0 to disable.
 	 * (Default: -1, which indicates that numGPU should be set dynamically)
 	 */
-	private @Nullable Integer numGPU;
+	private final @Nullable Integer numGPU;
 
 	/**
 	 * When using multiple GPUs this option controls which GPU is used
@@ -143,28 +144,28 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * more VRAM to store a scratch buffer for temporary results.
 	 * By default, GPU 0 is used.
 	 */
-	private @Nullable Integer mainGPU;
+	private final @Nullable Integer mainGPU;
 
 	/**
 	 * (Default: false)
 	 */
-	private @Nullable Boolean lowVRAM;
+	private final @Nullable Boolean lowVRAM;
 
 	/**
 	 * (Default: true)
 	 */
-	private @Nullable Boolean f16KV;
+	private final @Nullable Boolean f16KV;
 
 	/**
 	 * Return logits for all the tokens, not just the last one.
 	 * To enable completions to return logprobs, this must be true.
 	 */
-	private @Nullable Boolean logitsAll;
+	private final @Nullable Boolean logitsAll;
 
 	/**
 	 * Load only the vocabulary, not the weights.
 	 */
-	private @Nullable Boolean vocabOnly;
+	private final @Nullable Boolean vocabOnly;
 
 	/**
 	 * By default, models are mapped into memory, which allows the system to load only the necessary parts
@@ -175,7 +176,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * the model from loading at all.
 	 * (Default: null)
 	 */
-	private @Nullable Boolean useMMap;
+	private final @Nullable Boolean useMMap;
 
 	/**
 	 * Lock the model in memory, preventing it from being swapped out when memory-mapped.
@@ -183,7 +184,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * by requiring more RAM to run and potentially slowing down load times as the model loads into RAM.
 	 * (Default: false)
 	 */
-	private @Nullable Boolean useMLock;
+	private final @Nullable Boolean useMLock;
 
 	/**
 	 * Set the number of threads to use during generation. For optimal performance, it is recommended to set this value
@@ -191,41 +192,41 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * Using the correct number of threads can greatly improve performance.
 	 * By default, Ollama will detect this value for optimal performance.
 	 */
-	private @Nullable Integer numThread;
+	private final @Nullable Integer numThread;
 
 	// Following fields are predict options used at runtime.
 
 	/**
 	 * (Default: 4)
 	 */
-	private @Nullable Integer numKeep;
+	private final @Nullable Integer numKeep;
 
 	/**
 	 * Sets the random number seed to use for generation. Setting this to a
 	 * specific number will make the model generate the same text for the same prompt.
 	 * (Default: -1)
 	 */
-	private @Nullable Integer seed;
+	private final @Nullable Integer seed;
 
 	/**
 	 * Maximum number of tokens to predict when generating text.
 	 * (Default: 128, -1 = infinite generation, -2 = fill context)
 	 */
-	private @Nullable Integer numPredict;
+	private final @Nullable Integer numPredict;
 
 	/**
 	 * Reduces the probability of generating nonsense. A higher value (e.g.
 	 * 100) will give more diverse answers, while a lower value (e.g. 10) will be more
 	 * conservative. (Default: 40)
 	 */
-	private @Nullable Integer topK;
+	private final @Nullable Integer topK;
 
 	/**
 	 * Works together with top-k. A higher value (e.g., 0.95) will lead to
 	 * more diverse text, while a lower value (e.g., 0.5) will generate more focused and
 	 * conservative text. (Default: 0.9)
 	 */
-	private @Nullable Double topP;
+	private final @Nullable Double topP;
 
 	/**
 	 * Alternative to the top_p, and aims to ensure a balance of quality and variety.
@@ -234,79 +235,79 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * the most likely token having a probability of 0.9, logits with a value
 	 * less than 0.045 are filtered out. (Default: 0.0)
 	 */
-	private @Nullable Double minP;
+	private final @Nullable Double minP;
 
 	/**
 	 * Tail free sampling is used to reduce the impact of less probable tokens
 	 * from the output. A higher value (e.g., 2.0) will reduce the impact more, while a
 	 * value of 1.0 disables this setting. (default: 1)
 	 */
-	private @Nullable Float tfsZ;
+	private final @Nullable Float tfsZ;
 
 	/**
 	 * (Default: 1.0)
 	 */
-	private @Nullable Float typicalP;
+	private final @Nullable Float typicalP;
 
 	/**
 	 * Sets how far back for the model to look back to prevent
 	 * repetition. (Default: 64, 0 = disabled, -1 = num_ctx)
 	 */
-	private @Nullable Integer repeatLastN;
+	private final @Nullable Integer repeatLastN;
 
 	/**
 	 * The temperature of the model. Increasing the temperature will
 	 * make the model answer more creatively. (Default: 0.8)
 	 */
-	private @Nullable Double temperature;
+	private final @Nullable Double temperature;
 
 	/**
 	 * Sets how strongly to penalize repetitions. A higher value
 	 * (e.g., 1.5) will penalize repetitions more strongly, while a lower value (e.g.,
 	 * 0.9) will be more lenient. (Default: 1.1)
 	 */
-	private @Nullable Double repeatPenalty;
+	private final @Nullable Double repeatPenalty;
 
 	/**
 	 * (Default: 0.0)
 	 */
-	private @Nullable Double presencePenalty;
+	private final @Nullable Double presencePenalty;
 
 	/**
 	 * (Default: 0.0)
 	 */
-	private @Nullable Double frequencyPenalty;
+	private final @Nullable Double frequencyPenalty;
 
 	/**
 	 * Enable Mirostat sampling for controlling perplexity. (default: 0, 0
 	 * = disabled, 1 = Mirostat, 2 = Mirostat 2.0)
 	 */
-	private @Nullable Integer mirostat;
+	private final @Nullable Integer mirostat;
 
 	/**
 	 * Controls the balance between coherence and diversity of the output.
 	 * A lower value will result in more focused and coherent text. (Default: 5.0)
 	 */
-	private @Nullable Float mirostatTau;
+	private final @Nullable Float mirostatTau;
 
 	/**
 	 * Influences how quickly the algorithm responds to feedback from the generated text.
 	 * A lower learning rate will result in slower adjustments, while a higher learning rate
 	 * will make the algorithm more responsive. (Default: 0.1)
 	 */
-	private @Nullable Float mirostatEta;
+	private final @Nullable Float mirostatEta;
 
 	/**
 	 * (Default: true)
 	 */
-	private @Nullable Boolean penalizeNewline;
+	private final @Nullable Boolean penalizeNewline;
 
 	/**
 	 * Sets the stop sequences to use. When this pattern is encountered the
 	 * LLM will stop generating text and return. Multiple stop patterns may be set by
 	 * specifying multiple separate stop parameters in a modelfile.
 	 */
-	private @Nullable List<String> stop;
+	private final @Nullable List<String> stop;
 
 
 	// Following fields are not part of the Ollama Options API but part of the Request.
@@ -316,26 +317,26 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * Used to allow overriding the model name with prompt options.
 	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">parameters</a>.
 	 */
-	private @Nullable String model;
+	private final @Nullable String model;
 
 	/**
 	 * Sets the desired format of output from the LLM. The only valid values are null or "json".
 	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">advanced parameters</a>.
 	 */
-	private @Nullable Object format;
+	private final @Nullable Object format;
 
 	/**
 	 * Sets the length of time for Ollama to keep the model loaded. Valid values for this
 	 * setting are parsed by <a href="https://pkg.go.dev/time#ParseDuration">ParseDuration in Go</a>.
 	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">advanced parameters</a>.
 	 */
-	private @Nullable String keepAlive;
+	private final @Nullable String keepAlive;
 
 	/**
 	 * Truncates the end of each input to fit within context length. Returns error if false and context length is exceeded.
 	 * Defaults to true.
 	 */
-	private @Nullable Boolean truncate;
+	private final @Nullable Boolean truncate;
 
 	/**
 	 * The model should think before responding, if supported.
@@ -359,9 +360,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * @see ThinkOption.ThinkBoolean
 	 * @see ThinkOption.ThinkLevel
 	 */
-	private @Nullable ThinkOption thinkOption;
+	private final @Nullable ThinkOption thinkOption;
 
-	private @Nullable Boolean internalToolExecutionEnabled;
+	private final @Nullable Boolean internalToolExecutionEnabled;
 
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
@@ -369,7 +370,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * For Default Options the toolCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
 	 * from the registry to be used by the ChatModel chat completion requests.
 	 */
-	private List<ToolCallback> toolCallbacks = new ArrayList<>();
+	private final List<ToolCallback> toolCallbacks;
 
 	/**
 	 * List of functions, identified by their names, to configure for function calling in
@@ -379,9 +380,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
 	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
 	 */
-	private Set<String> toolNames;
+	private final Set<String> toolNames;
 
-	private Map<String, Object> toolContext;
+	private final Map<String, Object> toolContext;
 
 	public static Builder builder() {
 		return new Builder();

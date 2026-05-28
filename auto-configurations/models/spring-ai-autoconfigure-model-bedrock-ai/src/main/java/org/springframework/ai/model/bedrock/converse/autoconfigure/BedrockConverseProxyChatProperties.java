@@ -23,7 +23,6 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.bedrock.converse.BedrockChatOptions;
-import org.springframework.ai.bedrock.converse.api.BedrockCacheOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
@@ -65,7 +64,7 @@ public class BedrockConverseProxyChatProperties {
 
 	private @Nullable Boolean internalToolExecutionEnabled;
 
-	private @Nullable BedrockCacheOptions cacheOptions;
+	private @Nullable BedrockCacheProperties cacheOptions;
 
 	private final Options options = new Options();
 
@@ -157,11 +156,11 @@ public class BedrockConverseProxyChatProperties {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
-	public @Nullable BedrockCacheOptions getCacheOptions() {
+	public @Nullable BedrockCacheProperties getCacheOptions() {
 		return this.cacheOptions;
 	}
 
-	public void setCacheOptions(@Nullable BedrockCacheOptions cacheOptions) {
+	public void setCacheOptions(@Nullable BedrockCacheProperties cacheOptions) {
 		this.cacheOptions = cacheOptions;
 	}
 
@@ -181,7 +180,7 @@ public class BedrockConverseProxyChatProperties {
 			.topK(this.topK)
 			.topP(this.topP)
 			.internalToolExecutionEnabled(this.internalToolExecutionEnabled)
-			.cacheOptions(this.cacheOptions)
+			.cacheOptions(this.cacheOptions != null ? this.cacheOptions.toOptions() : null)
 			.build();
 	}
 
@@ -290,11 +289,11 @@ public class BedrockConverseProxyChatProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.bedrock.converse.chat.cache-options")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public @Nullable BedrockCacheOptions getCacheOptions() {
+		public @Nullable BedrockCacheProperties getCacheOptions() {
 			return BedrockConverseProxyChatProperties.this.getCacheOptions();
 		}
 
-		public void setCacheOptions(@Nullable BedrockCacheOptions cacheOptions) {
+		public void setCacheOptions(@Nullable BedrockCacheProperties cacheOptions) {
 			BedrockConverseProxyChatProperties.this.setCacheOptions(cacheOptions);
 		}
 

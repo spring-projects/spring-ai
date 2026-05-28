@@ -21,12 +21,12 @@ import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.Coher
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest.InputType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * Bedrock Cohere Embedding autoconfiguration properties.
  *
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  * @since 0.8.0
  */
 @ConfigurationProperties(BedrockCohereEmbeddingProperties.CONFIG_PREFIX)
@@ -45,11 +45,7 @@ public class BedrockCohereEmbeddingProperties {
 	 */
 	private String model = CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V3.id();
 
-	@NestedConfigurationProperty
-	private final BedrockCohereEmbeddingOptions options = BedrockCohereEmbeddingOptions.builder()
-		.inputType(InputType.SEARCH_DOCUMENT)
-		.truncate(CohereEmbeddingRequest.Truncate.NONE)
-		.build();
+	private final Options options = new Options();
 
 	public String getModel() {
 		return this.model;
@@ -59,7 +55,7 @@ public class BedrockCohereEmbeddingProperties {
 		this.model = model;
 	}
 
-	public BedrockCohereEmbeddingOptions getOptions() {
+	public Options getOptions() {
 		return this.options;
 	}
 
@@ -69,6 +65,34 @@ public class BedrockCohereEmbeddingProperties {
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
+	}
+
+	public static class Options {
+
+		private InputType inputType = InputType.SEARCH_DOCUMENT;
+
+		private CohereEmbeddingRequest.Truncate truncate = CohereEmbeddingRequest.Truncate.NONE;
+
+		public InputType getInputType() {
+			return this.inputType;
+		}
+
+		public void setInputType(InputType inputType) {
+			this.inputType = inputType;
+		}
+
+		public CohereEmbeddingRequest.Truncate getTruncate() {
+			return this.truncate;
+		}
+
+		public void setTruncate(CohereEmbeddingRequest.Truncate truncate) {
+			this.truncate = truncate;
+		}
+
+		public BedrockCohereEmbeddingOptions toOptions() {
+			return BedrockCohereEmbeddingOptions.builder().inputType(this.inputType).truncate(this.truncate).build();
+		}
+
 	}
 
 }

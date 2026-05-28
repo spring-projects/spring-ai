@@ -122,7 +122,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 	/**
 	 * Proxy settings for OpenAI client.
 	 */
-	private @Nullable Proxy proxy;
+	private final @Nullable Proxy proxy;
 
 	/**
 	 * Custom HTTP headers to add to OpenAI client requests.
@@ -219,7 +219,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.isMicrosoftFoundry = (isMicrosoftFoundry != null ? isMicrosoftFoundry : false);
 		this.isGitHubModels = (isGitHubModels != null ? isGitHubModels : false);
 		this.timeout = (timeout != null ? timeout : AbstractOpenAiOptions.DEFAULT_TIMEOUT);
-		this.maxRetries = (timeout != null ? maxRetries : AbstractOpenAiOptions.DEFAULT_MAX_RETRIES);
+		this.maxRetries = (maxRetries != null ? maxRetries : AbstractOpenAiOptions.DEFAULT_MAX_RETRIES);
 		this.proxy = proxy;
 		this.customHeaders = (customHeaders != null ? customHeaders : Collections.emptyMap());
 		// ChatOptions
@@ -1244,9 +1244,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		public OpenAiChatOptions build() {
 			return new OpenAiChatOptions(this.baseUrl, this.apiKey, this.credential, this.model,
 					this.microsoftDeploymentName, this.microsoftFoundryServiceVersion, this.organizationId,
-					Boolean.TRUE.equals(this.isMicrosoftFoundry), Boolean.TRUE.equals(this.isGitHubModels),
-					this.timeout != null ? this.timeout : AbstractOpenAiOptions.DEFAULT_TIMEOUT,
-					this.maxRetries != null ? this.maxRetries : AbstractOpenAiOptions.DEFAULT_MAX_RETRIES, this.proxy,
+					this.isMicrosoftFoundry, this.isGitHubModels, this.timeout, this.maxRetries, this.proxy,
 					this.customHeaders, this.frequencyPenalty, this.maxTokens, this.presencePenalty, this.stopSequences,
 					this.temperature, this.topP, this.toolCallbacks, this.toolNames, this.toolContext,
 					this.internalToolExecutionEnabled, this.logitBias, this.logprobs, this.topLogprobs,

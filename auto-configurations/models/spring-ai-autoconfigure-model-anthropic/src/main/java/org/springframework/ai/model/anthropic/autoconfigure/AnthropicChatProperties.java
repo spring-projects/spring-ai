@@ -26,7 +26,6 @@ import com.anthropic.models.messages.ThinkingConfigParam;
 import com.anthropic.models.messages.ToolChoice;
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.ai.anthropic.AnthropicCacheOptions;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.AnthropicServiceTier;
 import org.springframework.ai.anthropic.AnthropicWebSearchTool;
@@ -75,7 +74,7 @@ public class AnthropicChatProperties {
 
 	private @Nullable String inferenceGeo;
 
-	private @Nullable AnthropicCacheOptions cacheOptions;
+	private @Nullable AnthropicCacheProperties cacheOptions;
 
 	private Map<String, String> httpHeaders = new HashMap<>();
 
@@ -207,11 +206,11 @@ public class AnthropicChatProperties {
 		this.inferenceGeo = inferenceGeo;
 	}
 
-	public @Nullable AnthropicCacheOptions getCacheOptions() {
+	public @Nullable AnthropicCacheProperties getCacheOptions() {
 		return this.cacheOptions;
 	}
 
-	public void setCacheOptions(@Nullable AnthropicCacheOptions cacheOptions) {
+	public void setCacheOptions(@Nullable AnthropicCacheProperties cacheOptions) {
 		this.cacheOptions = cacheOptions;
 	}
 
@@ -277,7 +276,7 @@ public class AnthropicChatProperties {
 			builder.inferenceGeo(this.inferenceGeo);
 		}
 		if (this.cacheOptions != null) {
-			builder.cacheOptions(this.cacheOptions);
+			builder.cacheOptions(this.cacheOptions.toOptions());
 		}
 		if (this.httpHeaders != null && !this.httpHeaders.isEmpty()) {
 			builder.httpHeaders(this.httpHeaders);
@@ -449,11 +448,11 @@ public class AnthropicChatProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.anthropic.chat.cache-options")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public @Nullable AnthropicCacheOptions getCacheOptions() {
+		public @Nullable AnthropicCacheProperties getCacheOptions() {
 			return AnthropicChatProperties.this.getCacheOptions();
 		}
 
-		public void setCacheOptions(@Nullable AnthropicCacheOptions cacheOptions) {
+		public void setCacheOptions(@Nullable AnthropicCacheProperties cacheOptions) {
 			AnthropicChatProperties.this.setCacheOptions(cacheOptions);
 		}
 

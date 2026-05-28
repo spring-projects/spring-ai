@@ -41,39 +41,35 @@ import org.springframework.ai.tool.ToolCallback;
  */
 public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
-	private @Nullable String model;
+	private final @Nullable String model;
 
-	private @Nullable Double frequencyPenalty;
+	private final @Nullable Double frequencyPenalty;
 
-	private @Nullable Integer maxTokens;
+	private final @Nullable Integer maxTokens;
 
-	private @Nullable Double presencePenalty;
+	private final @Nullable Double presencePenalty;
 
-	private Map<String, String> requestParameters = new HashMap<>();
+	private final Map<String, String> requestParameters;
 
-	private @Nullable List<String> stopSequences;
+	private final @Nullable List<String> stopSequences;
 
-	private @Nullable Double temperature;
+	private final @Nullable Double temperature;
 
-	private @Nullable Integer topK;
+	private final @Nullable Integer topK;
 
-	private @Nullable Double topP;
+	private final @Nullable Double topP;
 
-	private List<ToolCallback> toolCallbacks = new ArrayList<>();
+	private final List<ToolCallback> toolCallbacks;
 
-	private Set<String> toolNames = new HashSet<>();
+	private final Set<String> toolNames;
 
-	private Map<String, Object> toolContext = new HashMap<>();
+	private final Map<String, Object> toolContext;
 
-	private @Nullable Boolean internalToolExecutionEnabled;
+	private final @Nullable Boolean internalToolExecutionEnabled;
 
-	private @Nullable BedrockCacheOptions cacheOptions;
+	private final @Nullable BedrockCacheOptions cacheOptions;
 
-	private @Nullable String outputSchema;
-
-	// TODO: left here for ModelOptionUtils.merge*()
-	public BedrockChatOptions() {
-	}
+	private final @Nullable String outputSchema;
 
 	protected BedrockChatOptions(@Nullable String model, @Nullable Double frequencyPenalty, @Nullable Integer maxTokens,
 			@Nullable Double presencePenalty, @Nullable Map<String, String> requestParameters,

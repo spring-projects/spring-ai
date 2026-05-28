@@ -53,66 +53,66 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	 * ID of the model to use.
 	 */
 	@SuppressWarnings("NullAway.Init")
-	private String model;
+	private final String model;
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
 	 * frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
 	 */
-	private @Nullable Double frequencyPenalty;
+	private final @Nullable Double frequencyPenalty;
 	/**
 	 * The maximum number of tokens to generate in the chat completion. The total length of input
 	 * tokens and generated tokens is limited by the model's context length.
 	 */
-	private @Nullable Integer maxTokens;
+	private final @Nullable Integer maxTokens;
 	/**
 	 * How many chat completion choices to generate for each input message. Note that you will be charged based
 	 * on the number of generated tokens across all of the choices. Keep n as 1 to minimize costs.
 	 */
-	private @Nullable Integer n;
+	private final @Nullable Integer n;
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
 	 * appear in the text so far, increasing the model's likelihood to talk about new topics.
 	 */
-	private @Nullable Double presencePenalty;
+	private final @Nullable Double presencePenalty;
 	/**
 	 * An object specifying the format that the model must output. Setting to { "type":
 	 * "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 	 */
-	private MiniMaxApi.ChatCompletionRequest.@Nullable ResponseFormat responseFormat;
+	private final MiniMaxApi.ChatCompletionRequest.@Nullable ResponseFormat responseFormat;
 	/**
 	 * This feature is in Beta. If specified, our system will make a best effort to sample
 	 * deterministically, such that repeated requests with the same seed and parameters should return the same result.
 	 * Determinism is not guaranteed, and you should refer to the system_fingerprint response parameter to monitor
 	 * changes in the backend.
 	 */
-	private @Nullable Integer seed;
+	private final @Nullable Integer seed;
 	/**
 	 * Up to 4 sequences where the API will stop generating further tokens.
 	 */
-	private @Nullable List<String> stop;
+	private final @Nullable List<String> stop;
 	/**
 	 * What sampling temperature to use, between 0 and 1. Higher values like 0.8 will make the output
 	 * more random, while lower values like 0.2 will make it more focused and deterministic. We generally recommend
 	 * altering this or top_p but not both.
 	 */
-	private @Nullable Double temperature;
+	private final @Nullable Double temperature;
 	/**
 	 * An alternative to sampling with temperature, called nucleus sampling, where the model considers the
 	 * results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10%
 	 * probability mass are considered. We generally recommend altering this or temperature but not both.
 	 */
-	private @Nullable Double topP;
+	private final @Nullable Double topP;
 	/**
 	 * Mask the text information in the output that is easy to involve privacy issues,
 	 * including but not limited to email, domain name, link, ID number, home address, etc.
 	 * The default is true, which means enabling masking.
 	 */
-	private @Nullable Boolean maskSensitiveInfo;
+	private final @Nullable Boolean maskSensitiveInfo;
 	/**
 	 * A list of tools the model may call. Currently, only functions are supported as a tool. Use this to
 	 * provide a list of functions the model may generate JSON inputs for.
 	 */
-	private @Nullable List<MiniMaxApi.FunctionTool> tools;
+	private final @Nullable List<MiniMaxApi.FunctionTool> tools;
 	/**
 	 * Controls which (if any) function is called by the model. none means the model will not call a
 	 * function and instead generates a message. auto means the model can pick between generating a message or calling a
@@ -120,7 +120,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	 * the model to call that function. none is the default when no functions are present. auto is the default if
 	 * functions are present. Use the {@link MiniMaxApi.ChatCompletionRequest.ToolChoiceBuilder} to create a tool choice object.
 	 */
-	private @Nullable String toolChoice;
+	private final @Nullable String toolChoice;
 
 	/**
 	 * MiniMax Tool Function Callbacks to register with the ChatModel.
@@ -128,7 +128,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	 * For Default Options the functionCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
 	 * from the registry to be used by the ChatModel chat completion requests.
 	 */
-	private List<ToolCallback> toolCallbacks = new ArrayList<>();
+	private final List<ToolCallback> toolCallbacks;
 
 	/**
 	 * List of functions, identified by their names, to configure for function calling in
@@ -139,20 +139,16 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
 	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
 	 */
-	private Set<String> toolNames = new HashSet<>();
+	private final Set<String> toolNames;
 
-	private Map<String, Object> toolContext = new HashMap<>();
+	private final Map<String, Object> toolContext;
 
 	/**
 	 * Whether to enable the tool execution lifecycle internally in ChatModel.
 	 */
-	private @Nullable Boolean internalToolExecutionEnabled;
+	private final @Nullable Boolean internalToolExecutionEnabled;
 
 	// @formatter:on
-
-	// TODO: left here for ModelOptionUtils.merge*()
-	public MiniMaxChatOptions() {
-	}
 
 	protected MiniMaxChatOptions(String model, @Nullable Double frequencyPenalty, @Nullable Integer maxTokens,
 			@Nullable Integer n, @Nullable Double presencePenalty,
