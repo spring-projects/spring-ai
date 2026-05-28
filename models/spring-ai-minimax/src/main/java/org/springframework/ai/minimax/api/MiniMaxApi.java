@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -130,7 +131,7 @@ public class MiniMaxApi {
 		return content.stream()
 				.filter(c -> "text".equals(c.type()))
 				.map(ChatCompletionMessage.MediaContent::text)
-				.reduce("", (a, b) -> a + b);
+				.collect(Collectors.joining());
 	}
 
 	/**

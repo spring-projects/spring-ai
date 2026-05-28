@@ -19,6 +19,8 @@ package org.springframework.ai.document.id;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Map;
+import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -26,6 +28,13 @@ import org.junit.jupiter.api.Test;
 public class JdkSha256HexIdGeneratorTest {
 
 	private final JdkSha256HexIdGenerator testee = new JdkSha256HexIdGenerator();
+
+	@Test
+	void generateIdProducesStableId() {
+		String id = this.testee.generateId("Content", Map.of("metadata", Set.of("META_DATA")));
+
+		Assertions.assertThat(id).isEqualTo("d0c527e2-2004-31a0-af6d-93c67ccaff50");
+	}
 
 	@Test
 	void messageDigestReturnsDistinctInstances() {
