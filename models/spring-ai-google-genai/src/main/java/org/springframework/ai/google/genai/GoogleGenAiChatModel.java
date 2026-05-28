@@ -53,6 +53,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -193,6 +194,11 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	private final JsonMapper jsonMapper = JacksonUtils.getDefaultJsonMapper()
 		.rebuild()
 		.addMixIn(Schema.class, SchemaMixin.class)
+		.build();
+
+	private final JsonMapper strictJsonMapper = ModelOptionsUtils.JSON_MAPPER.rebuild()
+		.addMixIn(Schema.class, SchemaMixin.class)
+		.enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
 		.build();
 
 	/**
@@ -386,27 +392,18 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	// Helper methods for JSON/Map conversion
 	private Map<String, Object> parseJsonToMap(String json) {
 		try {
-			// First, try to parse as an array
-			Object parsed = this.jsonMapper.readValue(json, Object.class);
-			if (parsed instanceof List) {
-				// It's an array, wrap it in a map with "result" key
-				Map<String, Object> wrapper = new HashMap<>();
-				wrapper.put("result", parsed);
-				return wrapper;
-			}
-			else if (parsed instanceof Map) {
-				// It's already a map, return it
+			Object parsed = this.strictJsonMapper.readValue(json, Object.class);
+			if (parsed instanceof Map) {
 				return (Map<String, Object>) parsed;
 			}
-			else {
-				// It's a primitive or other type, wrap it
-				Map<String, Object> wrapper = new HashMap<>();
-				wrapper.put("result", parsed);
-				return wrapper;
-			}
+			Map<String, Object> wrapper = new HashMap<>();
+			wrapper.put("result", parsed);
+			return wrapper;
 		}
 		catch (Exception e) {
-			throw new RuntimeException("Failed to parse JSON: " + json, e);
+			Map<String, Object> wrapper = new HashMap<>();
+			wrapper.put("result", json);
+			return wrapper;
 		}
 	}
 
