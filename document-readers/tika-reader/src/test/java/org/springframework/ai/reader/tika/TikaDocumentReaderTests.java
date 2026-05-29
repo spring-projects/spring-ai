@@ -31,13 +31,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 public class TikaDocumentReaderTests {
 
 	@ParameterizedTest
-	@CsvSource({
-			"classpath:/word-sample.docx,word-sample.docx,Two kinds of links are possible, those that refer to an external website",
-			"classpath:/word-sample.doc,word-sample.doc,The limited permissions granted above are perpetual and will not be revoked by OASIS",
-			"classpath:/sample2.pdf,sample2.pdf,Consult doc/pdftex/manual.pdf from your tetex distribution for more",
-			"classpath:/sample.ppt,sample.ppt,Sed ipsum tortor, fringilla a consectetur eget, cursus posuere sem.",
-			"classpath:/sample.pptx,sample.pptx,Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-			"https://github.com/spring-projects/spring-ai/,https://github.com/spring-projects/spring-ai/,An Application Framework for AI Engineering" })
+	@CsvSource(value = {
+			"classpath:/word-sample.docx;word-sample.docx;Two kinds of links are possible, those that refer to an external website",
+			"classpath:/word-sample.doc;word-sample.doc;The limited permissions granted above are perpetual and will not be revoked by OASIS",
+			"classpath:/sample2.pdf;sample2.pdf;Consult doc/pdftex/manual.pdf from your tetex distribution for more",
+			"classpath:/sample.ppt;sample.ppt;Sed ipsum tortor, fringilla a consectetur eget, cursus posuere sem.",
+			"classpath:/sample.pptx;sample.pptx;Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+			"https://github.com/spring-projects/spring-ai/;https://github.com/spring-projects/spring-ai/;An Application Framework for AI Engineering" },
+			delimiter = ';')
 	public void testDocx(String resourceUri, String resourceName, String contentSnipped) {
 
 		var docs = new TikaDocumentReader(resourceUri).get();
@@ -51,10 +52,12 @@ public class TikaDocumentReaderTests {
 	}
 
 	@ParameterizedTest
-	@CsvSource({
-			"classpath:/word-sample.docx,word-sample.docx,This document demonstrates the ability of the calibre DOCX Input plugin",
-			"classpath:/sample2.pdf,sample2.pdf,Robert Maron", "classpath:/sample.ppt,sample.ppt,Sample FILE",
-			"classpath:/sample.pptx,sample.pptx,Sample FILE" })
+	@CsvSource(value = {
+			"classpath:/word-sample.docx;word-sample.docx;This document demonstrates the ability of the calibre DOCX Input plugin",
+			"classpath:/sample2.pdf;sample2.pdf;Robert Maron",
+			"classpath:/sample.ppt;sample.ppt;Sample FILE",
+			"classpath:/sample.pptx;sample.pptx;Sample FILE" },
+			delimiter = ';')
 	public void testReaderWithFormatter(String resourceUri, String resourceName, String contentSnipped) {
 
 		ExtractedTextFormatter formatter = ExtractedTextFormatter.builder().withNumberOfTopTextLinesToDelete(5).build();
