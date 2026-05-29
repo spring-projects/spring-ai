@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.mcp.server.webmvc.transport;
+package org.springframework.ai.mcp.server.webflux.transport;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.springframework.web.servlet.function.ServerRequest;
+import org.springframework.web.reactive.function.server.ServerRequest;
 
 /**
  * Utility class for working with HTTP headers. Internal use only.
+ *
+ * <p>
+ * * This is the reactive version of
+ * {@link org.springframework.ai.mcp.server.webmvc.transport.HeaderUtils}
  *
  * @author Daniel Garnier-Moiroux
  * @author Yanming Zhou

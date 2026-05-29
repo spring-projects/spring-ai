@@ -33,6 +33,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
  * Simple {@link HandlerFilterFunction} which records calls made to an MCP server.
  *
  * @author Daniel Garnier-Moiroux
+ * @author Yanming Zhou
  */
 public class McpTestRequestRecordingExchangeFilterFunction implements HandlerFilterFunction {
 
@@ -42,10 +43,9 @@ public class McpTestRequestRecordingExchangeFilterFunction implements HandlerFil
 	public Mono<ServerResponse> filter(ServerRequest request, HandlerFunction next) {
 		Map<String, String> headers = request.headers()
 			.asHttpHeaders()
-			.asMultiValueMap()
-			.keySet()
+			.headerSet()
 			.stream()
-			.collect(Collectors.toMap(String::toLowerCase, k -> String.join(",", request.headers().header(k))));
+			.collect(Collectors.toMap(e -> e.getKey().toLowerCase(), e -> String.join(",", e.getValue())));
 
 		var cr = request.bodyToMono(String.class).defaultIfEmpty("").map(body -> {
 			this.calls.add(new Call(request.method(), headers, body));
