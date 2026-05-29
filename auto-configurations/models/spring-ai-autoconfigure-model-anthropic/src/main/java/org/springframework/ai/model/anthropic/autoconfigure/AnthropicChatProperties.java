@@ -79,6 +79,8 @@ public class AnthropicChatProperties {
 
 	private Map<String, String> httpHeaders = new HashMap<>();
 
+	private boolean connectionPoolMetricsEnabled = false;
+
 	private Options options = new Options();
 
 	public AnthropicChatProperties() {
@@ -219,6 +221,14 @@ public class AnthropicChatProperties {
 
 	public void setHttpHeaders(Map<String, String> httpHeaders) {
 		this.httpHeaders = httpHeaders;
+	}
+
+	public boolean isConnectionPoolMetricsEnabled() {
+		return this.connectionPoolMetricsEnabled;
+	}
+
+	public void setConnectionPoolMetricsEnabled(boolean connectionPoolMetricsEnabled) {
+		this.connectionPoolMetricsEnabled = connectionPoolMetricsEnabled;
 	}
 
 	public AnthropicChatOptions toOptions() {
