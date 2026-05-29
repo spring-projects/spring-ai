@@ -62,8 +62,8 @@ import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.ToolC
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionRequest;
 import org.springframework.ai.minimax.api.MiniMaxApiConstants;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
@@ -118,10 +118,9 @@ public class MiniMaxChatModel implements ChatModel {
 	private final ToolCallingManager toolCallingManager;
 
 	/**
-	 * The tool execution eligibility predicate used to determine if a tool can be
-	 * executed.
+	 * The tool execution eligibility checker used to determine if a tool can be executed.
 	 */
-	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+	private final ToolExecutionEligibilityChecker toolExecutionEligibilityChecker;
 
 	private final AtomicBoolean internalToolExecutionWarned = new AtomicBoolean(false);
 
@@ -172,7 +171,7 @@ public class MiniMaxChatModel implements ChatModel {
 	public MiniMaxChatModel(MiniMaxApi miniMaxApi, MiniMaxChatOptions options, ToolCallingManager toolCallingManager,
 			RetryTemplate retryTemplate) {
 		this(miniMaxApi, options, toolCallingManager, retryTemplate, ObservationRegistry.NOOP,
-				new DefaultToolExecutionEligibilityPredicate());
+				chatResponse -> chatResponse != null && chatResponse.hasToolCalls());
 	}
 
 	/**
@@ -182,23 +181,46 @@ public class MiniMaxChatModel implements ChatModel {
 	 * @param options The MiniMaxChatOptions to configure the chat model.
 	 * @param retryTemplate The retry template.
 	 * @param observationRegistry The ObservationRegistry used for instrumentation.
-	 * @param toolExecutionEligibilityPredicate The Tool
+	 * @param toolExecutionEligibilityChecker The tool execution eligibility checker.
 	 */
 	public MiniMaxChatModel(MiniMaxApi miniMaxApi, MiniMaxChatOptions options, ToolCallingManager toolCallingManager,
 			RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
-			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
+			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
 		Assert.notNull(miniMaxApi, "MiniMaxApi must not be null");
 		Assert.notNull(options, "Options must not be null");
 		Assert.notNull(toolCallingManager, "toolCallingManager cannot be null");
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
 		Assert.notNull(observationRegistry, "ObservationRegistry must not be null");
-		Assert.notNull(toolExecutionEligibilityPredicate, "toolExecutionEligibilityPredicate cannot be null");
+		Assert.notNull(toolExecutionEligibilityChecker, "toolExecutionEligibilityChecker cannot be null");
 		this.miniMaxApi = miniMaxApi;
 		this.defaultOptions = options;
 		this.toolCallingManager = toolCallingManager;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
-		this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
+		this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
+	}
+
+	/**
+	 * @deprecated since 2.0.0 for removal in 3.0.0 — replaced by
+	 * {@link #MiniMaxChatModel(MiniMaxApi, MiniMaxChatOptions, ToolCallingManager, RetryTemplate, ObservationRegistry, ToolExecutionEligibilityChecker)}.
+	 */
+	@Deprecated(since = "2.0.0", forRemoval = true)
+	@SuppressWarnings({ "deprecation", "removal" })
+	public MiniMaxChatModel(MiniMaxApi miniMaxApi, MiniMaxChatOptions options, ToolCallingManager toolCallingManager,
+			RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
+			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
+		this(miniMaxApi, options, toolCallingManager, retryTemplate, observationRegistry,
+				new ToolExecutionEligibilityChecker() {
+					@Override
+					public Boolean apply(ChatResponse chatResponse) {
+						return chatResponse != null && chatResponse.hasToolCalls();
+					}
+
+					@Override
+					public boolean isToolExecutionRequired(ChatOptions promptOptions, ChatResponse chatResponse) {
+						return toolExecutionEligibilityPredicate.test(promptOptions, chatResponse);
+					}
+				});
 	}
 
 	private static Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
@@ -303,7 +325,7 @@ public class MiniMaxChatModel implements ChatModel {
 			});
 
 		ChatOptions promptOptions = Objects.requireNonNull(requestPrompt.getOptions());
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(promptOptions, response)) {
+		if (this.toolExecutionEligibilityChecker.isToolExecutionRequired(promptOptions, response)) {
 			if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
 				logger.warn(
 						"Internal tool execution in MiniMaxChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
@@ -390,7 +412,7 @@ public class MiniMaxChatModel implements ChatModel {
 
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 						ChatOptions promptOptions = Objects.requireNonNull(requestPrompt.getOptions());
-						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(promptOptions, response)) {
+						if (this.toolExecutionEligibilityChecker.isToolExecutionRequired(promptOptions, response)) {
 							// FIXME: bounded elastic needs to be used since tool calling
 							//  is currently only synchronous
 							return Flux.deferContextual(ctx -> {

@@ -66,48 +66,90 @@ By default, Spring AI autoconfigures a single `ChatClient.Builder` bean.
 However, you may need to work with multiple chat models in your application.
 Here's how to handle this scenario:
 
-In all cases, you need to disable the `ChatClient.Builder` autoconfiguration by setting the property `spring.ai.chat.client.enabled=false`.
-
-This allows you to create multiple `ChatClient` instances manually.
-
 ==== Multiple ChatClients with a Single Model Type
 
 This section covers a common use case where you need to create multiple ChatClient instances that all use the same underlying model type but with different configurations.
+You can use the auto-configured `ChatClient.Builder` as it is prototype-scoped, meaning a new instance is created for each injection point:
 
 [source,java]
 ----
-// Create ChatClient instances programmatically
-ChatModel myChatModel = ... // already autoconfigured by Spring Boot
-ChatClient chatClient = ChatClient.create(myChatModel);
+@Configuration
+class ChatClientConfig {
 
-// Or use the builder for more control
-ChatClient.Builder builder = ChatClient.builder(myChatModel);
-ChatClient customChatClient = builder
-    .defaultSystemPrompt("You are a helpful assistant.")
-    .build();
+    @Bean
+    ChatClient defaultChatClient(ChatClient.Builder builder) {
+        return builder.build();
+    }
+
+    @Bean
+    ChatClient customChatClient(ChatClient.Builder builder) {
+        return builder.defaultSystem("You are a helpful assistant.").build();
+    }
+}
 ----
 
 ==== ChatClients for Different Model Types
 
-When working with multiple AI models, you can define separate `ChatClient` beans for each model:
+When working with multiple AI models, you might be tempted to define separate `ChatClient` beans by using `ChatClient.create(chatModel)` or `ChatClient.builder(chatModel)`.
+However, doing so bypasses the auto-configured `ChatClient.Builder`, which means observability and `ChatClientCustomizer` beans are ignored.
+
+To retain observability and customizers, you should inject `ChatClientBuilderConfigurer` to create custom builders.
+The `ChatClientBuilderConfigurer` applies all registered `ChatClientCustomizer` beans and wires up observability, mirroring what the auto-configuration does internally.
+
+When multiple `ChatModel` beans are present in the application context, Spring cannot resolve the `ChatModel` dependency of the auto-configured `ChatClient.Builder` bean without ambiguity.
+To resolve this, you can mark one of your `ChatClient` beans as `@Primary`. You may also need to mark one of your `ChatModel` beans as `@Primary` if you are defining them manually, or alternatively, define your own `ChatClient.Builder` bean to override the auto-configured one.
 
 [source,java]
 ----
-import org.springframework.ai.chat.ChatClient;
+import io.micrometer.observation.ObservationRegistry;
+import org.springframework.ai.anthropic.AnthropicChatModel;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
+import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.model.chat.client.autoconfigure.ChatClientBuilderConfigurer;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 @Configuration
 public class ChatClientConfig {
-    
+
     @Bean
-    public ChatClient openAiChatClient(OpenAiChatModel chatModel) {
-        return ChatClient.create(chatModel);
+    @Primary
+    public ChatClient openAiChatClient(OpenAiChatModel chatModel, ChatClientBuilderConfigurer configurer,
+            ObjectProvider<ObservationRegistry> observationRegistry,
+            ObjectProvider<ChatClientObservationConvention> chatClientObservationConvention,
+            ObjectProvider<AdvisorObservationConvention> advisorObservationConvention,
+            ObjectProvider<ToolCallAdvisor.Builder<?>> toolCallAdvisorBuilder) {
+        return buildChatClient(chatModel, configurer, observationRegistry,
+                chatClientObservationConvention, advisorObservationConvention, toolCallAdvisorBuilder);
     }
-    
+
     @Bean
-    public ChatClient anthropicChatClient(AnthropicChatModel chatModel) {
-        return ChatClient.create(chatModel);
+    public ChatClient anthropicChatClient(AnthropicChatModel chatModel, ChatClientBuilderConfigurer configurer,
+            ObjectProvider<ObservationRegistry> observationRegistry,
+            ObjectProvider<ChatClientObservationConvention> chatClientObservationConvention,
+            ObjectProvider<AdvisorObservationConvention> advisorObservationConvention,
+            ObjectProvider<ToolCallAdvisor.Builder<?>> toolCallAdvisorBuilder) {
+        return buildChatClient(chatModel, configurer, observationRegistry,
+                chatClientObservationConvention, advisorObservationConvention, toolCallAdvisorBuilder);
+    }
+
+    private ChatClient buildChatClient(ChatModel chatModel, ChatClientBuilderConfigurer configurer,
+            ObjectProvider<ObservationRegistry> observationRegistry,
+            ObjectProvider<ChatClientObservationConvention> chatClientObservationConvention,
+            ObjectProvider<AdvisorObservationConvention> advisorObservationConvention,
+            ObjectProvider<ToolCallAdvisor.Builder<?>> toolCallAdvisorBuilder) {
+        ChatClient.Builder builder = ChatClient.builder(chatModel,
+                observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+                chatClientObservationConvention.getIfUnique(),
+                advisorObservationConvention.getIfUnique(),
+                toolCallAdvisorBuilder.getIfAvailable());
+        return configurer.configure(builder).build();
     }
 }
 ----
@@ -273,10 +315,28 @@ List<ActorFilms> actorFilms = chatClient.prompt()
     .entity(new ParameterizedTypeReference<List<ActorFilms>>() {});
 ----
 
-==== Native Structured Output
+==== EntityParamSpec
 
-As more AI models support structured output natively, you can take advantage of this feature by using the `AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT` advisor parameter when calling the `ChatClient`.
-You can use the `defaultAdvisors()` method on the `ChatClient.Builder` to set this parameter globally for all calls or set it per call as shown below:
+All three `entity()` overloads accept an optional `Consumer<EntityParamSpec>` that enables two independent behaviours:
+
+===== Provider-Native Structured Output
+
+By default, the JSON schema is appended to the user message as text instructions.
+When `useProviderStructuredOutput()` is set, the schema is instead passed directly to the AI provider API as a structured constraint (equivalent to setting `AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT`).
+This requires the underlying model to support `StructuredOutputChatOptions`.
+
+[source,java]
+----
+ActorFilms actorFilms = chatClient.prompt()
+    .user("Generate the filmography for a random actor.")
+    .call()
+    .entity(ActorFilms.class, spec -> spec.useProviderStructuredOutput());
+----
+
+NOTE: Some AI models such as OpenAI don't support arrays of objects natively.
+In such cases, you can use the Spring AI default structured output conversion.
+
+You can still set this globally for all calls via the advisor parameter:
 
 [source,java]
 ----
@@ -287,8 +347,33 @@ ActorFilms actorFilms = chatClient.prompt()
     .entity(ActorFilms.class);
 ----
 
-NOTE: Some AI models such as OpenAI don't support arrays of objects natively.
-In such cases, you can use the Spring AI default structured output conversion.
+===== Schema Validation with Retry
+
+`schemaValidation()` validates the model's JSON response against the entity schema before returning it.
+If validation fails, the error message is appended to the user prompt and the model is retried, up to `maxRepeatAttempts` times (default: 3).
+This uses xref:api/advisors-recursive.adoc#structured-output-validation-advisor[StructuredOutputValidationAdvisor] internally.
+
+[source,java]
+----
+ActorFilms actorFilms = chatClient.prompt()
+    .user("Generate the filmography for a random actor.")
+    .call()
+    .entity(ActorFilms.class, spec -> spec.schemaValidation());
+----
+
+Both options can be combined:
+
+[source,java]
+----
+ActorFilms actorFilms = chatClient.prompt()
+    .user("Generate the filmography for a random actor.")
+    .call()
+    .entity(ActorFilms.class, spec -> spec
+        .useProviderStructuredOutput()
+        .validateSchema());
+----
+
+NOTE: Streaming is not supported when `validateSchema()` is active.
 
 === Streaming Responses
 
@@ -376,6 +461,9 @@ After specifying the `call()` method on `ChatClient`, there are a few different 
 ** `entity(ParameterizedTypeReference<T> type)`: used to return a `Collection` of entity types.
 ** `entity(Class<T> type)`:  used to return a specific entity type.
 ** `entity(StructuredOutputConverter<T> structuredOutputConverter)`: used to specify an instance of a `StructuredOutputConverter` to convert a `String` to an entity type.
+** `entity(ParameterizedTypeReference<T> type, Consumer<EntityParamSpec> spec)`: like above, with optional xref:api/chatclient.adoc#_entityparamspec[EntityParamSpec] configuration.
+** `entity(Class<T> type, Consumer<EntityParamSpec> spec)`: like above, with optional xref:api/chatclient.adoc#_entityparamspec[EntityParamSpec] configuration.
+** `entity(StructuredOutputConverter<T> converter, Consumer<EntityParamSpec> spec)`: like above, with optional xref:api/chatclient.adoc#_entityparamspec[EntityParamSpec] configuration.
 * `responseEntity()` to return both the `ChatResponse` and a Java type. This is useful when you need access to both the complete AI model response (with metadata and generations) and the structured output entity in a single call.
 ** `responseEntity(Class<T> type)`: used to return a `ResponseEntity` containing both the complete `ChatResponse` object and a specific entity type.
 ** `responseEntity(ParameterizedTypeReference<T> type)`: used to return a `ResponseEntity` containing both the complete `ChatResponse` object and a `Collection` of entity types.
