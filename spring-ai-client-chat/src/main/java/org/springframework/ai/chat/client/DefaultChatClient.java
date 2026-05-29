@@ -405,7 +405,7 @@ public class DefaultChatClient implements ChatClient {
 	/**
 	 * Default implementation of {@link EntityParamSpec}.
 	 */
-	public static class DefaultEntityParamSpec<T> implements EntityParamSpec {
+	public static class DefaultEntityParamSpec implements EntityParamSpec {
 
 		private boolean enableNative = false;
 
@@ -420,13 +420,13 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
-		public EntityParamSpec delegateToProvider() {
+		public EntityParamSpec useProviderStructuredOutput() {
 			this.enableNative = true;
 			return this;
 		}
 
 		@Override
-		public EntityParamSpec schemaValidation() {
+		public EntityParamSpec validateSchema() {
 			this.validated = true;
 			return this;
 		}
@@ -576,7 +576,7 @@ public class DefaultChatClient implements ChatClient {
 
 		private BaseAdvisorChain resolveAdvisorChain(Consumer<EntityParamSpec> consumer,
 				StructuredOutputConverter<?> converter) {
-			var spec = new DefaultEntityParamSpec<>();
+			var spec = new DefaultEntityParamSpec();
 			consumer.accept(spec);
 			if (spec.isEnableNative()) {
 				this.request.context().put(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey(), true);

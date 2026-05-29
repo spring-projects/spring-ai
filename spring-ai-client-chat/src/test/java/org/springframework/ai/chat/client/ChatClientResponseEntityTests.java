@@ -268,7 +268,7 @@ public class ChatClientResponseEntityTests {
 			.user("Tell me about John")
 			.call()
 			.entity(new ParameterizedTypeReference<MyBean>() {
-			}, spec -> spec.delegateToProvider());
+			}, spec -> spec.useProviderStructuredOutput());
 
 		assertThat(contextCatcher.getContext()).containsKey(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey());
 		assertThat(entity).isEqualTo(new MyBean("John", 30));
@@ -288,7 +288,7 @@ public class ChatClientResponseEntityTests {
 			.user("Tell me about John")
 			.call()
 			.entity(new ParameterizedTypeReference<MyBean>() {
-			}, spec -> spec.schemaValidation());
+			}, spec -> spec.validateSchema());
 
 		assertThat(entity).isEqualTo(new MyBean("John", 30));
 		verify(this.chatModel, times(1)).call(any(Prompt.class));
@@ -308,7 +308,7 @@ public class ChatClientResponseEntityTests {
 			.user("Tell me about John")
 			.call()
 			.entity(new ParameterizedTypeReference<MyBean>() {
-			}, spec -> spec.schemaValidation());
+			}, spec -> spec.validateSchema());
 
 		assertThat(entity).isEqualTo(new MyBean("John", 30));
 		verify(this.chatModel, times(2)).call(any(Prompt.class));
@@ -328,7 +328,7 @@ public class ChatClientResponseEntityTests {
 			.advisors(contextCatcher)
 			.user("Tell me about John")
 			.call()
-			.entity(MyBean.class, spec -> spec.delegateToProvider());
+			.entity(MyBean.class, spec -> spec.useProviderStructuredOutput());
 
 		assertThat(contextCatcher.getContext()).containsKey(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey());
 		assertThat(entity).isEqualTo(new MyBean("John", 30));
@@ -346,7 +346,7 @@ public class ChatClientResponseEntityTests {
 			.prompt()
 			.user("Tell me about John")
 			.call()
-			.entity(MyBean.class, spec -> spec.schemaValidation());
+			.entity(MyBean.class, spec -> spec.validateSchema());
 
 		assertThat(entity).isEqualTo(new MyBean("John", 30));
 		verify(this.chatModel, times(1)).call(any(Prompt.class));
@@ -366,7 +366,7 @@ public class ChatClientResponseEntityTests {
 			.advisors(contextCatcher)
 			.user("Tell me about John")
 			.call()
-			.entity(new BeanOutputConverter<>(MyBean.class), spec -> spec.delegateToProvider());
+			.entity(new BeanOutputConverter<>(MyBean.class), spec -> spec.useProviderStructuredOutput());
 
 		assertThat(contextCatcher.getContext()).containsKey(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey());
 		assertThat(entity).isEqualTo(new MyBean("John", 30));
@@ -384,7 +384,7 @@ public class ChatClientResponseEntityTests {
 			.prompt()
 			.user("Tell me about John")
 			.call()
-			.entity(new BeanOutputConverter<>(MyBean.class), spec -> spec.schemaValidation());
+			.entity(new BeanOutputConverter<>(MyBean.class), spec -> spec.validateSchema());
 
 		assertThat(entity).isEqualTo(new MyBean("John", 30));
 		verify(this.chatModel, times(1)).call(any(Prompt.class));

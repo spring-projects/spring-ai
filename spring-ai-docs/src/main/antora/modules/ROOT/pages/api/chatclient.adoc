@@ -280,7 +280,7 @@ All three `entity()` overloads accept an optional `Consumer<EntityParamSpec>` th
 ===== Provider-Native Structured Output
 
 By default, the JSON schema is appended to the user message as text instructions.
-When `delegateToProvider()` is set, the schema is instead passed directly to the AI provider API as a structured constraint (equivalent to setting `AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT`).
+When `useProviderStructuredOutput()` is set, the schema is instead passed directly to the AI provider API as a structured constraint (equivalent to setting `AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT`).
 This requires the underlying model to support `StructuredOutputChatOptions`.
 
 [source,java]
@@ -327,11 +327,11 @@ ActorFilms actorFilms = chatClient.prompt()
     .user("Generate the filmography for a random actor.")
     .call()
     .entity(ActorFilms.class, spec -> spec
-        .delegateToProvider()
-        .schemaValidation());
+        .useProviderStructuredOutput()
+        .validateSchema());
 ----
 
-NOTE: Streaming is not supported when `schemaValidation()` is active.
+NOTE: Streaming is not supported when `validateSchema()` is active.
 
 === Streaming Responses
 
