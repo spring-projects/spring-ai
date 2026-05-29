@@ -23,7 +23,6 @@ import java.util.Set;
 
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
 import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
@@ -43,21 +42,19 @@ public class GoogleGenAiChatProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.google.genai.chat";
 
-	public static final String DEFAULT_MODEL = GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue();
-
 	private @Nullable List<String> stopSequences;
 
-	private @Nullable Double temperature = 0.7;
+	private @Nullable Double temperature;
 
 	private @Nullable Double topP;
 
 	private @Nullable Integer topK;
 
-	private @Nullable Integer candidateCount = 1;
+	private @Nullable Integer candidateCount;
 
 	private @Nullable Integer maxOutputTokens;
 
-	private @Nullable String model = DEFAULT_MODEL;
+	private @Nullable String model;
 
 	private @Nullable String responseMimeType;
 
@@ -83,13 +80,13 @@ public class GoogleGenAiChatProperties {
 
 	private @Nullable Duration autoCacheTtl;
 
-	private @Nullable List<String> toolNames;
+	private @Nullable Set<String> toolNames;
 
 	private @Nullable Boolean internalToolExecutionEnabled;
 
-	private @Nullable Boolean googleSearchRetrieval = false;
+	private @Nullable Boolean googleSearchRetrieval;
 
-	private @Nullable Boolean includeServerSideToolInvocations = false;
+	private @Nullable Boolean includeServerSideToolInvocations;
 
 	private @Nullable List<GoogleGenAiSafetySetting> safetySettings;
 
@@ -247,11 +244,11 @@ public class GoogleGenAiChatProperties {
 		this.autoCacheTtl = autoCacheTtl;
 	}
 
-	public @Nullable List<String> getToolNames() {
+	public @Nullable Set<String> getToolNames() {
 		return this.toolNames;
 	}
 
-	public void setToolNames(@Nullable List<String> toolNames) {
+	public void setToolNames(@Nullable Set<String> toolNames) {
 		this.toolNames = toolNames;
 	}
 
@@ -296,81 +293,33 @@ public class GoogleGenAiChatProperties {
 	}
 
 	public GoogleGenAiChatOptions toOptions() {
-		GoogleGenAiChatOptions.Builder builder = GoogleGenAiChatOptions.builder();
-		builder.model(this.model);
-		if (this.stopSequences != null) {
-			builder.stopSequences(this.stopSequences);
-		}
-		if (this.temperature != null) {
-			builder.temperature(this.temperature);
-		}
-		if (this.topP != null) {
-			builder.topP(this.topP);
-		}
-		if (this.topK != null) {
-			builder.topK(this.topK);
-		}
-		if (this.candidateCount != null) {
-			builder.candidateCount(this.candidateCount);
-		}
-		if (this.maxOutputTokens != null) {
-			builder.maxOutputTokens(this.maxOutputTokens);
-		}
-		if (this.responseMimeType != null) {
-			builder.responseMimeType(this.responseMimeType);
-		}
-		if (this.responseSchema != null) {
-			builder.responseSchema(this.responseSchema);
-		}
-		if (this.frequencyPenalty != null) {
-			builder.frequencyPenalty(this.frequencyPenalty);
-		}
-		if (this.presencePenalty != null) {
-			builder.presencePenalty(this.presencePenalty);
-		}
-		if (this.thinkingBudget != null) {
-			builder.thinkingBudget(this.thinkingBudget);
-		}
-		if (this.includeThoughts != null) {
-			builder.includeThoughts(this.includeThoughts);
-		}
-		if (this.thinkingLevel != null) {
-			builder.thinkingLevel(this.thinkingLevel);
-		}
-		if (this.includeExtendedUsageMetadata != null) {
-			builder.includeExtendedUsageMetadata(this.includeExtendedUsageMetadata);
-		}
-		if (this.cachedContentName != null) {
-			builder.cachedContentName(this.cachedContentName);
-		}
-		if (this.useCachedContent != null) {
-			builder.useCachedContent(this.useCachedContent);
-		}
-		if (this.autoCacheThreshold != null) {
-			builder.autoCacheThreshold(this.autoCacheThreshold);
-		}
-		if (this.autoCacheTtl != null) {
-			builder.autoCacheTtl(this.autoCacheTtl);
-		}
-		if (this.toolNames != null) {
-			builder.toolNames(Set.copyOf(this.toolNames));
-		}
-		if (this.internalToolExecutionEnabled != null) {
-			builder.internalToolExecutionEnabled(this.internalToolExecutionEnabled);
-		}
-		if (this.googleSearchRetrieval != null) {
-			builder.googleSearchRetrieval(this.googleSearchRetrieval);
-		}
-		if (this.includeServerSideToolInvocations != null) {
-			builder.includeServerSideToolInvocations(this.includeServerSideToolInvocations);
-		}
-		if (this.safetySettings != null) {
-			builder.safetySettings(this.safetySettings);
-		}
-		if (this.labels != null) {
-			builder.labels(this.labels);
-		}
-		return builder.build();
+		return GoogleGenAiChatOptions.builder()
+			.model(this.model)
+			.stopSequences(this.stopSequences)
+			.temperature(this.temperature)
+			.topP(this.topP)
+			.topK(this.topK)
+			.candidateCount(this.candidateCount)
+			.maxOutputTokens(this.maxOutputTokens)
+			.responseMimeType(this.responseMimeType)
+			.responseSchema(this.responseSchema)
+			.frequencyPenalty(this.frequencyPenalty)
+			.presencePenalty(this.presencePenalty)
+			.thinkingBudget(this.thinkingBudget)
+			.includeThoughts(this.includeThoughts)
+			.thinkingLevel(this.thinkingLevel)
+			.includeExtendedUsageMetadata(this.includeExtendedUsageMetadata)
+			.cachedContentName(this.cachedContentName)
+			.useCachedContent(this.useCachedContent)
+			.autoCacheThreshold(this.autoCacheThreshold)
+			.autoCacheTtl(this.autoCacheTtl)
+			.toolNames(this.toolNames)
+			.internalToolExecutionEnabled(this.internalToolExecutionEnabled)
+			.googleSearchRetrieval(this.googleSearchRetrieval)
+			.includeServerSideToolInvocations(this.includeServerSideToolInvocations)
+			.safetySettings(this.safetySettings)
+			.labels(this.labels)
+			.build();
 	}
 
 	private Options options = new Options();
@@ -579,11 +528,11 @@ public class GoogleGenAiChatProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.google.genai.chat.tool-names")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public @Nullable List<String> getToolNames() {
+		public @Nullable Set<String> getToolNames() {
 			return GoogleGenAiChatProperties.this.getToolNames();
 		}
 
-		public void setToolNames(@Nullable List<String> toolNames) {
+		public void setToolNames(@Nullable Set<String> toolNames) {
 			GoogleGenAiChatProperties.this.setToolNames(toolNames);
 		}
 

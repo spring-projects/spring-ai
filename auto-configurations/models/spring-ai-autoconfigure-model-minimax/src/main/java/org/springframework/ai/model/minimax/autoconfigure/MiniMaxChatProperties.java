@@ -36,9 +36,7 @@ public class MiniMaxChatProperties extends MiniMaxParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.minimax.chat";
 
-	public static final String DEFAULT_CHAT_MODEL = MiniMaxApi.ChatModel.ABAB_5_5_Chat.value;
-
-	private String model = DEFAULT_CHAT_MODEL;
+	private @Nullable String model;
 
 	private @Nullable Double frequencyPenalty;
 
@@ -66,11 +64,11 @@ public class MiniMaxChatProperties extends MiniMaxParentProperties {
 
 	private @Nullable Boolean internalToolExecutionEnabled;
 
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
+	public void setModel(@Nullable String model) {
 		this.model = model;
 	}
 
@@ -180,7 +178,9 @@ public class MiniMaxChatProperties extends MiniMaxParentProperties {
 
 	public MiniMaxChatOptions toOptions() {
 		MiniMaxChatOptions.Builder builder = MiniMaxChatOptions.builder();
-		builder.model(this.model);
+		if (this.model != null) {
+			builder.model(this.model);
+		}
 		if (this.frequencyPenalty != null) {
 			builder.frequencyPenalty(this.frequencyPenalty);
 		}
@@ -239,11 +239,11 @@ public class MiniMaxChatProperties extends MiniMaxParentProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.minimax.chat.model")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public String getModel() {
+		public @Nullable String getModel() {
 			return MiniMaxChatProperties.this.getModel();
 		}
 
-		public void setModel(String model) {
+		public void setModel(@Nullable String model) {
 			MiniMaxChatProperties.this.setModel(model);
 		}
 

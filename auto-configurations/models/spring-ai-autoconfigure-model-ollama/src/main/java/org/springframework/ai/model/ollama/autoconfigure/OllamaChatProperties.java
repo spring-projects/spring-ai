@@ -21,7 +21,6 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.ollama.api.OllamaChatOptions;
-import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.ThinkOption;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
@@ -37,7 +36,7 @@ public class OllamaChatProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.ollama.chat";
 
-	private String model = OllamaModel.MISTRAL.id();
+	private @Nullable String model;
 
 	private @Nullable Object format;
 
@@ -109,11 +108,11 @@ public class OllamaChatProperties {
 
 	private @Nullable Boolean internalToolExecutionEnabled;
 
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
+	public void setModel(@Nullable String model) {
 		this.model = model;
 	}
 
@@ -399,7 +398,9 @@ public class OllamaChatProperties {
 
 	public OllamaChatOptions toOptions() {
 		OllamaChatOptions.Builder builder = OllamaChatOptions.builder();
-		builder.model(this.model);
+		if (this.model != null) {
+			builder.model(this.model);
+		}
 		if (this.format != null) {
 			builder.format(this.format);
 		}
@@ -524,11 +525,11 @@ public class OllamaChatProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.ollama.chat.model")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public String getModel() {
+		public @Nullable String getModel() {
 			return OllamaChatProperties.this.getModel();
 		}
 
-		public void setModel(String model) {
+		public void setModel(@Nullable String model) {
 			OllamaChatProperties.this.setModel(model);
 		}
 

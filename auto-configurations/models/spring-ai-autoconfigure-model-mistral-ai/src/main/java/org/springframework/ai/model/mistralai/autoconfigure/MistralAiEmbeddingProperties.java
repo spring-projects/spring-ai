@@ -16,9 +16,10 @@
 
 package org.springframework.ai.model.mistralai.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.mistralai.MistralAiEmbeddingOptions;
-import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -32,10 +33,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class MistralAiEmbeddingProperties extends MistralAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.mistralai.embedding";
-
-	public static final String DEFAULT_EMBEDDING_MODEL = MistralAiApi.EmbeddingModel.EMBED.getValue();
-
-	public static final String DEFAULT_ENCODING_FORMAT = "float";
 
 	public MetadataMode metadataMode = MetadataMode.EMBED;
 
@@ -59,23 +56,23 @@ public class MistralAiEmbeddingProperties extends MistralAiParentProperties {
 
 	public static class Options {
 
-		private String model = DEFAULT_EMBEDDING_MODEL;
+		private @Nullable String model;
 
-		private String encodingFormat = DEFAULT_ENCODING_FORMAT;
+		private @Nullable String encodingFormat;
 
-		public String getModel() {
+		public @Nullable String getModel() {
 			return this.model;
 		}
 
-		public void setModel(String model) {
+		public void setModel(@Nullable String model) {
 			this.model = model;
 		}
 
-		public String getEncodingFormat() {
+		public @Nullable String getEncodingFormat() {
 			return this.encodingFormat;
 		}
 
-		public void setEncodingFormat(String encodingFormat) {
+		public void setEncodingFormat(@Nullable String encodingFormat) {
 			this.encodingFormat = encodingFormat;
 		}
 

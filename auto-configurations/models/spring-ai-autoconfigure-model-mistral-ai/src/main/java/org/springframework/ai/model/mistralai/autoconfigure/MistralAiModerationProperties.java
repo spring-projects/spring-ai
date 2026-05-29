@@ -16,7 +16,8 @@
 
 package org.springframework.ai.model.mistralai.autoconfigure;
 
-import org.springframework.ai.mistralai.api.MistralAiModerationApi;
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.mistralai.moderation.MistralAiModerationOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -28,8 +29,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class MistralAiModerationProperties extends MistralAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.mistralai.moderation";
-
-	private static final String DEFAULT_MODERATION_MODEL = MistralAiModerationApi.Model.MISTRAL_MODERATION.getValue();
 
 	private final Options options = new Options();
 
@@ -43,18 +42,22 @@ public class MistralAiModerationProperties extends MistralAiParentProperties {
 
 	public static class Options {
 
-		private String model = DEFAULT_MODERATION_MODEL;
+		private @Nullable String model;
 
-		public String getModel() {
+		public @Nullable String getModel() {
 			return this.model;
 		}
 
-		public void setModel(String model) {
+		public void setModel(@Nullable String model) {
 			this.model = model;
 		}
 
 		public MistralAiModerationOptions toOptions() {
-			return MistralAiModerationOptions.builder().model(this.model).build();
+			MistralAiModerationOptions.Builder builder = MistralAiModerationOptions.builder();
+			if (this.model != null) {
+				builder.model(this.model);
+			}
+			return builder.build();
 		}
 
 	}

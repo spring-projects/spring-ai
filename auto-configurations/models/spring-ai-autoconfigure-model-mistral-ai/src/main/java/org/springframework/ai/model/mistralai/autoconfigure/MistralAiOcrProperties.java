@@ -21,7 +21,6 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.mistralai.ocr.MistralAiOcrOptions;
-import org.springframework.ai.mistralai.ocr.MistralOcrApi;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -36,8 +35,6 @@ public class MistralAiOcrProperties extends MistralAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.mistralai.ocr";
 
-	public static final String DEFAULT_OCR_MODEL = MistralOcrApi.OCRModel.MISTRAL_OCR_LATEST.getValue();
-
 	private final Options options = new Options();
 
 	public MistralAiOcrProperties() {
@@ -50,7 +47,7 @@ public class MistralAiOcrProperties extends MistralAiParentProperties {
 
 	public static class Options {
 
-		private String model = DEFAULT_OCR_MODEL;
+		private @Nullable String model;
 
 		private @Nullable String id;
 
@@ -62,11 +59,11 @@ public class MistralAiOcrProperties extends MistralAiParentProperties {
 
 		private @Nullable Integer imageMinSize;
 
-		public String getModel() {
+		public @Nullable String getModel() {
 			return this.model;
 		}
 
-		public void setModel(String model) {
+		public void setModel(@Nullable String model) {
 			this.model = model;
 		}
 
@@ -79,7 +76,14 @@ public class MistralAiOcrProperties extends MistralAiParentProperties {
 		}
 
 		public MistralAiOcrOptions toOptions() {
-			return MistralAiOcrOptions.builder().model(this.model).includeImageBase64(this.includeImageBase64).build();
+			MistralAiOcrOptions.Builder builder = MistralAiOcrOptions.builder();
+			if (this.model != null) {
+				builder.model(this.model);
+			}
+			if (this.includeImageBase64 != null) {
+				builder.includeImageBase64(this.includeImageBase64);
+			}
+			return builder.build();
 		}
 
 		public @Nullable String getId() {

@@ -46,7 +46,7 @@ public class AnthropicChatProperties {
 
 	private @Nullable String model;
 
-	private @Nullable Integer maxTokens = AnthropicChatOptions.DEFAULT_MAX_TOKENS;
+	private @Nullable Integer maxTokens;
 
 	private @Nullable Metadata metadata;
 
@@ -81,7 +81,6 @@ public class AnthropicChatProperties {
 	private Options options = new Options();
 
 	public AnthropicChatProperties() {
-		this.model = AnthropicChatOptions.DEFAULT_MODEL;
 	}
 
 	public @Nullable String getModel() {

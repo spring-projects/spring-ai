@@ -44,15 +44,15 @@ public class VertexAiMultimodalEmbeddingProperties {
 
 	public static class Options {
 
-		private String model = VertexAiMultimodalEmbeddingOptions.DEFAULT_MODEL_NAME;
+		private @Nullable String model;
 
 		private @Nullable Integer outputDimensionality;
 
-		public String getModel() {
+		public @Nullable String getModel() {
 			return this.model;
 		}
 
-		public void setModel(String model) {
+		public void setModel(@Nullable String model) {
 			this.model = model;
 		}
 
@@ -65,10 +65,14 @@ public class VertexAiMultimodalEmbeddingProperties {
 		}
 
 		public VertexAiMultimodalEmbeddingOptions toOptions() {
-			return VertexAiMultimodalEmbeddingOptions.builder()
-				.model(this.model)
-				.dimensions(this.outputDimensionality)
-				.build();
+			VertexAiMultimodalEmbeddingOptions.Builder builder = VertexAiMultimodalEmbeddingOptions.builder();
+			if (this.model != null) {
+				builder.model(this.model);
+			}
+			if (this.outputDimensionality != null) {
+				builder.dimensions(this.outputDimensionality);
+			}
+			return builder.build();
 		}
 
 	}

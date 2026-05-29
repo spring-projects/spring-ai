@@ -44,27 +44,27 @@ public class VertexAiTextEmbeddingProperties {
 
 	public static class Options {
 
-		private String model = VertexAiTextEmbeddingOptions.DEFAULT_MODEL_NAME;
+		private @Nullable String model;
 
-		private VertexAiTextEmbeddingOptions.TaskType taskType = VertexAiTextEmbeddingOptions.TaskType.RETRIEVAL_DOCUMENT;
+		private VertexAiTextEmbeddingOptions.@Nullable TaskType taskType;
 
 		private @Nullable Integer outputDimensionality;
 
 		private @Nullable String title;
 
-		public String getModel() {
+		public @Nullable String getModel() {
 			return this.model;
 		}
 
-		public void setModel(String model) {
+		public void setModel(@Nullable String model) {
 			this.model = model;
 		}
 
-		public VertexAiTextEmbeddingOptions.TaskType getTaskType() {
+		public VertexAiTextEmbeddingOptions.@Nullable TaskType getTaskType() {
 			return this.taskType;
 		}
 
-		public void setTaskType(VertexAiTextEmbeddingOptions.TaskType taskType) {
+		public void setTaskType(VertexAiTextEmbeddingOptions.@Nullable TaskType taskType) {
 			this.taskType = taskType;
 		}
 
@@ -85,12 +85,20 @@ public class VertexAiTextEmbeddingProperties {
 		}
 
 		public VertexAiTextEmbeddingOptions toOptions() {
-			return VertexAiTextEmbeddingOptions.builder()
-				.model(this.model)
-				.taskType(this.taskType)
-				.dimensions(this.outputDimensionality)
-				.title(this.title)
-				.build();
+			VertexAiTextEmbeddingOptions.Builder builder = VertexAiTextEmbeddingOptions.builder();
+			if (this.model != null) {
+				builder.model(this.model);
+			}
+			if (this.taskType != null) {
+				builder.taskType(this.taskType);
+			}
+			if (this.outputDimensionality != null) {
+				builder.dimensions(this.outputDimensionality);
+			}
+			if (this.title != null) {
+				builder.title(this.title);
+			}
+			return builder.build();
 		}
 
 	}

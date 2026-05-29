@@ -21,7 +21,6 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.document.MetadataMode;
-import org.springframework.ai.postgresml.PostgresMlEmbeddingModel;
 import org.springframework.ai.postgresml.PostgresMlEmbeddingModel.VectorType;
 import org.springframework.ai.postgresml.PostgresMlEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -44,11 +43,11 @@ public class PostgresMlEmbeddingProperties {
 	 */
 	private boolean createExtension;
 
-	private @Nullable String transformer = PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL;
+	private @Nullable String transformer;
 
-	private @Nullable VectorType vectorType = VectorType.PG_ARRAY;
+	private @Nullable VectorType vectorType;
 
-	private @Nullable Map<String, Object> kwargs = Map.of();
+	private @Nullable Map<String, Object> kwargs;
 
 	private @Nullable MetadataMode metadataMode = MetadataMode.EMBED;
 
