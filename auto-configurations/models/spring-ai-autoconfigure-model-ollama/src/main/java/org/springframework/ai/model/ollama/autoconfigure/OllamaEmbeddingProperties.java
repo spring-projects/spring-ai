@@ -19,7 +19,6 @@ package org.springframework.ai.model.ollama.autoconfigure;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
-import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -55,7 +54,7 @@ public class OllamaEmbeddingProperties {
 
 	public static class Options {
 
-		private @Nullable String model = OllamaModel.MXBAI_EMBED_LARGE.id();
+		private @Nullable String model;
 
 		private @Nullable Boolean truncate;
 
@@ -86,11 +85,17 @@ public class OllamaEmbeddingProperties {
 		}
 
 		public OllamaEmbeddingOptions toOptions() {
-			return OllamaEmbeddingOptions.builder()
-				.model(this.model)
-				.truncate(this.truncate)
-				.keepAlive(this.keepAlive)
-				.build();
+			OllamaEmbeddingOptions.Builder builder = OllamaEmbeddingOptions.builder();
+			if (this.model != null) {
+				builder.model(this.model);
+			}
+			if (this.truncate != null) {
+				builder.truncate(this.truncate);
+			}
+			if (this.keepAlive != null) {
+				builder.keepAlive(this.keepAlive);
+			}
+			return builder.build();
 		}
 
 	}

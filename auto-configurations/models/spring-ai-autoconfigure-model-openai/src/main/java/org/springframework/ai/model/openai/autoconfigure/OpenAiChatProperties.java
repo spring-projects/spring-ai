@@ -43,9 +43,7 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.chat";
 
-	public static final String DEFAULT_CHAT_MODEL = OpenAiChatOptions.DEFAULT_CHAT_MODEL;
-
-	private @Nullable String model = DEFAULT_CHAT_MODEL;
+	private @Nullable String model;
 
 	private @Nullable Double frequencyPenalty;
 

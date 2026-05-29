@@ -29,11 +29,9 @@ public class OpenAiEmbeddingProperties extends AbstractOpenAiProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.embedding";
 
-	public static final String DEFAULT_EMBEDDING_MODEL = OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL;
-
 	private MetadataMode metadataMode = MetadataMode.EMBED;
 
-	private @Nullable String model = DEFAULT_EMBEDDING_MODEL;
+	private @Nullable String model;
 
 	private @Nullable String user;
 

@@ -16,7 +16,6 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
-import com.openai.models.images.ImageModel;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.openai.OpenAiImageOptions;
@@ -35,9 +34,7 @@ public class OpenAiImageProperties extends AbstractOpenAiProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.image";
 
-	public static final String DEFAULT_IMAGE_MODEL = ImageModel.GPT_IMAGE_1_MINI.toString();
-
-	private @Nullable String model = DEFAULT_IMAGE_MODEL;
+	private @Nullable String model;
 
 	private @Nullable Integer n;
 

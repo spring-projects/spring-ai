@@ -18,7 +18,6 @@ package org.springframework.ai.model.stabilityai.autoconfigure;
 
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.ai.stabilityai.api.StabilityAiApi;
 import org.springframework.ai.stabilityai.api.StabilityAiImageOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
@@ -38,7 +37,7 @@ public class StabilityAiImageProperties extends StabilityAiParentProperties {
 
 	private @Nullable Integer n;
 
-	private String model = StabilityAiApi.DEFAULT_IMAGE_MODEL;
+	private @Nullable String model;
 
 	private @Nullable Integer width;
 
@@ -66,11 +65,11 @@ public class StabilityAiImageProperties extends StabilityAiParentProperties {
 		this.n = n;
 	}
 
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
+	public void setModel(@Nullable String model) {
 		this.model = model;
 	}
 
@@ -148,7 +147,9 @@ public class StabilityAiImageProperties extends StabilityAiParentProperties {
 
 	public StabilityAiImageOptions toOptions() {
 		StabilityAiImageOptions.Builder builder = StabilityAiImageOptions.builder();
-		builder.model(this.model);
+		if (this.model != null) {
+			builder.model(this.model);
+		}
 		if (this.n != null) {
 			builder.N(this.n);
 		}
@@ -208,11 +209,11 @@ public class StabilityAiImageProperties extends StabilityAiParentProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.stabilityai.image.model")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public String getModel() {
+		public @Nullable String getModel() {
 			return StabilityAiImageProperties.this.getModel();
 		}
 
-		public void setModel(String model) {
+		public void setModel(@Nullable String model) {
 			StabilityAiImageProperties.this.setModel(model);
 		}
 

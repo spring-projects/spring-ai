@@ -36,19 +36,13 @@ public class ElevenLabsSpeechProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.elevenlabs.tts";
 
-	public static final String DEFAULT_MODEL_ID = "eleven_turbo_v2_5";
+	private @Nullable String modelId;
 
-	private static final String DEFAULT_VOICE_ID = "9BWtsMINqrJLrRacOk9x";
-
-	private static final ElevenLabsApi.OutputFormat DEFAULT_OUTPUT_FORMAT = ElevenLabsApi.OutputFormat.MP3_22050_32;
-
-	private @Nullable String modelId = DEFAULT_MODEL_ID;
-
-	private @Nullable String voiceId = DEFAULT_VOICE_ID;
+	private @Nullable String voiceId;
 
 	private @Nullable Boolean enableLogging;
 
-	private @Nullable String outputFormat = DEFAULT_OUTPUT_FORMAT.getValue();
+	private @Nullable String outputFormat;
 
 	private ElevenLabsApi.SpeechRequest.@Nullable VoiceSettings voiceSettings;
 

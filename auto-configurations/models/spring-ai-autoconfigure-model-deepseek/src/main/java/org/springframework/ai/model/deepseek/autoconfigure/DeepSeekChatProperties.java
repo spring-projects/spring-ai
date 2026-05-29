@@ -21,7 +21,6 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
-import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.deepseek.api.ResponseFormat;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
@@ -37,8 +36,6 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.deepseek.chat";
 
-	public static final String DEFAULT_CHAT_MODEL = DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue();
-
 	public static final String DEFAULT_COMPLETIONS_PATH = "/chat/completions";
 
 	public static final String DEFAULT_BETA_PREFIX_PATH = "/beta";
@@ -52,7 +49,7 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 
 	private String betaPrefixPath = DEFAULT_BETA_PREFIX_PATH;
 
-	private String model = DEFAULT_CHAT_MODEL;
+	private @Nullable String model;
 
 	private @Nullable Double frequencyPenalty;
 
@@ -98,11 +95,11 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 		this.betaPrefixPath = betaPrefixPath;
 	}
 
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
+	public void setModel(@Nullable String model) {
 		this.model = model;
 	}
 
@@ -188,7 +185,9 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 
 	public DeepSeekChatOptions toOptions() {
 		DeepSeekChatOptions.Builder builder = DeepSeekChatOptions.builder();
-		builder.model(this.model);
+		if (this.model != null) {
+			builder.model(this.model);
+		}
 		if (this.frequencyPenalty != null) {
 			builder.frequencyPenalty(this.frequencyPenalty);
 		}
@@ -238,11 +237,11 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.deepseek.chat.model")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public String getModel() {
+		public @Nullable String getModel() {
 			return DeepSeekChatProperties.this.getModel();
 		}
 
-		public void setModel(String model) {
+		public void setModel(@Nullable String model) {
 			DeepSeekChatProperties.this.setModel(model);
 		}
 

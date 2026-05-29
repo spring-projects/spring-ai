@@ -48,7 +48,7 @@ public class BedrockConverseProxyChatProperties {
 
 	private @Nullable Double frequencyPenalty;
 
-	private @Nullable Integer maxTokens = 300;
+	private @Nullable Integer maxTokens;
 
 	private @Nullable Double presencePenalty;
 
@@ -56,7 +56,7 @@ public class BedrockConverseProxyChatProperties {
 
 	private @Nullable List<String> stopSequences;
 
-	private @Nullable Double temperature = 0.7;
+	private @Nullable Double temperature;
 
 	private @Nullable Integer topK;
 

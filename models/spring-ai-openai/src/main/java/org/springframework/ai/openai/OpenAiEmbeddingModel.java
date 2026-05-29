@@ -57,8 +57,6 @@ import org.springframework.util.CollectionUtils;
  */
 public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
-	private static final String DEFAULT_MODEL_NAME = OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL;
-
 	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiEmbeddingModel.class);

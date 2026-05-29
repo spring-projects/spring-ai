@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.minimax.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.minimax.MiniMaxEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -30,8 +32,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class MiniMaxEmbeddingProperties extends MiniMaxParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.minimax.embedding";
-
-	public static final String DEFAULT_EMBEDDING_MODEL = MiniMaxEmbeddingOptions.DEFAULT_EMBEDDING_MODEL;
 
 	private MetadataMode metadataMode = MetadataMode.EMBED;
 
@@ -51,18 +51,22 @@ public class MiniMaxEmbeddingProperties extends MiniMaxParentProperties {
 
 	public static class Options {
 
-		private String model = DEFAULT_EMBEDDING_MODEL;
+		private @Nullable String model;
 
-		public String getModel() {
+		public @Nullable String getModel() {
 			return this.model;
 		}
 
-		public void setModel(String model) {
+		public void setModel(@Nullable String model) {
 			this.model = model;
 		}
 
 		public MiniMaxEmbeddingOptions toOptions() {
-			return MiniMaxEmbeddingOptions.builder().model(this.model).build();
+			MiniMaxEmbeddingOptions.Builder builder = MiniMaxEmbeddingOptions.builder();
+			if (this.model != null) {
+				builder.model(this.model);
+			}
+			return builder.build();
 		}
 
 	}

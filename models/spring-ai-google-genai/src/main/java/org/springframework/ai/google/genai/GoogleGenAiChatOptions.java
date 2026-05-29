@@ -37,7 +37,6 @@ import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.util.Assert;
 
 /**
  * Options for the Google GenAI Chat API.
@@ -492,10 +491,10 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		@Override
 		public B clone() {
 			B copy = super.clone();
-			if (!this.safetySettings.isEmpty()) {
+			if (this.safetySettings != null && !this.safetySettings.isEmpty()) {
 				copy.safetySettings = new ArrayList<>(this.safetySettings);
 			}
-			if (!this.labels.isEmpty()) {
+			if (this.labels != null && !this.labels.isEmpty()) {
 				copy.labels = new HashMap<>(this.labels);
 			}
 			return copy;
@@ -527,9 +526,9 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 
 		protected @Nullable Boolean includeServerSideToolInvocations;
 
-		protected List<GoogleGenAiSafetySetting> safetySettings = new ArrayList<>();
+		protected @Nullable List<GoogleGenAiSafetySetting> safetySettings;
 
-		protected Map<String, String> labels = new HashMap<>();
+		protected @Nullable Map<String, String> labels;
 
 		protected @Nullable GoogleGenAiServiceTier serviceTier;
 
@@ -582,9 +581,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			return self();
 		}
 
-		public B safetySettings(List<GoogleGenAiSafetySetting> safetySettings) {
-			Assert.notNull(safetySettings, "safetySettings must not be null");
-			this.safetySettings = safetySettings;
+		public B safetySettings(@Nullable List<GoogleGenAiSafetySetting> safetySettings) {
+			this.safetySettings = safetySettings != null ? safetySettings : new ArrayList<>();
 			return self();
 		}
 
@@ -608,9 +606,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			return self();
 		}
 
-		public B labels(Map<String, String> labels) {
-			Assert.notNull(labels, "labels must not be null");
-			this.labels = labels;
+		public B labels(@Nullable Map<String, String> labels) {
+			this.labels = labels != null ? labels : new HashMap<>();
 			return self();
 		}
 
