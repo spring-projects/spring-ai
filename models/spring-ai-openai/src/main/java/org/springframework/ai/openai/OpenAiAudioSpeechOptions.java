@@ -199,13 +199,6 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 		return Objects.hash(getModel(), this.input, this.voice, this.responseFormat, this.speed);
 	}
 
-	@Override
-	public String toString() {
-		return "OpenAiAudioSpeechOptions{" + "model='" + getModel() + '\'' + ", input='" + this.input + '\''
-				+ ", voice='" + this.voice + '\'' + ", responseFormat='" + this.responseFormat + '\'' + ", speed="
-				+ this.speed + '}';
-	}
-
 	public static final class Builder extends AbstractBuilder<OpenAiAudioSpeechOptions, Builder> {
 
 		private @Nullable String input;

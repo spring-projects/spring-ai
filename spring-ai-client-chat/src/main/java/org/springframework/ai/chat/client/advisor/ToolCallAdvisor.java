@@ -55,6 +55,8 @@ import org.springframework.util.Assert;
  */
 public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor {
 
+	private static final ChatClientMessageAggregator CHAT_CLIENT_MESSAGE_AGGREGATOR = new ChatClientMessageAggregator();
+
 	/**
 	 * Default advisor order. Placed early in the chain so that all downstream advisors
 	 * (e.g. {@link org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor})
@@ -255,40 +257,22 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 
 			final ChatClientRequest finalRequest = processedRequest;
 
-			// Get the streaming response
 			Flux<ChatClientResponse> responseFlux = chainCopy.nextStream(processedRequest);
 
-			// Holder for aggregated response (set when aggregation completes)
-			AtomicReference<ChatClientResponse> aggregatedResponseRef = new AtomicReference<>();
-
-			return streamWithToolCallResponses(responseFlux, aggregatedResponseRef, finalRequest, streamAdvisorChain,
-					originalRequest, optionsCopy);
+			return streamWithToolCallResponses(responseFlux, finalRequest, streamAdvisorChain, originalRequest,
+					optionsCopy);
 		});
 	}
 
-	/**
-	 * Streams all chunks immediately including intermediate tool call responses. Uses
-	 * publish() to multicast the stream for parallel streaming and aggregation.
-	 */
 	private Flux<ChatClientResponse> streamWithToolCallResponses(Flux<ChatClientResponse> responseFlux,
-			AtomicReference<ChatClientResponse> aggregatedResponseRef, ChatClientRequest finalRequest,
-			StreamAdvisorChain streamAdvisorChain, ChatClientRequest originalRequest,
+			ChatClientRequest finalRequest, StreamAdvisorChain streamAdvisorChain, ChatClientRequest originalRequest,
 			ToolCallingChatOptions optionsCopy) {
 
-		return responseFlux.publish(shared -> {
-			// Branch 1: Stream chunks immediately for real-time streaming UX
-			Flux<ChatClientResponse> streamingBranch = new ChatClientMessageAggregator()
-				.aggregateChatClientResponse(shared, aggregatedResponseRef::set);
+		AtomicReference<ChatClientResponse> aggregatedResponseRef = new AtomicReference<>();
 
-			// Branch 2: After streaming completes, check for tool calls and
-			// potentially recurse.
-			Flux<ChatClientResponse> recursionBranch = Flux
-				.defer(() -> this.handleToolCallRecursion(aggregatedResponseRef.get(), finalRequest, streamAdvisorChain,
-						originalRequest, optionsCopy));
-
-			// Emit all streaming chunks first, then append any recursive results
-			return streamingBranch.concatWith(recursionBranch);
-		})
+		return CHAT_CLIENT_MESSAGE_AGGREGATOR.aggregateChatClientResponse(responseFlux, aggregatedResponseRef::set)
+			.concatWith(Flux.defer(() -> this.handleToolCallRecursion(aggregatedResponseRef.get(), finalRequest,
+					streamAdvisorChain, originalRequest, optionsCopy)))
 			.filter(ccr -> this.streamToolCallResponses
 					|| !(ccr.chatResponse() != null && ccr.chatResponse().hasToolCalls()));
 	}

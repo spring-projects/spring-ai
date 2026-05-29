@@ -123,7 +123,7 @@ public class StreamableMcpAnnotationsIT {
 				// "spring.ai.mcp.server.protocol=SSE",
 				"spring.ai.mcp.server.version=1.0.0",
 				"spring.ai.mcp.server.streamable-http.keep-alive-interval=1s",
-				// "spring.ai.mcp.server.requestTimeout=1m",
+				// "spring.ai.mcp.server.request-timeout=1m",
 				"spring.ai.mcp.server.streamable-http.mcp-endpoint=/mcp") // @formatter:on
 			.run(serverContext -> {
 				// Verify all required beans are present

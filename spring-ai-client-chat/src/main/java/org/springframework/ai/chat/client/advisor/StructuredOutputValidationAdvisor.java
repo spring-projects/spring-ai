@@ -41,7 +41,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.core.Ordered;
 import org.springframework.core.ParameterizedTypeReference;
@@ -249,7 +249,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 
 		private int maxRepeatAttempts = 3;
 
-		private JsonMapper jsonMapper = JsonParser.getJsonMapper();
+		private JsonMapper jsonMapper = JacksonUtils.getDefaultJsonMapper();
 
 		private Builder() {
 		}

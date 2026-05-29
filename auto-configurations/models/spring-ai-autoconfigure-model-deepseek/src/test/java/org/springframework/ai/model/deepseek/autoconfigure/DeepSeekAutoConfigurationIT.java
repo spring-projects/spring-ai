@@ -49,7 +49,7 @@ public class DeepSeekAutoConfigurationIT {
 	private static final Log logger = LogFactory.getLog(DeepSeekAutoConfigurationIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.deepseek.apiKey=" + System.getenv("DEEPSEEK_API_KEY"))
+		.withPropertyValues("spring.ai.deepseek.api-key=" + System.getenv("DEEPSEEK_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(DeepSeekChatAutoConfiguration.class, RestClientAutoConfiguration.class,
 				SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class,
 				WebClientAutoConfiguration.class));

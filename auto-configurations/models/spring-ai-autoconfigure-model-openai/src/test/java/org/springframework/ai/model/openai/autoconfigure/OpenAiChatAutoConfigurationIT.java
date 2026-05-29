@@ -41,7 +41,7 @@ public class OpenAiChatAutoConfigurationIT {
 	private static final Log logger = LogFactory.getLog(OpenAiChatAutoConfigurationIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"));
+		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"));
 
 	@Test
 	void chatCall() {

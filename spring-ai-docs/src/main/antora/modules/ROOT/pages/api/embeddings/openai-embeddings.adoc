@@ -150,7 +150,7 @@ The prefix `spring.ai.openai.embedding` is property prefix that configures the `
 | spring.ai.openai.embedding.project-id      | Optionally, you can specify which project is used for an API request. |  -
 | spring.ai.openai.embedding.metadata-mode      | Document content extraction mode.      | EMBED
 | spring.ai.openai.embedding.options.model      | The model to use      | text-embedding-ada-002 (other options: text-embedding-3-large, text-embedding-3-small)
-| spring.ai.openai.embedding.options.encodingFormat   | The format to return the embeddings in. Can be either float or base64.  | -
+| spring.ai.openai.embedding.options.encoding-format   | The format to return the embeddings in. Can be either float or base64.  | -
 | spring.ai.openai.embedding.options.user   | A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.  | -
 | spring.ai.openai.embedding.options.dimensions   | The number of dimensions the resulting output embeddings should have. Only supported in `text-embedding-3` and later models.  | -
 |====

@@ -670,16 +670,6 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 	}
 
 	@Test
-	void testToString() {
-		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").temperature(0.7).build();
-
-		String toString = options.toString();
-		assertThat(toString).contains("OpenAiChatOptions");
-		assertThat(toString).contains("test-model");
-		assertThat(toString).contains("0.7");
-	}
-
-	@Test
 	void testTopKReturnsNull() {
 		OpenAiChatOptions options = OpenAiChatOptions.builder().build();
 		// TopK is not supported by OpenAI, should always return null

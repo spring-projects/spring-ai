@@ -75,11 +75,6 @@ public class BedrockCacheOptions {
 		this.strategy = strategy;
 	}
 
-	@Override
-	public String toString() {
-		return "BedrockCacheOptions{" + "strategy=" + this.strategy + '}';
-	}
-
 	/**
 	 * Builder for constructing BedrockCacheOptions instances.
 	 */

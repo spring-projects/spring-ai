@@ -36,6 +36,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.ApiKey;
+import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -641,23 +643,6 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 				this.toolNames, this.internalToolExecutionEnabled, this.toolContext);
 	}
 
-	@Override
-	public String toString() {
-		return "OpenAiChatOptions{" + "model='" + this.getModel() + ", frequencyPenalty=" + this.frequencyPenalty
-				+ ", logitBias=" + this.logitBias + ", logprobs=" + this.logprobs + ", topLogprobs=" + this.topLogprobs
-				+ ", maxTokens=" + this.maxTokens + ", maxCompletionTokens=" + this.maxCompletionTokens + ", n="
-				+ this.n + ", outputModalities=" + this.outputModalities + ", outputAudio=" + this.outputAudio
-				+ ", presencePenalty=" + this.presencePenalty + ", responseFormat=" + this.responseFormat
-				+ ", streamOptions=" + this.streamOptions + ", streamUsage=" + ", seed=" + this.seed + ", stop="
-				+ this.stop + ", temperature=" + this.temperature + ", topP=" + this.topP + ", toolChoice="
-				+ this.toolChoice + ", user='" + this.user + '\'' + ", parallelToolCalls=" + this.parallelToolCalls
-				+ ", store=" + this.store + ", metadata=" + this.metadata + ", reasoningEffort='" + this.reasoningEffort
-				+ '\'' + ", verbosity='" + this.verbosity + '\'' + ", serviceTier='" + this.serviceTier + '\''
-				+ ", extraBody=" + this.extraBody + ", toolCallbacks=" + this.toolCallbacks + ", toolNames="
-				+ this.toolNames + ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled
-				+ ", toolContext=" + this.toolContext + '}';
-	}
-
 	public record AudioParameters(@Nullable Voice voice, @Nullable AudioResponseFormat format) {
 
 		/**
@@ -947,6 +932,17 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 		public B apiKey(@Nullable String apiKey) {
 			this.apiKey = apiKey;
+			return self();
+		}
+
+		/**
+		 * Sets the API key using an {@link ApiKey} instance. Pass a {@link NoopApiKey} to
+		 * disable authentication (no {@code Authorization} header will be sent), which is
+		 * the same behavior as setting an empty string via {@link #apiKey(String)}.
+		 * @param apiKey the API key instance; if {@code null}, the key is cleared
+		 */
+		public B apiKey(@Nullable ApiKey apiKey) {
+			this.apiKey = (apiKey != null) ? apiKey.getValue() : null;
 			return self();
 		}
 

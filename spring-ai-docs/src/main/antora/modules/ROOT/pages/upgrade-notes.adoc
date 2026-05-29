@@ -1,6 +1,162 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-2-0-0-RC1]]
+== Upgrading to 2.0.0-RC1
+
+=== JSON Utilities Refactoring
+
+==== New: `JsonHelper` and Updated `JacksonUtils`
+
+A new `JsonHelper` class has been introduced in `spring-ai-commons` as the canonical way to perform JSON serialization and deserialization.
+It is instantiable and accepts a custom `JsonMapper`, making it straightforward to customize JSON behavior per use case.
+`JacksonUtils` gains a new `getDefaultJsonMapper()` static method that returns a shared, pre-configured `JsonMapper` instance.
+
+`JsonHelper` centralizes JSON operations previously spread across `JsonParser`, `ModelOptionsUtils`, and `McpJsonParser`.
+The default constructor uses the shared mapper from `JacksonUtils.getDefaultJsonMapper()`.
+Inject a custom `JsonMapper` if you need different serialization settings:
+
+[source,java]
+----
+// Default — uses the shared JsonMapper from JacksonUtils
+JsonHelper jsonHelper = new JsonHelper();
+
+// Custom — supply your own JsonMapper
+JsonMapper myMapper = JsonMapper.builder()
+    .addModule(new JavaTimeModule())
+    .build();
+JsonHelper customHelper = new JsonHelper(myMapper);
+----
+
+==== Deprecated: `JsonParser`
+
+`JsonParser` (in `org.springframework.ai.util.json`) is deprecated for removal. All methods now delegate to `JsonHelper`.
+
+===== Impact
+
+Code that calls `JsonParser` methods will see deprecation warnings at compile time.
+
+===== Migration
+
+[cols="1,1", options="header"]
+|===
+| Before | After
+| `JsonParser.getJsonMapper()` | `JacksonUtils.getDefaultJsonMapper()`
+| `JsonParser.fromJson(json, MyType.class)` | `jsonHelper.fromJson(json, MyType.class)`
+| `JsonParser.fromJson(json, type)` | `jsonHelper.fromJson(json, type)`
+| `JsonParser.toJson(object)` | `jsonHelper.toJson(object)`
+| `JsonParser.toTypedObject(value, type)` | `jsonHelper.convertToTypedObject(value, type)`
+|===
+
+==== Removed: JSON Methods from `ModelOptionsUtils`
+
+The following members of `ModelOptionsUtils` have been removed, since model options no longer depend on Jackson directly.
+
+[cols="1,1", options="header"]
+|===
+| Removed member | Replacement
+| `ModelOptionsUtils.JSON_MAPPER` | `JacksonUtils.getDefaultJsonMapper()`
+| `ModelOptionsUtils.jsonToMap(String)` | `jsonHelper.fromJsonToMap(json)`
+| `ModelOptionsUtils.jsonToObject(String, Class<T>)` | `jsonHelper.fromJson(json, type)`
+| `ModelOptionsUtils.toJsonString(Object)` | `jsonHelper.toJson(object)`
+| `ModelOptionsUtils.toJsonStringPrettyPrinter(Object)` | `JacksonUtils.getDefaultJsonMapper().writerWithDefaultPrettyPrinter().writeValueAsString(object)`
+| `ModelOptionsUtils.getJsonSchema(Type, boolean)` | `JsonSchemaUtils.getJsonSchema(type, toUpperCase)`
+| `ModelOptionsUtils.getJsonSchema(Type)` | `JsonSchemaUtils.getJsonSchema(type)`
+| `ModelOptionsUtils.toUpperCaseTypeValues(ObjectNode)` | `JsonSchemaUtils.toUpperCaseTypeValues(node)`
+|===
+
+===== Impact
+
+Code that references the removed fields or methods will fail to compile.
+
+===== Migration
+
+[source,java]
+----
+// Before
+import org.springframework.ai.model.ModelOptionsUtils;
+
+Map<String, Object> map = ModelOptionsUtils.jsonToMap(jsonString);
+String json = ModelOptionsUtils.toJsonString(myObject);
+JsonMapper mapper = ModelOptionsUtils.JSON_MAPPER;
+
+// After
+import org.springframework.ai.util.JsonHelper;
+import org.springframework.ai.util.JacksonUtils;
+
+private static final JsonHelper jsonHelper = new JsonHelper();
+
+Map<String, Object> map = jsonHelper.fromJsonToMap(jsonString);
+String json = jsonHelper.toJson(myObject);
+JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+----
+
+==== Removed: `McpJsonParser`
+
+`McpJsonParser` (in `org.springframework.ai.mcp.annotation.method.tool.utils`) has been deleted.
+Its functionality is now covered by `JsonHelper`.
+
+===== Migration
+
+[cols="1,1", options="header"]
+|===
+| Before | After
+| `McpJsonParser.toMap(object)` | `jsonHelper.convertToMap(object)`
+| `McpJsonParser.fromMap(map, MyType.class)` | `jsonHelper.convertFromMap(map, MyType.class)`
+| `McpJsonParser.fromMap(map, typeReference)` | `jsonHelper.convertFromMap(map, parameterizedTypeReference)`
+|===
+
+=== MCP Elicitation API: `TypeReference` Replaced by `ParameterizedTypeReference`
+
+The `elicit(...)` overloads that previously accepted `tools.jackson.core.type.TypeReference<T>` in `McpAsyncRequestContext` and `McpSyncRequestContext` now accept `org.springframework.core.ParameterizedTypeReference<T>`.
+
+==== Impact
+
+Any code that calls these methods with a Jackson `TypeReference` will fail to compile.
+
+Affected method signatures:
+
+* `McpAsyncRequestContext.elicit(TypeReference<T>)`
+* `McpAsyncRequestContext.elicit(Consumer<ElicitationSpec>, TypeReference<T>)`
+* `McpSyncRequestContext.elicit(TypeReference<T>)`
+* `McpSyncRequestContext.elicit(Consumer<ElicitationSpec>, TypeReference<T>)`
+
+==== Migration
+
+Replace the Jackson `TypeReference` anonymous class with a Spring `ParameterizedTypeReference` anonymous class:
+
+[source,java]
+----
+// Before
+import tools.jackson.core.type.TypeReference;
+
+Mono<StructuredElicitResult<Map<String, Object>>> result =
+    context.elicit(e -> e.message("Please fill in the form"),
+        new TypeReference<Map<String, Object>>() {});
+
+// After
+import org.springframework.core.ParameterizedTypeReference;
+
+Mono<StructuredElicitResult<Map<String, Object>>> result =
+    context.elicit(e -> e.message("Please fill in the form"),
+        new ParameterizedTypeReference<Map<String, Object>>() {});
+----
+
+The same change applies to `McpSyncRequestContext`:
+
+[source,java]
+----
+// Before
+StructuredElicitResult<Person> result =
+    context.elicit(e -> e.message("Provide your details"),
+        new TypeReference<Person>() {});
+
+// After
+StructuredElicitResult<Person> result =
+    context.elicit(e -> e.message("Provide your details"),
+        new ParameterizedTypeReference<Person>() {});
+----
+
 [[upgrading-to-2-0-0-M7]]
 == Upgrading to 2.0.0-M7
 

@@ -27,10 +27,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -44,6 +44,8 @@ import org.springframework.util.StringUtils;
  * @since 1.0.0
  */
 public class SyncMcpToolCallback implements ToolCallback {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final Logger logger = LoggerFactory.getLogger(SyncMcpToolCallback.class);
 
@@ -115,7 +117,7 @@ public class SyncMcpToolCallback implements ToolCallback {
 			toolCallInput = "{}";
 		}
 
-		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(toolCallInput);
+		Map<String, Object> arguments = jsonHelper.fromJsonToMap(toolCallInput);
 
 		CallToolResult response;
 		try {
@@ -142,7 +144,7 @@ public class SyncMcpToolCallback implements ToolCallback {
 			throw new ToolExecutionException(this.getToolDefinition(),
 					new IllegalStateException("Error calling tool: " + response.content()));
 		}
-		return ModelOptionsUtils.toJsonString(response.content());
+		return jsonHelper.toJson(response.content());
 	}
 
 	/**

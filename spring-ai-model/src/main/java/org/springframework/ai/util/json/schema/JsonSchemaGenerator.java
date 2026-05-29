@@ -43,7 +43,7 @@ import tools.jackson.databind.node.ObjectNode;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.KotlinModule;
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.core.KotlinDetector;
 import org.springframework.core.Nullness;
 import org.springframework.util.Assert;
@@ -127,7 +127,7 @@ public final class JsonSchemaGenerator {
 	 * Generate a JSON Schema for a method's input parameters.
 	 */
 	public static String generateForMethodInput(Method method, SchemaOption... schemaOptions) {
-		ObjectNode schema = JsonParser.getJsonMapper().createObjectNode();
+		ObjectNode schema = JacksonUtils.getDefaultJsonMapper().createObjectNode();
 		schema.put("$schema", SchemaVersion.DRAFT_2020_12.getIdentifier());
 		schema.put("type", "object");
 		ObjectNode defs = schema.putObject("$defs");
@@ -300,7 +300,6 @@ public final class JsonSchemaGenerator {
 		});
 	}
 
-	// Based on the method in ModelOptionsUtils.
 	public static void convertTypeValuesToUpperCase(ObjectNode node) {
 		if (node.isObject()) {
 			node.properties().forEach(entry -> {
