@@ -335,16 +335,6 @@ public class MiniMaxChatModel implements ChatModel {
 		return this.options;
 	}
 
-	/**
-	 * @deprecated use {@link #getOptions()} instead.
-	 */
-	@Deprecated(forRemoval = true)
-	@Override
-	@SuppressWarnings("removal")
-	public ChatOptions getDefaultOptions() {
-		return this.options.copy();
-	}
-
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 		// Before moving any further, build the final request Prompt,

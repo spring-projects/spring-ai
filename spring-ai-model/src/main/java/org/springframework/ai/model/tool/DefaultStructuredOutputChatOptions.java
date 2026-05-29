@@ -52,12 +52,6 @@ public class DefaultStructuredOutputChatOptions extends DefaultChatOptions imple
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public <T extends ChatOptions> T copy() {
-		return (T) mutate().build();
-	}
-
-	@Override
 	public StructuredOutputChatOptions.Builder<?> mutate() {
 		return StructuredOutputChatOptions.builder()
 			.model(this.getModel())

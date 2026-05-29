@@ -54,10 +54,6 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 		return new Builder();
 	}
 
-	public OpenAiModerationOptions copy() {
-		return builder().from(this).build();
-	}
-
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {

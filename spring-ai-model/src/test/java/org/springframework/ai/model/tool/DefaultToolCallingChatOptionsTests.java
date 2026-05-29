@@ -97,30 +97,6 @@ class DefaultToolCallingChatOptionsTests {
 	}
 
 	@Test
-	void copyShouldCreateNewInstanceWithSameValues() {
-		ToolCallback callback = mock(ToolCallback.class);
-		ToolCallingChatOptions original = ToolCallingChatOptions.builder()
-			.toolCallbacks(List.of(callback))
-			.toolNames(Set.of("tool1"))
-			.toolContext(Map.of("key", "value"))
-			.internalToolExecutionEnabled(true)
-			.model("gpt-4")
-			.temperature(0.7)
-			.build();
-
-		ToolCallingChatOptions copy = original.copy();
-
-		assertThat(copy).isNotSameAs(original).satisfies(c -> {
-			assertThat(c.getToolCallbacks()).isEqualTo(original.getToolCallbacks());
-			assertThat(c.getToolNames()).isEqualTo(original.getToolNames());
-			assertThat(c.getToolContext()).isEqualTo(original.getToolContext());
-			assertThat(c.getInternalToolExecutionEnabled()).isEqualTo(original.getInternalToolExecutionEnabled());
-			assertThat(c.getModel()).isEqualTo(original.getModel());
-			assertThat(c.getTemperature()).isEqualTo(original.getTemperature());
-		});
-	}
-
-	@Test
 	void gettersShouldReturnImmutableCollections() {
 		ToolCallback callback = mock(ToolCallback.class);
 		ToolCallingChatOptions options = ToolCallingChatOptions.builder()

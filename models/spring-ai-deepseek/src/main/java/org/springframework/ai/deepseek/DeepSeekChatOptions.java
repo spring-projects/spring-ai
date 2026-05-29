@@ -254,11 +254,6 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public DeepSeekChatOptions copy() {
-		return mutate().build();
-	}
-
-	@Override
 	public Builder mutate() {
 		return DeepSeekChatOptions.builder()
 			// ChatOptions

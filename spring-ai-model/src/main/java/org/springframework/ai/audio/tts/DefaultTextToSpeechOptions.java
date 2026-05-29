@@ -85,12 +85,6 @@ public class DefaultTextToSpeechOptions implements TextToSpeechOptions {
 		return Objects.hash(this.model, this.voice, this.format, this.speed);
 	}
 
-	@Override
-	@SuppressWarnings("unchecked")
-	public DefaultTextToSpeechOptions copy() {
-		return new Builder(this).build();
-	}
-
 	public static final class Builder implements TextToSpeechOptions.Builder {
 
 		private @Nullable String model;

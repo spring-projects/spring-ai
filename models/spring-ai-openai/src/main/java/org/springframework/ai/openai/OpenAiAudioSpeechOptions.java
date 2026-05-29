@@ -158,30 +158,6 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public OpenAiAudioSpeechOptions copy() {
-		return OpenAiAudioSpeechOptions.builder()
-			.model(this.getModel())
-			.input(this.input)
-			.voice(this.voice)
-			.responseFormat(this.responseFormat)
-			.speed(this.speed)
-			.baseUrl(this.getBaseUrl())
-			.apiKey(this.getApiKey())
-			.credential(this.getCredential())
-			.deploymentName(this.getDeploymentName())
-			.microsoftFoundryServiceVersion(this.getMicrosoftFoundryServiceVersion())
-			.organizationId(this.getOrganizationId())
-			.microsoftFoundry(this.isMicrosoftFoundry())
-			.gitHubModels(this.isGitHubModels())
-			.timeout(this.getTimeout())
-			.maxRetries(this.getMaxRetries())
-			.proxy(this.getProxy())
-			.customHeaders(this.getCustomHeaders())
-			.build();
-	}
-
-	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;

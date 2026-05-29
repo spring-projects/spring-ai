@@ -302,10 +302,6 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 		}
 		return map;
 	}
-
-	public OllamaEmbeddingOptions copy() {
-		return fromOptions(this);
-	}
 	// @formatter:on
 
 	@Override

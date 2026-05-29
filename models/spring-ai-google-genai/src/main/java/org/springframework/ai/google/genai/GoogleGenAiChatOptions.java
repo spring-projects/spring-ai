@@ -424,11 +424,6 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	}
 
 	@Override
-	public GoogleGenAiChatOptions copy() {
-		return mutate().build();
-	}
-
-	@Override
 	public Builder mutate() {
 		return GoogleGenAiChatOptions.builder()
 			// ChatOptions

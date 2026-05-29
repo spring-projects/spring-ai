@@ -800,7 +800,7 @@ public class ToolCallAdvisorTests {
 		when(mockRequest.context()).thenReturn(Map.of());
 
 		when(mockRequest.copy()).thenAnswer(invocation -> {
-			Prompt copiedPrompt = new Prompt(instructions, toolOptions.copy());
+			Prompt copiedPrompt = new Prompt(instructions, toolOptions);
 			return ChatClientRequest.builder().prompt(copiedPrompt).build();
 		});
 
@@ -821,7 +821,7 @@ public class ToolCallAdvisorTests {
 		when(mockRequest.context()).thenReturn(Map.of());
 
 		when(mockRequest.copy()).thenAnswer(invocation -> {
-			Prompt copiedPrompt = new Prompt(instructions, toolOptions.copy());
+			Prompt copiedPrompt = new Prompt(instructions, toolOptions);
 			return ChatClientRequest.builder().prompt(copiedPrompt).build();
 		});
 

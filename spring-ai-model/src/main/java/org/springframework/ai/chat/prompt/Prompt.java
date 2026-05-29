@@ -189,7 +189,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 	}
 
 	public Prompt copy() {
-		return new Prompt(instructionsCopy(), null == this.chatOptions ? null : this.chatOptions.copy());
+		return new Prompt(instructionsCopy(), this.chatOptions);
 	}
 
 	private List<Message> instructionsCopy() {
@@ -243,7 +243,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 			// and add it as the first item in the list.
 			messagesCopy.add(0, systemMessageAugmenter.apply(new SystemMessage("")));
 		}
-		return new Prompt(messagesCopy, null == this.chatOptions ? null : this.chatOptions.copy());
+		return new Prompt(messagesCopy, this.chatOptions);
 	}
 
 	/**
@@ -273,7 +273,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 			}
 		}
 
-		return new Prompt(messagesCopy, null == this.chatOptions ? null : this.chatOptions.copy());
+		return new Prompt(messagesCopy, this.chatOptions);
 	}
 
 	/**
@@ -288,7 +288,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 	public Builder mutate() {
 		Builder builder = new Builder().messages(instructionsCopy());
 		if (this.chatOptions != null) {
-			builder.chatOptions(this.chatOptions.copy());
+			builder.chatOptions(this.chatOptions);
 		}
 		return builder;
 	}

@@ -72,20 +72,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
-	public void testCopyWithThinkingBudget() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.thinkingBudget(30000)
-			.build();
-
-		GoogleGenAiChatOptions copy = original.copy();
-
-		assertThat(copy.getModel()).isEqualTo("test-model");
-		assertThat(copy.getThinkingBudget()).isEqualTo(30000);
-		assertThat(copy).isNotSameAs(original);
-	}
-
-	@Test
 	public void testEqualsAndHashCodeWithThinkingBudget() {
 		GoogleGenAiChatOptions options1 = GoogleGenAiChatOptions.builder()
 			.model("test-model")
@@ -170,19 +156,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
-	public void testCopyWithThinkingLevel() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
-			.build();
-
-		GoogleGenAiChatOptions copy = original.copy();
-
-		assertThat(copy.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.HIGH);
-		assertThat(copy).isNotSameAs(original);
-	}
-
-	@Test
 	public void testEqualsAndHashCodeWithThinkingLevel() {
 		GoogleGenAiChatOptions options1 = GoogleGenAiChatOptions.builder()
 			.model("test-model")
@@ -249,19 +222,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 			.build();
 
 		GoogleGenAiChatOptions copy = GoogleGenAiChatOptions.fromOptions(original);
-
-		assertThat(copy.getIncludeServerSideToolInvocations()).isTrue();
-		assertThat(copy).isNotSameAs(original);
-	}
-
-	@Test
-	public void testCopyWithIncludeServerSideToolInvocations() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.includeServerSideToolInvocations(true)
-			.build();
-
-		GoogleGenAiChatOptions copy = original.copy();
 
 		assertThat(copy.getIncludeServerSideToolInvocations()).isTrue();
 		assertThat(copy).isNotSameAs(original);

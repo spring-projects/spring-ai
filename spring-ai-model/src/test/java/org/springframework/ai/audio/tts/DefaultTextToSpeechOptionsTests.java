@@ -44,19 +44,6 @@ class DefaultTextToSpeechOptionsTests {
 	}
 
 	@Test
-	void testCopy() {
-		TextToSpeechOptions original = DefaultTextToSpeechOptions.builder()
-			.model("test-model")
-			.voice("test-voice")
-			.format("test-format")
-			.speed(0.8)
-			.build();
-
-		DefaultTextToSpeechOptions copied = original.copy();
-		assertThat(copied).isNotSameAs(original).isEqualTo(original);
-	}
-
-	@Test
 	void testDefaultValues() {
 		DefaultTextToSpeechOptions options = DefaultTextToSpeechOptions.builder().build();
 		assertThat(options.getModel()).isNull();

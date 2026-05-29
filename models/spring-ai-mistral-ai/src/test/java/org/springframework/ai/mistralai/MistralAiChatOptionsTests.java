@@ -76,30 +76,6 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 	}
 
 	@Test
-	void testCopy() {
-		MistralAiChatOptions options = MistralAiChatOptions.builder()
-			.model("test-model")
-			.temperature(0.7)
-			.topP(0.9)
-			.maxTokens(100)
-			.safePrompt(true)
-			.randomSeed(123)
-			.stop(List.of("stop1", "stop2"))
-			.reasoningEffort(ReasoningEffort.HIGH)
-			.responseFormat(new ResponseFormat("json_object"))
-			.toolChoice(MistralAiApi.ChatCompletionRequest.ToolChoice.AUTO)
-			.internalToolExecutionEnabled(true)
-			.toolContext(Map.of("key1", "value1"))
-			.build();
-
-		MistralAiChatOptions copiedOptions = options.copy();
-		assertThat(copiedOptions).isNotSameAs(options).isEqualTo(options);
-		// Ensure deep copy
-		assertThat(copiedOptions.getStop()).isNotSameAs(options.getStop());
-		assertThat(copiedOptions.getToolContext()).isNotSameAs(options.getToolContext());
-	}
-
-	@Test
 	void testSetters() {
 		ResponseFormat responseFormat = new ResponseFormat("json_object");
 		MistralAiChatOptions options = MistralAiChatOptions.builder()
@@ -175,17 +151,6 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 
 		assertThat(options.getStop()).hasSize(1).containsExactly("single-stop");
 		assertThat(options.getToolContext()).hasSize(1).containsEntry("single-key", "single-value");
-	}
-
-	@Test
-	void testCopyWithEmptyOptions() {
-		MistralAiChatOptions emptyOptions = MistralAiChatOptions.builder().build();
-		MistralAiChatOptions copiedOptions = emptyOptions.copy();
-
-		assertThat(copiedOptions).isNotSameAs(emptyOptions).isEqualTo(emptyOptions);
-		assertThat(copiedOptions.getModel()).isEqualTo(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue());
-		assertThat(copiedOptions.getTemperature()).isEqualTo(0.7);
-		assertThat(copiedOptions.getReasoningEffort()).isNull();
 	}
 
 	@Test

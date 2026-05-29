@@ -502,16 +502,6 @@ public class DeepSeekChatModel implements ChatModel {
 		return this.options;
 	}
 
-	/**
-	 * @deprecated use {@link #getOptions()} instead.
-	 */
-	@Deprecated(forRemoval = true)
-	@Override
-	@SuppressWarnings("removal")
-	public ChatOptions getDefaultOptions() {
-		return this.options.copy();
-	}
-
 	@Override
 	public String toString() {
 		return "DeepSeekChatModel [options=" + this.options + "]";

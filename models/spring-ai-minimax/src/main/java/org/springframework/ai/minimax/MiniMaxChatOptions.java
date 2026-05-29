@@ -303,11 +303,6 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public MiniMaxChatOptions copy() {
-		return mutate().build();
-	}
-
-	@Override
 	public Builder mutate() {
 		return MiniMaxChatOptions.builder()
 			// ChatOptions

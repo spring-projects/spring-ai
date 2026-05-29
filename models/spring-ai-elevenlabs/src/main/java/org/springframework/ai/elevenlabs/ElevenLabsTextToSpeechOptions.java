@@ -202,28 +202,6 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 				this.applyLanguageTextNormalization);
 	}
 
-	@Override
-	@SuppressWarnings("unchecked")
-	public ElevenLabsTextToSpeechOptions copy() {
-		return ElevenLabsTextToSpeechOptions.builder()
-			.modelId(this.getModelId())
-			.voice(this.getVoice())
-			.voiceId(this.getVoiceId())
-			.format(this.getFormat())
-			.outputFormat(this.getOutputFormat())
-			.voiceSettings(this.getVoiceSettings())
-			.languageCode(this.getLanguageCode())
-			.pronunciationDictionaryLocators(this.getPronunciationDictionaryLocators())
-			.seed(this.getSeed())
-			.previousText(this.getPreviousText())
-			.nextText(this.getNextText())
-			.previousRequestIds(this.getPreviousRequestIds())
-			.nextRequestIds(this.getNextRequestIds())
-			.applyTextNormalization(this.getApplyTextNormalization())
-			.applyLanguageTextNormalization(this.getApplyLanguageTextNormalization())
-			.build();
-	}
-
 	public static final class Builder {
 
 		private @Nullable String modelId;

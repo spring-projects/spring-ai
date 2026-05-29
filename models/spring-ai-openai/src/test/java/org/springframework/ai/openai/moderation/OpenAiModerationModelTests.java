@@ -179,20 +179,6 @@ class OpenAiModerationModelTests {
 	}
 
 	@Test
-	void testOptionsCopy() {
-		OpenAiModerationOptions original = OpenAiModerationOptions.builder()
-			.model("omni-moderation-latest")
-			.baseUrl("https://api.example.com")
-			.build();
-
-		OpenAiModerationOptions copy = original.copy();
-
-		assertThat(copy).isNotSameAs(original);
-		assertThat(copy.getModel()).isEqualTo(original.getModel());
-		assertThat(copy.getBaseUrl()).isEqualTo(original.getBaseUrl());
-	}
-
-	@Test
 	void testOptionsEqualsAndHashCode() {
 		OpenAiModerationOptions options1 = OpenAiModerationOptions.builder()
 			.model("omni-moderation-latest")

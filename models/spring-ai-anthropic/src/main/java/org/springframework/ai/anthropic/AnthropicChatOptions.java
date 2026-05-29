@@ -499,11 +499,6 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	}
 
 	@Override
-	public AnthropicChatOptions copy() {
-		return mutate().build();
-	}
-
-	@Override
 	public Builder mutate() {
 		return builder()
 			// AbstractAnthropicOptions

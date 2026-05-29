@@ -17,7 +17,6 @@
 package org.springframework.ai.anthropic;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,41 +103,6 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		AnthropicChatOptions options = AnthropicChatOptions.builder().model(Model.CLAUDE_SONNET_4_20250514).build();
 
 		assertThat(options.getModel()).isEqualTo("claude-sonnet-4-20250514");
-	}
-
-	@Test
-	void testCopyCreatesIndependentInstance() {
-		Metadata metadata = Metadata.builder().userId("userId_123").build();
-		List<String> mutableStops = new ArrayList<>(List.of("stop1", "stop2"));
-		Map<String, Object> mutableContext = new HashMap<>(Map.of("key1", "value1"));
-
-		AnthropicChatOptions original = AnthropicChatOptions.builder()
-			.model("test-model")
-			.maxTokens(100)
-			.stopSequences(mutableStops)
-			.temperature(0.7)
-			.topP(0.8)
-			.topK(50)
-			.metadata(metadata)
-			.toolContext(mutableContext)
-			.disableParallelToolUse(true)
-			.build();
-
-		AnthropicChatOptions copied = original.copy();
-
-		// Verify copied is equal but not same instance
-		assertThat(copied).isNotSameAs(original);
-		assertThat(copied).isEqualTo(original);
-
-		// Verify collections are deep copied
-		assertThat(copied.getStopSequences()).isNotSameAs(original.getStopSequences());
-		assertThat(copied.getToolContext()).isNotSameAs(original.getToolContext());
-
-		// Modify original collections and verify copy is unchanged
-		mutableStops.add("stop3");
-		mutableContext.put("key2", "value2");
-		assertThat(copied.getStopSequences()).hasSize(2);
-		assertThat(copied.getToolContext()).hasSize(1);
 	}
 
 	@Test

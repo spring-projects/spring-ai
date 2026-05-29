@@ -545,11 +545,6 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	public OpenAiChatOptions copy() {
-		return mutate().build();
-	}
-
-	@Override
 	public Builder mutate() {
 		return builder()
 			// AbstractOpenAiOptions
