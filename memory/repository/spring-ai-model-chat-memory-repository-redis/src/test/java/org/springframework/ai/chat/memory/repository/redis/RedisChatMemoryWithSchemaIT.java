@@ -30,8 +30,6 @@ import redis.clients.jedis.JedisPooled;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 
@@ -42,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Demonstrates how to properly index metadata fields with appropriate types.
  *
  * @author Brian Sam-Bodden
+ * @author Yanming Zhou
  */
 @Testcontainers
 class RedisChatMemoryWithSchemaIT {
@@ -184,7 +183,6 @@ class RedisChatMemoryWithSchemaIT {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
 	static class TestApplication {
 
 		@Bean
