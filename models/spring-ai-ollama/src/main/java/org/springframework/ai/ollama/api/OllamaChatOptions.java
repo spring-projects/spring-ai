@@ -678,11 +678,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	public OllamaChatOptions copy() {
-		return mutate().build();
-	}
-
-	@Override
 	public Builder mutate() {
 		return OllamaChatOptions.builder()
 			// ChatOptions

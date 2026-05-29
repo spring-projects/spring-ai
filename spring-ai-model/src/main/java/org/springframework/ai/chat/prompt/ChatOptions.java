@@ -77,13 +77,6 @@ public interface ChatOptions extends ModelOptions {
 	@Nullable Double getTopP();
 
 	/**
-	 * Returns a copy of this {@link ChatOptions}.
-	 * @return a copy of this {@link ChatOptions}
-	 */
-	// TODO: can become default mutate().build()
-	<T extends ChatOptions> T copy();
-
-	/**
 	 * Returns a new {@link Builder} initialized with the values of this
 	 * {@link ChatOptions}.
 	 *

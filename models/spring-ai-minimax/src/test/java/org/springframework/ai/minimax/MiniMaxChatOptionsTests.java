@@ -75,33 +75,6 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 	}
 
 	@Test
-	void testCopy() {
-		MiniMaxChatOptions original = MiniMaxChatOptions.builder()
-			.model("test-model")
-			.frequencyPenalty(0.5)
-			.maxTokens(10)
-			.N(1)
-			.presencePenalty(0.5)
-			.responseFormat(new MiniMaxApi.ChatCompletionRequest.ResponseFormat("text"))
-			.seed(1)
-			.stop(List.of("test"))
-			.temperature(0.6)
-			.topP(0.6)
-			.maskSensitiveInfo(false)
-			.toolChoice("test")
-			.internalToolExecutionEnabled(true)
-			.toolContext(Map.of("key1", "value1"))
-			.build();
-
-		MiniMaxChatOptions copied = original.copy();
-
-		assertThat(copied).isNotSameAs(original).isEqualTo(original);
-		// Ensure deep copy
-		assertThat(copied.getStop()).isNotSameAs(original.getStop());
-		assertThat(copied.getToolContext()).isNotSameAs(original.getToolContext());
-	}
-
-	@Test
 	void testNotEquals() {
 		MiniMaxChatOptions options1 = MiniMaxChatOptions.builder().model("model1").build();
 		MiniMaxChatOptions options2 = MiniMaxChatOptions.builder().model("model2").build();

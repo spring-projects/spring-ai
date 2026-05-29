@@ -341,23 +341,13 @@ public class BedrockProxyChatModel implements ChatModel {
 		return this.options;
 	}
 
-	/**
-	 * @deprecated use {@link #getOptions()} instead.
-	 */
-	@Deprecated(forRemoval = true)
-	@Override
-	public ChatOptions getDefaultOptions() {
-		return this.options.copy();
-	}
-
 	ConverseRequest createRequest(Prompt prompt) {
 
-		ChatOptions options = prompt.getOptions();
+		BedrockChatOptions options = (BedrockChatOptions) prompt.getOptions();
 		Assert.state(options != null, "Prompt options must not be null");
-		BedrockChatOptions updatedRuntimeOptions = options.copy();
 
 		// Get cache options to determine strategy
-		BedrockCacheOptions cacheOptions = updatedRuntimeOptions.getCacheOptions();
+		BedrockCacheOptions cacheOptions = options.getCacheOptions();
 		boolean shouldCacheConversationHistory = cacheOptions != null
 				&& cacheOptions.getStrategy() == BedrockCacheStrategy.CONVERSATION_HISTORY;
 
@@ -494,7 +484,7 @@ public class BedrockProxyChatModel implements ChatModel {
 		ToolConfiguration toolConfiguration = null;
 
 		// Add the tool definitions to the request's tools parameter.
-		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(updatedRuntimeOptions);
+		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(options);
 
 		// Determine if tool caching should be applied
 		boolean shouldCacheTools = cacheOptions != null
@@ -536,11 +526,10 @@ public class BedrockProxyChatModel implements ChatModel {
 		}
 
 		InferenceConfiguration inferenceConfiguration = InferenceConfiguration.builder()
-			.maxTokens(updatedRuntimeOptions.getMaxTokens())
-			.stopSequences(updatedRuntimeOptions.getStopSequences())
-			.temperature(updatedRuntimeOptions.getTemperature() != null
-					? updatedRuntimeOptions.getTemperature().floatValue() : null)
-			.topP(updatedRuntimeOptions.getTopP() != null ? updatedRuntimeOptions.getTopP().floatValue() : null)
+			.maxTokens(options.getMaxTokens())
+			.stopSequences(options.getStopSequences())
+			.temperature(options.getTemperature() != null ? options.getTemperature().floatValue() : null)
+			.topP(options.getTopP() != null ? options.getTopP().floatValue() : null)
 			.build();
 
 		BedrockChatOptions bedrockOptions = (BedrockChatOptions) prompt.getOptions();
@@ -552,14 +541,14 @@ public class BedrockProxyChatModel implements ChatModel {
 			.getRequestMetadata(prompt.getUserMessage().getMetadata());
 
 		return ConverseRequest.builder()
-			.modelId(updatedRuntimeOptions.getModel())
+			.modelId(options.getModel())
 			.inferenceConfig(inferenceConfiguration)
 			.messages(instructionMessages)
 			.system(systemMessages)
 			.additionalModelRequestFields(additionalModelRequestFields)
 			.toolConfig(toolConfiguration)
 			.requestMetadata(requestMetadata)
-			.outputConfig(buildOutputConfig(updatedRuntimeOptions))
+			.outputConfig(buildOutputConfig(options))
 			.build();
 	}
 

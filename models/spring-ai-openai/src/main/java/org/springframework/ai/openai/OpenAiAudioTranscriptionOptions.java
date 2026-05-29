@@ -109,29 +109,6 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 		return this.timestampGranularities;
 	}
 
-	public OpenAiAudioTranscriptionOptions copy() {
-		return OpenAiAudioTranscriptionOptions.builder()
-			.model(this.getModel())
-			.responseFormat(this.responseFormat)
-			.prompt(this.prompt)
-			.language(this.language)
-			.temperature(this.temperature)
-			.timestampGranularities(this.timestampGranularities)
-			.baseUrl(this.getBaseUrl())
-			.apiKey(this.getApiKey())
-			.credential(this.getCredential())
-			.deploymentName(this.getDeploymentName())
-			.microsoftFoundryServiceVersion(this.getMicrosoftFoundryServiceVersion())
-			.organizationId(this.getOrganizationId())
-			.microsoftFoundry(this.isMicrosoftFoundry())
-			.gitHubModels(this.isGitHubModels())
-			.timeout(this.getTimeout())
-			.maxRetries(this.getMaxRetries())
-			.proxy(this.getProxy())
-			.customHeaders(this.getCustomHeaders())
-			.build();
-	}
-
 	@Override
 	public boolean equals(@Nullable Object o) {
 		if (this == o) {

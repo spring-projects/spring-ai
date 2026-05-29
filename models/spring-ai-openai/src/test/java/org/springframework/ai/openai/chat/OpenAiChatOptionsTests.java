@@ -124,51 +124,6 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 	}
 
 	@Test
-	void testCopy() {
-		Map<String, Integer> logitBias = new HashMap<>();
-		logitBias.put("token1", 1);
-
-		List<String> stop = List.of("stop1");
-		Map<String, String> metadata = Map.of("key1", "value1");
-
-		OpenAiChatOptions originalOptions = OpenAiChatOptions.builder()
-			.model("test-model")
-			.deploymentName("test-deployment")
-			.frequencyPenalty(0.5)
-			.logitBias(logitBias)
-			.logprobs(true)
-			.topLogprobs(5)
-			.maxCompletionTokens(50)
-			.N(2)
-			.presencePenalty(0.8)
-			.streamOptions(StreamOptions.builder().includeUsage(false).build())
-			.seed(12345)
-			.stop(stop)
-			.temperature(0.7)
-			.topP(0.9)
-			.user("test-user")
-			.parallelToolCalls(false)
-			.store(true)
-			.metadata(metadata)
-			.reasoningEffort("low")
-			.verbosity("high")
-			.serviceTier("default")
-			.internalToolExecutionEnabled(true)
-			.customHeaders(Map.of("header1", "value1"))
-			.build();
-
-		OpenAiChatOptions copiedOptions = originalOptions.copy();
-
-		assertThat(copiedOptions).isNotSameAs(originalOptions).isEqualTo(originalOptions);
-		// Verify collections are copied
-		assertThat(copiedOptions.getStop()).isNotSameAs(originalOptions.getStop());
-		assertThat(copiedOptions.getCustomHeaders()).isNotSameAs(originalOptions.getCustomHeaders());
-		assertThat(copiedOptions.getToolCallbacks()).isNotSameAs(originalOptions.getToolCallbacks());
-		assertThat(copiedOptions.getToolNames()).isNotSameAs(originalOptions.getToolNames());
-		assertThat(copiedOptions.getToolContext()).isNotSameAs(originalOptions.getToolContext());
-	}
-
-	@Test
 	void testSetters() {
 		Map<String, Integer> logitBias = new HashMap<>();
 		logitBias.put("token1", 1);
@@ -371,20 +326,6 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 		options = options.mutate().stopSequences(newStop).build();
 		assertThat(options.getStop()).isEqualTo(newStop);
 		assertThat(options.getStopSequences()).isEqualTo(newStop);
-	}
-
-	@Test
-	void testCopyChangeIndependence() {
-		OpenAiChatOptions original = OpenAiChatOptions.builder().model("original-model").temperature(0.5).build();
-
-		OpenAiChatOptions copied = original.copy();
-
-		// Modify original
-		original = original.mutate().model("modified-model").temperature(0.9).build();
-
-		// Verify copy is unchanged
-		assertThat(copied.getModel()).isEqualTo("original-model");
-		assertThat(copied.getTemperature()).isEqualTo(0.5);
 	}
 
 	@Test

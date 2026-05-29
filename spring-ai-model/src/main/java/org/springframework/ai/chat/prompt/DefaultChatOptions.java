@@ -98,12 +98,6 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public <T extends ChatOptions> T copy() {
-		return (T) mutate().build();
-	}
-
-	@Override
 	public ChatOptions.Builder<?> mutate() {
 		return ChatOptions.builder()
 			.model(this.model)

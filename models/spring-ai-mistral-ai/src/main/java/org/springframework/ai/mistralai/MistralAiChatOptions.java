@@ -304,11 +304,6 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 		return jsonHelper.toJson(this.responseFormat.getJsonSchema().getSchema());
 	}
 
-	@Override
-	public MistralAiChatOptions copy() {
-		return mutate().build();
-	}
-
 	public Builder mutate() {
 		return builder()
 			// ChatOptions

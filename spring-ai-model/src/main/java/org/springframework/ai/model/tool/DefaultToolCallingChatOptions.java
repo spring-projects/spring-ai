@@ -83,12 +83,6 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public <T extends ChatOptions> T copy() {
-		return (T) mutate().build();
-	}
-
-	@Override
 	public ToolCallingChatOptions.Builder<?> mutate() {
 		return DefaultToolCallingChatOptions.builder()
 			.model(getModel())

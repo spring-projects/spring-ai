@@ -617,16 +617,6 @@ public class MistralAiChatModel implements ChatModel {
 	}
 
 	/**
-	 * @deprecated use {@link #getOptions()} instead.
-	 */
-	@Deprecated(forRemoval = true)
-	@Override
-	@SuppressWarnings("removal")
-	public ChatOptions getDefaultOptions() {
-		return this.options.copy();
-	}
-
-	/**
 	 * Use the provided convention for reporting observation data
 	 * @param observationConvention The provided convention
 	 */

@@ -239,16 +239,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	/**
-	 * @deprecated use {@link #getOptions()} instead.
-	 */
-	@Deprecated(forRemoval = true)
-	@Override
-	@SuppressWarnings("removal")
-	public ChatOptions getDefaultOptions() {
-		return this.options.copy();
-	}
-
-	/**
 	 * Returns the underlying synchronous Anthropic SDK client. Useful for accessing SDK
 	 * features directly, such as the Files API ({@code client.beta().files()}).
 	 * @return the sync client

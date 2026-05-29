@@ -573,16 +573,6 @@ public class OllamaChatModel implements ChatModel {
 	}
 
 	/**
-	 * @deprecated use {@link #getOptions()} instead.
-	 */
-	@Deprecated(forRemoval = true)
-	@Override
-	@SuppressWarnings("removal")
-	public ChatOptions getDefaultOptions() {
-		return this.options.copy();
-	}
-
-	/**
 	 * Pull the given model into Ollama based on the specified strategy.
 	 */
 	private void initializeModel(String model, @Nullable PullModelStrategy pullModelStrategy) {

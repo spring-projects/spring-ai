@@ -190,20 +190,6 @@ class OpenAiAudioTranscriptionModelTests {
 	}
 
 	@Test
-	void optionsCopyCreatesIndependentInstance() {
-		OpenAiAudioTranscriptionOptions original = OpenAiAudioTranscriptionOptions.builder()
-			.model("whisper-1")
-			.language("en")
-			.build();
-
-		OpenAiAudioTranscriptionOptions copy = original.copy();
-
-		assertThat(copy).isNotSameAs(original);
-		assertThat(copy.getModel()).isEqualTo(original.getModel());
-		assertThat(copy.getLanguage()).isEqualTo(original.getLanguage());
-	}
-
-	@Test
 	void optionsEqualsAndHashCode() {
 		OpenAiAudioTranscriptionOptions options1 = OpenAiAudioTranscriptionOptions.builder()
 			.model("whisper-1")

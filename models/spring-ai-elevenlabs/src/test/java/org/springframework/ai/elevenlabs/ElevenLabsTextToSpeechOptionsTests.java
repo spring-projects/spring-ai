@@ -82,24 +82,6 @@ public class ElevenLabsTextToSpeechOptionsTests {
 	}
 
 	@Test
-	public void testCopy() {
-		ElevenLabsTextToSpeechOptions original = ElevenLabsTextToSpeechOptions.builder()
-			.modelId("test-model")
-			.voice("test-voice")
-			.format("mp3_44100_128")
-			.voiceSettings(new ElevenLabsApi.SpeechRequest.VoiceSettings(0.5, 0.8, null, null, null))
-			.build();
-
-		ElevenLabsTextToSpeechOptions copied = original.copy();
-
-		assertThat(copied).isNotSameAs(original).isEqualTo(original);
-
-		copied = ElevenLabsTextToSpeechOptions.builder().modelId("new-model").build();
-		assertThat(original.getModelId()).isEqualTo("test-model");
-		assertThat(copied.getModelId()).isEqualTo("new-model");
-	}
-
-	@Test
 	public void testBuilder() {
 		ElevenLabsTextToSpeechOptions options = ElevenLabsTextToSpeechOptions.builder()
 			.modelId("test-model")

@@ -177,11 +177,6 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	}
 
 	@Override
-	public BedrockChatOptions copy() {
-		return mutate().build();
-	}
-
-	@Override
 	public Builder mutate() {
 		return BedrockChatOptions.builder()
 			// ChatOptions
