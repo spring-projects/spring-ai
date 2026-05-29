@@ -54,6 +54,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(classes = OracleChatMemoryRepositoryIT.TestConfiguration.class)
 class OracleChatMemoryRepositoryIT {
 
+	private static final String CHAT_MEMORY_TABLE = "SPRING_AI_CHAT_MEMORY_CUSTOM";
+
 	private static final String ORACLE_DATABASE_URL = System.getenv("ORACLE_DATABASE_URL");
 
 	private static final String ORACLE_DATABASE_USERNAME = System.getenv("ORACLE_DATABASE_USERNAME");
@@ -104,26 +106,24 @@ class OracleChatMemoryRepositoryIT {
 	void resetSchema() {
 		this.jdbcTemplate.execute("""
 				BEGIN
-					EXECUTE IMMEDIATE 'DROP TABLE SPRING_AI_CHAT_MEMORY';
+					EXECUTE IMMEDIATE 'DROP TABLE %s';
 				EXCEPTION
 					WHEN OTHERS THEN
 						IF SQLCODE != -942 THEN
 							RAISE;
 						END IF;
 				END;
-				""");
+				""".formatted(CHAT_MEMORY_TABLE));
 		this.jdbcTemplate.execute("""
-				CREATE TABLE SPRING_AI_CHAT_MEMORY (
+				CREATE TABLE %s (
 					CONVERSATION_ID VARCHAR2(36 CHAR) NOT NULL,
 					CONTENT CLOB NOT NULL,
 					"TYPE" VARCHAR2(10 CHAR) NOT NULL CHECK ("TYPE" IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')),
 					"TIMESTAMP" TIMESTAMP NOT NULL
 				)
-				""");
-		this.jdbcTemplate.execute("""
-				CREATE INDEX SPRING_AI_CHAT_MEMORY_CONVERSATION_ID_TIMESTAMP_IDX
-				ON SPRING_AI_CHAT_MEMORY(CONVERSATION_ID, "TIMESTAMP")
-				""");
+				""".formatted(CHAT_MEMORY_TABLE));
+		this.jdbcTemplate.execute(("CREATE INDEX " + CHAT_MEMORY_TABLE + "_CONVERSATION_ID_TIMESTAMP_IDX ON "
+				+ CHAT_MEMORY_TABLE + "(CONVERSATION_ID, \"TIMESTAMP\")"));
 	}
 
 	@Test
@@ -225,7 +225,7 @@ class OracleChatMemoryRepositoryIT {
 
 		@Bean
 		ChatMemoryRepository chatMemoryRepository(DataSource dataSource) {
-			return OracleChatMemoryRepository.builder().dataSource(dataSource).build();
+			return OracleChatMemoryRepository.builder().dataSource(dataSource).tableName(CHAT_MEMORY_TABLE).build();
 		}
 
 	}

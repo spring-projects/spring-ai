@@ -24,10 +24,10 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository;
-import org.springframework.ai.chat.memory.repository.jdbc.OracleChatMemoryRepositoryDialect;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.util.Assert;
 
 /**
  * An implementation of {@link ChatMemoryRepository} for Oracle.
@@ -76,6 +76,8 @@ public final class OracleChatMemoryRepository implements ChatMemoryRepository {
 	 */
 	public static final class Builder {
 
+		private static final String DEFAULT_TABLE_NAME = "SPRING_AI_CHAT_MEMORY";
+
 		/** Data source used by the underlying JDBC repository. */
 		private @Nullable DataSource dataSource;
 
@@ -85,36 +87,50 @@ public final class OracleChatMemoryRepository implements ChatMemoryRepository {
 		/** Optional transaction manager used by the repository. */
 		private @Nullable PlatformTransactionManager transactionManager;
 
+		/** Table name used by the repository. */
+		private String tableName = DEFAULT_TABLE_NAME;
+
 		private Builder() {
 		}
 
 		/**
 		 * Set the data source.
-		 * @param dataSourceToUse data source to use
+		 * @param dataSource data source to use
 		 * @return this builder
 		 */
-		public Builder dataSource(final DataSource dataSourceToUse) {
-			this.dataSource = dataSourceToUse;
+		public Builder dataSource(final DataSource dataSource) {
+			this.dataSource = dataSource;
 			return this;
 		}
 
 		/**
 		 * Set the JDBC template.
-		 * @param jdbcTemplateToUse JDBC template to use
+		 * @param jdbcTemplate JDBC template to use
 		 * @return this builder
 		 */
-		public Builder jdbcTemplate(final JdbcTemplate jdbcTemplateToUse) {
-			this.jdbcTemplate = jdbcTemplateToUse;
+		public Builder jdbcTemplate(final JdbcTemplate jdbcTemplate) {
+			this.jdbcTemplate = jdbcTemplate;
 			return this;
 		}
 
 		/**
 		 * Set the transaction manager.
-		 * @param transactionManagerToUse transaction manager to use
+		 * @param transactionManager transaction manager to use
 		 * @return this builder
 		 */
-		public Builder transactionManager(final PlatformTransactionManager transactionManagerToUse) {
-			this.transactionManager = transactionManagerToUse;
+		public Builder transactionManager(final PlatformTransactionManager transactionManager) {
+			this.transactionManager = transactionManager;
+			return this;
+		}
+
+		/**
+		 * Set the table name used to store chat memory.
+		 * @param tableName table name to use
+		 * @return this builder
+		 */
+		public Builder tableName(final String tableName) {
+			Assert.hasText(tableName, "tableName cannot be null or empty");
+			this.tableName = tableName;
 			return this;
 		}
 
@@ -123,7 +139,8 @@ public final class OracleChatMemoryRepository implements ChatMemoryRepository {
 		 * @return a new Oracle chat memory repository
 		 */
 		public OracleChatMemoryRepository build() {
-			var repository = JdbcChatMemoryRepository.builder().dialect(new OracleChatMemoryRepositoryDialect());
+			var dialect = new OracleRepositoryDialect(this.tableName);
+			var repository = JdbcChatMemoryRepository.builder().dialect(dialect);
 
 			if (this.dataSource != null) {
 				repository.dataSource(this.dataSource);
