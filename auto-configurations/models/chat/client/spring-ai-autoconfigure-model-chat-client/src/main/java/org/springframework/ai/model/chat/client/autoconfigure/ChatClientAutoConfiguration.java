@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientBuilderCustomizer;
 import org.springframework.ai.chat.client.ChatClientCustomizer;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
@@ -82,9 +83,12 @@ public class ChatClientAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	ChatClientBuilderConfigurer chatClientBuilderConfigurer(ObjectProvider<ChatClientCustomizer> customizerProvider) {
+	@SuppressWarnings("removal")
+	ChatClientBuilderConfigurer chatClientBuilderConfigurer(ObjectProvider<ChatClientCustomizer> customizerProvider,
+			ObjectProvider<ChatClientBuilderCustomizer> builderCustomizerProvider) {
 		ChatClientBuilderConfigurer configurer = new ChatClientBuilderConfigurer();
 		configurer.setChatClientCustomizers(customizerProvider.orderedStream().toList());
+		configurer.setChatClientBuilderCustomizers(builderCustomizerProvider.orderedStream().toList());
 		return configurer;
 	}
 

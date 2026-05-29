@@ -91,10 +91,10 @@ class ChatClientConfig {
 ==== ChatClients for Different Model Types
 
 When working with multiple AI models, you might be tempted to define separate `ChatClient` beans by using `ChatClient.create(chatModel)` or `ChatClient.builder(chatModel)`.
-However, doing so bypasses the auto-configured `ChatClient.Builder`, which means observability and `ChatClientCustomizer` beans are ignored.
+However, doing so bypasses the auto-configured `ChatClient.Builder`, which means observability and `ChatClientBuilderCustomizer` beans are ignored.
 
 To retain observability and customizers, you should inject `ChatClientBuilderConfigurer` to create custom builders.
-The `ChatClientBuilderConfigurer` applies all registered `ChatClientCustomizer` beans and wires up observability, mirroring what the auto-configuration does internally.
+The `ChatClientBuilderConfigurer` applies all registered `ChatClientBuilderCustomizer` beans and wires up observability, mirroring what the auto-configuration does internally.
 
 When multiple `ChatModel` beans are present in the application context, Spring cannot resolve the `ChatModel` dependency of the auto-configured `ChatClient.Builder` bean without ambiguity.
 To resolve this, you can mark one of your `ChatClient` beans as `@Primary`. You may also need to mark one of your `ChatModel` beans as `@Primary` if you are defining them manually, or alternatively, define your own `ChatClient.Builder` bean to override the auto-configured one.

@@ -20,7 +20,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.ChatClientCustomizer;
+import org.springframework.ai.chat.client.ChatClientBuilderCustomizer;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
@@ -45,8 +45,8 @@ import static org.mockito.Mockito.mock;
  * same model type</li>
  * <li>Using {@link ChatClientBuilderConfigurer} for multiple clients of different model
  * types</li>
- * <li>Ensuring observability and {@link ChatClientCustomizer} beans are applied in both
- * patterns</li>
+ * <li>Ensuring observability and {@link ChatClientBuilderCustomizer} beans are applied in
+ * both patterns</li>
  * </ul>
  *
  */
@@ -96,7 +96,7 @@ class ChatClientCreationPatternsTests {
 	}
 
 	@Test
-	void prototypeBuilderAppliesChatClientCustomizers() {
+	void prototypeBuilderAppliesChatClientBuilderCustomizers() {
 		this.contextRunner
 			.withUserConfiguration(SingleModelMultipleClientsConfig.class, SystemPromptCustomizerConfig.class)
 			.run(context -> {
@@ -125,7 +125,7 @@ class ChatClientCreationPatternsTests {
 	}
 
 	@Test
-	void configurerPatternAppliesChatClientCustomizers() {
+	void configurerPatternAppliesChatClientBuilderCustomizers() {
 		this.contextRunner.withUserConfiguration(MultipleModelTypesConfig.class, SystemPromptCustomizerConfig.class)
 			.run(context -> {
 				assertThat(context).hasNotFailed();
@@ -139,8 +139,8 @@ class ChatClientCreationPatternsTests {
 				String primarySystemText = (String) ReflectionTestUtils.getField(primaryRequest, "systemText");
 				String secondarySystemText = (String) ReflectionTestUtils.getField(secondaryRequest, "systemText");
 
-				assertThat(primarySystemText).isEqualTo("Customized by ChatClientCustomizer.");
-				assertThat(secondarySystemText).isEqualTo("Customized by ChatClientCustomizer.");
+				assertThat(primarySystemText).isEqualTo("Customized by ChatClientBuilderCustomizer.");
+				assertThat(secondarySystemText).isEqualTo("Customized by ChatClientBuilderCustomizer.");
 			});
 	}
 
@@ -272,15 +272,15 @@ class ChatClientCreationPatternsTests {
 	}
 
 	/**
-	 * A {@link ChatClientCustomizer} that sets a fixed system prompt, used to verify that
-	 * customizers are applied in both ChatClient creation patterns.
+	 * A {@link ChatClientBuilderCustomizer} that sets a fixed system prompt, used to
+	 * verify that customizers are applied in both ChatClient creation patterns.
 	 */
 	@Configuration(proxyBeanMethods = false)
 	static class SystemPromptCustomizerConfig {
 
 		@Bean
-		ChatClientCustomizer systemPromptCustomizer() {
-			return builder -> builder.defaultSystem("Customized by ChatClientCustomizer.");
+		ChatClientBuilderCustomizer systemPromptCustomizer() {
+			return builder -> builder.defaultSystem("Customized by ChatClientBuilderCustomizer.");
 		}
 
 	}
