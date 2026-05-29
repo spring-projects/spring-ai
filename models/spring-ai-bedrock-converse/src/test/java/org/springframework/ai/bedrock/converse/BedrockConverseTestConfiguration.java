@@ -37,7 +37,7 @@ public class BedrockConverseTestConfiguration {
 			.region(Region.US_EAST_1)
 			// .region(Region.US_EAST_1)
 			.timeout(Duration.ofSeconds(120))
-			.defaultOptions(BedrockChatOptions.builder().model(modelId).build())
+			.options(BedrockChatOptions.builder().model(modelId).build())
 			.build();
 	}
 

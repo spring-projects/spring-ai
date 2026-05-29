@@ -141,7 +141,7 @@ public class GoogleGenAiChatAutoConfiguration {
 
 		GoogleGenAiChatModel chatModel = GoogleGenAiChatModel.builder()
 			.genAiClient(googleGenAiClient)
-			.defaultOptions(chatProperties.toOptions())
+			.options(chatProperties.toOptions())
 			.toolCallingManager(toolCallingManager)
 			.toolExecutionEligibilityPredicate(
 					toolExecutionEligibilityPredicate.getIfUnique(() -> new DefaultToolExecutionEligibilityPredicate()))

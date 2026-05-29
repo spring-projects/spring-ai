@@ -57,7 +57,7 @@ public class OpenAiAudioSpeechAutoConfiguration {
 
 		return OpenAiAudioSpeechModel.builder()
 			.openAiClient(openAIClient)
-			.defaultOptions(speechProperties.toOptions())
+			.options(speechProperties.toOptions())
 			.build();
 	}
 

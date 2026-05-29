@@ -53,6 +53,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Christian Tzolov
  * @author Alexandros Pappas
+ * @author Sebastien Deleuze
  */
 @ExtendWith(MockitoExtension.class)
 public class ChatClientResponseEntityTests {
@@ -65,7 +66,7 @@ public class ChatClientResponseEntityTests {
 
 	@Test
 	public void responseEntityTest() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
@@ -94,7 +95,7 @@ public class ChatClientResponseEntityTests {
 
 	@Test
 	public void parametrizedResponseEntityTest() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 
 		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("""
 				[
@@ -125,7 +126,7 @@ public class ChatClientResponseEntityTests {
 
 	@Test
 	public void customSoCResponseEntityTest() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 
 		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("""
 					{"name":"Max", "age":10},
@@ -151,7 +152,7 @@ public class ChatClientResponseEntityTests {
 
 	@Test
 	public void whenEmptyResponseContentThenHandleGracefully() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage(""))));
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
 
@@ -165,7 +166,7 @@ public class ChatClientResponseEntityTests {
 
 	@Test
 	public void whenInvalidJsonResponseThenThrows() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("invalid json content"))));
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
 
@@ -179,7 +180,7 @@ public class ChatClientResponseEntityTests {
 
 	@Test
 	public void whenParameterizedTypeWithMapThenParseCorrectly() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("""
 				{
 					"key1": "value1",
@@ -205,7 +206,7 @@ public class ChatClientResponseEntityTests {
 
 	@Test
 	public void whenEmptyArrayResponseThenReturnEmptyList() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("[]"))));
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
 
@@ -222,7 +223,7 @@ public class ChatClientResponseEntityTests {
 
 	@Test
 	public void whenBooleanPrimitiveResponseThenParseCorrectly() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("true"))));
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
 
@@ -238,7 +239,7 @@ public class ChatClientResponseEntityTests {
 
 	@Test
 	public void whenIntegerResponseThenParseCorrectly() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("1"))));
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
 
@@ -254,7 +255,7 @@ public class ChatClientResponseEntityTests {
 
 	@Test
 	public void entitySpecWithEnableNativeSetsContextAttribute() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("""
 				{"name":"John", "age":30}
 				"""))));
@@ -276,7 +277,7 @@ public class ChatClientResponseEntityTests {
 
 	@Test
 	public void entitySpecWithValidatePassesOnFirstAttempt() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("""
 				{"name":"John", "age":30}
 				"""))));
@@ -296,7 +297,7 @@ public class ChatClientResponseEntityTests {
 
 	@Test
 	public void entitySpecWithValidateRetriesOnInvalidJson() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		var invalidResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("{\"name\":\"John\"}"))));
 		var validResponse = new ChatResponse(
 				List.of(new Generation(new AssistantMessage("{\"name\":\"John\",\"age\":30}"))));
@@ -316,7 +317,7 @@ public class ChatClientResponseEntityTests {
 
 	@Test
 	public void entityClassSpecWithEnableNativeSetsContextAttribute() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		var chatResponse = new ChatResponse(
 				List.of(new Generation(new AssistantMessage("{\"name\":\"John\",\"age\":30}"))));
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
@@ -336,7 +337,7 @@ public class ChatClientResponseEntityTests {
 
 	@Test
 	public void entityClassSpecWithValidatePassesOnFirstAttempt() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		var chatResponse = new ChatResponse(
 				List.of(new Generation(new AssistantMessage("{\"name\":\"John\",\"age\":30}"))));
 		given(this.chatModel.call(any(Prompt.class))).willReturn(chatResponse);
@@ -354,7 +355,7 @@ public class ChatClientResponseEntityTests {
 
 	@Test
 	public void entityConverterSpecWithEnableNativeSetsContextAttribute() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		var chatResponse = new ChatResponse(
 				List.of(new Generation(new AssistantMessage("{\"name\":\"John\",\"age\":30}"))));
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
@@ -374,7 +375,7 @@ public class ChatClientResponseEntityTests {
 
 	@Test
 	public void entityConverterSpecWithValidatePassesOnFirstAttempt() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		var chatResponse = new ChatResponse(
 				List.of(new Generation(new AssistantMessage("{\"name\":\"John\",\"age\":30}"))));
 		given(this.chatModel.call(any(Prompt.class))).willReturn(chatResponse);

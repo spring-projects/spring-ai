@@ -55,6 +55,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Dan Dobrin
+ * @author Sebastien Deleuze
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
@@ -167,7 +168,7 @@ public class GoogleGenAiPaymentTransactionToolsIT {
 			return GoogleGenAiChatModel.builder()
 				.genAiClient(genAiClient)
 				.toolCallingManager(toolCallingManager)
-				.defaultOptions(GoogleGenAiChatOptions.builder()
+				.options(GoogleGenAiChatOptions.builder()
 					.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
 					.temperature(0.1)
 					.build())

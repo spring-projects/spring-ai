@@ -127,7 +127,7 @@ import org.springframework.util.StringUtils;
  * <pre>{@code
  * GoogleGenAiChatModel model = GoogleGenAiChatModel.builder()
  * 		.genAiClient(genAiClient)
- * 		.defaultOptions(options)
+ * 		.options(options)
  * 		.toolCallingManager(toolManager)
  * 		.build();
  * }</pre>
@@ -143,6 +143,7 @@ import org.springframework.util.StringUtils;
  * @author Ilayaperumal Gopinathan
  * @author Dan Dobrin
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  * @since 0.8.1
  * @see GoogleGenAiChatOptions
  * @see ToolCallingManager
@@ -158,7 +159,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 	private final Client genAiClient;
 
-	private final GoogleGenAiChatOptions defaultOptions;
+	private final GoogleGenAiChatOptions options;
 
 	/**
 	 * The retry template used to retry the API calls.
@@ -203,24 +204,24 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	/**
 	 * Creates a new instance of GoogleGenAiChatModel.
 	 * @param genAiClient the GenAI Client instance to use
-	 * @param defaultOptions the default options to use
+	 * @param options the default options to use
 	 * @param toolCallingManager the tool calling manager to use. It is wrapped in a
 	 * {@link GoogleGenAiToolCallingManager} to ensure compatibility with Vertex AI's
 	 * OpenAPI schema format.
 	 * @param retryTemplate the retry template to use
 	 * @param observationRegistry the observation registry to use
 	 */
-	public GoogleGenAiChatModel(Client genAiClient, GoogleGenAiChatOptions defaultOptions,
+	public GoogleGenAiChatModel(Client genAiClient, GoogleGenAiChatOptions options,
 			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
 			ObservationRegistry observationRegistry) {
-		this(genAiClient, defaultOptions, toolCallingManager, retryTemplate, observationRegistry,
+		this(genAiClient, options, toolCallingManager, retryTemplate, observationRegistry,
 				chatResponse -> chatResponse != null && chatResponse.hasToolCalls());
 	}
 
 	/**
 	 * Creates a new instance of GoogleGenAiChatModel.
 	 * @param genAiClient the GenAI Client instance to use
-	 * @param defaultOptions the default options to use
+	 * @param options the default options to use
 	 * @param toolCallingManager the tool calling manager to use. It is wrapped in a
 	 * {@link GoogleGenAiToolCallingManager} to ensure compatibility with Vertex AI's
 	 * OpenAPI schema format.
@@ -228,19 +229,19 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	 * @param observationRegistry the observation registry to use
 	 * @param toolExecutionEligibilityChecker the tool execution eligibility checker
 	 */
-	public GoogleGenAiChatModel(Client genAiClient, GoogleGenAiChatOptions defaultOptions,
+	public GoogleGenAiChatModel(Client genAiClient, GoogleGenAiChatOptions options,
 			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
 			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
 
 		Assert.notNull(genAiClient, "GenAI Client must not be null");
-		Assert.notNull(defaultOptions, "GoogleGenAiChatOptions must not be null");
-		Assert.notNull(defaultOptions.getModel(), "GoogleGenAiChatOptions.modelName must not be null");
+		Assert.notNull(options, "GoogleGenAiChatOptions must not be null");
+		Assert.notNull(options.getModel(), "GoogleGenAiChatOptions.modelName must not be null");
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
 		Assert.notNull(toolCallingManager, "ToolCallingManager must not be null");
 		Assert.notNull(toolExecutionEligibilityChecker, "ToolExecutionEligibilityChecker must not be null");
 
 		this.genAiClient = genAiClient;
-		this.defaultOptions = defaultOptions;
+		this.options = options;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
 		this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
@@ -744,8 +745,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		if (options != null && options.getIncludeExtendedUsageMetadata() != null) {
 			includeExtended = options.getIncludeExtendedUsageMetadata();
 		}
-		else if (this.defaultOptions.getIncludeExtendedUsageMetadata() != null) {
-			includeExtended = this.defaultOptions.getIncludeExtendedUsageMetadata();
+		else if (this.options.getIncludeExtendedUsageMetadata() != null) {
+			includeExtended = this.options.getIncludeExtendedUsageMetadata();
 		}
 
 		if (includeExtended) {
@@ -769,8 +770,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		// Build GenerateContentConfig
 		GenerateContentConfig.Builder configBuilder = GenerateContentConfig.builder();
 
-		String modelName = requestOptions.getModel() != null ? requestOptions.getModel()
-				: this.defaultOptions.getModel();
+		String modelName = requestOptions.getModel() != null ? requestOptions.getModel() : this.options.getModel();
 		Assert.notNull(modelName, "Model name must not be null");
 
 		// Set generation config parameters directly on configBuilder
@@ -852,8 +852,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			tools.add(Tool.builder().functionDeclarations(functionDeclarations).build());
 		}
 
-		if (prompt.getOptions() instanceof GoogleGenAiChatOptions options
-				&& Boolean.TRUE.equals(options.getGoogleSearchRetrieval())) {
+		if (prompt.getOptions() instanceof GoogleGenAiChatOptions googleGenAiChatOptions
+				&& Boolean.TRUE.equals(googleGenAiChatOptions.getGoogleSearchRetrieval())) {
 			var googleSearch = GoogleSearch.builder().build();
 			final var googleSearchRetrievalTool = Tool.builder().googleSearch(googleSearch).build();
 			tools.add(googleSearchRetrievalTool);
@@ -1024,9 +1024,22 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		}
 	}
 
+	/**
+	 * @since 2.0.0
+	 */
 	@Override
+	public GoogleGenAiChatOptions getOptions() {
+		return this.options;
+	}
+
+	/**
+	 * @deprecated use {@link #getOptions()} instead.
+	 */
+	@Deprecated(forRemoval = true)
+	@Override
+	@SuppressWarnings("removal")
 	public ChatOptions getDefaultOptions() {
-		return GoogleGenAiChatOptions.fromOptions(this.defaultOptions);
+		return this.options.copy();
 	}
 
 	/**
@@ -1059,7 +1072,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 		@Nullable private Client genAiClient;
 
-		private GoogleGenAiChatOptions defaultOptions = GoogleGenAiChatOptions.builder()
+		private GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
 			.temperature(0.7)
 			.topP(1.0)
 			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
@@ -1082,8 +1095,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			return this;
 		}
 
-		public Builder defaultOptions(GoogleGenAiChatOptions defaultOptions) {
-			this.defaultOptions = defaultOptions;
+		public Builder options(GoogleGenAiChatOptions options) {
+			this.options = options;
 			return this;
 		}
 
@@ -1153,10 +1166,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		public GoogleGenAiChatModel build() {
 			Assert.notNull(this.genAiClient, "GenAI Client must not be null");
 			if (this.toolCallingManager != null) {
-				return new GoogleGenAiChatModel(this.genAiClient, this.defaultOptions, this.toolCallingManager,
+				return new GoogleGenAiChatModel(this.genAiClient, this.options, this.toolCallingManager,
 						this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityChecker);
 			}
-			return new GoogleGenAiChatModel(this.genAiClient, this.defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
+			return new GoogleGenAiChatModel(this.genAiClient, this.options, DEFAULT_TOOL_CALLING_MANAGER,
 					this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityChecker);
 		}
 

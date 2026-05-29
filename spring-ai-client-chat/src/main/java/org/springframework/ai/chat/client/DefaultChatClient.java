@@ -88,6 +88,7 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Jonatan Ivanov
  * @author Wenli Tian
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public class DefaultChatClient implements ChatClient {
@@ -1315,7 +1316,7 @@ public class DefaultChatClient implements ChatClient {
 
 			boolean hasTools = !this.toolCallbacks.isEmpty() || !this.toolCallbackProviders.isEmpty()
 					|| !this.toolNames.isEmpty() || hasToolsInChatOptions(this.optionsCustomizer)
-					|| hasToolsInChatOptions(this.chatModel.getDefaultOptions());
+					|| hasToolsInChatOptions(this.chatModel.getOptions());
 			if (!hasTools) {
 				return;
 			}

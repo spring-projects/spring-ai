@@ -53,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 @SpringBootTest(classes = BedrockNovaChatClientIT.Config.class)
 @RequiresAwsCredentials
@@ -267,7 +268,7 @@ public class BedrockNovaChatClientIT {
 				.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
 				.region(Region.US_EAST_1)
 				.timeout(Duration.ofSeconds(120))
-				.defaultOptions(BedrockChatOptions.builder().model(modelId).build())
+				.options(BedrockChatOptions.builder().model(modelId).build())
 				.build();
 		}
 

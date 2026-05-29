@@ -186,7 +186,7 @@ ElevenLabsApi elevenLabsApi = ElevenLabsApi.builder()
 
 ElevenLabsTextToSpeechModel elevenLabsTextToSpeechModel = ElevenLabsTextToSpeechModel.builder()
 	.elevenLabsApi(elevenLabsApi)
-	.defaultOptions(ElevenLabsTextToSpeechOptions.builder()
+	.options(ElevenLabsTextToSpeechOptions.builder()
 		.model("eleven_turbo_v2_5")
 		.voiceId("your_voice_id") // e.g. "9BWtsMINqrJLrRacOk9x"
 		.outputFormat("mp3_44100_128")

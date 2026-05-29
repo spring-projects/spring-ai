@@ -77,6 +77,7 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Geng Rong
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  */
 public class DeepSeekChatModel implements ChatModel {
 
@@ -89,7 +90,7 @@ public class DeepSeekChatModel implements ChatModel {
 	/**
 	 * The default options used for the chat completion requests.
 	 */
-	private final DeepSeekChatOptions defaultOptions;
+	private final DeepSeekChatOptions options;
 
 	/**
 	 * The retry template used to retry the DeepSeek API calls.
@@ -123,24 +124,24 @@ public class DeepSeekChatModel implements ChatModel {
 	 */
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
-	public DeepSeekChatModel(DeepSeekApi deepSeekApi, DeepSeekChatOptions defaultOptions,
+	public DeepSeekChatModel(DeepSeekApi deepSeekApi, DeepSeekChatOptions options,
 			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
 			ObservationRegistry observationRegistry) {
-		this(deepSeekApi, defaultOptions, toolCallingManager, retryTemplate, observationRegistry,
+		this(deepSeekApi, options, toolCallingManager, retryTemplate, observationRegistry,
 				chatResponse -> chatResponse != null && chatResponse.hasToolCalls());
 	}
 
-	public DeepSeekChatModel(DeepSeekApi deepSeekApi, DeepSeekChatOptions defaultOptions,
+	public DeepSeekChatModel(DeepSeekApi deepSeekApi, DeepSeekChatOptions options,
 			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
 			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
 		Assert.notNull(deepSeekApi, "deepSeekApi cannot be null");
-		Assert.notNull(defaultOptions, "defaultOptions cannot be null");
+		Assert.notNull(options, "options cannot be null");
 		Assert.notNull(toolCallingManager, "toolCallingManager cannot be null");
 		Assert.notNull(retryTemplate, "retryTemplate cannot be null");
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
 		Assert.notNull(toolExecutionEligibilityChecker, "toolExecutionEligibilityChecker cannot be null");
 		this.deepSeekApi = deepSeekApi;
-		this.defaultOptions = defaultOptions;
+		this.options = options;
 		this.toolCallingManager = toolCallingManager;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
@@ -515,14 +516,27 @@ public class DeepSeekChatModel implements ChatModel {
 		}).toList();
 	}
 
+	/**
+	 * @since 2.0.0
+	 */
 	@Override
+	public DeepSeekChatOptions getOptions() {
+		return this.options;
+	}
+
+	/**
+	 * @deprecated use {@link #getOptions()} instead.
+	 */
+	@Deprecated(forRemoval = true)
+	@Override
+	@SuppressWarnings("removal")
 	public ChatOptions getDefaultOptions() {
-		return DeepSeekChatOptions.fromOptions(this.defaultOptions);
+		return this.options.copy();
 	}
 
 	@Override
 	public String toString() {
-		return "DeepSeekChatModel [defaultOptions=" + this.defaultOptions + "]";
+		return "DeepSeekChatModel [options=" + this.options + "]";
 	}
 
 	/**
@@ -542,7 +556,7 @@ public class DeepSeekChatModel implements ChatModel {
 
 		private @Nullable DeepSeekApi deepSeekApi;
 
-		private DeepSeekChatOptions defaultOptions = DeepSeekChatOptions.builder()
+		private DeepSeekChatOptions options = DeepSeekChatOptions.builder()
 			.model(DeepSeekApi.DEFAULT_CHAT_MODEL)
 			.temperature(0.7)
 			.build();
@@ -564,8 +578,8 @@ public class DeepSeekChatModel implements ChatModel {
 			return this;
 		}
 
-		public Builder defaultOptions(DeepSeekChatOptions defaultOptions) {
-			this.defaultOptions = defaultOptions;
+		public Builder options(DeepSeekChatOptions options) {
+			this.options = options;
 			return this;
 		}
 
@@ -635,10 +649,10 @@ public class DeepSeekChatModel implements ChatModel {
 		public DeepSeekChatModel build() {
 			Assert.state(this.deepSeekApi != null, "DeepSeekApi must not be null");
 			if (this.toolCallingManager != null) {
-				return new DeepSeekChatModel(this.deepSeekApi, this.defaultOptions, this.toolCallingManager,
+				return new DeepSeekChatModel(this.deepSeekApi, this.options, this.toolCallingManager,
 						this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityChecker);
 			}
-			return new DeepSeekChatModel(this.deepSeekApi, this.defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
+			return new DeepSeekChatModel(this.deepSeekApi, this.options, DEFAULT_TOOL_CALLING_MANAGER,
 					this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityChecker);
 		}
 

@@ -50,6 +50,7 @@ import org.springframework.util.StringUtils;
  * @author Geng Rong
  * @author Thomas Vitale
  * @author Soby Chacko
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
@@ -58,7 +59,7 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 
 	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 
-	private final MiniMaxEmbeddingOptions defaultOptions;
+	private final MiniMaxEmbeddingOptions options;
 
 	private final RetryTemplate retryTemplate;
 
@@ -137,7 +138,7 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 
 		this.miniMaxApi = miniMaxApi;
 		this.metadataMode = metadataMode;
-		this.defaultOptions = options;
+		this.options = options;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
 	}
@@ -201,12 +202,12 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
-		MiniMaxEmbeddingOptions options = this.defaultOptions;
+		MiniMaxEmbeddingOptions options = this.options;
 
 		EmbeddingOptions runtimeOptions = embeddingRequest.getOptions();
 		if (runtimeOptions != null) {
 			options = MiniMaxEmbeddingOptions.builder()
-				.model(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), this.defaultOptions.getModel()))
+				.model(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), this.options.getModel()))
 				.build();
 		}
 

@@ -326,7 +326,7 @@ DeepSeekChatOptions options = DeepSeekChatOptions.builder()
         .build();
 DeepSeekChatModel chatModel = DeepSeekChatModel.builder()
         .deepSeekApi(deepSeekApi)
-        .defaultOptions(options)
+        .options(options)
         .build();
 ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));

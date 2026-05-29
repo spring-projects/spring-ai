@@ -62,6 +62,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author Mark Pollack
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel {
@@ -84,7 +85,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 		.collect(Collectors.toMap(VertexAiMultimodalEmbeddingModelName::getName,
 				VertexAiMultimodalEmbeddingModelName::getDimensions));
 
-	public final VertexAiMultimodalEmbeddingOptions defaultOptions;
+	public final VertexAiMultimodalEmbeddingOptions options;
 
 	private final VertexAiEmbeddingConnectionDetails connectionDetails;
 
@@ -92,7 +93,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 			VertexAiMultimodalEmbeddingOptions defaultEmbeddingOptions) {
 
 		Assert.notNull(defaultEmbeddingOptions, "VertexAiMultimodalEmbeddingOptions must not be null");
-		this.defaultOptions = defaultEmbeddingOptions;
+		this.options = defaultEmbeddingOptions;
 		this.connectionDetails = connectionDetails;
 	}
 
@@ -102,27 +103,27 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 		EmbeddingResponse finalResponse = new EmbeddingResponse(List.of());
 
 		EmbeddingOptions requestOptions = request.getOptions();
-		VertexAiMultimodalEmbeddingOptions mergedOptions = this.defaultOptions;
+		VertexAiMultimodalEmbeddingOptions mergedOptions = this.options;
 
 		if (requestOptions != null) {
 			VertexAiMultimodalEmbeddingOptions.Builder builder = VertexAiMultimodalEmbeddingOptions.builder()
-				.model(ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.defaultOptions.getModel()))
-				.dimensions(ModelOptionsUtils.mergeOption(requestOptions.getDimensions(),
-						this.defaultOptions.getDimensions()));
+				.model(ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.options.getModel()))
+				.dimensions(
+						ModelOptionsUtils.mergeOption(requestOptions.getDimensions(), this.options.getDimensions()));
 
 			if (requestOptions instanceof VertexAiMultimodalEmbeddingOptions vertexOptions) {
 				builder
 					.videoStartOffsetSec(ModelOptionsUtils.mergeOption(vertexOptions.getVideoStartOffsetSec(),
-							this.defaultOptions.getVideoStartOffsetSec()))
+							this.options.getVideoStartOffsetSec()))
 					.videoEndOffsetSec(ModelOptionsUtils.mergeOption(vertexOptions.getVideoEndOffsetSec(),
-							this.defaultOptions.getVideoEndOffsetSec()))
+							this.options.getVideoEndOffsetSec()))
 					.videoIntervalSec(ModelOptionsUtils.mergeOption(vertexOptions.getVideoIntervalSec(),
-							this.defaultOptions.getVideoIntervalSec()));
+							this.options.getVideoIntervalSec()));
 			}
 			else {
-				builder.videoStartOffsetSec(this.defaultOptions.getVideoStartOffsetSec())
-					.videoEndOffsetSec(this.defaultOptions.getVideoEndOffsetSec())
-					.videoIntervalSec(this.defaultOptions.getVideoIntervalSec());
+				builder.videoStartOffsetSec(this.options.getVideoStartOffsetSec())
+					.videoEndOffsetSec(this.options.getVideoEndOffsetSec())
+					.videoIntervalSec(this.options.getVideoIntervalSec());
 			}
 			mergedOptions = builder.build();
 		}
@@ -281,7 +282,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 
 	@Override
 	public int dimensions() {
-		return KNOWN_EMBEDDING_DIMENSIONS.getOrDefault(this.defaultOptions.getModel(), 768);
+		return KNOWN_EMBEDDING_DIMENSIONS.getOrDefault(this.options.getModel(), 768);
 	}
 
 	record DocumentMetadata(String documentId, MimeType mimeType, Object data) {

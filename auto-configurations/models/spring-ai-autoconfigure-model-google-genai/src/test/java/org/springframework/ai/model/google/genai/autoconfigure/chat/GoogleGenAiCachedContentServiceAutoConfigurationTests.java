@@ -38,6 +38,7 @@ import static org.mockito.Mockito.when;
  *
  * @author Dan Dobrin
  * @author Issam El-atif
+ * @author Sebastien Deleuze
  * @since 1.1.0
  */
 public class GoogleGenAiCachedContentServiceAutoConfigurationTests {
@@ -118,7 +119,7 @@ public class GoogleGenAiCachedContentServiceAutoConfigurationTests {
 				GoogleGenAiChatModel chatModel = context.getBean(GoogleGenAiChatModel.class);
 				assertThat(chatModel).isNotNull();
 
-				var options = chatModel.getDefaultOptions();
+				var options = chatModel.getOptions();
 				assertThat(options).isNotNull();
 				// Note: We can't directly access GoogleGenAiChatOptions from ChatOptions
 				// interface
@@ -136,7 +137,7 @@ public class GoogleGenAiCachedContentServiceAutoConfigurationTests {
 				GoogleGenAiChatModel chatModel = context.getBean(GoogleGenAiChatModel.class);
 				assertThat(chatModel).isNotNull();
 
-				var options = chatModel.getDefaultOptions();
+				var options = chatModel.getOptions();
 				assertThat(options).isNotNull();
 				// The property should be configured
 			});
@@ -165,7 +166,7 @@ public class GoogleGenAiCachedContentServiceAutoConfigurationTests {
 			GoogleGenAiChatModel mockModel = Mockito.mock(GoogleGenAiChatModel.class);
 			GoogleGenAiCachedContentService mockService = Mockito.mock(GoogleGenAiCachedContentService.class);
 			when(mockModel.getCachedContentService()).thenReturn(mockService);
-			when(mockModel.getDefaultOptions()).thenReturn(properties.toOptions());
+			when(mockModel.getOptions()).thenReturn(properties.toOptions());
 			return mockModel;
 		}
 
@@ -191,7 +192,7 @@ public class GoogleGenAiCachedContentServiceAutoConfigurationTests {
 			// This simulates using a mock client that doesn't support cached content
 			GoogleGenAiChatModel mockModel = Mockito.mock(GoogleGenAiChatModel.class);
 			when(mockModel.getCachedContentService()).thenReturn(null);
-			when(mockModel.getDefaultOptions()).thenReturn(properties.toOptions());
+			when(mockModel.getOptions()).thenReturn(properties.toOptions());
 			return mockModel;
 		}
 

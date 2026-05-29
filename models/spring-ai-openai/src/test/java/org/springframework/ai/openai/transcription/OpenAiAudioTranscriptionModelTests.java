@@ -43,6 +43,7 @@ import static org.mockito.Mockito.when;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 class OpenAiAudioTranscriptionModelTests {
 
@@ -71,7 +72,7 @@ class OpenAiAudioTranscriptionModelTests {
 	}
 
 	@Test
-	void callWithDefaultOptions() {
+	void callWithOptions() {
 		TranscriptionCreateResponse mockResponse = TranscriptionCreateResponse
 			.ofTranscription(Transcription.builder().text("Hello, this is a test transcription.").build());
 

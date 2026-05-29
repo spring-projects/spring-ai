@@ -339,7 +339,7 @@ class GoogleGenAiThoughtSignatureLifecycleIT {
 		public GoogleGenAiChatModel googleGenAiChatModel(Client genAiClient) {
 			return GoogleGenAiChatModel.builder()
 				.genAiClient(genAiClient)
-				.defaultOptions(GoogleGenAiChatOptions.builder()
+				.options(GoogleGenAiChatOptions.builder()
 					.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
 					.temperature(0.9)
 					.build())

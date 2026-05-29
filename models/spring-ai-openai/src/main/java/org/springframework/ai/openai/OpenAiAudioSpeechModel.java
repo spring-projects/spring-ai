@@ -48,6 +48,7 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Jonghoon Park
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
@@ -59,25 +60,23 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
 	private final OpenAIClient openAiClient;
 
-	private final OpenAiAudioSpeechOptions defaultOptions;
+	private final OpenAiAudioSpeechOptions options;
 
 	/**
 	 * Private constructor that takes individual configuration parameters.
 	 * @param openAiClient The OpenAI client instance.
-	 * @param defaultOptions The default options for speech generation.
+	 * @param options The default options for speech generation.
 	 */
-	private OpenAiAudioSpeechModel(@Nullable OpenAIClient openAiClient,
-			@Nullable OpenAiAudioSpeechOptions defaultOptions) {
-		this.defaultOptions = Objects.requireNonNullElseGet(defaultOptions,
+	private OpenAiAudioSpeechModel(@Nullable OpenAIClient openAiClient, @Nullable OpenAiAudioSpeechOptions options) {
+		this.options = Objects.requireNonNullElseGet(options,
 				() -> OpenAiAudioSpeechOptions.builder().model(DEFAULT_MODEL_NAME).build());
 		this.openAiClient = Objects.requireNonNullElseGet(openAiClient,
-				() -> OpenAiSetup.setupSyncClient(this.defaultOptions.getBaseUrl(), this.defaultOptions.getApiKey(),
-						this.defaultOptions.getCredential(), this.defaultOptions.getMicrosoftDeploymentName(),
-						this.defaultOptions.getMicrosoftFoundryServiceVersion(),
-						this.defaultOptions.getOrganizationId(), this.defaultOptions.isMicrosoftFoundry(),
-						this.defaultOptions.isGitHubModels(), this.defaultOptions.getModel(),
-						this.defaultOptions.getTimeout(), this.defaultOptions.getMaxRetries(),
-						this.defaultOptions.getProxy(), this.defaultOptions.getCustomHeaders()));
+				() -> OpenAiSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
+						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
+						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
+						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
+						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
+						this.options.getCustomHeaders()));
 	}
 
 	/**
@@ -170,9 +169,22 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 		return Flux.just(call(prompt));
 	}
 
+	/**
+	 * @since 2.0.0
+	 */
 	@Override
+	public OpenAiAudioSpeechOptions getOptions() {
+		return this.options;
+	}
+
+	/**
+	 * @deprecated use {@link #getOptions()} instead.
+	 */
+	@Deprecated(forRemoval = true)
+	@Override
+	@SuppressWarnings("removal")
 	public TextToSpeechOptions getDefaultOptions() {
-		return this.defaultOptions;
+		return this.options;
 	}
 
 	private OpenAiAudioSpeechOptions mergeOptions(TextToSpeechPrompt prompt) {
@@ -180,9 +192,9 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 			.getOptions() instanceof OpenAiAudioSpeechOptions openAiSdkOptions) ? openAiSdkOptions : null;
 
 		if (runtimeOptions != null) {
-			return merge(runtimeOptions, this.defaultOptions);
+			return merge(runtimeOptions, this.options);
 		}
-		return this.defaultOptions;
+		return this.options;
 	}
 
 	private OpenAiAudioSpeechOptions merge(OpenAiAudioSpeechOptions source, OpenAiAudioSpeechOptions target) {
@@ -230,13 +242,13 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
 		private @Nullable OpenAIClient openAiClient;
 
-		private @Nullable OpenAiAudioSpeechOptions defaultOptions;
+		private @Nullable OpenAiAudioSpeechOptions options;
 
 		/**
 		 * Default constructor with default options.
 		 */
 		private Builder() {
-			this.defaultOptions = OpenAiAudioSpeechOptions.builder()
+			this.options = OpenAiAudioSpeechOptions.builder()
 				.model(DEFAULT_MODEL_NAME)
 				.voice(OpenAiAudioSpeechOptions.Voice.ALLOY)
 				.responseFormat(OpenAiAudioSpeechOptions.AudioResponseFormat.MP3)
@@ -250,7 +262,7 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 		 */
 		private Builder(OpenAiAudioSpeechModel model) {
 			this.openAiClient = model.openAiClient;
-			this.defaultOptions = model.defaultOptions;
+			this.options = model.options;
 		}
 
 		/**
@@ -265,12 +277,12 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
 		/**
 		 * Sets the default options.
-		 * @param defaultOptions The default options to use
+		 * @param options The default options to use
 		 * @return This builder
 		 */
-		public Builder defaultOptions(@Nullable OpenAiAudioSpeechOptions defaultOptions) {
-			if (defaultOptions != null) {
-				this.defaultOptions = defaultOptions;
+		public Builder options(@Nullable OpenAiAudioSpeechOptions options) {
+			if (options != null) {
+				this.options = options;
 			}
 			return this;
 		}
@@ -280,7 +292,7 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 		 * @return A new OpenAiAudioSpeechModel instance
 		 */
 		public OpenAiAudioSpeechModel build() {
-			return new OpenAiAudioSpeechModel(this.openAiClient, this.defaultOptions);
+			return new OpenAiAudioSpeechModel(this.openAiClient, this.options);
 		}
 
 	}

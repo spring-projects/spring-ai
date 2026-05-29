@@ -45,6 +45,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 @ExtendWith({ MockitoExtension.class, OutputCaptureExtension.class })
 @ActiveProfiles("logging-test")
@@ -61,7 +62,7 @@ public class SimpleLoggerAdvisorTests {
 
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your answer is ZXY")))));
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 
 		var loggerAdvisor = new SimpleLoggerAdvisor();
 
@@ -82,7 +83,7 @@ public class SimpleLoggerAdvisorTests {
 					sink.complete();
 					return state;
 				}));
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 
 		var loggerAdvisor = new SimpleLoggerAdvisor();
 

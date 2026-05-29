@@ -46,6 +46,7 @@ import org.springframework.util.Assert;
 /**
  * @author Ricken Bazolo
  * @author Jason Smith
+ * @author Sebastien Deleuze
  */
 public class MistralAiModerationModel implements ModerationModel {
 
@@ -55,7 +56,7 @@ public class MistralAiModerationModel implements ModerationModel {
 
 	private final RetryTemplate retryTemplate;
 
-	private final MistralAiModerationOptions defaultOptions;
+	private final MistralAiModerationOptions options;
 
 	public MistralAiModerationModel(MistralAiModerationApi mistralAiModerationApi, RetryTemplate retryTemplate,
 			MistralAiModerationOptions options) {
@@ -64,7 +65,7 @@ public class MistralAiModerationModel implements ModerationModel {
 		Assert.notNull(options, "options must not be null");
 		this.mistralAiModerationApi = mistralAiModerationApi;
 		this.retryTemplate = retryTemplate;
-		this.defaultOptions = options;
+		this.options = options;
 	}
 
 	@Override
@@ -75,10 +76,10 @@ public class MistralAiModerationModel implements ModerationModel {
 			var instructions = moderationPrompt.getInstructions().getText();
 
 			ModerationOptions requestOptions = moderationPrompt.getOptions();
-			String model = this.defaultOptions.getModel();
+			String model = this.options.getModel();
 
 			if (requestOptions != null) {
-				model = ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.defaultOptions.getModel());
+				model = ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.options.getModel());
 			}
 
 			var moderationRequest = new MistralAiModerationRequest(instructions, model);

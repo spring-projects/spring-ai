@@ -47,6 +47,7 @@ import static org.mockito.Mockito.when;
  * Unit tests for {@link VectorStoreChatMemoryAdvisor}.
  *
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  */
 class VectorStoreChatMemoryAdvisorTests {
 
@@ -177,7 +178,7 @@ class VectorStoreChatMemoryAdvisorTests {
 		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
 		given(chatModel.call(promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("ok")))));
-		when(chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 
 		ChatClient chatClient = ChatClient.builder(chatModel)
 			.defaultSystem("System instructions.")
@@ -216,7 +217,7 @@ class VectorStoreChatMemoryAdvisorTests {
 		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
 		given(chatModel.call(promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("ok")))));
-		when(chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 
 		ChatClient chatClient = ChatClient.builder(chatModel)
 			.defaultSystem("System instructions.")

@@ -38,6 +38,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  *
  * @author Alexandros Pappas
  * @author Yanming Zhou
+ * @author Sebastien Deleuze
  */
 @AutoConfiguration
 @ConditionalOnClass(ElevenLabsApi.class)
@@ -69,7 +70,7 @@ public class ElevenLabsAutoConfiguration {
 
 		return ElevenLabsTextToSpeechModel.builder()
 			.elevenLabsApi(elevenLabsApi)
-			.defaultOptions(speechProperties.toOptions())
+			.options(speechProperties.toOptions())
 			.retryTemplate(retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))
 			.build();
 	}

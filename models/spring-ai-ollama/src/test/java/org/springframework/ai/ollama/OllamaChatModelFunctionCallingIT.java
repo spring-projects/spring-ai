@@ -142,7 +142,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 		public OllamaChatModel ollamaChat(OllamaApi ollamaApi) {
 			return OllamaChatModel.builder()
 				.ollamaApi(ollamaApi)
-				.defaultOptions(OllamaChatOptions.builder().model(MODEL).temperature(0.9).build())
+				.options(OllamaChatOptions.builder().model(MODEL).temperature(0.9).build())
 				.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 				.build();
 		}

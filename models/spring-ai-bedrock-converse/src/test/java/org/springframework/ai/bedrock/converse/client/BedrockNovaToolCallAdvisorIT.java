@@ -35,6 +35,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  * Integration tests for {@link ToolCallAdvisor} functionality with Bedrock SDK.
  *
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 @SpringBootTest
 @RequiresAwsCredentials
@@ -49,7 +50,7 @@ class BedrockNovaToolCallAdvisorIT extends AbstractToolCallAdvisorIT {
 			.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
 			.region(Region.US_EAST_1)
 			.timeout(Duration.ofSeconds(120))
-			.defaultOptions(BedrockChatOptions.builder().model(modelId).build())
+			.options(BedrockChatOptions.builder().model(modelId).build())
 			.build();
 	}
 

@@ -476,7 +476,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		OllamaChatModel ollamaChat(OllamaApi ollamaApi) {
 			return OllamaChatModel.builder()
 				.ollamaApi(ollamaApi)
-				.defaultOptions(OllamaChatOptions.builder().model(MODEL).temperature(0.0).build())
+				.options(OllamaChatOptions.builder().model(MODEL).temperature(0.0).build())
 				.modelManagementOptions(ModelManagementOptions.builder()
 					.pullModelStrategy(PullModelStrategy.WHEN_MISSING)
 					.additionalModels(List.of(ADDITIONAL_MODEL))

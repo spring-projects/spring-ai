@@ -67,7 +67,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	private final OllamaApi ollamaApi;
 
-	private final OllamaEmbeddingOptions defaultOptions;
+	private final OllamaEmbeddingOptions options;
 
 	private final ObservationRegistry observationRegistry;
 
@@ -75,19 +75,19 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
-	public OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaEmbeddingOptions defaultOptions,
+	public OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaEmbeddingOptions options,
 			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
 		Assert.notNull(ollamaApi, "ollamaApi must not be null");
-		Assert.notNull(defaultOptions, "options must not be null");
+		Assert.notNull(options, "options must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
 		Assert.notNull(modelManagementOptions, "modelManagementOptions must not be null");
 
 		this.ollamaApi = ollamaApi;
-		this.defaultOptions = defaultOptions;
+		this.options = options;
 		this.observationRegistry = observationRegistry;
 		this.modelManager = new OllamaModelManager(ollamaApi, modelManagementOptions);
 
-		String model = defaultOptions.getModel();
+		String model = options.getModel();
 		Assert.state(model != null, "model must not be null");
 		initializeModel(model, modelManagementOptions.pullModelStrategy());
 	}
@@ -158,7 +158,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	private OllamaEmbeddingOptions mergeOptions(@Nullable EmbeddingOptions requestOptions) {
-		OllamaEmbeddingOptions options = this.defaultOptions;
+		OllamaEmbeddingOptions options = this.options;
 
 		if (requestOptions == null) {
 			return options;
@@ -221,7 +221,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 		private @Nullable OllamaApi ollamaApi;
 
-		private OllamaEmbeddingOptions defaultOptions = OllamaEmbeddingOptions.builder()
+		private OllamaEmbeddingOptions options = OllamaEmbeddingOptions.builder()
 			.model(OllamaModel.MXBAI_EMBED_LARGE.id())
 			.build();
 
@@ -237,8 +237,8 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 			return this;
 		}
 
-		public Builder defaultOptions(OllamaEmbeddingOptions defaultOptions) {
-			this.defaultOptions = defaultOptions;
+		public Builder options(OllamaEmbeddingOptions options) {
+			this.options = options;
 			return this;
 		}
 
@@ -254,7 +254,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 		public OllamaEmbeddingModel build() {
 			Assert.state(this.ollamaApi != null, "OllamaApi must not be null");
-			return new OllamaEmbeddingModel(this.ollamaApi, this.defaultOptions, this.observationRegistry,
+			return new OllamaEmbeddingModel(this.ollamaApi, this.options, this.observationRegistry,
 					this.modelManagementOptions);
 		}
 

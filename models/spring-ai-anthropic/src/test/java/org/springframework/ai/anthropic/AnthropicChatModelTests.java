@@ -65,6 +65,7 @@ import static org.mockito.Mockito.verify;
  * with mocked SDK client.
  *
  * @author Soby Chacko
+ * @author Sebastien Deleuze
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -214,15 +215,6 @@ class AnthropicChatModelTests {
 		assertThat(toolCall.id()).isEqualTo("toolu_123");
 		assertThat(toolCall.name()).isEqualTo("getCurrentWeather");
 		assertThat(toolCall.arguments()).contains("San Francisco");
-	}
-
-	@Test
-	void getDefaultOptionsReturnsCopy() {
-		var defaultOptions1 = this.chatModel.getDefaultOptions();
-		var defaultOptions2 = this.chatModel.getDefaultOptions();
-
-		assertThat(defaultOptions1).isNotSameAs(defaultOptions2);
-		assertThat(defaultOptions1.getModel()).isEqualTo(defaultOptions2.getModel());
 	}
 
 	@Test

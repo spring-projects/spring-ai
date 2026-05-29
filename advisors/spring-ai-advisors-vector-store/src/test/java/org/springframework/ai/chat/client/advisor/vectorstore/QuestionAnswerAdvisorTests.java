@@ -55,6 +55,7 @@ import static org.mockito.Mockito.when;
  * @author Timo Salm
  * @author Alexandros Pappas
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  */
 @ExtendWith(MockitoExtension.class)
 public class QuestionAnswerAdvisorTests {
@@ -73,7 +74,7 @@ public class QuestionAnswerAdvisorTests {
 
 	@Test
 	public void qaAdvisorWithDynamicFilterExpressions() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 
 		// @formatter:off
 		given(this.chatModel.call(this.promptCaptor.capture()))
@@ -182,7 +183,7 @@ public class QuestionAnswerAdvisorTests {
 
 	@Test
 	public void qaAdvisorTakesUserTextParametersIntoAccountForSimilaritySearch() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your answer is ZXY"))),
 						ChatResponseMetadata.builder().build()));
@@ -213,7 +214,7 @@ public class QuestionAnswerAdvisorTests {
 
 	@Test
 	public void qaAdvisorTakesUserParameterizedUserMessagesIntoAccountForSimilaritySearch() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your answer is ZXY"))),
 						ChatResponseMetadata.builder().build()));
@@ -248,7 +249,7 @@ public class QuestionAnswerAdvisorTests {
 
 	@Test
 	public void qaAdvisorWithMultipleFilterParameters() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Filtered response"))),
 						ChatResponseMetadata.builder().build()));
@@ -279,7 +280,7 @@ public class QuestionAnswerAdvisorTests {
 
 	@Test
 	public void qaAdvisorWithDifferentSimilarityThresholds() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("High threshold response"))),
 						ChatResponseMetadata.builder().build()));
@@ -306,7 +307,7 @@ public class QuestionAnswerAdvisorTests {
 
 	@Test
 	public void qaAdvisorWithComplexParameterizedTemplate() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Complex template response"))),
 						ChatResponseMetadata.builder().build()));
@@ -345,7 +346,7 @@ public class QuestionAnswerAdvisorTests {
 
 	@Test
 	public void qaAdvisorWithDocumentsContainingMetadata() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Metadata response"))),
 						ChatResponseMetadata.builder().build()));
@@ -387,7 +388,7 @@ public class QuestionAnswerAdvisorTests {
 
 	@Test
 	public void qaAdvisorWithZeroTopK() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Zero docs response"))),
 						ChatResponseMetadata.builder().build()));

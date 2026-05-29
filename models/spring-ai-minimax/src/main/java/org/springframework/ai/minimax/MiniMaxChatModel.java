@@ -81,6 +81,7 @@ import org.springframework.util.CollectionUtils;
  * @author Geng Rong
  * @author Alexandros Pappas
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  * @see ChatModel
  * @see StreamingChatModel
  * @see MiniMaxApi
@@ -100,7 +101,7 @@ public class MiniMaxChatModel implements ChatModel {
 	/**
 	 * The default options used for the chat completion requests.
 	 */
-	private final MiniMaxChatOptions defaultOptions;
+	private final MiniMaxChatOptions options;
 
 	/**
 	 * Low-level access to the MiniMax API.
@@ -193,7 +194,7 @@ public class MiniMaxChatModel implements ChatModel {
 		Assert.notNull(observationRegistry, "ObservationRegistry must not be null");
 		Assert.notNull(toolExecutionEligibilityChecker, "toolExecutionEligibilityChecker cannot be null");
 		this.miniMaxApi = miniMaxApi;
-		this.defaultOptions = options;
+		this.options = options;
 		this.toolCallingManager = toolCallingManager;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
@@ -348,9 +349,22 @@ public class MiniMaxChatModel implements ChatModel {
 		return response;
 	}
 
+	/**
+	 * @since 2.0.0
+	 */
 	@Override
+	public MiniMaxChatOptions getOptions() {
+		return this.options;
+	}
+
+	/**
+	 * @deprecated use {@link #getOptions()} instead.
+	 */
+	@Deprecated(forRemoval = true)
+	@Override
+	@SuppressWarnings("removal")
 	public ChatOptions getDefaultOptions() {
-		return MiniMaxChatOptions.fromOptions(this.defaultOptions);
+		return this.options.copy();
 	}
 
 	@Override

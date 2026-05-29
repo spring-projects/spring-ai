@@ -144,6 +144,7 @@ import org.springframework.web.client.RestClientException;
  * @author Soby Chacko
  * @author Sun Yuhan
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public class BedrockProxyChatModel implements ChatModel {
@@ -160,7 +161,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 	private final BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
 
-	private final BedrockChatOptions defaultOptions;
+	private final BedrockChatOptions options;
 
 	/**
 	 * Observation registry used for instrumentation.
@@ -185,22 +186,22 @@ public class BedrockProxyChatModel implements ChatModel {
 	private final MediaFetcher mediaFetcher;
 
 	public BedrockProxyChatModel(BedrockRuntimeClient bedrockRuntimeClient,
-			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, BedrockChatOptions defaultOptions,
+			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, BedrockChatOptions options,
 			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager) {
-		this(bedrockRuntimeClient, bedrockRuntimeAsyncClient, defaultOptions, observationRegistry, toolCallingManager,
+		this(bedrockRuntimeClient, bedrockRuntimeAsyncClient, options, observationRegistry, toolCallingManager,
 				chatResponse -> chatResponse != null && chatResponse.hasToolCalls());
 	}
 
 	public BedrockProxyChatModel(BedrockRuntimeClient bedrockRuntimeClient,
-			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, BedrockChatOptions defaultOptions,
+			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, BedrockChatOptions options,
 			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager,
 			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
-		this(bedrockRuntimeClient, bedrockRuntimeAsyncClient, defaultOptions, observationRegistry, toolCallingManager,
+		this(bedrockRuntimeClient, bedrockRuntimeAsyncClient, options, observationRegistry, toolCallingManager,
 				toolExecutionEligibilityChecker, new MediaFetcher());
 	}
 
 	public BedrockProxyChatModel(BedrockRuntimeClient bedrockRuntimeClient,
-			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, BedrockChatOptions defaultOptions,
+			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, BedrockChatOptions options,
 			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager,
 			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, MediaFetcher mediaFetcher) {
 
@@ -212,7 +213,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		this.bedrockRuntimeClient = bedrockRuntimeClient;
 		this.bedrockRuntimeAsyncClient = bedrockRuntimeAsyncClient;
-		this.defaultOptions = defaultOptions;
+		this.options = options;
 		this.observationRegistry = observationRegistry;
 		this.toolCallingManager = toolCallingManager;
 		this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
@@ -332,9 +333,21 @@ public class BedrockProxyChatModel implements ChatModel {
 		return chatResponse;
 	}
 
+	/**
+	 * @since 2.0.0
+	 */
+	@Override
+	public BedrockChatOptions getOptions() {
+		return this.options;
+	}
+
+	/**
+	 * @deprecated use {@link #getOptions()} instead.
+	 */
+	@Deprecated(forRemoval = true)
 	@Override
 	public ChatOptions getDefaultOptions() {
-		return this.defaultOptions;
+		return this.options.copy();
 	}
 
 	ConverseRequest createRequest(Prompt prompt) {
@@ -941,7 +954,7 @@ public class BedrockProxyChatModel implements ChatModel {
 		private ToolExecutionEligibilityChecker toolExecutionEligibilityChecker = chatResponse -> chatResponse != null
 				&& chatResponse.hasToolCalls();
 
-		private BedrockChatOptions defaultOptions = BedrockChatOptions.builder().build();
+		private BedrockChatOptions options = BedrockChatOptions.builder().build();
 
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
@@ -1055,9 +1068,9 @@ public class BedrockProxyChatModel implements ChatModel {
 			return this;
 		}
 
-		public Builder defaultOptions(BedrockChatOptions defaultOptions) {
-			Assert.notNull(defaultOptions, "'defaultOptions' must not be null.");
-			this.defaultOptions = defaultOptions;
+		public Builder options(BedrockChatOptions options) {
+			Assert.notNull(options, "'options' must not be null.");
+			this.options = options;
 			return this;
 		}
 
@@ -1121,13 +1134,13 @@ public class BedrockProxyChatModel implements ChatModel {
 
 			if (this.toolCallingManager != null) {
 				bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
-						this.bedrockRuntimeAsyncClient, this.defaultOptions, this.observationRegistry,
+						this.bedrockRuntimeAsyncClient, this.options, this.observationRegistry,
 						this.toolCallingManager, this.toolExecutionEligibilityChecker);
 
 			}
 			else {
 				bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
-						this.bedrockRuntimeAsyncClient, this.defaultOptions, this.observationRegistry,
+						this.bedrockRuntimeAsyncClient, this.options, this.observationRegistry,
 						DEFAULT_TOOL_CALLING_MANAGER, this.toolExecutionEligibilityChecker);
 			}
 

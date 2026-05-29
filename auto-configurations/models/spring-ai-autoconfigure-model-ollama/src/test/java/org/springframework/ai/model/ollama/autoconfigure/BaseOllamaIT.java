@@ -113,7 +113,7 @@ public abstract class BaseOllamaIT {
 	 * Merge options customizer {@code other} with the options coming from the model.
 	 */
 	protected static OllamaChatOptions mergeOptions(OllamaChatModel chatModel, Builder other) {
-		return (OllamaChatOptions) chatModel.getDefaultOptions().mutate().combineWith(other).build();
+		return (OllamaChatOptions) chatModel.getOptions().mutate().combineWith(other).build();
 	}
 
 	public String getBaseUrl() {

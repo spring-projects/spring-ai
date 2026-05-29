@@ -49,6 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit tests for GoogleGenAiChatModel extended usage metadata functionality.
  *
  * @author Dan Dobrin
+ * @author Sebastien Deleuze
  * @since 1.1.0
  */
 public class GoogleGenAiChatModelExtendedUsageTests {
@@ -66,12 +67,12 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 		this.retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
 
 		// Initialize chat model with default options
-		GoogleGenAiChatOptions defaultOptions = GoogleGenAiChatOptions.builder()
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
 			.model("gemini-2.0-flash-thinking-exp")
 			.temperature(0.7)
 			.build();
 
-		this.chatModel = new TestGoogleGenAiGeminiChatModel(this.mockClient, defaultOptions, this.retryTemplate);
+		this.chatModel = new TestGoogleGenAiGeminiChatModel(this.mockClient, options, this.retryTemplate);
 	}
 
 	@Test

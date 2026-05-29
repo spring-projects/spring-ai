@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Geng Rong
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 public class ChatCompletionRequestTests {
 
@@ -85,7 +86,7 @@ public class ChatCompletionRequestTests {
 	}
 
 	@Test
-	public void defaultOptionsTools() {
+	public void optionsTools() {
 
 		final String TOOL_FUNCTION_NAME = "CurrentWeather";
 

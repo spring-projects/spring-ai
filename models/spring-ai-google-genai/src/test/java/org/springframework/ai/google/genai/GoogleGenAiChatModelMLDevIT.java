@@ -45,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * like includeServerSideToolInvocations which are MLDev-only.
  *
  * @author Dan Dobrin
+ * @author Sebastien Deleuze
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
@@ -178,7 +179,7 @@ class GoogleGenAiChatModelMLDevIT {
 		public GoogleGenAiChatModel googleGenAiChatModel(Client genAiClient) {
 			return GoogleGenAiChatModel.builder()
 				.genAiClient(genAiClient)
-				.defaultOptions(
+				.options(
 						GoogleGenAiChatOptions.builder().model(GoogleGenAiChatModel.ChatModel.GEMINI_3_5_FLASH).build())
 				.toolCallingManager(ToolCallingManager.builder().build())
 				.build();

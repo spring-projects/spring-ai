@@ -122,7 +122,7 @@ public class DeepSeekChatModelStreamingTests {
 		ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
 		this.chatModel = DeepSeekChatModel.builder()
 			.deepSeekApi(this.api)
-			.defaultOptions(DeepSeekChatOptions.builder().build())
+			.options(DeepSeekChatOptions.builder().build())
 			.toolCallingManager(toolCallingManager)
 			.retryTemplate(retryTemplate)
 			.observationRegistry(ObservationRegistry.NOOP)

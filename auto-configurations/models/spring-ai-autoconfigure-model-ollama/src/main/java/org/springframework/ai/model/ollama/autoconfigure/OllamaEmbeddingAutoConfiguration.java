@@ -60,7 +60,7 @@ public class OllamaEmbeddingAutoConfiguration {
 
 		var embeddingModel = OllamaEmbeddingModel.builder()
 			.ollamaApi(ollamaApi)
-			.defaultOptions(properties.getOptions().toOptions())
+			.options(properties.getOptions().toOptions())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.modelManagementOptions(new ModelManagementOptions(embeddingModelPullStrategy,
 					initProperties.getEmbedding().getAdditionalModels(), initProperties.getTimeout(),
