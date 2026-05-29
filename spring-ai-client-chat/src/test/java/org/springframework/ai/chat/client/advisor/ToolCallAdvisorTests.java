@@ -38,6 +38,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.quality.Strictness;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
@@ -928,6 +929,75 @@ public class ToolCallAdvisorTests {
 		return response;
 	}
 
+	/**
+	 * Reproduces the detached-span problem visible in traces when
+	 * {@link Hooks#enableAutomaticContextPropagation()} is NOT active.
+	 *
+	 * <p>
+	 * {@link DefaultAroundAdvisorChain#nextStream} writes the advisor observation into
+	 * the Reactor context via {@code contextWrite} but never opens a Micrometer
+	 * ThreadLocal scope. Without automatic context propagation, worker threads (e.g.
+	 * those created by {@code subscribeOn(boundedElastic())}) start with empty
+	 * ThreadLocals, so any observation a real streaming model would create on such a
+	 * thread has no parent and appears detached from {@code tool_calling} in traces. The
+	 * recursive stream (second LLM call) is unaffected because
+	 * {@code handleToolCallRecursion} explicitly calls {@code openScope()} before the
+	 * tool execution.
+	 */
+	@Test
+	void withoutAutomaticContextPropagation_firstModelStreamObservationIsDetached() {
+		ObservationRegistry registry = ObservationRegistry.create();
+		ToolCallAdvisor advisor = ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+
+		int[] callCount = { 0 };
+		AtomicReference<Observation> observationOnWorkerThread = new AtomicReference<>();
+
+		// Simulates a real streaming model: the actual work happens on a worker thread.
+		// Without auto-propagation no ThreadLocal is restored there, so
+		// registry.getCurrentObservation() returns null and the model span is detached.
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			callCount[0]++;
+			if (callCount[0] == 1) {
+				return Flux.defer(() -> {
+					observationOnWorkerThread.set(registry.getCurrentObservation());
+					return Flux.just(createMockResponse(true));
+				}).subscribeOn(Schedulers.boundedElastic());
+			}
+			return Flux.just(createMockResponse(false));
+		});
+
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(registry)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		Observation outerObservation = Observation.createNotStarted("invoke_workflow", registry).start();
+
+		advisor.adviseStream(request, realChain)
+			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, outerObservation))
+			.collectList()
+			.block();
+
+		outerObservation.stop();
+
+		assertThat(observationOnWorkerThread.get())
+			.as("Without Hooks.enableAutomaticContextPropagation() the advisor observation is not "
+					+ "restored to ThreadLocal on the worker thread, so the model span is detached "
+					+ "from tool_calling in traces")
+			.isNull();
+	}
+
+	// Helper classes
+
 	private static class TerminalCallAdvisor implements CallAdvisor {
 
 		private final BiFunction<ChatClientRequest, CallAdvisorChain, ChatClientResponse> responseFunction;
@@ -1234,6 +1304,64 @@ public class ToolCallAdvisorTests {
 						.isNotSameAs(record.ctx());
 				}
 			});
+		}
+
+		@Test
+		void withAutomaticContextPropagation_firstModelStreamObservationIsProperlyNested() {
+			// Counterpart to the standalone test above: with auto-propagation Reactor
+			// restores ThreadLocals from the Reactor context at every operator boundary
+			// including the subscribeOn(boundedElastic()) hop. The advisor observation
+			// written to context by DefaultAroundAdvisorChain is therefore visible on
+			// the worker thread and any model observation created there is correctly
+			// nested under tool_calling instead of appearing detached.
+			ObservationRegistry registry = ObservationRegistry.create();
+			ToolCallAdvisor advisor = ToolCallAdvisor.builder()
+				.toolCallingManager(ToolCallAdvisorTests.this.toolCallingManager)
+				.build();
+
+			ChatClientRequest request = createMockRequest();
+
+			int[] callCount = { 0 };
+			AtomicReference<Observation> observationOnWorkerThread = new AtomicReference<>();
+
+			TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+				callCount[0]++;
+				if (callCount[0] == 1) {
+					return Flux.defer(() -> {
+						observationOnWorkerThread.set(registry.getCurrentObservation());
+						return Flux.just(createMockResponse(true));
+					}).subscribeOn(Schedulers.boundedElastic());
+				}
+				return Flux.just(createMockResponse(false));
+			});
+
+			StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(registry)
+				.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+				.build();
+
+			List<Message> conversationHistory = List.of(new UserMessage("test"),
+					AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+			ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+				.conversationHistory(conversationHistory)
+				.build();
+			when(ToolCallAdvisorTests.this.toolCallingManager.executeToolCalls(any(Prompt.class),
+					any(ChatResponse.class)))
+				.thenReturn(toolExecutionResult);
+
+			Observation outerObservation = Observation.createNotStarted("invoke_workflow", registry).start();
+
+			advisor.adviseStream(request, realChain)
+				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, outerObservation))
+				.collectList()
+				.block();
+
+			outerObservation.stop();
+
+			assertThat(observationOnWorkerThread.get())
+				.as("With Hooks.enableAutomaticContextPropagation() the advisor observation is "
+						+ "restored to ThreadLocal on the worker thread, so the model span is "
+						+ "correctly nested under tool_calling in traces")
+				.isNotNull();
 		}
 
 		record StartRecord(Observation.Context ctx, ObservationView parent) {
