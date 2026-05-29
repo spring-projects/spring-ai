@@ -291,7 +291,8 @@ public class MistralAiApi {
 		MINISTRAL_3B("ministral-3b-latest"),
 		MINISTRAL_8B("ministral-8b-latest"),
 		MINISTRAL_14B("ministral-14b-latest"),
-		@Deprecated(forRemoval = true) // Retirement planed the 31st of July 2026
+		@Deprecated(forRemoval = true) // Retirement planned the 31st of July 2026
+		// It is an alias for mistral-small-latest and behaves accordingly.
 		MAGISTRAL_SMALL("magistral-small-latest"),
 		DEVSTRAL_SMALL("devstral-small-latest"),
 		MISTRAL_SMALL("mistral-small-latest"),
@@ -676,7 +677,9 @@ public class MistralAiApi {
 	 * result as JSON.
 	 * @param safePrompt Whether to inject a safety prompt before all conversations.
 	 * @param stop A list of tokens that the model should stop generating after.
-	 * @param reasoningEffort Controls the reasoning effort level for reasoning models.
+	 * @param promptMode Controls the system prompt behavior.
+	 * @param reasoningEffort Controls the reasoning effort level for adjustable reasoning
+	 * models.
 	 * @param randomSeed The seed to use for random sampling. If set, different calls will
 	 * generate deterministic results.
 	 * @param responseFormat An object specifying the format or schema that the model must
@@ -701,6 +704,7 @@ public class MistralAiApi {
 			@JsonProperty("stream") @Nullable Boolean stream,
 			@JsonProperty("safe_prompt") @Nullable Boolean safePrompt,
 			@JsonProperty("stop") @Nullable List<String> stop,
+			@JsonProperty("prompt_mode") @Nullable PromptMode promptMode,
 			@JsonProperty("reasoning_effort") @Nullable ReasoningEffort reasoningEffort,
 			@JsonProperty("random_seed") @Nullable Integer randomSeed,
 			@JsonProperty("response_format") @Nullable ResponseFormat responseFormat) {
@@ -714,7 +718,8 @@ public class MistralAiApi {
 		 * @param model ID of the model to use.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model) {
-			this(model, messages, null, null, 0.7, 1.0, null, null, null, null, false, false, null, null, null, null);
+			this(model, messages, null, null, 0.7, 1.0, null, null, null, null, false, false, null, null, null, null,
+					null);
 		}
 
 		/**
@@ -730,7 +735,7 @@ public class MistralAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature,
 				boolean stream) {
 			this(model, messages, null, null, temperature, 1.0, null, null, null, null, stream, false, null, null, null,
-					null);
+					null, null);
 		}
 
 		/**
@@ -744,7 +749,7 @@ public class MistralAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
 			this(model, messages, null, null, temperature, 1.0, null, null, null, null, false, false, null, null, null,
-					null);
+					null, null);
 		}
 
 		/**
@@ -760,7 +765,7 @@ public class MistralAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, List<FunctionTool> tools,
 				ToolChoice toolChoice) {
 			this(model, messages, tools, toolChoice, null, 1.0, null, null, null, null, false, false, null, null, null,
-					null);
+					null, null);
 		}
 
 		/**
@@ -768,7 +773,8 @@ public class MistralAiApi {
 		 * stream.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
-			this(null, messages, null, null, 0.7, 1.0, null, null, null, null, stream, false, null, null, null, null);
+			this(null, messages, null, null, 0.7, 1.0, null, null, null, null, stream, false, null, null, null, null,
+					null);
 		}
 
 		/**
@@ -789,10 +795,28 @@ public class MistralAiApi {
 		}
 
 		/**
+		 * Controls the system prompt behavior. Assignment to actual system prompts is
+		 * handled internally. A system prompt may include knowledge, cutoff date, model
+		 * capabilities, tone to use, safety guidelines...
 		 * <p>
+		 * {@link PromptMode#REASONING} Explicitly uses the default reasoning system
+		 * prompt. Applicable for native reasoning models only.
+		 * </p>
+		 */
+		public enum PromptMode {
+
+			// @formatter:off
+			@JsonProperty("reasoning")
+			REASONING
+			// @formatter:on
+
+		}
+
+		/**
 		 * Controls the reasoning effort level for adjustable reasoning models.
-		 * {@link ReasoningEffort#HIGH} enables comprehensive reasoning traces,
-		 * {@link ReasoningEffort#NONE} disables reasoning effort.
+		 * <p>
+		 * {@link ReasoningEffort#HIGH} Enables comprehensive reasoning traces,
+		 * {@link ReasoningEffort#NONE} Disables reasoning effort.
 		 * </p>
 		 */
 		public enum ReasoningEffort {

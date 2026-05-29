@@ -144,6 +144,7 @@ The prefix `spring.ai.mistralai.chat` is the property prefix that lets you confi
 | spring.ai.mistralai.chat.stop | Stop generation if this token is detected. Or if one of these tokens is detected when providing an array. | -
 | spring.ai.mistralai.chat.top-p | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or `temperature` but not both. | -
 | spring.ai.mistralai.chat.response-format | An object specifying the format that the model must output. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON. Setting to `{ "type": "json_schema" }` with a supplied schema enables native structured outputs, which guarantees the model will match your supplied JSON schema. See the <<structured-output>> section for more details.| -
+| spring.ai.mistralai.chat.prompt-mode | Controls the system prompt behavior. `reasoning` value explicitly uses the default reasoning system prompt. | -
 | spring.ai.mistralai.chat.reasoning-effort | Controls the reasoning effort level for adjustable reasoning models. Valid values include `high` or `none`. | -
 | spring.ai.mistralai.chat.tools | A list of tools the model may call. Currently, only functions are supported as a tool. Use this to provide a list of functions the model may generate JSON inputs for. | -
 | spring.ai.mistralai.chat.tool-choice | Controls which (if any) function is called by the model. `none` means the model will not call a function and instead generates a message. `auto` means the model can pick between generating a message or calling a function. Specifying a particular function via `{"type: "function", "function": {"name": "my_function"}}` forces the model to call that function. `none` is the default when no functions are present. `auto` is the default if functions are present. | -
@@ -265,6 +266,22 @@ Mistral offers two approaches to reasoning:
 
 * Adjustable: Available on Mistral Small 4 and Mistral Medium 3.5 via the `reasoning_effort` parameter. Enables the model to think to varying degrees.
 * Native: Available for the Magistral model family. These models always generate reasoning traces and are purpose-built for deep reasoning tasks.
+
+=== Reasoning Prompt Mode
+
+You can configure the reasoning prompt mode using the `REASONING` value for `promptMode` property in `MistralAiChatOptions`.
+This allows you to apply the default reasoning system prompt while using native reasoning models.
+
+[source,java]
+----
+var options = MistralAiChatOptions.builder()
+    .model(MistralAiApi.ChatModel.MAGISTRAL_MEDIUM.getValue())
+    .promptMode(MistralAiApi.ChatCompletionRequest.PromptMode.REASONING)
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt("Solve this complex math problem...", options));
+----
 
 === Reasoning Effort
 

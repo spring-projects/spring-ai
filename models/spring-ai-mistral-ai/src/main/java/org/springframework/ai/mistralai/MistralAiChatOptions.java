@@ -27,10 +27,11 @@ import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.PromptMode;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ReasoningEffort;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatModel;
 import org.springframework.ai.mistralai.api.MistralAiApi.FunctionTool;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
@@ -106,9 +107,22 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	private @Nullable List<String> stop;
 
 	/**
+	 * Controls the system prompt behavior. Assignment to actual system prompts is handled
+	 * internally. A system prompt may include knowledge, cutoff date, model capabilities,
+	 * tone to use, safety guidelines...
+	 * <p>
+	 * {@link PromptMode#REASONING} Explicitly uses the default reasoning system prompt.
+	 * Applicable for native reasoning models only.
+	 * </p>
+	 */
+	private @Nullable PromptMode promptMode;
+
+	/**
 	 * Controls the reasoning effort level for adjustable reasoning models.
-	 * {@link ReasoningEffort#HIGH} enables comprehensive reasoning traces,
-	 * {@link ReasoningEffort#NONE} disables reasoning effort.
+	 * <p>
+	 * {@link ReasoningEffort#HIGH} Enables comprehensive reasoning traces,
+	 * {@link ReasoningEffort#NONE} Disables reasoning effort.
+	 * </p>
 	 */
 	private @Nullable ReasoningEffort reasoningEffort;
 
@@ -173,7 +187,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 
 	protected MistralAiChatOptions(String model, @Nullable Double temperature, @Nullable Double topP,
 			@Nullable Integer maxTokens, @Nullable Boolean safePrompt, @Nullable Integer randomSeed,
-			@Nullable ResponseFormat responseFormat, @Nullable List<String> stop,
+			@Nullable ResponseFormat responseFormat, @Nullable List<String> stop, @Nullable PromptMode promptMode,
 			@Nullable ReasoningEffort reasoningEffort, @Nullable Double frequencyPenalty,
 			@Nullable Double presencePenalty, @Nullable Integer n, @Nullable List<FunctionTool> tools,
 			@Nullable ToolChoice toolChoice, @Nullable List<ToolCallback> toolCallbacks,
@@ -192,6 +206,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 		this.randomSeed = randomSeed;
 		this.responseFormat = responseFormat;
 		this.stop = stop;
+		this.promptMode = promptMode;
 		this.reasoningEffort = reasoningEffort;
 		if (frequencyPenalty != null) {
 			this.frequencyPenalty = frequencyPenalty;
@@ -251,6 +266,10 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 
 	public @Nullable List<String> getStop() {
 		return this.stop;
+	}
+
+	public @Nullable PromptMode getPromptMode() {
+		return this.promptMode;
 	}
 
 	public @Nullable ReasoningEffort getReasoningEffort() {
@@ -348,6 +367,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 			// Mistral AI specific
 			.safePrompt(this.safePrompt)
 			.randomSeed(this.randomSeed)
+			.promptMode(this.promptMode)
 			.reasoningEffort(this.reasoningEffort)
 			.responseFormat(this.responseFormat)
 			.n(this.n)
@@ -358,9 +378,9 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.temperature, this.topP, this.maxTokens, this.safePrompt, this.randomSeed,
-				this.responseFormat, this.stop, this.reasoningEffort, this.frequencyPenalty, this.presencePenalty,
-				this.n, this.tools, this.toolChoice, this.toolCallbacks, this.tools, this.internalToolExecutionEnabled,
-				this.toolContext);
+				this.responseFormat, this.stop, this.promptMode, this.reasoningEffort, this.frequencyPenalty,
+				this.presencePenalty, this.n, this.tools, this.toolChoice, this.toolCallbacks, this.tools,
+				this.internalToolExecutionEnabled, this.toolContext);
 	}
 
 	@Override
@@ -384,6 +404,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 				&& Objects.equals(this.randomSeed, other.randomSeed)
 				&& Objects.equals(this.responseFormat, other.responseFormat)
 				&& Objects.equals(this.stop, other.stop)
+				&& Objects.equals(this.promptMode, other.promptMode)
 				&& Objects.equals(this.reasoningEffort, other.reasoningEffort)
 				&& Objects.equals(this.frequencyPenalty, other.frequencyPenalty)
 				&& Objects.equals(this.presencePenalty, other.presencePenalty)
@@ -425,9 +446,11 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 
 		private @Nullable ToolChoice toolChoice;
 
+		private @Nullable PromptMode promptMode;
+
 		private @Nullable ReasoningEffort reasoningEffort;
 
-		public B model(MistralAiApi.@Nullable ChatModel chatModel) {
+		public B model(@Nullable ChatModel chatModel) {
 			if (chatModel != null) {
 				this.model(chatModel.getName());
 			}
@@ -449,6 +472,11 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 
 		public B stop(@Nullable List<String> stop) {
 			super.stopSequences(stop);
+			return self();
+		}
+
+		public B promptMode(@Nullable PromptMode promptMode) {
+			this.promptMode = promptMode;
 			return self();
 		}
 
@@ -513,6 +541,9 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 				if (that.toolChoice != null) {
 					this.toolChoice = that.toolChoice;
 				}
+				if (that.promptMode != null) {
+					this.promptMode = that.promptMode;
+				}
 				if (that.reasoningEffort != null) {
 					this.reasoningEffort = that.reasoningEffort;
 				}
@@ -526,7 +557,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 			// TODO: add assertions, remove SuppressWarnings
 			// Assert.state(this.model != null, "model must be set");
 			return new MistralAiChatOptions(this.model, this.temperature, this.topP, this.maxTokens, this.safePrompt,
-					this.randomSeed, this.responseFormat, this.stopSequences, this.reasoningEffort,
+					this.randomSeed, this.responseFormat, this.stopSequences, this.promptMode, this.reasoningEffort,
 					this.frequencyPenalty, this.presencePenalty, this.n, this.tools, this.toolChoice,
 					this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled, this.toolContext);
 		}

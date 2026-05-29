@@ -21,10 +21,11 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.mistralai.MistralAiChatOptions;
-import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.PromptMode;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ReasoningEffort;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatModel;
 import org.springframework.ai.mistralai.api.MistralAiApi.FunctionTool;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
@@ -37,6 +38,7 @@ import org.springframework.boot.context.properties.DeprecatedConfigurationProper
  * @author Thomas Vitale
  * @author Alexandros Pappas
  * @author Sebastien Deleuze
+ * @author Nicolas Krier
  * @since 0.8.1
  */
 @ConfigurationProperties(MistralAiChatProperties.CONFIG_PREFIX)
@@ -44,7 +46,7 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.mistralai.chat";
 
-	public static final String DEFAULT_CHAT_MODEL = MistralAiApi.ChatModel.MISTRAL_SMALL.getValue();
+	public static final String DEFAULT_CHAT_MODEL = ChatModel.MISTRAL_SMALL.getValue();
 
 	private static final Double DEFAULT_TOP_P = 1.0;
 
@@ -75,6 +77,8 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 	private @Nullable List<FunctionTool> tools;
 
 	private @Nullable ToolChoice toolChoice;
+
+	private @Nullable PromptMode promptMode;
 
 	private @Nullable ReasoningEffort reasoningEffort;
 
@@ -184,6 +188,14 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 		this.toolChoice = toolChoice;
 	}
 
+	public @Nullable PromptMode getPromptMode() {
+		return this.promptMode;
+	}
+
+	public void setPromptMode(@Nullable PromptMode promptMode) {
+		this.promptMode = promptMode;
+	}
+
 	public @Nullable ReasoningEffort getReasoningEffort() {
 		return this.reasoningEffort;
 	}
@@ -230,6 +242,9 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 		}
 		if (this.toolChoice != null) {
 			builder.toolChoice(this.toolChoice);
+		}
+		if (this.promptMode != null) {
+			builder.promptMode(this.promptMode);
 		}
 		if (this.reasoningEffort != null) {
 			builder.reasoningEffort(this.reasoningEffort);

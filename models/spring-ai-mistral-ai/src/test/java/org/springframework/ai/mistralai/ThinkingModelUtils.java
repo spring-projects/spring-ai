@@ -18,6 +18,7 @@ package org.springframework.ai.mistralai;
 
 import java.util.Set;
 
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.PromptMode;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ReasoningEffort;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatModel;
 import org.springframework.util.Assert;
@@ -41,6 +42,13 @@ public interface ThinkingModelUtils {
 		// Mistral Medium Latest does not yet target model version 3.5, so this temporary
 		// workaround is used.
 		return ChatModel.MISTRAL_MEDIUM == chatModel ? "mistral-medium-3.5" : chatModel.getValue();
+	}
+
+	static PromptMode providePromptMode(ChatModel chatModel) {
+		verifyChatModelIsReasoning(chatModel);
+
+		// Reasoning prompt mode is only supported by Magistral Medium model.
+		return ChatModel.MAGISTRAL_MEDIUM == chatModel ? PromptMode.REASONING : null;
 	}
 
 	static ReasoningEffort provideReasoningEffort(ChatModel chatModel) {

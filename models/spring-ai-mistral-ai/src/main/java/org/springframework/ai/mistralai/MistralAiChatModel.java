@@ -486,6 +486,7 @@ public class MistralAiChatModel implements ChatModel {
 				request.stream(),
 				ModelOptionsUtils.mergeOption(options.getSafePrompt(), request.safePrompt()),
 				ModelOptionsUtils.mergeOption(options.getStop(), request.stop()),
+				ModelOptionsUtils.mergeOption(options.getPromptMode(), request.promptMode()),
 				ModelOptionsUtils.mergeOption(options.getReasoningEffort(), request.reasoningEffort()),
 				ModelOptionsUtils.mergeOption(options.getRandomSeed(), request.randomSeed()),
 				ModelOptionsUtils.mergeOption(options.getResponseFormat(), request.responseFormat())

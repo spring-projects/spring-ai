@@ -654,9 +654,14 @@ class MistralAiChatModelIT {
 	}
 
 	private static Prompt createThinkingPrompt(MistralAiApi.ChatModel chatModel) {
+		var promptMode = ThinkingModelUtils.providePromptMode(chatModel);
 		var reasoningEffort = ThinkingModelUtils.provideReasoningEffort(chatModel);
 		var model = ThinkingModelUtils.provideChatModelValue(chatModel);
-		var chatOptions = MistralAiChatOptions.builder().model(model).reasoningEffort(reasoningEffort).build();
+		var chatOptions = MistralAiChatOptions.builder()
+			.model(model)
+			.promptMode(promptMode)
+			.reasoningEffort(reasoningEffort)
+			.build();
 		var systemMessage = new SystemMessage("You are a helpful assistant providing accurate short answers.");
 		var userMessage = new UserMessage(
 				"What is the first planet of the solar system based on the mass in descending order?");

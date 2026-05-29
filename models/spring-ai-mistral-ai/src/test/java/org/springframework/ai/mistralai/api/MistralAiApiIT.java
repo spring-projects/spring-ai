@@ -262,6 +262,7 @@ class MistralAiApiIT {
 	}
 
 	private static ChatCompletionRequest createChatCompletionRequest(MistralAiApi.ChatModel chatModel, boolean stream) {
+		var promptMode = ThinkingModelUtils.providePromptMode(chatModel);
 		var reasoningEffort = ThinkingModelUtils.provideReasoningEffort(chatModel);
 		var model = ThinkingModelUtils.provideChatModelValue(chatModel);
 		var systemChatCompletionMessage = new ChatCompletionMessage(
@@ -271,7 +272,7 @@ class MistralAiApiIT {
 		var chatCompletionMessages = List.of(systemChatCompletionMessage, userChatCompletionMessage);
 
 		return new ChatCompletionRequest(model, chatCompletionMessages, null, null, 0.7, 1.0, null, null, null, null,
-				stream, false, null, reasoningEffort, null, null);
+				stream, false, null, promptMode, reasoningEffort, null, null);
 	}
 
 	private static boolean hasContent(List<ChatCompletionChunk> chatCompletionChunks,
