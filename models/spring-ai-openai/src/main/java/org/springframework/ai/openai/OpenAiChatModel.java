@@ -179,8 +179,20 @@ public final class OpenAiChatModel implements ChatModel {
 	/**
 	 * Gets the chat options for this model.
 	 * @return the chat options
+	 * @since 2.0.0
 	 */
+	@Override
 	public OpenAiChatOptions getOptions() {
+		return this.options;
+	}
+
+	/**
+	 * @deprecated use {@link #getOptions()} instead.
+	 */
+	@Override
+	@Deprecated(forRemoval = true)
+	@SuppressWarnings("removal")
+	public ChatOptions getDefaultOptions() {
 		return this.options;
 	}
 
@@ -1133,11 +1145,6 @@ public final class OpenAiChatModel implements ChatModel {
 		}).toList();
 	}
 
-	@Override
-	public ChatOptions getDefaultOptions() {
-		return this.options.copy();
-	}
-
 	/**
 	 * Use the provided convention for reporting observation data
 	 * @param observationConvention The provided convention
@@ -1163,6 +1170,7 @@ public final class OpenAiChatModel implements ChatModel {
 	 * @author luocongqiu
 	 * @author Hyunjoon Choi
 	 * @author Jonghoon Park
+	 * @author Sebastien Deleuze
 	 */
 	public static class ResponseFormat {
 

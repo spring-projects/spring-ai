@@ -86,7 +86,7 @@ class DefaultChatClientTests {
 
 	private static ChatModel mockChatModel() {
 		ChatModel chatModel = mock(ChatModel.class);
-		when(chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		return chatModel;
 	}
 
@@ -2456,7 +2456,7 @@ class DefaultChatClientTests {
 	void whenToolCallbackProviderThenLazilyEvaluatedOnCall() {
 		ChatModel chatModel = mockChatModel();
 		// use options that at least support tool calls for this test to make sense
-		when(chatModel.getDefaultOptions()).thenReturn(ToolCallingChatOptions.builder().build());
+		when(chatModel.getOptions()).thenReturn(ToolCallingChatOptions.builder().build());
 		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
 		given(chatModel.call(promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));

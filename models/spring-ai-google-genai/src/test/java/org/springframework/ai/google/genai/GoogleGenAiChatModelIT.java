@@ -440,7 +440,7 @@ class GoogleGenAiChatModelIT {
 		GoogleGenAiChatModel chatModelWithTools = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient())
 			.toolCallingManager(toolCallingManager)
-			.defaultOptions(GoogleGenAiChatOptions.builder()
+			.options(GoogleGenAiChatOptions.builder()
 				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
 				.temperature(0.1)
 				.build())
@@ -475,7 +475,7 @@ class GoogleGenAiChatModelIT {
 		GoogleGenAiChatModel chatModelWithTools = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient())
 			.toolCallingManager(toolCallingManager)
-			.defaultOptions(GoogleGenAiChatOptions.builder()
+			.options(GoogleGenAiChatOptions.builder()
 				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
 				.temperature(0.1)
 				.build())
@@ -499,7 +499,7 @@ class GoogleGenAiChatModelIT {
 	void testThinkingBudgetGeminiProAutomaticDecisionByModel() {
 		GoogleGenAiChatModel chatModelWithThinkingBudget = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient())
-			.defaultOptions(GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_2_5_PRO).temperature(0.1).build())
+			.options(GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_2_5_PRO).temperature(0.1).build())
 			.build();
 
 		ChatClient chatClient = ChatClient.builder(chatModelWithThinkingBudget).build();
@@ -520,7 +520,7 @@ class GoogleGenAiChatModelIT {
 	void testThinkingBudgetGeminiProMinBudget() {
 		GoogleGenAiChatModel chatModelWithThinkingBudget = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient())
-			.defaultOptions(GoogleGenAiChatOptions.builder()
+			.options(GoogleGenAiChatOptions.builder()
 				.model(ChatModel.GEMINI_2_5_PRO)
 				.temperature(0.1)
 				.thinkingBudget(128)
@@ -545,7 +545,7 @@ class GoogleGenAiChatModelIT {
 	void testThinkingBudgetGeminiFlashDefaultBudget() {
 		GoogleGenAiChatModel chatModelWithThinkingBudget = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient())
-			.defaultOptions(GoogleGenAiChatOptions.builder()
+			.options(GoogleGenAiChatOptions.builder()
 				.model(ChatModel.GEMINI_2_5_FLASH)
 				.temperature(0.1)
 				.thinkingBudget(8192)
@@ -570,7 +570,7 @@ class GoogleGenAiChatModelIT {
 	void testThinkingBudgetGeminiFlashThinkingTurnedOff() {
 		GoogleGenAiChatModel chatModelWithThinkingBudget = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient())
-			.defaultOptions(GoogleGenAiChatOptions.builder()
+			.options(GoogleGenAiChatOptions.builder()
 				.model(ChatModel.GEMINI_2_5_FLASH)
 				.temperature(0.1)
 				.thinkingBudget(0)
@@ -602,7 +602,7 @@ class GoogleGenAiChatModelIT {
 	void testThinkingLevelUnsupportedModels() {
 		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient())
-			.defaultOptions(GoogleGenAiChatOptions.builder()
+			.options(GoogleGenAiChatOptions.builder()
 				.model(ChatModel.GEMINI_2_5_FLASH)
 				.temperature(0.1)
 				.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
@@ -622,7 +622,7 @@ class GoogleGenAiChatModelIT {
 	void testThinkingLevelLow() {
 		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClientGlobal())
-			.defaultOptions(GoogleGenAiChatOptions.builder()
+			.options(GoogleGenAiChatOptions.builder()
 				.model(ChatModel.GEMINI_3_PRO_PREVIEW)
 				.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
 				.build())
@@ -641,7 +641,7 @@ class GoogleGenAiChatModelIT {
 	void testThinkingLevelHigh() {
 		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClientGlobal())
-			.defaultOptions(GoogleGenAiChatOptions.builder()
+			.options(GoogleGenAiChatOptions.builder()
 				.model(ChatModel.GEMINI_3_PRO_PREVIEW)
 				.temperature(0.1)
 				.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
@@ -676,7 +676,7 @@ class GoogleGenAiChatModelIT {
 	void testThinkingLevelWithBudgetCombinedExpectsError() {
 		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClientGlobal())
-			.defaultOptions(GoogleGenAiChatOptions.builder()
+			.options(GoogleGenAiChatOptions.builder()
 				.model(ChatModel.GEMINI_3_PRO_PREVIEW)
 				.temperature(0.1)
 				.thinkingBudget(4096)
@@ -745,7 +745,7 @@ class GoogleGenAiChatModelIT {
 		public GoogleGenAiChatModel vertexAiEmbedding(Client genAiClient) {
 			return GoogleGenAiChatModel.builder()
 				.genAiClient(genAiClient)
-				.defaultOptions(
+				.options(
 						GoogleGenAiChatOptions.builder().model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH).build())
 				.build();
 		}

@@ -39,6 +39,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Thomas Vitale
  * @author Sun Yuhan
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 final class DefaultChatClientUtils {
@@ -100,7 +101,7 @@ final class DefaultChatClientUtils {
 		 * ==========* OPTIONS * ==========
 		 */
 
-		ChatOptions.Builder<?> builder = inputRequest.getChatModel().getDefaultOptions().mutate();
+		ChatOptions.Builder<?> builder = inputRequest.getChatModel().getOptions().mutate();
 		if (inputRequest.getOptionsCustomizer() != null) {
 			builder = builder.combineWith(inputRequest.getOptionsCustomizer());
 		}

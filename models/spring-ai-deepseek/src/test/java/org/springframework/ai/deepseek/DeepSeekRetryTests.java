@@ -47,6 +47,7 @@ import static org.mockito.BDDMockito.given;
 
 /**
  * @author Geng Rong
+ * @author Sebastien Deleuze
  */
 @SuppressWarnings("unchecked")
 @ExtendWith(MockitoExtension.class)
@@ -66,7 +67,7 @@ public class DeepSeekRetryTests {
 
 		this.chatModel = DeepSeekChatModel.builder()
 			.deepSeekApi(this.deepSeekApi)
-			.defaultOptions(DeepSeekChatOptions.builder().model(DeepSeekApi.DEFAULT_CHAT_MODEL).build())
+			.options(DeepSeekChatOptions.builder().model(DeepSeekApi.DEFAULT_CHAT_MODEL).build())
 			.retryTemplate(retryTemplate)
 			.build();
 	}

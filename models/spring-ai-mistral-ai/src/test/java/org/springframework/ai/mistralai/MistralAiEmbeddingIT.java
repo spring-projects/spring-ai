@@ -60,7 +60,7 @@ class MistralAiEmbeddingIT {
 
 	@ParameterizedTest
 	@CsvSource({ "mistral-embed, 1024", "codestral-embed, 1536" })
-	void defaultOptionsEmbedding(String model, int dimensions) {
+	void optionsEmbedding(String model, int dimensions) {
 		var mistralAiEmbeddingOptions = MistralAiEmbeddingOptions.builder().model(model).build();
 		var anotherMistralAiEmbeddingModel = MistralAiEmbeddingModel.builder()
 			.mistralAiApi(this.mistralAiApi)

@@ -108,7 +108,7 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 		public OllamaEmbeddingModel ollamaEmbedding(OllamaApi ollamaApi) {
 			return OllamaEmbeddingModel.builder()
 				.ollamaApi(ollamaApi)
-				.defaultOptions(OllamaEmbeddingOptions.builder().model(MODEL).build())
+				.options(OllamaEmbeddingOptions.builder().model(MODEL).build())
 				.modelManagementOptions(ModelManagementOptions.builder()
 					.pullModelStrategy(PullModelStrategy.WHEN_MISSING)
 					.additionalModels(List.of(ADDITIONAL_MODEL))

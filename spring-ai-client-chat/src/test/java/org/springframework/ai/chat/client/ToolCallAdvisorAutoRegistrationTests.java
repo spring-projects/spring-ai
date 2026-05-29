@@ -75,6 +75,7 @@ import static org.mockito.Mockito.when;
  * forwarding to the model, proving it — not the model — owns the tool-call lifecycle.
  *
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 @ExtendWith(MockitoExtension.class)
 class ToolCallAdvisorAutoRegistrationTests {
@@ -89,7 +90,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 
 	@BeforeEach
 	void setup() {
-		lenient().when(this.chatModel.getDefaultOptions()).thenReturn(DefaultToolCallingChatOptions.builder().build());
+		lenient().when(this.chatModel.getOptions()).thenReturn(DefaultToolCallingChatOptions.builder().build());
 		this.weatherTool = FunctionToolCallback.builder("getWeather", (CityInput in) -> in.city() + ": 25C")
 			.description("Get weather for a city")
 			.inputType(CityInput.class)
@@ -200,10 +201,10 @@ class ToolCallAdvisorAutoRegistrationTests {
 		}
 
 		@Test
-		void autoRegistersWhenToolsInModelDefaultOptions() {
+		void autoRegistersWhenToolsInModelOptions() {
 			stubTwoCallCycle();
 			// Override default: model already has the weather tool baked into its options
-			when(chatModel.getDefaultOptions())
+			when(chatModel.getOptions())
 				.thenReturn(DefaultToolCallingChatOptions.builder().toolCallbacks(List.of(weatherTool)).build());
 
 			var counter = new ChainIterationCountingAdvisor();

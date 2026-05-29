@@ -225,7 +225,7 @@ public class OllamaEmbeddingOptionsTestsIT extends BaseOllamaIT {
 		public OllamaEmbeddingModel ollamaEmbedding(OllamaApi ollamaApi) {
 			return OllamaEmbeddingModel.builder()
 				.ollamaApi(ollamaApi)
-				.defaultOptions(OllamaEmbeddingOptions.builder().model(MODEL).build())
+				.options(OllamaEmbeddingOptions.builder().model(MODEL).build())
 				.build();
 		}
 

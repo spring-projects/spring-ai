@@ -45,6 +45,7 @@ import org.springframework.util.Assert;
  *
  * @author Ahmed Yousri
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 public final class OpenAiModerationModel implements ModerationModel {
 
@@ -52,27 +53,25 @@ public final class OpenAiModerationModel implements ModerationModel {
 
 	private final OpenAIClient openAiClient;
 
-	private final OpenAiModerationOptions defaultOptions;
+	private final OpenAiModerationOptions options;
 
 	private OpenAiModerationModel(Builder builder) {
 		if (builder.options == null) {
-			this.defaultOptions = OpenAiModerationOptions.builder()
+			this.options = OpenAiModerationOptions.builder()
 				.model(OpenAiModerationOptions.DEFAULT_MODERATION_MODEL)
 				.build();
 		}
 		else {
-			this.defaultOptions = builder.options;
+			this.options = builder.options;
 		}
 
 		this.openAiClient = java.util.Objects.requireNonNullElseGet(builder.openAiClient,
-				() -> org.springframework.ai.openai.setup.OpenAiSetup.setupSyncClient(this.defaultOptions.getBaseUrl(),
-						this.defaultOptions.getApiKey(), this.defaultOptions.getCredential(),
-						this.defaultOptions.getMicrosoftDeploymentName(),
-						this.defaultOptions.getMicrosoftFoundryServiceVersion(),
-						this.defaultOptions.getOrganizationId(), this.defaultOptions.isMicrosoftFoundry(),
-						this.defaultOptions.isGitHubModels(), this.defaultOptions.getModel(),
-						this.defaultOptions.getTimeout(), this.defaultOptions.getMaxRetries(),
-						this.defaultOptions.getProxy(), this.defaultOptions.getCustomHeaders()));
+				() -> org.springframework.ai.openai.setup.OpenAiSetup.setupSyncClient(this.options.getBaseUrl(),
+						this.options.getApiKey(), this.options.getCredential(),
+						this.options.getMicrosoftDeploymentName(), this.options.getMicrosoftFoundryServiceVersion(),
+						this.options.getOrganizationId(), this.options.isMicrosoftFoundry(),
+						this.options.isGitHubModels(), this.options.getModel(), this.options.getTimeout(),
+						this.options.getMaxRetries(), this.options.getProxy(), this.options.getCustomHeaders()));
 	}
 
 	public static Builder builder() {
@@ -87,7 +86,7 @@ public final class OpenAiModerationModel implements ModerationModel {
 	public ModerationResponse call(ModerationPrompt moderationPrompt) {
 		String text = moderationPrompt.getInstructions().getText();
 
-		OpenAiModerationOptions options = merge(moderationPrompt.getOptions(), this.defaultOptions);
+		OpenAiModerationOptions options = merge(moderationPrompt.getOptions(), this.options);
 
 		ModerationCreateParams.Builder builder = ModerationCreateParams.builder()
 			.input(ModerationCreateParams.Input.ofString(text));
@@ -169,7 +168,7 @@ public final class OpenAiModerationModel implements ModerationModel {
 	}
 
 	public OpenAiModerationOptions getOptions() {
-		return this.defaultOptions;
+		return this.options;
 	}
 
 	public static final class Builder {
@@ -183,7 +182,7 @@ public final class OpenAiModerationModel implements ModerationModel {
 
 		private Builder(OpenAiModerationModel model) {
 			this.openAiClient = model.openAiClient;
-			this.options = model.defaultOptions;
+			this.options = model.options;
 		}
 
 		public Builder openAiClient(OpenAIClient openAiClient) {

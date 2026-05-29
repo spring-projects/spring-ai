@@ -43,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * levels (MINIMAL, LOW, MEDIUM, HIGH).
  *
  * @author Dan Dobrin
+ * @author Sebastien Deleuze
  */
 @EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
 class GoogleGenAiThinkingLevelIT {
@@ -89,7 +90,7 @@ class GoogleGenAiThinkingLevelIT {
 	void testGemini3ProRejectsUnsupportedLevels(String modelName, GoogleGenAiThinkingLevel level) {
 		var chatModel = GoogleGenAiChatModel.builder()
 			.genAiClient(this.genAiClient)
-			.defaultOptions(GoogleGenAiChatOptions.builder().model(modelName).thinkingLevel(level).build())
+			.options(GoogleGenAiChatOptions.builder().model(modelName).thinkingLevel(level).build())
 			.toolCallingManager(ToolCallingManager.builder().build())
 			.observationRegistry(ObservationRegistry.NOOP)
 			.build();
@@ -108,7 +109,7 @@ class GoogleGenAiThinkingLevelIT {
 	void testGemini3ProAcceptsSupportedLevels(String modelName, GoogleGenAiThinkingLevel level) {
 		var chatModel = GoogleGenAiChatModel.builder()
 			.genAiClient(this.genAiClient)
-			.defaultOptions(GoogleGenAiChatOptions.builder().model(modelName).thinkingLevel(level).build())
+			.options(GoogleGenAiChatOptions.builder().model(modelName).thinkingLevel(level).build())
 			.toolCallingManager(ToolCallingManager.builder().build())
 			.observationRegistry(ObservationRegistry.NOOP)
 			.build();
@@ -127,7 +128,7 @@ class GoogleGenAiThinkingLevelIT {
 	void testGemini3FlashAcceptsAllLevels(String modelName, GoogleGenAiThinkingLevel level) {
 		var chatModel = GoogleGenAiChatModel.builder()
 			.genAiClient(this.genAiClient)
-			.defaultOptions(GoogleGenAiChatOptions.builder().model(modelName).thinkingLevel(level).build())
+			.options(GoogleGenAiChatOptions.builder().model(modelName).thinkingLevel(level).build())
 			.toolCallingManager(ToolCallingManager.builder().build())
 			.observationRegistry(ObservationRegistry.NOOP)
 			.build();

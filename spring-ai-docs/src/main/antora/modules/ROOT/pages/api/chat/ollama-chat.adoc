@@ -767,7 +767,7 @@ var ollamaApi = OllamaApi.builder().build();
 
 var chatModel = OllamaChatModel.builder()
                     .ollamaApi(ollamaApi)
-                    .defaultOptions(
+                    .options(
                         OllamaChatOptions.builder()
                             .model(OllamaModel.MISTRAL)
                             .temperature(0.9)

@@ -110,7 +110,7 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 			});
 			return OllamaChatModel.builder()
 				.ollamaApi(ollamaApi)
-				.defaultOptions(OllamaChatOptions.builder().model(MODEL).temperature(0.9).build())
+				.options(OllamaChatOptions.builder().model(MODEL).temperature(0.9).build())
 				.retryTemplate(retryTemplate)
 				.build();
 		}

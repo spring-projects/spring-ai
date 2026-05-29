@@ -47,6 +47,7 @@ import org.springframework.core.retry.RetryTemplate;
  * @author Ilayaperumal Gopinathan
  * @author Jonghoon Park
  * @author Yanming Zhou
+ * @author Sebastien Deleuze
  * @since 0.8.0
  */
 @AutoConfiguration
@@ -69,7 +70,7 @@ public class OllamaChatAutoConfiguration {
 
 		var chatModel = OllamaChatModel.builder()
 			.ollamaApi(ollamaApi)
-			.defaultOptions(properties.toOptions())
+			.options(properties.toOptions())
 			.toolCallingManager(toolCallingManager)
 			.toolExecutionEligibilityPredicate(
 					ollamaToolExecutionEligibilityPredicate.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))

@@ -88,6 +88,7 @@ import org.springframework.util.StringUtils;
  * @author Alexandros Pappas
  * @author Ilayaperumal Gopinathan
  * @author Sun Yuhan
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public class OllamaChatModel implements ChatModel {
@@ -120,7 +121,7 @@ public class OllamaChatModel implements ChatModel {
 
 	private final OllamaApi chatApi;
 
-	private final OllamaChatOptions defaultOptions;
+	private final OllamaChatOptions options;
 
 	private final ObservationRegistry observationRegistry;
 
@@ -140,31 +141,31 @@ public class OllamaChatModel implements ChatModel {
 
 	private final RetryTemplate retryTemplate;
 
-	public OllamaChatModel(OllamaApi ollamaApi, OllamaChatOptions defaultOptions, ToolCallingManager toolCallingManager,
+	public OllamaChatModel(OllamaApi ollamaApi, OllamaChatOptions options, ToolCallingManager toolCallingManager,
 			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
-		this(ollamaApi, defaultOptions, toolCallingManager, observationRegistry, modelManagementOptions,
+		this(ollamaApi, options, toolCallingManager, observationRegistry, modelManagementOptions,
 				new DefaultToolExecutionEligibilityPredicate(), RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
-	public OllamaChatModel(OllamaApi ollamaApi, OllamaChatOptions defaultOptions, ToolCallingManager toolCallingManager,
+	public OllamaChatModel(OllamaApi ollamaApi, OllamaChatOptions options, ToolCallingManager toolCallingManager,
 			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions,
 			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate, RetryTemplate retryTemplate) {
 
 		Assert.notNull(ollamaApi, "ollamaApi must not be null");
-		Assert.notNull(defaultOptions, "defaultOptions must not be null");
+		Assert.notNull(options, "options must not be null");
 		Assert.notNull(toolCallingManager, "toolCallingManager must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
 		Assert.notNull(modelManagementOptions, "modelManagementOptions must not be null");
 		Assert.notNull(toolExecutionEligibilityPredicate, "toolExecutionEligibilityPredicate must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
 		this.chatApi = ollamaApi;
-		this.defaultOptions = defaultOptions;
+		this.options = options;
 		this.toolCallingManager = toolCallingManager;
 		this.observationRegistry = observationRegistry;
 		this.modelManager = new OllamaModelManager(this.chatApi, modelManagementOptions);
 		this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
 		this.retryTemplate = retryTemplate;
-		String model = defaultOptions.getModel();
+		String model = options.getModel();
 		Assert.state(model != null, "model must not be null");
 		initializeModel(model, modelManagementOptions.pullModelStrategy());
 	}
@@ -542,9 +543,22 @@ public class OllamaChatModel implements ChatModel {
 		}).toList();
 	}
 
+	/**
+	 * @since 2.0.0
+	 */
 	@Override
+	public OllamaChatOptions getOptions() {
+		return this.options;
+	}
+
+	/**
+	 * @deprecated use {@link #getOptions()} instead.
+	 */
+	@Deprecated(forRemoval = true)
+	@Override
+	@SuppressWarnings("removal")
 	public ChatOptions getDefaultOptions() {
-		return OllamaChatOptions.fromOptions(this.defaultOptions);
+		return this.options.copy();
 	}
 
 	/**
@@ -569,7 +583,7 @@ public class OllamaChatModel implements ChatModel {
 
 		private @Nullable OllamaApi ollamaApi;
 
-		private OllamaChatOptions defaultOptions = OllamaChatOptions.builder().model(OllamaModel.MISTRAL.id()).build();
+		private OllamaChatOptions options = OllamaChatOptions.builder().model(OllamaModel.MISTRAL.id()).build();
 
 		private @Nullable ToolCallingManager toolCallingManager;
 
@@ -589,8 +603,8 @@ public class OllamaChatModel implements ChatModel {
 			return this;
 		}
 
-		public Builder defaultOptions(OllamaChatOptions defaultOptions) {
-			this.defaultOptions = defaultOptions;
+		public Builder options(OllamaChatOptions options) {
+			this.options = options;
 			return this;
 		}
 
@@ -642,7 +656,7 @@ public class OllamaChatModel implements ChatModel {
 
 		public OllamaChatModel build() {
 			Assert.state(this.ollamaApi != null, "OllamaApi must not be null");
-			return new OllamaChatModel(this.ollamaApi, this.defaultOptions,
+			return new OllamaChatModel(this.ollamaApi, this.options,
 					Objects.requireNonNullElse(this.toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER),
 					this.observationRegistry, this.modelManagementOptions, this.toolExecutionEligibilityPredicate,
 					this.retryTemplate);

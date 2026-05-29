@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class PostgresMlEmbeddingOptionsTests {
 
 	@Test
-	public void defaultOptions() {
+	public void options() {
 		PostgresMlEmbeddingOptions options = PostgresMlEmbeddingOptions.builder().build();
 
 		assertThat(options.getTransformer()).isEqualTo(PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL);

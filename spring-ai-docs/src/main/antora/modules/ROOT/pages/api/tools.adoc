@@ -275,7 +275,7 @@ WARNING: Default tools are shared across all the chat requests performed by that
 ToolCallback[] dateTimeTools = ToolCallbacks.from(new DateTimeTools());
 ChatModel chatModel = OllamaChatModel.builder()
     .ollamaApi(OllamaApi.builder().build())
-    .defaultOptions(ToolCallingChatOptions.builder()
+    .options(ToolCallingChatOptions.builder()
             .toolCallbacks(dateTimeTools)
             .build())
     .build();
@@ -443,7 +443,7 @@ WARNING: Default tools are shared across all the chat requests performed by that
 ToolCallback toolCallback = ...
 ChatModel chatModel = OllamaChatModel.builder()
     .ollamaApi(OllamaApi.builder().build())
-    .defaultOptions(ToolCallingChatOptions.builder()
+    .options(ToolCallingChatOptions.builder()
             .toolCallbacks(toolCallback)
             .build())
     .build();
@@ -565,7 +565,7 @@ WARNING: Default tools are shared across all the chat requests performed by that
 ToolCallback toolCallback = ...
 ChatModel chatModel = OllamaChatModel.builder()
     .ollamaApi(OllamaApi.builder().build())
-    .defaultOptions(ToolCallingChatOptions.builder()
+    .options(ToolCallingChatOptions.builder()
             .toolCallbacks(toolCallback)
             .build())
     .build();
@@ -676,7 +676,7 @@ WARNING: Default tools are shared across all the chat requests performed by that
 ----
 ChatModel chatModel = OllamaChatModel.builder()
     .ollamaApi(OllamaApi.builder().build())
-    .defaultOptions(ToolCallingChatOptions.builder()
+    .options(ToolCallingChatOptions.builder()
             .toolNames("currentWeather")
             .build())
     .build();

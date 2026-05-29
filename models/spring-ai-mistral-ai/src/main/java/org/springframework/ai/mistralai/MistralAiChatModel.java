@@ -108,7 +108,7 @@ public class MistralAiChatModel implements ChatModel {
 	/**
 	 * The default options used for the chat completion requests.
 	 */
-	private final MistralAiChatOptions defaultOptions;
+	private final MistralAiChatOptions options;
 
 	/**
 	 * Low-level access to the Mistral API.
@@ -137,17 +137,17 @@ public class MistralAiChatModel implements ChatModel {
 	 */
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
-	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions defaultOptions,
+	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions options,
 			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
 			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 		Assert.notNull(mistralAiApi, "mistralAiApi cannot be null");
-		Assert.notNull(defaultOptions, "defaultOptions cannot be null");
+		Assert.notNull(options, "options cannot be null");
 		Assert.notNull(toolCallingManager, "toolCallingManager cannot be null");
 		Assert.notNull(retryTemplate, "retryTemplate cannot be null");
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
 		Assert.notNull(toolExecutionEligibilityPredicate, "toolExecutionEligibilityPredicate cannot be null");
 		this.mistralAiApi = mistralAiApi;
-		this.defaultOptions = defaultOptions;
+		this.options = options;
 		this.toolCallingManager = toolCallingManager;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
@@ -586,9 +586,22 @@ public class MistralAiChatModel implements ChatModel {
 		}).toList();
 	}
 
+	/**
+	 * @since 2.0.0
+	 */
 	@Override
+	public MistralAiChatOptions getOptions() {
+		return this.options;
+	}
+
+	/**
+	 * @deprecated use {@link #getOptions()} instead.
+	 */
+	@Deprecated(forRemoval = true)
+	@Override
+	@SuppressWarnings("removal")
 	public ChatOptions getDefaultOptions() {
-		return MistralAiChatOptions.fromOptions(this.defaultOptions);
+		return this.options.copy();
 	}
 
 	/**
@@ -608,7 +621,7 @@ public class MistralAiChatModel implements ChatModel {
 
 		private @Nullable MistralAiApi mistralAiApi;
 
-		private MistralAiChatOptions defaultOptions = MistralAiChatOptions.builder()
+		private MistralAiChatOptions options = MistralAiChatOptions.builder()
 			.temperature(0.7)
 			.topP(1.0)
 			.safePrompt(false)
@@ -631,8 +644,8 @@ public class MistralAiChatModel implements ChatModel {
 			return this;
 		}
 
-		public Builder defaultOptions(MistralAiChatOptions defaultOptions) {
-			this.defaultOptions = defaultOptions;
+		public Builder options(MistralAiChatOptions options) {
+			this.options = options;
 			return this;
 		}
 
@@ -679,8 +692,8 @@ public class MistralAiChatModel implements ChatModel {
 
 		public MistralAiChatModel build() {
 			Assert.state(this.mistralAiApi != null, "MistralAiApi must not be null");
-			return new MistralAiChatModel(this.mistralAiApi, this.defaultOptions, this.toolCallingManager,
-					this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
+			return new MistralAiChatModel(this.mistralAiApi, this.options, this.toolCallingManager, this.retryTemplate,
+					this.observationRegistry, this.toolExecutionEligibilityPredicate);
 		}
 
 	}

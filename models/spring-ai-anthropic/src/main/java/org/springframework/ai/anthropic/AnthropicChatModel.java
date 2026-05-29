@@ -125,6 +125,7 @@ import org.springframework.util.MimeType;
  * @author Jonghoon Park
  * @author Soby Chacko
  * @author Austin Dase
+ * @author Sebastien Deleuze
  * @since 1.0.0
  * @see AnthropicChatOptions
  * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
@@ -207,9 +208,21 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	/**
 	 * Gets the chat options for this model.
 	 * @return the chat options
+	 * @since 2.0.0
 	 */
+	@Override
 	public AnthropicChatOptions getOptions() {
 		return this.options;
+	}
+
+	/**
+	 * @deprecated use {@link #getOptions()} instead.
+	 */
+	@Deprecated(forRemoval = true)
+	@Override
+	@SuppressWarnings("removal")
+	public ChatOptions getDefaultOptions() {
+		return this.options.copy();
 	}
 
 	/**
@@ -1455,11 +1468,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			return ToolChoice.ofTool(toolChoice.asTool().toBuilder().disableParallelToolUse(true).build());
 		}
 		return toolChoice;
-	}
-
-	@Override
-	public ChatOptions getDefaultOptions() {
-		return this.options.copy();
 	}
 
 	/**

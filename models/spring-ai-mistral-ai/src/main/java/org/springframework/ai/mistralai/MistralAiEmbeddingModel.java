@@ -71,7 +71,7 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 
-	private final MistralAiEmbeddingOptions defaultOptions;
+	private final MistralAiEmbeddingOptions options;
 
 	private final MetadataMode metadataMode;
 
@@ -99,7 +99,7 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 		this.mistralAiApi = mistralAiApi;
 		this.metadataMode = metadataMode;
-		this.defaultOptions = options;
+		this.options = options;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
 	}
@@ -149,18 +149,18 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	private EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
 		EmbeddingOptions requestOptions = embeddingRequest.getOptions();
-		MistralAiEmbeddingOptions mergedOptions = this.defaultOptions;
+		MistralAiEmbeddingOptions mergedOptions = this.options;
 
 		if (requestOptions != null) {
 			MistralAiEmbeddingOptions.Builder builder = MistralAiEmbeddingOptions.builder()
-				.model(ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.defaultOptions.getModel()));
+				.model(ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.options.getModel()));
 
 			if (requestOptions instanceof MistralAiEmbeddingOptions mistralOptions) {
 				builder.encodingFormat(ModelOptionsUtils.mergeOption(mistralOptions.getEncodingFormat(),
-						this.defaultOptions.getEncodingFormat()));
+						this.options.getEncodingFormat()));
 			}
 			else {
-				builder.encodingFormat(this.defaultOptions.getEncodingFormat());
+				builder.encodingFormat(this.options.getEncodingFormat());
 			}
 			mergedOptions = builder.build();
 		}
@@ -193,7 +193,7 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public int dimensions() {
-		return KNOWN_EMBEDDING_DIMENSIONS.getOrDefault(this.defaultOptions.getModel(), super.dimensions());
+		return KNOWN_EMBEDDING_DIMENSIONS.getOrDefault(this.options.getModel(), super.dimensions());
 	}
 
 	/**

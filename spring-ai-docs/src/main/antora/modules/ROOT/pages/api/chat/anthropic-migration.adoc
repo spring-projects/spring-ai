@@ -249,7 +249,7 @@ A prompt-level options instance is used as-is; if the prompt has no options, the
 // After: prompt-level options must be "full", or null.
 Prompt prompt = new Prompt(
     "Tell me a joke",
-    chatModel.getDefaultOptions().mutate().maxTokens(2048).build());
+    chatModel.getOptions().mutate().maxTokens(2048).build());
 chatModel.call(prompt);
 ----
 

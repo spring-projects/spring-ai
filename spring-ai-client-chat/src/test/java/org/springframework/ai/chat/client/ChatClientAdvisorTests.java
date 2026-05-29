@@ -52,6 +52,7 @@ import static org.mockito.Mockito.when;
  *
  * @author Christian Tzolov
  * @author Alexandros Pappas
+ * @author Sebastien Deleuze
  */
 @ExtendWith(MockitoExtension.class)
 public class ChatClientAdvisorTests {
@@ -75,7 +76,7 @@ public class ChatClientAdvisorTests {
 					new ChatResponse(List.of(new Generation(new AssistantMessage("Hello John"))), chatResponseMetadata))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your name is John"))),
 					chatResponseMetadata));
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 
 		ChatMemory chatMemory = MessageWindowChatMemory.builder()
 			.chatMemoryRepository(new InMemoryChatMemoryRepository())
@@ -145,7 +146,7 @@ public class ChatClientAdvisorTests {
 						sink.complete();
 						return state;
 					}));
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 
 		ChatMemory chatMemory = MessageWindowChatMemory.builder()
 			.chatMemoryRepository(new InMemoryChatMemoryRepository())

@@ -39,17 +39,18 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  * @author Alexandros Pappas
  * @author Nicolas Krier
+ * @author Sebastien Deleuze
  */
 class OllamaChatRequestTests {
 
 	private final OllamaChatModel chatModel = OllamaChatModel.builder()
 		.ollamaApi(OllamaApi.builder().build())
-		.defaultOptions(OllamaChatOptions.builder().model("MODEL_NAME").topK(99).temperature(66.6).numGPU(1).build())
+		.options(OllamaChatOptions.builder().model("MODEL_NAME").topK(99).temperature(66.6).numGPU(1).build())
 		.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 		.build();
 
 	@Test
-	void createRequestWithDefaultOptions() {
+	void createRequestWithOptions() {
 		var prompt = this.chatModel.buildRequestPrompt(new Prompt("Test message content"));
 
 		var request = this.chatModel.ollamaChatRequest(prompt, false);
@@ -99,10 +100,10 @@ class OllamaChatRequestTests {
 	}
 
 	@Test
-	public void createRequestWithDefaultOptionsModelOverride() {
+	public void createRequestWithOptionsModelOverride() {
 		OllamaChatModel chatModel = OllamaChatModel.builder()
 			.ollamaApi(OllamaApi.builder().build())
-			.defaultOptions(OllamaChatOptions.builder().model("DEFAULT_OPTIONS_MODEL").build())
+			.options(OllamaChatOptions.builder().model("DEFAULT_OPTIONS_MODEL").build())
 			.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 			.build();
 
@@ -122,10 +123,10 @@ class OllamaChatRequestTests {
 	}
 
 	@Test
-	public void createRequestWithDefaultOptionsModelChatOptionsOverride() {
+	public void createRequestWithOptionsModelChatOptionsOverride() {
 		OllamaChatModel chatModel = OllamaChatModel.builder()
 			.ollamaApi(OllamaApi.builder().build())
-			.defaultOptions(OllamaChatOptions.builder().model("DEFAULT_OPTIONS_MODEL").build())
+			.options(OllamaChatOptions.builder().model("DEFAULT_OPTIONS_MODEL").build())
 			.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 			.build();
 

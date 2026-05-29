@@ -41,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration tests for {@link ToolCallAdvisor} functionality.
  *
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
@@ -76,7 +77,7 @@ class GoogleGenAiToolCallAdvisorIT extends AbstractToolCallAdvisorIT {
 
 		return GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient)
-			.defaultOptions(GoogleGenAiChatOptions.builder().model(model).build())
+			.options(GoogleGenAiChatOptions.builder().model(model).build())
 			.build();
 
 	}
