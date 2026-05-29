@@ -128,8 +128,8 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 	@Test
 	void testDefaultValues() {
 		MistralAiChatOptions options = MistralAiChatOptions.builder().build();
-		assertThat(options.getModel()).isNull();
-		assertThat(options.getTemperature()).isNull();
+		assertThat(options.getModel()).isEqualTo(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue());
+		assertThat(options.getTemperature()).isEqualTo(0.7);
 		assertThat(options.getTopP()).isEqualTo(1.0);
 		assertThat(options.getMaxTokens()).isNull();
 		assertThat(options.getSafePrompt()).isFalse();
@@ -183,8 +183,8 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 		MistralAiChatOptions copiedOptions = emptyOptions.copy();
 
 		assertThat(copiedOptions).isNotSameAs(emptyOptions).isEqualTo(emptyOptions);
-		assertThat(copiedOptions.getModel()).isNull();
-		assertThat(copiedOptions.getTemperature()).isNull();
+		assertThat(copiedOptions.getModel()).isEqualTo(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue());
+		assertThat(copiedOptions.getTemperature()).isEqualTo(0.7);
 		assertThat(copiedOptions.getReasoningEffort()).isNull();
 	}
 

@@ -245,12 +245,12 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 			@Nullable AnthropicWebSearchTool webSearchTool, @Nullable AnthropicServiceTier serviceTier) {
 		this.baseUrl = baseUrl;
 		this.apiKey = apiKey;
-		this.model = model;
+		this.model = model != null ? model : DEFAULT_MODEL;
 		this.timeout = timeout;
 		this.maxRetries = maxRetries;
 		this.proxy = proxy;
 		this.customHeaders = customHeaders;
-		this.maxTokens = maxTokens;
+		this.maxTokens = maxTokens != null ? maxTokens : DEFAULT_MAX_TOKENS;
 		this.metadata = metadata;
 		this.stopSequences = stopSequences;
 		this.temperature = temperature;

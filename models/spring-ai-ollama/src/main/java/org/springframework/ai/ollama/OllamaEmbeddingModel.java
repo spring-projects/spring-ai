@@ -39,7 +39,6 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
 import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
-import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.common.OllamaApiConstants;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
@@ -221,9 +220,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 		private @Nullable OllamaApi ollamaApi;
 
-		private OllamaEmbeddingOptions options = OllamaEmbeddingOptions.builder()
-			.model(OllamaModel.MXBAI_EMBED_LARGE.id())
-			.build();
+		private OllamaEmbeddingOptions options = OllamaEmbeddingOptions.builder().build();
 
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 

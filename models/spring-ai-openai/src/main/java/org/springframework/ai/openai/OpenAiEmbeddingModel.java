@@ -158,7 +158,7 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 			@Nullable OpenAiEmbeddingOptions options, @Nullable ObservationRegistry observationRegistry) {
 
 		if (options == null) {
-			this.options = OpenAiEmbeddingOptions.builder().model(DEFAULT_MODEL_NAME).build();
+			this.options = OpenAiEmbeddingOptions.builder().build();
 		}
 		else {
 			this.options = options;

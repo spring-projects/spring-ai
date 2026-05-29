@@ -98,7 +98,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.mirostatEta = mirostatEta;
 		this.penalizeNewline = penalizeNewline;
 		this.stop = stop;
-		this.model = model;
+		this.model = model != null ? model : org.springframework.ai.ollama.api.OllamaModel.MISTRAL.id();
 		this.format = format;
 		this.keepAlive = keepAlive;
 		this.truncate = truncate;

@@ -149,7 +149,7 @@ public final class OpenAiChatModel implements ChatModel {
 	@SuppressWarnings({ "deprecation", "removal" })
 	private OpenAiChatModel(Builder builder) {
 		if (builder.options == null) {
-			this.options = OpenAiChatOptions.builder().model(DEFAULT_MODEL_NAME).build();
+			this.options = OpenAiChatOptions.builder().build();
 		}
 		else {
 			this.options = builder.options;

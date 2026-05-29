@@ -60,11 +60,7 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 	// CohereEmbeddingRequest.Truncate.NONE;
 
 	public BedrockCohereEmbeddingModel(CohereEmbeddingBedrockApi cohereEmbeddingBedrockApi) {
-		this(cohereEmbeddingBedrockApi,
-				BedrockCohereEmbeddingOptions.builder()
-					.inputType(CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT)
-					.truncate(CohereEmbeddingRequest.Truncate.NONE)
-					.build());
+		this(cohereEmbeddingBedrockApi, BedrockCohereEmbeddingOptions.builder().build());
 	}
 
 	public BedrockCohereEmbeddingModel(CohereEmbeddingBedrockApi cohereEmbeddingBedrockApi,

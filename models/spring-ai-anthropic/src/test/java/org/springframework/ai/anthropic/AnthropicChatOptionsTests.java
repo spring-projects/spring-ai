@@ -165,7 +165,7 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		assertThat(merged.getTopK()).isEqualTo(40);
 
 		// Base values preserved when override is null
-		assertThat(merged.getMaxTokens()).isEqualTo(100);
+		assertThat(merged.getMaxTokens()).isEqualTo(AnthropicChatOptions.DEFAULT_MAX_TOKENS);
 		assertThat(merged.getTemperature()).isEqualTo(0.5);
 		assertThat(merged.getTopP()).isEqualTo(0.8);
 		assertThat(merged.getBaseUrl()).isEqualTo("https://base.api.com");
@@ -337,7 +337,7 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 
 		AnthropicChatOptions merged = base.mutate().combineWith(override.mutate()).build();
 
-		assertThat(merged.getModel()).isEqualTo("base-model");
+		assertThat(merged.getModel()).isEqualTo(AnthropicChatOptions.DEFAULT_MODEL);
 		assertThat(merged.getOutputConfig()).isNotNull();
 		assertThat(merged.getOutputConfig().effort()).isPresent();
 		assertThat(merged.getOutputConfig().effort().get()).isEqualTo(OutputConfig.Effort.MEDIUM);
@@ -526,7 +526,7 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 
 		AnthropicChatOptions merged = base.mutate().combineWith(override.mutate()).build();
 
-		assertThat(merged.getModel()).isEqualTo("base-model");
+		assertThat(merged.getModel()).isEqualTo(AnthropicChatOptions.DEFAULT_MODEL);
 		assertThat(merged.getSkillContainer()).isNotNull();
 		assertThat(merged.getSkillContainer().getSkills()).hasSize(1);
 		assertThat(merged.getSkillContainer().getSkills().get(0).getSkillId()).isEqualTo("docx");
@@ -736,7 +736,7 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 
 		AnthropicChatOptions merged = base.mutate().combineWith(override.mutate()).build();
 
-		assertThat(merged.getModel()).isEqualTo("base-model");
+		assertThat(merged.getModel()).isEqualTo(AnthropicChatOptions.DEFAULT_MODEL);
 		ThinkingConfigAdaptive adaptive = merged.getThinking().adaptive().get();
 		assertThat(adaptive.display()).isPresent();
 		assertThat(adaptive.display().get()).isEqualTo(ThinkingConfigAdaptive.Display.OMITTED);

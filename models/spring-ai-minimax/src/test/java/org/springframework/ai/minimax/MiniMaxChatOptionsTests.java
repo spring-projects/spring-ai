@@ -128,7 +128,7 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 			.internalToolExecutionEnabled(null)
 			.build();
 
-		assertThat(options.getModel()).isNull();
+		assertThat(options.getModel()).isEqualTo(MiniMaxApi.DEFAULT_CHAT_MODEL);
 		assertThat(options.getFrequencyPenalty()).isNull();
 		assertThat(options.getMaxTokens()).isNull();
 		assertThat(options.getN()).isNull();
@@ -136,7 +136,7 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 		assertThat(options.getResponseFormat()).isNull();
 		assertThat(options.getSeed()).isNull();
 		assertThat(options.getStop()).isNull();
-		assertThat(options.getTemperature()).isNull();
+		assertThat(options.getTemperature()).isEqualTo(0.7);
 		assertThat(options.getTopP()).isNull();
 		assertThat(options.getMaskSensitiveInfo()).isNull();
 		assertThat(options.getTools()).isNull();
@@ -203,7 +203,7 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 	@Test
 	void testDefaultValues() {
 		MiniMaxChatOptions options = MiniMaxChatOptions.builder().build();
-		assertThat(options.getModel()).isNull();
+		assertThat(options.getModel()).isEqualTo(MiniMaxApi.DEFAULT_CHAT_MODEL);
 		assertThat(options.getFrequencyPenalty()).isNull();
 		assertThat(options.getMaxTokens()).isNull();
 		assertThat(options.getN()).isNull();
@@ -211,7 +211,7 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 		assertThat(options.getResponseFormat()).isNull();
 		assertThat(options.getSeed()).isNull();
 		assertThat(options.getStop()).isNull();
-		assertThat(options.getTemperature()).isNull();
+		assertThat(options.getTemperature()).isEqualTo(0.7);
 		assertThat(options.getTopP()).isNull();
 		assertThat(options.getMaskSensitiveInfo()).isNull();
 		assertThat(options.getToolChoice()).isNull();

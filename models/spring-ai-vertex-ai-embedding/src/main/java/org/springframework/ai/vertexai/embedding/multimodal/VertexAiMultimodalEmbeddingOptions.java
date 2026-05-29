@@ -101,7 +101,7 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 	protected VertexAiMultimodalEmbeddingOptions(@Nullable String model, @Nullable Integer dimensions,
 			@Nullable Integer videoStartOffsetSec, @Nullable Integer videoEndOffsetSec,
 			@Nullable Integer videoIntervalSec) {
-		this.model = model;
+		this.model = model != null ? model : DEFAULT_MODEL_NAME;
 		this.dimensions = dimensions;
 		this.videoStartOffsetSec = videoStartOffsetSec;
 		this.videoEndOffsetSec = videoEndOffsetSec;

@@ -65,8 +65,9 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 			@Nullable Boolean isMicrosoftFoundry, @Nullable Boolean isGitHubModels, @Nullable Duration timeout,
 			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
 			@Nullable String user, @Nullable EncodingFormat encodingFormat, @Nullable Integer dimensions) {
-		super(baseUrl, apiKey, credential, model, microsoftDeploymentName, microsoftFoundryServiceVersion,
-				organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries, proxy, customHeaders);
+		super(baseUrl, apiKey, credential, model != null ? model : DEFAULT_EMBEDDING_MODEL, microsoftDeploymentName,
+				microsoftFoundryServiceVersion, organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries,
+				proxy, customHeaders);
 		this.user = user;
 		this.encodingFormat = encodingFormat;
 		this.dimensions = dimensions;

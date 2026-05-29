@@ -67,7 +67,7 @@ public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 
 	protected VertexAiTextEmbeddingOptions(@Nullable String model, @Nullable TaskType taskType,
 			@Nullable Integer dimensions, @Nullable String title, @Nullable Boolean autoTruncate) {
-		this.model = model;
+		this.model = model != null ? model : DEFAULT_MODEL_NAME;
 		if (StringUtils.hasText(title) && taskType != TaskType.RETRIEVAL_DOCUMENT) {
 			throw new IllegalArgumentException("Title is only valid with task_type=RETRIEVAL_DOCUMENT");
 		}

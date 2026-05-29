@@ -138,20 +138,20 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 
 	private final Map<String, Object> toolContext;
 
-	protected DeepSeekChatOptions(String model, @Nullable Double frequencyPenalty,
+	protected DeepSeekChatOptions(@Nullable String model, @Nullable Double frequencyPenalty,
 			@Nullable Integer maxTokens, @Nullable Double presencePenalty,
 			@Nullable ResponseFormat responseFormat, @Nullable List<String> stop,
 			@Nullable Double temperature, @Nullable Double topP, @Nullable Boolean logprobs,
 			@Nullable Integer topLogprobs, @Nullable List<DeepSeekApi.FunctionTool> tools,
 			@Nullable Object toolChoice, @Nullable Boolean internalToolExecutionEnabled,
 			@Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames, @Nullable Map<String, Object> toolContext) {
-		this.model = model;
+		this.model = model != null ? model : DeepSeekApi.DEFAULT_CHAT_MODEL.getValue();
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
 		this.presencePenalty = presencePenalty;
 		this.responseFormat = responseFormat;
 		this.stop = stop;
-		this.temperature = temperature;
+		this.temperature = temperature != null ? temperature : 0.7;
 		this.topP = topP;
 		this.logprobs = logprobs;
 		this.topLogprobs = topLogprobs;

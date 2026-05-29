@@ -51,8 +51,6 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 	 */
 	public static final AudioResponseFormat DEFAULT_RESPONSE_FORMAT = AudioResponseFormat.TEXT;
 
-	private final @Nullable String model;
-
 	private final AudioResponseFormat responseFormat;
 
 	private final @Nullable String prompt;
@@ -71,9 +69,9 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 			@Nullable AudioResponseFormat responseFormat, @Nullable String prompt, @Nullable String language,
 			@Nullable Float temperature,
 			@Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities) {
-		super(baseUrl, apiKey, credential, model, microsoftDeploymentName, microsoftFoundryServiceVersion,
-				organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries, proxy, customHeaders);
-		this.model = model;
+		super(baseUrl, apiKey, credential, model != null ? model : DEFAULT_TRANSCRIPTION_MODEL, microsoftDeploymentName,
+				microsoftFoundryServiceVersion, organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries,
+				proxy, customHeaders);
 		this.responseFormat = responseFormat != null ? responseFormat : DEFAULT_RESPONSE_FORMAT;
 		this.prompt = prompt;
 		this.language = language;
@@ -87,7 +85,8 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 
 	@Override
 	public String getModel() {
-		return this.model != null ? this.model : DEFAULT_TRANSCRIPTION_MODEL;
+		String model = super.getModel();
+		return model != null ? model : DEFAULT_TRANSCRIPTION_MODEL;
 	}
 
 	public AudioResponseFormat getResponseFormat() {
@@ -112,7 +111,7 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 
 	public OpenAiAudioTranscriptionOptions copy() {
 		return OpenAiAudioTranscriptionOptions.builder()
-			.model(this.model)
+			.model(this.getModel())
 			.responseFormat(this.responseFormat)
 			.prompt(this.prompt)
 			.language(this.language)
@@ -142,15 +141,15 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 			return false;
 		}
 		OpenAiAudioTranscriptionOptions that = (OpenAiAudioTranscriptionOptions) o;
-		return Objects.equals(this.model, that.model) && Objects.equals(this.responseFormat, that.responseFormat)
-				&& Objects.equals(this.prompt, that.prompt) && Objects.equals(this.language, that.language)
-				&& Objects.equals(this.temperature, that.temperature)
+		return Objects.equals(this.getModel(), that.getModel())
+				&& Objects.equals(this.responseFormat, that.responseFormat) && Objects.equals(this.prompt, that.prompt)
+				&& Objects.equals(this.language, that.language) && Objects.equals(this.temperature, that.temperature)
 				&& Objects.equals(this.timestampGranularities, that.timestampGranularities);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.model, this.responseFormat, this.prompt, this.language, this.temperature,
+		return Objects.hash(this.getModel(), this.responseFormat, this.prompt, this.language, this.temperature,
 				this.timestampGranularities);
 	}
 
