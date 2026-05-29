@@ -41,7 +41,7 @@ import static org.mockito.Mockito.mock;
  * Tests verifying the ChatClient creation best practices documented in the reference
  * guide. Covers the patterns described in GH-5786:
  * <ul>
- * <li>Cloning the auto-configured {@link ChatClient.Builder} for multiple clients of the
+ * <li>Using the auto-configured {@link ChatClient.Builder} for multiple clients of the
  * same model type</li>
  * <li>Using {@link ChatClientBuilderConfigurer} for multiple clients of different model
  * types</li>
@@ -57,11 +57,11 @@ class ChatClientCreationPatternsTests {
 		.withBean(ChatModel.class, () -> mock(ChatModel.class));
 
 	// -------------------------------------------------------------------------
-	// Pattern 1: Multiple ChatClients with a Single Model Type (clone pattern)
+	// Pattern 1: Multiple ChatClients with a Single Model Type (prototype pattern)
 	// -------------------------------------------------------------------------
 
 	@Test
-	void clonedBuilderProducesSeparateChatClientInstances() {
+	void prototypeBuilderProducesSeparateChatClientInstances() {
 		this.contextRunner.withUserConfiguration(SingleModelMultipleClientsConfig.class).run(context -> {
 			assertThat(context).hasNotFailed();
 			ChatClient defaultClient = context.getBean("defaultChatClient", ChatClient.class);
@@ -71,11 +71,11 @@ class ChatClientCreationPatternsTests {
 	}
 
 	@Test
-	void clonedBuilderPreservesCustomSystemPrompt() {
+	void prototypeBuilderPreservesCustomSystemPrompt() {
 		this.contextRunner.withUserConfiguration(SingleModelMultipleClientsConfig.class).run(context -> {
 			assertThat(context).hasNotFailed();
 			ChatClient customClient = context.getBean("customChatClient", ChatClient.class);
-			// Verify the custom system text was applied to the cloned builder
+			// Verify the custom system text was applied to the builder
 			Object defaultRequest = ReflectionTestUtils.getField(customClient, "defaultChatClientRequest");
 			assertThat(defaultRequest).isNotNull();
 			String systemText = (String) ReflectionTestUtils.getField(defaultRequest, "systemText");
@@ -96,12 +96,12 @@ class ChatClientCreationPatternsTests {
 	}
 
 	@Test
-	void clonedBuilderAppliesChatClientCustomizers() {
+	void prototypeBuilderAppliesChatClientCustomizers() {
 		this.contextRunner
 			.withUserConfiguration(SingleModelMultipleClientsConfig.class, SystemPromptCustomizerConfig.class)
 			.run(context -> {
 				assertThat(context).hasNotFailed();
-				// Both clients built from the auto-configured builder (or its clones)
+				// Both clients built from the auto-configured builder
 				// should have customizers applied via the prototype-scoped builder
 				ChatClient defaultClient = context.getBean("defaultChatClient", ChatClient.class);
 				ChatClient customClient = context.getBean("customChatClient", ChatClient.class);
@@ -197,8 +197,8 @@ class ChatClientCreationPatternsTests {
 	/**
 	 * Mirrors the "Multiple ChatClients with a Single Model Type" doc example: inject
 	 * {@code ChatClient.Builder} as a method parameter (prototype-scoped, so Spring
-	 * creates a fresh instance per injection point) and use {@code .clone()} to produce
-	 * an independently configured client.
+	 * creates a fresh instance per injection point) to produce an independently
+	 * configured client.
 	 */
 	@Configuration(proxyBeanMethods = false)
 	static class SingleModelMultipleClientsConfig {
@@ -210,7 +210,7 @@ class ChatClientCreationPatternsTests {
 
 		@Bean
 		ChatClient customChatClient(ChatClient.Builder builder) {
-			return builder.clone().defaultSystem("You are a helpful assistant.").build();
+			return builder.defaultSystem("You are a helpful assistant.").build();
 		}
 
 	}

@@ -69,7 +69,7 @@ Here's how to handle this scenario:
 ==== Multiple ChatClients with a Single Model Type
 
 This section covers a common use case where you need to create multiple ChatClient instances that all use the same underlying model type but with different configurations.
-You can use the auto-configured `ChatClient.Builder` and just clone it:
+You can use the auto-configured `ChatClient.Builder` as it is prototype-scoped, meaning a new instance is created for each injection point:
 
 [source,java]
 ----
@@ -83,7 +83,7 @@ class ChatClientConfig {
 
     @Bean
     ChatClient customChatClient(ChatClient.Builder builder) {
-        return builder.clone().defaultSystem("You are a helpful assistant.").build();
+        return builder.defaultSystem("You are a helpful assistant.").build();
     }
 }
 ----
