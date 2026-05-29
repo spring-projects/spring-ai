@@ -231,7 +231,7 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 	void testDefaultValues() {
 		OpenAiChatOptions options = OpenAiChatOptions.builder().build();
 
-		assertThat(options.getModel()).isNull();
+		assertThat(options.getModel()).isEqualTo(OpenAiChatOptions.DEFAULT_CHAT_MODEL);
 		assertThat(options.getDeploymentName()).isNull();
 		assertThat(options.getFrequencyPenalty()).isNull();
 		assertThat(options.getLogitBias()).isNull();
@@ -309,7 +309,7 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 			.extraBody(null)
 			.build();
 
-		assertThat(options.getModel()).isNull();
+		assertThat(options.getModel()).isEqualTo(OpenAiChatOptions.DEFAULT_CHAT_MODEL);
 		assertThat(options.getTemperature()).isNull();
 		assertThat(options.getLogitBias()).isNull();
 		assertThat(options.getStop()).isNull();

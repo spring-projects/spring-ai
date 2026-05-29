@@ -167,7 +167,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 
 	private final Map<String, Object> toolContext;
 
-	protected MistralAiChatOptions(String model, @Nullable Double temperature, @Nullable Double topP,
+	protected MistralAiChatOptions(@Nullable String model, @Nullable Double temperature, @Nullable Double topP,
 			@Nullable Integer maxTokens, @Nullable Boolean safePrompt, @Nullable Integer randomSeed,
 			@Nullable ResponseFormat responseFormat, @Nullable List<String> stop,
 			@Nullable ReasoningEffort reasoningEffort, @Nullable Double frequencyPenalty,
@@ -176,8 +176,8 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 			@Nullable Set<String> toolNames, @Nullable Boolean internalToolExecutionEnabled,
 			@Nullable Map<String, Object> toolContext) {
 
-		this.model = model;
-		this.temperature = temperature;
+		this.model = model != null ? model : MistralAiApi.ChatModel.MISTRAL_SMALL.getValue();
+		this.temperature = temperature != null ? temperature : 0.7;
 		this.topP = topP != null ? topP : 1.0;
 		this.maxTokens = maxTokens;
 		this.safePrompt = safePrompt != null ? safePrompt : false;

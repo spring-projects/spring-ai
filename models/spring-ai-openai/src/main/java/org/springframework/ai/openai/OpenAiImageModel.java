@@ -136,7 +136,7 @@ public class OpenAiImageModel implements ImageModel {
 			@Nullable ObservationRegistry observationRegistry) {
 
 		if (options == null) {
-			this.options = OpenAiImageOptions.builder().model(DEFAULT_MODEL_NAME).build();
+			this.options = OpenAiImageOptions.builder().build();
 		}
 		else {
 			this.options = options;

@@ -227,14 +227,14 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			@Nullable Boolean googleSearchRetrieval, @Nullable Boolean includeServerSideToolInvocations,
 			@Nullable List<GoogleGenAiSafetySetting> safetySettings, @Nullable Map<String, String> labels,
 			@Nullable GoogleGenAiServiceTier serviceTier) {
-		this.model = model;
+		this.model = model != null ? model : ChatModel.GEMINI_2_5_FLASH.getValue();
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxOutputTokens = maxOutputTokens;
 		this.presencePenalty = presencePenalty;
 		this.stopSequences = stopSequences;
-		this.temperature = temperature;
+		this.temperature = temperature != null ? temperature : 0.7;
 		this.topK = topK;
-		this.topP = topP;
+		this.topP = topP != null ? topP : 1.0;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 		this.toolCallbacks = toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(toolCallbacks);
 		this.toolNames = toolNames == null ? new HashSet<>() : new HashSet<>(toolNames);

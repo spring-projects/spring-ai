@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.ApiKey;
-import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -212,7 +211,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.baseUrl = baseUrl;
 		this.apiKey = apiKey;
 		this.credential = credential;
-		this.model = model;
+		this.model = model != null ? model : DEFAULT_CHAT_MODEL;
 		this.microsoftDeploymentName = microsoftDeploymentName;
 		this.microsoftFoundryServiceVersion = microsoftFoundryServiceVersion;
 		this.organizationId = organizationId;

@@ -68,8 +68,7 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 	 * @param options The default options for speech generation.
 	 */
 	private OpenAiAudioSpeechModel(@Nullable OpenAIClient openAiClient, @Nullable OpenAiAudioSpeechOptions options) {
-		this.options = Objects.requireNonNullElseGet(options,
-				() -> OpenAiAudioSpeechOptions.builder().model(DEFAULT_MODEL_NAME).build());
+		this.options = Objects.requireNonNullElseGet(options, () -> OpenAiAudioSpeechOptions.builder().build());
 		this.openAiClient = Objects.requireNonNullElseGet(openAiClient,
 				() -> OpenAiSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
 						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
@@ -248,12 +247,7 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 		 * Default constructor with default options.
 		 */
 		private Builder() {
-			this.options = OpenAiAudioSpeechOptions.builder()
-				.model(DEFAULT_MODEL_NAME)
-				.voice(OpenAiAudioSpeechOptions.Voice.ALLOY)
-				.responseFormat(OpenAiAudioSpeechOptions.AudioResponseFormat.MP3)
-				.speed(DEFAULT_SPEED)
-				.build();
+			this.options = OpenAiAudioSpeechOptions.builder().build();
 		}
 
 		/**

@@ -51,8 +51,8 @@ public class BedrockCohereEmbeddingOptions implements EmbeddingOptions {
 	// @formatter:on
 
 	protected BedrockCohereEmbeddingOptions(@Nullable InputType inputType, @Nullable Truncate truncate) {
-		this.inputType = inputType;
-		this.truncate = truncate;
+		this.inputType = inputType != null ? inputType : InputType.SEARCH_DOCUMENT;
+		this.truncate = truncate != null ? truncate : Truncate.NONE;
 	}
 
 	public @Nullable InputType getInputType() {

@@ -121,12 +121,13 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 			@Nullable Boolean isMicrosoftFoundry, @Nullable Boolean isGitHubModels, @Nullable Duration timeout,
 			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
 			@Nullable String input, @Nullable String voice, @Nullable String responseFormat, @Nullable Double speed) {
-		super(baseUrl, apiKey, credential, model, microsoftDeploymentName, microsoftFoundryServiceVersion,
-				organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries, proxy, customHeaders);
+		super(baseUrl, apiKey, credential, model != null ? model : DEFAULT_SPEECH_MODEL, microsoftDeploymentName,
+				microsoftFoundryServiceVersion, organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries,
+				proxy, customHeaders);
 		this.input = input;
-		this.voice = voice;
-		this.responseFormat = responseFormat;
-		this.speed = speed;
+		this.voice = voice != null ? voice : DEFAULT_VOICE;
+		this.responseFormat = responseFormat != null ? responseFormat : DEFAULT_RESPONSE_FORMAT;
+		this.speed = speed != null ? speed : DEFAULT_SPEED;
 	}
 
 	public static Builder builder() {

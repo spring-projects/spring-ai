@@ -1072,11 +1072,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 		@Nullable private Client genAiClient;
 
-		private GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-			.temperature(0.7)
-			.topP(1.0)
-			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
-			.build();
+		private GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().build();
 
 		@Nullable private ToolCallingManager toolCallingManager;
 

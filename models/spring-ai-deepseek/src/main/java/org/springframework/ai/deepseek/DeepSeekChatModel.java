@@ -556,10 +556,7 @@ public class DeepSeekChatModel implements ChatModel {
 
 		private @Nullable DeepSeekApi deepSeekApi;
 
-		private DeepSeekChatOptions options = DeepSeekChatOptions.builder()
-			.model(DeepSeekApi.DEFAULT_CHAT_MODEL)
-			.temperature(0.7)
-			.build();
+		private DeepSeekChatOptions options = DeepSeekChatOptions.builder().build();
 
 		private @Nullable ToolCallingManager toolCallingManager;
 

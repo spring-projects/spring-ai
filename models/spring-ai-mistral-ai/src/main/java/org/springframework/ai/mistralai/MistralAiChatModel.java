@@ -643,12 +643,7 @@ public class MistralAiChatModel implements ChatModel {
 
 		private @Nullable MistralAiApi mistralAiApi;
 
-		private MistralAiChatOptions options = MistralAiChatOptions.builder()
-			.temperature(0.7)
-			.topP(1.0)
-			.safePrompt(false)
-			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
-			.build();
+		private MistralAiChatOptions options = MistralAiChatOptions.builder().build();
 
 		private ToolCallingManager toolCallingManager = DEFAULT_TOOL_CALLING_MANAGER;
 

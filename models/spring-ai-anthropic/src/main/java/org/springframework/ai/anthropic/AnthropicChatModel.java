@@ -199,7 +199,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			@Nullable ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
 
 		if (options == null) {
-			this.options = AnthropicChatOptions.builder().model(DEFAULT_MODEL).maxTokens(DEFAULT_MAX_TOKENS).build();
+			this.options = AnthropicChatOptions.builder().build();
 		}
 		else {
 			this.options = options;

@@ -97,8 +97,9 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
 			@Nullable Integer n, @Nullable Integer width, @Nullable Integer height, @Nullable String quality,
 			@Nullable String responseFormat, @Nullable String size, @Nullable String style, @Nullable String user) {
-		super(baseUrl, apiKey, credential, model, microsoftDeploymentName, microsoftFoundryServiceVersion,
-				organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries, proxy, customHeaders);
+		super(baseUrl, apiKey, credential, model != null ? model : DEFAULT_IMAGE_MODEL, microsoftDeploymentName,
+				microsoftFoundryServiceVersion, organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries,
+				proxy, customHeaders);
 		this.n = n;
 		this.width = width;
 		this.height = height;

@@ -137,7 +137,7 @@ public class MiniMaxChatModel implements ChatModel {
 	 * @throws IllegalArgumentException if MiniMaxApi is null
 	 */
 	public MiniMaxChatModel(MiniMaxApi miniMaxApi) {
-		this(miniMaxApi, MiniMaxChatOptions.builder().model(MiniMaxApi.DEFAULT_CHAT_MODEL).temperature(0.7).build());
+		this(miniMaxApi, MiniMaxChatOptions.builder().build());
 	}
 
 	/**

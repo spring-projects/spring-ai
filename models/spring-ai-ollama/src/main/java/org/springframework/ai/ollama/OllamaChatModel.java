@@ -61,7 +61,6 @@ import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
 import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCall;
 import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCallFunction;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
-import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.common.OllamaApiConstants;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
@@ -605,7 +604,7 @@ public class OllamaChatModel implements ChatModel {
 
 		private @Nullable OllamaApi ollamaApi;
 
-		private OllamaChatOptions options = OllamaChatOptions.builder().model(OllamaModel.MISTRAL.id()).build();
+		private OllamaChatOptions options = OllamaChatOptions.builder().build();
 
 		private @Nullable ToolCallingManager toolCallingManager;
 

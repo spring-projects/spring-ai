@@ -338,7 +338,8 @@ public class CreateGeminiRequestTests {
 				new Prompt("Test message content", GoogleGenAiChatOptions.builder().thinkingBudget(25000).build())));
 
 		assertThat(request.contents()).hasSize(1);
-		assertThat(request.modelName()).isEqualTo("DEFAULT_MODEL");
+		assertThat(request.modelName())
+			.isEqualTo(org.springframework.ai.google.genai.GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue());
 
 		// Verify prompt-specific thinkingBudget overrides default
 		assertThat(request.config().thinkingConfig()).isPresent();
@@ -665,7 +666,10 @@ public class CreateGeminiRequestTests {
 
 		// Runtime override with unsupported level should throw
 		assertThatThrownBy(() -> client.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content",
-				GoogleGenAiChatOptions.builder().thinkingLevel(GoogleGenAiThinkingLevel.MINIMAL).build()))))
+				GoogleGenAiChatOptions.builder()
+					.model("gemini-3-pro-preview")
+					.thinkingLevel(GoogleGenAiThinkingLevel.MINIMAL)
+					.build()))))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("MINIMAL")
 			.hasMessageContaining("not supported");

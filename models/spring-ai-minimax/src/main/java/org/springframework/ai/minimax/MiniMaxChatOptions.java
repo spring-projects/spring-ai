@@ -150,14 +150,14 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 
 	// @formatter:on
 
-	protected MiniMaxChatOptions(String model, @Nullable Double frequencyPenalty, @Nullable Integer maxTokens,
+	protected MiniMaxChatOptions(@Nullable String model, @Nullable Double frequencyPenalty, @Nullable Integer maxTokens,
 			@Nullable Integer n, @Nullable Double presencePenalty,
 			MiniMaxApi.ChatCompletionRequest.@Nullable ResponseFormat responseFormat, @Nullable Integer seed,
 			@Nullable List<String> stop, @Nullable Double temperature, @Nullable Double topP,
 			@Nullable Boolean maskSensitiveInfo, @Nullable List<MiniMaxApi.FunctionTool> tools,
 			@Nullable String toolChoice, @Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames,
 			@Nullable Map<String, Object> toolContext, @Nullable Boolean internalToolExecutionEnabled) {
-		this.model = model;
+		this.model = model != null ? model : MiniMaxApi.DEFAULT_CHAT_MODEL;
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
 		this.n = n;
@@ -165,7 +165,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		this.responseFormat = responseFormat;
 		this.seed = seed;
 		this.stop = stop;
-		this.temperature = temperature;
+		this.temperature = temperature != null ? temperature : 0.7;
 		this.topP = topP;
 		this.maskSensitiveInfo = maskSensitiveInfo;
 		this.tools = tools;
