@@ -17,6 +17,7 @@
 package org.springframework.ai.bedrock.converse;
 
 import java.net.URL;
+import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,9 @@ import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 
 import org.springframework.ai.bedrock.converse.api.MediaFetcher;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -86,6 +90,17 @@ class BedrockProxyChatModelTest {
 	void sanitizeDocumentNameShouldPreserveAllowedSpecialCharacters() {
 		String name = "my document (1) [draft]";
 		assertThat(BedrockProxyChatModel.sanitizeDocumentName(name)).isEqualTo(name);
+	}
+
+	@Test
+	void createRequestShouldIgnoreBlankSystemMessages() {
+		BedrockProxyChatModel model = newModel();
+		Prompt prompt = new Prompt(List.of(new SystemMessage(""), new UserMessage("Hello")),
+				BedrockChatOptions.builder().build());
+
+		var request = model.createRequest(prompt);
+
+		assertThat(request.system()).isEmpty();
 	}
 
 	// -------------------------------------------------------------------------

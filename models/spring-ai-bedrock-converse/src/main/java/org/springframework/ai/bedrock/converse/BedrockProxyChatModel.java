@@ -456,6 +456,7 @@ public class BedrockProxyChatModel implements ChatModel {
 		List<org.springframework.ai.chat.messages.Message> systemMessageList = prompt.getInstructions()
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
+			.filter(m -> StringUtils.hasText(m.getText()))
 			.toList();
 
 		List<SystemContentBlock> systemMessages = new ArrayList<>();
