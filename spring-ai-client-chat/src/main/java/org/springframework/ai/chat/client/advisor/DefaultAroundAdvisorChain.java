@@ -18,6 +18,7 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
@@ -195,7 +196,16 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 		return this.observationRegistry;
 	}
 
-	public static final class Builder {
+	@Override
+	public Builder mutate() {
+		LinkedHashSet<Advisor> all = new LinkedHashSet<>(this.originalCallAdvisors);
+		all.addAll(this.originalStreamAdvisors);
+		return DefaultAroundAdvisorChain.builder(this.observationRegistry)
+			.observationConvention(this.observationConvention)
+			.pushAll(new ArrayList<>(all));
+	}
+
+	public static final class Builder implements BaseAdvisorChain.Builder<Builder> {
 
 		private final ObservationRegistry observationRegistry;
 

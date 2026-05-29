@@ -18,6 +18,7 @@ package org.springframework.ai.chat.client;
 
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -169,12 +170,86 @@ public interface ChatClient {
 
 	}
 
+	/**
+	 * Configures optional behaviour for {@code entity(...)} calls. Options may be
+	 * combined.
+	 */
+	interface EntityParamSpec {
+
+		/**
+		 * Delivers the JSON schema to the AI provider as an API-level constraint rather
+		 * than appending it as prompt text. Has no effect if the underlying
+		 * {@link org.springframework.ai.chat.model.ChatModel} does not support
+		 * {@link org.springframework.ai.model.tool.StructuredOutputChatOptions}.
+		 */
+		EntityParamSpec useProviderStructuredOutput();
+
+		/**
+		 * Validates the model's JSON response against the entity schema and retries with
+		 * the error feedback on failure, up to {@code maxRepeatAttempts} times (default:
+		 * 3). Streaming is not supported.
+		 */
+		EntityParamSpec validateSchema();
+
+	}
+
 	interface CallResponseSpec {
 
+		/**
+		 * Deserializes the response into a {@code T} instance, with behaviour configured
+		 * via the {@code entityParamSpecConsumer}.
+		 * @param type the target parameterized type
+		 * @param entityParamSpecConsumer configures options such as
+		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
+		 * {@link EntityParamSpec#validateSchema()}
+		 * @return the deserialized entity, or {@code null} if the response is empty
+		 */
+		<T> @Nullable T entity(ParameterizedTypeReference<T> type, Consumer<EntityParamSpec> entityParamSpecConsumer);
+
+		/**
+		 * Deserializes the response into a {@code T} instance.
+		 * @param type the target parameterized type
+		 * @return the deserialized entity, or {@code null} if the response is empty
+		 */
 		<T> @Nullable T entity(ParameterizedTypeReference<T> type);
 
+		/**
+		 * Deserializes the response using the given converter, with behaviour configured
+		 * via the {@code entityParamSpecConsumer}.
+		 * @param structuredOutputConverter the converter for parsing and schema
+		 * resolution
+		 * @param entityParamSpecConsumer configures options such as
+		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
+		 * {@link EntityParamSpec#validateSchema()}
+		 * @return the deserialized entity, or {@code null} if the response is empty
+		 */
+		<T> @Nullable T entity(StructuredOutputConverter<T> structuredOutputConverter,
+				Consumer<EntityParamSpec> entityParamSpecConsumer);
+
+		/**
+		 * Deserializes the response using the given converter.
+		 * @param structuredOutputConverter the converter for parsing and schema
+		 * resolution
+		 * @return the deserialized entity, or {@code null} if the response is empty
+		 */
 		<T> @Nullable T entity(StructuredOutputConverter<T> structuredOutputConverter);
 
+		/**
+		 * Deserializes the response into a {@code T} instance, with behaviour configured
+		 * via the {@code entityParamSpecConsumer}.
+		 * @param type the target class
+		 * @param entityParamSpecConsumer configures options such as
+		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
+		 * {@link EntityParamSpec#validateSchema()}
+		 * @return the deserialized entity, or {@code null} if the response is empty
+		 */
+		<T> @Nullable T entity(Class<T> type, Consumer<EntityParamSpec> entityParamSpecConsumer);
+
+		/**
+		 * Deserializes the response into a {@code T} instance.
+		 * @param type the target class
+		 * @return the deserialized entity, or {@code null} if the response is empty
+		 */
 		<T> @Nullable T entity(Class<T> type);
 
 		ChatClientResponse chatClientResponse();
@@ -183,10 +258,77 @@ public interface ChatClient {
 
 		@Nullable String content();
 
+		/**
+		 * Returns a {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and a specific entity type, with behaviour
+		 * configured via the {@code entityParamSpecConsumer}.
+		 * @param type the target class
+		 * @param entityParamSpecConsumer configures options such as
+		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
+		 * {@link EntityParamSpec#validateSchema()}
+		 * @return the {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and the deserialized entity
+		 */
+		<T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type,
+				Consumer<EntityParamSpec> entityParamSpecConsumer);
+
+		/**
+		 * Returns a {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and a specific entity type.
+		 * @param type the target class
+		 * @return the {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and the deserialized entity
+		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type);
 
+		/**
+		 * Returns a {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and a specific entity type, with behaviour
+		 * configured via the {@code entityParamSpecConsumer}.
+		 * @param type the target parameterized type
+		 * @param entityParamSpecConsumer configures options such as
+		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
+		 * {@link EntityParamSpec#validateSchema()}
+		 * @return the {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and the deserialized entity
+		 */
+		<T> ResponseEntity<ChatResponse, T> responseEntity(ParameterizedTypeReference<T> type,
+				Consumer<EntityParamSpec> entityParamSpecConsumer);
+
+		/**
+		 * Returns a {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and a {@link Collection} of entity types.
+		 * @param type the target parameterized type
+		 * @return the {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and the deserialized entities
+		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(ParameterizedTypeReference<T> type);
 
+		/**
+		 * Returns a {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and an entity converted using a specified
+		 * {@link StructuredOutputConverter}, with behaviour configured via the
+		 * {@code entityParamSpecConsumer}.
+		 * @param structuredOutputConverter the converter for parsing and schema
+		 * resolution
+		 * @param entityParamSpecConsumer configures options such as
+		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
+		 * {@link EntityParamSpec#validateSchema()}
+		 * @return the {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and the deserialized entity
+		 */
+		<T> ResponseEntity<ChatResponse, T> responseEntity(StructuredOutputConverter<T> structuredOutputConverter,
+				Consumer<EntityParamSpec> entityParamSpecConsumer);
+
+		/**
+		 * Returns a {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and an entity converted using a specified
+		 * {@link StructuredOutputConverter}.
+		 * @param structuredOutputConverter the converter for parsing and schema
+		 * resolution
+		 * @return the {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and the deserialized entity
+		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(StructuredOutputConverter<T> structuredOutputConverter);
 
 	}

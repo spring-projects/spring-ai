@@ -40,6 +40,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.client.advisor.ChatModelCallAdvisor;
 import org.springframework.ai.chat.client.advisor.ChatModelStreamAdvisor;
 import org.springframework.ai.chat.client.advisor.DefaultAroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.StructuredOutputValidationAdvisor;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
@@ -401,6 +402,37 @@ public class DefaultChatClient implements ChatClient {
 
 	}
 
+	/**
+	 * Default implementation of {@link EntityParamSpec}.
+	 */
+	public static class DefaultEntityParamSpec implements EntityParamSpec {
+
+		private boolean enableNative = false;
+
+		private boolean validated = false;
+
+		public boolean isEnableNative() {
+			return this.enableNative;
+		}
+
+		public boolean isValidated() {
+			return this.validated;
+		}
+
+		@Override
+		public EntityParamSpec useProviderStructuredOutput() {
+			this.enableNative = true;
+			return this;
+		}
+
+		@Override
+		public EntityParamSpec validateSchema() {
+			this.validated = true;
+			return this;
+		}
+
+	}
+
 	public static class DefaultCallResponseSpec implements CallResponseSpec {
 
 		private final ChatClientRequest request;
@@ -425,9 +457,27 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
+		public <T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type,
+				Consumer<EntityParamSpec> entityParamSpecConsumer) {
+			Assert.notNull(type, "type cannot be null");
+			Assert.notNull(entityParamSpecConsumer, "entityParamSpecConsumer cannot be null");
+			var converter = new BeanOutputConverter<>(type);
+			return doResponseEntity(converter, resolveAdvisorChain(entityParamSpecConsumer, converter));
+		}
+
+		@Override
 		public <T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type) {
 			Assert.notNull(type, "type cannot be null");
 			return doResponseEntity(new BeanOutputConverter<>(type));
+		}
+
+		@Override
+		public <T> ResponseEntity<ChatResponse, T> responseEntity(ParameterizedTypeReference<T> type,
+				Consumer<EntityParamSpec> entityParamSpecConsumer) {
+			Assert.notNull(type, "type cannot be null");
+			Assert.notNull(entityParamSpecConsumer, "entityParamSpecConsumer cannot be null");
+			var converter = new BeanOutputConverter<>(type);
+			return doResponseEntity(converter, resolveAdvisorChain(entityParamSpecConsumer, converter));
 		}
 
 		@Override
@@ -438,13 +488,30 @@ public class DefaultChatClient implements ChatClient {
 
 		@Override
 		public <T> ResponseEntity<ChatResponse, T> responseEntity(
+				StructuredOutputConverter<T> structuredOutputConverter,
+				Consumer<EntityParamSpec> entityParamSpecConsumer) {
+			Assert.notNull(structuredOutputConverter, "structuredOutputConverter cannot be null");
+			Assert.notNull(entityParamSpecConsumer, "entityParamSpecConsumer cannot be null");
+			return doResponseEntity(structuredOutputConverter,
+					resolveAdvisorChain(entityParamSpecConsumer, structuredOutputConverter));
+		}
+
+		@Override
+		public <T> ResponseEntity<ChatResponse, T> responseEntity(
 				StructuredOutputConverter<T> structuredOutputConverter) {
 			Assert.notNull(structuredOutputConverter, "structuredOutputConverter cannot be null");
 			return doResponseEntity(structuredOutputConverter);
 		}
 
 		protected <T> ResponseEntity<ChatResponse, T> doResponseEntity(StructuredOutputConverter<T> outputConverter) {
+			return this.doResponseEntity(outputConverter, this.advisorChain);
+		}
+
+		protected <T> ResponseEntity<ChatResponse, T> doResponseEntity(StructuredOutputConverter<T> outputConverter,
+				BaseAdvisorChain advisorChain) {
+
 			Assert.notNull(outputConverter, "structuredOutputConverter cannot be null");
+			Assert.notNull(advisorChain, "advisor chain cannot be null");
 
 			this.request.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), outputConverter.getFormat());
 
@@ -454,7 +521,7 @@ public class DefaultChatClient implements ChatClient {
 					.put(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey(), outputConverter.getJsonSchema());
 			}
 
-			var chatResponse = doGetObservableChatClientResponse(this.request).chatResponse();
+			var chatResponse = doGetObservableChatClientResponse(this.request, advisorChain).chatResponse();
 			var responseContent = getContentFromChatResponse(chatResponse);
 			if (responseContent == null) {
 				return new ResponseEntity<>(chatResponse, null);
@@ -464,9 +531,35 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
+		public <T> @Nullable T entity(ParameterizedTypeReference<T> type,
+				Consumer<EntityParamSpec> entitySpecConsumer) {
+			Assert.notNull(type, "type cannot be null");
+			Assert.notNull(entitySpecConsumer, "entitySpecConsumer cannot be null");
+			var converter = new BeanOutputConverter<>(type);
+			return doSingleWithBeanOutputConverter(converter, resolveAdvisorChain(entitySpecConsumer, converter));
+		}
+
+		@Override
+		public <T> @Nullable T entity(Class<T> type, Consumer<EntityParamSpec> entitySpecConsumer) {
+			Assert.notNull(type, "type cannot be null");
+			Assert.notNull(entitySpecConsumer, "entitySpecConsumer cannot be null");
+			var converter = new BeanOutputConverter<>(type);
+			return doSingleWithBeanOutputConverter(converter, resolveAdvisorChain(entitySpecConsumer, converter));
+		}
+
+		@Override
 		public <T> @Nullable T entity(ParameterizedTypeReference<T> type) {
 			Assert.notNull(type, "type cannot be null");
 			return doSingleWithBeanOutputConverter(new BeanOutputConverter<>(type));
+		}
+
+		@Override
+		public <T> @Nullable T entity(StructuredOutputConverter<T> structuredOutputConverter,
+				Consumer<EntityParamSpec> entitySpecConsumer) {
+			Assert.notNull(structuredOutputConverter, "structuredOutputConverter cannot be null");
+			Assert.notNull(entitySpecConsumer, "entitySpecConsumer cannot be null");
+			return doSingleWithBeanOutputConverter(structuredOutputConverter,
+					resolveAdvisorChain(entitySpecConsumer, structuredOutputConverter));
 		}
 
 		@Override
@@ -478,11 +571,31 @@ public class DefaultChatClient implements ChatClient {
 		@Override
 		public <T> @Nullable T entity(Class<T> type) {
 			Assert.notNull(type, "type cannot be null");
-			var outputConverter = new BeanOutputConverter<>(type);
-			return doSingleWithBeanOutputConverter(outputConverter);
+			return doSingleWithBeanOutputConverter(new BeanOutputConverter<>(type));
+		}
+
+		private BaseAdvisorChain resolveAdvisorChain(Consumer<EntityParamSpec> consumer,
+				StructuredOutputConverter<?> converter) {
+			var spec = new DefaultEntityParamSpec();
+			consumer.accept(spec);
+			if (spec.isEnableNative()) {
+				this.request.context().put(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey(), true);
+			}
+			if (spec.isValidated()) {
+				var validationAdvisor = StructuredOutputValidationAdvisor.builder()
+					.outputJsonSchema(converter.getJsonSchema())
+					.build();
+				return this.advisorChain.mutate().push(validationAdvisor).build();
+			}
+			return this.advisorChain;
 		}
 
 		private <T> @Nullable T doSingleWithBeanOutputConverter(StructuredOutputConverter<T> outputConverter) {
+			return doSingleWithBeanOutputConverter(outputConverter, this.advisorChain);
+		}
+
+		private <T> @Nullable T doSingleWithBeanOutputConverter(StructuredOutputConverter<T> outputConverter,
+				BaseAdvisorChain advisorChain) {
 
 			if (StringUtils.hasText(outputConverter.getFormat())) {
 				// Used for default structured output format support, based on prompt
@@ -499,7 +612,7 @@ public class DefaultChatClient implements ChatClient {
 
 			}
 
-			var chatResponse = doGetObservableChatClientResponse(this.request).chatResponse();
+			var chatResponse = doGetObservableChatClientResponse(this.request, advisorChain).chatResponse();
 
 			var stringResponse = getContentFromChatResponse(chatResponse);
 			if (stringResponse == null) {
@@ -525,13 +638,18 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		private ChatClientResponse doGetObservableChatClientResponse(ChatClientRequest chatClientRequest) {
+			return doGetObservableChatClientResponse(chatClientRequest, this.advisorChain);
+		}
+
+		private ChatClientResponse doGetObservableChatClientResponse(ChatClientRequest chatClientRequest,
+				BaseAdvisorChain advisorChain) {
 
 			String outputFormat = (String) chatClientRequest.context()
 				.getOrDefault(ChatClientAttributes.OUTPUT_FORMAT.getKey(), null);
 
 			ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
 				.request(chatClientRequest)
-				.advisors(this.advisorChain.getCallAdvisors())
+				.advisors(advisorChain.getCallAdvisors())
 				.stream(false)
 				.format(outputFormat)
 				.build();
@@ -542,7 +660,7 @@ public class DefaultChatClient implements ChatClient {
 			// CHECKSTYLE:OFF
 			var chatClientResponse = observation.observe(() -> {
 				// Apply the advisor chain that terminates with the ChatModelCallAdvisor.
-				var response = this.advisorChain.nextCall(chatClientRequest);
+				var response = advisorChain.nextCall(chatClientRequest);
 				observationContext.setResponse(response);
 				return response;
 			});
