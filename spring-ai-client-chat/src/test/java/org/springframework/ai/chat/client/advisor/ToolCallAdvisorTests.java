@@ -1066,10 +1066,12 @@ public class ToolCallAdvisorTests {
 
 		@Test
 		void observationIsSameInstanceDuringToolExecution() {
-			// With auto-propagation Reactor restores the ThreadLocal before every operator
-			// boundary including the subscribeOn(boundedElastic()) hop, so the guard in
-			// handleToolCallRecursion must NOT call openScope() redundantly. The observable
-			// proof: the observation seen inside executeToolCalls is the exact same instance
+			// With auto-propagation Reactor restores the ThreadLocal before every
+			// operator boundary including the subscribeOn(boundedElastic()) hop, so the
+			// guard in handleToolCallRecursion must NOT call openScope() redundantly. The
+			// observable
+			// proof: the observation seen inside executeToolCalls is the exact same
+			// instance
 			// placed in the Reactor context, not a stale or double-opened scope.
 			ObservationRegistry registry = ObservationRegistry.create();
 			ToolCallAdvisor advisor = ToolCallAdvisor.builder()
