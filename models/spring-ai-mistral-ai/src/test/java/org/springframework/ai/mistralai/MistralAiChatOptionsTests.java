@@ -26,6 +26,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mistralai.MistralAiChatOptions.Builder;
 import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ReasoningEffort;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
@@ -37,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Tests for {@link MistralAiChatOptions}.
  *
  * @author Alexandros Pappas
+ * @author Nicolas Krier
  */
 class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOptions, Builder> {
 
@@ -82,6 +84,7 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 			.safePrompt(true)
 			.randomSeed(123)
 			.stop(List.of("stop1", "stop2"))
+			.reasoningEffort(ReasoningEffort.HIGH)
 			.responseFormat(new ResponseFormat("json_object"))
 			.toolChoice(MistralAiApi.ChatCompletionRequest.ToolChoice.AUTO)
 			.internalToolExecutionEnabled(true)
@@ -107,6 +110,7 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 			.randomSeed(123)
 			.responseFormat(responseFormat)
 			.stop(List.of("stop1", "stop2"))
+			.reasoningEffort(ReasoningEffort.HIGH)
 			.build();
 
 		assertThat(options.getModel()).isEqualTo("test-model");
@@ -117,6 +121,7 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 		assertThat(options.getRandomSeed()).isEqualTo(123);
 		assertThat(options.getStopSequences()).isEqualTo(List.of("stop1", "stop2"));
 		assertThat(options.getResponseFormat()).isEqualTo(responseFormat);
+		assertThat(options.getReasoningEffort()).isEqualTo(ReasoningEffort.HIGH);
 	}
 
 	@Test
@@ -131,6 +136,7 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 		assertThat(options.getStopSequences()).isNull();
 		assertThat(options.getResponseFormat()).isNull();
 		assertThat(options.getOutputSchema()).isNull();
+		assertThat(options.getReasoningEffort()).isNull();
 	}
 
 	@Test
@@ -178,6 +184,7 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 		assertThat(copiedOptions).isNotSameAs(emptyOptions).isEqualTo(emptyOptions);
 		assertThat(copiedOptions.getModel()).isNull();
 		assertThat(copiedOptions.getTemperature()).isNull();
+		assertThat(copiedOptions.getReasoningEffort()).isNull();
 	}
 
 	@Test

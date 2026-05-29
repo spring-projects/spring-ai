@@ -40,18 +40,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class MistralModelConfigurationTests {
 
 	private final ApplicationContextRunner chatContextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.mistralai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"))
+		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(MistralAiChatAutoConfiguration.class,
 				RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
 				ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class));
 
 	private final ApplicationContextRunner embeddingContextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.mistralai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"))
+		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(MistralAiEmbeddingAutoConfiguration.class,
 				RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class));
 
 	private final ApplicationContextRunner moderationContextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.mistralai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"))
+		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"))
 		.withConfiguration(
 				AutoConfigurations.of(MistralAiModerationAutoConfiguration.class, RestClientAutoConfiguration.class,
 						SpringAiRetryAutoConfiguration.class, WebClientAutoConfiguration.class));

@@ -100,8 +100,8 @@ class MistralAiOcrPropertiesTests {
 		new ApplicationContextRunner().withPropertyValues("spring.ai.mistralai.api-key=API_KEY",
 				"spring.ai.mistralai.ocr.options.model=custom-ocr-model",
 				"spring.ai.mistralai.ocr.options.id=ocr-request-id-123", "spring.ai.mistralai.ocr.options.pages=0,1,5",
-				"spring.ai.mistralai.ocr.options.includeImageBase64=true",
-				"spring.ai.mistralai.ocr.options.imageLimit=25", "spring.ai.mistralai.ocr.options.imageMinSize=150")
+				"spring.ai.mistralai.ocr.options.include-image-base64=true",
+				"spring.ai.mistralai.ocr.options.image-limit=25", "spring.ai.mistralai.ocr.options.image-min-size=150")
 			.withConfiguration(this.autoConfigurations)
 			.run(context -> {
 				assertThat(context).hasSingleBean(MistralAiOcrProperties.class);

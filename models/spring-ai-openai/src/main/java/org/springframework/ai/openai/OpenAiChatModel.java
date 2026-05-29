@@ -85,9 +85,8 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
@@ -95,6 +94,7 @@ import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
@@ -131,7 +131,7 @@ public final class OpenAiChatModel implements ChatModel {
 
 	private final ToolCallingManager toolCallingManager;
 
-	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+	private final ToolExecutionEligibilityChecker toolExecutionEligibilityChecker;
 
 	private final AtomicBoolean internalToolExecutionWarned = new AtomicBoolean(false);
 
@@ -170,8 +170,8 @@ public final class OpenAiChatModel implements ChatModel {
 
 		this.observationRegistry = Objects.requireNonNullElse(builder.observationRegistry, ObservationRegistry.NOOP);
 		this.toolCallingManager = Objects.requireNonNullElse(builder.toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER);
-		this.toolExecutionEligibilityPredicate = Objects.requireNonNullElse(builder.toolExecutionEligibilityPredicate,
-				new DefaultToolExecutionEligibilityPredicate());
+		this.toolExecutionEligibilityChecker = Objects.requireNonNullElse(builder.toolExecutionEligibilityChecker,
+				chatResponse -> chatResponse != null && chatResponse.hasToolCalls());
 	}
 
 	/**
@@ -245,7 +245,7 @@ public final class OpenAiChatModel implements ChatModel {
 
 		Assert.state(prompt.getOptions() != null, "Prompt options must not be null");
 		Assert.state(response != null, "Chat response must not be null");
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+		if (this.toolExecutionEligibilityChecker.isToolExecutionRequired(prompt.getOptions(), response)) {
 			if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
 				logger.warn(
 						"Internal tool execution in OpenAiChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
@@ -450,7 +450,7 @@ public final class OpenAiChatModel implements ChatModel {
 						finalMetadata != null ? finalMetadata : ChatResponseMetadata.builder().build());
 				observationContext.setResponse(aggregated);
 				Assert.state(prompt.getOptions() != null, "ChatOptions must not be null");
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), aggregated)) {
+				if (this.toolExecutionEligibilityChecker.isToolExecutionRequired(prompt.getOptions(), aggregated)) {
 					if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
 						logger.warn(
 								"Internal tool execution in OpenAiChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
@@ -575,7 +575,7 @@ public final class OpenAiChatModel implements ChatModel {
 
 		result._additionalProperties().forEach((key, jsonValue) -> {
 			try {
-				Object value = ModelOptionsUtils.JSON_MAPPER.convertValue(jsonValue, Object.class);
+				Object value = JacksonUtils.getDefaultJsonMapper().convertValue(jsonValue, Object.class);
 				metadataBuilder.keyValue(key, value);
 			}
 			catch (Exception e) {
@@ -1018,7 +1018,7 @@ public final class OpenAiChatModel implements ChatModel {
 				}
 				else {
 					try {
-						var node = ModelOptionsUtils.JSON_MAPPER.readTree(json);
+						var node = JacksonUtils.getDefaultJsonMapper().readTree(json);
 						builder.toolChoice(parseToolChoice(node));
 					}
 					catch (Exception e) {
@@ -1284,7 +1284,7 @@ public final class OpenAiChatModel implements ChatModel {
 
 		private @Nullable ObservationRegistry observationRegistry;
 
-		private @Nullable ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+		private @Nullable ToolExecutionEligibilityChecker toolExecutionEligibilityChecker;
 
 		private Builder() {
 		}
@@ -1324,9 +1324,8 @@ public final class OpenAiChatModel implements ChatModel {
 		 * @param toolCallingManager the tool calling manager
 		 * @return this builder
 		 * @deprecated since 2.0.0 for removal in 3.0.0 — internal tool execution in
-		 * {@link OpenAiChatModel} is superseded by
-		 * {@link org.springframework.ai.chat.client.advisor.ToolCallAdvisor} used via
-		 * {@link org.springframework.ai.chat.client.ChatClient}.
+		 * {@link OpenAiChatModel} is superseded by {@code ToolCallAdvisor} used via
+		 * {@code ChatClient}.
 		 */
 		@Deprecated(since = "2.0.0", forRemoval = true)
 		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
@@ -1348,15 +1347,38 @@ public final class OpenAiChatModel implements ChatModel {
 		 * Sets the predicate to determine tool execution eligibility.
 		 * @param toolExecutionEligibilityPredicate the predicate
 		 * @return this builder
-		 * @deprecated since 2.0.0 for removal in 3.0.0 — internal tool execution in
-		 * {@link OpenAiChatModel} is superseded by
-		 * {@link org.springframework.ai.chat.client.advisor.ToolCallAdvisor} used via
-		 * {@link org.springframework.ai.chat.client.ChatClient}.
+		 * @deprecated since 2.0.0 for removal in 3.0.0 — replaced by
+		 * {@link #toolExecutionEligibilityChecker(ToolExecutionEligibilityChecker)}. For
+		 * the recommended long-term approach, internal tool execution in
+		 * {@link OpenAiChatModel} is superseded by {@code ToolCallAdvisor} used via
+		 * {@code ChatClient}.
 		 */
 		@Deprecated(since = "2.0.0", forRemoval = true)
+		@SuppressWarnings({ "deprecation", "removal" })
 		public Builder toolExecutionEligibilityPredicate(
 				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
-			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
+			this.toolExecutionEligibilityChecker = new ToolExecutionEligibilityChecker() {
+				@Override
+				public Boolean apply(ChatResponse chatResponse) {
+					return chatResponse != null && chatResponse.hasToolCalls();
+				}
+
+				@Override
+				public boolean isToolExecutionRequired(ChatOptions promptOptions, ChatResponse chatResponse) {
+					return toolExecutionEligibilityPredicate.test(promptOptions, chatResponse);
+				}
+			};
+			return this;
+		}
+
+		/**
+		 * Sets the checker to determine tool execution eligibility.
+		 * @param toolExecutionEligibilityChecker the checker
+		 * @return this builder
+		 */
+		public Builder toolExecutionEligibilityChecker(
+				ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
+			this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
 			return this;
 		}
 

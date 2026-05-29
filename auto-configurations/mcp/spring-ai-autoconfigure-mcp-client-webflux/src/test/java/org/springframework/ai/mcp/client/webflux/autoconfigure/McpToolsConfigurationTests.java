@@ -143,8 +143,9 @@ class McpToolsConfigurationTests {
 			// In a real use-case, we would use the chat client to call the LLM again
 			logger.info("MCP SAMPLING: simulating using chat client {}", this.chatClient);
 
-			return McpSchema.CreateMessageResult.builder()
-				.content(new McpSchema.TextContent("Response " + userPrompt + " with model hint " + modelHint))
+			return McpSchema.CreateMessageResult
+				.builder(McpSchema.Role.ASSISTANT, "Response " + userPrompt + " with model hint " + modelHint,
+						modelHint)
 				.build();
 		}
 

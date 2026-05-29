@@ -33,6 +33,7 @@ import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.ToolAdvisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -53,6 +54,8 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  */
 public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor {
+
+	private static final ChatClientMessageAggregator CHAT_CLIENT_MESSAGE_AGGREGATOR = new ChatClientMessageAggregator();
 
 	/**
 	 * Default advisor order. Placed early in the chain so that all downstream advisors
@@ -108,8 +111,8 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 		Assert.notNull(callAdvisorChain, "callAdvisorChain must not be null");
 		Assert.notNull(chatClientRequest, "chatClientRequest must not be null");
 
-		if (chatClientRequest.prompt().getOptions() == null
-				|| !(chatClientRequest.prompt().getOptions() instanceof ToolCallingChatOptions)) {
+		ChatOptions options = chatClientRequest.prompt().getOptions();
+		if (!(options instanceof ToolCallingChatOptions)) {
 			throw new IllegalArgumentException(
 					"ToolCall Advisor requires ToolCallingChatOptions to be set in the ChatClientRequest options.");
 		}
@@ -118,9 +121,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 
 		// Overwrite the ToolCallingChatOptions to disable internal tool execution.
 		// Disable internal tool execution to allow ToolCallAdvisor to handle tool calls
-		var optionsCopy = ((ToolCallingChatOptions.Builder<?>) chatClientRequest.prompt().getOptions().mutate())
-			.internalToolExecutionEnabled(false)
-			.build();
+		var optionsCopy = ((ToolCallingChatOptions) options).mutate().internalToolExecutionEnabled(false).build();
 
 		var instructions = chatClientRequest.prompt().getInstructions();
 
@@ -256,40 +257,22 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 
 			final ChatClientRequest finalRequest = processedRequest;
 
-			// Get the streaming response
 			Flux<ChatClientResponse> responseFlux = chainCopy.nextStream(processedRequest);
 
-			// Holder for aggregated response (set when aggregation completes)
-			AtomicReference<ChatClientResponse> aggregatedResponseRef = new AtomicReference<>();
-
-			return streamWithToolCallResponses(responseFlux, aggregatedResponseRef, finalRequest, streamAdvisorChain,
-					originalRequest, optionsCopy);
+			return streamWithToolCallResponses(responseFlux, finalRequest, streamAdvisorChain, originalRequest,
+					optionsCopy);
 		});
 	}
 
-	/**
-	 * Streams all chunks immediately including intermediate tool call responses. Uses
-	 * publish() to multicast the stream for parallel streaming and aggregation.
-	 */
 	private Flux<ChatClientResponse> streamWithToolCallResponses(Flux<ChatClientResponse> responseFlux,
-			AtomicReference<ChatClientResponse> aggregatedResponseRef, ChatClientRequest finalRequest,
-			StreamAdvisorChain streamAdvisorChain, ChatClientRequest originalRequest,
+			ChatClientRequest finalRequest, StreamAdvisorChain streamAdvisorChain, ChatClientRequest originalRequest,
 			ToolCallingChatOptions optionsCopy) {
 
-		return responseFlux.publish(shared -> {
-			// Branch 1: Stream chunks immediately for real-time streaming UX
-			Flux<ChatClientResponse> streamingBranch = new ChatClientMessageAggregator()
-				.aggregateChatClientResponse(shared, aggregatedResponseRef::set);
+		AtomicReference<ChatClientResponse> aggregatedResponseRef = new AtomicReference<>();
 
-			// Branch 2: After streaming completes, check for tool calls and
-			// potentially recurse.
-			Flux<ChatClientResponse> recursionBranch = Flux
-				.defer(() -> this.handleToolCallRecursion(aggregatedResponseRef.get(), finalRequest, streamAdvisorChain,
-						originalRequest, optionsCopy));
-
-			// Emit all streaming chunks first, then append any recursive results
-			return streamingBranch.concatWith(recursionBranch);
-		})
+		return CHAT_CLIENT_MESSAGE_AGGREGATOR.aggregateChatClientResponse(responseFlux, aggregatedResponseRef::set)
+			.concatWith(Flux.defer(() -> this.handleToolCallRecursion(aggregatedResponseRef.get(), finalRequest,
+					streamAdvisorChain, originalRequest, optionsCopy)))
 			.filter(ccr -> this.streamToolCallResponses
 					|| !(ccr.chatResponse() != null && ccr.chatResponse().hasToolCalls()));
 	}

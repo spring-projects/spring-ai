@@ -20,7 +20,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.util.JsonHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,6 +30,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Ilayaperumal Gopinathan
  */
 class JsonSchemaUtilsTests {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	/**
 	 * Test that a schema with only "type": "object" and no "properties" field is
@@ -45,7 +47,7 @@ class JsonSchemaUtilsTests {
 
 		String normalizedSchema = JsonSchemaUtils.ensureValidInputSchema(inputSchema);
 
-		Map<String, Object> schemaMap = ModelOptionsUtils.jsonToMap(normalizedSchema);
+		Map<String, Object> schemaMap = jsonHelper.fromJsonToMap(normalizedSchema);
 		assertThat(schemaMap).isNotNull();
 		assertThat(schemaMap).containsKey("type");
 		assertThat(schemaMap.get("type")).isEqualTo("object");
@@ -70,7 +72,7 @@ class JsonSchemaUtilsTests {
 
 		String normalizedSchema = JsonSchemaUtils.ensureValidInputSchema(inputSchema);
 
-		Map<String, Object> schemaMap = ModelOptionsUtils.jsonToMap(normalizedSchema);
+		Map<String, Object> schemaMap = jsonHelper.fromJsonToMap(normalizedSchema);
 		assertThat(schemaMap).isNotNull();
 
 		// Verify both "type" and "properties" were added
@@ -89,7 +91,7 @@ class JsonSchemaUtilsTests {
 
 		String normalizedSchema = JsonSchemaUtils.ensureValidInputSchema(inputSchema);
 
-		Map<String, Object> schemaMap = ModelOptionsUtils.jsonToMap(normalizedSchema);
+		Map<String, Object> schemaMap = jsonHelper.fromJsonToMap(normalizedSchema);
 		assertThat(schemaMap).isNotNull();
 		assertThat(schemaMap).containsKey("type");
 		assertThat(schemaMap.get("type")).isEqualTo("object");
@@ -107,7 +109,7 @@ class JsonSchemaUtilsTests {
 
 		String normalizedSchema = JsonSchemaUtils.ensureValidInputSchema(inputSchema);
 
-		Map<String, Object> schemaMap = ModelOptionsUtils.jsonToMap(normalizedSchema);
+		Map<String, Object> schemaMap = jsonHelper.fromJsonToMap(normalizedSchema);
 		assertThat(schemaMap).isNotNull();
 		assertThat(schemaMap).containsKey("type");
 		assertThat(schemaMap).containsKey("properties");
@@ -127,7 +129,7 @@ class JsonSchemaUtilsTests {
 
 		String normalizedSchema = JsonSchemaUtils.ensureValidInputSchema(inputSchema);
 
-		Map<String, Object> schemaMap = ModelOptionsUtils.jsonToMap(normalizedSchema);
+		Map<String, Object> schemaMap = jsonHelper.fromJsonToMap(normalizedSchema);
 		assertThat(schemaMap).isNotNull();
 		assertThat(schemaMap).containsKey("type");
 		assertThat(schemaMap.get("type")).isEqualTo("string");

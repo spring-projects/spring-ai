@@ -218,18 +218,6 @@ class OpenAiModerationModelTests {
 	}
 
 	@Test
-	void testOptionsToString() {
-		OpenAiModerationOptions options = OpenAiModerationOptions.builder()
-			.model("omni-moderation-latest")
-			.baseUrl("https://api.example.com")
-			.build();
-
-		String string = options.toString();
-		assertThat(string).contains("omni-moderation-latest");
-		assertThat(string).contains("https://api.example.com");
-	}
-
-	@Test
 	void testDefaultModelValue() {
 		assertThat(OpenAiModerationOptions.DEFAULT_MODERATION_MODEL).isEqualTo("omni-moderation-latest");
 	}

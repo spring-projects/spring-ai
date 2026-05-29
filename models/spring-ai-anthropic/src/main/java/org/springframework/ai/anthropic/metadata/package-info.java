@@ -14,16 +14,8 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.mcp.utils;
-
-import io.modelcontextprotocol.json.McpJsonDefaults;
-import io.modelcontextprotocol.json.McpJsonMapper;
-
-public final class McpJsonMapperUtils {
-
-	private McpJsonMapperUtils() {
-	}
-
-	public static final McpJsonMapper JSON_MAPPER = McpJsonDefaults.getMapper();
-
-}
+/**
+ * Metadata support classes for the Anthropic chat model.
+ */
+@org.jspecify.annotations.NullMarked
+package org.springframework.ai.anthropic.metadata;

@@ -44,6 +44,7 @@ import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -64,6 +65,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * provider.
  *
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 @Testcontainers
 @SpringBootTest(classes = OllamaWithOpenAiChatModelIT.Config.class)
@@ -309,6 +311,7 @@ class OllamaWithOpenAiChatModelIT {
 			return OpenAiChatModel.builder()
 				.options(OpenAiChatOptions.builder()
 					.baseUrl(getBaseUrl())
+					.apiKey(new NoopApiKey())
 					.model(DEFAULT_OLLAMA_MODEL)
 					.timeout(Duration.ofMinutes(5))
 					.build())

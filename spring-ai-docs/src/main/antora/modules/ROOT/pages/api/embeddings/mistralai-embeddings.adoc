@@ -161,7 +161,7 @@ The prefix `spring.ai.mistralai.embedding` is property prefix that configures th
 | spring.ai.mistralai.embedding.api-key    | Optional overrides the spring.ai.mistralai.api-key to provide embedding specific api-key  | -
 | spring.ai.mistralai.embedding.metadata-mode      | Document content extraction mode.      | EMBED
 | spring.ai.mistralai.embedding.options.model      | The model to use      | mistral-embed
-| spring.ai.mistralai.embedding.options.encodingFormat   | The format to return the embeddings in. Can be either float or base64.  | -
+| spring.ai.mistralai.embedding.options.encoding-format   | The format to return the embeddings in. Can be either float or base64.  | -
 |====
 
 NOTE: You can override the common `spring.ai.mistralai.base-url` and `spring.ai.mistralai.api-key` for the `ChatModel` and `EmbeddingModel` implementations.

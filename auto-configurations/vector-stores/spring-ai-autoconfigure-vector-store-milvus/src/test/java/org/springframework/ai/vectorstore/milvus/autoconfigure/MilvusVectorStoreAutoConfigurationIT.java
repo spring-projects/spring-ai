@@ -67,11 +67,11 @@ public class MilvusVectorStoreAutoConfigurationIT {
 	@Test
 	public void addAndSearch() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.vectorstore.milvus.metricType=COSINE",
-					"spring.ai.vectorstore.milvus.indexType=IVF_FLAT",
-					"spring.ai.vectorstore.milvus.embeddingDimension=384",
-					"spring.ai.vectorstore.milvus.collectionName=myTestCollection",
-					"spring.ai.vectorstore.milvus.initializeSchema=true",
+			.withPropertyValues("spring.ai.vectorstore.milvus.metric-type=COSINE",
+					"spring.ai.vectorstore.milvus.index-type=IVF_FLAT",
+					"spring.ai.vectorstore.milvus.embedding-dimension=384",
+					"spring.ai.vectorstore.milvus.collection-name=myTestCollection",
+					"spring.ai.vectorstore.milvus.initialize-schema=true",
 					"spring.ai.vectorstore.milvus.client.host=" + milvus.getHost(),
 					"spring.ai.vectorstore.milvus.client.port=" + milvus.getMappedPort(19530))
 			.run(context -> {
@@ -115,15 +115,15 @@ public class MilvusVectorStoreAutoConfigurationIT {
 	@Test
 	public void searchWithCustomFields() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.vectorstore.milvus.metricType=COSINE",
-					"spring.ai.vectorstore.milvus.indexType=IVF_FLAT",
-					"spring.ai.vectorstore.milvus.embeddingDimension=384",
-					"spring.ai.vectorstore.milvus.collectionName=myCustomCollection",
-					"spring.ai.vectorstore.milvus.idFieldName=identity",
-					"spring.ai.vectorstore.milvus.contentFieldName=text",
-					"spring.ai.vectorstore.milvus.embeddingFieldName=vectors",
-					"spring.ai.vectorstore.milvus.metadataFieldName=meta",
-					"spring.ai.vectorstore.milvus.initializeSchema=true",
+			.withPropertyValues("spring.ai.vectorstore.milvus.metric-type=COSINE",
+					"spring.ai.vectorstore.milvus.index-type=IVF_FLAT",
+					"spring.ai.vectorstore.milvus.embedding-dimension=384",
+					"spring.ai.vectorstore.milvus.collection-name=myCustomCollection",
+					"spring.ai.vectorstore.milvus.id-field-name=identity",
+					"spring.ai.vectorstore.milvus.content-field-name=text",
+					"spring.ai.vectorstore.milvus.embedding-field-name=vectors",
+					"spring.ai.vectorstore.milvus.metadata-field-name=meta",
+					"spring.ai.vectorstore.milvus.initialize-schema=true",
 					"spring.ai.vectorstore.milvus.client.host=" + milvus.getHost(),
 					"spring.ai.vectorstore.milvus.client.port=" + milvus.getMappedPort(19530))
 			.run(context -> {

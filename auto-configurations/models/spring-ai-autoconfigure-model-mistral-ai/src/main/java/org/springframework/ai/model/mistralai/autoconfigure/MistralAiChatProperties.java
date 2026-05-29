@@ -22,6 +22,7 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ReasoningEffort;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.mistralai.api.MistralAiApi.FunctionTool;
@@ -74,6 +75,8 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 	private @Nullable List<FunctionTool> tools;
 
 	private @Nullable ToolChoice toolChoice;
+
+	private @Nullable ReasoningEffort reasoningEffort;
 
 	private @Nullable Boolean internalToolExecutionEnabled;
 
@@ -181,6 +184,14 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 		this.toolChoice = toolChoice;
 	}
 
+	public @Nullable ReasoningEffort getReasoningEffort() {
+		return this.reasoningEffort;
+	}
+
+	public void setReasoningEffort(@Nullable ReasoningEffort reasoningEffort) {
+		this.reasoningEffort = reasoningEffort;
+	}
+
 	public @Nullable Boolean getInternalToolExecutionEnabled() {
 		return this.internalToolExecutionEnabled;
 	}
@@ -219,6 +230,9 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 		}
 		if (this.toolChoice != null) {
 			builder.toolChoice(this.toolChoice);
+		}
+		if (this.reasoningEffort != null) {
+			builder.reasoningEffort(this.reasoningEffort);
 		}
 		if (this.internalToolExecutionEnabled != null) {
 			builder.internalToolExecutionEnabled(this.internalToolExecutionEnabled);

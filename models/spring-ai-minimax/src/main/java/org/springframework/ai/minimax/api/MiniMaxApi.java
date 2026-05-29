@@ -33,8 +33,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.model.ChatModelDescription;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -52,9 +52,12 @@ import org.springframework.web.reactive.function.client.WebClient;
  *
  * @author Geng Rong
  * @author Thomas Vitale
- * @since 1.0.0 M1
+ * @author Sebastien Deleuze
+ * @since 1.0.0
  */
 public class MiniMaxApi {
+	private static final JsonHelper jsonHelper = new JsonHelper();
+
 
 	public static final String DEFAULT_CHAT_MODEL = ChatModel.ABAB_6_5_G_Chat.getValue();
 	public static final String DEFAULT_EMBEDDING_MODEL = EmbeddingModel.Embo_01.getValue();
@@ -154,6 +157,7 @@ public class MiniMaxApi {
 	 * @param chatRequest The chat completion request. Must have the stream property set to true.
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
+	@SuppressWarnings("NullAway")
 	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
@@ -168,7 +172,7 @@ public class MiniMaxApi {
 				.bodyToFlux(String.class)
 				.takeUntil(SSE_DONE_PREDICATE)
 				.filter(SSE_DONE_PREDICATE.negate())
-				.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
+				.mapNotNull(content -> jsonHelper.fromJson(content, ChatCompletionChunk.class))
 				.map(chunk -> {
 					if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
 						isInsideTool.set(true);
@@ -454,7 +458,7 @@ public class MiniMaxApi {
 			 * @param jsonSchema tool function schema as json.
 			 */
 			public Function(String description, String name, String jsonSchema) {
-				this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
+				this(description, name, jsonHelper.fromJsonToMap(jsonSchema));
 			}
 
 			@JsonProperty("description")
@@ -491,7 +495,7 @@ public class MiniMaxApi {
 			public void setJsonSchema(@Nullable String jsonSchema) {
 				this.jsonSchema = jsonSchema;
 				if (jsonSchema != null) {
-					this.parameters = ModelOptionsUtils.jsonToMap(jsonSchema);
+					this.parameters = jsonHelper.fromJsonToMap(jsonSchema);
 				}
 			}
 

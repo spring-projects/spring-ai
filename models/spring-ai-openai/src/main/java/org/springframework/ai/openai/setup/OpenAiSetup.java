@@ -26,8 +26,12 @@ import com.openai.azure.AzureOpenAIServiceVersion;
 import com.openai.azure.credential.AzureApiKeyCredential;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
+import com.openai.client.OpenAIClientAsyncImpl;
+import com.openai.client.OpenAIClientImpl;
+import com.openai.client.okhttp.OkHttpClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.client.okhttp.OpenAIOkHttpClientAsync;
+import com.openai.core.ClientOptions;
 import com.openai.credential.Credential;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -50,6 +54,17 @@ public final class OpenAiSetup {
 	static final String GITHUB_TOKEN = "GITHUB_TOKEN";
 	static final String DEFAULT_USER_AGENT = "spring-ai-openai";
 
+	/**
+	 * Placeholder API key used internally when no-auth mode is requested (empty apiKey /
+	 * {@link org.springframework.ai.model.NoopApiKey}). The OpenAI Java SDK requires a
+	 * non-empty string to pass its credential validation at both construction and
+	 * per-request time — an empty string causes an {@link IllegalStateException} in
+	 * {@code securityHeaders()}. The OkHttp interceptor registered in
+	 * {@link #buildNoAuthClientOptions} guarantees this placeholder value is stripped
+	 * from the {@code Authorization} header before any request leaves the JVM.
+	 */
+	private static final String NO_AUTH_PLACEHOLDER_KEY = "no-auth-placeholder";
+
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiSetup.class);
 
 	private OpenAiSetup() {
@@ -61,6 +76,17 @@ public final class OpenAiSetup {
 
 	}
 
+	/**
+	 * Sets up a synchronous OpenAI client.
+	 * <p>
+	 * When {@code apiKey} is an empty string, the client is configured in no-auth mode:
+	 * no {@code Authorization} header is sent with any request. This is useful for
+	 * connecting to custom OpenAI-compatible servers that use cookie-based or other
+	 * non-bearer-token authentication. To enable this mode, set
+	 * {@code spring.ai.openai.api-key=} (empty value) in your application properties, or
+	 * pass a {@link org.springframework.ai.model.NoopApiKey} via
+	 * {@link org.springframework.ai.openai.AbstractOpenAiOptions.AbstractBuilder#apiKey(org.springframework.ai.model.ApiKey)}.
+	 */
 	public static OpenAIClient setupSyncClient(@Nullable String baseUrl, @Nullable String apiKey,
 			@Nullable Credential credential, @Nullable String azureDeploymentName,
 			@Nullable AzureOpenAIServiceVersion azureOpenAiServiceVersion, @Nullable String organizationId,
@@ -70,10 +96,20 @@ public final class OpenAiSetup {
 		baseUrl = detectBaseUrlFromEnv(baseUrl);
 		var modelProvider = detectModelProvider(isAzure, isGitHubModels, baseUrl, azureDeploymentName,
 				azureOpenAiServiceVersion);
+
+		String calculatedApiKey = apiKey != null ? apiKey : detectApiKey(modelProvider);
+		if (calculatedApiKey != null && calculatedApiKey.isEmpty()) {
+			// No-auth mode: build the client directly via ClientOptions so we can inject
+			// a
+			// custom HttpClient that strips the Authorization header before sending
+			// requests.
+			return new OpenAIClientImpl(buildNoAuthClientOptions(baseUrl, modelProvider, modelName, azureDeploymentName,
+					azureOpenAiServiceVersion, organizationId, timeout, maxRetries, proxy, customHeaders));
+		}
+
 		OpenAIOkHttpClient.Builder builder = OpenAIOkHttpClient.builder();
 		builder.baseUrl(calculateBaseUrl(baseUrl, modelProvider, modelName, azureDeploymentName));
 
-		String calculatedApiKey = apiKey != null ? apiKey : detectApiKey(modelProvider);
 		if (calculatedApiKey != null) {
 			if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY) {
 				builder.credential(AzureApiKeyCredential.create(calculatedApiKey));
@@ -88,8 +124,7 @@ public final class OpenAiSetup {
 			}
 			else if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY) {
 				// If no API key is provided for Microsoft Foundry, we try to use
-				// passwordless
-				// authentication
+				// passwordless authentication
 				builder.credential(azureAuthentication());
 			}
 		}
@@ -128,10 +163,20 @@ public final class OpenAiSetup {
 		baseUrl = detectBaseUrlFromEnv(baseUrl);
 		var modelProvider = detectModelProvider(isAzure, isGitHubModels, baseUrl, azureDeploymentName,
 				azureOpenAiServiceVersion);
+
+		String calculatedApiKey = apiKey != null ? apiKey : detectApiKey(modelProvider);
+		if (calculatedApiKey != null && calculatedApiKey.isEmpty()) {
+			// No-auth mode: build the client directly via ClientOptions so we can inject
+			// a custom HttpClient that strips the Authorization header before
+			// sending requests.
+			return new OpenAIClientAsyncImpl(
+					buildNoAuthClientOptions(baseUrl, modelProvider, modelName, azureDeploymentName,
+							azureOpenAiServiceVersion, organizationId, timeout, maxRetries, proxy, customHeaders));
+		}
+
 		OpenAIOkHttpClientAsync.Builder builder = OpenAIOkHttpClientAsync.builder();
 		builder.baseUrl(calculateBaseUrl(baseUrl, modelProvider, modelName, azureDeploymentName));
 
-		String calculatedApiKey = apiKey != null ? apiKey : detectApiKey(modelProvider);
 		if (calculatedApiKey != null) {
 			if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY) {
 				builder.credential(AzureApiKeyCredential.create(calculatedApiKey));
@@ -146,8 +191,7 @@ public final class OpenAiSetup {
 			}
 			else if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY) {
 				// If no API key is provided for Microsoft Foundry, we try to use
-				// passwordless
-				// authentication
+				// passwordless authentication
 				builder.credential(azureAuthentication());
 			}
 		}
@@ -171,6 +215,47 @@ public final class OpenAiSetup {
 		builder.timeout(timeout);
 		builder.maxRetries(maxRetries);
 		return builder.build();
+	}
+
+	/**
+	 * Builds a {@link ClientOptions} instance with a custom {@link OkHttpClient} that
+	 * removes the {@code Authorization} header from every outgoing request. Used when an
+	 * empty API key is provided to signal no-auth mode.
+	 */
+	private static ClientOptions buildNoAuthClientOptions(@Nullable String baseUrl, ModelProvider modelProvider,
+			@Nullable String modelName, @Nullable String azureDeploymentName,
+			@Nullable AzureOpenAIServiceVersion azureOpenAiServiceVersion, @Nullable String organizationId,
+			Duration timeout, int maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders) {
+
+		okhttp3.OkHttpClient.Builder okHttpBuilder = new okhttp3.OkHttpClient.Builder();
+		if (proxy != null) {
+			okHttpBuilder.proxy(proxy);
+		}
+		okHttpBuilder.addInterceptor(chain -> {
+			okhttp3.Request request = chain.request().newBuilder().removeHeader("Authorization").build();
+			return chain.proceed(request);
+		});
+		OkHttpClient httpClient = new OkHttpClient(okHttpBuilder.build());
+
+		ClientOptions.Builder clientOptions = ClientOptions.builder()
+			.httpClient(httpClient)
+			.apiKey(NO_AUTH_PLACEHOLDER_KEY)
+			.baseUrl(calculateBaseUrl(baseUrl, modelProvider, modelName, azureDeploymentName))
+			.organization(organizationId)
+			.timeout(timeout)
+			.maxRetries(maxRetries)
+			.putHeader("User-Agent", DEFAULT_USER_AGENT);
+
+		if (azureOpenAiServiceVersion != null) {
+			clientOptions.azureServiceVersion(azureOpenAiServiceVersion);
+		}
+		if (customHeaders != null) {
+			clientOptions.putAllHeaders(customHeaders.entrySet()
+				.stream()
+				.collect(Collectors.toMap(Map.Entry::getKey, entry -> Collections.singletonList(entry.getValue()))));
+		}
+
+		return clientOptions.build();
 	}
 
 	static @Nullable String detectBaseUrlFromEnv(@Nullable String baseUrl) {

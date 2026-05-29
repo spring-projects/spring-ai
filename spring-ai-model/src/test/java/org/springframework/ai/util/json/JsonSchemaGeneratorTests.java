@@ -33,6 +33,8 @@ import tools.jackson.databind.JsonNode;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.lang.Nullable;
 
@@ -46,6 +48,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author Christian Tzolov
  */
 class JsonSchemaGeneratorTests {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	// METHODS
 
@@ -246,7 +250,7 @@ class JsonSchemaGeneratorTests {
 		String schema = JsonSchemaGenerator.generateForMethodInput(method,
 				JsonSchemaGenerator.SchemaOption.ALLOW_ADDITIONAL_PROPERTIES_BY_DEFAULT);
 
-		JsonNode jsonNode = JsonParser.getJsonMapper().readTree(schema);
+		JsonNode jsonNode = JacksonUtils.getDefaultJsonMapper().readTree(schema);
 		assertThat(jsonNode.has("additionalProperties")).isFalse();
 	}
 
@@ -345,7 +349,7 @@ class JsonSchemaGeneratorTests {
 		String schema = JsonSchemaGenerator.generateForMethodInput(method,
 				JsonSchemaGenerator.SchemaOption.ALLOW_ADDITIONAL_PROPERTIES_BY_DEFAULT);
 
-		JsonNode jsonNode = JsonParser.getJsonMapper().readTree(schema);
+		JsonNode jsonNode = JacksonUtils.getDefaultJsonMapper().readTree(schema);
 		assertThat(jsonNode.has("additionalProperties")).isFalse();
 		assertThat(jsonNode.get("properties").get("data").has("additionalProperties")).isFalse();
 		assertThat(jsonNode.get("properties").get("moreData").has("additionalProperties")).isFalse();
@@ -447,7 +451,7 @@ class JsonSchemaGeneratorTests {
 		String schema = JsonSchemaGenerator.generateForType(Person.class,
 				JsonSchemaGenerator.SchemaOption.ALLOW_ADDITIONAL_PROPERTIES_BY_DEFAULT);
 
-		JsonNode jsonNode = JsonParser.getJsonMapper().readTree(schema);
+		JsonNode jsonNode = JacksonUtils.getDefaultJsonMapper().readTree(schema);
 		assertThat(jsonNode.has("additionalProperties")).isFalse();
 	}
 
@@ -660,7 +664,7 @@ class JsonSchemaGeneratorTests {
 	@Test
 	void generateSchemaForTypeWithMapFieldDoesNotForbidAdditionalProperties() {
 		String schema = JsonSchemaGenerator.generateForType(WithMapField.class);
-		JsonNode jsonNode = JsonParser.getJsonMapper().readTree(schema);
+		JsonNode jsonNode = JacksonUtils.getDefaultJsonMapper().readTree(schema);
 		assertThat(jsonNode.get("additionalProperties").asBoolean())
 			.as("root object schema should have additionalProperties: false")
 			.isFalse();
@@ -752,7 +756,7 @@ class JsonSchemaGeneratorTests {
 		Method method = TestMethods.class.getDeclaredMethod("searchBooksMethod", SearchRequest.class);
 
 		String schema = JsonSchemaGenerator.generateForMethodInput(method);
-		JsonNode schemaNode = JsonParser.fromJson(schema, JsonNode.class);
+		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
 
 		assertThat(schemaNode.has("$defs")).as("$defs must be hoisted to the outer schema root").isTrue();
 		assertThat(schemaNode.get("$defs").has("RecursiveFilter")).isTrue();
@@ -775,7 +779,7 @@ class JsonSchemaGeneratorTests {
 				SearchRequest.class);
 
 		String schema = JsonSchemaGenerator.generateForMethodInput(method);
-		JsonNode schemaNode = JsonParser.fromJson(schema, JsonNode.class);
+		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
 
 		assertThat(schemaNode.at("/$defs").size()).isEqualTo(1);
 		assertThat(schemaNode.at("/$defs").has("RecursiveFilter")).isTrue();
@@ -797,7 +801,7 @@ class JsonSchemaGeneratorTests {
 				OuterB.SearchRequest.class);
 
 		String schema = JsonSchemaGenerator.generateForMethodInput(method);
-		JsonNode schemaNode = JsonParser.fromJson(schema, JsonNode.class);
+		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
 
 		assertThat(schemaNode.at("/$defs/Filter").has("properties")).isTrue();
 		assertThat(schemaNode.at("/$defs/Filter_2").has("properties")).isTrue();
@@ -827,7 +831,7 @@ class JsonSchemaGeneratorTests {
 				PeerB.SearchRequest.class);
 
 		String schema = JsonSchemaGenerator.generateForMethodInput(method);
-		JsonNode schemaNode = JsonParser.fromJson(schema, JsonNode.class);
+		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
 
 		assertThat(schemaNode.at("/$defs/Filter/properties").has("label")).as("first definition keeps PeerA shape")
 			.isTrue();
@@ -854,7 +858,7 @@ class JsonSchemaGeneratorTests {
 		Method method = TestMethods.class.getDeclaredMethod("searchBooksMethod", SearchRequest.class);
 
 		String schema = JsonSchemaGenerator.generateForMethodInput(method);
-		JsonNode schemaNode = JsonParser.fromJson(schema, JsonNode.class);
+		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
 
 		assertThat(schemaNode.at("/$defs/RecursiveFilter/additionalProperties").asBoolean(true))
 			.as("additionalProperties: false must be propagated into hoisted $defs entries")
@@ -869,7 +873,7 @@ class JsonSchemaGeneratorTests {
 
 		String schema = JsonSchemaGenerator.generateForMethodInput(method,
 				JsonSchemaGenerator.SchemaOption.ALLOW_ADDITIONAL_PROPERTIES_BY_DEFAULT);
-		JsonNode schemaNode = JsonParser.fromJson(schema, JsonNode.class);
+		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
 
 		assertThat(schemaNode.has("$defs")).isTrue();
 		assertThat(schemaNode.at("/$defs/RecursiveFilter").has("additionalProperties"))

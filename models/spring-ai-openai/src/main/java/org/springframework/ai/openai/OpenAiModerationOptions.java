@@ -85,14 +85,6 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 				getTimeout(), getMaxRetries(), getProxy(), getCustomHeaders());
 	}
 
-	@Override
-	public String toString() {
-		return "OpenAiModerationOptions{" + "model='" + getModel() + '\'' + ", baseUrl='" + getBaseUrl() + '\''
-				+ ", organizationId='" + getOrganizationId() + '\'' + ", microsoftDeploymentName='"
-				+ getMicrosoftDeploymentName() + '\'' + ", timeout=" + getTimeout() + ", maxRetries=" + getMaxRetries()
-				+ '}';
-	}
-
 	public static final class Builder extends AbstractBuilder<OpenAiModerationOptions, Builder> {
 
 		private Builder() {

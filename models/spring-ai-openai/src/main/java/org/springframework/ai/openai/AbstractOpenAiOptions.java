@@ -25,6 +25,9 @@ import com.openai.azure.AzureOpenAIServiceVersion;
 import com.openai.credential.Credential;
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.ai.model.ApiKey;
+import org.springframework.ai.model.NoopApiKey;
+
 public class AbstractOpenAiOptions {
 
 	/**
@@ -227,6 +230,17 @@ public class AbstractOpenAiOptions {
 
 		public B apiKey(@Nullable String apiKey) {
 			this.apiKey = apiKey;
+			return self();
+		}
+
+		/**
+		 * Sets the API key using an {@link ApiKey} instance. Pass a {@link NoopApiKey} to
+		 * disable authentication (no {@code Authorization} header will be sent), which is
+		 * the same behavior as setting an empty string via {@link #apiKey(String)}.
+		 * @param apiKey the API key instance; if {@code null}, the key is cleared
+		 */
+		public B apiKey(@Nullable ApiKey apiKey) {
+			this.apiKey = (apiKey != null) ? apiKey.getValue() : null;
 			return self();
 		}
 

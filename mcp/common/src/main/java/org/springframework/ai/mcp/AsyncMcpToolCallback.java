@@ -27,11 +27,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -47,6 +47,8 @@ import org.springframework.util.StringUtils;
  * @author Ilayaperumal Gopinathan
  */
 public class AsyncMcpToolCallback implements ToolCallback {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final Logger logger = LoggerFactory.getLogger(AsyncMcpToolCallback.class);
 
@@ -114,7 +116,7 @@ public class AsyncMcpToolCallback implements ToolCallback {
 			toolCallInput = "{}";
 		}
 
-		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(toolCallInput);
+		Map<String, Object> arguments = jsonHelper.fromJsonToMap(toolCallInput);
 
 		CallToolResult response;
 		try {
@@ -143,7 +145,7 @@ public class AsyncMcpToolCallback implements ToolCallback {
 			throw new ToolExecutionException(this.getToolDefinition(),
 					new IllegalStateException("Error calling tool: " + response.content()));
 		}
-		return ModelOptionsUtils.toJsonString(response.content());
+		return jsonHelper.toJson(response.content());
 	}
 
 	/**

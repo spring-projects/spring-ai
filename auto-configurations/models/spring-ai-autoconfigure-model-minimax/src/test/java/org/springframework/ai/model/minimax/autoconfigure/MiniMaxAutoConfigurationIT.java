@@ -49,7 +49,7 @@ public class MiniMaxAutoConfigurationIT {
 	private static final Log logger = LogFactory.getLog(MiniMaxAutoConfigurationIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.minimax.apiKey=" + System.getenv("MINIMAX_API_KEY"));
+		.withPropertyValues("spring.ai.minimax.api-key=" + System.getenv("MINIMAX_API_KEY"));
 
 	@Test
 	void generate() {
