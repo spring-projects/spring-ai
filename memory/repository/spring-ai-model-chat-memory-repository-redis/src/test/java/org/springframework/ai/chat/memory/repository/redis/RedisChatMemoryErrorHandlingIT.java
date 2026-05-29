@@ -36,8 +36,6 @@ import redis.clients.jedis.exceptions.JedisConnectionException;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 
@@ -49,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  * Integration tests for RedisChatMemoryRepository focused on error handling scenarios.
  *
  * @author Brian Sam-Bodden
+ * @author Yanming Zhou
  */
 @Testcontainers
 class RedisChatMemoryErrorHandlingIT {
@@ -314,7 +313,6 @@ class RedisChatMemoryErrorHandlingIT {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
 	static class TestApplication {
 
 		@Bean
