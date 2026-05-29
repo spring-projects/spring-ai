@@ -311,7 +311,11 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 			// Restore observation scope on the boundedElastic thread so tool execution
 			// can correctly parent any child spans it creates.
 			Observation parentObs = ctx.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
-			Observation.Scope scope = parentObs != null ? parentObs.openScope() : null;
+			// Guard: only open a scope when the observation is NOT already the current
+			// one.
+			Observation.Scope scope = (parentObs != null
+					&& parentObs != parentObs.getObservationRegistry().getCurrentObservation()) ? parentObs.openScope()
+							: null;
 
 			try {
 				ToolCallReactiveContextHolder.setContext(ctx);

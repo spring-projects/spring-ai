@@ -18,11 +18,18 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
 import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationHandler;
 import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.ObservationView;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -30,6 +37,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.quality.Strictness;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Hooks;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
@@ -449,7 +457,17 @@ public class ToolCallAdvisorTests {
 			return toolExecutionResult;
 		});
 
-		advisor.adviseStream(request, realChain).collectList().block();
+		Observation outerObservation = Observation.createNotStarted("outer.test", registry).start();
+
+		// Simulate DefaultAroundAdvisorChain's contextWrite so the tool-call
+		// deferContextual lambda sees the observation and can open a scope on
+		// the boundedElastic thread.
+		advisor.adviseStream(request, realChain)
+			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, outerObservation))
+			.collectList()
+			.block();
+
+		outerObservation.stop();
 
 		assertThat(observationDuringTool.get())
 			.as("Fix B: observation must be in scope on the boundedElastic thread during tool execution")
@@ -1016,6 +1034,207 @@ public class ToolCallAdvisorTests {
 				return new TestableToolCallAdvisor(getToolCallingManager(), getAdvisorOrder(), null);
 			}
 
+		}
+
+	}
+
+	/**
+	 * Verifies that {@link Hooks#enableAutomaticContextPropagation()} does not break the
+	 * streaming tool-call observation path.
+	 *
+	 * <p>
+	 * With auto-propagation active Reactor restores ThreadLocals from the Reactor context
+	 * at every operator boundary including the {@code subscribeOn(boundedElastic())}
+	 * thread hop in {@link ToolCallAdvisor}. This means {@code openScope()} in
+	 * {@code handleToolCallRecursion} may be called on an observation that is already the
+	 * current ThreadLocal observation — a redundant double-open. These tests confirm the
+	 * behaviour is correct: the observation remains in scope during tool execution and no
+	 * observation becomes its own parent.
+	 */
+	@Nested
+	class WithAutomaticContextPropagation {
+
+		@BeforeEach
+		void enableAutoPropagation() {
+			Hooks.enableAutomaticContextPropagation();
+		}
+
+		@AfterEach
+		void disableAutoPropagation() {
+			Hooks.disableAutomaticContextPropagation();
+		}
+
+		@Test
+		void observationIsSameInstanceDuringToolExecution() {
+			// With auto-propagation Reactor restores the ThreadLocal before every operator
+			// boundary including the subscribeOn(boundedElastic()) hop, so the guard in
+			// handleToolCallRecursion must NOT call openScope() redundantly. The observable
+			// proof: the observation seen inside executeToolCalls is the exact same instance
+			// placed in the Reactor context, not a stale or double-opened scope.
+			ObservationRegistry registry = ObservationRegistry.create();
+			ToolCallAdvisor advisor = ToolCallAdvisor.builder()
+				.toolCallingManager(ToolCallAdvisorTests.this.toolCallingManager)
+				.build();
+
+			ChatClientRequest request = createMockRequest();
+			ChatClientResponse responseWithToolCall = createMockResponse(true);
+			ChatClientResponse finalResponse = createMockResponse(false);
+
+			int[] callCount = { 0 };
+			TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+				callCount[0]++;
+				return Flux.just(callCount[0] == 1 ? responseWithToolCall : finalResponse);
+			});
+
+			StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(registry)
+				.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+				.build();
+
+			AtomicReference<Observation> observationDuringTool = new AtomicReference<>();
+			List<Message> conversationHistory = List.of(new UserMessage("test"),
+					AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+			ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+				.conversationHistory(conversationHistory)
+				.build();
+			when(ToolCallAdvisorTests.this.toolCallingManager.executeToolCalls(any(Prompt.class),
+					any(ChatResponse.class)))
+				.thenAnswer(inv -> {
+					observationDuringTool.set(registry.getCurrentObservation());
+					return toolExecutionResult;
+				});
+
+			Observation outerObservation = Observation.createNotStarted("outer.test", registry).start();
+
+			advisor.adviseStream(request, realChain)
+				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, outerObservation))
+				.collectList()
+				.block();
+
+			outerObservation.stop();
+
+			assertThat(observationDuringTool.get())
+				.as("Observation during tool execution must be the exact same instance as the outer observation")
+				.isSameAs(outerObservation);
+		}
+
+		@Test
+		void returnDirectPathHasObservationInScope() {
+			ObservationRegistry registry = ObservationRegistry.create();
+			ToolCallAdvisor advisor = ToolCallAdvisor.builder()
+				.toolCallingManager(ToolCallAdvisorTests.this.toolCallingManager)
+				.build();
+
+			ChatClientRequest request = createMockRequest();
+			ChatClientResponse responseWithToolCall = createMockResponse(true);
+
+			TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor(
+					(req, chain) -> Flux.just(responseWithToolCall));
+
+			StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(registry)
+				.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+				.build();
+
+			AtomicReference<Observation> observationDuringTool = new AtomicReference<>();
+			ToolResponseMessage.ToolResponse toolResponse = new ToolResponseMessage.ToolResponse("tool-1", "testTool",
+					"Tool result data");
+			ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder()
+				.responses(List.of(toolResponse))
+				.build();
+			List<Message> conversationHistory = List.of(new UserMessage("test"),
+					AssistantMessage.builder().content("").build(), toolResponseMessage);
+			ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+				.conversationHistory(conversationHistory)
+				.returnDirect(true)
+				.build();
+			when(ToolCallAdvisorTests.this.toolCallingManager.executeToolCalls(any(Prompt.class),
+					any(ChatResponse.class)))
+				.thenAnswer(inv -> {
+					observationDuringTool.set(registry.getCurrentObservation());
+					return toolExecutionResult;
+				});
+
+			Observation outerObservation = Observation.createNotStarted("outer.test", registry).start();
+
+			List<ChatClientResponse> results = advisor.adviseStream(request, realChain)
+				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, outerObservation))
+				.collectList()
+				.block();
+
+			outerObservation.stop();
+
+			assertThat(observationDuringTool.get())
+				.as("Observation must be in scope during return-direct tool execution "
+						+ "even with automatic context propagation enabled")
+				.isSameAs(outerObservation);
+			assertThat(results).isNotNull().hasSize(1);
+			assertThat(results.get(0).chatResponse().getResults().get(0).getOutput().getText())
+				.isEqualTo("Tool result data");
+		}
+
+		@Test
+		void noObservationBecomesItsOwnParent() {
+			CopyOnWriteArrayList<StartRecord> starts = new CopyOnWriteArrayList<>();
+			ObservationRegistry registry = ObservationRegistry.create();
+			registry.observationConfig().observationHandler(new ObservationHandler<Observation.Context>() {
+				@Override
+				public void onStart(Observation.Context context) {
+					starts.add(new StartRecord(context, context.getParentObservation()));
+				}
+
+				@Override
+				public boolean supportsContext(Observation.Context context) {
+					return true;
+				}
+			});
+
+			ToolCallAdvisor advisor = ToolCallAdvisor.builder()
+				.toolCallingManager(ToolCallAdvisorTests.this.toolCallingManager)
+				.build();
+
+			ChatClientRequest request = createMockRequest();
+			ChatClientResponse responseWithToolCall = createMockResponse(true);
+			ChatClientResponse finalResponse = createMockResponse(false);
+
+			int[] callCount = { 0 };
+			TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+				callCount[0]++;
+				return Flux.just(callCount[0] == 1 ? responseWithToolCall : finalResponse);
+			});
+
+			StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(registry)
+				.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+				.build();
+
+			Observation outerObservation = Observation.createNotStarted("outer.test", registry).start();
+
+			List<Message> conversationHistory = List.of(new UserMessage("test"),
+					AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+			ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+				.conversationHistory(conversationHistory)
+				.build();
+			when(ToolCallAdvisorTests.this.toolCallingManager.executeToolCalls(any(Prompt.class),
+					any(ChatResponse.class)))
+				.thenReturn(toolExecutionResult);
+
+			advisor.adviseStream(request, realChain)
+				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, outerObservation))
+				.collectList()
+				.block();
+
+			outerObservation.stop();
+
+			assertThat(starts).as("At least one observation must have started").isNotEmpty();
+			starts.forEach(record -> {
+				ObservationView parent = record.parent();
+				if (parent != null) {
+					assertThat(parent.getContextView())
+						.as("Observation [%s] must not be its own parent", record.ctx().getName())
+						.isNotSameAs(record.ctx());
+				}
+			});
+		}
+
+		record StartRecord(Observation.Context ctx, ObservationView parent) {
 		}
 
 	}
