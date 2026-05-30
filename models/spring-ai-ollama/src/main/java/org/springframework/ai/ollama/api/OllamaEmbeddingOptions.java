@@ -150,7 +150,7 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 			@Nullable Integer numGPU, @Nullable Integer mainGPU, @Nullable Boolean lowVRAM,
 			@Nullable Boolean vocabOnly, @Nullable Boolean useMMap, @Nullable Boolean useMLock,
 			@Nullable Integer numThread) {
-		this.model = model != null ? model : org.springframework.ai.ollama.api.OllamaModel.MXBAI_EMBED_LARGE.id();
+		this.model = model != null ? model : OllamaModel.MXBAI_EMBED_LARGE.id();
 		this.keepAlive = keepAlive;
 		this.dimensions = dimensions;
 		this.truncate = truncate;
