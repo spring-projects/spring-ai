@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -466,12 +465,10 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 
 	// public Builder class exposed to users. Avoids having to deal with noisy generic
 	// parameters.
-	@NullMarked // TODO: move at package level
 	public static class Builder extends AbstractBuilder<Builder> {
 
 	}
 
-	@NullMarked // TODO: move at package level
 	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
 			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
 
