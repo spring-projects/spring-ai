@@ -249,14 +249,15 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 
 		var optionsMap = options.toMap();
 		assertThat(optionsMap).containsOnlyKeys("model");
-		assertThat(optionsMap.get("model")).isEqualTo(org.springframework.ai.ollama.api.OllamaModel.MISTRAL.id());
+		assertThat(optionsMap.get("model")).isEqualTo(OllamaModel.MISTRAL.id());
 
-		// Verify all getters return null/empty
-		assertThat(options.getModel()).isEqualTo(org.springframework.ai.ollama.api.OllamaModel.MISTRAL.id());
+		assertThat(options.getModel()).isEqualTo(OllamaModel.MISTRAL.id());
+
+		// Verify all getters return null
 		assertThat(options.getTemperature()).isNull();
 		assertThat(options.getTopK()).isNull();
-		assertThat(options.getToolNames()).isEmpty();
-		assertThat(options.getToolContext()).isEmpty();
+		assertThat(options.getToolNames()).isNull();
+		assertThat(options.getToolContext()).isNull();
 	}
 
 	@Test

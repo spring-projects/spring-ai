@@ -80,11 +80,27 @@ class ToolCallingChatOptionsTests {
 	}
 
 	@Test
+	void whenMergeNullRuntimeAndDefaultToolNames() {
+		Set<String> runtimeToolNames = null;
+		Set<String> defaultToolNames = Set.of("toolB");
+		Set<String> mergedToolNames = ToolCallingChatOptions.mergeToolNames(runtimeToolNames, defaultToolNames);
+		assertThat(mergedToolNames).containsExactlyInAnyOrder("toolB");
+	}
+
+	@Test
 	void whenMergeEmptyRuntimeAndEmptyDefaultToolNames() {
 		Set<String> runtimeToolNames = Set.of();
 		Set<String> defaultToolNames = Set.of();
 		Set<String> mergedToolNames = ToolCallingChatOptions.mergeToolNames(runtimeToolNames, defaultToolNames);
 		assertThat(mergedToolNames).containsExactlyInAnyOrder();
+	}
+
+	@Test
+	void whenMergeNullRuntimeAndNullDefaultToolNames() {
+		Set<String> runtimeToolNames = null;
+		Set<String> defaultToolNames = null;
+		Set<String> mergedToolNames = ToolCallingChatOptions.mergeToolNames(runtimeToolNames, defaultToolNames);
+		assertThat(mergedToolNames).isNull();
 	}
 
 	@Test
@@ -118,12 +134,31 @@ class ToolCallingChatOptionsTests {
 	}
 
 	@Test
+	void whenMergeNullRuntimeAndDefaultToolCallbacks() {
+		List<ToolCallback> runtimeToolCallbacks = null;
+		List<ToolCallback> defaultToolCallbacks = List.of(new TestToolCallback("toolB"));
+		List<ToolCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
+				defaultToolCallbacks);
+		assertThat(mergedToolCallbacks).hasSize(1);
+		assertThat(mergedToolCallbacks.get(0).getToolDefinition().name()).isEqualTo("toolB");
+	}
+
+	@Test
 	void whenMergeEmptyRuntimeAndEmptyDefaultToolCallbacks() {
 		List<ToolCallback> runtimeToolCallbacks = List.of();
 		List<ToolCallback> defaultToolCallbacks = List.of();
 		List<ToolCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
 				defaultToolCallbacks);
 		assertThat(mergedToolCallbacks).hasSize(0);
+	}
+
+	@Test
+	void whenMergeNullRuntimeAndNullDefaultToolCallbacks() {
+		List<ToolCallback> runtimeToolCallbacks = null;
+		List<ToolCallback> defaultToolCallbacks = null;
+		List<ToolCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
+				defaultToolCallbacks);
+		assertThat(mergedToolCallbacks).isNull();
 	}
 
 	@Test
@@ -159,12 +194,31 @@ class ToolCallingChatOptionsTests {
 	}
 
 	@Test
+	void whenMergeNullRuntimeAndDefaultToolContext() {
+		Map<String, Object> runtimeToolContext = null;
+		Map<String, Object> defaultToolContext = Map.of("key1", "value1", "key2", "value2");
+		Map<String, Object> mergedToolContext = ToolCallingChatOptions.mergeToolContext(runtimeToolContext,
+				defaultToolContext);
+		assertThat(mergedToolContext).hasSize(2);
+		assertThat(mergedToolContext).containsEntry("key1", "value1").containsEntry("key2", "value2");
+	}
+
+	@Test
 	void whenMergeEmptyRuntimeAndEmptyDefaultToolContext() {
 		Map<String, Object> runtimeToolContext = Map.of();
 		Map<String, Object> defaultToolContext = Map.of();
 		Map<String, Object> mergedToolContext = ToolCallingChatOptions.mergeToolContext(runtimeToolContext,
 				defaultToolContext);
 		assertThat(mergedToolContext).hasSize(0);
+	}
+
+	@Test
+	void whenMergeNullRuntimeAndNullDefaultToolContext() {
+		Map<String, Object> runtimeToolContext = null;
+		Map<String, Object> defaultToolContext = null;
+		Map<String, Object> mergedToolContext = ToolCallingChatOptions.mergeToolContext(runtimeToolContext,
+				defaultToolContext);
+		assertThat(mergedToolContext).isNull();
 	}
 
 	@Test

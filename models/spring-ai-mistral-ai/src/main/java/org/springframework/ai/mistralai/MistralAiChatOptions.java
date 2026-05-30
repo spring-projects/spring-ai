@@ -150,20 +150,20 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
 	 * completion requests.
 	 */
-	private final List<ToolCallback> toolCallbacks;
+	private final @Nullable List<ToolCallback> toolCallbacks;
 
 	/**
 	 * Collection of tool names to be resolved at runtime and used for tool calling in the
 	 * chat completion requests.
 	 */
-	private final Set<String> toolNames;
+	private final @Nullable Set<String> toolNames;
 
 	/**
 	 * Whether to enable the tool execution lifecycle internally in ChatModel.
 	 */
 	private final @Nullable Boolean internalToolExecutionEnabled;
 
-	private final Map<String, Object> toolContext;
+	private final @Nullable Map<String, Object> toolContext;
 
 	protected MistralAiChatOptions(@Nullable String model, @Nullable Double temperature, @Nullable Double topP,
 			@Nullable Integer maxTokens, @Nullable Boolean safePrompt, @Nullable Integer randomSeed,
@@ -188,10 +188,10 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 		this.n = n;
 		this.tools = tools != null ? List.copyOf(tools) : null;
 		this.toolChoice = toolChoice;
-		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : List.of();
-		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : Set.of();
+		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
+		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : null;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : Map.of();
+		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
 	}
 
 	public static Builder builder() {
@@ -270,12 +270,12 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	}
 
 	@Override
-	public List<ToolCallback> getToolCallbacks() {
+	public @Nullable List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
 	}
 
 	@Override
-	public Set<String> getToolNames() {
+	public @Nullable Set<String> getToolNames() {
 		return this.toolNames;
 	}
 
@@ -290,7 +290,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	}
 
 	@Override
-	public Map<String, Object> getToolContext() {
+	public @Nullable Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
 

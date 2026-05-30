@@ -183,8 +183,13 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 			return keyValues;
 		}
 
-		Set<String> toolNames = new HashSet<>(options.getToolNames());
-		toolNames.addAll(options.getToolCallbacks().stream().map(tc -> tc.getToolDefinition().name()).toList());
+		Set<String> toolNames = new HashSet<>();
+		if (!CollectionUtils.isEmpty(options.getToolNames())) {
+			toolNames.addAll(options.getToolNames());
+		}
+		if (!CollectionUtils.isEmpty(options.getToolCallbacks())) {
+			toolNames.addAll(options.getToolCallbacks().stream().map(tc -> tc.getToolDefinition().name()).toList());
+		}
 
 		if (!CollectionUtils.isEmpty(toolNames)) {
 			StringJoiner toolNamesJoiner = new StringJoiner(", ", "[", "]");

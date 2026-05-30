@@ -159,13 +159,13 @@ class DefaultToolCallingChatOptionsTests {
 	}
 
 	@Test
-	void defaultConstructorShouldInitializeWithEmptyCollections() {
+	void defaultConstructorShouldInitializeWithNullCollections() {
 		DefaultToolCallingChatOptions options = (DefaultToolCallingChatOptions) DefaultToolCallingChatOptions.builder()
 			.build();
 
-		assertThat(options.getToolCallbacks()).isEmpty();
-		assertThat(options.getToolNames()).isEmpty();
-		assertThat(options.getToolContext()).isEmpty();
+		assertThat(options.getToolCallbacks()).isNull();
+		assertThat(options.getToolNames()).isNull();
+		assertThat(options.getToolContext()).isNull();
 		assertThat(options.getInternalToolExecutionEnabled()).isNull();
 	}
 

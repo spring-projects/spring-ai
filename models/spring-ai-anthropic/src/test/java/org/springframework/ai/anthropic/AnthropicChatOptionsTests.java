@@ -328,9 +328,9 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 	}
 
 	@Test
-	void testHttpHeadersDefaultEmpty() {
+	void testHttpHeadersDefaultNull() {
 		AnthropicChatOptions options = AnthropicChatOptions.builder().build();
-		assertThat(options.getHttpHeaders()).isNotNull().isEmpty();
+		assertThat(options.getHttpHeaders()).isNull();
 	}
 
 	@Test
@@ -431,7 +431,7 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 	void testCitationConsistencyValidationSkipsEmpty() {
 		// Should not throw — no documents
 		AnthropicChatOptions options = AnthropicChatOptions.builder().build();
-		assertThat(options.getCitationDocuments()).isEmpty();
+		assertThat(options.getCitationDocuments()).isNull();
 	}
 
 	@Test

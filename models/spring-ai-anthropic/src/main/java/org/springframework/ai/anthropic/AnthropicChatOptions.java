@@ -46,6 +46,7 @@ import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 /**
  * Chat options for {@link AnthropicChatModel}. Supports model selection, sampling
@@ -116,7 +117,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	/**
 	 * Custom HTTP headers to add to Anthropic client requests.
 	 */
-	private final Map<String, String> customHeaders;
+	private final @Nullable Map<String, String> customHeaders;
 
 	/**
 	 * Maximum number of tokens to generate in the response.
@@ -167,12 +168,12 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	/**
 	 * Collection of tool callbacks for tool calling.
 	 */
-	private final List<ToolCallback> toolCallbacks;
+	private final @Nullable List<ToolCallback> toolCallbacks;
 
 	/**
 	 * Collection of tool names to be resolved at runtime.
 	 */
-	private final Set<String> toolNames;
+	private final @Nullable Set<String> toolNames;
 
 	/**
 	 * Whether to enable internal tool execution in the chat model.
@@ -182,12 +183,12 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	/**
 	 * Context to be passed to tools during execution.
 	 */
-	private final Map<String, Object> toolContext;
+	private final @Nullable Map<String, Object> toolContext;
 
 	/**
 	 * Citation documents to include in the request for citation-enabled responses.
 	 */
-	private final List<AnthropicCitationDocument> citationDocuments;
+	private final @Nullable List<AnthropicCitationDocument> citationDocuments;
 
 	/**
 	 * Cache options for configuring prompt caching behavior.
@@ -205,7 +206,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	 * defaults (runtime headers take precedence). Used for beta feature headers, custom
 	 * tracking, etc.
 	 */
-	private final Map<String, String> httpHeaders;
+	private final @Nullable Map<String, String> httpHeaders;
 
 	/**
 	 * Skills container for configuring Claude Skills in the request.
@@ -249,7 +250,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		this.timeout = timeout;
 		this.maxRetries = maxRetries;
 		this.proxy = proxy;
-		this.customHeaders = customHeaders != null ? Map.copyOf(customHeaders) : Map.of();
+		this.customHeaders = customHeaders != null ? Map.copyOf(customHeaders) : null;
 		this.maxTokens = maxTokens != null ? maxTokens : DEFAULT_MAX_TOKENS;
 		this.metadata = metadata;
 		this.stopSequences = stopSequences != null ? List.copyOf(stopSequences) : null;
@@ -259,14 +260,14 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		this.toolChoice = toolChoice;
 		this.thinking = thinking;
 		this.disableParallelToolUse = disableParallelToolUse;
-		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : List.of();
-		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : Set.of();
+		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
+		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : null;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : Map.of();
-		this.citationDocuments = citationDocuments != null ? List.copyOf(citationDocuments) : List.of();
+		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
+		this.citationDocuments = citationDocuments != null ? List.copyOf(citationDocuments) : null;
 		this.cacheOptions = cacheOptions != null ? cacheOptions : AnthropicCacheOptions.disabled();
 		this.outputConfig = outputConfig;
-		this.httpHeaders = httpHeaders != null ? Map.copyOf(httpHeaders) : Map.of();
+		this.httpHeaders = httpHeaders != null ? Map.copyOf(httpHeaders) : null;
 		this.skillContainer = skillContainer;
 		this.inferenceGeo = inferenceGeo;
 		this.webSearchTool = webSearchTool;
@@ -307,7 +308,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		return this.proxy;
 	}
 
-	public Map<String, String> getCustomHeaders() {
+	public @Nullable Map<String, String> getCustomHeaders() {
 		return this.customHeaders;
 	}
 
@@ -353,12 +354,12 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	}
 
 	@Override
-	public List<ToolCallback> getToolCallbacks() {
+	public @Nullable List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
 	}
 
 	@Override
-	public Set<String> getToolNames() {
+	public @Nullable Set<String> getToolNames() {
 		return this.toolNames;
 	}
 
@@ -368,11 +369,11 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	}
 
 	@Override
-	public Map<String, Object> getToolContext() {
+	public @Nullable Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
 
-	public List<AnthropicCitationDocument> getCitationDocuments() {
+	public @Nullable List<AnthropicCitationDocument> getCitationDocuments() {
 		return this.citationDocuments;
 	}
 
@@ -381,7 +382,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	 * requires all documents to have citations enabled if any do.
 	 */
 	public void validateCitationConsistency() {
-		if (this.citationDocuments.isEmpty()) {
+		if (CollectionUtils.isEmpty(this.citationDocuments)) {
 			return;
 		}
 
@@ -404,7 +405,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		return this.outputConfig;
 	}
 
-	public Map<String, String> getHttpHeaders() {
+	public @Nullable Map<String, String> getHttpHeaders() {
 		return this.httpHeaders;
 	}
 

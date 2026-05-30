@@ -101,9 +101,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.truncate = truncate;
 		this.thinkOption = thinkOption;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks == null ? List.of() : List.copyOf(toolCallbacks);
-		this.toolNames = toolNames == null ? Set.of() : Set.copyOf(toolNames);
-		this.toolContext = toolContext == null ? Map.of() : Map.copyOf(toolContext);
+		this.toolCallbacks = toolCallbacks == null ? null : List.copyOf(toolCallbacks);
+		this.toolNames = toolNames == null ? null : Set.copyOf(toolNames);
+		this.toolContext = toolContext == null ? null : Map.copyOf(toolContext);
 	}
 
 	// Following fields are options which must be set when the model is loaded into
@@ -367,7 +367,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * For Default Options the toolCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
 	 * from the registry to be used by the ChatModel chat completion requests.
 	 */
-	private final List<ToolCallback> toolCallbacks;
+	private final @Nullable List<ToolCallback> toolCallbacks;
 
 	/**
 	 * List of functions, identified by their names, to configure for function calling in
@@ -377,9 +377,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
 	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
 	 */
-	private final Set<String> toolNames;
+	private final @Nullable Set<String> toolNames;
 
-	private final Map<String, Object> toolContext;
+	private final @Nullable Map<String, Object> toolContext;
 
 	public static Builder builder() {
 		return new Builder();
@@ -597,12 +597,12 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 
 	@Override
-	public List<ToolCallback> getToolCallbacks() {
+	public @Nullable List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
 	}
 
 	@Override
-	public Set<String> getToolNames() {
+	public @Nullable Set<String> getToolNames() {
 		return this.toolNames;
 	}
 
@@ -612,7 +612,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	public Map<String, Object> getToolContext() {
+	public @Nullable Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
 

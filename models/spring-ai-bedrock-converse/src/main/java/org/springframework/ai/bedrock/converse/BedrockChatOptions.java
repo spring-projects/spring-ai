@@ -47,7 +47,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 
 	private final @Nullable Double presencePenalty;
 
-	private final Map<String, String> requestParameters;
+	private final @Nullable Map<String, String> requestParameters;
 
 	private final @Nullable List<String> stopSequences;
 
@@ -57,11 +57,11 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 
 	private final @Nullable Double topP;
 
-	private final List<ToolCallback> toolCallbacks;
+	private final @Nullable List<ToolCallback> toolCallbacks;
 
-	private final Set<String> toolNames;
+	private final @Nullable Set<String> toolNames;
 
-	private final Map<String, Object> toolContext;
+	private final @Nullable Map<String, Object> toolContext;
 
 	private final @Nullable Boolean internalToolExecutionEnabled;
 
@@ -80,15 +80,15 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
 		this.presencePenalty = presencePenalty;
-		this.requestParameters = requestParameters == null ? Map.of() : Map.copyOf(requestParameters);
+		this.requestParameters = requestParameters == null ? null : Map.copyOf(requestParameters);
 		this.stopSequences = stopSequences != null ? List.copyOf(stopSequences) : null;
 		this.temperature = temperature;
 		this.topK = topK;
 		this.topP = topP;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks == null ? List.of() : List.copyOf(toolCallbacks);
-		this.toolNames = toolNames == null ? Set.of() : Set.copyOf(toolNames);
-		this.toolContext = toolContext == null ? Map.of() : Map.copyOf(toolContext);
+		this.toolCallbacks = toolCallbacks == null ? null : List.copyOf(toolCallbacks);
+		this.toolNames = toolNames == null ? null : Set.copyOf(toolNames);
+		this.toolContext = toolContext == null ? null : Map.copyOf(toolContext);
 		this.cacheOptions = cacheOptions;
 		this.outputSchema = outputSchema;
 	}
@@ -116,7 +116,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		return this.maxTokens;
 	}
 
-	public Map<String, String> getRequestParameters() {
+	public @Nullable Map<String, String> getRequestParameters() {
 		return this.requestParameters;
 	}
 
@@ -146,17 +146,17 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	}
 
 	@Override
-	public List<ToolCallback> getToolCallbacks() {
+	public @Nullable List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
 	}
 
 	@Override
-	public Set<String> getToolNames() {
-		return Set.copyOf(this.toolNames);
+	public @Nullable Set<String> getToolNames() {
+		return this.toolNames;
 	}
 
 	@Override
-	public Map<String, Object> getToolContext() {
+	public @Nullable Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
 

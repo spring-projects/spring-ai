@@ -125,7 +125,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 	/**
 	 * Custom HTTP headers to add to OpenAI client requests.
 	 */
-	private final Map<String, String> customHeaders;
+	private final @Nullable Map<String, String> customHeaders;
 
 	private final @Nullable Double frequencyPenalty;
 
@@ -183,13 +183,13 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 */
 	private final @Nullable Map<String, Object> extraBody;
 
-	private final List<ToolCallback> toolCallbacks;
+	private final @Nullable List<ToolCallback> toolCallbacks;
 
-	private final Set<String> toolNames;
+	private final @Nullable Set<String> toolNames;
 
 	private final @Nullable Boolean internalToolExecutionEnabled;
 
-	private final Map<String, Object> toolContext;
+	private final @Nullable Map<String, Object> toolContext;
 
 	protected OpenAiChatOptions(@Nullable String baseUrl, @Nullable String apiKey, @Nullable Credential credential,
 			@Nullable String model, @Nullable String microsoftDeploymentName,
@@ -219,7 +219,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.timeout = (timeout != null ? timeout : AbstractOpenAiOptions.DEFAULT_TIMEOUT);
 		this.maxRetries = (maxRetries != null ? maxRetries : AbstractOpenAiOptions.DEFAULT_MAX_RETRIES);
 		this.proxy = proxy;
-		this.customHeaders = (customHeaders != null ? Map.copyOf(customHeaders) : Map.of());
+		this.customHeaders = (customHeaders != null ? Map.copyOf(customHeaders) : null);
 		// ChatOptions
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
@@ -228,9 +228,9 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.temperature = temperature;
 		this.topP = topP;
 		// ToolCallingChatOptions
-		this.toolCallbacks = (toolCallbacks != null ? List.copyOf(toolCallbacks) : List.of());
-		this.toolNames = (toolNames != null ? Set.copyOf(toolNames) : Set.of());
-		this.toolContext = (toolContext != null ? Map.copyOf(toolContext) : Map.of());
+		this.toolCallbacks = (toolCallbacks != null ? List.copyOf(toolCallbacks) : null);
+		this.toolNames = (toolNames != null ? Set.copyOf(toolNames) : null);
+		this.toolContext = (toolContext != null ? Map.copyOf(toolContext) : null);
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 		// OpenAI SDK specific
 		this.logitBias = logitBias != null ? Map.copyOf(logitBias) : null;
@@ -314,7 +314,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		return this.proxy;
 	}
 
-	public Map<String, String> getCustomHeaders() {
+	public @Nullable Map<String, String> getCustomHeaders() {
 		return this.customHeaders;
 	}
 
@@ -505,12 +505,12 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	public List<ToolCallback> getToolCallbacks() {
+	public @Nullable List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
 	}
 
 	@Override
-	public Set<String> getToolNames() {
+	public @Nullable Set<String> getToolNames() {
 		return this.toolNames;
 	}
 
@@ -520,7 +520,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	public Map<String, Object> getToolContext() {
+	public @Nullable Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
 

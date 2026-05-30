@@ -214,11 +214,11 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 		assertThat(options.getReasoningEffort()).isNull();
 		assertThat(options.getVerbosity()).isNull();
 		assertThat(options.getServiceTier()).isNull();
-		assertThat(options.getToolCallbacks()).isNotNull().isEmpty();
-		assertThat(options.getToolNames()).isNotNull().isEmpty();
+		assertThat(options.getToolCallbacks()).isNull();
+		assertThat(options.getToolNames()).isNull();
 		assertThat(options.getInternalToolExecutionEnabled()).isNull();
-		assertThat(options.getCustomHeaders()).isNotNull().isEmpty();
-		assertThat(options.getToolContext()).isNotNull().isEmpty();
+		assertThat(options.getCustomHeaders()).isNull();
+		assertThat(options.getToolContext()).isNull();
 		assertThat(options.getOutputSchema()).isNull();
 	}
 
@@ -460,14 +460,14 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 	void testToolCallbacksBuilderValidation() {
 		// Test null validation
 		OpenAiChatOptions options1 = OpenAiChatOptions.builder().toolCallbacks((List<ToolCallback>) null).build();
-		assertThat(options1.getToolCallbacks()).isEmpty();
+		assertThat(options1.getToolCallbacks()).isNull();
 	}
 
 	@Test
 	void testToolNamesBuilderValidation() {
 		// Test null validation
 		OpenAiChatOptions options1 = OpenAiChatOptions.builder().toolNames((Set<String>) null).build();
-		assertThat(options1.getToolNames()).isEmpty();
+		assertThat(options1.getToolNames()).isNull();
 	}
 
 	@Test
