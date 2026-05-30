@@ -4,6 +4,55 @@
 [[upgrading-to-2-0-0-RC1]]
 == Upgrading to 2.0.0-RC1
 
+=== Options Immutability and Default Values
+
+==== Strict Immutability for Options
+
+Options classes (like `ChatOptions`, `EmbeddingOptions`, etc.) are now strictly immutable.
+Collections within options (like `toolCallbacks`, `stopSequences`, `customHeaders`) are now stored as unmodifiable collections.
+Additionally, nullable collections are now used instead of empty ones to better represent the absence of a value.
+
+===== Impact
+
+- `ChatOptions#copy()` has been removed because options are now strictly immutable.
+- Modifying collections returned by options getters will throw an `UnsupportedOperationException`.
+
+===== Migration
+
+To create a modified copy of an options instance, use the `mutate()` method instead of `copy()`:
+
+[source,java]
+----
+// Before
+ChatOptions options = originalOptions.copy();
+
+// After
+ChatOptions options = originalOptions.mutate().build();
+----
+
+==== Default Values Moved to Options Constructors
+
+Default values for options (like default model names, temperatures, etc.) have been moved from the `Model` implementations and `*Properties` configuration classes to the options constructors themselves.
+Default configuration properties in `*Properties` classes have been removed as they are no longer needed and should be consistent with the options-level defaults.
+
+===== Impact
+
+- `ChatModel#getDefaultOptions()` is deprecated in favor of `ChatModel#getOptions()`.
+- Default values are no longer duplicated in `*Properties` classes.
+
+===== Migration
+
+Use `getOptions()` instead of `getDefaultOptions()` when retrieving the default options for a model:
+
+[source,java]
+----
+// Before
+ChatOptions options = chatModel.getDefaultOptions();
+
+// After
+ChatOptions options = chatModel.getOptions();
+----
+
 === JSON Utilities Refactoring
 
 ==== New: `JsonHelper` and Updated `JacksonUtils`
