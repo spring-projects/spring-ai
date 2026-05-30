@@ -30,6 +30,7 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.util.context.ContextView;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -237,21 +238,32 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				.toolCallArguments(finalToolInputArguments)
 				.build();
 
-			String toolCallResult = ToolCallingObservationDocumentation.TOOL_CALL
-				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-						this.observationRegistry)
-				.parentObservation(parent)
-				.observe(() -> {
-					String toolResult;
-					try {
-						toolResult = toolCallback.call(finalToolInputArguments, toolContext);
-					}
-					catch (ToolExecutionException ex) {
-						toolResult = this.toolExecutionExceptionProcessor.process(ex);
-					}
-					observationContext.setToolCallResult(toolResult);
-					return toolResult;
-				});
+			var toolObservation = ToolCallingObservationDocumentation.TOOL_CALL.observation(this.observationConvention,
+					DEFAULT_OBSERVATION_CONVENTION, () -> observationContext, this.observationRegistry);
+
+			// When tool execution runs on a boundedElastic thread (streaming path)
+			// without Hooks.enableAutomaticContextPropagation(), the Micrometer
+			// thread-local is empty and setParentFromCurrentObservation() cannot find the
+			// parent. ToolCallAdvisor stores the Reactor context in
+			// ToolCallReactiveContextHolder before dispatching, so we can read the parent
+			// observation from there and set it explicitly.
+			ContextView reactorCtx = ToolCallReactiveContextHolder.getContext();
+			if (reactorCtx.hasKey(ObservationThreadLocalAccessor.KEY)) {
+				Observation parentObs = reactorCtx.get(ObservationThreadLocalAccessor.KEY);
+				toolObservation.parentObservation(parentObs);
+			}
+
+			String toolCallResult = toolObservation.observe(() -> {
+				String toolResult;
+				try {
+					toolResult = toolCallback.call(finalToolInputArguments, toolContext);
+				}
+				catch (ToolExecutionException ex) {
+					toolResult = this.toolExecutionExceptionProcessor.process(ex);
+				}
+				observationContext.setToolCallResult(toolResult);
+				return toolResult;
+			});
 
 			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName,
 					toolCallResult != null ? toolCallResult : ""));

@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import io.micrometer.observation.ObservationRegistry;
@@ -37,6 +38,7 @@ import org.springframework.ai.chat.client.observation.ChatClientObservationConve
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -60,14 +62,7 @@ public class DefaultChatClientBuilder implements Builder {
 	protected final DefaultChatClientRequestSpec defaultRequest;
 
 	DefaultChatClientBuilder(ChatModel chatModel) {
-		this(chatModel, ObservationRegistry.NOOP, null, null);
-	}
-
-	@Deprecated(since = "2.0.0", forRemoval = true)
-	public DefaultChatClientBuilder(ChatModel chatModel, ObservationRegistry observationRegistry,
-			@Nullable ChatClientObservationConvention chatClientObservationConvention,
-			@Nullable AdvisorObservationConvention advisorObservationConvention) {
-		this(chatModel, observationRegistry, chatClientObservationConvention, advisorObservationConvention, null);
+		this(chatModel, ObservationRegistry.NOOP, null, null, null);
 	}
 
 	public DefaultChatClientBuilder(ChatModel chatModel, ObservationRegistry observationRegistry,
@@ -76,6 +71,9 @@ public class DefaultChatClientBuilder implements Builder {
 			ToolCallAdvisor.@Nullable Builder<?> toolCallAdvisorBuilder) {
 		Assert.notNull(chatModel, "the " + ChatModel.class.getName() + " must be non-null");
 		Assert.notNull(observationRegistry, "the " + ObservationRegistry.class.getName() + " must be non-null");
+
+		toolCallAdvisorBuilder = Objects.requireNonNullElse(toolCallAdvisorBuilder, ToolCallAdvisor.builder()
+			.toolCallingManager(ToolCallingManager.builder().observationRegistry(observationRegistry).build()));
 
 		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, null, Map.of(), Map.of(), null, Map.of(),
 				Map.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(),

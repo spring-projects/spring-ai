@@ -902,7 +902,7 @@ class DefaultChatClientTests {
 		given(chatModel.call(promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
-		ChatClient chatClient = new DefaultChatClientBuilder(chatModel, observationRegistry, null, null).build();
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel, observationRegistry, null, null, null).build();
 		DefaultChatClient.DefaultChatClientRequestSpec chatClientRequestSpec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
 			.prompt("my question");
 		DefaultChatClient.DefaultCallResponseSpec spec = (DefaultChatClient.DefaultCallResponseSpec) chatClientRequestSpec
@@ -1448,7 +1448,7 @@ class DefaultChatClientTests {
 		given(chatModel.stream(promptCaptor.capture()))
 			.willReturn(Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage("response"))))));
 
-		ChatClient chatClient = new DefaultChatClientBuilder(chatModel, observationRegistry, null, null).build();
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel, observationRegistry, null, null, null).build();
 		DefaultChatClient.DefaultChatClientRequestSpec chatClientRequestSpec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
 			.prompt("my question");
 		DefaultChatClient.DefaultStreamResponseSpec spec = (DefaultChatClient.DefaultStreamResponseSpec) chatClientRequestSpec
@@ -1598,7 +1598,8 @@ class DefaultChatClientTests {
 		ChatModel chatModel = mockChatModel();
 		DefaultChatClient.DefaultChatClientRequestSpec spec = new DefaultChatClient.DefaultChatClientRequestSpec(
 				chatModel, null, Map.of(), Map.of(), null, Map.of(), Map.of(), List.of(), List.of(), List.of(),
-				List.of(), List.of(), null, List.of(), Map.of(), ObservationRegistry.NOOP, null, Map.of(), null, null);
+				List.of(), List.of(), null, List.of(), Map.of(), ObservationRegistry.NOOP, null, Map.of(), null, null,
+				ToolCallAdvisor.builder());
 		assertThat(spec).isNotNull();
 	}
 
@@ -1606,7 +1607,7 @@ class DefaultChatClientTests {
 	void whenChatModelIsNullThenThrow() {
 		assertThatThrownBy(() -> new DefaultChatClient.DefaultChatClientRequestSpec(null, null, Map.of(), Map.of(),
 				null, Map.of(), Map.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(),
-				Map.of(), ObservationRegistry.NOOP, null, Map.of(), null, null))
+				Map.of(), ObservationRegistry.NOOP, null, Map.of(), null, null, ToolCallAdvisor.builder()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("chatModel cannot be null");
 	}
@@ -1615,7 +1616,7 @@ class DefaultChatClientTests {
 	void whenObservationRegistryIsNullThenThrow() {
 		assertThatThrownBy(() -> new DefaultChatClient.DefaultChatClientRequestSpec(mockChatModel(), null, Map.of(),
 				Map.of(), null, Map.of(), Map.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null,
-				List.of(), Map.of(), null, null, Map.of(), null, null))
+				List.of(), Map.of(), null, null, Map.of(), null, null, ToolCallAdvisor.builder()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("observationRegistry cannot be null");
 	}
@@ -2354,7 +2355,7 @@ class DefaultChatClientTests {
 		var advisorObservationConvention = mock(AdvisorObservationConvention.class);
 
 		var builder = new DefaultChatClientBuilder(chatModel, observationRegistry, observationConvention,
-				advisorObservationConvention);
+				advisorObservationConvention, null);
 
 		assertThat(builder).isNotNull();
 	}
