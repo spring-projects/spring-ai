@@ -16,25 +16,38 @@
 
 package org.springframework.ai.bedrock.converse;
 
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.core.document.internal.MapDocument;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockDelta;
+import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockStart;
 import software.amazon.awssdk.services.bedrockruntime.model.ConversationRole;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseMetrics;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseOutput;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamOutput;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamRequest;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamResponseHandler;
 import software.amazon.awssdk.services.bedrockruntime.model.Message;
 import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
 import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlockDelta;
+import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlockStart;
 
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -42,6 +55,7 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
 
 /**
  * @author Christian Tzolov
@@ -155,7 +169,107 @@ public class BedrockConverseUsageAggregationTests {
 
 	@Test
 	public void streamWithToolUse() {
-		// TODO: Implement the test
+		List<ConverseStreamOutput> firstStreamEvents = List.of(ConverseStreamOutput.contentBlockStartBuilder()
+			.contentBlockIndex(0)
+			.start(ContentBlockStart.builder()
+				.toolUse(ToolUseBlockStart.builder().toolUseId("tooluse_stream_123").name("getCurrentWeather").build())
+				.build())
+			.build(),
+				ConverseStreamOutput.contentBlockDeltaBuilder()
+					.contentBlockIndex(0)
+					.delta(ContentBlockDelta.builder()
+						.toolUse(ToolUseBlockDelta.builder()
+							.input("{\"location\":\"Paris, France\",\"unit\":\"C\"}")
+							.build())
+						.build())
+					.build(),
+				ConverseStreamOutput.messageStopBuilder().stopReason(StopReason.TOOL_USE).build(),
+				ConverseStreamOutput.metadataBuilder()
+					.usage(TokenUsage.builder().inputTokens(445).outputTokens(119).totalTokens(564).build())
+					.build());
+
+		List<ConverseStreamOutput> secondStreamEvents = List.of(
+				ConverseStreamOutput.contentBlockDeltaBuilder()
+					.contentBlockIndex(0)
+					.delta(ContentBlockDelta.builder().text("The current temperature in Paris is 15.0°C.").build())
+					.build(),
+				ConverseStreamOutput.messageStopBuilder().stopReason(StopReason.END_TURN).build(),
+				ConverseStreamOutput.metadataBuilder()
+					.usage(TokenUsage.builder().inputTokens(540).outputTokens(106).totalTokens(646).build())
+					.build());
+
+		willAnswer(invocation -> {
+			ConverseStreamResponseHandler handler = invocation.getArgument(1);
+			CompletableFuture.runAsync(() -> {
+				try {
+					Thread.sleep(50);
+				}
+				catch (InterruptedException ex) {
+					Thread.currentThread().interrupt();
+				}
+				handler.onEventStream(SdkPublisher.adapt((org.reactivestreams.Publisher<ConverseStreamOutput>) sub -> {
+					sub.onSubscribe(new org.reactivestreams.Subscription() {
+						@Override
+						public void request(long n) {
+						}
+
+						@Override
+						public void cancel() {
+						}
+					});
+					for (ConverseStreamOutput event : firstStreamEvents) {
+						sub.onNext(event);
+					}
+					sub.onComplete();
+				}));
+				handler.complete();
+			});
+			return CompletableFuture.completedFuture(null);
+		}).willAnswer(invocation -> {
+			ConverseStreamResponseHandler handler = invocation.getArgument(1);
+			CompletableFuture.runAsync(() -> {
+				try {
+					Thread.sleep(50);
+				}
+				catch (InterruptedException ex) {
+					Thread.currentThread().interrupt();
+				}
+				handler.onEventStream(SdkPublisher.adapt((org.reactivestreams.Publisher<ConverseStreamOutput>) sub -> {
+					sub.onSubscribe(new org.reactivestreams.Subscription() {
+						@Override
+						public void request(long n) {
+						}
+
+						@Override
+						public void cancel() {
+						}
+					});
+					for (ConverseStreamOutput event : secondStreamEvents) {
+						sub.onNext(event);
+					}
+					sub.onComplete();
+				}));
+				handler.complete();
+			});
+			return CompletableFuture.completedFuture(null);
+		})
+			.given(this.bedrockRuntimeAsyncClient)
+			.converseStream(isA(ConverseStreamRequest.class), isA(ConverseStreamResponseHandler.class));
+
+		ToolCallback toolCallback = FunctionToolCallback.builder("getCurrentWeather", (Request request) -> "15.0°C")
+			.description("Gets the weather in location")
+			.inputType(Request.class)
+			.build();
+
+		ChatResponse lastResponse = this.chatModel
+			.stream(new Prompt("What is the weather in Paris?",
+					BedrockChatOptions.builder().toolCallbacks(toolCallback).build()))
+			.blockLast(Duration.ofSeconds(10));
+
+		assertThat(lastResponse).isNotNull();
+		assertThat(lastResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(445 + 540);
+		assertThat(lastResponse.getMetadata().getUsage().getCompletionTokens()).isEqualTo(119 + 106);
+		assertThat(lastResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(564 + 646);
 	}
 
 	@Test
