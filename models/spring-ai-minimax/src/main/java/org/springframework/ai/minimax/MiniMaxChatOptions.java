@@ -168,9 +168,9 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		this.maskSensitiveInfo = maskSensitiveInfo;
 		this.tools = tools != null ? List.copyOf(tools) : null;
 		this.toolChoice = toolChoice;
-		this.toolCallbacks = toolCallbacks == null ? null : List.copyOf(toolCallbacks);
-		this.toolNames = toolNames == null ? null : Set.copyOf(toolNames);
-		this.toolContext = toolContext == null ? null : Map.copyOf(toolContext);
+		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
+		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : null;
+		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 

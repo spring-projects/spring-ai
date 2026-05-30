@@ -224,7 +224,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
 		this.presencePenalty = presencePenalty;
-		this.stop = stop != null ? List.copyOf(stop) : null;
+		this.stop = (stop != null ? List.copyOf(stop) : null);
 		this.temperature = temperature;
 		this.topP = topP;
 		// ToolCallingChatOptions
@@ -233,12 +233,12 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.toolContext = (toolContext != null ? Map.copyOf(toolContext) : null);
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 		// OpenAI SDK specific
-		this.logitBias = logitBias != null ? Map.copyOf(logitBias) : null;
+		this.logitBias = (logitBias != null ? Map.copyOf(logitBias) : null);
 		this.logprobs = logprobs;
 		this.topLogprobs = topLogprobs;
 		this.maxCompletionTokens = maxCompletionTokens;
 		this.n = n;
-		this.outputModalities = outputModalities != null ? List.copyOf(outputModalities) : null;
+		this.outputModalities = (outputModalities != null ? List.copyOf(outputModalities) : null);
 		this.outputAudio = outputAudio;
 		this.responseFormat = responseFormat;
 		this.streamOptions = streamOptions;
@@ -247,11 +247,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.user = user;
 		this.parallelToolCalls = parallelToolCalls;
 		this.store = store;
-		this.metadata = metadata != null ? Map.copyOf(metadata) : null;
+		this.metadata = (metadata != null ? Map.copyOf(metadata) : null);
 		this.reasoningEffort = reasoningEffort;
 		this.verbosity = verbosity;
 		this.serviceTier = serviceTier;
-		this.extraBody = extraBody != null ? Map.copyOf(extraBody) : null;
+		this.extraBody = (extraBody != null ? Map.copyOf(extraBody) : null);
 	}
 
 	/**

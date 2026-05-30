@@ -80,15 +80,15 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
 		this.presencePenalty = presencePenalty;
-		this.requestParameters = requestParameters == null ? null : Map.copyOf(requestParameters);
+		this.requestParameters = requestParameters != null ? Map.copyOf(requestParameters) : null;
 		this.stopSequences = stopSequences != null ? List.copyOf(stopSequences) : null;
 		this.temperature = temperature;
 		this.topK = topK;
 		this.topP = topP;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks == null ? null : List.copyOf(toolCallbacks);
-		this.toolNames = toolNames == null ? null : Set.copyOf(toolNames);
-		this.toolContext = toolContext == null ? null : Map.copyOf(toolContext);
+		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
+		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : null;
+		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
 		this.cacheOptions = cacheOptions;
 		this.outputSchema = outputSchema;
 	}
