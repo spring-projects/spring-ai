@@ -106,7 +106,12 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 	public TextToSpeechResponse call(TextToSpeechPrompt prompt) {
 		Assert.notNull(prompt, "Prompt must not be null");
 
-		OpenAiAudioSpeechOptions mergedOptions = mergeOptions(prompt);
+		// Merge request options with default options
+		OpenAiAudioSpeechOptions mergedOptions = OpenAiAudioSpeechOptions.builder()
+			.from(this.options)
+			.merge(prompt.getOptions())
+			.build();
+
 		String inputText = getInputText(prompt, mergedOptions);
 
 		if (logger.isTraceEnabled()) {
@@ -185,47 +190,6 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 	@SuppressWarnings("removal")
 	public TextToSpeechOptions getDefaultOptions() {
 		return this.options;
-	}
-
-	private OpenAiAudioSpeechOptions mergeOptions(TextToSpeechPrompt prompt) {
-		OpenAiAudioSpeechOptions runtimeOptions = (prompt
-			.getOptions() instanceof OpenAiAudioSpeechOptions openAiSdkOptions) ? openAiSdkOptions : null;
-
-		if (runtimeOptions != null) {
-			return merge(runtimeOptions, this.options);
-		}
-		return this.options;
-	}
-
-	private OpenAiAudioSpeechOptions merge(OpenAiAudioSpeechOptions source, OpenAiAudioSpeechOptions target) {
-		OpenAiAudioSpeechOptions.Builder builder = OpenAiAudioSpeechOptions.builder();
-
-		builder.model(source.getModel() != null ? source.getModel() : target.getModel());
-		builder.input(source.getInput() != null ? source.getInput() : target.getInput());
-		builder.voice(source.getVoice() != null ? source.getVoice() : target.getVoice());
-		builder.responseFormat(
-				source.getResponseFormat() != null ? source.getResponseFormat() : target.getResponseFormat());
-		builder.speed(source.getSpeed() != null ? source.getSpeed() : target.getSpeed());
-
-		// Merge parent class fields
-		builder.baseUrl(source.getBaseUrl() != null ? source.getBaseUrl() : target.getBaseUrl());
-		builder.apiKey(source.getApiKey() != null ? source.getApiKey() : target.getApiKey());
-		builder.credential(source.getCredential() != null ? source.getCredential() : target.getCredential());
-		builder.deploymentName(
-				source.getDeploymentName() != null ? source.getDeploymentName() : target.getDeploymentName());
-		builder.microsoftFoundryServiceVersion(source.getMicrosoftFoundryServiceVersion() != null
-				? source.getMicrosoftFoundryServiceVersion() : target.getMicrosoftFoundryServiceVersion());
-		builder.organizationId(
-				source.getOrganizationId() != null ? source.getOrganizationId() : target.getOrganizationId());
-		builder.microsoftFoundry(source.isMicrosoftFoundry() || target.isMicrosoftFoundry());
-		builder.gitHubModels(source.isGitHubModels() || target.isGitHubModels());
-		builder.timeout(source.getTimeout());
-		builder.maxRetries(source.getMaxRetries());
-		builder.proxy(source.getProxy() != null ? source.getProxy() : target.getProxy());
-		builder
-			.customHeaders(source.getCustomHeaders() != null ? source.getCustomHeaders() : target.getCustomHeaders());
-
-		return builder.build();
 	}
 
 	private String getInputText(TextToSpeechPrompt prompt, OpenAiAudioSpeechOptions options) {

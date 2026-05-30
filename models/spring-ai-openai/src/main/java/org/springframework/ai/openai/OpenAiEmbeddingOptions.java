@@ -18,6 +18,7 @@ package org.springframework.ai.openai;
 
 import java.net.Proxy;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -206,7 +207,14 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 					this.proxy = castFrom.getProxy();
 				}
 				if (castFrom.getCustomHeaders() != null) {
-					this.customHeaders = castFrom.getCustomHeaders();
+					if (this.customHeaders == null) {
+						this.customHeaders = new HashMap<>(castFrom.getCustomHeaders());
+					}
+					else {
+						Map<String, String> merged = new HashMap<>(this.customHeaders);
+						merged.putAll(castFrom.getCustomHeaders());
+						this.customHeaders = merged;
+					}
 				}
 			}
 			if (from instanceof OpenAiEmbeddingOptions castFrom) {
