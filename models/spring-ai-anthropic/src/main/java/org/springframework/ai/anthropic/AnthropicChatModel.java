@@ -700,7 +700,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		// Prepare citation documents for inclusion in the first user message
 		List<AnthropicCitationDocument> citationDocuments = requestOptions.getCitationDocuments();
-		boolean citationDocsAdded = false;
 
 		// Collect system messages and non-system messages separately
 		List<String> systemTexts = new ArrayList<>();
@@ -774,7 +773,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 			if (message.getMessageType() == MessageType.USER) {
 				UserMessage userMessage = (UserMessage) message;
-				boolean hasCitationDocs = !citationDocsAdded && !citationDocuments.isEmpty();
+				boolean hasCitationDocs = !CollectionUtils.isEmpty(citationDocuments);
 				boolean hasMedia = !CollectionUtils.isEmpty(userMessage.getMedia());
 				boolean isLastUserMessage = (i == lastUserIndex);
 				boolean applyCacheToUser = isLastUserMessage && cacheResolver.isCachingEnabled();
@@ -791,10 +790,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 					// Prepend citation document blocks to the first user message
 					if (hasCitationDocs) {
-						for (AnthropicCitationDocument doc : citationDocuments) {
+						for (AnthropicCitationDocument doc : Objects.requireNonNull(citationDocuments)) {
 							contentBlocks.add(ContentBlockParam.ofDocument(doc.toDocumentBlockParam()));
 						}
-						citationDocsAdded = true;
 					}
 
 					String text = userMessage.getText();
@@ -934,8 +932,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		// Per-request HTTP headers
-		if (!requestOptions.getHttpHeaders().isEmpty()) {
-			requestOptions.getHttpHeaders().forEach((key, value) -> builder.putAdditionalHeader(key, value));
+		Map<String, String> httpHeaders = requestOptions.getHttpHeaders();
+		if (!CollectionUtils.isEmpty(httpHeaders)) {
+			httpHeaders.forEach(builder::putAdditionalHeader);
 		}
 
 		// Skills support
@@ -956,7 +955,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 
 			// Add beta headers, merging with any existing anthropic-beta value
-			String existingBeta = requestOptions.getHttpHeaders().get("anthropic-beta");
+			String existingBeta = httpHeaders != null ? httpHeaders.get("anthropic-beta") : null;
 			if (existingBeta != null) {
 				StringBuilder merged = new StringBuilder(existingBeta);
 				if (!existingBeta.contains(BETA_SKILLS)) {

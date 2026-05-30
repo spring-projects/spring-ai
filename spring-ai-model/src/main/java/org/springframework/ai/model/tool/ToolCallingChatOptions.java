@@ -44,12 +44,12 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	/**
 	 * ToolCallbacks to be registered with the ChatModel.
 	 */
-	List<ToolCallback> getToolCallbacks();
+	@Nullable List<ToolCallback> getToolCallbacks();
 
 	/**
 	 * Names of the tools to register with the ChatModel.
 	 */
-	Set<String> getToolNames();
+	@Nullable Set<String> getToolNames();
 
 	/**
 	 * Whether the {@link ChatModel} is responsible for executing the tools requested by
@@ -61,7 +61,7 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	 * Get the configured tool context.
 	 * @return the tool context map.
 	 */
-	Map<String, Object> getToolContext();
+	@Nullable Map<String, Object> getToolContext();
 
 	/**
 	 * Returns a new {@link ToolCallingChatOptions.Builder} initialized with the values of
@@ -94,37 +94,41 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		return internalToolExecutionEnabled;
 	}
 
-	static Set<String> mergeToolNames(Set<String> runtimeToolNames, Set<String> defaultToolNames) {
-		Assert.notNull(runtimeToolNames, "runtimeToolNames cannot be null");
-		Assert.notNull(defaultToolNames, "defaultToolNames cannot be null");
+	static @Nullable Set<String> mergeToolNames(@Nullable Set<String> runtimeToolNames,
+			@Nullable Set<String> defaultToolNames) {
 		if (CollectionUtils.isEmpty(runtimeToolNames)) {
-			return Set.copyOf(defaultToolNames);
+			return defaultToolNames != null ? Set.copyOf(defaultToolNames) : null;
 		}
 		return Set.copyOf(runtimeToolNames);
 	}
 
-	static List<ToolCallback> mergeToolCallbacks(List<ToolCallback> runtimeToolCallbacks,
-			List<ToolCallback> defaultToolCallbacks) {
-		Assert.notNull(runtimeToolCallbacks, "runtimeToolCallbacks cannot be null");
-		Assert.notNull(defaultToolCallbacks, "defaultToolCallbacks cannot be null");
+	static @Nullable List<ToolCallback> mergeToolCallbacks(@Nullable List<ToolCallback> runtimeToolCallbacks,
+			@Nullable List<ToolCallback> defaultToolCallbacks) {
 		if (CollectionUtils.isEmpty(runtimeToolCallbacks)) {
-			return List.copyOf(defaultToolCallbacks);
+			return defaultToolCallbacks != null ? List.copyOf(defaultToolCallbacks) : null;
 		}
 		return List.copyOf(runtimeToolCallbacks);
 	}
 
-	static Map<String, Object> mergeToolContext(Map<String, Object> runtimeToolContext,
-			Map<String, Object> defaultToolContext) {
-		Assert.notNull(runtimeToolContext, "runtimeToolContext cannot be null");
+	static @Nullable Map<String, Object> mergeToolContext(@Nullable Map<String, Object> runtimeToolContext,
+			@Nullable Map<String, Object> defaultToolContext) {
+		if (CollectionUtils.isEmpty(runtimeToolContext)) {
+			return defaultToolContext != null ? Map.copyOf(defaultToolContext) : null;
+		}
 		Assert.noNullElements(runtimeToolContext.keySet(), "runtimeToolContext keys cannot be null");
-		Assert.notNull(defaultToolContext, "defaultToolContext cannot be null");
+		if (CollectionUtils.isEmpty(defaultToolContext)) {
+			return Map.copyOf(runtimeToolContext);
+		}
 		Assert.noNullElements(defaultToolContext.keySet(), "defaultToolContext keys cannot be null");
 		var mergedToolContext = new java.util.HashMap<>(defaultToolContext);
 		mergedToolContext.putAll(runtimeToolContext);
 		return Map.copyOf(mergedToolContext);
 	}
 
-	static void validateToolCallbacks(List<ToolCallback> toolCallbacks) {
+	static void validateToolCallbacks(@Nullable List<ToolCallback> toolCallbacks) {
+		if (CollectionUtils.isEmpty(toolCallbacks)) {
+			return;
+		}
 		List<String> duplicateToolNames = ToolUtils.getDuplicateToolNames(toolCallbacks);
 		if (!duplicateToolNames.isEmpty()) {
 			throw new IllegalStateException("Multiple tools with the same name (%s) found in ToolCallingChatOptions"

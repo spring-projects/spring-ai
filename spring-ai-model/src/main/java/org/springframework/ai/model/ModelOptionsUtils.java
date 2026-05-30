@@ -19,7 +19,6 @@ package org.springframework.ai.model;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.lang.Contract;
-import org.springframework.util.ObjectUtils;
 
 /**
  * Utility class for manipulating {@link ModelOptions} objects.
@@ -33,11 +32,11 @@ import org.springframework.util.ObjectUtils;
 public abstract class ModelOptionsUtils {
 
 	/**
-	 * Return the runtime value if not empty, or else the default value.
+	 * Return the runtime value if not null, or else the default value.
 	 */
 	@Contract("_, !null -> !null")
 	public static <T> @Nullable T mergeOption(@Nullable T runtimeValue, @Nullable T defaultValue) {
-		return ObjectUtils.isEmpty(runtimeValue) ? defaultValue : runtimeValue;
+		return runtimeValue == null ? defaultValue : runtimeValue;
 	}
 
 }

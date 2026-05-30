@@ -189,7 +189,7 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 		assertThat(options.getMaskSensitiveInfo()).isNull();
 		assertThat(options.getToolChoice()).isNull();
 		assertThat(options.getInternalToolExecutionEnabled()).isNull();
-		assertThat(options.getToolContext()).isEqualTo(new java.util.HashMap<>());
+		assertThat(options.getToolContext()).isNull();
 	}
 
 	@Test

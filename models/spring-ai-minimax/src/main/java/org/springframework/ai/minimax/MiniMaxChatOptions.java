@@ -126,7 +126,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	 * For Default Options the functionCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
 	 * from the registry to be used by the ChatModel chat completion requests.
 	 */
-	private final List<ToolCallback> toolCallbacks;
+	private final @Nullable List<ToolCallback> toolCallbacks;
 
 	/**
 	 * List of functions, identified by their names, to configure for function calling in
@@ -137,9 +137,9 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
 	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
 	 */
-	private final Set<String> toolNames;
+	private final @Nullable Set<String> toolNames;
 
-	private final Map<String, Object> toolContext;
+	private final @Nullable Map<String, Object> toolContext;
 
 	/**
 	 * Whether to enable the tool execution lifecycle internally in ChatModel.
@@ -168,9 +168,9 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		this.maskSensitiveInfo = maskSensitiveInfo;
 		this.tools = tools != null ? List.copyOf(tools) : null;
 		this.toolChoice = toolChoice;
-		this.toolCallbacks = toolCallbacks == null ? List.of() : List.copyOf(toolCallbacks);
-		this.toolNames = toolNames == null ? Set.of() : Set.copyOf(toolNames);
-		this.toolContext = toolContext == null ? Map.of() : Map.copyOf(toolContext);
+		this.toolCallbacks = toolCallbacks == null ? null : List.copyOf(toolCallbacks);
+		this.toolNames = toolNames == null ? null : Set.copyOf(toolNames);
+		this.toolContext = toolContext == null ? null : Map.copyOf(toolContext);
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
@@ -251,13 +251,13 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public List<ToolCallback> getToolCallbacks() {
-		return Collections.unmodifiableList(this.toolCallbacks);
+	public @Nullable List<ToolCallback> getToolCallbacks() {
+		return this.toolCallbacks;
 	}
 
 	@Override
-	public Set<String> getToolNames() {
-		return Collections.unmodifiableSet(this.toolNames);
+	public @Nullable Set<String> getToolNames() {
+		return this.toolNames;
 	}
 
 	@Override
@@ -266,8 +266,8 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public Map<String, Object> getToolContext() {
-		return Collections.unmodifiableMap(this.toolContext);
+	public @Nullable Map<String, Object> getToolContext() {
+		return this.toolContext;
 	}
 
 	@Override

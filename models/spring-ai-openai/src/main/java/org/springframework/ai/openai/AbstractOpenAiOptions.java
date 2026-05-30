@@ -105,7 +105,7 @@ public class AbstractOpenAiOptions {
 	/**
 	 * Custom HTTP headers to add to OpenAI client requests.
 	 */
-	private final Map<String, String> customHeaders;
+	private final @Nullable Map<String, String> customHeaders;
 
 	protected AbstractOpenAiOptions(@Nullable String baseUrl, @Nullable String apiKey, @Nullable Credential credential,
 			@Nullable String model, @Nullable String microsoftDeploymentName,
@@ -124,7 +124,7 @@ public class AbstractOpenAiOptions {
 		this.timeout = timeout != null ? timeout : DEFAULT_TIMEOUT;
 		this.maxRetries = maxRetries != null ? maxRetries : DEFAULT_MAX_RETRIES;
 		this.proxy = proxy;
-		this.customHeaders = customHeaders != null ? Map.copyOf(customHeaders) : Map.of();
+		this.customHeaders = customHeaders != null ? Map.copyOf(customHeaders) : null;
 	}
 
 	public @Nullable String getBaseUrl() {
@@ -182,7 +182,7 @@ public class AbstractOpenAiOptions {
 		return this.proxy;
 	}
 
-	public Map<String, String> getCustomHeaders() {
+	public @Nullable Map<String, String> getCustomHeaders() {
 		return this.customHeaders;
 	}
 

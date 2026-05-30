@@ -105,25 +105,27 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 	public List<ToolDefinition> resolveToolDefinitions(ToolCallingChatOptions chatOptions) {
 		Assert.notNull(chatOptions, "chatOptions cannot be null");
 
-		List<ToolCallback> toolCallbacks = new ArrayList<>(chatOptions.getToolCallbacks());
-		Set<String> existingToolNames = chatOptions.getToolCallbacks()
-			.stream()
+		List<ToolCallback> toolCallbacks = new ArrayList<>(
+				!CollectionUtils.isEmpty(chatOptions.getToolCallbacks()) ? chatOptions.getToolCallbacks() : List.of());
+		Set<String> existingToolNames = toolCallbacks.stream()
 			.map(tool -> tool.getToolDefinition().name())
 			.collect(Collectors.toSet());
 
-		for (String toolName : chatOptions.getToolNames()) {
-			// Skip the tool if it is already present in the request toolCallbacks.
-			// That might happen if a tool is defined in the options
-			// both as a ToolCallback and as a tool name.
-			if (existingToolNames.contains(toolName)) {
-				continue;
+		if (!CollectionUtils.isEmpty(chatOptions.getToolNames())) {
+			for (String toolName : chatOptions.getToolNames()) {
+				// Skip the tool if it is already present in the request toolCallbacks.
+				// That might happen if a tool is defined in the options
+				// both as a ToolCallback and as a tool name.
+				if (existingToolNames.contains(toolName)) {
+					continue;
+				}
+				ToolCallback toolCallback = this.toolCallbackResolver.resolve(toolName);
+				if (toolCallback == null) {
+					logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolName);
+					throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
+				}
+				toolCallbacks.add(toolCallback);
 			}
-			ToolCallback toolCallback = this.toolCallbackResolver.resolve(toolName);
-			if (toolCallback == null) {
-				logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolName);
-				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
-			}
-			toolCallbacks.add(toolCallback);
 		}
 
 		return toolCallbacks.stream().map(ToolCallback::getToolDefinition).toList();
@@ -177,7 +179,9 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			ToolContext toolContext) {
 		List<ToolCallback> toolCallbacks = List.of();
 		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-			toolCallbacks = toolCallingChatOptions.getToolCallbacks();
+			if (!CollectionUtils.isEmpty(toolCallingChatOptions.getToolCallbacks())) {
+				toolCallbacks = toolCallingChatOptions.getToolCallbacks();
+			}
 		}
 
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();

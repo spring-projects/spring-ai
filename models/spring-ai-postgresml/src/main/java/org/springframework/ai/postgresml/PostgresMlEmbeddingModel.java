@@ -86,7 +86,6 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 		Assert.notNull(options, "options must not be null.");
 		Assert.notNull(options.getTransformer(), "transformer must not be null.");
 		Assert.notNull(options.getVectorType(), "vectorType must not be null.");
-		Assert.notNull(options.getKwargs(), "kwargs must not be null.");
 		Assert.notNull(options.getMetadataMode(), "metadataMode must not be null.");
 
 		this.jdbcTemplate = jdbcTemplate;

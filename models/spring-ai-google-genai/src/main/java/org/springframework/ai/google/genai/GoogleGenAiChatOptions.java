@@ -173,20 +173,20 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
 	 * completion requests.
 	 */
-	private final List<ToolCallback> toolCallbacks;
+	private final @Nullable List<ToolCallback> toolCallbacks;
 
 	/**
      * Collection of tool names to be resolved at runtime and used for tool calling in the
 	 * chat completion requests.
 	 */
-	private final Set<String> toolNames;
+	private final @Nullable Set<String> toolNames;
 
 	/**
 	 * Whether to enable the tool execution lifecycle internally in ChatModel.
 	 */
 	private final @Nullable Boolean internalToolExecutionEnabled;
 
-	private final Map<String, Object> toolContext;
+	private final @Nullable Map<String, Object> toolContext;
 
 	/**
 	 * Use Google search Grounding feature
@@ -201,9 +201,9 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	 */
 	private final Boolean includeServerSideToolInvocations;
 
-	private final List<GoogleGenAiSafetySetting> safetySettings;
+	private final @Nullable List<GoogleGenAiSafetySetting> safetySettings;
 
-	private final Map<String, String> labels;
+	private final @Nullable Map<String, String> labels;
 
 	/**
 	 * Optional. The service tier to use for the request.
@@ -233,9 +233,9 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		this.topK = topK;
 		this.topP = topP != null ? topP : 1.0;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks == null ? List.of() : List.copyOf(toolCallbacks);
-		this.toolNames = toolNames == null ? Set.of() : Set.copyOf(toolNames);
-		this.toolContext = toolContext == null ? Map.of() : Map.copyOf(toolContext);
+		this.toolCallbacks = toolCallbacks == null ? null : List.copyOf(toolCallbacks);
+		this.toolNames = toolNames == null ? null : Set.copyOf(toolNames);
+		this.toolContext = toolContext == null ? null : Map.copyOf(toolContext);
 		this.candidateCount = candidateCount;
 		this.responseMimeType = responseMimeType;
 		this.responseSchema = responseSchema;
@@ -249,8 +249,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		this.autoCacheTtl = autoCacheTtl;
 		this.googleSearchRetrieval = Boolean.TRUE.equals(googleSearchRetrieval);
 		this.includeServerSideToolInvocations = Boolean.TRUE.equals(includeServerSideToolInvocations);
-		this.safetySettings = safetySettings == null ? List.of() : List.copyOf(safetySettings);
-		this.labels = labels == null ? Map.of() : Map.copyOf(labels);
+		this.safetySettings = safetySettings == null ? null : List.copyOf(safetySettings);
+		this.labels = labels == null ? null : Map.copyOf(labels);
 		this.serviceTier = serviceTier;
 	}
 
@@ -309,12 +309,12 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	}
 
 	@Override
-	public List<ToolCallback> getToolCallbacks() {
+	public @Nullable List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
 	}
 
 	@Override
-	public Set<String> getToolNames() {
+	public @Nullable Set<String> getToolNames() {
 		return this.toolNames;
 	}
 
@@ -373,11 +373,11 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		return this.includeServerSideToolInvocations;
 	}
 
-	public List<GoogleGenAiSafetySetting> getSafetySettings() {
+	public @Nullable List<GoogleGenAiSafetySetting> getSafetySettings() {
 		return this.safetySettings;
 	}
 
-	public Map<String, String> getLabels() {
+	public @Nullable Map<String, String> getLabels() {
 		return this.labels;
 	}
 
@@ -389,7 +389,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	}
 
 	@Override
-	public Map<String, Object> getToolContext() {
+	public @Nullable Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
 

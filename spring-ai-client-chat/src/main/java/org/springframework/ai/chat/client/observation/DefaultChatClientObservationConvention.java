@@ -128,14 +128,19 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 			return keyValues;
 		}
 
-		var toolNames = new ArrayList<>(options.getToolNames());
+		var toolNames = new ArrayList<String>();
+		if (!CollectionUtils.isEmpty(options.getToolNames())) {
+			toolNames.addAll(options.getToolNames());
+		}
 		var toolCallbacks = options.getToolCallbacks();
 
-		if (CollectionUtils.isEmpty(toolNames) && CollectionUtils.isEmpty(toolCallbacks)) {
+		if (toolNames.isEmpty() && CollectionUtils.isEmpty(toolCallbacks)) {
 			return keyValues;
 		}
 
-		toolCallbacks.forEach(toolCallback -> toolNames.add(toolCallback.getToolDefinition().name()));
+		if (!CollectionUtils.isEmpty(toolCallbacks)) {
+			toolCallbacks.forEach(toolCallback -> toolNames.add(toolCallback.getToolDefinition().name()));
+		}
 
 		return keyValues.and(
 				ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_TOOL_NAMES.asString(),

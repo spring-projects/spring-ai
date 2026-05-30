@@ -29,6 +29,7 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
+import org.springframework.util.CollectionUtils;
 
 /**
  * Configuration information for the Image Model implementation using the OpenAI Java SDK.
@@ -207,7 +208,7 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 		if (this.getUser() != null) {
 			builder.user(this.getUser());
 		}
-		if (!this.getCustomHeaders().isEmpty()) {
+		if (!CollectionUtils.isEmpty(this.getCustomHeaders())) {
 			this.getCustomHeaders().forEach(builder::putAdditionalHeader);
 		}
 

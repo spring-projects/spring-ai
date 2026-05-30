@@ -48,7 +48,7 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 	/**
 	 * Additional transformer specific options.
 	 */
-	private final Map<String, Object> kwargs;
+	private final @Nullable Map<String, Object> kwargs;
 
 	/**
 	 * The Document metadata aggregation mode.
@@ -59,7 +59,7 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 			@Nullable Map<String, Object> kwargs, @Nullable MetadataMode metadataMode) {
 		this.transformer = transformer != null ? transformer : PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL;
 		this.vectorType = vectorType != null ? vectorType : VectorType.PG_ARRAY;
-		this.kwargs = kwargs != null ? Map.copyOf(kwargs) : Map.of();
+		this.kwargs = kwargs != null ? Map.copyOf(kwargs) : null;
 		this.metadataMode = metadataMode != null ? metadataMode : MetadataMode.EMBED;
 	}
 
@@ -71,7 +71,7 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 		return this.vectorType;
 	}
 
-	public Map<String, Object> getKwargs() {
+	public @Nullable Map<String, Object> getKwargs() {
 		return this.kwargs;
 	}
 

@@ -42,11 +42,11 @@ import org.springframework.util.Assert;
  */
 public class DefaultToolCallingChatOptions extends DefaultChatOptions implements ToolCallingChatOptions {
 
-	private final List<ToolCallback> toolCallbacks;
+	private final @Nullable List<ToolCallback> toolCallbacks;
 
-	private final Set<String> toolNames;
+	private final @Nullable Set<String> toolNames;
 
-	private final Map<String, Object> toolContext;
+	private final @Nullable Map<String, Object> toolContext;
 
 	private final @Nullable Boolean internalToolExecutionEnabled;
 
@@ -56,24 +56,24 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 			@Nullable Double presencePenalty, @Nullable List<String> stopSequences, @Nullable Double temperature,
 			@Nullable Integer topK, @Nullable Double topP) {
 		super(model, frequencyPenalty, maxTokens, presencePenalty, stopSequences, temperature, topK, topP);
-		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : List.of();
-		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : Set.of();
-		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : Map.of();
+		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
+		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : null;
+		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
 	@Override
-	public List<ToolCallback> getToolCallbacks() {
+	public @Nullable List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
 	}
 
 	@Override
-	public Set<String> getToolNames() {
+	public @Nullable Set<String> getToolNames() {
 		return this.toolNames;
 	}
 
 	@Override
-	public Map<String, Object> getToolContext() {
+	public @Nullable Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
 
