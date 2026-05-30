@@ -17,8 +17,6 @@
 package org.springframework.ai.deepseek;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -150,17 +148,17 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		this.maxTokens = maxTokens;
 		this.presencePenalty = presencePenalty;
 		this.responseFormat = responseFormat;
-		this.stop = stop;
+		this.stop = stop != null ? List.copyOf(stop) : null;
 		this.temperature = temperature != null ? temperature : 0.7;
 		this.topP = topP;
 		this.logprobs = logprobs;
 		this.topLogprobs = topLogprobs;
-		this.tools = tools;
+		this.tools = tools != null ? List.copyOf(tools) : null;
 		this.toolChoice = toolChoice;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(toolCallbacks);
-		this.toolNames = toolNames == null ? new HashSet<>() : new HashSet<>(toolNames);
-		this.toolContext = toolContext ==  null ? new HashMap<>() : new HashMap<>(toolContext);
+		this.toolCallbacks = toolCallbacks == null ? List.of() : List.copyOf(toolCallbacks);
+		this.toolNames = toolNames == null ? Set.of() : Set.copyOf(toolNames);
+		this.toolContext = toolContext ==  null ? Map.of() : Map.copyOf(toolContext);
 	}
 
 	public static Builder builder() {
@@ -326,7 +324,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		@Override
 		public B clone() {
 			B copy = super.clone();
-			copy.tools = this.tools == null ? null : new ArrayList<>(this.tools);
+			copy.tools = this.tools;
 			return copy;
 		}
 
@@ -392,7 +390,14 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 					this.topLogprobs = that.topLogprobs;
 				}
 				if (that.tools != null) {
-					this.tools = that.tools;
+					if (this.tools == null) {
+						this.tools = new ArrayList<>(that.tools);
+					}
+					else {
+						List<DeepSeekApi.FunctionTool> merged = new ArrayList<>(this.tools);
+						merged.addAll(that.tools);
+						this.tools = merged;
+					}
 				}
 				if (that.toolChoice != null) {
 					this.toolChoice = that.toolChoice;

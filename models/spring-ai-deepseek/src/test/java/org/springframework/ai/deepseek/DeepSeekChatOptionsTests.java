@@ -16,6 +16,8 @@
 
 package org.springframework.ai.deepseek;
 
+import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.deepseek.DeepSeekChatOptions.Builder;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
@@ -35,6 +37,21 @@ class DeepSeekChatOptionsTests extends AbstractChatOptionsTests<DeepSeekChatOpti
 	@Override
 	protected Builder readyToBuildBuilder() {
 		return DeepSeekChatOptions.builder().model(DeepSeekApi.DEFAULT_CHAT_MODEL);
+	}
+
+	@Test
+	void testCombineWithCollections() {
+		DeepSeekApi.FunctionTool baseTool = new DeepSeekApi.FunctionTool(DeepSeekApi.FunctionTool.Type.FUNCTION,
+				new DeepSeekApi.FunctionTool.Function("base-function", "", "{}"));
+		DeepSeekChatOptions base = DeepSeekChatOptions.builder().tools(java.util.List.of(baseTool)).build();
+
+		DeepSeekApi.FunctionTool overrideTool = new DeepSeekApi.FunctionTool(DeepSeekApi.FunctionTool.Type.FUNCTION,
+				new DeepSeekApi.FunctionTool.Function("override-function", "", "{}"));
+		DeepSeekChatOptions override = DeepSeekChatOptions.builder().tools(java.util.List.of(overrideTool)).build();
+
+		DeepSeekChatOptions merged = base.mutate().combineWith(override.mutate()).build();
+
+		org.assertj.core.api.Assertions.assertThat(merged.getTools()).containsExactlyInAnyOrder(baseTool, overrideTool);
 	}
 
 }

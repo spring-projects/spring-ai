@@ -68,7 +68,7 @@ public class MistralAiOcrOptions implements ModelOptions {
 			@Nullable Boolean includeImageBase64, @Nullable Integer imageLimit, @Nullable Integer imageMinSize) {
 		this.model = (model != null ? model : MistralOcrApi.OCRModel.MISTRAL_OCR_LATEST.getValue());
 		this.id = id;
-		this.pages = pages;
+		this.pages = pages != null ? List.copyOf(pages) : null;
 		this.includeImageBase64 = includeImageBase64;
 		this.imageLimit = imageLimit;
 		this.imageMinSize = imageMinSize;

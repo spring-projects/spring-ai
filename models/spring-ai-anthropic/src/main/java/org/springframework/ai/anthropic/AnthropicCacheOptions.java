@@ -66,12 +66,11 @@ public class AnthropicCacheOptions {
 		this.strategy = (strategy != null ? strategy : AnthropicCacheStrategy.NONE);
 		this.contentLengthFunction = (contentLengthFunction != null ? contentLengthFunction
 				: s -> s != null ? s.length() : 0);
-		this.messageTypeTtl = (messageTypeTtl != null ? messageTypeTtl : Stream.of(MessageType.values())
-			.collect(Collectors.toMap(mt -> mt, mt -> AnthropicCacheTtl.FIVE_MINUTES, (m1, m2) -> m1, HashMap::new)));
-		this.messageTypeMinContentLengths = (messageTypeMinContentLengths != null ? messageTypeMinContentLengths
-				: Stream.of(MessageType.values())
-					.collect(Collectors.toMap(mt -> mt, mt -> DEFAULT_MIN_CONTENT_LENGTH, (m1, m2) -> m1,
-							HashMap::new)));
+		this.messageTypeTtl = (messageTypeTtl != null ? Map.copyOf(messageTypeTtl) : Stream.of(MessageType.values())
+			.collect(Collectors.toUnmodifiableMap(mt -> mt, mt -> AnthropicCacheTtl.FIVE_MINUTES)));
+		this.messageTypeMinContentLengths = (messageTypeMinContentLengths != null
+				? Map.copyOf(messageTypeMinContentLengths) : Stream.of(MessageType.values())
+					.collect(Collectors.toUnmodifiableMap(mt -> mt, mt -> DEFAULT_MIN_CONTENT_LENGTH)));
 		this.multiBlockSystemCaching = (multiBlockSystemCaching != null ? multiBlockSystemCaching : false);
 	}
 

@@ -535,9 +535,23 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 		return MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_SMALL).maxTokens(500);
 	}
 
+	@Test
+	void testCombineWithCollections() {
+		MistralAiApi.FunctionTool baseTool = new MistralAiApi.FunctionTool(MistralAiApi.FunctionTool.Type.FUNCTION,
+				new MistralAiApi.FunctionTool.Function("base-function", "", "{}"));
+		MistralAiChatOptions base = MistralAiChatOptions.builder().tools(List.of(baseTool)).build();
+
+		MistralAiApi.FunctionTool overrideTool = new MistralAiApi.FunctionTool(MistralAiApi.FunctionTool.Type.FUNCTION,
+				new MistralAiApi.FunctionTool.Function("override-function", "", "{}"));
+		MistralAiChatOptions override = MistralAiChatOptions.builder().tools(List.of(overrideTool)).build();
+
+		MistralAiChatOptions merged = base.mutate().combineWith(override.mutate()).build();
+
+		assertThat(merged.getTools()).containsExactlyInAnyOrder(baseTool, overrideTool);
+	}
+
 	// Test record for schema generation tests
 	record TestRecord(String name, int age, List<String> tags) {
-
 	}
 
 }

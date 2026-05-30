@@ -17,8 +17,6 @@
 package org.springframework.ai.mistralai;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -183,17 +181,17 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 		this.safePrompt = safePrompt != null ? safePrompt : false;
 		this.randomSeed = randomSeed;
 		this.responseFormat = responseFormat;
-		this.stop = stop;
+		this.stop = stop != null ? List.copyOf(stop) : null;
 		this.reasoningEffort = reasoningEffort;
 		this.frequencyPenalty = frequencyPenalty != null ? frequencyPenalty : 0.0;
 		this.presencePenalty = presencePenalty != null ? presencePenalty : 0.0;
 		this.n = n;
-		this.tools = tools;
+		this.tools = tools != null ? List.copyOf(tools) : null;
 		this.toolChoice = toolChoice;
-		this.toolCallbacks = toolCallbacks != null ? new ArrayList<>(toolCallbacks) : new ArrayList<>();
-		this.toolNames = toolNames != null ? new HashSet<>(toolNames) : new HashSet<>();
+		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : List.of();
+		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : Set.of();
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolContext = toolContext != null ? new HashMap<>(toolContext) : new HashMap<>();
+		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : Map.of();
 	}
 
 	public static Builder builder() {
@@ -312,15 +310,15 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 			.maxTokens(this.maxTokens)
 			.presencePenalty(this.presencePenalty)
 			// @formatter:off
-			.stop(this.stop == null ? null : new ArrayList<>(this.stop)) // stopSequences alias for Mistral AI
+			.stop(this.stop == null ? null : List.copyOf(this.stop)) // stopSequences alias for Mistral AI
 			// @formatter:on
 			.temperature(this.temperature)
 			.topP(this.topP)
 			.topK(this.getTopK()) // always null but here for consistency
 			// ToolCallingChatOptions
-			.toolCallbacks(new ArrayList<>(this.getToolCallbacks()))
-			.toolNames(new HashSet<>(this.getToolNames()))
-			.toolContext(new HashMap<>(this.getToolContext()))
+			.toolCallbacks(this.getToolCallbacks())
+			.toolNames(this.getToolNames())
+			.toolContext(this.getToolContext())
 			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
 			// Mistral AI specific
 			.safePrompt(this.safePrompt)
@@ -328,7 +326,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 			.reasoningEffort(this.reasoningEffort)
 			.responseFormat(this.responseFormat)
 			.n(this.n)
-			.tools(this.tools != null ? new ArrayList<>(this.tools) : null)
+			.tools(this.tools)
 			.toolChoice(this.toolChoice);
 	}
 
@@ -386,7 +384,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 		@Override
 		public B clone() {
 			AbstractBuilder<B> copy = super.clone();
-			copy.tools = this.tools == null ? null : new ArrayList<>(this.tools);
+			copy.tools = this.tools;
 			return (B) copy;
 		}
 
@@ -485,7 +483,14 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 					this.n = that.n;
 				}
 				if (that.tools != null) {
-					this.tools = that.tools;
+					if (this.tools == null) {
+						this.tools = new ArrayList<>(that.tools);
+					}
+					else {
+						List<MistralAiApi.FunctionTool> merged = new ArrayList<>(this.tools);
+						merged.addAll(that.tools);
+						this.tools = merged;
+					}
 				}
 				if (that.toolChoice != null) {
 					this.toolChoice = that.toolChoice;

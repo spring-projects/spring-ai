@@ -59,7 +59,7 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 			@Nullable Map<String, Object> kwargs, @Nullable MetadataMode metadataMode) {
 		this.transformer = transformer != null ? transformer : PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL;
 		this.vectorType = vectorType != null ? vectorType : VectorType.PG_ARRAY;
-		this.kwargs = kwargs != null ? kwargs : Map.of();
+		this.kwargs = kwargs != null ? Map.copyOf(kwargs) : Map.of();
 		this.metadataMode = metadataMode != null ? metadataMode : MetadataMode.EMBED;
 	}
 

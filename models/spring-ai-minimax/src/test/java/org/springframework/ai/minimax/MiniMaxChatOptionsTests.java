@@ -192,4 +192,19 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 		assertThat(options.getToolContext()).isEqualTo(new java.util.HashMap<>());
 	}
 
+	@Test
+	void testCombineWithCollections() {
+		MiniMaxApi.FunctionTool baseTool = new MiniMaxApi.FunctionTool(MiniMaxApi.FunctionTool.Type.FUNCTION,
+				new MiniMaxApi.FunctionTool.Function("base-function", "", "{}"));
+		MiniMaxChatOptions base = MiniMaxChatOptions.builder().tools(List.of(baseTool)).build();
+
+		MiniMaxApi.FunctionTool overrideTool = new MiniMaxApi.FunctionTool(MiniMaxApi.FunctionTool.Type.FUNCTION,
+				new MiniMaxApi.FunctionTool.Function("override-function", "", "{}"));
+		MiniMaxChatOptions override = MiniMaxChatOptions.builder().tools(List.of(overrideTool)).build();
+
+		MiniMaxChatOptions merged = base.mutate().combineWith(override.mutate()).build();
+
+		assertThat(merged.getTools()).containsExactlyInAnyOrder(baseTool, overrideTool);
+	}
+
 }

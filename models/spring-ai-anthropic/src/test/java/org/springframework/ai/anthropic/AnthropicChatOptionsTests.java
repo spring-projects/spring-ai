@@ -343,9 +343,9 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 
 		assertThat(copied.getHttpHeaders()).containsEntry("X-Custom", "value");
 
-		// Verify deep copy — modifying original doesn't affect copy
-		original.getHttpHeaders().put("X-New", "new-value");
-		assertThat(copied.getHttpHeaders()).doesNotContainKey("X-New");
+		// Verify collections are immutable
+		assertThatThrownBy(() -> original.getHttpHeaders().put("X-New", "new-value"))
+			.isInstanceOf(UnsupportedOperationException.class);
 	}
 
 	@Test
@@ -358,9 +358,9 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 
 		AnthropicChatOptions merged = base.mutate().combineWith(override.mutate()).build();
 
-		// Override's non-empty headers replace base
+		// Override's non-empty headers are merged with base
 		assertThat(merged.getHttpHeaders()).containsEntry("X-Override", "override-value");
-		assertThat(merged.getHttpHeaders()).doesNotContainKey("X-Base");
+		assertThat(merged.getHttpHeaders()).containsEntry("X-Base", "base-value");
 	}
 
 	@Test

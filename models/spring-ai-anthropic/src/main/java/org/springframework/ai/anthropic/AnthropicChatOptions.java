@@ -20,7 +20,6 @@ import java.net.Proxy;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -234,39 +233,40 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 
 	protected AnthropicChatOptions(@Nullable String baseUrl, @Nullable String apiKey, @Nullable String model,
 			@Nullable Duration timeout, @Nullable Integer maxRetries, @Nullable Proxy proxy,
-			Map<String, String> customHeaders, @Nullable Integer maxTokens, @Nullable Metadata metadata,
+			@Nullable Map<String, String> customHeaders, @Nullable Integer maxTokens, @Nullable Metadata metadata,
 			@Nullable List<String> stopSequences, @Nullable Double temperature, @Nullable Double topP,
 			@Nullable Integer topK, @Nullable ToolChoice toolChoice, @Nullable ThinkingConfigParam thinking,
-			@Nullable Boolean disableParallelToolUse, List<ToolCallback> toolCallbacks, Set<String> toolNames,
-			@Nullable Boolean internalToolExecutionEnabled, Map<String, Object> toolContext,
-			List<AnthropicCitationDocument> citationDocuments, AnthropicCacheOptions cacheOptions,
-			@Nullable OutputConfig outputConfig, Map<String, String> httpHeaders,
-			@Nullable AnthropicSkillContainer skillContainer, @Nullable String inferenceGeo,
-			@Nullable AnthropicWebSearchTool webSearchTool, @Nullable AnthropicServiceTier serviceTier) {
+			@Nullable Boolean disableParallelToolUse, @Nullable List<ToolCallback> toolCallbacks,
+			@Nullable Set<String> toolNames, @Nullable Boolean internalToolExecutionEnabled,
+			@Nullable Map<String, Object> toolContext, @Nullable List<AnthropicCitationDocument> citationDocuments,
+			@Nullable AnthropicCacheOptions cacheOptions, @Nullable OutputConfig outputConfig,
+			@Nullable Map<String, String> httpHeaders, @Nullable AnthropicSkillContainer skillContainer,
+			@Nullable String inferenceGeo, @Nullable AnthropicWebSearchTool webSearchTool,
+			@Nullable AnthropicServiceTier serviceTier) {
 		this.baseUrl = baseUrl;
 		this.apiKey = apiKey;
 		this.model = model != null ? model : DEFAULT_MODEL;
 		this.timeout = timeout;
 		this.maxRetries = maxRetries;
 		this.proxy = proxy;
-		this.customHeaders = customHeaders;
+		this.customHeaders = customHeaders != null ? Map.copyOf(customHeaders) : Map.of();
 		this.maxTokens = maxTokens != null ? maxTokens : DEFAULT_MAX_TOKENS;
 		this.metadata = metadata;
-		this.stopSequences = stopSequences;
+		this.stopSequences = stopSequences != null ? List.copyOf(stopSequences) : null;
 		this.temperature = temperature;
 		this.topP = topP;
 		this.topK = topK;
 		this.toolChoice = toolChoice;
 		this.thinking = thinking;
 		this.disableParallelToolUse = disableParallelToolUse;
-		this.toolCallbacks = toolCallbacks;
-		this.toolNames = toolNames;
+		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : List.of();
+		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : Set.of();
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolContext = toolContext;
-		this.citationDocuments = citationDocuments;
-		this.cacheOptions = cacheOptions;
+		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : Map.of();
+		this.citationDocuments = citationDocuments != null ? List.copyOf(citationDocuments) : List.of();
+		this.cacheOptions = cacheOptions != null ? cacheOptions : AnthropicCacheOptions.disabled();
 		this.outputConfig = outputConfig;
-		this.httpHeaders = httpHeaders;
+		this.httpHeaders = httpHeaders != null ? Map.copyOf(httpHeaders) : Map.of();
 		this.skillContainer = skillContainer;
 		this.inferenceGeo = inferenceGeo;
 		this.webSearchTool = webSearchTool;
@@ -590,14 +590,14 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		@Override
 		public B clone() {
 			AbstractBuilder<B> copy = super.clone();
-			if (!this.customHeaders.isEmpty()) {
-				copy.customHeaders = new HashMap<>(this.customHeaders);
+			if (this.customHeaders != null && !this.customHeaders.isEmpty()) {
+				copy.customHeaders = this.customHeaders;
 			}
-			if (!this.citationDocuments.isEmpty()) {
-				copy.citationDocuments = new ArrayList<>(this.citationDocuments);
+			if (this.citationDocuments != null && !this.citationDocuments.isEmpty()) {
+				copy.citationDocuments = this.citationDocuments;
 			}
-			if (!this.httpHeaders.isEmpty()) {
-				copy.httpHeaders = new HashMap<>(this.httpHeaders);
+			if (this.httpHeaders != null && !this.httpHeaders.isEmpty()) {
+				copy.httpHeaders = this.httpHeaders;
 			}
 			return (B) copy;
 		}
@@ -613,7 +613,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 
 		private @Nullable Proxy proxy;
 
-		private Map<String, String> customHeaders = new HashMap<>();
+		private @Nullable Map<String, String> customHeaders;
 
 		// Anthropic-specific fields
 		private @Nullable Metadata metadata;
@@ -624,13 +624,13 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 
 		private @Nullable Boolean disableParallelToolUse;
 
-		private List<AnthropicCitationDocument> citationDocuments = new ArrayList<>();
+		private @Nullable List<AnthropicCitationDocument> citationDocuments;
 
-		private AnthropicCacheOptions cacheOptions = AnthropicCacheOptions.disabled();
+		private @Nullable AnthropicCacheOptions cacheOptions;
 
 		private @Nullable OutputConfig outputConfig;
 
-		private Map<String, String> httpHeaders = new HashMap<>();
+		private @Nullable Map<String, String> httpHeaders;
 
 		private @Nullable AnthropicSkillContainer skillContainer;
 
@@ -693,7 +693,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 			return self();
 		}
 
-		public B customHeaders(Map<String, String> customHeaders) {
+		public B customHeaders(@Nullable Map<String, String> customHeaders) {
 			this.customHeaders = customHeaders;
 			return self();
 		}
@@ -773,26 +773,29 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 			return self();
 		}
 
-		public B citationDocuments(List<AnthropicCitationDocument> citationDocuments) {
-			Assert.notNull(citationDocuments, "citationDocuments cannot be null");
-			this.citationDocuments = new ArrayList<>(citationDocuments);
+		public B citationDocuments(@Nullable List<AnthropicCitationDocument> citationDocuments) {
+			this.citationDocuments = citationDocuments;
 			return self();
 		}
 
 		public B citationDocuments(AnthropicCitationDocument... citationDocuments) {
-			Assert.notNull(citationDocuments, "citationDocuments cannot be null");
+			if (this.citationDocuments == null) {
+				this.citationDocuments = new ArrayList<>();
+			}
 			this.citationDocuments.addAll(java.util.Arrays.asList(citationDocuments));
 			return self();
 		}
 
 		public B addCitationDocument(AnthropicCitationDocument citationDocument) {
 			Assert.notNull(citationDocument, "citationDocument cannot be null");
+			if (this.citationDocuments == null) {
+				this.citationDocuments = new ArrayList<>();
+			}
 			this.citationDocuments.add(citationDocument);
 			return self();
 		}
 
-		public B cacheOptions(AnthropicCacheOptions cacheOptions) {
-			Assert.notNull(cacheOptions, "cacheOptions cannot be null");
+		public B cacheOptions(@Nullable AnthropicCacheOptions cacheOptions) {
 			this.cacheOptions = cacheOptions;
 			return self();
 		}
@@ -821,8 +824,8 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 			return self();
 		}
 
-		public B httpHeaders(Map<String, String> httpHeaders) {
-			this.httpHeaders = new HashMap<>(httpHeaders);
+		public B httpHeaders(@Nullable Map<String, String> httpHeaders) {
+			this.httpHeaders = httpHeaders;
 			return self();
 		}
 
@@ -937,8 +940,15 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 				if (options.proxy != null) {
 					this.proxy = options.proxy;
 				}
-				if (!options.customHeaders.isEmpty()) {
-					this.customHeaders = options.customHeaders;
+				if (options.customHeaders != null) {
+					if (this.customHeaders == null) {
+						this.customHeaders = new HashMap<>(options.customHeaders);
+					}
+					else {
+						Map<String, String> merged = new HashMap<>(this.customHeaders);
+						merged.putAll(options.customHeaders);
+						this.customHeaders = merged;
+					}
 				}
 				if (options.metadata != null) {
 					this.metadata = options.metadata;
@@ -952,8 +962,15 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 				if (options.disableParallelToolUse != null) {
 					this.disableParallelToolUse = options.disableParallelToolUse;
 				}
-				if (!options.citationDocuments.isEmpty()) {
-					this.citationDocuments = options.citationDocuments;
+				if (options.citationDocuments != null) {
+					if (this.citationDocuments == null) {
+						this.citationDocuments = new ArrayList<>(options.citationDocuments);
+					}
+					else {
+						List<AnthropicCitationDocument> merged = new ArrayList<>(this.citationDocuments);
+						merged.addAll(options.citationDocuments);
+						this.citationDocuments = merged;
+					}
 				}
 				if (options.cacheOptions != null && options.cacheOptions.getStrategy() != AnthropicCacheStrategy.NONE) {
 					this.cacheOptions = options.cacheOptions;
@@ -961,8 +978,15 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 				if (options.outputConfig != null) {
 					this.outputConfig = options.outputConfig;
 				}
-				if (!options.httpHeaders.isEmpty()) {
-					this.httpHeaders = options.httpHeaders;
+				if (options.httpHeaders != null) {
+					if (this.httpHeaders == null) {
+						this.httpHeaders = new HashMap<>(options.httpHeaders);
+					}
+					else {
+						Map<String, String> merged = new HashMap<>(this.httpHeaders);
+						merged.putAll(options.httpHeaders);
+						this.httpHeaders = merged;
+					}
 				}
 				if (options.skillContainer != null) {
 					this.skillContainer = options.skillContainer;
@@ -983,16 +1007,10 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		@SuppressWarnings("NullAway")
 		public AnthropicChatOptions build() {
 			return new AnthropicChatOptions(this.baseUrl, this.apiKey, this.model, this.timeout, this.maxRetries,
-					this.proxy, this.customHeaders == null ? new HashMap<>() : new HashMap<>(this.customHeaders),
-					this.maxTokens, this.metadata, this.stopSequences, this.temperature, this.topP, this.topK,
-					this.toolChoice, this.thinking, this.disableParallelToolUse,
-					this.toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(this.toolCallbacks),
-					this.toolNames == null ? new HashSet<>() : new HashSet<>(this.toolNames),
-					this.internalToolExecutionEnabled,
-					this.toolContext == null ? new HashMap<>() : new HashMap<>(this.toolContext),
-					this.citationDocuments == null ? new ArrayList<>() : new ArrayList<>(this.citationDocuments),
-					this.cacheOptions, this.outputConfig,
-					this.httpHeaders == null ? new HashMap<>() : new HashMap<>(this.httpHeaders), this.skillContainer,
+					this.proxy, this.customHeaders, this.maxTokens, this.metadata, this.stopSequences, this.temperature,
+					this.topP, this.topK, this.toolChoice, this.thinking, this.disableParallelToolUse,
+					this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled, this.toolContext,
+					this.citationDocuments, this.cacheOptions, this.outputConfig, this.httpHeaders, this.skillContainer,
 					this.inferenceGeo, this.webSearchTool, this.serviceTier);
 		}
 

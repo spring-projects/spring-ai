@@ -19,7 +19,6 @@ package org.springframework.ai.google.genai;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -223,14 +222,14 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxOutputTokens = maxOutputTokens;
 		this.presencePenalty = presencePenalty;
-		this.stopSequences = stopSequences;
+		this.stopSequences = stopSequences != null ? List.copyOf(stopSequences) : null;
 		this.temperature = temperature != null ? temperature : 0.7;
 		this.topK = topK;
 		this.topP = topP != null ? topP : 1.0;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(toolCallbacks);
-		this.toolNames = toolNames == null ? new HashSet<>() : new HashSet<>(toolNames);
-		this.toolContext = toolContext == null ? new HashMap<>() : new HashMap<>(toolContext);
+		this.toolCallbacks = toolCallbacks == null ? List.of() : List.copyOf(toolCallbacks);
+		this.toolNames = toolNames == null ? Set.of() : Set.copyOf(toolNames);
+		this.toolContext = toolContext == null ? Map.of() : Map.copyOf(toolContext);
 		this.candidateCount = candidateCount;
 		this.responseMimeType = responseMimeType;
 		this.responseSchema = responseSchema;
@@ -244,8 +243,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		this.autoCacheTtl = autoCacheTtl;
 		this.googleSearchRetrieval = Boolean.TRUE.equals(googleSearchRetrieval);
 		this.includeServerSideToolInvocations = Boolean.TRUE.equals(includeServerSideToolInvocations);
-		this.safetySettings = safetySettings == null ? new ArrayList<>() : new ArrayList<>(safetySettings);
-		this.labels = labels == null ? new HashMap<>() : new HashMap<>(labels);
+		this.safetySettings = safetySettings == null ? List.of() : List.copyOf(safetySettings);
+		this.labels = labels == null ? Map.of() : Map.copyOf(labels);
 	}
 
 	public static Builder builder() {
@@ -479,12 +478,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		@Override
 		public B clone() {
 			B copy = super.clone();
-			if (this.safetySettings != null && !this.safetySettings.isEmpty()) {
-				copy.safetySettings = new ArrayList<>(this.safetySettings);
-			}
-			if (this.labels != null && !this.labels.isEmpty()) {
-				copy.labels = new HashMap<>(this.labels);
-			}
+			copy.safetySettings = this.safetySettings;
+			copy.labels = this.labels;
 			return copy;
 		}
 
@@ -568,7 +563,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		}
 
 		public B safetySettings(@Nullable List<GoogleGenAiSafetySetting> safetySettings) {
-			this.safetySettings = safetySettings != null ? safetySettings : new ArrayList<>();
+			this.safetySettings = safetySettings;
 			return self();
 		}
 
@@ -593,7 +588,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		}
 
 		public B labels(@Nullable Map<String, String> labels) {
-			this.labels = labels != null ? labels : new HashMap<>();
+			this.labels = labels;
 			return self();
 		}
 
@@ -660,10 +655,24 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 					this.includeServerSideToolInvocations = that.includeServerSideToolInvocations;
 				}
 				if (that.safetySettings != null) {
-					this.safetySettings = that.safetySettings;
+					if (this.safetySettings == null) {
+						this.safetySettings = new ArrayList<>(that.safetySettings);
+					}
+					else {
+						List<GoogleGenAiSafetySetting> merged = new ArrayList<>(this.safetySettings);
+						merged.addAll(that.safetySettings);
+						this.safetySettings = merged;
+					}
 				}
 				if (that.labels != null) {
-					this.labels = that.labels;
+					if (this.labels == null) {
+						this.labels = new HashMap<>(that.labels);
+					}
+					else {
+						Map<String, String> merged = new HashMap<>(this.labels);
+						merged.putAll(that.labels);
+						this.labels = merged;
+					}
 				}
 			}
 			return self();

@@ -16,7 +16,6 @@
 
 package org.springframework.ai.chat.prompt;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -51,7 +50,7 @@ public class DefaultChatOptions implements ChatOptions {
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
 		this.presencePenalty = presencePenalty;
-		this.stopSequences = stopSequences;
+		this.stopSequences = stopSequences != null ? List.copyOf(stopSequences) : null;
 		this.temperature = temperature;
 		this.topK = topK;
 		this.topP = topP;
@@ -104,7 +103,7 @@ public class DefaultChatOptions implements ChatOptions {
 			.frequencyPenalty(this.frequencyPenalty)
 			.maxTokens(this.maxTokens)
 			.presencePenalty(this.presencePenalty)
-			.stopSequences(this.stopSequences != null ? new ArrayList<>(this.stopSequences) : null)
+			.stopSequences(this.stopSequences)
 			.temperature(this.temperature)
 			.topK(this.topK)
 			.topP(this.topP);

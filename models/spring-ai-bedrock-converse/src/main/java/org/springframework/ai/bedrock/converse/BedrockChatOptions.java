@@ -16,9 +16,7 @@
 
 package org.springframework.ai.bedrock.converse;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -82,15 +80,15 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
 		this.presencePenalty = presencePenalty;
-		this.requestParameters = requestParameters == null ? new HashMap<>() : new HashMap<>(requestParameters);
-		this.stopSequences = stopSequences;
+		this.requestParameters = requestParameters == null ? Map.of() : Map.copyOf(requestParameters);
+		this.stopSequences = stopSequences != null ? List.copyOf(stopSequences) : null;
 		this.temperature = temperature;
 		this.topK = topK;
 		this.topP = topP;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(toolCallbacks);
-		this.toolNames = toolNames == null ? new HashSet<>() : new HashSet<>(toolNames);
-		this.toolContext = toolContext == null ? new HashMap<>() : new HashMap<>(toolContext);
+		this.toolCallbacks = toolCallbacks == null ? List.of() : List.copyOf(toolCallbacks);
+		this.toolNames = toolNames == null ? Set.of() : Set.copyOf(toolNames);
+		this.toolContext = toolContext == null ? Map.of() : Map.copyOf(toolContext);
 		this.cacheOptions = cacheOptions;
 		this.outputSchema = outputSchema;
 	}
@@ -239,11 +237,11 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		@Override
 		public B clone() {
 			B copy = super.clone();
-			copy.requestParameters = this.requestParameters == null ? null : new HashMap<>(this.requestParameters);
+			copy.requestParameters = this.requestParameters;
 			return copy;
 		}
 
-		protected @Nullable Map<String, String> requestParameters = new HashMap<>();
+		protected @Nullable Map<String, String> requestParameters;
 
 		protected @Nullable BedrockCacheOptions cacheOptions;
 
@@ -263,7 +261,14 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 			super.combineWith(other);
 			if (other instanceof AbstractBuilder<?> that) {
 				if (that.requestParameters != null) {
-					this.requestParameters = that.requestParameters;
+					if (this.requestParameters == null) {
+						this.requestParameters = new HashMap<>(that.requestParameters);
+					}
+					else {
+						Map<String, String> merged = new HashMap<>(this.requestParameters);
+						merged.putAll(that.requestParameters);
+						this.requestParameters = merged;
+					}
 				}
 				if (that.cacheOptions != null) {
 					this.cacheOptions = that.cacheOptions;

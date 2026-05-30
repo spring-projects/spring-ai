@@ -76,7 +76,7 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 		this.prompt = prompt;
 		this.language = language;
 		this.temperature = temperature;
-		this.timestampGranularities = timestampGranularities;
+		this.timestampGranularities = timestampGranularities != null ? List.copyOf(timestampGranularities) : null;
 	}
 
 	public static Builder builder() {
