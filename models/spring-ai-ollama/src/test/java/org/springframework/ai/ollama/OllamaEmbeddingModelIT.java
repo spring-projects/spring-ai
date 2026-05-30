@@ -52,7 +52,7 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 	void embeddings() {
 		assertThat(this.embeddingModel).isNotNull();
 		EmbeddingResponse embeddingResponse = this.embeddingModel.call(new EmbeddingRequest(
-				List.of("Hello World", "Something else"), OllamaEmbeddingOptions.builder().build()));
+				List.of("Hello World", "Something else"), null));
 		assertThat(embeddingResponse.getResults()).hasSize(2);
 		assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();

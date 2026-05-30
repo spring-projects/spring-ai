@@ -183,6 +183,7 @@ class OllamaWithOpenAiChatModelIT {
 			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage(),
 				OpenAiChatOptions.builder()
+					.model(DEFAULT_OLLAMA_MODEL)
 					.responseFormat(OpenAiChatModel.ResponseFormat.builder()
 						.type(OpenAiChatModel.ResponseFormat.Type.JSON_OBJECT)
 						.build())
