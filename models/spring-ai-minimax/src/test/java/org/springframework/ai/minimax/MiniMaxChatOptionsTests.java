@@ -24,7 +24,9 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.minimax.MiniMaxChatOptions.Builder;
 import org.springframework.ai.minimax.api.MiniMaxApi;
+import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
+import org.springframework.ai.util.json.JsonParser;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -197,6 +199,47 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 		assertThat(options.getToolChoice()).isEqualTo("test");
 		assertThat(options.getInternalToolExecutionEnabled()).isEqualTo(true);
 		assertThat(options.getToolContext()).isEqualTo(Map.of("key1", "value1"));
+	}
+
+	@Test
+	void testImplementsStructuredOutputChatOptions() {
+		assertThat(MiniMaxChatOptions.builder().build()).isInstanceOf(StructuredOutputChatOptions.class);
+	}
+
+	@Test
+	void testOutputSchema() {
+		String schema = """
+				{"type":"object","properties":{"name":{"type":"string"}},"required":["name"]}""";
+
+		MiniMaxChatOptions options = MiniMaxChatOptions.builder().outputSchema(schema).build();
+
+		MiniMaxApi.ChatCompletionRequest.ResponseFormat responseFormat = options.getResponseFormat();
+		assertThat(responseFormat).isNotNull();
+		assertThat(responseFormat.type()).isEqualTo("json_schema");
+		assertThat(responseFormat.jsonSchema()).isNotNull();
+		assertThat(responseFormat.jsonSchema().name()).isEqualTo("custom_schema");
+		assertThat(responseFormat.jsonSchema().schema()).containsEntry("type", "object");
+
+		// getOutputSchema() round-trips the supplied schema back to JSON.
+		assertThat(JsonParser.fromJson(options.getOutputSchema(), Map.class))
+			.isEqualTo(JsonParser.fromJson(schema, Map.class));
+	}
+
+	@Test
+	void testOutputSchemaWithNull() {
+		MiniMaxChatOptions options = MiniMaxChatOptions.builder().outputSchema(null).build();
+
+		assertThat(options.getResponseFormat()).isNull();
+		assertThat(options.getOutputSchema()).isNull();
+	}
+
+	@Test
+	void testGetOutputSchemaReturnsNullForJsonMode() {
+		MiniMaxChatOptions options = MiniMaxChatOptions.builder()
+			.responseFormat(new MiniMaxApi.ChatCompletionRequest.ResponseFormat("json_object"))
+			.build();
+
+		assertThat(options.getOutputSchema()).isNull();
 	}
 
 	@Test

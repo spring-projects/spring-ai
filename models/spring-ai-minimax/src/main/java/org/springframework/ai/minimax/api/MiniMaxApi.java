@@ -640,11 +640,43 @@ public class MiniMaxApi {
 
 		/**
 		 * An object specifying the format that the model must output.
-		 * @param type Must be one of 'text' or 'json_object'.
+		 *
+		 * @param type Must be one of 'text', 'json_object' or 'json_schema'. Setting to
+		 * 'json_object' enables JSON mode, which guarantees the message the model
+		 * generates is valid JSON. Setting to 'json_schema' enables Structured Outputs
+		 * which ensures the model output matches the supplied {@link JsonSchema}.
+		 * @param jsonSchema The JSON schema the model output must conform to. Only
+		 * applicable when {@code type} is 'json_schema', which is currently only supported
+		 * by the {@code MiniMax-Text-01} model.
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record ResponseFormat(
-				@JsonProperty("type") String type) {
+				@JsonProperty("type") String type,
+				@JsonProperty("json_schema") @Nullable JsonSchema jsonSchema) {
+
+			/**
+			 * Shortcut constructor for a response format with only a type, e.g.
+			 * {@code { "type": "json_object" }} to enable JSON mode.
+			 * @param type Must be one of 'text', 'json_object' or 'json_schema'.
+			 */
+			public ResponseFormat(String type) {
+				this(type, null);
+			}
+
+			/**
+			 * The JSON schema definition that constrains the model output when the
+			 * response format type is 'json_schema'.
+			 *
+			 * @param name A name for the response schema. Must contain only alphanumeric
+			 * characters or underscores, with a maximum length of 64 characters.
+			 * @param schema The JSON Schema object describing the structure the model
+			 * output must match.
+			 */
+			@JsonInclude(Include.NON_NULL)
+			public record JsonSchema(
+					@JsonProperty("name") String name,
+					@JsonProperty("schema") Map<String, Object> schema) {
+			}
 		}
 	}
 

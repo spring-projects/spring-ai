@@ -30,8 +30,10 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
+import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.util.json.JsonParser;
 
 /**
  * MiniMaxChatOptions represents the options for performing chat completion using the
@@ -46,7 +48,7 @@ import org.springframework.ai.tool.ToolCallback;
  * @author Sebastien Deleuze
  * @since 1.0.0 M1
  */
-public class MiniMaxChatOptions implements ToolCallingChatOptions {
+public class MiniMaxChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
 	// @formatter:off
 	/**
@@ -77,6 +79,8 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	/**
 	 * An object specifying the format that the model must output. Setting to { "type":
 	 * "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
+	 * Setting to { "type": "json_schema" } with a supplied schema enables native structured output,
+	 * which guarantees the model output matches the schema (only supported by MiniMax-Text-01).
 	 */
 	private MiniMaxApi.ChatCompletionRequest.@Nullable ResponseFormat responseFormat;
 	/**
@@ -216,6 +220,18 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		return this.responseFormat;
 	}
 
+	@Override
+	public @Nullable String getOutputSchema() {
+		if (this.responseFormat == null) {
+			return null;
+		}
+		MiniMaxApi.ChatCompletionRequest.ResponseFormat.JsonSchema jsonSchema = this.responseFormat.jsonSchema();
+		if (jsonSchema == null) {
+			return null;
+		}
+		return JsonParser.toJson(jsonSchema.schema());
+	}
+
 	public @Nullable Integer getSeed() {
 		return this.seed;
 	}
@@ -344,7 +360,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
-			extends DefaultToolCallingChatOptions.Builder<B> {
+			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
 
 		@Override
 		public B clone() {
@@ -372,6 +388,21 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 
 		public B responseFormat(MiniMaxApi.ChatCompletionRequest.@Nullable ResponseFormat responseFormat) {
 			this.responseFormat = responseFormat;
+			return self();
+		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		public B outputSchema(@Nullable String outputSchema) {
+			if (outputSchema == null) {
+				this.responseFormat = null;
+				return self();
+			}
+			Map<String, Object> schema = Objects.requireNonNull(
+					(Map<String, Object>) JsonParser.fromJson(outputSchema, Map.class),
+					"outputSchema must be a valid JSON object");
+			this.responseFormat = new MiniMaxApi.ChatCompletionRequest.ResponseFormat("json_schema",
+					new MiniMaxApi.ChatCompletionRequest.ResponseFormat.JsonSchema("custom_schema", schema));
 			return self();
 		}
 

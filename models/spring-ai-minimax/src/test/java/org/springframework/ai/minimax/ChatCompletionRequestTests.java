@@ -107,4 +107,22 @@ public class ChatCompletionRequestTests {
 		assertThat(request.model()).isEqualTo("DEFAULT_MODEL");
 	}
 
+	@Test
+	public void createRequestWithStructuredOutput() {
+
+		var client = new MiniMaxChatModel(new MiniMaxApi("TEST"),
+				MiniMaxChatOptions.builder().model("MiniMax-Text-01").build());
+
+		String schema = "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}},\"required\":[\"name\"]}";
+
+		var request = client.createRequest(new Prompt("Test message content",
+				MiniMaxChatOptions.builder().model("MiniMax-Text-01").outputSchema(schema).build()), false);
+
+		assertThat(request.responseFormat()).isNotNull();
+		assertThat(request.responseFormat().type()).isEqualTo("json_schema");
+		assertThat(request.responseFormat().jsonSchema()).isNotNull();
+		assertThat(request.responseFormat().jsonSchema().name()).isEqualTo("custom_schema");
+		assertThat(request.responseFormat().jsonSchema().schema()).containsEntry("type", "object");
+	}
+
 }
