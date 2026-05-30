@@ -309,4 +309,18 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 		assertThat(options1).isNotEqualTo(options3);
 	}
 
+	@Test
+	public void testCombineWithCollections() {
+		GoogleGenAiChatOptions base = GoogleGenAiChatOptions.builder().labels(Map.of("base-key", "base-value")).build();
+
+		GoogleGenAiChatOptions override = GoogleGenAiChatOptions.builder()
+			.labels(Map.of("override-key", "override-value"))
+			.build();
+
+		GoogleGenAiChatOptions merged = base.mutate().combineWith(override.mutate()).build();
+
+		assertThat(merged.getLabels()).containsEntry("base-key", "base-value");
+		assertThat(merged.getLabels()).containsEntry("override-key", "override-value");
+	}
+
 }

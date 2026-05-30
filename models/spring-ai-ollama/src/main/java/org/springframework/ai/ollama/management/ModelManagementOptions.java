@@ -19,6 +19,8 @@ package org.springframework.ai.ollama.management;
 import java.time.Duration;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Options for managing models in Ollama.
  *
@@ -30,8 +32,12 @@ import java.util.List;
  * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
-public record ModelManagementOptions(PullModelStrategy pullModelStrategy, List<String> additionalModels,
+public record ModelManagementOptions(PullModelStrategy pullModelStrategy, @Nullable List<String> additionalModels,
 		Duration timeout, Integer maxRetries) {
+
+	public ModelManagementOptions {
+		additionalModels = additionalModels != null ? List.copyOf(additionalModels) : List.of();
+	}
 
 	public static ModelManagementOptions defaults() {
 		return new ModelManagementOptions(PullModelStrategy.NEVER, List.of(), Duration.ofMinutes(5), 0);

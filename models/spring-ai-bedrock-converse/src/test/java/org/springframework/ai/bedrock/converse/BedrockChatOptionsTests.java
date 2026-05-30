@@ -89,4 +89,20 @@ class BedrockChatOptionsTests extends AbstractChatOptionsTests<BedrockChatOption
 		assertThat(options).isInstanceOf(StructuredOutputChatOptions.class);
 	}
 
+	@Test
+	void testCombineWithCollections() {
+		BedrockChatOptions base = BedrockChatOptions.builder()
+			.requestParameters(Map.of("base-key", "base-value"))
+			.build();
+
+		BedrockChatOptions override = BedrockChatOptions.builder()
+			.requestParameters(Map.of("override-key", "override-value"))
+			.build();
+
+		BedrockChatOptions merged = base.mutate().combineWith(override.mutate()).build();
+
+		assertThat(merged.getRequestParameters()).containsEntry("base-key", "base-value");
+		assertThat(merged.getRequestParameters()).containsEntry("override-key", "override-value");
+	}
+
 }

@@ -18,7 +18,6 @@ package org.springframework.ai.openai;
 
 import java.net.Proxy;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.Map;
 
 import com.openai.azure.AzureOpenAIServiceVersion;
@@ -125,7 +124,7 @@ public class AbstractOpenAiOptions {
 		this.timeout = timeout != null ? timeout : DEFAULT_TIMEOUT;
 		this.maxRetries = maxRetries != null ? maxRetries : DEFAULT_MAX_RETRIES;
 		this.proxy = proxy;
-		this.customHeaders = customHeaders != null ? new HashMap<>(customHeaders) : new HashMap<>();
+		this.customHeaders = customHeaders != null ? Map.copyOf(customHeaders) : Map.of();
 	}
 
 	public @Nullable String getBaseUrl() {
@@ -213,7 +212,7 @@ public class AbstractOpenAiOptions {
 
 		protected @Nullable Proxy proxy;
 
-		protected Map<String, String> customHeaders = new HashMap<>();
+		protected @Nullable Map<String, String> customHeaders;
 
 		@SuppressWarnings("unchecked")
 		protected B self() {
@@ -301,8 +300,8 @@ public class AbstractOpenAiOptions {
 			return self();
 		}
 
-		public B customHeaders(Map<String, String> customHeaders) {
-			this.customHeaders = customHeaders != null ? new HashMap<>(customHeaders) : new HashMap<>();
+		public B customHeaders(@Nullable Map<String, String> customHeaders) {
+			this.customHeaders = customHeaders;
 			return self();
 		}
 

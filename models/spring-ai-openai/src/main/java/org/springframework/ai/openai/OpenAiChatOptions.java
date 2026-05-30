@@ -19,7 +19,6 @@ package org.springframework.ai.openai;
 import java.net.Proxy;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -220,26 +219,26 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.timeout = (timeout != null ? timeout : AbstractOpenAiOptions.DEFAULT_TIMEOUT);
 		this.maxRetries = (maxRetries != null ? maxRetries : AbstractOpenAiOptions.DEFAULT_MAX_RETRIES);
 		this.proxy = proxy;
-		this.customHeaders = (customHeaders != null ? customHeaders : Collections.emptyMap());
+		this.customHeaders = (customHeaders != null ? Map.copyOf(customHeaders) : Map.of());
 		// ChatOptions
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
 		this.presencePenalty = presencePenalty;
-		this.stop = stop;
+		this.stop = stop != null ? List.copyOf(stop) : null;
 		this.temperature = temperature;
 		this.topP = topP;
 		// ToolCallingChatOptions
-		this.toolCallbacks = (toolCallbacks != null ? toolCallbacks : Collections.emptyList());
-		this.toolNames = (toolNames != null ? toolNames : Collections.emptySet());
-		this.toolContext = (toolContext != null ? toolContext : Collections.emptyMap());
+		this.toolCallbacks = (toolCallbacks != null ? List.copyOf(toolCallbacks) : List.of());
+		this.toolNames = (toolNames != null ? Set.copyOf(toolNames) : Set.of());
+		this.toolContext = (toolContext != null ? Map.copyOf(toolContext) : Map.of());
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 		// OpenAI SDK specific
-		this.logitBias = logitBias;
+		this.logitBias = logitBias != null ? Map.copyOf(logitBias) : null;
 		this.logprobs = logprobs;
 		this.topLogprobs = topLogprobs;
 		this.maxCompletionTokens = maxCompletionTokens;
 		this.n = n;
-		this.outputModalities = outputModalities;
+		this.outputModalities = outputModalities != null ? List.copyOf(outputModalities) : null;
 		this.outputAudio = outputAudio;
 		this.responseFormat = responseFormat;
 		this.streamOptions = streamOptions;
@@ -248,11 +247,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.user = user;
 		this.parallelToolCalls = parallelToolCalls;
 		this.store = store;
-		this.metadata = metadata;
+		this.metadata = metadata != null ? Map.copyOf(metadata) : null;
 		this.reasoningEffort = reasoningEffort;
 		this.verbosity = verbosity;
 		this.serviceTier = serviceTier;
-		this.extraBody = extraBody;
+		this.extraBody = extraBody != null ? Map.copyOf(extraBody) : null;
 	}
 
 	/**
@@ -560,26 +559,26 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			.timeout(this.getTimeout())
 			.maxRetries(this.getMaxRetries())
 			.proxy(this.getProxy())
-			.customHeaders(new HashMap<>(this.getCustomHeaders()))
+			.customHeaders(this.getCustomHeaders())
 			// ChatOptions
 			.frequencyPenalty(this.frequencyPenalty)
 			.maxTokens(this.maxTokens)
 			.presencePenalty(this.presencePenalty)
-			.stopSequences(this.stop != null ? new ArrayList<>(this.stop) : null)
+			.stopSequences(this.stop)
 			.temperature(this.temperature)
 			.topP(this.topP)
 			// ToolCallingChatOptions
-			.toolCallbacks(new ArrayList<>(this.getToolCallbacks()))
-			.toolNames(new HashSet<>(this.getToolNames()))
-			.toolContext(new HashMap<>(this.getToolContext()))
+			.toolCallbacks(this.getToolCallbacks())
+			.toolNames(this.getToolNames())
+			.toolContext(this.getToolContext())
 			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
 			// OpenAI SDK specific
-			.logitBias(this.logitBias != null ? new HashMap<>(this.logitBias) : null)
+			.logitBias(this.logitBias)
 			.logprobs(this.logprobs)
 			.topLogprobs(this.topLogprobs)
 			.maxCompletionTokens(this.maxCompletionTokens)
 			.n(this.n)
-			.outputModalities(this.outputModalities != null ? new ArrayList<>(this.outputModalities) : null)
+			.outputModalities(this.outputModalities)
 			.outputAudio(this.outputAudio)
 			.responseFormat(this.responseFormat)
 			.streamOptions(this.streamOptions)
@@ -588,11 +587,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			.user(this.user)
 			.parallelToolCalls(this.parallelToolCalls)
 			.store(this.store)
-			.metadata(this.metadata != null ? new HashMap<>(this.metadata) : null)
+			.metadata(this.metadata)
 			.reasoningEffort(this.reasoningEffort)
 			.verbosity(this.verbosity)
 			.serviceTier(this.serviceTier)
-			.extraBody(this.extraBody != null ? new HashMap<>(this.extraBody) : null);
+			.extraBody(this.extraBody);
 	}
 
 	@Override
@@ -705,8 +704,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			}
 
 			public Builder additionalProperties(@Nullable Map<String, Object> additionalProperties) {
-				this.additionalProperties = additionalProperties != null ? new HashMap<>(additionalProperties)
-						: new HashMap<>();
+				this.additionalProperties = additionalProperties;
 				return this;
 			}
 
@@ -739,11 +737,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		public B clone() {
 			B copy = super.clone();
 			if (this.customHeaders != null && !this.customHeaders.isEmpty()) {
-				copy.customHeaders = new HashMap<>(this.customHeaders);
+				copy.customHeaders = this.customHeaders;
 			}
-			copy.logitBias = this.logitBias == null ? null : new HashMap<>(this.logitBias);
-			copy.outputModalities = this.outputModalities == null ? null : new ArrayList<>(this.outputModalities);
-			copy.metadata = this.metadata == null ? null : new HashMap<>(this.metadata);
+			copy.logitBias = this.logitBias;
+			copy.outputModalities = this.outputModalities;
+			copy.metadata = this.metadata;
 			return copy;
 		}
 
@@ -769,7 +767,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 		protected @Nullable Proxy proxy;
 
-		protected Map<String, String> customHeaders = new HashMap<>();
+		protected @Nullable Map<String, String> customHeaders;
 
 		// OpenAI SDK specific fields
 		protected @Nullable Map<String, Integer> logitBias;
@@ -812,7 +810,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 		@Override
 		public B toolCallbacks(@Nullable List<ToolCallback> toolCallbacks) {
-			this.toolCallbacks = toolCallbacks != null ? new ArrayList<>(toolCallbacks) : null;
+			this.toolCallbacks = toolCallbacks;
 			return self();
 		}
 
@@ -827,7 +825,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 		@Override
 		public B toolNames(@Nullable Set<String> toolNames) {
-			this.toolNames = toolNames != null ? new HashSet<>(toolNames) : null;
+			this.toolNames = toolNames;
 			return self();
 		}
 
@@ -995,8 +993,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			return self();
 		}
 
-		public B customHeaders(Map<String, String> customHeaders) {
-			this.customHeaders = customHeaders != null ? new HashMap<>(customHeaders) : new HashMap<>();
+		public B customHeaders(@Nullable Map<String, String> customHeaders) {
+			this.customHeaders = customHeaders;
 			return self();
 		}
 
@@ -1156,7 +1154,14 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 					this.proxy = that.proxy;
 				}
 				if (that.logitBias != null) {
-					this.logitBias = that.logitBias;
+					if (this.logitBias == null) {
+						this.logitBias = new HashMap<>(that.logitBias);
+					}
+					else {
+						Map<String, Integer> merged = new HashMap<>(this.logitBias);
+						merged.putAll(that.logitBias);
+						this.logitBias = merged;
+					}
 				}
 				if (that.logprobs != null) {
 					this.logprobs = that.logprobs;
@@ -1171,7 +1176,14 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 					this.n = that.n;
 				}
 				if (that.outputModalities != null) {
-					this.outputModalities = that.outputModalities;
+					if (this.outputModalities == null) {
+						this.outputModalities = new ArrayList<>(that.outputModalities);
+					}
+					else {
+						List<String> merged = new ArrayList<>(this.outputModalities);
+						merged.addAll(that.outputModalities);
+						this.outputModalities = merged;
+					}
 				}
 				if (that.outputAudio != null) {
 					this.outputAudio = that.outputAudio;
@@ -1198,7 +1210,14 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 					this.store = that.store;
 				}
 				if (that.metadata != null) {
-					this.metadata = that.metadata;
+					if (this.metadata == null) {
+						this.metadata = new HashMap<>(that.metadata);
+					}
+					else {
+						Map<String, String> merged = new HashMap<>(this.metadata);
+						merged.putAll(that.metadata);
+						this.metadata = merged;
+					}
 				}
 				if (that.reasoningEffort != null) {
 					this.reasoningEffort = that.reasoningEffort;
@@ -1211,9 +1230,13 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 				}
 				if (that.extraBody != null) {
 					if (this.extraBody == null) {
-						this.extraBody = new HashMap<>();
+						this.extraBody = new HashMap<>(that.extraBody);
 					}
-					this.extraBody.putAll(that.extraBody);
+					else {
+						Map<String, Object> merged = new HashMap<>(this.extraBody);
+						merged.putAll(that.extraBody);
+						this.extraBody = merged;
+					}
 				}
 				if (that.isMicrosoftFoundry != null) {
 					this.isMicrosoftFoundry = that.isMicrosoftFoundry;
@@ -1221,8 +1244,15 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 				if (that.isGitHubModels != null) {
 					this.isGitHubModels = that.isGitHubModels;
 				}
-				if (that.customHeaders != null && !that.customHeaders.isEmpty()) {
-					this.customHeaders = that.customHeaders;
+				if (that.customHeaders != null) {
+					if (this.customHeaders == null) {
+						this.customHeaders = new HashMap<>(that.customHeaders);
+					}
+					else {
+						Map<String, String> merged = new HashMap<>(this.customHeaders);
+						merged.putAll(that.customHeaders);
+						this.customHeaders = merged;
+					}
 				}
 				if (that.timeout != null) {
 					this.timeout = that.timeout;

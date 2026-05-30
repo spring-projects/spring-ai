@@ -16,9 +16,6 @@
 
 package org.springframework.ai.model.tool;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -101,9 +98,9 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		Assert.notNull(runtimeToolNames, "runtimeToolNames cannot be null");
 		Assert.notNull(defaultToolNames, "defaultToolNames cannot be null");
 		if (CollectionUtils.isEmpty(runtimeToolNames)) {
-			return new HashSet<>(defaultToolNames);
+			return Set.copyOf(defaultToolNames);
 		}
-		return new HashSet<>(runtimeToolNames);
+		return Set.copyOf(runtimeToolNames);
 	}
 
 	static List<ToolCallback> mergeToolCallbacks(List<ToolCallback> runtimeToolCallbacks,
@@ -111,9 +108,9 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		Assert.notNull(runtimeToolCallbacks, "runtimeToolCallbacks cannot be null");
 		Assert.notNull(defaultToolCallbacks, "defaultToolCallbacks cannot be null");
 		if (CollectionUtils.isEmpty(runtimeToolCallbacks)) {
-			return new ArrayList<>(defaultToolCallbacks);
+			return List.copyOf(defaultToolCallbacks);
 		}
-		return new ArrayList<>(runtimeToolCallbacks);
+		return List.copyOf(runtimeToolCallbacks);
 	}
 
 	static Map<String, Object> mergeToolContext(Map<String, Object> runtimeToolContext,
@@ -122,9 +119,9 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		Assert.noNullElements(runtimeToolContext.keySet(), "runtimeToolContext keys cannot be null");
 		Assert.notNull(defaultToolContext, "defaultToolContext cannot be null");
 		Assert.noNullElements(defaultToolContext.keySet(), "defaultToolContext keys cannot be null");
-		var mergedToolContext = new HashMap<>(defaultToolContext);
+		var mergedToolContext = new java.util.HashMap<>(defaultToolContext);
 		mergedToolContext.putAll(runtimeToolContext);
-		return mergedToolContext;
+		return Map.copyOf(mergedToolContext);
 	}
 
 	static void validateToolCallbacks(List<ToolCallback> toolCallbacks) {

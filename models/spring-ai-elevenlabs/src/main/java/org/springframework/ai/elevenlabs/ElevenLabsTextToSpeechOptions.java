@@ -80,12 +80,13 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 		this.outputFormat = outputFormat;
 		this.voiceSettings = voiceSettings;
 		this.languageCode = languageCode;
-		this.pronunciationDictionaryLocators = pronunciationDictionaryLocators;
+		this.pronunciationDictionaryLocators = pronunciationDictionaryLocators != null
+				? List.copyOf(pronunciationDictionaryLocators) : null;
 		this.seed = seed;
 		this.previousText = previousText;
 		this.nextText = nextText;
-		this.previousRequestIds = previousRequestIds;
-		this.nextRequestIds = nextRequestIds;
+		this.previousRequestIds = previousRequestIds != null ? List.copyOf(previousRequestIds) : null;
+		this.nextRequestIds = nextRequestIds != null ? List.copyOf(nextRequestIds) : null;
 		this.applyTextNormalization = applyTextNormalization;
 		this.applyLanguageTextNormalization = applyLanguageTextNormalization;
 	}

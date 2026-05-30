@@ -241,10 +241,13 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 				}
 				if (that.toolContext != null) {
 					if (this.toolContext == null) {
-						this.toolContext = new HashMap<>();
+						this.toolContext = new HashMap<>(that.toolContext);
 					}
-					this.toolContext.putAll(that.toolContext); // TODO:replace instead of
-																// merge?
+					else {
+						Map<String, Object> merged = new HashMap<>(this.toolContext);
+						merged.putAll(that.toolContext);
+						this.toolContext = merged;
+					}
 				}
 				if (that.internalToolExecutionEnabled != null) {
 					this.internalToolExecutionEnabled = that.internalToolExecutionEnabled;

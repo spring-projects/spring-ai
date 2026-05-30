@@ -16,9 +16,6 @@
 
 package org.springframework.ai.ollama.api;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -97,16 +94,16 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.mirostatTau = mirostatTau;
 		this.mirostatEta = mirostatEta;
 		this.penalizeNewline = penalizeNewline;
-		this.stop = stop;
-		this.model = model != null ? model : org.springframework.ai.ollama.api.OllamaModel.MISTRAL.id();
+		this.stop = stop != null ? List.copyOf(stop) : null;
+		this.model = model != null ? model : OllamaModel.MISTRAL.id();
 		this.format = format;
 		this.keepAlive = keepAlive;
 		this.truncate = truncate;
 		this.thinkOption = thinkOption;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(toolCallbacks);
-		this.toolNames = toolNames == null ? new HashSet<>() : new HashSet<>(toolNames);
-		this.toolContext = toolContext == null ? new HashMap<>() : new HashMap<>(toolContext);
+		this.toolCallbacks = toolCallbacks == null ? List.of() : List.copyOf(toolCallbacks);
+		this.toolNames = toolNames == null ? Set.of() : Set.copyOf(toolNames);
+		this.toolContext = toolContext == null ? Map.of() : Map.copyOf(toolContext);
 	}
 
 	// Following fields are options which must be set when the model is loaded into
@@ -637,7 +634,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * @return The {@link Map} of key/value pairs.
 	 */
 	public Map<String, Object> toMap() {
-		Map<String, @Nullable Object> map = new HashMap<>();
+		Map<String, @Nullable Object> map = new java.util.HashMap<>();
 		map.put("numa", this.useNUMA);
 		map.put("num_ctx", this.numCtx);
 		map.put("num_batch", this.numBatch);
