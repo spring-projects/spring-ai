@@ -505,7 +505,8 @@ Then add the client to your chat client:
 [source,java]
 ----
 var chatResponse = chatClient.prompt("Prompt the LLM to do the thing")
-        .toolCallbacks(new SyncMcpToolCallbackProvider(mcpClient1, mcpClient2, mcpClient3))
+        .tools(t -> t.callbacks(new SyncMcpToolCallbackProvider(
+                mcpClient1, mcpClient2, mcpClient3)))
         .call()
         .content();
 ----
