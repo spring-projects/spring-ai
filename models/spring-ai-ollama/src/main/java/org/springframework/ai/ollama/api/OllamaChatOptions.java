@@ -101,9 +101,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.truncate = truncate;
 		this.thinkOption = thinkOption;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks == null ? null : List.copyOf(toolCallbacks);
-		this.toolNames = toolNames == null ? null : Set.copyOf(toolNames);
-		this.toolContext = toolContext == null ? null : Map.copyOf(toolContext);
+		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
+		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : null;
+		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
 	}
 
 	// Following fields are options which must be set when the model is loaded into

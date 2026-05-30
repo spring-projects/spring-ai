@@ -148,7 +148,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		this.maxTokens = maxTokens;
 		this.presencePenalty = presencePenalty;
 		this.responseFormat = responseFormat;
-		this.stop = stop != null ? List.copyOf(stop) : null;
+		this.stop = (stop != null ? List.copyOf(stop) : null);
 		this.temperature = temperature != null ? temperature : 0.7;
 		this.topP = topP;
 		this.logprobs = logprobs;
@@ -156,9 +156,9 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		this.tools = tools != null ? List.copyOf(tools) : null;
 		this.toolChoice = toolChoice;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks == null ? null : List.copyOf(toolCallbacks);
-		this.toolNames = toolNames == null ? null : Set.copyOf(toolNames);
-		this.toolContext = toolContext ==  null ? null : Map.copyOf(toolContext);
+		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
+		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : null;
+		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
 	}
 
 	public static Builder builder() {

@@ -56,9 +56,9 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 			@Nullable Double presencePenalty, @Nullable List<String> stopSequences, @Nullable Double temperature,
 			@Nullable Integer topK, @Nullable Double topP) {
 		super(model, frequencyPenalty, maxTokens, presencePenalty, stopSequences, temperature, topK, topP);
-		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
-		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : null;
-		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
+		this.toolCallbacks = (toolCallbacks != null ? List.copyOf(toolCallbacks) : null);
+		this.toolNames = (toolNames != null ? Set.copyOf(toolNames) : null);
+		this.toolContext = (toolContext != null ? Map.copyOf(toolContext) : null);
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 

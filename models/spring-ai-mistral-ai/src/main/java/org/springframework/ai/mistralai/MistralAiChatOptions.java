@@ -310,7 +310,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 			.maxTokens(this.maxTokens)
 			.presencePenalty(this.presencePenalty)
 			// @formatter:off
-			.stop(this.stop == null ? null : List.copyOf(this.stop)) // stopSequences alias for Mistral AI
+			.stop(this.stop != null ? List.copyOf(this.stop) : null) // stopSequences alias for Mistral AI
 			// @formatter:on
 			.temperature(this.temperature)
 			.topP(this.topP)

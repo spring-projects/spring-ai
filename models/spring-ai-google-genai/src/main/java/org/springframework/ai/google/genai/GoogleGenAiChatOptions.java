@@ -221,14 +221,14 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxOutputTokens = maxOutputTokens;
 		this.presencePenalty = presencePenalty;
-		this.stopSequences = stopSequences != null ? List.copyOf(stopSequences) : null;
+		this.stopSequences = (stopSequences != null ? List.copyOf(stopSequences) : null);
 		this.temperature = temperature != null ? temperature : 0.7;
 		this.topK = topK;
 		this.topP = topP != null ? topP : 1.0;
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks == null ? null : List.copyOf(toolCallbacks);
-		this.toolNames = toolNames == null ? null : Set.copyOf(toolNames);
-		this.toolContext = toolContext == null ? null : Map.copyOf(toolContext);
+		this.toolCallbacks = (toolCallbacks != null ? List.copyOf(toolCallbacks) : null);
+		this.toolNames = (toolNames != null ? Set.copyOf(toolNames) : null);
+		this.toolContext = (toolContext != null ? Map.copyOf(toolContext) : null);
 		this.candidateCount = candidateCount;
 		this.responseMimeType = responseMimeType;
 		this.responseSchema = responseSchema;
@@ -242,8 +242,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		this.autoCacheTtl = autoCacheTtl;
 		this.googleSearchRetrieval = Boolean.TRUE.equals(googleSearchRetrieval);
 		this.includeServerSideToolInvocations = Boolean.TRUE.equals(includeServerSideToolInvocations);
-		this.safetySettings = safetySettings == null ? null : List.copyOf(safetySettings);
-		this.labels = labels == null ? null : Map.copyOf(labels);
+		this.safetySettings = (safetySettings != null ? List.copyOf(safetySettings) : null);
+		this.labels = (labels != null ? Map.copyOf(labels) : null);
 	}
 
 	public static Builder builder() {
