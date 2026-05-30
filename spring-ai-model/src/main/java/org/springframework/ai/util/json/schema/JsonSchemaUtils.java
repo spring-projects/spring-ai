@@ -60,6 +60,12 @@ public final class JsonSchemaUtils {
 	private JsonSchemaUtils() {
 	}
 
+	private static ObjectNode generateSchema(SchemaGenerator generator, Type inputType) {
+		synchronized (generator) {
+			return generator.generateSchema(inputType);
+		}
+	}
+
 	/**
 	 * Moves any {@code $defs} block found on {@code subSchema} into the {@code $defs}
 	 * block of {@code rootSchema}, creating one on the root if needed. On key collisions
@@ -220,8 +226,11 @@ public final class JsonSchemaUtils {
 			SCHEMA_GENERATOR_CACHE.compareAndSet(null, generator);
 		}
 
-		@SuppressWarnings("NullAway")
-		ObjectNode node = SCHEMA_GENERATOR_CACHE.get().generateSchema(inputType);
+		SchemaGenerator schemaGenerator = SCHEMA_GENERATOR_CACHE.get();
+		if (schemaGenerator == null) {
+			throw new IllegalStateException("JSON Schema generator has not been initialized");
+		}
+		ObjectNode node = generateSchema(schemaGenerator, inputType);
 
 		if ((inputType == Void.class) && !node.has("properties")) {
 			node.putObject("properties");

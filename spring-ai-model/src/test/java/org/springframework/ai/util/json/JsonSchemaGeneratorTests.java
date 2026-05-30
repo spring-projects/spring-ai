@@ -21,8 +21,15 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -885,9 +892,52 @@ class JsonSchemaGeneratorTests {
 	}
 
 	@Test
+	void generateSchemaForTypeCanRunConcurrently() throws Exception {
+		List<String> schemas = generateConcurrently(() -> JsonSchemaGenerator.generateForType(SearchRequest.class));
+
+		assertThat(schemas).hasSize(240);
+		assertThat(schemas).allSatisfy(schema -> assertThat(schema).contains("\"properties\""));
+	}
+
+	@Test
+	void generateSchemaForMethodInputCanRunConcurrently() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("searchBooksMethod", SearchRequest.class);
+
+		List<String> schemas = generateConcurrently(() -> JsonSchemaGenerator.generateForMethodInput(method));
+
+		assertThat(schemas).hasSize(240);
+		assertThat(schemas).allSatisfy(schema -> assertThat(schema).contains("\"$defs\""));
+	}
+
+	@Test
 	void throwExceptionWhenTypeIsNull() {
 		assertThatThrownBy(() -> JsonSchemaGenerator.generateForType(null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("type cannot be null");
+	}
+
+	private static List<String> generateConcurrently(Callable<String> generator) throws Exception {
+		int threadCount = 12;
+		int callCount = 240;
+		ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+		CountDownLatch start = new CountDownLatch(1);
+		try {
+			List<Future<String>> futures = new ArrayList<>();
+			for (int i = 0; i < callCount; i++) {
+				futures.add(executor.submit(() -> {
+					start.await();
+					return generator.call();
+				}));
+			}
+			start.countDown();
+			List<String> schemas = new ArrayList<>();
+			for (Future<String> future : futures) {
+				schemas.add(future.get(30, TimeUnit.SECONDS));
+			}
+			return schemas;
+		}
+		finally {
+			executor.shutdownNow();
+		}
 	}
 
 	static class TestMethods {
