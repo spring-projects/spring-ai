@@ -1197,7 +1197,7 @@ ChatModel chatModel = ...
 ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
 
 ChatOptions chatOptions = ToolCallingChatOptions.builder()
-    .toolCallbacks(new CustomerTools())
+    .toolCallbacks(ToolCallbacks.from(new CustomerTools()))
     .internalToolExecutionEnabled(false)
     .build();
 Prompt prompt = new Prompt("Tell me more about the customer with ID 42", chatOptions);

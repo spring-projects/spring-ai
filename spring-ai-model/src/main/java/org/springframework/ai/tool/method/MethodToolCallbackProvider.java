@@ -75,8 +75,9 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 				.toList();
 
 			if (toolMethods.isEmpty()) {
-				throw new IllegalStateException("No @Tool annotated methods found in " + toolObject + "."
-						+ "Did you mean to pass a ToolCallback or ToolCallbackProvider? If so, you have to use .toolCallbacks() instead of .tool()");
+				throw new IllegalStateException("No @Tool annotated methods found in " + toolObject + ". "
+						+ "Did you mean to pass a ToolCallback or ToolCallbackProvider? If so, you have to use"
+						+ " .tools(toolSpec -> toolSpec.callbacks(...)) instead of .tools(...)");
 			}
 		}
 	}

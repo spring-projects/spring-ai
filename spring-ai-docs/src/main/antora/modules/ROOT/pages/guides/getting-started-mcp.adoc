@@ -63,7 +63,7 @@ public CommandLineRunner demo(ChatClient chatClient, ToolCallbackProvider mcpToo
     return args -> {
         String response = chatClient
             .prompt("What's the weather like in Paris?")
-            .toolCallbacks(mcpTools)
+            .tools(t -> t.callbacks(mcpTools))
             .call()
             .content();
         System.out.println(response);

@@ -680,7 +680,7 @@ public class McpClientApplication {
         return args -> {
 
             ChatClient chatClient = ChatClient.builder(openAiChatModel)
-                    .defaultToolCallbacks(mcpToolProvider)
+                    .defaultTools(t -> t.callbacks(mcpToolProvider))
                     .build();
 
             String userQuestion = """
