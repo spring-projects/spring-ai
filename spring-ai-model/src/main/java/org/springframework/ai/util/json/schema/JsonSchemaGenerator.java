@@ -89,6 +89,8 @@ public final class JsonSchemaGenerator {
 
 	private static final SchemaGenerator SUBTYPE_SCHEMA_GENERATOR;
 
+	private static final Object SCHEMA_GENERATION_LOCK = new Object();
+
 	/*
 	 * Initialize JSON Schema generators.
 	 */
@@ -149,7 +151,7 @@ public final class JsonSchemaGenerator {
 			if (isMethodParameterRequired(method, i)) {
 				required.add(parameterName);
 			}
-			ObjectNode parameterNode = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
+			ObjectNode parameterNode = generateSchema(SUBTYPE_SCHEMA_GENERATOR, parameterType);
 			// victools generates self-contained schemas where $defs and the $ref
 			// pointers into them are rooted at the sub-schema. Inlining the
 			// sub-schema under properties.<paramName> re-parents existing
@@ -182,12 +184,18 @@ public final class JsonSchemaGenerator {
 	 */
 	public static String generateForType(Type type, SchemaOption... schemaOptions) {
 		Assert.notNull(type, "type cannot be null");
-		ObjectNode schema = TYPE_SCHEMA_GENERATOR.generateSchema(type);
+		ObjectNode schema = generateSchema(TYPE_SCHEMA_GENERATOR, type);
 		if ((type == Void.class) && !schema.has("properties")) {
 			schema.putObject("properties");
 		}
 		processSchemaOptions(schemaOptions, schema);
 		return schema.toPrettyString();
+	}
+
+	private static ObjectNode generateSchema(SchemaGenerator schemaGenerator, Type type) {
+		synchronized (SCHEMA_GENERATION_LOCK) {
+			return schemaGenerator.generateSchema(type);
+		}
 	}
 
 	private static void processSchemaOptions(SchemaOption[] schemaOptions, ObjectNode schema) {

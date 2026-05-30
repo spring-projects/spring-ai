@@ -23,12 +23,22 @@ import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.stream.IntStream;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import tools.jackson.databind.JsonNode;
 
 import org.springframework.ai.chat.model.ToolContext;
@@ -890,6 +900,48 @@ class JsonSchemaGeneratorTests {
 			.hasMessage("type cannot be null");
 	}
 
+	// gh-6207: Victools' Jackson property sorter keeps mutable ordering state, so
+	// concurrent schema generation for structured outputs and tool inputs must be
+	// serialized by Spring AI.
+	@Test
+	void generateSchemasConcurrently() throws Exception {
+		Class<?>[] types = { OrderedStatement.class, Person.class, TestData.class, MoreTestData.class,
+				SearchRequest.class, OuterA.SearchRequest.class, OuterB.SearchRequest.class };
+		Method[] methods = {
+				TestMethods.class.getDeclaredMethod("complexMethod", List.class, TestData.class, MoreTestData.class),
+				TestMethods.class.getDeclaredMethod("searchBooksMethod", SearchRequest.class),
+				TestMethods.class.getDeclaredMethod("collidingSimpleNameMethod", OuterA.SearchRequest.class,
+						OuterB.SearchRequest.class) };
+		int threads = 24;
+		int iterations = 300;
+
+		ExecutorService executor = Executors.newFixedThreadPool(threads);
+		CountDownLatch start = new CountDownLatch(1);
+		List<Callable<Void>> tasks = IntStream.range(0, threads).<Callable<Void>>mapToObj(worker -> () -> {
+			start.await();
+			for (int i = 0; i < iterations; i++) {
+				JsonSchemaGenerator.generateForType(types[(worker + i) % types.length]);
+				JsonSchemaGenerator.generateForMethodInput(methods[(worker + i) % methods.length]);
+			}
+			return null;
+		}).toList();
+		List<Future<Void>> futures = tasks.stream().map(executor::submit).toList();
+		Logger schemaLogger = (Logger) LoggerFactory.getLogger("com.github.victools.jsonschema.generator");
+		Level schemaLoggerLevel = schemaLogger.getLevel();
+		schemaLogger.setLevel(Level.INFO);
+
+		try {
+			start.countDown();
+			for (Future<Void> future : futures) {
+				future.get();
+			}
+		}
+		finally {
+			schemaLogger.setLevel(schemaLoggerLevel);
+			executor.shutdownNow();
+		}
+	}
+
 	static class TestMethods {
 
 		public void simpleMethod(String name, int age) {
@@ -1027,6 +1079,12 @@ class JsonSchemaGeneratorTests {
 	}
 
 	record WithMapField(String name, Map<String, Integer> scores) {
+
+	}
+
+	@JsonPropertyOrder({ "accountId", "accountName", "currency", "totals" })
+	record OrderedStatement(@JsonProperty(required = true) String accountId,
+			@JsonProperty(required = true) String accountName, String currency, Map<String, Double> totals) {
 
 	}
 

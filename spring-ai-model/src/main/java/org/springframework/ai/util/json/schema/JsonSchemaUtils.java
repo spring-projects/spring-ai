@@ -57,6 +57,8 @@ public final class JsonSchemaUtils {
 
 	private static final AtomicReference<@Nullable SchemaGenerator> SCHEMA_GENERATOR_CACHE = new AtomicReference<>();
 
+	private static final Object SCHEMA_GENERATION_LOCK = new Object();
+
 	private JsonSchemaUtils() {
 	}
 
@@ -220,14 +222,24 @@ public final class JsonSchemaUtils {
 			SCHEMA_GENERATOR_CACHE.compareAndSet(null, generator);
 		}
 
-		@SuppressWarnings("NullAway")
-		ObjectNode node = SCHEMA_GENERATOR_CACHE.get().generateSchema(inputType);
+		SchemaGenerator generator = SCHEMA_GENERATOR_CACHE.get();
+		if (generator == null) {
+			throw new IllegalStateException("SchemaGenerator cache was not initialized");
+		}
+
+		ObjectNode node = generateSchema(generator, inputType);
 
 		if ((inputType == Void.class) && !node.has("properties")) {
 			node.putObject("properties");
 		}
 
 		return node;
+	}
+
+	private static ObjectNode generateSchema(SchemaGenerator schemaGenerator, Type inputType) {
+		synchronized (SCHEMA_GENERATION_LOCK) {
+			return schemaGenerator.generateSchema(inputType);
+		}
 	}
 
 }
