@@ -17,6 +17,7 @@
 package org.springframework.ai.bedrock.converse;
 
 import java.net.URL;
+import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
@@ -29,8 +30,11 @@ import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest;
 
 import org.springframework.ai.bedrock.converse.api.MediaFetcher;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -199,6 +203,36 @@ class BedrockProxyChatModelTest {
 			.cause()
 			.isInstanceOf(SecurityException.class)
 			.hasMessageContaining("evil.com");
+	}
+
+	@Test
+	void nullTemperatureAndTopPAreOmittedFromInferenceConfig() {
+		BedrockProxyChatModel model = new BedrockProxyChatModel(this.syncClient, this.asyncClient,
+				BedrockChatOptions.builder().model("anthropic.claude-opus-4-7").build(), ObservationRegistry.NOOP,
+				ToolCallingManager.builder().build(), new DefaultToolExecutionEligibilityPredicate());
+
+		Prompt prompt = new Prompt(List.of(new UserMessage("hello")),
+				BedrockChatOptions.builder().model("anthropic.claude-opus-4-7").build());
+
+		ConverseRequest request = model.createRequest(prompt);
+
+		assertThat(request.inferenceConfig().temperature()).isNull();
+		assertThat(request.inferenceConfig().topP()).isNull();
+	}
+
+	@Test
+	void explicitTemperatureAndTopPAreIncludedInInferenceConfig() {
+		BedrockProxyChatModel model = new BedrockProxyChatModel(this.syncClient, this.asyncClient,
+				BedrockChatOptions.builder().model("anthropic.claude-3-sonnet").build(), ObservationRegistry.NOOP,
+				ToolCallingManager.builder().build(), new DefaultToolExecutionEligibilityPredicate());
+
+		Prompt prompt = new Prompt(List.of(new UserMessage("hello")),
+				BedrockChatOptions.builder().model("anthropic.claude-3-sonnet").temperature(0.7).topP(0.9).build());
+
+		ConverseRequest request = model.createRequest(prompt);
+
+		assertThat(request.inferenceConfig().temperature()).isEqualTo(0.7f);
+		assertThat(request.inferenceConfig().topP()).isEqualTo(0.9f);
 	}
 
 }
