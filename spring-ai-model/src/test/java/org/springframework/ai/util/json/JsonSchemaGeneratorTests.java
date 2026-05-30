@@ -21,8 +21,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -888,6 +893,41 @@ class JsonSchemaGeneratorTests {
 	void throwExceptionWhenTypeIsNull() {
 		assertThatThrownBy(() -> JsonSchemaGenerator.generateForType(null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("type cannot be null");
+	}
+
+	@Test
+	void generateForTypeConcurrently() throws Exception {
+		int threads = 20;
+		ExecutorService executor = Executors.newFixedThreadPool(threads);
+		List<CompletableFuture<String>> futures = new ArrayList<>();
+		for (int i = 0; i < threads; i++) {
+			futures.add(CompletableFuture.supplyAsync(() -> JsonSchemaGenerator.generateForType(OpenApiPerson.class),
+					executor));
+		}
+		executor.shutdown();
+		assertThat(executor.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
+		String expected = JsonSchemaGenerator.generateForType(OpenApiPerson.class);
+		for (CompletableFuture<String> future : futures) {
+			assertThat(future.get()).isEqualTo(expected);
+		}
+	}
+
+	@Test
+	void generateForMethodInputConcurrently() throws Exception {
+		Method method = TestMethods.class.getMethod("simpleMethod", String.class, int.class);
+		int threads = 20;
+		ExecutorService executor = Executors.newFixedThreadPool(threads);
+		List<CompletableFuture<String>> futures = new ArrayList<>();
+		for (int i = 0; i < threads; i++) {
+			futures
+				.add(CompletableFuture.supplyAsync(() -> JsonSchemaGenerator.generateForMethodInput(method), executor));
+		}
+		executor.shutdown();
+		assertThat(executor.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
+		String expected = JsonSchemaGenerator.generateForMethodInput(method);
+		for (CompletableFuture<String> future : futures) {
+			assertThat(future.get()).isEqualTo(expected);
+		}
 	}
 
 	static class TestMethods {
