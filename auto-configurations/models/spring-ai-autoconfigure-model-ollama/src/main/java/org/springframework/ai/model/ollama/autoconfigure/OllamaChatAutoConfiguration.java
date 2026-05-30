@@ -21,9 +21,8 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
@@ -62,7 +61,7 @@ public class OllamaChatAutoConfiguration {
 			OllamaInitializationProperties initProperties, ToolCallingManager toolCallingManager,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
-			ObjectProvider<ToolExecutionEligibilityPredicate> ollamaToolExecutionEligibilityPredicate,
+			ObjectProvider<ToolExecutionEligibilityChecker> ollamaToolExecutionEligibilityChecker,
 			ObjectProvider<RetryTemplate> retryTemplate) {
 		var chatModelPullStrategy = initProperties.getChat().isInclude() ? initProperties.getPullModelStrategy()
 				: PullModelStrategy.NEVER;
@@ -71,8 +70,8 @@ public class OllamaChatAutoConfiguration {
 			.ollamaApi(ollamaApi)
 			.defaultOptions(properties.toOptions())
 			.toolCallingManager(toolCallingManager)
-			.toolExecutionEligibilityPredicate(
-					ollamaToolExecutionEligibilityPredicate.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
+			.toolExecutionEligibilityChecker(ollamaToolExecutionEligibilityChecker
+				.getIfUnique(() -> chatResponse -> chatResponse != null && chatResponse.hasToolCalls()))
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.modelManagementOptions(
 					new ModelManagementOptions(chatModelPullStrategy, initProperties.getChat().getAdditionalModels(),

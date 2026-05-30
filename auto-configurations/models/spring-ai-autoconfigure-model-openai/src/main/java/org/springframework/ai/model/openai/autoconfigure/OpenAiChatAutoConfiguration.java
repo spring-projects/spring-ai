@@ -23,9 +23,8 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.beans.factory.ObjectProvider;
@@ -58,7 +57,7 @@ public class OpenAiChatAutoConfiguration {
 	public OpenAiChatModel openAiChatModel(OpenAiCommonProperties commonProperties, OpenAiChatProperties chatProperties,
 			ToolCallingManager toolCallingManager, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
-			ObjectProvider<ToolExecutionEligibilityPredicate> openAiToolExecutionEligibilityPredicate) {
+			ObjectProvider<ToolExecutionEligibilityChecker> openAiToolExecutionEligibilityChecker) {
 
 		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties, chatProperties);
 
@@ -72,8 +71,8 @@ public class OpenAiChatAutoConfiguration {
 			.options(chatProperties.toOptions())
 			.toolCallingManager(toolCallingManager)
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.toolExecutionEligibilityPredicate(
-					openAiToolExecutionEligibilityPredicate.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
+			.toolExecutionEligibilityChecker(openAiToolExecutionEligibilityChecker
+				.getIfUnique(() -> chatResponse -> chatResponse != null && chatResponse.hasToolCalls()))
 			.build();
 
 		observationConvention.ifAvailable(chatModel::setObservationConvention);

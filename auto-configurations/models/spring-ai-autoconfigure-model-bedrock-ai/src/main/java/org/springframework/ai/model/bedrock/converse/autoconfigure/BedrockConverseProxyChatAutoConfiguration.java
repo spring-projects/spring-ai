@@ -28,9 +28,8 @@ import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.model.bedrock.autoconfigure.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.model.bedrock.autoconfigure.BedrockAwsConnectionProperties;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -69,7 +68,7 @@ public class BedrockConverseProxyChatAutoConfiguration {
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
 			ObjectProvider<BedrockRuntimeClient> bedrockRuntimeClient,
 			ObjectProvider<BedrockRuntimeAsyncClient> bedrockRuntimeAsyncClient,
-			ObjectProvider<ToolExecutionEligibilityPredicate> bedrockToolExecutionEligibilityPredicate) {
+			ObjectProvider<ToolExecutionEligibilityChecker> bedrockToolExecutionEligibilityChecker) {
 
 		var chatModel = BedrockProxyChatModel.builder()
 			.credentialsProvider(credentialsProvider)
@@ -82,8 +81,8 @@ public class BedrockConverseProxyChatAutoConfiguration {
 			.defaultOptions(chatProperties.toOptions())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.toolCallingManager(toolCallingManager)
-			.toolExecutionEligibilityPredicate(
-					bedrockToolExecutionEligibilityPredicate.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
+			.toolExecutionEligibilityChecker(bedrockToolExecutionEligibilityChecker
+				.getIfUnique(() -> chatResponse -> chatResponse != null && chatResponse.hasToolCalls()))
 			.bedrockRuntimeClient(bedrockRuntimeClient.getIfAvailable())
 			.bedrockRuntimeAsyncClient(bedrockRuntimeAsyncClient.getIfAvailable())
 			.build();

@@ -24,9 +24,8 @@ import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -65,7 +64,7 @@ public class MiniMaxChatAutoConfiguration {
 			ObjectProvider<ResponseErrorHandler> responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
-			ObjectProvider<ToolExecutionEligibilityPredicate> openAiToolExecutionEligibilityPredicate) {
+			ObjectProvider<ToolExecutionEligibilityChecker> miniMaxToolExecutionEligibilityChecker) {
 
 		var miniMaxApi = miniMaxApi(chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
 				chatProperties.getApiKey(), commonProperties.getApiKey(),
@@ -73,8 +72,8 @@ public class MiniMaxChatAutoConfiguration {
 
 		var chatModel = new MiniMaxChatModel(miniMaxApi, chatProperties.toOptions(), toolCallingManager,
 				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE),
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				openAiToolExecutionEligibilityPredicate.getIfUnique(DefaultToolExecutionEligibilityPredicate::new));
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP), miniMaxToolExecutionEligibilityChecker
+					.getIfUnique(() -> chatResponse -> chatResponse != null && chatResponse.hasToolCalls()));
 
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
 		return chatModel;

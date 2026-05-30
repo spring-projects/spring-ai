@@ -25,9 +25,8 @@ import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -56,7 +55,7 @@ public class AnthropicChatAutoConfiguration {
 			AnthropicChatProperties chatProperties, ToolCallingManager toolCallingManager,
 			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
-			ObjectProvider<ToolExecutionEligibilityPredicate> anthropicToolExecutionEligibilityPredicate) {
+			ObjectProvider<ToolExecutionEligibilityChecker> anthropicToolExecutionEligibilityChecker) {
 
 		AnthropicChatOptions.Builder builder = chatProperties.toOptions().mutate();
 		if (connectionProperties.getApiKey() != null) {
@@ -84,8 +83,8 @@ public class AnthropicChatAutoConfiguration {
 			.toolCallingManager(toolCallingManager)
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.meterRegistry(chatProperties.isConnectionPoolMetricsEnabled() ? meterRegistry.getIfAvailable() : null)
-			.toolExecutionEligibilityPredicate(anthropicToolExecutionEligibilityPredicate
-				.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
+			.toolExecutionEligibilityChecker(anthropicToolExecutionEligibilityChecker
+				.getIfUnique(() -> chatResponse -> chatResponse != null && chatResponse.hasToolCalls()))
 			.build();
 
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
