@@ -271,7 +271,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		public B combineWith(ChatOptions.Builder<?> other) {
 			super.combineWith(other);
 			if (other instanceof AbstractBuilder<?> that) {
-				if (that.requestParameters != null) {
+				if (that.requestParameters != null && !that.requestParameters.isEmpty()) {
 					this.requestParameters = that.requestParameters;
 				}
 				if (that.cacheOptions != null) {
