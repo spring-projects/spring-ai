@@ -17,18 +17,24 @@
 package org.springframework.ai.openai;
 
 import java.lang.reflect.Method;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
+import com.openai.core.http.AsyncStreamResponse;
 import com.openai.models.chat.completions.ChatCompletion;
+import com.openai.models.chat.completions.ChatCompletionChunk;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
 import com.openai.models.chat.completions.ChatCompletionMessage;
 import com.openai.models.completions.CompletionUsage;
+import com.openai.services.async.ChatServiceAsync;
+import com.openai.services.async.chat.ChatCompletionServiceAsync;
 import com.openai.services.blocking.ChatService;
 import com.openai.services.blocking.chat.ChatCompletionService;
 import org.junit.jupiter.api.Test;
@@ -224,6 +230,53 @@ class OpenAiChatModelTests {
 		assertThat(aggregatedMetadata.getRateLimit()).isSameAs(rateLimit);
 		assertThat(aggregatedMetadata.getPromptMetadata()).isSameAs(promptMetadata);
 		assertThat((String) aggregatedMetadata.get("custom-key")).isEqualTo("custom-value");
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void streamingDoesNotThrowWhenChoiceApiIndexExceedsListSize() {
+		ChatCompletionChunk chunk = ChatCompletionChunk.builder()
+			.id("stream-id")
+			.created(1234567890L)
+			.model("test-model")
+			.addChoice(ChatCompletionChunk.Choice.builder()
+				.index(1L)
+				.delta(ChatCompletionChunk.Choice.Delta.builder().content("hello").build())
+				.finishReason(ChatCompletionChunk.Choice.FinishReason.STOP)
+				.build())
+			.build();
+
+		ChatServiceAsync chatServiceAsync = mock(ChatServiceAsync.class);
+		ChatCompletionServiceAsync chatCompletionServiceAsync = mock(ChatCompletionServiceAsync.class);
+		AsyncStreamResponse<ChatCompletionChunk> streamResponse = mock(AsyncStreamResponse.class);
+
+		when(this.openAiClientAsync.chat()).thenReturn(chatServiceAsync);
+		when(chatServiceAsync.completions()).thenReturn(chatCompletionServiceAsync);
+		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class)))
+			.thenReturn(streamResponse);
+
+		CompletableFuture<Void> completeFuture = new CompletableFuture<>();
+		when(streamResponse.subscribe(any())).thenAnswer(invocation -> {
+			AsyncStreamResponse.Handler<ChatCompletionChunk> handler = invocation.getArgument(0);
+			handler.onNext(chunk);
+			handler.onComplete(Optional.empty());
+			completeFuture.complete(null);
+			return streamResponse;
+		});
+		when(streamResponse.onCompleteFuture()).thenReturn(completeFuture);
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		org.springframework.ai.chat.model.ChatResponse response = chatModel
+			.stream(new org.springframework.ai.chat.prompt.Prompt("hi", options))
+			.blockLast(Duration.ofSeconds(5));
+		assertThat(response).isNotNull();
+		assertThat(response.getResult().getOutput().getText()).isEqualTo("hello");
 	}
 
 }
