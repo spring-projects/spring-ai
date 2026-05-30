@@ -17,9 +17,9 @@
 package org.springframework.ai.chat.memory;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -81,17 +81,10 @@ public final class MessageWindowChatMemory implements ChatMemory {
 	private List<Message> process(List<Message> memoryMessages, List<Message> newMessages) {
 		List<Message> processedMessages = new ArrayList<>();
 
-		// Compare by text only — AbstractMessage.equals() includes metadata, which
-		// persistence stores (Cassandra, JDBC, MongoDB) may enrich on save, causing a
-		// false "new system message" detection that silently wipes existing system
-		// context.
-		Set<String> memorySystemTexts = memoryMessages.stream()
-			.filter(SystemMessage.class::isInstance)
-			.map(Message::getText)
-			.collect(Collectors.toSet());
+		Set<Message> memoryMessagesSet = new HashSet<>(memoryMessages);
 		boolean hasNewSystemMessage = newMessages.stream()
 			.filter(SystemMessage.class::isInstance)
-			.anyMatch(message -> !memorySystemTexts.contains(message.getText()));
+			.anyMatch(message -> !memoryMessagesSet.contains(message));
 
 		memoryMessages.stream()
 			.filter(message -> !(hasNewSystemMessage && message instanceof SystemMessage))

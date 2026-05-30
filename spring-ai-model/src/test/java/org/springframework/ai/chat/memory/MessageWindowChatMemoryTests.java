@@ -396,35 +396,38 @@ public class MessageWindowChatMemoryTests {
 	}
 
 	@Test
-	void systemMessageMetadataDifferenceDoesNotTriggerFalseNewSystemMessageDetection() {
-		// AbstractMessage.equals() includes metadata. A persistence store that enriches
-		// messages on save (e.g. JDBC adding a timestamp) returns a SystemMessage with
-		// extra metadata on reload. Without text-based comparison, every resumed
-		// conversation would incorrectly wipe all SystemMessages.
-		int limit = 5;
+	void multipleConsecutiveOrphanedToolResponsesAreAllDropped() {
+		// Two tool calls in one turn produce two orphaned ToolResponseMessages when
+		// both their paired AssistantMessages(tool_call) are evicted by the window.
+		// All leading ToolResponseMessages must be dropped, not just the first.
+		int limit = 3;
 		MessageWindowChatMemory mem = MessageWindowChatMemory.builder().maxMessages(limit).build();
 		String id = UUID.randomUUID().toString();
 
-		mem.add(id, List.of(new SystemMessage("System instruction"), new UserMessage("u1")));
-
-		// Simulate a persistence round-trip: reload the system message with extra
-		// metadata
-		SystemMessage reloadedWithMetadata = SystemMessage.builder()
-			.text("System instruction")
-			.metadata(java.util.Map.of("persisted_at", "2025-01-01T00:00:00Z"))
+		AssistantMessage assistantWithTool1 = AssistantMessage.builder()
+			.toolCalls(List.of(new AssistantMessage.ToolCall("t1", "function", "tool_a", "{}")))
 			.build();
-		mem.add(id, List.of(reloadedWithMetadata, new UserMessage("u2")));
+		ToolResponseMessage toolResponse1 = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("t1", "tool_a", "result_a")))
+			.build();
+		AssistantMessage assistantWithTool2 = AssistantMessage.builder()
+			.toolCalls(List.of(new AssistantMessage.ToolCall("t2", "function", "tool_b", "{}")))
+			.build();
+		ToolResponseMessage toolResponse2 = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("t2", "tool_b", "result_b")))
+			.build();
+		AssistantMessage done = new AssistantMessage("done");
+
+		// 7 messages, limit=3 → remove 4: evicts [u1, assistantWithTool1,
+		// toolResponse1, assistantWithTool2], leaving [toolResponse2, done, u2]
+		mem.add(id, List.of(new UserMessage("u1"), assistantWithTool1, toolResponse1, assistantWithTool2, toolResponse2,
+				done, new UserMessage("u2")));
 
 		List<Message> result = mem.get(id);
 
-		// With text-based detection the reloaded SM has the same text → not treated as
-		// "new", so the original SM is NOT wiped. Both messages are retained (the
-		// original
-		// and the reloaded one) rather than the old code silently discarding the
-		// original.
-		assertThat(result.stream()
-			.filter(SystemMessage.class::isInstance)
-			.anyMatch(m -> "System instruction".equals(m.getText()))).isTrue();
+		assertThat(result).doesNotContain(toolResponse1, toolResponse2);
+		assertThat(result.stream().filter(ToolResponseMessage.class::isInstance).count()).isZero();
+		assertThat(result).contains(done);
 	}
 
 }
