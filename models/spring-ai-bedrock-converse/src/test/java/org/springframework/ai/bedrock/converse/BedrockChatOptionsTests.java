@@ -80,6 +80,8 @@ class BedrockChatOptionsTests extends AbstractChatOptionsTests<BedrockChatOption
 		assertThat(options.getTopP()).isNull();
 		assertThat(options.getStopSequences()).isNull();
 		assertThat(options.getOutputSchema()).isNull();
+		assertThat(options.getGuardrailId()).isNull();
+		assertThat(options.getGuardrailVersion()).isNull();
 	}
 
 	@Test
@@ -103,6 +105,46 @@ class BedrockChatOptionsTests extends AbstractChatOptionsTests<BedrockChatOption
 
 		assertThat(merged.getRequestParameters()).containsEntry("base-key", "base-value");
 		assertThat(merged.getRequestParameters()).containsEntry("override-key", "override-value");
+	}
+
+	@Test
+	void testBuilderWithGuardrailFields() {
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.guardrailId("test-guardrail-123")
+			.guardrailVersion("Version 1")
+			.build();
+
+		assertThat(options.getGuardrailId()).isEqualTo("test-guardrail-123");
+		assertThat(options.getGuardrailVersion()).isEqualTo("Version 1");
+	}
+
+	@Test
+	void testCopyPreservesGuardrailFields() {
+		BedrockChatOptions original = BedrockChatOptions.builder()
+			.model("test-model")
+			.guardrailId("test-guardrail-123")
+			.guardrailVersion("DRAFT")
+			.build();
+
+		BedrockChatOptions copied = original.copy();
+
+		assertThat(copied.getGuardrailId()).isEqualTo("test-guardrail-123");
+		assertThat(copied.getGuardrailVersion()).isEqualTo("DRAFT");
+		assertThat(copied).isNotSameAs(original).isEqualTo(original);
+	}
+
+	@Test
+	void testMutatePreservesGuardrailFields() {
+		BedrockChatOptions original = BedrockChatOptions.builder()
+			.guardrailId("test-guardrail-123")
+			.guardrailVersion("Version 1")
+			.build();
+
+		BedrockChatOptions mutated = original.mutate().model("new-model").build();
+
+		assertThat(mutated.getGuardrailId()).isEqualTo("test-guardrail-123");
+		assertThat(mutated.getGuardrailVersion()).isEqualTo("Version 1");
+		assertThat(mutated.getModel()).isEqualTo("new-model");
 	}
 
 }

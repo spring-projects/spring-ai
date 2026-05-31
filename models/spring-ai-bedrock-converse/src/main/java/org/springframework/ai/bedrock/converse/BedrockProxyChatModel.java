@@ -52,6 +52,8 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.DocumentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.DocumentSource;
+import software.amazon.awssdk.services.bedrockruntime.model.GuardrailConfiguration;
+import software.amazon.awssdk.services.bedrockruntime.model.GuardrailStreamConfiguration;
 import software.amazon.awssdk.services.bedrockruntime.model.ImageBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ImageSource;
 import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfiguration;
@@ -446,7 +448,7 @@ public class BedrockProxyChatModel implements ChatModel {
 		Map<String, String> requestMetadata = ConverseApiUtils
 			.getRequestMetadata(prompt.getUserMessage().getMetadata());
 
-		return ConverseRequest.builder()
+		ConverseRequest.Builder converseRequestBuilder = ConverseRequest.builder()
 			.modelId(options.getModel())
 			.inferenceConfig(inferenceConfiguration)
 			.messages(instructionMessages)
@@ -454,8 +456,17 @@ public class BedrockProxyChatModel implements ChatModel {
 			.additionalModelRequestFields(additionalModelRequestFields)
 			.toolConfig(toolConfiguration)
 			.requestMetadata(requestMetadata)
-			.outputConfig(buildOutputConfig(options))
-			.build();
+			.outputConfig(buildOutputConfig(options));
+
+		if (StringUtils.hasText(bedrockOptions.getGuardrailId())
+				&& StringUtils.hasText(bedrockOptions.getGuardrailVersion())) {
+			converseRequestBuilder.guardrailConfig(GuardrailConfiguration.builder()
+				.guardrailIdentifier(bedrockOptions.getGuardrailId())
+				.guardrailVersion(bedrockOptions.getGuardrailVersion())
+				.build());
+		}
+
+		return converseRequestBuilder.build();
 	}
 
 	private @Nullable OutputConfig buildOutputConfig(BedrockChatOptions options) {
@@ -748,7 +759,7 @@ public class BedrockProxyChatModel implements ChatModel {
 				observation.start();
 			}
 
-			ConverseStreamRequest converseStreamRequest = ConverseStreamRequest.builder()
+			ConverseStreamRequest.Builder converseStreamRequestBuilder = ConverseStreamRequest.builder()
 				.modelId(converseRequest.modelId())
 				.inferenceConfig(converseRequest.inferenceConfig())
 				.messages(converseRequest.messages())
@@ -756,8 +767,16 @@ public class BedrockProxyChatModel implements ChatModel {
 				.additionalModelRequestFields(converseRequest.additionalModelRequestFields())
 				.toolConfig(converseRequest.toolConfig())
 				.requestMetadata(converseRequest.requestMetadata())
-				.outputConfig(converseRequest.outputConfig())
-				.build();
+				.outputConfig(converseRequest.outputConfig());
+
+			if (converseRequest.guardrailConfig() != null) {
+				converseStreamRequestBuilder.guardrailConfig(GuardrailStreamConfiguration.builder()
+					.guardrailIdentifier(converseRequest.guardrailConfig().guardrailIdentifier())
+					.guardrailVersion(converseRequest.guardrailConfig().guardrailVersion())
+					.build());
+			}
+
+			ConverseStreamRequest converseStreamRequest = converseStreamRequestBuilder.build();
 
 			Usage accumulatedUsage = null;
 			if (perviousChatResponse != null && perviousChatResponse.getMetadata() != null) {

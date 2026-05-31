@@ -32,12 +32,14 @@ import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest;
 
 import org.springframework.ai.bedrock.converse.api.BedrockCacheOptions;
 import org.springframework.ai.bedrock.converse.api.BedrockCacheStrategy;
 import org.springframework.ai.bedrock.converse.api.MediaFetcher;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -188,6 +190,62 @@ class BedrockProxyChatModelTest {
 
 		assertThatThrownBy(() -> model.mapMediaToContentBlock(media)).isInstanceOf(RuntimeException.class)
 			.isInstanceOf(SecurityException.class);
+	}
+
+	// -------------------------------------------------------------------------
+	// Guardrail configuration tests
+	// -------------------------------------------------------------------------
+
+	@Test
+	void shouldIncludeGuardrailConfigWhenBothFieldsAreSet() {
+		BedrockProxyChatModel model = newModel();
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.model("test-model")
+			.guardrailId("test-guardrail-123")
+			.guardrailVersion("Version 1")
+			.build();
+
+		ConverseRequest request = model.createRequest(new Prompt("hello", options));
+
+		assertThat(request.guardrailConfig()).isNotNull();
+		assertThat(request.guardrailConfig().guardrailIdentifier()).isEqualTo("test-guardrail-123");
+		assertThat(request.guardrailConfig().guardrailVersion()).isEqualTo("Version 1");
+	}
+
+	@Test
+	void shouldNotIncludeGuardrailConfigWhenFieldsAreMissing() {
+		BedrockProxyChatModel model = newModel();
+		BedrockChatOptions options = BedrockChatOptions.builder().model("test-model").build();
+
+		ConverseRequest request = model.createRequest(new Prompt("hello", options));
+
+		assertThat(request.guardrailConfig()).isNull();
+	}
+
+	@Test
+	void shouldNotIncludeGuardrailConfigWhenOnlyGuardrailIdIsSet() {
+		BedrockProxyChatModel model = newModel();
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.model("test-model")
+			.guardrailId("test-guardrail-123")
+			.build();
+
+		ConverseRequest request = model.createRequest(new Prompt("hello", options));
+
+		assertThat(request.guardrailConfig()).isNull();
+	}
+
+	@Test
+	void shouldNotIncludeGuardrailConfigWhenOnlyGuardrailVersionIsSet() {
+		BedrockProxyChatModel model = newModel();
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.model("test-model")
+			.guardrailVersion("Version 1")
+			.build();
+
+		ConverseRequest request = model.createRequest(new Prompt("hello", options));
+
+		assertThat(request.guardrailConfig()).isNull();
 	}
 
 	// -------------------------------------------------------------------------

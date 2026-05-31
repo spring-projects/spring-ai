@@ -64,12 +64,16 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 
 	private final @Nullable String outputSchema;
 
+	private @Nullable String guardrailId;
+
+	private @Nullable String guardrailVersion;
+
 	protected BedrockChatOptions(@Nullable String model, @Nullable Double frequencyPenalty, @Nullable Integer maxTokens,
 			@Nullable Double presencePenalty, @Nullable Map<String, String> requestParameters,
 			@Nullable List<String> stopSequences, @Nullable Double temperature, @Nullable Integer topK,
 			@Nullable Double topP, @Nullable List<ToolCallback> toolCallbacks,
 			@Nullable Map<String, Object> toolContext, @Nullable BedrockCacheOptions cacheOptions,
-			@Nullable String outputSchema) {
+			@Nullable String outputSchema, @Nullable String guardrailId, @Nullable String guardrailVersion) {
 		this.model = model;
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
@@ -83,6 +87,8 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
 		this.cacheOptions = cacheOptions;
 		this.outputSchema = outputSchema;
+		this.guardrailId = guardrailId;
+		this.guardrailVersion = guardrailVersion;
 	}
 
 	public static Builder builder() {
@@ -152,6 +158,14 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		return this.outputSchema;
 	}
 
+	public @Nullable String getGuardrailId() {
+		return this.guardrailId;
+	}
+
+	public @Nullable String getGuardrailVersion() {
+		return this.guardrailVersion;
+	}
+
 	@Override
 	public Builder mutate() {
 		return BedrockChatOptions.builder()
@@ -170,7 +184,9 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 			// Bedrock Specific
 			.requestParameters(this.requestParameters)
 			.cacheOptions(this.cacheOptions)
-			.outputSchema(this.outputSchema);
+			.outputSchema(this.outputSchema)
+			.guardrailId(this.guardrailId)
+			.guardrailVersion(this.guardrailVersion);
 	}
 
 	@Override
@@ -190,14 +206,16 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 				&& Objects.equals(this.topP, that.topP) && Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.toolContext, that.toolContext)
 				&& Objects.equals(this.cacheOptions, that.cacheOptions)
-				&& Objects.equals(this.outputSchema, that.outputSchema);
+				&& Objects.equals(this.outputSchema, that.outputSchema)
+				&& Objects.equals(this.guardrailId, that.guardrailId)
+				&& Objects.equals(this.guardrailVersion, that.guardrailVersion);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 				this.requestParameters, this.stopSequences, this.temperature, this.topK, this.topP, this.toolCallbacks,
-				this.toolContext, this.cacheOptions, this.outputSchema);
+				this.toolContext, this.cacheOptions, this.outputSchema, this.guardrailId, this.guardrailVersion);
 	}
 
 	// public Builder class exposed to users. Avoids having to deal with noisy generic
@@ -222,6 +240,10 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 
 		private @Nullable String outputSchema;
 
+		private @Nullable String guardrailId;
+
+		private @Nullable String guardrailVersion;
+
 		public B requestParameters(@Nullable Map<String, String> requestParameters) {
 			this.requestParameters = requestParameters;
 			return self();
@@ -229,6 +251,16 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 
 		public B cacheOptions(@Nullable BedrockCacheOptions cacheOptions) {
 			this.cacheOptions = cacheOptions;
+			return self();
+		}
+
+		public B guardrailId(@Nullable String guardrailId) {
+			this.guardrailId = guardrailId;
+			return self();
+		}
+
+		public B guardrailVersion(@Nullable String guardrailVersion) {
+			this.guardrailVersion = guardrailVersion;
 			return self();
 		}
 
@@ -251,6 +283,12 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 				if (that.outputSchema != null) {
 					this.outputSchema = that.outputSchema;
 				}
+				if (that.guardrailId != null) {
+					this.guardrailId = that.guardrailId;
+				}
+				if (that.guardrailVersion != null) {
+					this.guardrailVersion = that.guardrailVersion;
+				}
 			}
 			return self();
 		}
@@ -265,7 +303,8 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		public BedrockChatOptions build() {
 			return new BedrockChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 					this.requestParameters, this.stopSequences, this.temperature, this.topK, this.topP,
-					this.toolCallbacks, this.toolContext, this.cacheOptions, this.outputSchema);
+					this.toolCallbacks, this.toolContext, this.cacheOptions, this.outputSchema, this.guardrailId,
+					this.guardrailVersion);
 		}
 
 	}
