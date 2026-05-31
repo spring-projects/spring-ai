@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.ChatClientCustomizer;
+import org.springframework.ai.chat.client.ChatClientBuilderCustomizer;
 import org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -83,7 +83,7 @@ public class ChatClientAutoConfigurationIT {
 	}
 
 	@Test
-	void testChatClientCustomizers() {
+	void testChatClientBuilderCustomizers() {
 		this.contextRunner.withUserConfiguration(Config.class).run(context -> {
 
 			ChatClient.Builder builder = context.getBean(ChatClient.Builder.class);
@@ -111,7 +111,7 @@ public class ChatClientAutoConfigurationIT {
 	static class Config {
 
 		@Bean
-		public ChatClientCustomizer chatClientCustomizer() {
+		public ChatClientBuilderCustomizer chatClientCustomizer() {
 			return b -> b.defaultSystem("You are a movie expert.")
 				.defaultUser("Generate the filmography of 5 movies for {actor}.");
 		}
