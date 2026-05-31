@@ -37,6 +37,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for MiniMax Embedding Model.
@@ -56,14 +57,16 @@ public class MiniMaxEmbeddingAutoConfiguration {
 	@ConditionalOnMissingBean
 	public MiniMaxEmbeddingModel miniMaxEmbeddingModel(MiniMaxConnectionProperties commonProperties,
 			MiniMaxEmbeddingProperties embeddingProperties,
-			ObjectProvider<RestClient.Builder> restClientBuilderProvider, ObjectProvider<RetryTemplate> retryTemplate,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ObjectProvider<RetryTemplate> retryTemplate,
 			ObjectProvider<ResponseErrorHandler> responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
 		var miniMaxApi = miniMaxApi(embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
 				embeddingProperties.getApiKey(), commonProperties.getApiKey(),
-				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
+				restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler);
 
 		var embeddingModel = new MiniMaxEmbeddingModel(miniMaxApi, embeddingProperties.getMetadataMode(),
 				embeddingProperties.getOptions(), retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE),
@@ -75,7 +78,7 @@ public class MiniMaxEmbeddingAutoConfiguration {
 	}
 
 	private MiniMaxApi miniMaxApi(@Nullable String baseUrl, @Nullable String commonBaseUrl, @Nullable String apiKey,
-			@Nullable String commonApiKey, RestClient.Builder restClientBuilder,
+			@Nullable String commonApiKey, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		String resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
@@ -84,7 +87,7 @@ public class MiniMaxEmbeddingAutoConfiguration {
 		String resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
 		Assert.hasText(resolvedApiKey, "MiniMax API key must be set");
 
-		return new MiniMaxApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder,
+		return new MiniMaxApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder, webClientBuilder,
 				responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER));
 	}
 

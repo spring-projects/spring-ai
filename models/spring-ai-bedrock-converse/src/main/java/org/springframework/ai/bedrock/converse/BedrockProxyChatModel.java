@@ -522,13 +522,20 @@ public class BedrockProxyChatModel implements ChatModel {
 			toolConfiguration = ToolConfiguration.builder().tools(bedrockTools).build();
 		}
 
-		InferenceConfiguration inferenceConfiguration = InferenceConfiguration.builder()
-			.maxTokens(updatedRuntimeOptions.getMaxTokens())
-			.stopSequences(updatedRuntimeOptions.getStopSequences())
-			.temperature(updatedRuntimeOptions.getTemperature() != null
-					? updatedRuntimeOptions.getTemperature().floatValue() : null)
-			.topP(updatedRuntimeOptions.getTopP() != null ? updatedRuntimeOptions.getTopP().floatValue() : null)
-			.build();
+		var inferenceConfigurationBuilder = InferenceConfiguration.builder()
+			.stopSequences(updatedRuntimeOptions.getStopSequences());
+
+		if (updatedRuntimeOptions.getMaxTokens() != null) {
+			inferenceConfigurationBuilder.maxTokens(updatedRuntimeOptions.getMaxTokens());
+		}
+		if (updatedRuntimeOptions.getTemperature() != null) {
+			inferenceConfigurationBuilder.temperature(updatedRuntimeOptions.getTemperature().floatValue());
+		}
+		if (updatedRuntimeOptions.getTopP() != null) {
+			inferenceConfigurationBuilder.topP(updatedRuntimeOptions.getTopP().floatValue());
+		}
+
+		InferenceConfiguration inferenceConfiguration = inferenceConfigurationBuilder.build();
 
 		BedrockChatOptions bedrockOptions = (BedrockChatOptions) prompt.getOptions();
 		Assert.notNull(bedrockOptions, "options can't be null here");
