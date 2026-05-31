@@ -113,4 +113,39 @@ class BedrockChatOptionsTests extends AbstractChatOptionsTests<BedrockChatOption
 		assertThat(options).isInstanceOf(StructuredOutputChatOptions.class);
 	}
 
+	@Test
+	void combineWithPreservesDefaultRequestParametersWhenPromptOptionsHaveNone() {
+		BedrockChatOptions defaultOptions = BedrockChatOptions.builder()
+			.model("default-model")
+			.requestParameters(Map.of("thinking", "{\"type\":\"adaptive\"}"))
+			.build();
+
+		BedrockChatOptions promptOptions = BedrockChatOptions.builder().model("prompt-model").build();
+
+		BedrockChatOptions.Builder combined = defaultOptions.mutate();
+		combined.combineWith(promptOptions.mutate());
+		BedrockChatOptions result = combined.build();
+
+		assertThat(result.getRequestParameters()).containsEntry("thinking", "{\"type\":\"adaptive\"}");
+	}
+
+	@Test
+	void combineWithOverridesRequestParametersWhenPromptOptionsHaveNonEmpty() {
+		BedrockChatOptions defaultOptions = BedrockChatOptions.builder()
+			.model("default-model")
+			.requestParameters(Map.of("thinking", "{\"type\":\"adaptive\"}"))
+			.build();
+
+		BedrockChatOptions promptOptions = BedrockChatOptions.builder()
+			.model("prompt-model")
+			.requestParameters(Map.of("extra", "value"))
+			.build();
+
+		BedrockChatOptions.Builder combined = defaultOptions.mutate();
+		combined.combineWith(promptOptions.mutate());
+		BedrockChatOptions result = combined.build();
+
+		assertThat(result.getRequestParameters()).containsEntry("extra", "value").doesNotContainKey("thinking");
+	}
+
 }
