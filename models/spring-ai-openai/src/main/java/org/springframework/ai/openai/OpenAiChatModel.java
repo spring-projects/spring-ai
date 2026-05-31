@@ -513,7 +513,7 @@ public final class OpenAiChatModel implements ChatModel {
 				// Extract reasoning_content from additional properties (e.g. thinking models)
 				var reasoningJson = chunkChoice.delta()._additionalProperties().get("reasoning_content");
 				if (reasoningJson != null) {
-					reasoningContent = reasoningJson.asString().orElse(null);
+					reasoningContent = (String) reasoningJson.asString().orElse(null);
 				}
 			}
 		}
