@@ -74,7 +74,7 @@ public class ModerationResponse implements ModelResponse<Generation> {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}

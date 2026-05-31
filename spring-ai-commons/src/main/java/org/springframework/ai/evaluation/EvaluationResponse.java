@@ -19,6 +19,8 @@ package org.springframework.ai.evaluation;
 import java.util.Map;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 public class EvaluationResponse {
 
 	private final boolean pass;
@@ -66,7 +68,7 @@ public class EvaluationResponse {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
