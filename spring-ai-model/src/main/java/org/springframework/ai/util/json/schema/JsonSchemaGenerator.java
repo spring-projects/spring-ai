@@ -126,7 +126,7 @@ public final class JsonSchemaGenerator {
 	/**
 	 * Generate a JSON Schema for a method's input parameters.
 	 */
-	public static String generateForMethodInput(Method method, SchemaOption... schemaOptions) {
+	public static synchronized String generateForMethodInput(Method method, SchemaOption... schemaOptions) {
 		ObjectNode schema = JacksonUtils.getDefaultJsonMapper().createObjectNode();
 		schema.put("$schema", SchemaVersion.DRAFT_2020_12.getIdentifier());
 		schema.put("type", "object");
@@ -180,7 +180,7 @@ public final class JsonSchemaGenerator {
 	/**
 	 * Generate a JSON Schema for a class type.
 	 */
-	public static String generateForType(Type type, SchemaOption... schemaOptions) {
+	public static synchronized String generateForType(Type type, SchemaOption... schemaOptions) {
 		Assert.notNull(type, "type cannot be null");
 		ObjectNode schema = TYPE_SCHEMA_GENERATOR.generateSchema(type);
 		if ((type == Void.class) && !schema.has("properties")) {
