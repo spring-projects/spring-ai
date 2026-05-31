@@ -830,7 +830,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		}
 
 		if (requestOptions.getServiceTier() != null) {
-			configBuilder.serviceTier(requestOptions.getServiceTier());
+			configBuilder.serviceTier(requestOptions.getServiceTier().getValue());
 		}
 
 		// Add safety settings

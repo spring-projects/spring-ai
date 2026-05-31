@@ -31,6 +31,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel.ChatModel;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
+import org.springframework.ai.google.genai.common.GoogleGenAiServiceTier;
 import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
@@ -228,10 +229,9 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 
 	/**
 	 * Optional. The service tier to use for the request.
-	 * Possible values include: "standard", "priority", "flex".
 	 */
 	@Nullable
-	private String serviceTier;
+	private GoogleGenAiServiceTier serviceTier;
 	// @formatter:on
 
 	// TODO: left here for ModelOptionUtils.merge*()
@@ -250,7 +250,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			@Nullable Integer autoCacheThreshold, @Nullable Duration autoCacheTtl,
 			@Nullable Boolean googleSearchRetrieval, @Nullable Boolean includeServerSideToolInvocations,
 			@Nullable List<GoogleGenAiSafetySetting> safetySettings, @Nullable Map<String, String> labels,
-			@Nullable String serviceTier) {
+			@Nullable GoogleGenAiServiceTier serviceTier) {
 		this.model = model;
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxOutputTokens = maxOutputTokens;
@@ -408,7 +408,10 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		return this.labels;
 	}
 
-	public @Nullable String getServiceTier() {
+	/**
+	 * @since 2.0.0
+	 */
+	public @Nullable GoogleGenAiServiceTier getServiceTier() {
 		return this.serviceTier;
 	}
 
@@ -563,7 +566,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 
 		protected Map<String, String> labels = new HashMap<>();
 
-		protected @Nullable String serviceTier;
+		protected @Nullable GoogleGenAiServiceTier serviceTier;
 
 		public B candidateCount(@Nullable Integer candidateCount) {
 			this.candidateCount = candidateCount;
@@ -666,7 +669,10 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			return self();
 		}
 
-		public B serviceTier(@Nullable String serviceTier) {
+		/**
+		 * @since 2.0.0
+		 */
+		public B serviceTier(@Nullable GoogleGenAiServiceTier serviceTier) {
 			this.serviceTier = serviceTier;
 			return self();
 		}

@@ -26,6 +26,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
+import org.springframework.ai.google.genai.common.GoogleGenAiServiceTier;
 import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
@@ -95,7 +96,7 @@ public class GoogleGenAiChatProperties {
 
 	private @Nullable Map<String, String> labels;
 
-	private @Nullable String serviceTier;
+	private @Nullable GoogleGenAiServiceTier serviceTier;
 
 	public @Nullable List<String> getStopSequences() {
 		return this.stopSequences;
@@ -297,11 +298,17 @@ public class GoogleGenAiChatProperties {
 		this.labels = labels;
 	}
 
-	public @Nullable String getServiceTier() {
+	/**
+	 * @since 2.0.0
+	 */
+	public @Nullable GoogleGenAiServiceTier getServiceTier() {
 		return this.serviceTier;
 	}
 
-	public void setServiceTier(@Nullable String serviceTier) {
+	/**
+	 * @since 2.0.0
+	 */
+	public void setServiceTier(@Nullable GoogleGenAiServiceTier serviceTier) {
 		this.serviceTier = serviceTier;
 	}
 
@@ -649,16 +656,6 @@ public class GoogleGenAiChatProperties {
 
 		public void setLabels(@Nullable Map<String, String> labels) {
 			GoogleGenAiChatProperties.this.setLabels(labels);
-		}
-
-		@DeprecatedConfigurationProperty(replacement = "spring.ai.google.genai.chat.service-tier")
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		public @Nullable String getServiceTier() {
-			return GoogleGenAiChatProperties.this.getServiceTier();
-		}
-
-		public void setServiceTier(@Nullable String serviceTier) {
-			GoogleGenAiChatProperties.this.setServiceTier(serviceTier);
 		}
 
 	}
