@@ -811,20 +811,16 @@ public final class OpenAiChatModel implements ChatModel {
 				else if (message.getMessageType() == MessageType.TOOL) {
 					ToolResponseMessage toolMessage = (ToolResponseMessage) message;
 
-					ChatCompletionToolMessageParam.Builder builder = ChatCompletionToolMessageParam.builder();
-					builder.content(toolMessage.getText() != null ? toolMessage.getText() : "");
-					builder.role(JsonValue.from(MessageType.TOOL.getValue()));
-
-					if (toolMessage.getResponses().isEmpty()) {
-						return List.of(ChatCompletionMessageParam.ofTool(builder.build()));
-					}
-					return toolMessage.getResponses().stream().map(response -> {
-						String callId = response.id();
-						String callResponse = response.responseData();
-
-						return ChatCompletionMessageParam
-							.ofTool(builder.toolCallId(callId).content(callResponse).build());
-					}).toList();
+					return toolMessage.getResponses()
+						.stream()
+						.filter(response -> StringUtils.hasText(response.id()))
+						.map(response -> {
+							ChatCompletionToolMessageParam.Builder builder = ChatCompletionToolMessageParam.builder();
+							builder.role(JsonValue.from(MessageType.TOOL.getValue()));
+							return ChatCompletionMessageParam
+								.ofTool(builder.toolCallId(response.id()).content(response.responseData()).build());
+						})
+						.toList();
 				}
 				else {
 					throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
