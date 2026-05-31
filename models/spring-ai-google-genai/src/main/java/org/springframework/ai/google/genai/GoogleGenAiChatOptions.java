@@ -507,12 +507,6 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			.responseMimeType(this.responseMimeType);
 	}
 
-	public enum TransportType {
-
-		GRPC, REST
-
-	}
-
 	// public Builder class exposed to users. Avoids having to deal with noisy generic
 	// parameters.
 	@NullMarked // TODO: move at package level
