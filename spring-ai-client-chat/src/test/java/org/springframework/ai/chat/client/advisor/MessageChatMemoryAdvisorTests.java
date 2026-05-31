@@ -159,6 +159,82 @@ public class MessageChatMemoryAdvisorTests {
 	}
 
 	@Test
+	void whenBeforeWithMemoryAlreadyInPromptThenDoesNotDuplicateMemory() {
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+			.chatMemoryRepository(new InMemoryChatMemoryRepository())
+			.build();
+		UserMessage userMessage = new UserMessage("When can I pick up dog 45?");
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("")
+			.toolCalls(
+					List.of(new AssistantMessage.ToolCall("call-45", "function", "schedulePickup", "{\"dogId\":45}")))
+			.build();
+		chatMemory.add("test-conversation", List.of(userMessage, assistantMessage));
+		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
+		ToolResponseMessage toolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("call-45", "schedulePickup",
+					"Pickup scheduled for Tuesday morning")))
+			.build();
+		Prompt prompt = Prompt.builder().messages(userMessage, assistantMessage, toolResponse).build();
+		ChatClientRequest request = ChatClientRequest.builder()
+			.prompt(prompt)
+			.context(ChatMemory.CONVERSATION_ID, "test-conversation")
+			.build();
+		AdvisorChain chain = mock(AdvisorChain.class);
+
+		ChatClientRequest processedRequest = advisor.before(request, chain);
+
+		assertThat(processedRequest.prompt().getInstructions()).containsExactly(userMessage, assistantMessage,
+				toolResponse);
+		assertThat(chatMemory.get("test-conversation")).containsExactly(userMessage, assistantMessage, toolResponse);
+	}
+
+	@Test
+	void whenBeforeWithWindowedMemoryAlreadyInPromptThenDoesNotDuplicateMemory() {
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+			.chatMemoryRepository(new InMemoryChatMemoryRepository())
+			.maxMessages(3)
+			.build();
+		UserMessage userMessage = new UserMessage("When can I pick up dog 45?");
+		AssistantMessage firstAssistantMessage = AssistantMessage.builder()
+			.content("")
+			.toolCalls(
+					List.of(new AssistantMessage.ToolCall("call-45", "function", "schedulePickup", "{\"dogId\":45}")))
+			.build();
+		ToolResponseMessage firstToolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("call-45", "schedulePickup",
+					"Pickup scheduled for Tuesday morning")))
+			.build();
+		AssistantMessage secondAssistantMessage = AssistantMessage.builder()
+			.content("")
+			.toolCalls(List.of(new AssistantMessage.ToolCall("call-46", "function", "confirmPickup",
+					"{\"dogId\":45,\"location\":\"Lisbon\"}")))
+			.build();
+		chatMemory.add("test-conversation",
+				List.of(userMessage, firstAssistantMessage, firstToolResponse, secondAssistantMessage));
+		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
+		ToolResponseMessage secondToolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("call-46", "confirmPickup",
+					"Pickup confirmed for the Lisbon location")))
+			.build();
+		Prompt prompt = Prompt.builder()
+			.messages(userMessage, firstAssistantMessage, firstToolResponse, secondAssistantMessage, secondToolResponse)
+			.build();
+		ChatClientRequest request = ChatClientRequest.builder()
+			.prompt(prompt)
+			.context(ChatMemory.CONVERSATION_ID, "test-conversation")
+			.build();
+		AdvisorChain chain = mock(AdvisorChain.class);
+
+		ChatClientRequest processedRequest = advisor.before(request, chain);
+
+		assertThat(processedRequest.prompt().getInstructions()).containsExactly(userMessage, firstAssistantMessage,
+				firstToolResponse, secondAssistantMessage, secondToolResponse);
+		assertThat(chatMemory.get("test-conversation")).containsExactly(firstToolResponse, secondAssistantMessage,
+				secondToolResponse);
+	}
+
+	@Test
 	void whenBeforeMovesSystemMessageToFirstPosition() {
 		ChatMemory chatMemory = MessageWindowChatMemory.builder()
 			.chatMemoryRepository(new InMemoryChatMemoryRepository())
