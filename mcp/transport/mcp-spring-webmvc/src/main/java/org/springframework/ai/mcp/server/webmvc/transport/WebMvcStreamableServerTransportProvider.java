@@ -390,6 +390,16 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 				McpSchema.InitializeRequest initializeRequest = this.jsonMapper.convertValue(jsonrpcRequest.params(),
 						new TypeRef<McpSchema.InitializeRequest>() {
 						});
+				if (initializeRequest == null || initializeRequest.protocolVersion() == null
+						|| initializeRequest.protocolVersion().isBlank() || initializeRequest.capabilities() == null
+						|| initializeRequest.clientInfo() == null) {
+					logger.debug("Rejecting malformed initialize request: missing required fields");
+					return ServerResponse.badRequest()
+						.body(McpError.builder(McpSchema.ErrorCodes.INVALID_PARAMS)
+							.message(
+									"Invalid initialize params: protocolVersion, capabilities, and clientInfo are required")
+							.build());
+				}
 				var sf = this.sessionFactory;
 				if (sf == null) {
 					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -410,9 +420,10 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 								null));
 				}
 				catch (Exception e) {
-					logger.error("Failed to initialize session: {}", e.getMessage());
+					String errorMessage = e.getMessage() != null ? e.getMessage() : "Session initialization failed";
+					logger.warn("Failed to initialize session: {}", errorMessage);
 					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-						.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR).message(e.getMessage()).build());
+						.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR).message(errorMessage).build());
 				}
 			}
 

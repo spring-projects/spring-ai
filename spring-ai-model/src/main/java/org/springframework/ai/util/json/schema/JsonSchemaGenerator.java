@@ -20,7 +20,12 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -89,6 +94,18 @@ public final class JsonSchemaGenerator {
 
 	private static final SchemaGenerator SUBTYPE_SCHEMA_GENERATOR;
 
+	/**
+	 * Schema cache keyed by (Type, Set<SchemaOption>). Avoids repeated generation for the
+	 * same type and prevents ConcurrentModificationException in victools when many
+	 * threads concurrently request the schema for the same type.
+	 */
+	private static final Map<TypeAndOptions, String> TYPE_SCHEMA_CACHE = new ConcurrentHashMap<>();
+
+	/**
+	 * Schema cache for method input schemas, keyed by (Method, Set<SchemaOption>).
+	 */
+	private static final Map<MethodAndOptions, String> METHOD_SCHEMA_CACHE = new ConcurrentHashMap<>();
+
 	/*
 	 * Initialize JSON Schema generators.
 	 */
@@ -127,6 +144,12 @@ public final class JsonSchemaGenerator {
 	 * Generate a JSON Schema for a method's input parameters.
 	 */
 	public static String generateForMethodInput(Method method, SchemaOption... schemaOptions) {
+		MethodAndOptions key = new MethodAndOptions(method,
+				schemaOptions.length == 0 ? Set.of() : EnumSet.copyOf(Arrays.asList(schemaOptions)));
+		return METHOD_SCHEMA_CACHE.computeIfAbsent(key, k -> generateForMethodInputInternal(k.method(), schemaOptions));
+	}
+
+	private static String generateForMethodInputInternal(Method method, SchemaOption... schemaOptions) {
 		ObjectNode schema = JacksonUtils.getDefaultJsonMapper().createObjectNode();
 		schema.put("$schema", SchemaVersion.DRAFT_2020_12.getIdentifier());
 		schema.put("type", "object");
@@ -149,7 +172,10 @@ public final class JsonSchemaGenerator {
 			if (isMethodParameterRequired(method, i)) {
 				required.add(parameterName);
 			}
-			ObjectNode parameterNode = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
+			ObjectNode parameterNode;
+			synchronized (SUBTYPE_SCHEMA_GENERATOR) {
+				parameterNode = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
+			}
 			// victools generates self-contained schemas where $defs and the $ref
 			// pointers into them are rooted at the sub-schema. Inlining the
 			// sub-schema under properties.<paramName> re-parents existing
@@ -182,7 +208,16 @@ public final class JsonSchemaGenerator {
 	 */
 	public static String generateForType(Type type, SchemaOption... schemaOptions) {
 		Assert.notNull(type, "type cannot be null");
-		ObjectNode schema = TYPE_SCHEMA_GENERATOR.generateSchema(type);
+		TypeAndOptions key = new TypeAndOptions(type,
+				schemaOptions.length == 0 ? Set.of() : EnumSet.copyOf(Arrays.asList(schemaOptions)));
+		return TYPE_SCHEMA_CACHE.computeIfAbsent(key, k -> generateForTypeInternal(k.type(), schemaOptions));
+	}
+
+	private static String generateForTypeInternal(Type type, SchemaOption... schemaOptions) {
+		ObjectNode schema;
+		synchronized (TYPE_SCHEMA_GENERATOR) {
+			schema = TYPE_SCHEMA_GENERATOR.generateSchema(type);
+		}
 		if ((type == Void.class) && !schema.has("properties")) {
 			schema.putObject("properties");
 		}
@@ -343,6 +378,14 @@ public final class JsonSchemaGenerator {
 		 * Convert all "type" values to upper case.
 		 */
 		UPPER_CASE_TYPE_VALUES
+
+	}
+
+	private record TypeAndOptions(Type type, Set<SchemaOption> options) {
+
+	}
+
+	private record MethodAndOptions(Method method, Set<SchemaOption> options) {
 
 	}
 
