@@ -61,12 +61,12 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	/**
 	 * Optional. Controls the randomness of predictions.
 	 */
-	private final @Nullable Double temperature;
+	private final Double temperature;
 
 	/**
 	 * Optional. If specified, nucleus sampling will be used.
 	 */
-	private final @Nullable Double topP;
+	private final Double topP;
 
 	/**
 	 * Optional. If specified, top k sampling will be used.
@@ -86,7 +86,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	/**
 	 * Gemini model name.
 	 */
-	private final @Nullable String model;
+	private final String model;
 
 	/**
 	 * Optional. Output response mimetype of the generated candidate text.
@@ -260,12 +260,12 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	}
 
 	@Override
-	public @Nullable Double getTemperature() {
+	public Double getTemperature() {
 		return this.temperature;
 	}
 
 	@Override
-	public @Nullable Double getTopP() {
+	public Double getTopP() {
 		return this.topP;
 	}
 
@@ -288,7 +288,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	}
 
 	@Override
-	public @Nullable String getModel() {
+	public String getModel() {
 		return this.model;
 	}
 

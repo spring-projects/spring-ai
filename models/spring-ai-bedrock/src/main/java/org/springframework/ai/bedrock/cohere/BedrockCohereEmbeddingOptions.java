@@ -39,14 +39,14 @@ public class BedrockCohereEmbeddingOptions implements EmbeddingOptions {
 	 * In this case, embed your corpus with the search_document type and embedded queries with
 	 * type search_query type.
 	 */
-	private final @Nullable InputType inputType;
+	private final InputType inputType;
 
 	/**
 	 * Specifies how the API handles inputs longer than the maximum token length. If you specify LEFT or
 	 * RIGHT, the model discards the input until the remaining input is exactly the maximum input token length for the
 	 * model.
 	 */
-	private final @Nullable Truncate truncate;
+	private final Truncate truncate;
 
 	// @formatter:on
 
@@ -55,11 +55,11 @@ public class BedrockCohereEmbeddingOptions implements EmbeddingOptions {
 		this.truncate = truncate != null ? truncate : Truncate.NONE;
 	}
 
-	public @Nullable InputType getInputType() {
+	public InputType getInputType() {
 		return this.inputType;
 	}
 
-	public @Nullable Truncate getTruncate() {
+	public Truncate getTruncate() {
 		return this.truncate;
 	}
 

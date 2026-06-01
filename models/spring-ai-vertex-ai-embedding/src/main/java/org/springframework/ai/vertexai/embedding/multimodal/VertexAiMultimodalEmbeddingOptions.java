@@ -70,7 +70,7 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 	 * The embedding model name to use. Supported models are:
 	 * text-embedding-004, text-multilingual-embedding-002 and multimodalembedding@001.
 	 */
-	private final @Nullable String model;
+	private final String model;
 
 	/**
 	 * The number of dimensions the resulting output embeddings should have.
@@ -115,7 +115,7 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	@Override
-	public @Nullable String getModel() {
+	public String getModel() {
 		return this.model;
 	}
 

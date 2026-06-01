@@ -56,7 +56,7 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	 * Used to allow overriding the model name with prompt options.
 	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">parameters</a>.
 	 */
-	private final @Nullable String model;
+	private final String model;
 
 	/**
 	 * Sets the length of time for Ollama to keep the model loaded. Valid values for this
@@ -202,7 +202,7 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	// Getters
 	// -------------------
 	@Override
-	public @Nullable String getModel() {
+	public String getModel() {
 		return this.model;
 	}
 

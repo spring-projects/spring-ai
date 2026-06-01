@@ -109,11 +109,11 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 
 	private final @Nullable String input;
 
-	private final @Nullable String voice;
+	private final String voice;
 
-	private final @Nullable String responseFormat;
+	private final String responseFormat;
 
-	private final @Nullable Double speed;
+	private final Double speed;
 
 	protected OpenAiAudioSpeechOptions(@Nullable String baseUrl, @Nullable String apiKey,
 			@Nullable Credential credential, @Nullable String model, @Nullable String microsoftDeploymentName,
@@ -139,16 +139,16 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 	}
 
 	@Override
-	public @Nullable String getVoice() {
+	public String getVoice() {
 		return this.voice;
 	}
 
-	public @Nullable String getResponseFormat() {
+	public String getResponseFormat() {
 		return this.responseFormat;
 	}
 
 	@Override
-	public @Nullable Double getSpeed() {
+	public Double getSpeed() {
 		return this.speed;
 	}
 
