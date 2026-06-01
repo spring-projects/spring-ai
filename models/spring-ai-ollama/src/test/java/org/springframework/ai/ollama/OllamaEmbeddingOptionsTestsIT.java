@@ -74,22 +74,6 @@ public class OllamaEmbeddingOptionsTestsIT extends BaseOllamaIT {
 	}
 
 	@Test
-	void testDimensionsOptionInFromOptions() {
-		// Test if fromOptions method correctly copies dimensions parameter
-		Integer expectedDimensions = 512;
-
-		OllamaEmbeddingOptions originalOptions = OllamaEmbeddingOptions.builder()
-			.model(MODEL)
-			.dimensions(expectedDimensions)
-			.build();
-
-		OllamaEmbeddingOptions copiedOptions = OllamaEmbeddingOptions.fromOptions(originalOptions);
-
-		assertThat(copiedOptions.getDimensions()).isEqualTo(expectedDimensions);
-		assertThat(copiedOptions.getModel()).isEqualTo(MODEL);
-	}
-
-	@Test
 	void testDimensionsOptionInEqualsAndHashCode() {
 		// Test the impact of dimensions parameter in equals and hashCode methods
 		Integer dimensions1 = 1024;

@@ -97,10 +97,6 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		return new Builder();
 	}
 
-	public static BedrockChatOptions fromOptions(BedrockChatOptions fromOptions) {
-		return fromOptions.mutate().build();
-	}
-
 	@Override
 	public @Nullable String getModel() {
 		return this.model;

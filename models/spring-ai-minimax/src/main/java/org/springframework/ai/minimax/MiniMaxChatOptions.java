@@ -177,10 +177,6 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		return new Builder();
 	}
 
-	public static MiniMaxChatOptions fromOptions(MiniMaxChatOptions fromOptions) {
-		return fromOptions.mutate().build();
-	}
-
 	@Override
 	public String getModel() {
 		return this.model;

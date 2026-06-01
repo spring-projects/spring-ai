@@ -250,10 +250,6 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		return new Builder();
 	}
 
-	public static GoogleGenAiChatOptions fromOptions(GoogleGenAiChatOptions fromOptions) {
-		return fromOptions.mutate().build();
-	}
-
 	@Override
 	public @Nullable List<String> getStopSequences() {
 		return this.stopSequences;

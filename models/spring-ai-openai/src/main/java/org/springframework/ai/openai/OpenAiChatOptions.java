@@ -539,10 +539,6 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		return new Builder();
 	}
 
-	public static OpenAiChatOptions fromOptions(OpenAiChatOptions fromOptions) {
-		return fromOptions.mutate().build();
-	}
-
 	@Override
 	public Builder mutate() {
 		return builder()

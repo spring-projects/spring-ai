@@ -396,10 +396,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
-	public static OllamaChatOptions fromOptions(OllamaChatOptions fromOptions) {
-		return fromOptions.mutate().build();
-	}
-
 	// -------------------
 	// Getters and Setters
 	// -------------------

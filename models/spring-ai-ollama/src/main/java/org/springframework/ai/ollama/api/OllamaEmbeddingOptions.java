@@ -180,24 +180,6 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
-	public static OllamaEmbeddingOptions fromOptions(OllamaEmbeddingOptions fromOptions) {
-		return builder()
-				.model(fromOptions.getModel())
-				.keepAlive(fromOptions.getKeepAlive())
-				.truncate(fromOptions.getTruncate())
-				.useNUMA(fromOptions.getUseNUMA())
-				.numBatch(fromOptions.getNumBatch())
-				.numGPU(fromOptions.getNumGPU())
-				.mainGPU(fromOptions.getMainGPU())
-				.lowVRAM(fromOptions.getLowVRAM())
-				.vocabOnly(fromOptions.getVocabOnly())
-				.useMMap(fromOptions.getUseMMap())
-				.useMLock(fromOptions.getUseMLock())
-				.numThread(fromOptions.getNumThread())
-				.dimensions(fromOptions.getDimensions())
-				.build();
-	}
-
 	// -------------------
 	// Getters
 	// -------------------

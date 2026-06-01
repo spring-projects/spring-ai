@@ -14,20 +14,23 @@ Additionally, nullable collections are now used instead of empty ones to better 
 
 ===== Impact
 
-- `ChatOptions#copy()` has been removed because options are now strictly immutable.
+- `ChatOptions#copy()` and `*Options#fromOptions(*Options)` methods have been removed because options are now strictly immutable.
 - Modifying collections returned by options getters will throw an `UnsupportedOperationException`.
 
 ===== Migration
 
-To create a modified copy of an options instance, use the `mutate()` method instead of `copy()`:
+To create a modified copy of an options instance, use the `mutate()` method instead of `copy()` or `fromOptions()`:
 
 [source,java]
 ----
 // Before
-ChatOptions options = originalOptions.copy();
+OllamaChatOptions options = originalOptions.copy();
+options.setFoo("...");
 
 // After
-ChatOptions options = originalOptions.mutate().build();
+OllamaChatOptions options = originalOptions.mutate()
+        .foo("...")
+        .build();
 ----
 
 ==== Default Values Moved to Options Constructors

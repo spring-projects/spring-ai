@@ -488,14 +488,8 @@ public class OllamaChatModel implements ChatModel {
 			throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
 		}).flatMap(List::stream).toList();
 
-		OllamaChatOptions requestOptions = null;
-		if (prompt.getOptions() instanceof OllamaChatOptions) {
-			requestOptions = (OllamaChatOptions) prompt.getOptions();
-		}
-		else {
-			requestOptions = OllamaChatOptions
-				.fromOptions((OllamaChatOptions) Objects.requireNonNull(prompt.getOptions()));
-		}
+		OllamaChatOptions requestOptions = (OllamaChatOptions) prompt.getOptions();
+		Assert.state(requestOptions != null, "ChatOptions must not be null");
 
 		String model = requestOptions.getModel();
 		Assert.state(model != null, "model must not be null");
