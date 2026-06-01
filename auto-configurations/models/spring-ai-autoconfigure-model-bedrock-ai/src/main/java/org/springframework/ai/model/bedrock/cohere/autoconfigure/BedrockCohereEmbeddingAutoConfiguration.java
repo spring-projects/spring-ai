@@ -67,7 +67,7 @@ public class BedrockCohereEmbeddingAutoConfiguration {
 	public BedrockCohereEmbeddingModel cohereEmbeddingModel(CohereEmbeddingBedrockApi cohereEmbeddingApi,
 			BedrockCohereEmbeddingProperties properties) {
 
-		return new BedrockCohereEmbeddingModel(cohereEmbeddingApi, properties.getOptions().toOptions());
+		return new BedrockCohereEmbeddingModel(cohereEmbeddingApi, properties.toOptions());
 	}
 
 }

@@ -72,7 +72,7 @@ public class MistralAiEmbeddingAutoConfiguration {
 		var embeddingModel = MistralAiEmbeddingModel.builder()
 			.mistralAiApi(mistralAiApi)
 			.metadataMode(embeddingProperties.getMetadataMode())
-			.options(embeddingProperties.getOptions().toOptions())
+			.options(embeddingProperties.toOptions())
 			.retryTemplate(retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.build();

@@ -67,8 +67,7 @@ public class MiniMaxEmbeddingAutoConfiguration {
 				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
 
 		var embeddingModel = new MiniMaxEmbeddingModel(miniMaxApi, embeddingProperties.getMetadataMode(),
-				embeddingProperties.getOptions().toOptions(),
-				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE),
+				embeddingProperties.toOptions(), retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE),
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(embeddingModel::setObservationConvention);

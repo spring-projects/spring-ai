@@ -56,6 +56,44 @@ ChatOptions options = chatModel.getDefaultOptions();
 ChatOptions options = chatModel.getOptions();
 ----
 
+==== Configuration Properties Flattening
+
+Building on the changes introduced in 2.0.0-M6 for Chat models, the configuration properties for all other models (Embedding, Image, Audio, Moderation, OCR, etc.) no longer use the `.options` prefix. 
+For example, the former `spring.ai.openai.embedding.options.model` is now `spring.ai.openai.embedding.model`.
+Deprecated configuration properties are provided for the `.options` variants to ensure a smoother migration experience.
+
+===== Impact
+
+- The `getOptions()` method in `*Properties` classes is deprecated.
+- The nested `Options` classes within `*Properties` are deprecated.
+- The `toOptions()` method has been moved from the nested `Options` class to the root `*Properties` class.
+
+===== Migration
+
+Update your `application.properties` or `application.yml` to remove the `.options` segment from the property keys.
+
+[source,properties]
+----
+# Before
+spring.ai.openai.embedding.options.model=text-embedding-3-small
+
+# After
+spring.ai.openai.embedding.model=text-embedding-3-small
+----
+
+In Java code, use the root properties class directly to access options or call `toOptions()`:
+
+[source,java]
+----
+// Before
+String model = properties.getOptions().getModel();
+OpenAiEmbeddingOptions options = properties.getOptions().toOptions();
+
+// After
+String model = properties.getModel();
+OpenAiEmbeddingOptions options = properties.toOptions();
+----
+
 === JSON Utilities Refactoring
 
 ==== New: `JsonHelper` and Updated `JacksonUtils`

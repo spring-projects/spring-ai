@@ -75,7 +75,7 @@ public class MistralAiModerationAutoConfiguration {
 		return MistralAiModerationModel.builder()
 			.mistralAiModerationApi(mistralAiModerationApi)
 			.retryTemplate(retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))
-			.options(moderationProperties.getOptions().toOptions())
+			.options(moderationProperties.toOptions())
 			.build();
 	}
 

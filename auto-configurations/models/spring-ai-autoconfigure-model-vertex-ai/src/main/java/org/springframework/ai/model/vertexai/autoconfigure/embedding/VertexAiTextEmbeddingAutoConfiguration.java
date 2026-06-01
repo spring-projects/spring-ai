@@ -57,8 +57,7 @@ public class VertexAiTextEmbeddingAutoConfiguration {
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
-		var embeddingModel = new VertexAiTextEmbeddingModel(connectionDetails,
-				textEmbeddingProperties.getOptions().toOptions(),
+		var embeddingModel = new VertexAiTextEmbeddingModel(connectionDetails, textEmbeddingProperties.toOptions(),
 				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE),
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 

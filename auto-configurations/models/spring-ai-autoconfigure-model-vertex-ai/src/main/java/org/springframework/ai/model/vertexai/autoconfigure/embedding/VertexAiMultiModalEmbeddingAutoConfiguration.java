@@ -50,8 +50,7 @@ public class VertexAiMultiModalEmbeddingAutoConfiguration {
 	public VertexAiMultimodalEmbeddingModel multimodalEmbedding(VertexAiEmbeddingConnectionDetails connectionDetails,
 			VertexAiMultimodalEmbeddingProperties multimodalEmbeddingProperties) throws IOException {
 
-		return new VertexAiMultimodalEmbeddingModel(connectionDetails,
-				multimodalEmbeddingProperties.getOptions().toOptions());
+		return new VertexAiMultimodalEmbeddingModel(connectionDetails, multimodalEmbeddingProperties.toOptions());
 	}
 
 }

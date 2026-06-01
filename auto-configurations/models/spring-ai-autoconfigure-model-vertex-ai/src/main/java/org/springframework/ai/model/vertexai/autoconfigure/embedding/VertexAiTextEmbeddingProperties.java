@@ -20,6 +20,7 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.vertexai.embedding.text.VertexAiTextEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 /**
  * Configuration properties for Vertex AI Gemini Chat.
@@ -33,72 +34,115 @@ public class VertexAiTextEmbeddingProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vertex.ai.embedding.text";
 
-	/**
-	 * Vertex AI Text Embedding API options.
-	 */
-	private final Options options = new Options();
+	private @Nullable String model;
 
+	private VertexAiTextEmbeddingOptions.@Nullable TaskType taskType;
+
+	private @Nullable Integer outputDimensionality;
+
+	private @Nullable String title;
+
+	public @Nullable String getModel() {
+		return this.model;
+	}
+
+	public void setModel(@Nullable String model) {
+		this.model = model;
+	}
+
+	public VertexAiTextEmbeddingOptions.@Nullable TaskType getTaskType() {
+		return this.taskType;
+	}
+
+	public void setTaskType(VertexAiTextEmbeddingOptions.@Nullable TaskType taskType) {
+		this.taskType = taskType;
+	}
+
+	public @Nullable Integer getOutputDimensionality() {
+		return this.outputDimensionality;
+	}
+
+	public void setOutputDimensionality(@Nullable Integer outputDimensionality) {
+		this.outputDimensionality = outputDimensionality;
+	}
+
+	public @Nullable String getTitle() {
+		return this.title;
+	}
+
+	public void setTitle(@Nullable String title) {
+		this.title = title;
+	}
+
+	public VertexAiTextEmbeddingOptions toOptions() {
+		VertexAiTextEmbeddingOptions.Builder builder = VertexAiTextEmbeddingOptions.builder();
+		if (this.model != null) {
+			builder.model(this.model);
+		}
+		if (this.taskType != null) {
+			builder.taskType(this.taskType);
+		}
+		if (this.outputDimensionality != null) {
+			builder.dimensions(this.outputDimensionality);
+		}
+		if (this.title != null) {
+			builder.title(this.title);
+		}
+		return builder.build();
+	}
+
+	private Options options = new Options();
+
+	@DeprecatedConfigurationProperty(replacement = "spring.ai.vertex.ai.embedding.text")
+	@Deprecated(since = "2.0.0", forRemoval = true)
 	public Options getOptions() {
 		return this.options;
 	}
 
-	public static class Options {
+	public void setOptions(Options options) {
+		this.options = options;
+	}
 
-		private @Nullable String model;
+	public class Options {
 
-		private VertexAiTextEmbeddingOptions.@Nullable TaskType taskType;
-
-		private @Nullable Integer outputDimensionality;
-
-		private @Nullable String title;
-
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.vertex.ai.embedding.text.model")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable String getModel() {
-			return this.model;
+			return VertexAiTextEmbeddingProperties.this.getModel();
 		}
 
 		public void setModel(@Nullable String model) {
-			this.model = model;
+			VertexAiTextEmbeddingProperties.this.setModel(model);
 		}
 
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.vertex.ai.embedding.text.task-type")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public VertexAiTextEmbeddingOptions.@Nullable TaskType getTaskType() {
-			return this.taskType;
+			return VertexAiTextEmbeddingProperties.this.getTaskType();
 		}
 
 		public void setTaskType(VertexAiTextEmbeddingOptions.@Nullable TaskType taskType) {
-			this.taskType = taskType;
+			VertexAiTextEmbeddingProperties.this.setTaskType(taskType);
 		}
 
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.vertex.ai.embedding.text.output-dimensionality")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable Integer getOutputDimensionality() {
-			return this.outputDimensionality;
+			return VertexAiTextEmbeddingProperties.this.getOutputDimensionality();
 		}
 
 		public void setOutputDimensionality(@Nullable Integer outputDimensionality) {
-			this.outputDimensionality = outputDimensionality;
+			VertexAiTextEmbeddingProperties.this.setOutputDimensionality(outputDimensionality);
 		}
 
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.vertex.ai.embedding.text.title")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable String getTitle() {
-			return this.title;
+			return VertexAiTextEmbeddingProperties.this.getTitle();
 		}
 
 		public void setTitle(@Nullable String title) {
-			this.title = title;
-		}
-
-		public VertexAiTextEmbeddingOptions toOptions() {
-			VertexAiTextEmbeddingOptions.Builder builder = VertexAiTextEmbeddingOptions.builder();
-			if (this.model != null) {
-				builder.model(this.model);
-			}
-			if (this.taskType != null) {
-				builder.taskType(this.taskType);
-			}
-			if (this.outputDimensionality != null) {
-				builder.dimensions(this.outputDimensionality);
-			}
-			if (this.title != null) {
-				builder.title(this.title);
-			}
-			return builder.build();
+			VertexAiTextEmbeddingProperties.this.setTitle(title);
 		}
 
 	}

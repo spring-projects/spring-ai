@@ -22,6 +22,7 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.mistralai.ocr.MistralAiOcrOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 /**
  * Configuration properties for Mistral AI OCR.
@@ -35,87 +36,153 @@ public class MistralAiOcrProperties extends MistralAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.mistralai.ocr";
 
-	private final Options options = new Options();
-
 	public MistralAiOcrProperties() {
 		super.setBaseUrl(MistralAiCommonProperties.DEFAULT_BASE_URL);
 	}
 
+	private @Nullable String model;
+
+	private @Nullable String id;
+
+	private @Nullable Boolean includeImageBase64;
+
+	private @Nullable List<Integer> pages;
+
+	private @Nullable Integer imageLimit;
+
+	private @Nullable Integer imageMinSize;
+
+	public @Nullable String getModel() {
+		return this.model;
+	}
+
+	public void setModel(@Nullable String model) {
+		this.model = model;
+	}
+
+	public @Nullable Boolean getIncludeImageBase64() {
+		return this.includeImageBase64;
+	}
+
+	public void setIncludeImageBase64(@Nullable Boolean includeImageBase64) {
+		this.includeImageBase64 = includeImageBase64;
+	}
+
+	public MistralAiOcrOptions toOptions() {
+		MistralAiOcrOptions.Builder builder = MistralAiOcrOptions.builder();
+		if (this.model != null) {
+			builder.model(this.model);
+		}
+		if (this.includeImageBase64 != null) {
+			builder.includeImageBase64(this.includeImageBase64);
+		}
+		return builder.build();
+	}
+
+	public @Nullable String getId() {
+		return this.id;
+	}
+
+	public void setId(@Nullable String id) {
+		this.id = id;
+	}
+
+	public @Nullable List<Integer> getPages() {
+		return this.pages;
+	}
+
+	public void setPages(@Nullable List<Integer> pages) {
+		this.pages = pages;
+	}
+
+	public @Nullable Integer getImageLimit() {
+		return this.imageLimit;
+	}
+
+	public void setImageLimit(@Nullable Integer imageLimit) {
+		this.imageLimit = imageLimit;
+	}
+
+	public @Nullable Integer getImageMinSize() {
+		return this.imageMinSize;
+	}
+
+	public void setImageMinSize(@Nullable Integer imageMinSize) {
+		this.imageMinSize = imageMinSize;
+	}
+
+	private Options options = new Options();
+
+	@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.ocr")
+	@Deprecated(since = "2.0.0", forRemoval = true)
 	public Options getOptions() {
 		return this.options;
 	}
 
-	public static class Options {
+	public void setOptions(Options options) {
+		this.options = options;
+	}
 
-		private @Nullable String model;
+	public class Options {
 
-		private @Nullable String id;
-
-		private @Nullable Boolean includeImageBase64;
-
-		private @Nullable List<Integer> pages;
-
-		private @Nullable Integer imageLimit;
-
-		private @Nullable Integer imageMinSize;
-
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.ocr.model")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable String getModel() {
-			return this.model;
+			return MistralAiOcrProperties.this.getModel();
 		}
 
 		public void setModel(@Nullable String model) {
-			this.model = model;
+			MistralAiOcrProperties.this.setModel(model);
 		}
 
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.ocr.include-image-base64")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable Boolean getIncludeImageBase64() {
-			return this.includeImageBase64;
+			return MistralAiOcrProperties.this.getIncludeImageBase64();
 		}
 
 		public void setIncludeImageBase64(@Nullable Boolean includeImageBase64) {
-			this.includeImageBase64 = includeImageBase64;
+			MistralAiOcrProperties.this.setIncludeImageBase64(includeImageBase64);
 		}
 
-		public MistralAiOcrOptions toOptions() {
-			MistralAiOcrOptions.Builder builder = MistralAiOcrOptions.builder();
-			if (this.model != null) {
-				builder.model(this.model);
-			}
-			if (this.includeImageBase64 != null) {
-				builder.includeImageBase64(this.includeImageBase64);
-			}
-			return builder.build();
-		}
-
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.ocr.id")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable String getId() {
-			return this.id;
+			return MistralAiOcrProperties.this.getId();
 		}
 
 		public void setId(@Nullable String id) {
-			this.id = id;
+			MistralAiOcrProperties.this.setId(id);
 		}
 
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.ocr.pages")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable List<Integer> getPages() {
-			return this.pages;
+			return MistralAiOcrProperties.this.getPages();
 		}
 
 		public void setPages(@Nullable List<Integer> pages) {
-			this.pages = pages;
+			MistralAiOcrProperties.this.setPages(pages);
 		}
 
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.ocr.image-limit")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable Integer getImageLimit() {
-			return this.imageLimit;
+			return MistralAiOcrProperties.this.getImageLimit();
 		}
 
 		public void setImageLimit(@Nullable Integer imageLimit) {
-			this.imageLimit = imageLimit;
+			MistralAiOcrProperties.this.setImageLimit(imageLimit);
 		}
 
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.ocr.image-min-size")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable Integer getImageMinSize() {
-			return this.imageMinSize;
+			return MistralAiOcrProperties.this.getImageMinSize();
 		}
 
 		public void setImageMinSize(@Nullable Integer imageMinSize) {
-			this.imageMinSize = imageMinSize;
+			MistralAiOcrProperties.this.setImageMinSize(imageMinSize);
 		}
 
 	}

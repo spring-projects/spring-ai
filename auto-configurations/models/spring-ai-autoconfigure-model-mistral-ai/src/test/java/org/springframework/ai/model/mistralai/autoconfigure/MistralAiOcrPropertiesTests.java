@@ -60,8 +60,7 @@ class MistralAiOcrPropertiesTests {
 				assertThat(ocrProps.getBaseUrl()).isEqualTo(MistralAiCommonProperties.DEFAULT_BASE_URL);
 				assertThat(ocrProps.getApiKey()).isNull();
 
-				assertThat(ocrProps.getOptions()).isNotNull();
-				assertThat(ocrProps.getOptions().getModel()).isEqualTo("mistral-ocr-specific-model");
+				assertThat(ocrProps.getModel()).isEqualTo("mistral-ocr-specific-model");
 
 				assertThat(context).hasSingleBean(MistralOcrApi.class);
 			});
@@ -88,8 +87,7 @@ class MistralAiOcrPropertiesTests {
 				assertThat(ocrProps.getBaseUrl()).isEqualTo("OCR_BASE_URL");
 				assertThat(ocrProps.getApiKey()).isEqualTo("OCR_API_KEY");
 
-				assertThat(ocrProps.getOptions()).isNotNull();
-				assertThat(ocrProps.getOptions().getModel()).isEqualTo("mistral-ocr-default");
+				assertThat(ocrProps.getModel()).isEqualTo("mistral-ocr-default");
 
 				assertThat(context).hasSingleBean(MistralOcrApi.class);
 			});
@@ -106,15 +104,12 @@ class MistralAiOcrPropertiesTests {
 			.run(context -> {
 				assertThat(context).hasSingleBean(MistralAiOcrProperties.class);
 				var ocrProps = context.getBean(MistralAiOcrProperties.class);
-				var options = ocrProps.getOptions();
-
-				assertThat(options).isNotNull();
-				assertThat(options.getModel()).isEqualTo("custom-ocr-model");
-				assertThat(options.getId()).isEqualTo("ocr-request-id-123");
-				assertThat(options.getPages()).containsExactly(0, 1, 5);
-				assertThat(options.getIncludeImageBase64()).isTrue();
-				assertThat(options.getImageLimit()).isEqualTo(25);
-				assertThat(options.getImageMinSize()).isEqualTo(150);
+				assertThat(ocrProps.getModel()).isEqualTo("custom-ocr-model");
+				assertThat(ocrProps.getId()).isEqualTo("ocr-request-id-123");
+				assertThat(ocrProps.getPages()).containsExactly(0, 1, 5);
+				assertThat(ocrProps.getIncludeImageBase64()).isTrue();
+				assertThat(ocrProps.getImageLimit()).isEqualTo(25);
+				assertThat(ocrProps.getImageMinSize()).isEqualTo(150);
 			});
 	}
 

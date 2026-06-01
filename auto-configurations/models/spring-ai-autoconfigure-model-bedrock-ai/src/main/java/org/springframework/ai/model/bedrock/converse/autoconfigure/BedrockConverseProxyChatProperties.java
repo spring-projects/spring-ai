@@ -66,7 +66,7 @@ public class BedrockConverseProxyChatProperties {
 
 	private @Nullable BedrockCacheProperties cacheOptions;
 
-	private final Options options = new Options();
+	private Options options = new Options();
 
 	public boolean isEnabled() {
 		return this.enabled;
@@ -164,8 +164,14 @@ public class BedrockConverseProxyChatProperties {
 		this.cacheOptions = cacheOptions;
 	}
 
+	@DeprecatedConfigurationProperty(replacement = "spring.ai.bedrock.converse.chat")
+	@Deprecated(since = "2.0.0", forRemoval = true)
 	public Options getOptions() {
 		return this.options;
+	}
+
+	public void setOptions(Options options) {
+		this.options = options;
 	}
 
 	public BedrockChatOptions toOptions() {

@@ -20,6 +20,7 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.mistralai.moderation.MistralAiModerationOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 /**
  * @author Ricken Bazolo
@@ -30,34 +31,50 @@ public class MistralAiModerationProperties extends MistralAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.mistralai.moderation";
 
-	private final Options options = new Options();
-
 	public MistralAiModerationProperties() {
 		super.setBaseUrl(MistralAiCommonProperties.DEFAULT_BASE_URL);
 	}
 
+	private @Nullable String model;
+
+	public @Nullable String getModel() {
+		return this.model;
+	}
+
+	public void setModel(@Nullable String model) {
+		this.model = model;
+	}
+
+	public MistralAiModerationOptions toOptions() {
+		MistralAiModerationOptions.Builder builder = MistralAiModerationOptions.builder();
+		if (this.model != null) {
+			builder.model(this.model);
+		}
+		return builder.build();
+	}
+
+	private Options options = new Options();
+
+	@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.moderation")
+	@Deprecated(since = "2.0.0", forRemoval = true)
 	public Options getOptions() {
 		return this.options;
 	}
 
-	public static class Options {
+	public void setOptions(Options options) {
+		this.options = options;
+	}
 
-		private @Nullable String model;
+	public class Options {
 
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.moderation.model")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable String getModel() {
-			return this.model;
+			return MistralAiModerationProperties.this.getModel();
 		}
 
 		public void setModel(@Nullable String model) {
-			this.model = model;
-		}
-
-		public MistralAiModerationOptions toOptions() {
-			MistralAiModerationOptions.Builder builder = MistralAiModerationOptions.builder();
-			if (this.model != null) {
-				builder.model(this.model);
-			}
-			return builder.build();
+			MistralAiModerationProperties.this.setModel(model);
 		}
 
 	}

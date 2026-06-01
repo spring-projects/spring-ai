@@ -20,6 +20,7 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 /**
  * Ollama Embedding autoconfiguration properties.
@@ -33,69 +34,92 @@ public class OllamaEmbeddingProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.ollama.embedding";
 
-	/**
-	 * Client lever Ollama options. Use this property to configure generative temperature,
-	 * topK and topP and alike parameters. The null values are ignored defaulting to the
-	 * generative's defaults.
-	 */
-	private final Options options = new Options();
+	private @Nullable String model;
+
+	private @Nullable Boolean truncate;
+
+	private @Nullable String keepAlive;
 
 	public @Nullable String getModel() {
-		return this.options.getModel();
+		return this.model;
 	}
 
 	public void setModel(@Nullable String model) {
-		this.options.setModel(model);
+		this.model = model;
 	}
 
+	public @Nullable Boolean getTruncate() {
+		return this.truncate;
+	}
+
+	public void setTruncate(@Nullable Boolean truncate) {
+		this.truncate = truncate;
+	}
+
+	public @Nullable String getKeepAlive() {
+		return this.keepAlive;
+	}
+
+	public void setKeepAlive(@Nullable String keepAlive) {
+		this.keepAlive = keepAlive;
+	}
+
+	public OllamaEmbeddingOptions toOptions() {
+		OllamaEmbeddingOptions.Builder builder = OllamaEmbeddingOptions.builder();
+		if (this.model != null) {
+			builder.model(this.model);
+		}
+		if (this.truncate != null) {
+			builder.truncate(this.truncate);
+		}
+		if (this.keepAlive != null) {
+			builder.keepAlive(this.keepAlive);
+		}
+		return builder.build();
+	}
+
+	private Options options = new Options();
+
+	@DeprecatedConfigurationProperty(replacement = "spring.ai.ollama.embedding")
+	@Deprecated(since = "2.0.0", forRemoval = true)
 	public Options getOptions() {
 		return this.options;
 	}
 
-	public static class Options {
+	public void setOptions(Options options) {
+		this.options = options;
+	}
 
-		private @Nullable String model;
+	public class Options {
 
-		private @Nullable Boolean truncate;
-
-		private @Nullable String keepAlive;
-
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.ollama.embedding.model")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable String getModel() {
-			return this.model;
+			return OllamaEmbeddingProperties.this.getModel();
 		}
 
 		public void setModel(@Nullable String model) {
-			this.model = model;
+			OllamaEmbeddingProperties.this.setModel(model);
 		}
 
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.ollama.embedding.truncate")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable Boolean getTruncate() {
-			return this.truncate;
+			return OllamaEmbeddingProperties.this.getTruncate();
 		}
 
 		public void setTruncate(@Nullable Boolean truncate) {
-			this.truncate = truncate;
+			OllamaEmbeddingProperties.this.setTruncate(truncate);
 		}
 
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.ollama.embedding.keep-alive")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable String getKeepAlive() {
-			return this.keepAlive;
+			return OllamaEmbeddingProperties.this.getKeepAlive();
 		}
 
 		public void setKeepAlive(@Nullable String keepAlive) {
-			this.keepAlive = keepAlive;
-		}
-
-		public OllamaEmbeddingOptions toOptions() {
-			OllamaEmbeddingOptions.Builder builder = OllamaEmbeddingOptions.builder();
-			if (this.model != null) {
-				builder.model(this.model);
-			}
-			if (this.truncate != null) {
-				builder.truncate(this.truncate);
-			}
-			if (this.keepAlive != null) {
-				builder.keepAlive(this.keepAlive);
-			}
-			return builder.build();
+			OllamaEmbeddingProperties.this.setKeepAlive(keepAlive);
 		}
 
 	}

@@ -20,6 +20,7 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.vertexai.embedding.multimodal.VertexAiMultimodalEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 /**
  * Configuration properties for Vertex AI Gemini Chat.
@@ -33,46 +34,69 @@ public class VertexAiMultimodalEmbeddingProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vertex.ai.embedding.multimodal";
 
-	/**
-	 * Vertex AI Text Embedding API options.
-	 */
-	private final Options options = new Options();
+	private @Nullable String model;
 
+	private @Nullable Integer outputDimensionality;
+
+	public @Nullable String getModel() {
+		return this.model;
+	}
+
+	public void setModel(@Nullable String model) {
+		this.model = model;
+	}
+
+	public @Nullable Integer getOutputDimensionality() {
+		return this.outputDimensionality;
+	}
+
+	public void setOutputDimensionality(@Nullable Integer outputDimensionality) {
+		this.outputDimensionality = outputDimensionality;
+	}
+
+	public VertexAiMultimodalEmbeddingOptions toOptions() {
+		VertexAiMultimodalEmbeddingOptions.Builder builder = VertexAiMultimodalEmbeddingOptions.builder();
+		if (this.model != null) {
+			builder.model(this.model);
+		}
+		if (this.outputDimensionality != null) {
+			builder.dimensions(this.outputDimensionality);
+		}
+		return builder.build();
+	}
+
+	private Options options = new Options();
+
+	@DeprecatedConfigurationProperty(replacement = "spring.ai.vertex.ai.embedding.multimodal")
+	@Deprecated(since = "2.0.0", forRemoval = true)
 	public Options getOptions() {
 		return this.options;
 	}
 
-	public static class Options {
+	public void setOptions(Options options) {
+		this.options = options;
+	}
 
-		private @Nullable String model;
+	public class Options {
 
-		private @Nullable Integer outputDimensionality;
-
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.vertex.ai.embedding.multimodal.model")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable String getModel() {
-			return this.model;
+			return VertexAiMultimodalEmbeddingProperties.this.getModel();
 		}
 
 		public void setModel(@Nullable String model) {
-			this.model = model;
+			VertexAiMultimodalEmbeddingProperties.this.setModel(model);
 		}
 
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.vertex.ai.embedding.multimodal.output-dimensionality")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable Integer getOutputDimensionality() {
-			return this.outputDimensionality;
+			return VertexAiMultimodalEmbeddingProperties.this.getOutputDimensionality();
 		}
 
 		public void setOutputDimensionality(@Nullable Integer outputDimensionality) {
-			this.outputDimensionality = outputDimensionality;
-		}
-
-		public VertexAiMultimodalEmbeddingOptions toOptions() {
-			VertexAiMultimodalEmbeddingOptions.Builder builder = VertexAiMultimodalEmbeddingOptions.builder();
-			if (this.model != null) {
-				builder.model(this.model);
-			}
-			if (this.outputDimensionality != null) {
-				builder.dimensions(this.outputDimensionality);
-			}
-			return builder.build();
+			VertexAiMultimodalEmbeddingProperties.this.setOutputDimensionality(outputDimensionality);
 		}
 
 	}

@@ -53,9 +53,9 @@ class OpenAiAudioTranscriptionPropertiesTests {
 				assertThat(commonProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
 				assertThat(commonProperties.getApiKey()).isEqualTo("API_KEY");
 
-				assertThat(transcriptionProperties.getOptions().getModel()).isEqualTo("whisper-1");
-				assertThat(transcriptionProperties.getOptions().getLanguage()).isEqualTo("en");
-				assertThat(transcriptionProperties.getOptions().getTemperature()).isEqualTo(0.5f);
+				assertThat(transcriptionProperties.getModel()).isEqualTo("whisper-1");
+				assertThat(transcriptionProperties.getLanguage()).isEqualTo("en");
+				assertThat(transcriptionProperties.getTemperature()).isEqualTo(0.5f);
 			});
 	}
 
@@ -71,8 +71,8 @@ class OpenAiAudioTranscriptionPropertiesTests {
 				assertThat(context).hasSingleBean(OpenAiAudioTranscriptionProperties.class);
 				OpenAiAudioTranscriptionProperties properties = context
 					.getBean(OpenAiAudioTranscriptionProperties.class);
-				assertThat(properties.getOptions().getModel()).isEqualTo("whisper-1");
-				assertThat(properties.getOptions().getLanguage()).isEqualTo("en");
+				assertThat(properties.getModel()).isEqualTo("whisper-1");
+				assertThat(properties.getLanguage()).isEqualTo("en");
 			});
 	}
 
