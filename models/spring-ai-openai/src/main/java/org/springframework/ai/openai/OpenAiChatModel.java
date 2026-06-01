@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
@@ -318,7 +319,9 @@ public final class OpenAiChatModel implements ChatModel {
 					try {
 						ChatCompletion chatCompletion = chunkToChatCompletion(chunk);
 						String id = chatCompletion.id();
-						List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
+						List<ChatCompletion.Choice> choiceList = chatCompletion.choices();
+						List<Generation> generations = IntStream.range(0, choiceList.size()).mapToObj(i -> {
+							ChatCompletion.Choice choice = choiceList.get(i);
 							roleMap.putIfAbsent(id, choice.message()._role().asString().isPresent()
 									? choice.message()._role().asStringOrThrow() : "");
 
@@ -327,7 +330,7 @@ public final class OpenAiChatModel implements ChatModel {
 									choice.message().refusal().isPresent() ? choice.message().refusal() : "",
 									"annotations", choice.message().annotations().isPresent()
 											? choice.message().annotations() : List.of(),
-									"chunkChoice", chunk.choices().get((int) choice.index()));
+									"chunkChoice", chunk.choices().get(i));
 
 							return buildGeneration(choice, metadata, request);
 						}).toList();
