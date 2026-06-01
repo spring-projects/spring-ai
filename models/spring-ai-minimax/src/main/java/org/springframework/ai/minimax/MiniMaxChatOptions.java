@@ -50,7 +50,6 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	/**
 	 * ID of the model to use.
 	 */
-	@SuppressWarnings("NullAway.Init")
 	private final String model;
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
@@ -422,10 +421,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		}
 
 		@Override
-		@SuppressWarnings("NullAway")
 		public MiniMaxChatOptions build() {
-			// TODO: add assertions, remove SuppressWarnings
-			// Assert.state(this.model != null, "model must be set");
 			return new MiniMaxChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.n,
 					this.presencePenalty, this.responseFormat, this.seed, this.stopSequences, this.temperature,
 					this.topP, this.maskSensitiveInfo, this.tools, this.toolChoice, this.toolCallbacks, this.toolNames,

@@ -37,7 +37,7 @@ public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 	 * The embedding model name to use. Supported models are: text-embedding-004,
 	 * text-multilingual-embedding-002 and multimodalembedding@001.
 	 */
-	private final @Nullable String model;
+	private final String model;
 
 	// @formatter:off
 
@@ -45,7 +45,7 @@ public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 	 * The intended downstream application to help the model produce better quality embeddings.
 	 * Not all model versions support all task types.
 	 */
-	private final @Nullable TaskType taskType;
+	private final TaskType taskType;
 
 	/**
 	 * The number of dimensions the resulting output embeddings should have.
@@ -85,11 +85,11 @@ public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 	// @formatter:on
 
 	@Override
-	public @Nullable String getModel() {
+	public String getModel() {
 		return this.model;
 	}
 
-	public @Nullable TaskType getTaskType() {
+	public TaskType getTaskType() {
 		return this.taskType;
 	}
 

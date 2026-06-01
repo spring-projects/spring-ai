@@ -314,7 +314,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * Used to allow overriding the model name with prompt options.
 	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">parameters</a>.
 	 */
-	private final @Nullable String model;
+	private final String model;
 
 	/**
 	 * Sets the desired format of output from the LLM. The only valid values are null or "json".
@@ -404,7 +404,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	// Getters and Setters
 	// -------------------
 	@Override
-	public @Nullable String getModel() {
+	public String getModel() {
 		return this.model;
 	}
 

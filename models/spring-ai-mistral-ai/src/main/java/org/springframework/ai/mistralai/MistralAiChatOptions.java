@@ -55,7 +55,6 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	/**
 	 * ID of the model to use
 	 */
-	@SuppressWarnings("NullAway.Init")
 	private final String model;
 
 	/**
@@ -63,7 +62,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	 * make the output more random, while lower values like 0.2 will make it more focused
 	 * and deterministic. We generally recommend altering this or top_p but not both.
 	 */
-	private final @Nullable Double temperature;
+	private final Double temperature;
 
 	/**
 	 * Nucleus sampling, where the model considers the results of the tokens with top_p
@@ -246,7 +245,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	}
 
 	@Override
-	public @Nullable Double getTemperature() {
+	public Double getTemperature() {
 		return this.temperature;
 	}
 
@@ -503,10 +502,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 		}
 
 		@Override
-		@SuppressWarnings("NullAway")
 		public MistralAiChatOptions build() {
-			// TODO: add assertions, remove SuppressWarnings
-			// Assert.state(this.model != null, "model must be set");
 			return new MistralAiChatOptions(this.model, this.temperature, this.topP, this.maxTokens, this.safePrompt,
 					this.randomSeed, this.responseFormat, this.stopSequences, this.reasoningEffort,
 					this.frequencyPenalty, this.presencePenalty, this.n, this.tools, this.toolChoice,

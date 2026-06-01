@@ -45,7 +45,6 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	/**
 	 * ID of the model to use. You can use either use deepseek-reasoner or deepseek-chat.
 	 */
-	@SuppressWarnings("NullAway.Init")
 	private final String model;
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
@@ -77,7 +76,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	 * while lower values like 0.2 will make it more focused and deterministic.
 	 * We generally recommend altering this or top_p but not both.
 	 */
-	private final @Nullable Double temperature;
+	private final Double temperature;
 	/**
 	 * An alternative to sampling with temperature, called nucleus sampling,
 	 * where the model considers the results of the tokens with top_p probability mass.
@@ -199,7 +198,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public @Nullable Double getTemperature() {
+	public Double getTemperature() {
 		return this.temperature;
 	}
 
@@ -407,10 +406,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		}
 
 		@Override
-		@SuppressWarnings("NullAway")
 		public DeepSeekChatOptions build() {
-			// TODO Un-comment assertion when tool definitions merging will use the builder/customizer
-			// Assert.state(this.model != null, "model must not be null");
 			return new DeepSeekChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 					this.responseFormat, this.stopSequences, this.temperature, this.topP, this.logprobs,
 					this.topLogprobs, this.tools, this.toolChoice, this.internalToolExecutionEnabled,
