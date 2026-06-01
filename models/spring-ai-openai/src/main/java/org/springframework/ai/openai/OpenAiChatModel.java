@@ -323,7 +323,17 @@ public final class OpenAiChatModel implements ChatModel {
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
 					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry);
-			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
+			Observation parentObservation = contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
+			observation.parentObservation(parentObservation);
+			// Briefly make the parent observation current while starting this one, so the
+			// tracing bridge derives the span's parent from the parent observation rather
+			// than from whatever scope happens to be open on the current thread (e.g. the
+			// servlet HTTP span). This keeps span parenting correct without relying on
+			// automatic context propagation.
+			try (Observation.Scope ignored = parentObservation != null ? parentObservation.openScope()
+					: Observation.Scope.NOOP) {
+				observation.start();
+			}
 
 			Flux<ChatResponse> chatResponses = Flux.<ChatResponse>create(sink -> {
 				this.openAiClientAsync.chat().completions().createStreaming(request).subscribe(chunk -> {

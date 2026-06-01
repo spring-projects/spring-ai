@@ -25,7 +25,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +38,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
@@ -223,6 +226,9 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				returnDirect = returnDirect && toolCallback.getToolMetadata().returnDirect();
 			}
 
+			Observation parent = ToolCallReactiveContextHolder.getContext()
+				.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
+
 			ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
 				.toolDefinition(toolCallback.getToolDefinition())
 				.toolMetadata(toolCallback.getToolMetadata())
@@ -234,6 +240,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			String toolCallResult = ToolCallingObservationDocumentation.TOOL_CALL
 				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 						this.observationRegistry)
+				.parentObservation(parent)
 				.observe(() -> {
 					String toolResult;
 					try {
