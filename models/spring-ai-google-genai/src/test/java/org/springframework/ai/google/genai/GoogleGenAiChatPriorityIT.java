@@ -64,7 +64,7 @@ class GoogleGenAiChatPriorityIT {
 
 		var chatModel = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient)
-			.defaultOptions(GoogleGenAiChatOptions.builder()
+			.options(GoogleGenAiChatOptions.builder()
 				.model(GoogleGenAiChatModel.ChatModel.GEMINI_3_5_FLASH)
 				.serviceTier(tier)
 				.build())

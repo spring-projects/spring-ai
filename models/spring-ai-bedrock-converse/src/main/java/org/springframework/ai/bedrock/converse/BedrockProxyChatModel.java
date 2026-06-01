@@ -1126,8 +1126,8 @@ public class BedrockProxyChatModel implements ChatModel {
 
 			if (this.toolCallingManager != null) {
 				bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
-						this.bedrockRuntimeAsyncClient, this.options, this.observationRegistry,
-						this.toolCallingManager, this.toolExecutionEligibilityChecker);
+						this.bedrockRuntimeAsyncClient, this.options, this.observationRegistry, this.toolCallingManager,
+						this.toolExecutionEligibilityChecker);
 
 			}
 			else {

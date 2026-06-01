@@ -784,7 +784,7 @@ public class CreateGeminiRequestTests {
 	public void createRequestWithServiceTier() {
 		var client = GoogleGenAiChatModel.builder()
 			.genAiClient(this.genAiClient)
-			.defaultOptions(GoogleGenAiChatOptions.builder()
+			.options(GoogleGenAiChatOptions.builder()
 				.model("DEFAULT_MODEL")
 				.serviceTier(GoogleGenAiServiceTier.PRIORITY)
 				.build())

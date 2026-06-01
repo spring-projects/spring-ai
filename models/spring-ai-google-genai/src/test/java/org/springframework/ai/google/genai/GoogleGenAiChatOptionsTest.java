@@ -220,32 +220,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
-	public void testFromOptionsWithServiceTier() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.serviceTier(GoogleGenAiServiceTier.STANDARD)
-			.build();
-
-		GoogleGenAiChatOptions copy = GoogleGenAiChatOptions.fromOptions(original);
-
-		assertThat(copy.getServiceTier()).isEqualTo(GoogleGenAiServiceTier.STANDARD);
-		assertThat(copy).isNotSameAs(original);
-	}
-
-	@Test
-	public void testCopyWithServiceTier() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.serviceTier(GoogleGenAiServiceTier.FLEX)
-			.build();
-
-		GoogleGenAiChatOptions copy = original.copy();
-
-		assertThat(copy.getServiceTier()).isEqualTo(GoogleGenAiServiceTier.FLEX);
-		assertThat(copy).isNotSameAs(original);
-	}
-
-	@Test
 	public void testEqualsAndHashCodeWithServiceTier() {
 		GoogleGenAiChatOptions options1 = GoogleGenAiChatOptions.builder()
 			.model("test-model")

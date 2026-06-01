@@ -722,8 +722,8 @@ public class MistralAiChatModel implements ChatModel {
 
 		public MistralAiChatModel build() {
 			Assert.state(this.mistralAiApi != null, "MistralAiApi must not be null");
-			return new MistralAiChatModel(this.mistralAiApi, this.options, this.toolCallingManager,
-					this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityChecker);
+			return new MistralAiChatModel(this.mistralAiApi, this.options, this.toolCallingManager, this.retryTemplate,
+					this.observationRegistry, this.toolExecutionEligibilityChecker);
 		}
 
 	}

@@ -59,7 +59,7 @@ public class OpenAiFunctionCallbackIT {
 
 	@Test
 	void functionCallTest() {
-		this.contextRunner.withPropertyValues("spring.ai.openai.chat.temperature=0.1").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.openai.chat.temperature=1").run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
@@ -78,7 +78,7 @@ public class OpenAiFunctionCallbackIT {
 
 	@Test
 	void streamFunctionCallTest() {
-		this.contextRunner.withPropertyValues("spring.ai.openai.chat.temperature=0.1").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.openai.chat.temperature=1").run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
