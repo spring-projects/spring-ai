@@ -26,10 +26,10 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
-import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientAttributes;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
@@ -51,6 +51,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.ollama.api.OllamaApi;
@@ -62,10 +63,12 @@ import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.ai.util.ResourceUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.json.JsonContent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
 
@@ -73,6 +76,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 class OllamaChatModelIT extends BaseOllamaIT {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final String MODEL = OllamaModel.QWEN_2_5_3B.getName();
 
@@ -111,10 +116,18 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		UserMessage userMessage = new UserMessage("Tell me about 5 famous pirates from the Golden Age of Piracy.");
 
-		// ollama specific options
-		var ollamaOptions = OllamaChatOptions.builder().model(MODEL).lowVRAM(true).build();
+		// portable/generic options
+		var portableOptions = ChatOptions.builder().temperature(0.7).build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(List.of(systemMessage, userMessage), ollamaOptions));
+		Prompt prompt = new Prompt(List.of(systemMessage, userMessage), portableOptions);
+
+		ChatResponse response = this.chatModel.call(prompt);
+		verifyMostFamousPiratePresence(response);
+
+		// ollama specific options
+		var ollamaOptions = OllamaChatOptions.builder().lowVRAM(true).build();
+
+		response = this.chatModel.call(new Prompt(List.of(systemMessage, userMessage), ollamaOptions));
 		verifyMostFamousPiratePresence(response);
 	}
 
@@ -266,7 +279,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 				""");
 		Map<String, Object> model = Map.of("country", "denmark");
 		var prompt = userPromptTemplate.create(model,
-				OllamaChatOptions.builder().model(MODEL).format(outputConverter.getJsonSchemaMap()).build());
+				OllamaChatOptions.builder().format(outputConverter.getJsonSchemaMap()).build());
 
 		var chatResponse = this.chatModel.call(prompt);
 
@@ -281,17 +294,26 @@ class OllamaChatModelIT extends BaseOllamaIT {
 	@Test
 	void jsonStructuredOutputWithOutputSchemaOption() {
 		var jsonSchemaAsText = ResourceUtils.getText("classpath:country-json-schema.json");
-		var chatOptions = OllamaChatOptions.builder().model(MODEL).outputSchema(jsonSchemaAsText).build();
+		var chatOptions = OllamaChatOptions.builder().outputSchema(jsonSchemaAsText).build();
 		var prompt = new Prompt("Tell me about Canada.", chatOptions);
 
 		var chatResponse = this.chatModel.call(prompt);
 
-		var outputText = chatResponse.getResult().getOutput().getText();
-		Map<String, Object> map = JsonMapper.builder().build().readValue(outputText, Map.class);
-		assertThat(map).containsOnlyKeys("name", "capital", "languages")
-			.containsEntry("name", "Canada")
-			.containsEntry("capital", "Ottawa");
-		assertThat(map.get("languages")).asInstanceOf(InstanceOfAssertFactories.LIST).contains("English", "French");
+		var result = chatResponse.getResult();
+		assertThat(result).isNotNull();
+		var outputText = result.getOutput().getText();
+		assertThat(outputText).isNotNull();
+
+		// @formatter:off
+		assertThat(new JsonContent<>(getClass(), null, outputText))
+				.extractingJsonPathMapValue("$")
+				.containsOnlyKeys("name", "capital", "languages")
+				.containsEntry("name", "Canada")
+				.containsEntry("capital", "Ottawa")
+				.extracting("languages")
+				.asInstanceOf(InstanceOfAssertFactories.LIST)
+				.contains("English", "French");
+		// @formatter:on
 	}
 
 	@Test
@@ -304,20 +326,25 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		// Generate expected JSON schema as map for testing purpose
 		var expectedOutputSchemaMap = new BeanOutputConverter<>(ActorsFilmsRecord.class).getJsonSchemaMap();
 
-		// Advisor to verify that native structured output is being used
+		// Advisor to verify that native structured output is being used.
+		// The schema is passed via context to ChatModelCallAdvisor which applies it
+		// to a new ChatClientRequest - so we verify the context attributes here,
+		// not the prompt options (which are only modified inside ChatModelCallAdvisor).
 		var nativeStructuredOutputUsed = new AtomicBoolean(false);
 		var verifyNativeStructuredOutputAdvisor = new CallAdvisor() {
 			@Override
 			public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
-				var response = chain.nextCall(request);
-				var chatOptions = request.prompt().getOptions();
+				var nativeFlag = request.context().get(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey());
+				var schemaString = (String) request.context()
+					.get(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey());
 
-				if (chatOptions instanceof OllamaChatOptions ollamaChatOptions
-						&& ollamaChatOptions.getFormat() instanceof Map<?, ?> format
-						&& expectedOutputSchemaMap.equals(format)) {
-					nativeStructuredOutputUsed.set(true);
+				if (Boolean.TRUE.equals(nativeFlag) && schemaString != null) {
+					var actualSchemaMap = jsonHelper.fromJsonToMap(schemaString);
+					if (expectedOutputSchemaMap.equals(actualSchemaMap)) {
+						nativeStructuredOutputUsed.set(true);
+					}
 				}
-				return response;
+				return chain.nextCall(request);
 			}
 
 			@Override
@@ -377,8 +404,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
 		String conversationId = UUID.randomUUID().toString();
 
-		ChatOptions chatOptions = OllamaChatOptions.builder()
-			.model(MODEL)
+		ChatOptions chatOptions = ToolCallingChatOptions.builder()
 			.toolCallbacks(ToolCallbacks.from(new MathTools()))
 			.internalToolExecutionEnabled(false)
 			.build();

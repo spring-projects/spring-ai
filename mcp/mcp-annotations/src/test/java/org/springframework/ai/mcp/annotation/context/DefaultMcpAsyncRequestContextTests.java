@@ -39,7 +39,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import tools.jackson.core.type.TypeReference;
+
+import org.springframework.core.ParameterizedTypeReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -51,6 +52,7 @@ import static org.mockito.Mockito.when;
  * Tests for {@link DefaultMcpAsyncRequestContext}.
  *
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 public class DefaultMcpAsyncRequestContextTests {
 
@@ -158,7 +160,7 @@ public class DefaultMcpAsyncRequestContextTests {
 		when(this.exchange.createElicitation(any(ElicitRequest.class))).thenReturn(Mono.just(expectedResult));
 
 		Mono<StructuredElicitResult<Map<String, Object>>> result = this.context.elicit(e -> e.message("Test message"),
-				new TypeReference<Map<String, Object>>() {
+				new ParameterizedTypeReference<Map<String, Object>>() {
 				});
 
 		StepVerifier.create(result).assertNext(structuredResult -> {
@@ -195,7 +197,7 @@ public class DefaultMcpAsyncRequestContextTests {
 
 		Map<String, Object> meta = Map.of("key", "value");
 		Mono<StructuredElicitResult<Person>> result = this.context.elicit(e -> e.message("Test message").meta(meta),
-				new TypeReference<Person>() {
+				new ParameterizedTypeReference<Person>() {
 				});
 
 		StepVerifier.create(result).assertNext(structuredResult -> {
@@ -215,7 +217,7 @@ public class DefaultMcpAsyncRequestContextTests {
 	@Test
 	public void testElicitationWithNullTypeReference() {
 		assertThat(org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
-				() -> this.context.elicit((TypeReference<?>) null)))
+				() -> this.context.elicit((ParameterizedTypeReference<?>) null)))
 			.hasMessageContaining("Elicitation response type must not be null");
 	}
 
@@ -229,7 +231,7 @@ public class DefaultMcpAsyncRequestContextTests {
 	@Test
 	public void testElicitationWithEmptyMessage() {
 		assertThat(org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> {
-			this.context.elicit(e -> e.message("").meta(null), new TypeReference<String>() {
+			this.context.elicit(e -> e.message("").meta(null), new ParameterizedTypeReference<String>() {
 			});
 		})).hasMessageContaining("Elicitation message must not be empty");
 	}
@@ -237,7 +239,7 @@ public class DefaultMcpAsyncRequestContextTests {
 	@Test
 	public void testElicitationWithNullMessage() {
 		assertThat(org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> {
-			this.context.elicit(e -> e.message(null).meta(null), new TypeReference<String>() {
+			this.context.elicit(e -> e.message(null).meta(null), new ParameterizedTypeReference<String>() {
 			});
 		})).hasMessageContaining("Elicitation message must not be empty");
 	}
@@ -246,9 +248,9 @@ public class DefaultMcpAsyncRequestContextTests {
 	public void testElicitationReturnsEmptyWhenNotSupported() {
 		when(this.exchange.getClientCapabilities()).thenReturn(null);
 
-		StepVerifier
-			.create(this.context.elicit(e -> e.message("Test message"), new TypeReference<Map<String, Object>>() {
-			}))
+		StepVerifier.create(this.context.elicit(e -> e.message("Test message"),
+				new ParameterizedTypeReference<Map<String, Object>>() {
+				}))
 			.verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
 				.hasMessageContaining("Elicitation not supported by the client"));
 	}
@@ -268,7 +270,7 @@ public class DefaultMcpAsyncRequestContextTests {
 		when(this.exchange.createElicitation(any(ElicitRequest.class))).thenReturn(Mono.just(expectedResult));
 
 		Mono<StructuredElicitResult<Map<String, Object>>> result = this.context.elicit(e -> e.message("Test message"),
-				new TypeReference<Map<String, Object>>() {
+				new ParameterizedTypeReference<Map<String, Object>>() {
 				});
 
 		StepVerifier.create(result).assertNext(structuredResult -> {
@@ -298,7 +300,7 @@ public class DefaultMcpAsyncRequestContextTests {
 		when(this.exchange.createElicitation(any(ElicitRequest.class))).thenReturn(Mono.just(expectedResult));
 
 		Mono<StructuredElicitResult<PersonWithAddress>> result = this.context.elicit(e -> e.message("Test message"),
-				new TypeReference<PersonWithAddress>() {
+				new ParameterizedTypeReference<PersonWithAddress>() {
 				});
 
 		StepVerifier.create(result).assertNext(structuredResult -> {
@@ -328,7 +330,7 @@ public class DefaultMcpAsyncRequestContextTests {
 		when(this.exchange.createElicitation(any(ElicitRequest.class))).thenReturn(Mono.just(expectedResult));
 
 		Mono<StructuredElicitResult<Map<String, Object>>> result = this.context.elicit(e -> e.message("Test message"),
-				new TypeReference<Map<String, Object>>() {
+				new ParameterizedTypeReference<Map<String, Object>>() {
 				});
 
 		StepVerifier.create(result)
@@ -350,7 +352,7 @@ public class DefaultMcpAsyncRequestContextTests {
 		when(this.exchange.createElicitation(any(ElicitRequest.class))).thenReturn(Mono.just(expectedResult));
 
 		Mono<StructuredElicitResult<Map<String, Object>>> result = this.context
-			.elicit(new TypeReference<Map<String, Object>>() {
+			.elicit(new ParameterizedTypeReference<Map<String, Object>>() {
 			});
 
 		StepVerifier.create(result).assertNext(map -> {

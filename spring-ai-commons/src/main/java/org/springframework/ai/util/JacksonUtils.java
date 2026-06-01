@@ -18,22 +18,50 @@ package org.springframework.ai.util;
 
 import java.util.List;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JacksonModule;
 import tools.jackson.databind.cfg.MapperBuilder;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Utility methods for Jackson.
+ *
+ * <p>
+ * The default {@link JsonMapper} returned by {@link #getDefaultJsonMapper} can be
+ * customized via the automatic discovery of services of type {@link JacksonModule} by JDK
+ * {@link java.util.ServiceLoader} facility.
  *
  * @author Sebastien Deleuze
  */
 public abstract class JacksonUtils {
 
+	private static final JsonMapper jsonMapper;
+
+	static {
+		jsonMapper = JsonMapper.builder()
+			.disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+			.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT)
+			.addModules(JacksonUtils.instantiateAvailableModules())
+			.build();
+	}
+
 	/**
-	 * Return the Jackson modules found by {@link MapperBuilder#findModules(ClassLoader)}.
+	 * Return the Jackson modules found by {@link MapperBuilder#findModules(ClassLoader)}
+	 * using JDK {@link java.util.ServiceLoader} facility.
 	 * @return The list of instantiated modules.
 	 */
 	public static List<JacksonModule> instantiateAvailableModules() {
 		return MapperBuilder.findModules(JacksonUtils.class.getClassLoader());
+	}
+
+	/**
+	 * Returns a default Jackson {@link JsonMapper} instance customized with
+	 * {@link DeserializationFeature#FAIL_ON_TRAILING_TOKENS} disabled and the Jackson
+	 * modules found by {@link #instantiateAvailableModules} configured.
+	 * @since 2.0.0
+	 */
+	public static JsonMapper getDefaultJsonMapper() {
+		return jsonMapper;
 	}
 
 }

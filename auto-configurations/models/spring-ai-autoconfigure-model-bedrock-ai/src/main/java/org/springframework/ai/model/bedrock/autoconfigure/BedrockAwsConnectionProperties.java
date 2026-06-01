@@ -18,6 +18,8 @@ package org.springframework.ai.model.bedrock.autoconfigure;
 
 import java.time.Duration;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -41,25 +43,25 @@ public class BedrockAwsConnectionProperties {
 	/**
 	 * AWS access key.
 	 */
-	private String accessKey;
+	private @Nullable String accessKey;
 
 	/**
 	 * AWS secret key.
 	 */
-	private String secretKey;
+	private @Nullable String secretKey;
 
 	/**
 	 * AWS session token. (optional) When provided the AwsSessionCredentials are used.
 	 * Otherwise, the AwsBasicCredentials are used.
 	 */
-	private String sessionToken;
+	private @Nullable String sessionToken;
 
 	/**
 	 * Aws profile. (optional) When the {@link #accessKey} and {@link #secretKey} are not
 	 * declared. Otherwise, the AwsBasicCredentials are used.
 	 */
 	@NestedConfigurationProperty
-	private ProfileProperties profile;
+	private @Nullable ProfileProperties profile;
 
 	/**
 	 * Maximum duration of the entire API call operation.
@@ -94,19 +96,19 @@ public class BedrockAwsConnectionProperties {
 		this.region = awsRegion;
 	}
 
-	public String getAccessKey() {
+	public @Nullable String getAccessKey() {
 		return this.accessKey;
 	}
 
-	public void setAccessKey(String accessKey) {
+	public void setAccessKey(@Nullable String accessKey) {
 		this.accessKey = accessKey;
 	}
 
-	public String getSecretKey() {
+	public @Nullable String getSecretKey() {
 		return this.secretKey;
 	}
 
-	public void setSecretKey(String secretKey) {
+	public void setSecretKey(@Nullable String secretKey) {
 		this.secretKey = secretKey;
 	}
 
@@ -150,19 +152,19 @@ public class BedrockAwsConnectionProperties {
 		this.socketTimeout = socketTimeout;
 	}
 
-	public String getSessionToken() {
+	public @Nullable String getSessionToken() {
 		return this.sessionToken;
 	}
 
-	public void setSessionToken(String sessionToken) {
+	public void setSessionToken(@Nullable String sessionToken) {
 		this.sessionToken = sessionToken;
 	}
 
-	public ProfileProperties getProfile() {
+	public @Nullable ProfileProperties getProfile() {
 		return this.profile;
 	}
 
-	public void setProfile(ProfileProperties profile) {
+	public void setProfile(@Nullable ProfileProperties profile) {
 		this.profile = profile;
 	}
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.chat.memory.repository.redis;
 
 import java.util.List;
@@ -29,8 +30,6 @@ import redis.clients.jedis.JedisPooled;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 
@@ -41,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Demonstrates how to properly index metadata fields with appropriate types.
  *
  * @author Brian Sam-Bodden
+ * @author Yanming Zhou
  */
 @Testcontainers
 class RedisChatMemoryWithSchemaIT {
@@ -57,7 +57,7 @@ class RedisChatMemoryWithSchemaIT {
 
 	@BeforeEach
 	void setUp() {
-		jedisClient = new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort());
+		this.jedisClient = new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort());
 
 		// Define metadata schema for proper indexing
 		List<Map<String, String>> metadataFields = List.of(Map.of("name", "priority", "type", "tag"),
@@ -67,20 +67,20 @@ class RedisChatMemoryWithSchemaIT {
 		// Use a unique index name to ensure we get a fresh schema
 		String uniqueIndexName = "test-schema-" + System.currentTimeMillis();
 
-		chatMemory = RedisChatMemoryRepository.builder()
-			.jedisClient(jedisClient)
+		this.chatMemory = RedisChatMemoryRepository.builder()
+			.jedisClient(this.jedisClient)
 			.indexName(uniqueIndexName)
 			.metadataFields(metadataFields)
 			.build();
 
 		// Clear existing test data
-		chatMemory.findConversationIds().forEach(chatMemory::clear);
+		this.chatMemory.findConversationIds().forEach(this.chatMemory::clear);
 	}
 
 	@AfterEach
 	void tearDown() {
-		if (jedisClient != null) {
-			jedisClient.close();
+		if (this.jedisClient != null) {
+			this.jedisClient.close();
 		}
 	}
 
@@ -106,48 +106,48 @@ class RedisChatMemoryWithSchemaIT {
 			userMsg2.getMetadata().put("score", 75);
 
 			// Add messages
-			chatMemory.add(conversationId, userMsg1);
-			chatMemory.add(conversationId, assistantMsg);
-			chatMemory.add(conversationId, userMsg2);
+			this.chatMemory.add(conversationId, userMsg1);
+			this.chatMemory.add(conversationId, assistantMsg);
+			this.chatMemory.add(conversationId, userMsg2);
 
 			// Give Redis time to index the documents
 			Thread.sleep(100);
 
 			// Test finding by tag metadata (priority)
-			List<AdvancedRedisChatMemoryRepository.MessageWithConversation> highPriorityMessages = ((AdvancedRedisChatMemoryRepository) chatMemory)
+			List<AdvancedRedisChatMemoryRepository.MessageWithConversation> highPriorityMessages = ((AdvancedRedisChatMemoryRepository) this.chatMemory)
 				.findByMetadata("priority", "high", 10);
 
 			assertThat(highPriorityMessages).hasSize(1);
 			assertThat(highPriorityMessages.get(0).message().getText()).isEqualTo("High priority task");
 
 			// Test finding by tag metadata (category)
-			List<AdvancedRedisChatMemoryRepository.MessageWithConversation> taskMessages = ((AdvancedRedisChatMemoryRepository) chatMemory)
+			List<AdvancedRedisChatMemoryRepository.MessageWithConversation> taskMessages = ((AdvancedRedisChatMemoryRepository) this.chatMemory)
 				.findByMetadata("category", "task", 10);
 
 			assertThat(taskMessages).hasSize(1);
 
 			// Test finding by numeric metadata (score)
-			List<AdvancedRedisChatMemoryRepository.MessageWithConversation> highScoreMessages = ((AdvancedRedisChatMemoryRepository) chatMemory)
+			List<AdvancedRedisChatMemoryRepository.MessageWithConversation> highScoreMessages = ((AdvancedRedisChatMemoryRepository) this.chatMemory)
 				.findByMetadata("score", 95, 10);
 
 			assertThat(highScoreMessages).hasSize(1);
 			assertThat(highScoreMessages.get(0).message().getMetadata().get("score")).isEqualTo(95.0);
 
 			// Test finding by numeric metadata (confidence)
-			List<AdvancedRedisChatMemoryRepository.MessageWithConversation> confidentMessages = ((AdvancedRedisChatMemoryRepository) chatMemory)
+			List<AdvancedRedisChatMemoryRepository.MessageWithConversation> confidentMessages = ((AdvancedRedisChatMemoryRepository) this.chatMemory)
 				.findByMetadata("confidence", 0.95, 10);
 
 			assertThat(confidentMessages).hasSize(1);
 			assertThat(confidentMessages.get(0).message().getMetadata().get("model")).isEqualTo("gpt-4");
 
 			// Test with non-existent metadata key (not in schema)
-			List<AdvancedRedisChatMemoryRepository.MessageWithConversation> nonExistentMessages = ((AdvancedRedisChatMemoryRepository) chatMemory)
+			List<AdvancedRedisChatMemoryRepository.MessageWithConversation> nonExistentMessages = ((AdvancedRedisChatMemoryRepository) this.chatMemory)
 				.findByMetadata("nonexistent", "value", 10);
 
 			assertThat(nonExistentMessages).isEmpty();
 
 			// Clean up
-			chatMemory.clear(conversationId);
+			this.chatMemory.clear(conversationId);
 		});
 	}
 
@@ -161,29 +161,28 @@ class RedisChatMemoryWithSchemaIT {
 			userMsg.getMetadata().put("customField", "customValue");
 			userMsg.getMetadata().put("priority", "medium"); // This is defined in schema
 
-			chatMemory.add(conversationId, userMsg);
+			this.chatMemory.add(conversationId, userMsg);
 
 			// Defined field should work with exact match
-			List<AdvancedRedisChatMemoryRepository.MessageWithConversation> priorityMessages = ((AdvancedRedisChatMemoryRepository) chatMemory)
+			List<AdvancedRedisChatMemoryRepository.MessageWithConversation> priorityMessages = ((AdvancedRedisChatMemoryRepository) this.chatMemory)
 				.findByMetadata("priority", "medium", 10);
 
 			assertThat(priorityMessages).hasSize(1);
 
 			// Undefined field will fall back to text search in general metadata
 			// This may or may not find the message depending on how the text is indexed
-			List<AdvancedRedisChatMemoryRepository.MessageWithConversation> customMessages = ((AdvancedRedisChatMemoryRepository) chatMemory)
+			List<AdvancedRedisChatMemoryRepository.MessageWithConversation> customMessages = ((AdvancedRedisChatMemoryRepository) this.chatMemory)
 				.findByMetadata("customField", "customValue", 10);
 
 			// The result depends on whether the general metadata text field caught this
 			// In practice, users should define all metadata fields they want to search on
 
 			// Clean up
-			chatMemory.clear(conversationId);
+			this.chatMemory.clear(conversationId);
 		});
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
 	static class TestApplication {
 
 		@Bean

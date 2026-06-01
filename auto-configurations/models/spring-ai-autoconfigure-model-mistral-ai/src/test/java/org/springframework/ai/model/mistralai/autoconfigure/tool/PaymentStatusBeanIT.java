@@ -56,7 +56,7 @@ class PaymentStatusBeanIT {
 	private final Logger logger = LoggerFactory.getLogger(PaymentStatusBeanIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.mistralai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"))
+		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(MistralAiChatAutoConfiguration.class,
 				RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
 				ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class))
@@ -66,8 +66,7 @@ class PaymentStatusBeanIT {
 	void functionCallTest() {
 
 		this.contextRunner
-			.withPropertyValues(
-					"spring.ai.mistralai.chat.options.model=" + MistralAiApi.ChatModel.MISTRAL_LARGE.getValue())
+			.withPropertyValues("spring.ai.mistralai.chat.model=" + MistralAiApi.ChatModel.MISTRAL_LARGE.getValue())
 			.run(context -> {
 
 				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);

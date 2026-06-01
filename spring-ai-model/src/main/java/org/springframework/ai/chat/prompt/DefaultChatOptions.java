@@ -48,7 +48,7 @@ public class DefaultChatOptions implements ChatOptions {
 		// TODO remove
 	}
 
-	/* private */ /* TODO move builder as an inner class */ DefaultChatOptions(@Nullable String model,
+	protected /* TODO move builder as an inner class */ DefaultChatOptions(@Nullable String model,
 			@Nullable Double frequencyPenalty, @Nullable Integer maxTokens, @Nullable Double presencePenalty,
 			@Nullable List<String> stopSequences, @Nullable Double temperature, @Nullable Integer topK,
 			@Nullable Double topP) {
@@ -67,17 +67,9 @@ public class DefaultChatOptions implements ChatOptions {
 		return this.model;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
-	}
-
 	@Override
 	public @Nullable Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
-	}
-
-	public void setFrequencyPenalty(Double frequencyPenalty) {
-		this.frequencyPenalty = frequencyPenalty;
 	}
 
 	@Override
@@ -85,17 +77,9 @@ public class DefaultChatOptions implements ChatOptions {
 		return this.maxTokens;
 	}
 
-	public void setMaxTokens(Integer maxTokens) {
-		this.maxTokens = maxTokens;
-	}
-
 	@Override
 	public @Nullable Double getPresencePenalty() {
 		return this.presencePenalty;
-	}
-
-	public void setPresencePenalty(Double presencePenalty) {
-		this.presencePenalty = presencePenalty;
 	}
 
 	@Override
@@ -103,17 +87,9 @@ public class DefaultChatOptions implements ChatOptions {
 		return this.stopSequences != null ? Collections.unmodifiableList(this.stopSequences) : null;
 	}
 
-	public void setStopSequences(List<String> stopSequences) {
-		this.stopSequences = stopSequences;
-	}
-
 	@Override
 	public @Nullable Double getTemperature() {
 		return this.temperature;
-	}
-
-	public void setTemperature(Double temperature) {
-		this.temperature = temperature;
 	}
 
 	@Override
@@ -121,17 +97,9 @@ public class DefaultChatOptions implements ChatOptions {
 		return this.topK;
 	}
 
-	public void setTopK(Integer topK) {
-		this.topK = topK;
-	}
-
 	@Override
 	public @Nullable Double getTopP() {
 		return this.topP;
-	}
-
-	public void setTopP(Double topP) {
-		this.topP = topP;
 	}
 
 	@Override
@@ -154,7 +122,7 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}

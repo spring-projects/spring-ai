@@ -30,12 +30,6 @@
 	<description>Spring AI Tika document reader</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<scm>
-		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
-	</scm>
-
 	<properties>
 		<tika.version>3.3.0</tika.version>
 	</properties>
@@ -58,7 +52,6 @@
 			<artifactId>tika-parsers-standard-package</artifactId>
 			<version>${tika.version}</version>
 		</dependency>
-
 
 		<!-- TESTING -->
 		<dependency>

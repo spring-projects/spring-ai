@@ -38,11 +38,10 @@ import io.modelcontextprotocol.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
-import tools.jackson.core.type.TypeReference;
 
-import org.springframework.ai.mcp.annotation.method.tool.utils.McpJsonParser;
 import org.springframework.ai.mcp.annotation.method.tool.utils.McpJsonSchemaGenerator;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.ConcurrentReferenceHashMap;
 
 /**
@@ -50,15 +49,15 @@ import org.springframework.util.ConcurrentReferenceHashMap;
  * types.
  *
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 public final class DefaultMcpAsyncRequestContext implements McpAsyncRequestContext {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final Logger logger = LoggerFactory.getLogger(DefaultMcpAsyncRequestContext.class);
 
 	private static final Map<Type, Map<String, Object>> typeSchemaCache = new ConcurrentReferenceHashMap<>(256);
-
-	private static TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<Map<String, Object>>() {
-	};
 
 	private final McpSchema.Request request;
 
@@ -99,13 +98,14 @@ public final class DefaultMcpAsyncRequestContext implements McpAsyncRequestConte
 	}
 
 	@Override
-	public <T> Mono<StructuredElicitResult<T>> elicit(Consumer<ElicitationSpec> spec, TypeReference<T> type) {
+	public <T> Mono<StructuredElicitResult<T>> elicit(Consumer<ElicitationSpec> spec,
+			ParameterizedTypeReference<T> type) {
 		Assert.notNull(type, "Elicitation response type must not be null");
 		Assert.notNull(spec, "Elicitation spec consumer must not be null");
 		DefaultElicitationSpec elicitationSpec = new DefaultElicitationSpec();
 		spec.accept(elicitationSpec);
 		return this.elicitationInternal(elicitationSpec.message, type.getType(), elicitationSpec.meta)
-			.map(er -> new StructuredElicitResult<T>(er.action(), McpJsonParser.fromMap(er.content(), type),
+			.map(er -> new StructuredElicitResult<T>(er.action(), jsonHelper.convertFromMap(er.content(), type),
 					er.meta()));
 	}
 
@@ -116,15 +116,15 @@ public final class DefaultMcpAsyncRequestContext implements McpAsyncRequestConte
 		DefaultElicitationSpec elicitationSpec = new DefaultElicitationSpec();
 		spec.accept(elicitationSpec);
 		return this.elicitationInternal(elicitationSpec.message, type, elicitationSpec.meta)
-			.map(er -> new StructuredElicitResult<T>(er.action(), McpJsonParser.fromMap(er.content(), type),
+			.map(er -> new StructuredElicitResult<T>(er.action(), jsonHelper.convertFromMap(er.content(), type),
 					er.meta()));
 	}
 
 	@Override
-	public <T> Mono<StructuredElicitResult<T>> elicit(TypeReference<T> type) {
+	public <T> Mono<StructuredElicitResult<T>> elicit(ParameterizedTypeReference<T> type) {
 		Assert.notNull(type, "Elicitation response type must not be null");
 		return this.elicitationInternal("Please provide the required information.", type.getType(), null)
-			.map(er -> new StructuredElicitResult<T>(er.action(), McpJsonParser.fromMap(er.content(), type),
+			.map(er -> new StructuredElicitResult<T>(er.action(), jsonHelper.convertFromMap(er.content(), type),
 					er.meta()));
 	}
 
@@ -132,7 +132,7 @@ public final class DefaultMcpAsyncRequestContext implements McpAsyncRequestConte
 	public <T> Mono<StructuredElicitResult<T>> elicit(Class<T> type) {
 		Assert.notNull(type, "Elicitation response type must not be null");
 		return this.elicitationInternal("Please provide the required information.", type, null)
-			.map(er -> new StructuredElicitResult<T>(er.action(), McpJsonParser.fromMap(er.content(), type),
+			.map(er -> new StructuredElicitResult<T>(er.action(), jsonHelper.convertFromMap(er.content(), type),
 					er.meta()));
 	}
 
@@ -162,7 +162,7 @@ public final class DefaultMcpAsyncRequestContext implements McpAsyncRequestConte
 	}
 
 	private Map<String, Object> generateElicitSchema(Type type) {
-		Map<String, Object> schema = JsonParser.fromJson(McpJsonSchemaGenerator.generateFromType(type), MAP_TYPE_REF);
+		Map<String, Object> schema = jsonHelper.fromJsonToMap(McpJsonSchemaGenerator.generateFromType(type));
 		// remove as elicitation schema does not support it
 		schema.remove("$schema");
 		return schema;

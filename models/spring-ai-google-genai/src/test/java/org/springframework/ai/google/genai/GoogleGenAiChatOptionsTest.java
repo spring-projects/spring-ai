@@ -21,6 +21,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions.Builder;
+import org.springframework.ai.google.genai.common.GoogleGenAiServiceTier;
 import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
 
@@ -42,19 +43,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	@SuppressWarnings("unchecked")
 	protected Builder readyToBuildBuilder() {
 		return GoogleGenAiChatOptions.builder();
-	}
-
-	@Test
-	public void testThinkingBudgetGetterSetter() {
-		GoogleGenAiChatOptions options = new GoogleGenAiChatOptions();
-
-		assertThat(options.getThinkingBudget()).isNull();
-
-		options.setThinkingBudget(12853);
-		assertThat(options.getThinkingBudget()).isEqualTo(12853);
-
-		options.setThinkingBudget(null);
-		assertThat(options.getThinkingBudget()).isNull();
 	}
 
 	@Test
@@ -145,30 +133,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
-	public void testToStringWithThinkingBudget() {
-		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.thinkingBudget(12853)
-			.build();
-
-		String toString = options.toString();
-		assertThat(toString).contains("thinkingBudget=12853");
-		assertThat(toString).contains("test-model");
-	}
-
-	@Test
-	public void testToStringWithLabels() {
-		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.labels(Map.of("org", "my-org"))
-			.build();
-
-		String toString = options.toString();
-		assertThat(toString).contains("labels={org=my-org}");
-		assertThat(toString).contains("test-model");
-	}
-
-	@Test
 	public void testThinkingBudgetWithZeroValue() {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().thinkingBudget(0).build();
 
@@ -180,22 +144,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().labels(Map.of()).build();
 
 		assertThat(options.getLabels()).isEmpty();
-	}
-
-	@Test
-	public void testThinkingLevelGetterSetter() {
-		GoogleGenAiChatOptions options = new GoogleGenAiChatOptions();
-
-		assertThat(options.getThinkingLevel()).isNull();
-
-		options.setThinkingLevel(GoogleGenAiThinkingLevel.HIGH);
-		assertThat(options.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.HIGH);
-
-		options.setThinkingLevel(GoogleGenAiThinkingLevel.LOW);
-		assertThat(options.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.LOW);
-
-		options.setThinkingLevel(null);
-		assertThat(options.getThinkingLevel()).isNull();
 	}
 
 	@Test
@@ -258,17 +206,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
-	public void testToStringWithThinkingLevel() {
-		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
-			.build();
-
-		String toString = options.toString();
-		assertThat(toString).contains("thinkingLevel=HIGH");
-	}
-
-	@Test
 	public void testThinkingLevelWithBudgetAndIncludeThoughts() {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
 			.model("test-model")
@@ -292,19 +229,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 				.build();
 			assertThat(options.getThinkingLevel()).isEqualTo(level);
 		}
-	}
-
-	@Test
-	public void testIncludeServerSideToolInvocationsGetterSetter() {
-		GoogleGenAiChatOptions options = new GoogleGenAiChatOptions();
-
-		assertThat(options.getIncludeServerSideToolInvocations()).isFalse();
-
-		options.setIncludeServerSideToolInvocations(true);
-		assertThat(options.getIncludeServerSideToolInvocations()).isTrue();
-
-		options.setIncludeServerSideToolInvocations(false);
-		assertThat(options.getIncludeServerSideToolInvocations()).isFalse();
 	}
 
 	@Test
@@ -367,14 +291,62 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
-	public void testToStringWithIncludeServerSideToolInvocations() {
+	public void testServiceTierWithBuilder() {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
 			.model("test-model")
-			.includeServerSideToolInvocations(true)
+			.serviceTier(GoogleGenAiServiceTier.PRIORITY)
 			.build();
 
-		String toString = options.toString();
-		assertThat(toString).contains("includeServerSideToolInvocations=true");
+		assertThat(options.getModel()).isEqualTo("test-model");
+		assertThat(options.getServiceTier()).isEqualTo(GoogleGenAiServiceTier.PRIORITY);
+	}
+
+	@Test
+	public void testFromOptionsWithServiceTier() {
+		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier(GoogleGenAiServiceTier.STANDARD)
+			.build();
+
+		GoogleGenAiChatOptions copy = GoogleGenAiChatOptions.fromOptions(original);
+
+		assertThat(copy.getServiceTier()).isEqualTo(GoogleGenAiServiceTier.STANDARD);
+		assertThat(copy).isNotSameAs(original);
+	}
+
+	@Test
+	public void testCopyWithServiceTier() {
+		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier(GoogleGenAiServiceTier.FLEX)
+			.build();
+
+		GoogleGenAiChatOptions copy = original.copy();
+
+		assertThat(copy.getServiceTier()).isEqualTo(GoogleGenAiServiceTier.FLEX);
+		assertThat(copy).isNotSameAs(original);
+	}
+
+	@Test
+	public void testEqualsAndHashCodeWithServiceTier() {
+		GoogleGenAiChatOptions options1 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier(GoogleGenAiServiceTier.PRIORITY)
+			.build();
+
+		GoogleGenAiChatOptions options2 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier(GoogleGenAiServiceTier.PRIORITY)
+			.build();
+
+		GoogleGenAiChatOptions options3 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier(GoogleGenAiServiceTier.STANDARD)
+			.build();
+
+		assertThat(options1).isEqualTo(options2);
+		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
+		assertThat(options1).isNotEqualTo(options3);
 	}
 
 }

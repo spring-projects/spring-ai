@@ -152,6 +152,7 @@ import org.springframework.util.StringUtils;
  * @author Jihoon Kim
  * @author YeongMin Song
  * @author Jonghoon Park
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 public class PgVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -336,10 +337,9 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	@Override
 	protected void doDelete(Filter.Expression filterExpression) {
-		String nativeFilterExpression = this.filterExpressionConverter.convertExpression(filterExpression);
+		String filterClause = this.filterExpressionConverter.convertExpression(filterExpression);
 
-		String sql = "DELETE FROM " + getFullyQualifiedTableName() + " WHERE metadata::jsonb @@ '"
-				+ nativeFilterExpression + "'::jsonpath";
+		String sql = "DELETE FROM " + getFullyQualifiedTableName() + " WHERE " + filterClause;
 
 		// Execute the delete
 		try {
@@ -359,7 +359,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		String jsonPathFilter = "";
 
 		if (StringUtils.hasText(nativeFilterExpression)) {
-			jsonPathFilter = " AND metadata::jsonb @@ '" + nativeFilterExpression + "'::jsonpath ";
+			jsonPathFilter = " AND " + nativeFilterExpression + " ";
 		}
 
 		double distance = 1 - request.getSimilarityThreshold();
@@ -406,7 +406,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		logger.info("vectorTableValidationsEnabled {}", this.schemaValidation);
 
 		if (this.schemaValidation) {
-			this.schemaValidator.validateTableSchema(this.getSchemaName(), this.getVectorTableName());
+			this.schemaValidator.validateTableSchema(this.getSchemaName(), this.getVectorTableName(), this.dimensions);
 		}
 
 		if (!this.initializeSchema) {

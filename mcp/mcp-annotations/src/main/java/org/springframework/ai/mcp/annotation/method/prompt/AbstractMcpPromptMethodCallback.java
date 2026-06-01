@@ -348,7 +348,7 @@ public abstract class AbstractMcpPromptMethodCallback {
 					List<PromptMessage> messages = ((List<String>) list).stream()
 						.map(text -> new PromptMessage(io.modelcontextprotocol.spec.McpSchema.Role.ASSISTANT,
 								new io.modelcontextprotocol.spec.McpSchema.TextContent(text)))
-						.collect(java.util.stream.Collectors.toList());
+						.toList();
 					return new GetPromptResult(null, messages);
 				}
 			}

@@ -16,6 +16,8 @@
 
 package org.springframework.ai.tool.augment;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.tool.definition.ToolDefinition;
 
 /**
@@ -28,5 +30,5 @@ import org.springframework.ai.tool.definition.ToolDefinition;
  * @param arguments The augmented arguments extracted from the input.
  * @author Christian Tzolov
  */
-public record AugmentedArgumentEvent<T>(ToolDefinition toolDefinition, String rawInput, T arguments) {
+public record AugmentedArgumentEvent<T>(ToolDefinition toolDefinition, String rawInput, @Nullable T arguments) {
 }

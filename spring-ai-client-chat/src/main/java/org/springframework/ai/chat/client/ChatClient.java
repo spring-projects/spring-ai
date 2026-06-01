@@ -18,6 +18,7 @@ package org.springframework.ai.chat.client;
 
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -26,7 +27,9 @@ import io.micrometer.observation.ObservationRegistry;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.client.advisor.api.ToolAdvisor;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.messages.Message;
@@ -82,10 +85,19 @@ public interface ChatClient {
 	static Builder builder(ChatModel chatModel, ObservationRegistry observationRegistry,
 			@Nullable ChatClientObservationConvention chatClientObservationConvention,
 			@Nullable AdvisorObservationConvention advisorObservationConvention) {
+		return builder(chatModel, observationRegistry, chatClientObservationConvention, advisorObservationConvention,
+				null);
+	}
+
+	static Builder builder(ChatModel chatModel, ObservationRegistry observationRegistry,
+			@Nullable ChatClientObservationConvention chatClientObservationConvention,
+			@Nullable AdvisorObservationConvention advisorObservationConvention,
+			ToolCallAdvisor.@Nullable Builder<?> toolCallAdvisorBuilder) {
 		Assert.notNull(chatModel, "chatModel cannot be null");
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
+
 		return new DefaultChatClientBuilder(chatModel, observationRegistry, chatClientObservationConvention,
-				advisorObservationConvention);
+				advisorObservationConvention, toolCallAdvisorBuilder);
 	}
 
 	ChatClientRequestSpec prompt();
@@ -158,12 +170,86 @@ public interface ChatClient {
 
 	}
 
+	/**
+	 * Configures optional behaviour for {@code entity(...)} calls. Options may be
+	 * combined.
+	 */
+	interface EntityParamSpec {
+
+		/**
+		 * Delivers the JSON schema to the AI provider as an API-level constraint rather
+		 * than appending it as prompt text. Has no effect if the underlying
+		 * {@link org.springframework.ai.chat.model.ChatModel} does not support
+		 * {@link org.springframework.ai.model.tool.StructuredOutputChatOptions}.
+		 */
+		EntityParamSpec useProviderStructuredOutput();
+
+		/**
+		 * Validates the model's JSON response against the entity schema and retries with
+		 * the error feedback on failure, up to {@code maxRepeatAttempts} times (default:
+		 * 3). Streaming is not supported.
+		 */
+		EntityParamSpec validateSchema();
+
+	}
+
 	interface CallResponseSpec {
 
+		/**
+		 * Deserializes the response into a {@code T} instance, with behaviour configured
+		 * via the {@code entityParamSpecConsumer}.
+		 * @param type the target parameterized type
+		 * @param entityParamSpecConsumer configures options such as
+		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
+		 * {@link EntityParamSpec#validateSchema()}
+		 * @return the deserialized entity, or {@code null} if the response is empty
+		 */
+		<T> @Nullable T entity(ParameterizedTypeReference<T> type, Consumer<EntityParamSpec> entityParamSpecConsumer);
+
+		/**
+		 * Deserializes the response into a {@code T} instance.
+		 * @param type the target parameterized type
+		 * @return the deserialized entity, or {@code null} if the response is empty
+		 */
 		<T> @Nullable T entity(ParameterizedTypeReference<T> type);
 
+		/**
+		 * Deserializes the response using the given converter, with behaviour configured
+		 * via the {@code entityParamSpecConsumer}.
+		 * @param structuredOutputConverter the converter for parsing and schema
+		 * resolution
+		 * @param entityParamSpecConsumer configures options such as
+		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
+		 * {@link EntityParamSpec#validateSchema()}
+		 * @return the deserialized entity, or {@code null} if the response is empty
+		 */
+		<T> @Nullable T entity(StructuredOutputConverter<T> structuredOutputConverter,
+				Consumer<EntityParamSpec> entityParamSpecConsumer);
+
+		/**
+		 * Deserializes the response using the given converter.
+		 * @param structuredOutputConverter the converter for parsing and schema
+		 * resolution
+		 * @return the deserialized entity, or {@code null} if the response is empty
+		 */
 		<T> @Nullable T entity(StructuredOutputConverter<T> structuredOutputConverter);
 
+		/**
+		 * Deserializes the response into a {@code T} instance, with behaviour configured
+		 * via the {@code entityParamSpecConsumer}.
+		 * @param type the target class
+		 * @param entityParamSpecConsumer configures options such as
+		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
+		 * {@link EntityParamSpec#validateSchema()}
+		 * @return the deserialized entity, or {@code null} if the response is empty
+		 */
+		<T> @Nullable T entity(Class<T> type, Consumer<EntityParamSpec> entityParamSpecConsumer);
+
+		/**
+		 * Deserializes the response into a {@code T} instance.
+		 * @param type the target class
+		 * @return the deserialized entity, or {@code null} if the response is empty
+		 */
 		<T> @Nullable T entity(Class<T> type);
 
 		ChatClientResponse chatClientResponse();
@@ -172,10 +258,77 @@ public interface ChatClient {
 
 		@Nullable String content();
 
+		/**
+		 * Returns a {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and a specific entity type, with behaviour
+		 * configured via the {@code entityParamSpecConsumer}.
+		 * @param type the target class
+		 * @param entityParamSpecConsumer configures options such as
+		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
+		 * {@link EntityParamSpec#validateSchema()}
+		 * @return the {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and the deserialized entity
+		 */
+		<T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type,
+				Consumer<EntityParamSpec> entityParamSpecConsumer);
+
+		/**
+		 * Returns a {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and a specific entity type.
+		 * @param type the target class
+		 * @return the {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and the deserialized entity
+		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type);
 
+		/**
+		 * Returns a {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and a specific entity type, with behaviour
+		 * configured via the {@code entityParamSpecConsumer}.
+		 * @param type the target parameterized type
+		 * @param entityParamSpecConsumer configures options such as
+		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
+		 * {@link EntityParamSpec#validateSchema()}
+		 * @return the {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and the deserialized entity
+		 */
+		<T> ResponseEntity<ChatResponse, T> responseEntity(ParameterizedTypeReference<T> type,
+				Consumer<EntityParamSpec> entityParamSpecConsumer);
+
+		/**
+		 * Returns a {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and a {@link Collection} of entity types.
+		 * @param type the target parameterized type
+		 * @return the {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and the deserialized entities
+		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(ParameterizedTypeReference<T> type);
 
+		/**
+		 * Returns a {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and an entity converted using a specified
+		 * {@link StructuredOutputConverter}, with behaviour configured via the
+		 * {@code entityParamSpecConsumer}.
+		 * @param structuredOutputConverter the converter for parsing and schema
+		 * resolution
+		 * @param entityParamSpecConsumer configures options such as
+		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
+		 * {@link EntityParamSpec#validateSchema()}
+		 * @return the {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and the deserialized entity
+		 */
+		<T> ResponseEntity<ChatResponse, T> responseEntity(StructuredOutputConverter<T> structuredOutputConverter,
+				Consumer<EntityParamSpec> entityParamSpecConsumer);
+
+		/**
+		 * Returns a {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and an entity converted using a specified
+		 * {@link StructuredOutputConverter}.
+		 * @param structuredOutputConverter the converter for parsing and schema
+		 * resolution
+		 * @return the {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and the deserialized entity
+		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(StructuredOutputConverter<T> structuredOutputConverter);
 
 	}
@@ -210,16 +363,43 @@ public interface ChatClient {
 
 		<B extends ChatOptions.Builder<?>> ChatClientRequestSpec options(B customizer);
 
-		ChatClientRequestSpec toolNames(String... toolNames);
+		ChatClientRequestSpec tools(Consumer<ToolSpec> consumer);
 
 		ChatClientRequestSpec tools(Object... toolObjects);
 
+		/**
+		 * @deprecated as of 2.0.0, in favor of {@link #tools(Consumer)}. To be removed in
+		 * 3.0.0.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		ChatClientRequestSpec toolNames(String... toolNames);
+
+		/**
+		 * @deprecated as of 2.0.0, in favor of {@link #tools(Consumer)} and
+		 * {@link #tools(Consumer<ToolSpec>)} To be removed in 3.0.0.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		ChatClientRequestSpec toolCallbacks(ToolCallback... toolCallbacks);
 
+		/**
+		 * @deprecated as of 2.0.0, in favor of {@link #tools(Consumer)} and
+		 * {@link #tools(Consumer<ToolSpec>)} To be removed in 3.0.0.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		ChatClientRequestSpec toolCallbacks(List<ToolCallback> toolCallbacks);
 
+		/**
+		 * @deprecated as of 2.0.0, in favor of {@link #tools(Consumer)} and
+		 * {@link #tools(Consumer<ToolSpec>)} To be removed in 3.0.0.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		ChatClientRequestSpec toolCallbacks(ToolCallbackProvider... toolCallbackProviders);
 
+		/**
+		 * @deprecated as of 2.0.0, in favor of {@link #tools(Consumer)} and
+		 * {@link #tools(Consumer<ToolSpec>)} To be removed in 3.0.0.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		ChatClientRequestSpec toolContext(Map<String, Object> toolContext);
 
 		ChatClientRequestSpec system(String text);
@@ -243,6 +423,26 @@ public interface ChatClient {
 		CallResponseSpec call();
 
 		StreamResponseSpec stream();
+
+	}
+
+	interface ToolSpec {
+
+		ToolSpec instances(Object... toolObjects);
+
+		ToolSpec instances(List<Object> toolObjects);
+
+		ToolSpec callbacks(ToolCallback... toolCallbacks);
+
+		ToolSpec callbacks(List<ToolCallback> toolCallbacks);
+
+		ToolSpec callbacks(ToolCallbackProvider... toolCallbackProvider);
+
+		ToolSpec context(Map<String, Object> toolContext);
+
+		ToolSpec context(String key, Object value);
+
+		ToolSpec advisor(ToolAdvisor toolAdvisor);
 
 	}
 
@@ -277,16 +477,43 @@ public interface ChatClient {
 
 		Builder defaultTemplateRenderer(TemplateRenderer templateRenderer);
 
-		Builder defaultToolNames(String... toolNames);
+		Builder defaultTools(Consumer<ToolSpec> consumer);
 
 		Builder defaultTools(Object... toolObjects);
 
+		/**
+		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)}. To be
+		 * removed in 3.0.0.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		Builder defaultToolNames(String... toolNames);
+
+		/**
+		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)} and
+		 * {@link #defaultTools(Consumer<ToolSpec>)} To be removed in 3.0.0.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		Builder defaultToolCallbacks(ToolCallback... toolCallbacks);
 
+		/**
+		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)} and
+		 * {@link #defaultTools(Consumer<ToolSpec>)} To be removed in 3.0.0.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		Builder defaultToolCallbacks(List<ToolCallback> toolCallbacks);
 
+		/**
+		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)} and
+		 * {@link #defaultTools(Consumer<ToolSpec>)} To be removed in 3.0.0.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		Builder defaultToolCallbacks(ToolCallbackProvider... toolCallbackProviders);
 
+		/**
+		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)} and
+		 * {@link #defaultTools(Consumer<ToolSpec>)} To be removed in 3.0.0.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		Builder defaultToolContext(Map<String, Object> toolContext);
 
 		Builder clone();

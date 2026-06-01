@@ -152,8 +152,7 @@ public class SseWebClientWebFluxServerIT {
 							.build());
 
 						// Call a tool that sends progress notifications
-						CallToolRequest toolRequest = CallToolRequest.builder()
-							.name("tool1")
+						CallToolRequest toolRequest = CallToolRequest.builder("tool1")
 							.arguments(Map.of())
 							.progressToken("test-progress-token")
 							.build();
@@ -258,12 +257,11 @@ public class SseWebClientWebFluxServerIT {
 						assertThat(mcpClient.listResources()).isNotNull();
 						assertThat(mcpClient.listResources().resources()).hasSize(1);
 						assertThat(mcpClient.listResources().resources().get(0))
-							.isEqualToComparingFieldByFieldRecursively(Resource.builder()
-								.uri("file://resource")
-								.name("Test Resource")
-								.mimeType("text/plain")
-								.description("Test resource description")
-								.build());
+							.isEqualToComparingFieldByFieldRecursively(
+									Resource.builder("file://resource", "Test Resource")
+										.mimeType("text/plain")
+										.description("Test resource description")
+										.build());
 
 					});
 
@@ -321,26 +319,30 @@ public class SseWebClientWebFluxServerIT {
 
 					var progressToken = request.progressToken();
 
-					exchange.progressNotification(new ProgressNotification(progressToken, 0.0, 1.0, "tool call start"));
+					exchange.progressNotification(ProgressNotification.builder(progressToken, 0.0)
+						.total(1.0)
+						.message("tool call start")
+						.build());
 
 					exchange.ping(); // call client ping
 
 					// call elicitation
-					var elicitationRequest = McpSchema.ElicitRequest.builder()
-						.message("Test message")
-						.requestedSchema(
+					var elicitationRequest = McpSchema.ElicitRequest
+						.builder("Test message",
 								Map.of("type", "object", "properties", Map.of("message", Map.of("type", "string"))))
 						.build();
 
 					ElicitResult elicitationResult = exchange.createElicitation(elicitationRequest);
 
-					exchange.progressNotification(
-							new ProgressNotification(progressToken, 0.50, 1.0, "elicitation completed"));
+					exchange.progressNotification(ProgressNotification.builder(progressToken, 0.50)
+						.total(1.0)
+						.message("elicitation completed")
+						.build());
 
 					// call sampling
-					var createMessageRequest = McpSchema.CreateMessageRequest.builder()
-						.messages(List.of(new McpSchema.SamplingMessage(McpSchema.Role.USER,
-								new McpSchema.TextContent("Test Sampling Message"))))
+					var createMessageRequest = McpSchema.CreateMessageRequest
+						.builder(List.of(new McpSchema.SamplingMessage(McpSchema.Role.USER,
+								McpSchema.TextContent.builder("Test Sampling Message").build())), 500)
 						.modelPreferences(ModelPreferences.builder()
 							.hints(List.of(ModelHint.of("OpenAi"), ModelHint.of("Ollama")))
 							.costPriority(1.0)
@@ -351,12 +353,17 @@ public class SseWebClientWebFluxServerIT {
 
 					CreateMessageResult samplingResponse = exchange.createMessage(createMessageRequest);
 
-					exchange
-						.progressNotification(new ProgressNotification(progressToken, 1.0, 1.0, "sampling completed"));
+					exchange.progressNotification(ProgressNotification.builder(progressToken, 1.0)
+						.total(1.0)
+						.message("sampling completed")
+						.build());
 
 					return McpSchema.CallToolResult.builder()
-						.content(List.of(new McpSchema.TextContent(
-								"CALL RESPONSE: " + samplingResponse.toString() + ", " + elicitationResult.toString())))
+						.content(List.of(
+								McpSchema.TextContent
+									.builder("CALL RESPONSE: " + samplingResponse.toString() + ", "
+											+ elicitationResult.toString())
+									.build()))
 						.build();
 				})
 				.build();
@@ -404,15 +411,22 @@ public class SseWebClientWebFluxServerIT {
 						}
 
 						// send logging notification
-						exchange.loggingNotification(LoggingMessageNotification.builder()
-							// .level(LoggingLevel.DEBUG)
-							.logger("test-logger")
-							.data("User prompt: Hello " + languageArgument + "! How can I assist you today?")
-							.build());
+						exchange
+							.loggingNotification(
+									LoggingMessageNotification
+										.builder(LoggingLevel.INFO,
+												"User prompt: Hello " + languageArgument
+														+ "! How can I assist you today?")
+										// .level(LoggingLevel.DEBUG)
+										.logger("test-logger")
+										.build());
 
 						var userMessage = new PromptMessage(Role.USER,
-								new TextContent("Hello " + languageArgument + "! How can I assist you today?"));
-						return new GetPromptResult("A personalized greeting message", List.of(userMessage));
+								TextContent.builder("Hello " + languageArgument + "! How can I assist you today?")
+									.build());
+						return GetPromptResult.builder(List.of(userMessage))
+							.description("A personalized greeting message")
+							.build();
 					});
 
 			return List.of(promptSpecification);
@@ -435,9 +449,7 @@ public class SseWebClientWebFluxServerIT {
 		@Bean
 		public List<McpServerFeatures.SyncResourceSpecification> myResources() {
 
-			var systemInfoResource = Resource.builder()
-				.uri("file://resource")
-				.name("Test Resource")
+			var systemInfoResource = Resource.builder("file://resource", "Test Resource")
 				.mimeType("text/plain")
 				.description("Test resource description")
 				.build();
@@ -449,8 +461,10 @@ public class SseWebClientWebFluxServerIT {
 									System.getProperty("os.version"), "java_version",
 									System.getProperty("java.version"));
 							String jsonContent = new JsonMapper().writeValueAsString(systemInfo);
-							return new McpSchema.ReadResourceResult(List.of(new McpSchema.TextResourceContents(
-									request.uri(), "application/json", jsonContent)));
+							return McpSchema.ReadResourceResult
+								.builder(List.of(new McpSchema.TextResourceContents(request.uri(), "application/json",
+										jsonContent)))
+								.build();
 						}
 						catch (Exception e) {
 							throw new RuntimeException("Failed to generate system info", e);
@@ -495,8 +509,8 @@ public class SseWebClientWebFluxServerIT {
 				Function<McpSchema.CreateMessageRequest, CreateMessageResult> samplingHandler = llmRequest -> {
 					String userPrompt = ((McpSchema.TextContent) llmRequest.messages().get(0).content()).text();
 					String modelHint = llmRequest.modelPreferences().hints().get(0).name();
-					return CreateMessageResult.builder()
-						.content(new McpSchema.TextContent("Response " + userPrompt + " with model hint " + modelHint))
+					return CreateMessageResult
+						.builder(Role.ASSISTANT, "Response " + userPrompt + " with model hint " + modelHint, modelHint)
 						.build();
 				};
 

@@ -30,12 +30,6 @@
 	<description>Common classes used across Spring AI</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<scm>
-		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
-	</scm>
-
 	<dependencies>
 		<!-- Spring Framework -->
 		<dependency>
@@ -102,8 +96,6 @@
 			<scope>test</scope>
 		</dependency>
 
-
 	</dependencies>
-
 
 </project>

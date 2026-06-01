@@ -58,10 +58,10 @@ public class PineconeVectorStoreAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(PineconeVectorStoreAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.ai.vectorstore.pinecone.apiKey=" + System.getenv("PINECONE_API_KEY"),
-				"spring.ai.vectorstore.pinecone.indexName=spring-ai-test-index",
-				"spring.ai.vectorstore.pinecone.contentFieldName=customContentField",
-				"spring.ai.vectorstore.pinecone.distanceMetadataFieldName=customDistanceField");
+		.withPropertyValues("spring.ai.vectorstore.pinecone.api-key=" + System.getenv("PINECONE_API_KEY"),
+				"spring.ai.vectorstore.pinecone.index-name=spring-ai-test-index",
+				"spring.ai.vectorstore.pinecone.content-field-name=customContentField",
+				"spring.ai.vectorstore.pinecone.distance-metadata-field-name=customDistanceField");
 
 	List<Document> documents = List.of(
 			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),

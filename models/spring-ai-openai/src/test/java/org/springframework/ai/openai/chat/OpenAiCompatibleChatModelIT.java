@@ -64,9 +64,13 @@ public class OpenAiCompatibleChatModelIT {
 		// (26.01.2025) Disable because the Groq API is down. TODO: Re-enable when the API
 		// is back up.
 		// if (System.getenv("GROQ_API_KEY") != null) {
-		// builder.add(new OpenAiChatModel(new OpenAiApi("https://api.groq.com/openai",
-		// System.getenv("GROQ_API_KEY")),
-		// forModelName("llama3-8b-8192")));
+		// builder.add(OpenAiChatModel.builder()
+		// .options(org.springframework.ai.openai.OpenAiChatOptions.builder()
+		// .baseUrl("https://api.groq.com/openai")
+		// .apiKey(System.getenv("GROQ_API_KEY"))
+		// .model("llama3-8b-8192")
+		// .build())
+		// .build());
 		// }
 
 		if (System.getenv("OPEN_ROUTER_API_KEY") != null) {

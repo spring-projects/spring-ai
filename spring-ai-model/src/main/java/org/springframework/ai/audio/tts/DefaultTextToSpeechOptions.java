@@ -70,7 +70,7 @@ public final class DefaultTextToSpeechOptions implements TextToSpeechOptions {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -84,12 +84,6 @@ public final class DefaultTextToSpeechOptions implements TextToSpeechOptions {
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.voice, this.format, this.speed);
-	}
-
-	@Override
-	public String toString() {
-		return "DefaultTextToSpeechOptions{" + "model='" + this.model + '\'' + ", voice='" + this.voice + '\''
-				+ ", format='" + this.format + '\'' + ", speed=" + this.speed + '}';
 	}
 
 	@Override

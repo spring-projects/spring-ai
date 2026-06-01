@@ -206,8 +206,8 @@ public List<McpServerFeatures.SyncPromptSpecification> myPrompts() {
     var promptSpecification = new McpServerFeatures.SyncPromptSpecification(prompt, (exchange, getPromptRequest) -> {
         String nameArgument = (String) getPromptRequest.arguments().get("name");
         if (nameArgument == null) { nameArgument = "friend"; }
-        var userMessage = new PromptMessage(Role.USER, new TextContent("Hello " + nameArgument + "! How can I assist you today?"));
-        return new GetPromptResult("A personalized greeting message", List.of(userMessage));
+        var userMessage = new PromptMessage(Role.USER, TextContent.builder("Hello " + nameArgument + "! How can I assist you today?").build());
+        return GetPromptResult.builder(List.of(userMessage)).description("A personalized greeting message").build();
     });
 
     return List.of(promptSpecification);
@@ -246,10 +246,8 @@ From within the tool, resource, prompt or completion call handler use the provid
 [source,java]
 ----
 (exchange, request) -> {
-        exchange.loggingNotification(LoggingMessageNotification.builder()
-            .level(LoggingLevel.INFO)
+        exchange.loggingNotification(LoggingMessageNotification.builder(LoggingLevel.INFO, "This is a test log message")
             .logger("test-logger")
-            .data("This is a test log message")
             .build());
 }
 ----
@@ -271,9 +269,7 @@ From within the tool, resource, prompt or completion call handler use the provid
 [source,java]
 ----
 (exchange, request) -> {
-        exchange.progressNotification(ProgressNotification.builder()
-            .progressToken("test-progress-token")
-            .progress(0.25)
+        exchange.progressNotification(ProgressNotification.builder("test-progress-token", 0.25)
             .total(1.0)
             .message("tool call in progress")
             .build());

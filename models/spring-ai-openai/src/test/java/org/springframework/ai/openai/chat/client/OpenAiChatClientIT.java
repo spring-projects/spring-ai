@@ -275,10 +275,10 @@ class OpenAiChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?"))
-				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build())
+					.build()))
 				.call()
 				.content();
 		// @formatter:on
@@ -293,10 +293,10 @@ class OpenAiChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultToolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.defaultTools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build())
+					.build()))
 				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?"))
 			.build()
 			.prompt().call().content();
@@ -313,10 +313,10 @@ class OpenAiChatClientIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
-				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build())
+					.build()))
 				.stream()
 				.content();
 		// @formatter:on
@@ -389,7 +389,7 @@ class OpenAiChatClientIT {
 		ChatResponse response = ChatClient.create(this.chatModel)
 			.prompt("Tell me joke about Spring Framework")
 			.options(OpenAiChatOptions.builder()
-				.model(com.openai.models.ChatModel.GPT_4O_AUDIO_PREVIEW.asString())
+				.model("gpt-audio")
 				.outputAudio(new AudioParameters(AudioParameters.Voice.ALLOY, AudioParameters.AudioResponseFormat.WAV))
 				.outputModalities(List.of(Modality.TEXT.asString(), Modality.AUDIO.asString())))
 			.call()

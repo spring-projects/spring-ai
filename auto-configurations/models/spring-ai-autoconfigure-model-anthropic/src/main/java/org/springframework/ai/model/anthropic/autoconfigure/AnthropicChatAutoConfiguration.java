@@ -17,6 +17,7 @@
 package org.springframework.ai.model.anthropic.autoconfigure;
 
 import com.anthropic.client.AnthropicClient;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
@@ -39,6 +40,7 @@ import org.springframework.context.annotation.Bean;
  * {@link AutoConfiguration Auto-configuration} for Anthropic Chat Model.
  *
  * @author Soby Chacko
+ * @author Sebastien Deleuze
  * @since 2.0.0
  */
 @AutoConfiguration
@@ -52,34 +54,36 @@ public class AnthropicChatAutoConfiguration {
 	@ConditionalOnMissingBean
 	public AnthropicChatModel anthropicChatModel(AnthropicConnectionProperties connectionProperties,
 			AnthropicChatProperties chatProperties, ToolCallingManager toolCallingManager,
-			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
 			ObjectProvider<ToolExecutionEligibilityPredicate> anthropicToolExecutionEligibilityPredicate) {
 
-		AnthropicChatOptions options = chatProperties.getOptions();
+		AnthropicChatOptions.Builder builder = chatProperties.toOptions().mutate();
 		if (connectionProperties.getApiKey() != null) {
-			options.setApiKey(connectionProperties.getApiKey());
+			builder.apiKey(connectionProperties.getApiKey());
 		}
 		if (connectionProperties.getBaseUrl() != null) {
-			options.setBaseUrl(connectionProperties.getBaseUrl());
+			builder.baseUrl(connectionProperties.getBaseUrl());
 		}
 		if (connectionProperties.getTimeout() != null) {
-			options.setTimeout(connectionProperties.getTimeout());
+			builder.timeout(connectionProperties.getTimeout());
 		}
 		if (connectionProperties.getMaxRetries() != null) {
-			options.setMaxRetries(connectionProperties.getMaxRetries());
+			builder.maxRetries(connectionProperties.getMaxRetries());
 		}
 		if (connectionProperties.getProxy() != null) {
-			options.setProxy(connectionProperties.getProxy());
+			builder.proxy(connectionProperties.getProxy());
 		}
 		if (!connectionProperties.getCustomHeaders().isEmpty()) {
-			options.setCustomHeaders(connectionProperties.getCustomHeaders());
+			builder.customHeaders(connectionProperties.getCustomHeaders());
 		}
+		AnthropicChatOptions options = builder.build();
 
 		var chatModel = AnthropicChatModel.builder()
 			.options(options)
 			.toolCallingManager(toolCallingManager)
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.meterRegistry(chatProperties.isConnectionPoolMetricsEnabled() ? meterRegistry.getIfAvailable() : null)
 			.toolExecutionEligibilityPredicate(anthropicToolExecutionEligibilityPredicate
 				.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
 			.build();

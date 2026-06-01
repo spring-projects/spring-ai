@@ -17,14 +17,18 @@
 package org.springframework.ai.vectorstore.filter.converter;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
@@ -42,6 +46,8 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR
  * @author Christian Tzolov
  */
 public class PineconeFilterExpressionConverterTests {
+
+	private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
 
 	FilterExpressionConverter converter = new PineconeFilterExpressionConverter();
 
@@ -118,11 +124,18 @@ public class PineconeFilterExpressionConverterTests {
 	@Test
 	public void testComplexIdentifiers() {
 		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("country 1 2 3"), new Value("BG")));
+		assertThat(vectorExpr).isEqualTo("""
+				{"country 1 2 3": {"$eq": "BG"}}""");
+
+		vectorExpr = this.converter
 			.convertExpression(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
-		assertThat(vectorExpr).isEqualTo("{\"country 1 2 3\": {\"$eq\": \"BG\"}}");
+		assertThat(vectorExpr).isEqualTo("""
+				{"\\"country 1 2 3\\"": {"$eq": "BG"}}""");
 
 		vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("'country 1 2 3'"), new Value("BG")));
-		assertThat(vectorExpr).isEqualTo("{\"country 1 2 3\": {\"$eq\": \"BG\"}}");
+		assertThat(vectorExpr).isEqualTo("""
+				{"'country 1 2 3'": {"$eq": "BG"}}""");
 	}
 
 	@Test
@@ -259,6 +272,29 @@ public class PineconeFilterExpressionConverterTests {
 
 		assertThat(vectorExpr).isEqualTo(
 				"{\"$or\": [{\"$and\": [{\"priority\": {\"$gte\": 1}},{\"priority\": {\"$lte\": 5}}]},{\"$and\": [{\"urgent\": {\"$eq\": true}},{\"category\": {\"$nin\": [\"low\",\"medium\"]}}]}]}");
+	}
+
+	@Test
+	void metadataKeyContainingDoubleQuotesAndJsonSyntaxStaysSingleProperty() throws Exception {
+		Expression expr = new Expression(EQ, new Key("x\" : { \"$or\": [ {} ] }, \"y"), new Value("ignored"));
+		String whereJson = this.converter.convertExpression(expr);
+		Map<String, Object> map = JSON_MAPPER.readValue(whereJson, new TypeReference<>() {
+		});
+		assertThat(map).hasSize(1);
+		assertThat(map).containsKey("x\" : { \"$or\": [ {} ] }, \"y");
+		@SuppressWarnings("unchecked")
+		Map<String, Object> inner = (Map<String, Object>) map.get("x\" : { \"$or\": [ {} ] }, \"y");
+		assertThat(inner).containsEntry("$eq", "ignored");
+	}
+
+	@Test
+	void parsedFilterWithQuotedKeyContainingJsonSyntaxProducesSingleTopLevelProperty() throws Exception {
+		Expression expr = new FilterExpressionTextParser().parse("'x\" : { \"$or\": [ {} ] }, \"y' == 'ignored'");
+		String whereJson = this.converter.convertExpression(expr);
+		Map<String, Object> map = JSON_MAPPER.readValue(whereJson, new TypeReference<>() {
+		});
+		assertThat(map).hasSize(1);
+		assertThat(map).containsKey("x\" : { \"$or\": [ {} ] }, \"y");
 	}
 
 }

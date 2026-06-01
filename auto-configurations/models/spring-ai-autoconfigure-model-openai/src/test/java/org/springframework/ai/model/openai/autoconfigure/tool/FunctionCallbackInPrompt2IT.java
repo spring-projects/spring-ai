@@ -40,13 +40,13 @@ public class FunctionCallbackInPrompt2IT {
 	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackInPromptIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
+		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class,
 				org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration.class));
 
 	@Test
 	void functionCallTest() {
-		this.contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=" + "gpt-4o-mini").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.openai.chat.model=" + "gpt-4o-mini").run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
@@ -59,11 +59,11 @@ public class FunctionCallbackInPrompt2IT {
 
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.")
-					.toolCallbacks(FunctionToolCallback
+					.tools(t -> t.callbacks(FunctionToolCallback
 						.builder("CurrentWeatherService", new MockWeatherService())
 						.description("Get the weather in location")
 						.inputType(MockWeatherService.Request.class)
-						.build())
+						.build()))
 					.call().content();
 			// @formatter:on
 
@@ -87,14 +87,14 @@ public class FunctionCallbackInPrompt2IT {
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("Turn the light on in the kitchen and in the living room!")
-					.toolCallbacks(FunctionToolCallback
+					.tools(t -> t.callbacks(FunctionToolCallback
 						.builder("turnLight", (LightInfo lightInfo) -> {
 							logger.info("Turning light to [" + lightInfo.isOn + "] in " + lightInfo.roomName());
 							state.put(lightInfo.roomName(), lightInfo.isOn());
 						})
 						.description("Turn light on or off in a room")
 						.inputType(LightInfo.class)
-						.build())
+						.build()))
 					.call().content();
 			// @formatter:on
 			logger.info("Response: {}", content);
@@ -105,18 +105,18 @@ public class FunctionCallbackInPrompt2IT {
 
 	@Test
 	void functionCallTest2() {
-		this.contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=" + "gpt-4o-mini").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.openai.chat.model=" + "gpt-4o-mini").run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("What's the weather like in Amsterdam?")
-					.toolCallbacks(FunctionToolCallback
+					.tools(t -> t.callbacks(FunctionToolCallback
 						.builder("CurrentWeatherService", input -> "18 degrees Celsius")
 						.description("Get the weather in location")
 						.inputType(MockWeatherService.Request.class)
-					.build())
+						.build()))
 					.call().content();
 			// @formatter:on
 			logger.info("Response: {}", content);
@@ -128,18 +128,18 @@ public class FunctionCallbackInPrompt2IT {
 	@Test
 	void streamingFunctionCallTest() {
 
-		this.contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=" + "gpt-4o-mini").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.openai.chat.model=" + "gpt-4o-mini").run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.")
-					.toolCallbacks(FunctionToolCallback
+					.tools(t -> t.callbacks(FunctionToolCallback
 						.builder("CurrentWeatherService", new MockWeatherService())
 						.description("Get the weather in location")
 						.inputType(MockWeatherService.Request.class)
-						.build())
+						.build()))
 					.stream().content()
 					.collectList().block().stream().collect(Collectors.joining());
 			// @formatter:on

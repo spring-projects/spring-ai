@@ -30,12 +30,6 @@
 	<description>OpenAI models support</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<scm>
-		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
-	</scm>
-
 	<dependencies>
 		
 		<!-- production dependencies -->
@@ -50,6 +44,12 @@
 			<groupId>com.openai</groupId>
 			<artifactId>openai-java</artifactId>
 			<version>${openai-sdk.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.squareup.okhttp3</groupId>
+			<artifactId>okhttp</artifactId>
+			<version>${okhttp3.version}</version>
 		</dependency>
 
 		<dependency>

@@ -18,6 +18,7 @@ package org.springframework.ai.testcontainers.service.connection.opensearch;
 
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
 import org.opensearch.testcontainers.OpenSearchContainer;
 
 import org.springframework.ai.vectorstore.opensearch.autoconfigure.OpenSearchConnectionDetails;
@@ -52,12 +53,12 @@ class OpenSearchContainerConnectionDetailsFactory
 		}
 
 		@Override
-		public String getUsername() {
+		public @Nullable String getUsername() {
 			return getContainer().isSecurityEnabled() ? getContainer().getUsername() : null;
 		}
 
 		@Override
-		public String getPassword() {
+		public @Nullable String getPassword() {
 			return getContainer().isSecurityEnabled() ? getContainer().getPassword() : null;
 		}
 

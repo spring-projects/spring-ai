@@ -38,10 +38,10 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.ai.util.json.schema.JsonSchemaUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
@@ -68,6 +68,8 @@ import org.springframework.util.MimeType;
  * @author Ilayaperumal Gopinathan
  */
 public final class McpToolUtils {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	/**
 	 * The name of tool context key used to store the MCP exchange object.
@@ -239,7 +241,7 @@ public final class McpToolUtils {
 		return DefaultToolDefinition.builder()
 			.name(prefixedToolName)
 			.description(tool.description())
-			.inputSchema(JsonSchemaUtils.ensureValidInputSchema(ModelOptionsUtils.toJsonString(tool.inputSchema())))
+			.inputSchema(JsonSchemaUtils.ensureValidInputSchema(jsonHelper.toJson(tool.inputSchema())))
 			.build();
 	}
 
@@ -249,13 +251,13 @@ public final class McpToolUtils {
 		var tool = McpSchema.Tool.builder()
 			.name(toolCallback.getToolDefinition().name())
 			.description(toolCallback.getToolDefinition().description())
-			.inputSchema(ModelOptionsUtils.jsonToObject(toolCallback.getToolDefinition().inputSchema(),
-					McpSchema.JsonSchema.class))
+			.inputSchema(
+					jsonHelper.fromJson(toolCallback.getToolDefinition().inputSchema(), McpSchema.JsonSchema.class))
 			.build();
 
 		return new SharedSyncToolSpecification(tool, (exchangeOrContext, request) -> {
 			try {
-				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request.arguments()),
+				String callResult = toolCallback.call(jsonHelper.toJson(request.arguments()),
 						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchangeOrContext)));
 				if (mimeType != null && mimeType.toString().startsWith("image")) {
 					McpSchema.Annotations annotations = new McpSchema.Annotations(List.of(Role.ASSISTANT), null);

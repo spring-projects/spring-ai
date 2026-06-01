@@ -50,19 +50,9 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	List<ToolCallback> getToolCallbacks();
 
 	/**
-	 * Set the ToolCallbacks to be registered with the ChatModel.
-	 */
-	void setToolCallbacks(List<ToolCallback> toolCallbacks);
-
-	/**
 	 * Names of the tools to register with the ChatModel.
 	 */
 	Set<String> getToolNames();
-
-	/**
-	 * Set the names of the tools to register with the ChatModel.
-	 */
-	void setToolNames(Set<String> toolNames);
 
 	/**
 	 * Whether the {@link ChatModel} is responsible for executing the tools requested by
@@ -71,22 +61,20 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	@Nullable Boolean getInternalToolExecutionEnabled();
 
 	/**
-	 * Set whether the {@link ChatModel} is responsible for executing the tools requested
-	 * by the model or if the tools should be executed directly by the caller.
-	 */
-	void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled);
-
-	/**
 	 * Get the configured tool context.
 	 * @return the tool context map.
 	 */
 	Map<String, Object> getToolContext();
 
 	/**
-	 * Set the tool context values as map.
-	 * @param toolContext as map
+	 * Returns a new {@link ToolCallingChatOptions.Builder} initialized with the values of
+	 * this {@link ToolCallingChatOptions}.
+	 *
+	 * Narrows the return type of {@link ChatOptions#mutate()} so generic tool calling
+	 * code can chain methods without casting.
 	 */
-	void setToolContext(Map<String, Object> toolContext);
+	@Override
+	ToolCallingChatOptions.Builder<?> mutate();
 
 	/**
 	 * A builder to create a new {@link ToolCallingChatOptions} instance.

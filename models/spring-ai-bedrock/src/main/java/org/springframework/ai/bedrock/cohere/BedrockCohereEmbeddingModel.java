@@ -18,10 +18,13 @@ package org.springframework.ai.bedrock.cohere;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest;
+import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest.InputType;
+import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest.Truncate;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -73,7 +76,9 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public float[] embed(Document document) {
-		return embed(document.getText());
+		String text = document.getText();
+		Assert.state(text != null, "Document text must not be null");
+		return embed(text);
 	}
 
 	@Override
@@ -83,6 +88,11 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 		Assert.notEmpty(instructions, "At least one text is required!");
 
 		final BedrockCohereEmbeddingOptions optionsToUse = this.mergeOptions(request.getOptions());
+
+		InputType inputType = optionsToUse.getInputType();
+		Assert.state(inputType != null, "InputType must not be null");
+		Truncate truncate = optionsToUse.getTruncate();
+		Assert.state(truncate != null, "Truncate must not be null");
 
 		List<String> truncatedInstructions = instructions.stream().map(text -> {
 			if (text == null || text.isEmpty()) {
@@ -94,7 +104,7 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 			}
 
 			// Handle truncation based on option
-			return switch (optionsToUse.getTruncate()) {
+			return switch (truncate) {
 				case END -> text.substring(0, COHERE_MAX_CHARACTERS); // Keep first 2048
 																		// chars
 				case START -> text.substring(text.length() - COHERE_MAX_CHARACTERS); // Keep
@@ -104,10 +114,9 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 				default -> text.substring(0, COHERE_MAX_CHARACTERS); // Default to END
 																		// behavior
 			};
-		}).collect(Collectors.toList());
+		}).toList();
 
-		var apiRequest = new CohereEmbeddingRequest(truncatedInstructions, optionsToUse.getInputType(),
-				optionsToUse.getTruncate());
+		var apiRequest = new CohereEmbeddingRequest(truncatedInstructions, inputType, truncate);
 		CohereEmbeddingResponse apiResponse = this.embeddingApi.embedding(apiRequest);
 		var indexCounter = new AtomicInteger(0);
 		List<Embedding> embeddings = apiResponse.embeddings()
@@ -122,7 +131,7 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 	 * @param requestOptions request options to merge.
 	 * @return the merged options.
 	 */
-	BedrockCohereEmbeddingOptions mergeOptions(EmbeddingOptions requestOptions) {
+	BedrockCohereEmbeddingOptions mergeOptions(@Nullable EmbeddingOptions requestOptions) {
 
 		BedrockCohereEmbeddingOptions options = this.defaultOptions;
 		// BedrockCohereEmbeddingOptions disregards options from EmbeddingOptions, so only

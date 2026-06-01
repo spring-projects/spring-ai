@@ -23,11 +23,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.core.JsonValue;
+import com.anthropic.core.http.HttpResponseFor;
 import com.anthropic.models.messages.Base64ImageSource;
 import com.anthropic.models.messages.Base64PdfSource;
 import com.anthropic.models.messages.CacheControlEphemeral;
@@ -62,6 +65,7 @@ import com.anthropic.models.messages.UserLocation;
 import com.anthropic.models.messages.WebSearchResultBlock;
 import com.anthropic.models.messages.WebSearchTool20260209;
 import com.anthropic.models.messages.WebSearchToolResultBlock;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
@@ -70,6 +74,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.messages.MessageType;
@@ -79,6 +84,7 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -92,9 +98,8 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.observation.conventions.AiProvider;
@@ -112,6 +117,17 @@ import org.springframework.util.MimeType;
  * Supports synchronous and streaming completions, tool calling, and Micrometer-based
  * observability. API credentials are auto-detected from {@code ANTHROPIC_API_KEY} if not
  * configured.
+ *
+ * <p>
+ * <b>Observability.</b> Two layers of Micrometer observations are emitted: a
+ * {@code gen_ai.client.operation} span per chat-model call (with token usage, model
+ * metadata, and request parameters), and an {@code okhttp.requests} span per outbound
+ * HTTP attempt (with HTTP method, URI, status code, and {@code traceparent} propagation).
+ * Optional OkHttp connection-pool gauges are bound to the
+ * {@link io.micrometer.core.instrument.MeterRegistry} when supplied. For synchronous
+ * calls the HTTP span nests under the chat-model span; for streaming calls the HTTP span
+ * fires but is not parented under the chat-model span due to an SDK-internal thread
+ * boundary — see {@link #stream(org.springframework.ai.chat.prompt.Prompt)}.
  *
  * @author Christian Tzolov
  * @author luocongqiu
@@ -152,9 +168,15 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 	private final ObservationRegistry observationRegistry;
 
+	private final @Nullable MeterRegistry meterRegistry;
+
+	private final @Nullable ExecutorService dispatcherExecutor;
+
 	private final ToolCallingManager toolCallingManager;
 
-	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+	private final ToolExecutionEligibilityChecker toolExecutionEligibilityChecker;
+
+	private final AtomicBoolean internalToolExecutionWarned = new AtomicBoolean(false);
 
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
@@ -172,7 +194,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	private AnthropicChatModel(@Nullable AnthropicClient anthropicClient,
 			@Nullable AnthropicClientAsync anthropicClientAsync, @Nullable AnthropicChatOptions options,
 			@Nullable ToolCallingManager toolCallingManager, @Nullable ObservationRegistry observationRegistry,
-			@Nullable ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
+			@Nullable MeterRegistry meterRegistry, @Nullable ExecutorService dispatcherExecutor,
+			@Nullable ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
 
 		if (options == null) {
 			this.options = AnthropicChatOptions.builder().model(DEFAULT_MODEL).maxTokens(DEFAULT_MAX_TOKENS).build();
@@ -181,20 +204,27 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			this.options = options;
 		}
 
+		// Must precede the AnthropicSetup calls below so the HTTP client gets the user's
+		// registries and dispatcher.
+		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
+		this.meterRegistry = meterRegistry;
+		this.dispatcherExecutor = dispatcherExecutor;
+
 		this.anthropicClient = Objects.requireNonNullElseGet(anthropicClient,
 				() -> AnthropicSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders()));
+						this.options.getCustomHeaders(), this.observationRegistry, this.meterRegistry,
+						this.dispatcherExecutor));
 
 		this.anthropicClientAsync = Objects.requireNonNullElseGet(anthropicClientAsync,
 				() -> AnthropicSetup.setupAsyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders()));
+						this.options.getCustomHeaders(), this.observationRegistry, this.meterRegistry,
+						this.dispatcherExecutor));
 
-		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
 		this.toolCallingManager = Objects.requireNonNullElse(toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER);
-		this.toolExecutionEligibilityPredicate = Objects.requireNonNullElse(toolExecutionEligibilityPredicate,
-				new DefaultToolExecutionEligibilityPredicate());
+		this.toolExecutionEligibilityChecker = Objects.requireNonNullElse(toolExecutionEligibilityChecker,
+				chatResponse -> chatResponse != null && chatResponse.hasToolCalls());
 	}
 
 	/**
@@ -229,6 +259,21 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		return this.internalCall(requestPrompt, null);
 	}
 
+	/**
+	 * Streams the chat completion as a {@link Flux} of {@link ChatResponse} events.
+	 *
+	 * <p>
+	 * <b>Observability note.</b> The outbound HTTP attempt is observed as
+	 * {@code okhttp.requests} with timer + {@code traceparent}, but for streaming calls
+	 * the HTTP span is not parented under the chat-model's
+	 * {@code gen_ai.client.operation} span. The SDK's async path internally schedules the
+	 * HTTP call on {@code ForkJoinPool.commonPool()} before Spring AI's HTTP client runs,
+	 * which drops the calling thread's observation context. Filter by
+	 * {@code okhttp.requests} + host {@code api.anthropic.com} and correlate by trace ID
+	 * or timestamp if you need to join the spans in your tracing UI.
+	 * @param prompt the prompt
+	 * @return a {@link Flux} of streamed {@link ChatResponse} events
+	 */
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 		Prompt requestPrompt = buildRequestPrompt(prompt);
@@ -238,6 +283,13 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	/**
 	 * Internal method to handle streaming chat completion calls with tool execution
 	 * support. This method is called recursively to support multi-turn tool calling.
+	 *
+	 * <p>
+	 * Note: rate-limit headers are not currently surfaced on the streaming path. The SDK
+	 * supports it via {@code withRawResponse().createStreaming(...)} but the wire-up is
+	 * deferred to a follow-up. For rate-limit metadata, use the synchronous
+	 * {@link #call(Prompt)} path; {@code getRateLimit()} resolves to
+	 * {@link org.springframework.ai.chat.metadata.EmptyRateLimit} for streamed responses.
 	 * @param prompt The prompt for the chat completion. In a recursive tool-call
 	 * scenario, this prompt will contain the full conversation history including the tool
 	 * results.
@@ -256,6 +308,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(AiProvider.ANTHROPIC.value())
+				.streaming(true)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
@@ -318,13 +371,18 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	private Flux<ChatResponse> handleStreamingToolExecution(Prompt prompt, ChatResponse chatResponse) {
 		ChatOptions promptOptions = prompt.getOptions();
 		if (promptOptions != null
-				&& this.toolExecutionEligibilityPredicate.isToolExecutionRequired(promptOptions, chatResponse)) {
+				&& this.toolExecutionEligibilityChecker.isToolExecutionRequired(promptOptions, chatResponse)) {
 			// Only execute tools when the model's turn is complete and its stated reason
 			// for stopping is that it wants to use a tool.
 			if (chatResponse.hasFinishReasons(java.util.Set.of("tool_use"))) {
 				return Flux.deferContextual(ctx -> {
 					ToolExecutionResult toolExecutionResult;
 					try {
+						if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
+							logger.warn(
+									"Internal tool execution in AnthropicChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
+											+ "Use ChatClient with ToolCallAdvisor instead.");
+						}
 						org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder.setContext(ctx);
 						toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
 					}
@@ -497,8 +555,12 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			// message_delta
 			long inputTokens = streamingState.getInputTokens();
 			long outputTokens = deltaEvent.usage().outputTokens();
-			Usage usage = new DefaultUsage(Math.toIntExact(inputTokens), Math.toIntExact(outputTokens),
-					Math.toIntExact(inputTokens + outputTokens), deltaEvent.usage());
+			Long cacheRead = deltaEvent.usage().cacheReadInputTokens().orElse(null);
+			Long cacheWrite = deltaEvent.usage().cacheCreationInputTokens().orElse(null);
+			Usage usage = new DefaultUsage(Integer.valueOf(Math.toIntExact(inputTokens)),
+					Integer.valueOf(Math.toIntExact(outputTokens)),
+					Integer.valueOf(Math.toIntExact(inputTokens + outputTokens)), deltaEvent.usage(), cacheRead,
+					cacheWrite);
 
 			Usage accumulatedUsage = previousChatResponse != null
 					? UsageCalculator.getCumulativeUsage(usage, previousChatResponse) : usage;
@@ -549,7 +611,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 					this.observationRegistry)
 			.observe(() -> {
 
-				Message message = this.anthropicClient.messages().create(request);
+				HttpResponseFor<Message> rawResponse = this.anthropicClient.messages()
+					.withRawResponse()
+					.create(request);
+				Message message = rawResponse.parse();
+				RateLimit rateLimit = AnthropicRateLimit.from(rawResponse.headers());
 
 				List<ContentBlock> contentBlocks = message.content();
 				if (contentBlocks.isEmpty()) {
@@ -569,7 +635,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 						: currentChatResponseUsage;
 
 				ChatResponse chatResponse = new ChatResponse(generations,
-						from(message, accumulatedUsage, citations, webSearchResults));
+						from(message, accumulatedUsage, citations, webSearchResults, rateLimit));
 
 				observationContext.setResponse(chatResponse);
 
@@ -578,7 +644,12 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		ChatOptions promptOptions = prompt.getOptions();
 		if (promptOptions != null
-				&& this.toolExecutionEligibilityPredicate.isToolExecutionRequired(promptOptions, response)) {
+				&& this.toolExecutionEligibilityChecker.isToolExecutionRequired(promptOptions, response)) {
+			if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
+				logger.warn(
+						"Internal tool execution in AnthropicChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
+								+ "Use ChatClient with ToolCallAdvisor instead.");
+			}
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -595,15 +666,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		return response;
-	}
-
-	Prompt buildRequestPrompt(Prompt prompt) {
-		var requestOptions = (AnthropicChatOptions) prompt.getOptions();
-		requestOptions = requestOptions == null ? this.options : requestOptions;
-
-		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
-
-		return prompt.mutate().chatOptions(requestOptions).build();
 	}
 
 	/**
@@ -1027,12 +1089,13 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @return the chat response metadata
 	 */
 	private ChatResponseMetadata from(Message message, Usage usage, List<Citation> citations,
-			List<AnthropicWebSearchResult> webSearchResults) {
+			List<AnthropicWebSearchResult> webSearchResults, RateLimit rateLimit) {
 		Assert.notNull(message, "Anthropic Message must not be null");
 		ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder()
 			.id(message.id())
 			.usage(usage)
 			.model(message.model().asString())
+			.rateLimit(rateLimit)
 			.keyValue("anthropic-response", message);
 		if (!citations.isEmpty()) {
 			metadataBuilder.keyValue("citations", citations).keyValue("citationCount", citations.size());
@@ -1054,8 +1117,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 		long inputTokens = usage.inputTokens();
 		long outputTokens = usage.outputTokens();
-		return new DefaultUsage(Math.toIntExact(inputTokens), Math.toIntExact(outputTokens),
-				Math.toIntExact(inputTokens + outputTokens), usage);
+		Long cacheRead = usage.cacheReadInputTokens().orElse(null);
+		Long cacheWrite = usage.cacheCreationInputTokens().orElse(null);
+		return new DefaultUsage(Integer.valueOf(Math.toIntExact(inputTokens)),
+				Integer.valueOf(Math.toIntExact(outputTokens)),
+				Integer.valueOf(Math.toIntExact(inputTokens + outputTokens)), usage, cacheRead, cacheWrite);
 	}
 
 	private @Nullable Citation convertTextCitation(TextCitation textCitation) {
@@ -1567,7 +1633,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		private @Nullable ObservationRegistry observationRegistry;
 
-		private @Nullable ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+		private @Nullable MeterRegistry meterRegistry;
+
+		private @Nullable ExecutorService dispatcherExecutor;
+
+		private @Nullable ToolExecutionEligibilityChecker toolExecutionEligibilityChecker;
 
 		private Builder() {
 		}
@@ -1603,10 +1673,14 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		/**
-		 * Sets the tool calling manager.
+		 * Sets the tool calling manager used for internal tool execution.
 		 * @param toolCallingManager the tool calling manager
 		 * @return this builder
+		 * @deprecated since 2.0.0 for removal in 3.0.0 — internal tool execution in
+		 * {@link AnthropicChatModel} is superseded by {@code ToolCallAdvisor} used via
+		 * {@code ChatClient}.
 		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
 			this.toolCallingManager = toolCallingManager;
 			return this;
@@ -1623,13 +1697,71 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		/**
+		 * Sets the meter registry used to bind OkHttp connection-pool gauges (active/idle
+		 * connections). Optional; when omitted, no pool gauges are registered.
+		 * Auto-configuration wires the application's {@link MeterRegistry} bean here
+		 * automatically.
+		 * @param meterRegistry the meter registry
+		 * @return this builder
+		 * @since 2.0.0
+		 */
+		public Builder meterRegistry(@Nullable MeterRegistry meterRegistry) {
+			this.meterRegistry = meterRegistry;
+			return this;
+		}
+
+		/**
+		 * Sets the executor used by the underlying OkHttp dispatcher for both the sync
+		 * and async clients. The caller owns the executor's lifecycle — Spring AI will
+		 * not shut it down. Typical use: pass
+		 * {@code Executors.newVirtualThreadPerTaskExecutor()} on Java 21+ to back HTTP
+		 * dispatch with virtual threads. When omitted, an internal platform-thread
+		 * executor is created and managed by the HTTP client.
+		 * @param dispatcherExecutor the dispatcher executor; null restores the default
+		 * @return this builder
+		 * @since 2.0.0
+		 */
+		public Builder dispatcherExecutor(@Nullable ExecutorService dispatcherExecutor) {
+			this.dispatcherExecutor = dispatcherExecutor;
+			return this;
+		}
+
+		/**
 		 * Sets the predicate to determine tool execution eligibility.
 		 * @param toolExecutionEligibilityPredicate the predicate
 		 * @return this builder
+		 * @deprecated since 2.0.0 for removal in 3.0.0 — replaced by
+		 * {@link #toolExecutionEligibilityChecker(ToolExecutionEligibilityChecker)}. For
+		 * the recommended long-term approach, internal tool execution in
+		 * {@link AnthropicChatModel} is superseded by {@code ToolCallAdvisor} used via
+		 * {@code ChatClient}.
 		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		@SuppressWarnings({ "deprecation", "removal" })
 		public Builder toolExecutionEligibilityPredicate(
 				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
-			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
+			this.toolExecutionEligibilityChecker = new ToolExecutionEligibilityChecker() {
+				@Override
+				public Boolean apply(ChatResponse chatResponse) {
+					return chatResponse != null && chatResponse.hasToolCalls();
+				}
+
+				@Override
+				public boolean isToolExecutionRequired(ChatOptions promptOptions, ChatResponse chatResponse) {
+					return toolExecutionEligibilityPredicate.test(promptOptions, chatResponse);
+				}
+			};
+			return this;
+		}
+
+		/**
+		 * Sets the checker to determine tool execution eligibility.
+		 * @param toolExecutionEligibilityChecker the checker
+		 * @return this builder
+		 */
+		public Builder toolExecutionEligibilityChecker(
+				ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
+			this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
 			return this;
 		}
 
@@ -1639,7 +1771,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		 */
 		public AnthropicChatModel build() {
 			return new AnthropicChatModel(this.anthropicClient, this.anthropicClientAsync, this.options,
-					this.toolCallingManager, this.observationRegistry, this.toolExecutionEligibilityPredicate);
+					this.toolCallingManager, this.observationRegistry, this.meterRegistry, this.dispatcherExecutor,
+					this.toolExecutionEligibilityChecker);
 		}
 
 	}

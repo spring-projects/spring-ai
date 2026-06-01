@@ -13,7 +13,6 @@ You first need access to an Ollama instance. There are a few options, including 
 
 * link:https://ollama.com/download[Download and install Ollama] on your local machine.
 * Configure and xref:api/testcontainers.adoc[run Ollama via Testcontainers].
-* Bind to an Ollama instance via xref:api/cloud-bindings.adoc[Kubernetes Service Bindings].
 
 You can pull the models you want to use in your application from the https://ollama.com/search?c=embedding[Ollama model library]:
 
@@ -40,7 +39,7 @@ There has been a significant change in the Spring AI auto-configuration, starter
 Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
 ====
 
-Spring AI provides Spring Boot auto-configuration for the Azure Ollama Embedding Model.
+Spring AI provides Spring Boot auto-configuration for the Ollama Embedding Model.
 To enable it add the following dependency to your Maven `pom.xml` or Gradle `build.gradle` build files:
 
 [tabs]

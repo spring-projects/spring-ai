@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
 import org.opensearch.client.json.JsonData;
@@ -149,6 +148,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author inpink
  * @author Sanghun Lee
+ * @author chabinhwang
  * @since 1.0.0
  */
 public class OpenSearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -228,10 +228,10 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		List<float[]> embedding = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
-		for (Document document : documents) {
+		for (int i = 0; i < documents.size(); i++) {
+			Document document = documents.get(i);
 			OpenSearchDocument openSearchDocument = new OpenSearchDocument(document.getId(),
-					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(),
-					embedding.get(documents.indexOf(document)));
+					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(), embedding.get(i));
 
 			// Conditionally set document ID based on manageDocumentIds flag
 			if (this.manageDocumentIds) {
@@ -377,7 +377,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 				.hits()
 				.stream()
 				.map(this::toDocument)
-				.collect(Collectors.toList());
+				.toList();
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);

@@ -29,6 +29,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
@@ -90,7 +91,7 @@ public abstract class AbstractToolCallAdvisorIT {
 				.prompt()
 				.advisors(ToolCallAdvisor.builder().build())
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?"))
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(t -> t.callbacks(createWeatherToolCallback()))
 				.call()
 				.content();
 
@@ -108,7 +109,8 @@ public abstract class AbstractToolCallAdvisorIT {
 						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(500).build())
 							.build())
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?"))
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(t -> t.callbacks(createWeatherToolCallback()))
+				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "call-default-advisor-with-memory"))
 				.call()
 				.content();
 
@@ -126,7 +128,7 @@ public abstract class AbstractToolCallAdvisorIT {
 
 			String response = chatClient.prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(t -> t.callbacks(createWeatherToolCallback()))
 				.call()
 				.content();
 
@@ -145,7 +147,8 @@ public abstract class AbstractToolCallAdvisorIT {
 
 			String response = chatClient.prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(t -> t.callbacks(createWeatherToolCallback()))
+				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "call-default-advisor-with-memory"))
 				.call()
 				.content();
 
@@ -160,7 +163,7 @@ public abstract class AbstractToolCallAdvisorIT {
 				.prompt()
 				.advisors(ToolCallAdvisor.builder().build())
 				.user("What's the weather like in Tokyo?")
-				.toolCallbacks(createReturnDirectWeatherToolCallback())
+				.tools(t -> t.callbacks(createReturnDirectWeatherToolCallback()))
 				.call()
 				.content();
 
@@ -183,7 +186,7 @@ public abstract class AbstractToolCallAdvisorIT {
 				.prompt()
 				.advisors(ToolCallAdvisor.builder().build())
 				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(t -> t.callbacks(createWeatherToolCallback()))
 				.stream()
 				.content();
 
@@ -203,7 +206,8 @@ public abstract class AbstractToolCallAdvisorIT {
 						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(500).build())
 							.build())
 				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(t -> t.callbacks(createWeatherToolCallback()))
+				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "call-default-advisor-with-memory"))
 				.stream()
 				.content();
 
@@ -223,7 +227,7 @@ public abstract class AbstractToolCallAdvisorIT {
 
 			Flux<String> response = chatClient.prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(t -> t.callbacks(createWeatherToolCallback()))
 				.stream()
 				.content();
 
@@ -244,7 +248,8 @@ public abstract class AbstractToolCallAdvisorIT {
 
 			Flux<String> response = chatClient.prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(t -> t.callbacks(createWeatherToolCallback()))
+				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "call-default-advisor-with-memory"))
 				.stream()
 				.content();
 
@@ -261,7 +266,7 @@ public abstract class AbstractToolCallAdvisorIT {
 				.prompt()
 				.advisors(ToolCallAdvisor.builder().build())
 				.user("What's the weather like in Tokyo?")
-				.toolCallbacks(createReturnDirectWeatherToolCallback())
+				.tools(t -> t.callbacks(createReturnDirectWeatherToolCallback()))
 				.stream()
 				.content();
 

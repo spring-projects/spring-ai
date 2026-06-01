@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -170,6 +169,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Soby Chacko
+ * @author chabinhwang
  * @see VectorStore
  * @see EmbeddingModel
  * @since 1.0.0
@@ -271,9 +271,10 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
-		int i = 0;
-		for (Document d : documents) {
-			futures[i++] = CompletableFuture.runAsync(() -> {
+		for (int i = 0; i < documents.size(); i++) {
+			Document d = documents.get(i);
+			int index = i;
+			futures[i] = CompletableFuture.runAsync(() -> {
 				List<Object> primaryKeyValues = this.documentIdTranslator.apply(d.getId());
 
 				BoundStatementBuilder builder = prepareAddStatement(d.getMetadata().keySet()).boundStatementBuilder();
@@ -284,8 +285,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 				builder = builder.setString(this.schema.content(), d.getText())
 					.setVector(this.schema.embedding(),
-							CqlVector.newInstance(EmbeddingUtils.toList(embeddings.get(documents.indexOf(d)))),
-							Float.class);
+							CqlVector.newInstance(EmbeddingUtils.toList(embeddings.get(index))), Float.class);
 
 				for (var metadataColumn : this.schema.metadataColumns()
 					.stream()
@@ -335,7 +335,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 			if (!matchingDocs.isEmpty()) {
 				// Then delete those documents by ID
-				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).collect(Collectors.toList());
+				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).toList();
 				delete(idsToDelete);
 				logger.debug("Deleted {} documents matching filter expression", idsToDelete.size());
 			}

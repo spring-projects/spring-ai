@@ -31,6 +31,10 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * @author Christian Tzolov
+ * @author Sebastien Deleuze
+ */
 @EnabledIfEnvironmentVariable(named = "STABILITYAI_API_KEY", matches = ".+")
 public class StabilityAiAutoConfigurationIT {
 

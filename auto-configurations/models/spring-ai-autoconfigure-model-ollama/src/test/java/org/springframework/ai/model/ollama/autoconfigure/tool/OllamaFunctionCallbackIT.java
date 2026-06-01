@@ -59,10 +59,10 @@ class OllamaFunctionCallbackIT extends BaseOllamaIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
 	// @formatter:off
-				"spring.ai.ollama.baseUrl=" + getBaseUrl(),
-				"spring.ai.ollama.chat.options.model=" + MODEL_NAME,
-				"spring.ai.ollama.chat.options.temperature=0.5",
-				"spring.ai.ollama.chat.options.topK=10")
+				"spring.ai.ollama.base-url=" + getBaseUrl(),
+				"spring.ai.ollama.chat.model=" + MODEL_NAME,
+				"spring.ai.ollama.chat.temperature=0.5",
+				"spring.ai.ollama.chat.top-k=10")
 				// @formatter:on
 		.withConfiguration(ollamaAutoConfig(OllamaChatAutoConfiguration.class))
 		.withUserConfiguration(Config.class);

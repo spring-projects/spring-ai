@@ -23,9 +23,9 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxEmbeddingModel;
 import org.springframework.ai.minimax.api.MiniMaxApi;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -38,8 +38,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Geng Rong
  * @author Issam El-atif
+ * @author Sebastien Deleuze
  */
 public class MiniMaxPropertiesTests {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	@Test
 	public void chatProperties() {
@@ -48,8 +51,8 @@ public class MiniMaxPropertiesTests {
 		// @formatter:off
 				"spring.ai.minimax.base-url=TEST_BASE_URL",
 				"spring.ai.minimax.api-key=abc123",
-				"spring.ai.minimax.chat.options.model=MODEL_XYZ",
-				"spring.ai.minimax.chat.options.temperature=0.55")
+				"spring.ai.minimax.chat.model=MODEL_XYZ",
+				"spring.ai.minimax.chat.temperature=0.55")
 				// @formatter:on
 			.withConfiguration(
 					AutoConfigurations.of(MiniMaxChatAutoConfiguration.class, RestClientAutoConfiguration.class,
@@ -64,8 +67,8 @@ public class MiniMaxPropertiesTests {
 				assertThat(chatProperties.getApiKey()).isNull();
 				assertThat(chatProperties.getBaseUrl()).isNull();
 
-				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
+				assertThat(chatProperties.toOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(chatProperties.toOptions().getTemperature()).isEqualTo(0.55);
 			});
 	}
 
@@ -78,8 +81,8 @@ public class MiniMaxPropertiesTests {
 				"spring.ai.minimax.api-key=abc123",
 				"spring.ai.minimax.chat.base-url=TEST_BASE_URL2",
 				"spring.ai.minimax.chat.api-key=456",
-				"spring.ai.minimax.chat.options.model=MODEL_XYZ",
-				"spring.ai.minimax.chat.options.temperature=0.55")
+				"spring.ai.minimax.chat.model=MODEL_XYZ",
+				"spring.ai.minimax.chat.temperature=0.55")
 				// @formatter:on
 			.withConfiguration(
 					AutoConfigurations.of(MiniMaxChatAutoConfiguration.class, RestClientAutoConfiguration.class,
@@ -94,8 +97,8 @@ public class MiniMaxPropertiesTests {
 				assertThat(chatProperties.getApiKey()).isEqualTo("456");
 				assertThat(chatProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
 
-				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
+				assertThat(chatProperties.toOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(chatProperties.toOptions().getTemperature()).isEqualTo(0.55);
 			});
 	}
 
@@ -159,24 +162,24 @@ public class MiniMaxPropertiesTests {
 				"spring.ai.minimax.api-key=API_KEY",
 				"spring.ai.minimax.base-url=TEST_BASE_URL",
 
-				"spring.ai.minimax.chat.options.model=MODEL_XYZ",
-				"spring.ai.minimax.chat.options.frequencyPenalty=-1.5",
-				"spring.ai.minimax.chat.options.logitBias.myTokenId=-5",
-				"spring.ai.minimax.chat.options.maxTokens=123",
-				"spring.ai.minimax.chat.options.n=10",
-				"spring.ai.minimax.chat.options.presencePenalty=0",
-				"spring.ai.minimax.chat.options.responseFormat.type=json",
-				"spring.ai.minimax.chat.options.seed=66",
-				"spring.ai.minimax.chat.options.stop=boza,koza",
-				"spring.ai.minimax.chat.options.temperature=0.55",
-				"spring.ai.minimax.chat.options.topP=0.56",
+				"spring.ai.minimax.chat.model=MODEL_XYZ",
+				"spring.ai.minimax.chat.frequency-penalty=-1.5",
+				"spring.ai.minimax.chat.logit-bias.myTokenId=-5",
+				"spring.ai.minimax.chat.max-tokens=123",
+				"spring.ai.minimax.chat.n=10",
+				"spring.ai.minimax.chat.presence-penalty=0",
+				"spring.ai.minimax.chat.response-format.type=json",
+				"spring.ai.minimax.chat.seed=66",
+				"spring.ai.minimax.chat.stop=boza,koza",
+				"spring.ai.minimax.chat.temperature=0.55",
+				"spring.ai.minimax.chat.top-p=0.56",
 
-				// "spring.ai.minimax.chat.options.toolChoice.functionName=toolChoiceFunctionName",
-				"spring.ai.minimax.chat.options.toolChoice=" + ModelOptionsUtils.toJsonString(MiniMaxApi.ChatCompletionRequest.ToolChoiceBuilder.function("toolChoiceFunctionName")),
+				// "spring.ai.minimax.chat.tool-choice.function-name=toolChoiceFunctionName",
+				"spring.ai.minimax.chat.tool-choice=" + jsonHelper.toJson(MiniMaxApi.ChatCompletionRequest.ToolChoiceBuilder.function("toolChoiceFunctionName")),
 
-				"spring.ai.minimax.chat.options.tools[0].function.name=myFunction1",
-				"spring.ai.minimax.chat.options.tools[0].function.description=function description",
-				"spring.ai.minimax.chat.options.tools[0].function.jsonSchema=" + """
+				"spring.ai.minimax.chat.tools[0].function.name=myFunction1",
+				"spring.ai.minimax.chat.tools[0].function.description=function description",
+				"spring.ai.minimax.chat.tools[0].function.jsonSchema=" + """
 					{
 						"type": "object",
 						"properties": {
@@ -212,23 +215,23 @@ public class MiniMaxPropertiesTests {
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
 
-				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(chatProperties.getOptions().getFrequencyPenalty()).isEqualTo(-1.5);
-				assertThat(chatProperties.getOptions().getMaxTokens()).isEqualTo(123);
-				assertThat(chatProperties.getOptions().getN()).isEqualTo(10);
-				assertThat(chatProperties.getOptions().getPresencePenalty()).isEqualTo(0);
-				assertThat(chatProperties.getOptions().getResponseFormat())
+				assertThat(chatProperties.toOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(chatProperties.toOptions().getFrequencyPenalty()).isEqualTo(-1.5);
+				assertThat(chatProperties.toOptions().getMaxTokens()).isEqualTo(123);
+				assertThat(chatProperties.toOptions().getN()).isEqualTo(10);
+				assertThat(chatProperties.toOptions().getPresencePenalty()).isEqualTo(0);
+				assertThat(chatProperties.toOptions().getResponseFormat())
 					.isEqualTo(new MiniMaxApi.ChatCompletionRequest.ResponseFormat("json"));
-				assertThat(chatProperties.getOptions().getSeed()).isEqualTo(66);
-				assertThat(chatProperties.getOptions().getStop()).contains("boza", "koza");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
-				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56);
+				assertThat(chatProperties.toOptions().getSeed()).isEqualTo(66);
+				assertThat(chatProperties.toOptions().getStop()).contains("boza", "koza");
+				assertThat(chatProperties.toOptions().getTemperature()).isEqualTo(0.55);
+				assertThat(chatProperties.toOptions().getTopP()).isEqualTo(0.56);
 
 				JSONAssert.assertEquals("{\"type\":\"function\",\"function\":{\"name\":\"toolChoiceFunctionName\"}}",
-						chatProperties.getOptions().getToolChoice(), JSONCompareMode.LENIENT);
+						chatProperties.toOptions().getToolChoice(), JSONCompareMode.LENIENT);
 
-				assertThat(chatProperties.getOptions().getTools()).hasSize(1);
-				var tool = chatProperties.getOptions().getTools().get(0);
+				assertThat(chatProperties.toOptions().getTools()).hasSize(1);
+				var tool = chatProperties.toOptions().getTools().get(0);
 				assertThat(tool.getType()).isEqualTo(MiniMaxApi.FunctionTool.Type.FUNCTION);
 				var function = tool.getFunction();
 				assertThat(function.getName()).isEqualTo("myFunction1");
@@ -246,7 +249,7 @@ public class MiniMaxPropertiesTests {
 				"spring.ai.minimax.base-url=TEST_BASE_URL",
 
 				"spring.ai.minimax.embedding.options.model=MODEL_XYZ",
-				"spring.ai.minimax.embedding.options.encodingFormat=MyEncodingFormat"
+				"spring.ai.minimax.embedding.options.encoding-format=MyEncodingFormat"
 				)
 			// @formatter:on
 			.withConfiguration(AutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class,

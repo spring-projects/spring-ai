@@ -30,12 +30,6 @@
 	<description>Spring AI OpenSearch Vector Store</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<scm>
-		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
-	</scm>
-
 	<properties>
 		<!-- testing -->
 		<hikari-cp.version>4.0.3</hikari-cp.version>
@@ -54,11 +48,6 @@
 			<version>${opensearch-client.version}</version>
 		</dependency>
 
-		<dependency>
-			<groupId>org.apache.httpcomponents.client5</groupId>
-			<artifactId>httpclient5</artifactId>
-		</dependency>
-
 		<!-- TESTING -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
@@ -73,7 +62,6 @@
 			<version>${project.parent.version}</version>
 			<scope>test</scope>
 		</dependency>
-
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>

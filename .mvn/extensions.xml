@@ -16,14 +16,14 @@
   -->
 
 <extensions>
-    <extension>
-      <groupId>fr.jcgay.maven</groupId>
-      <artifactId>maven-profiler</artifactId>
-      <version>3.2</version>
-    </extension>
+	<extension>
+		<groupId>fr.jcgay.maven</groupId>
+		<artifactId>maven-profiler</artifactId>
+		<version>3.3</version>
+	</extension>
 	<extension>
 		<groupId>org.apache.maven.extensions</groupId>
 		<artifactId>maven-build-cache-extension</artifactId>
-		<version>1.2.1</version>
+		<version>1.2.3</version>
 	</extension>
 </extensions>

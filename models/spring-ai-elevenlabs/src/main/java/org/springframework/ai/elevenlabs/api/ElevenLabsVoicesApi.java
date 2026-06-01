@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.NoopApiKey;
@@ -404,7 +405,7 @@ public class ElevenLabsVoicesApi {
 
 		private String baseUrl = DEFAULT_BASE_URL;
 
-		private ApiKey apiKey;
+		private @Nullable ApiKey apiKey;
 
 		private HttpHeaders headers = new HttpHeaders();
 

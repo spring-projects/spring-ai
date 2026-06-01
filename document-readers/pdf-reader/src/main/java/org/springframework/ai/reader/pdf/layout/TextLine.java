@@ -37,6 +37,13 @@ class TextLine {
 		if (lineLength < 0) {
 			throw new IllegalArgumentException("Line length cannot be negative");
 		}
+		else if (lineLength > 14_400) {
+			// Cap to a reasonable limit to prevent attack via excessive char allocation
+			// below.
+			// 14_400 pdf units is the recommendation for the max dimension of a page by
+			// ISO 32000
+			throw new IllegalArgumentException("Unreasonable lineLength of %d provided".formatted(lineLength));
+		}
 		this.lineLength = lineLength / ForkPDFLayoutTextStripper.OUTPUT_SPACE_CHARACTER_WIDTH_IN_PT;
 		this.line = new char[this.lineLength];
 		Arrays.fill(this.line, SPACE_CHARACTER);

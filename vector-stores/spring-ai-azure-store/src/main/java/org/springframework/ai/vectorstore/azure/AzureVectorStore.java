@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.fastjson2.TypeReference;
@@ -78,6 +78,7 @@ import org.springframework.util.StringUtils;
  * @author Soby Chacko
  * @author Jinwoo Lee
  * @author Alexandros Pappas
+ * @author chabinhwang
  */
 public class AzureVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -173,10 +174,11 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
-		final var searchDocuments = documents.stream().map(document -> {
+		final var searchDocuments = IntStream.range(0, documents.size()).mapToObj(i -> {
+			Document document = documents.get(i);
 			SearchDocument searchDocument = new SearchDocument();
 			searchDocument.put(ID_FIELD_NAME, document.getId());
-			searchDocument.put(this.embeddingFieldName, embeddings.get(documents.indexOf(document)));
+			searchDocument.put(this.embeddingFieldName, embeddings.get(i));
 			searchDocument.put(this.contentFieldName, document.getText());
 			searchDocument.put(this.metadataFieldName, new JSONObject(document.getMetadata()).toJSONString());
 
@@ -264,7 +266,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 				return Document.builder().id(id).text(content).metadata(metadata).score(result.getScore()).build();
 			})
-			.collect(Collectors.toList());
+			.toList();
 	}
 
 	@Override

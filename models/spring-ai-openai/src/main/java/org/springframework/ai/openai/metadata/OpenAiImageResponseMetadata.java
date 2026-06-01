@@ -19,6 +19,7 @@ package org.springframework.ai.openai.metadata;
 import java.util.Objects;
 
 import com.openai.models.images.ImagesResponse;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.image.ImageResponseMetadata;
 import org.springframework.util.Assert;
@@ -61,7 +62,7 @@ public class OpenAiImageResponseMetadata extends ImageResponseMetadata {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}

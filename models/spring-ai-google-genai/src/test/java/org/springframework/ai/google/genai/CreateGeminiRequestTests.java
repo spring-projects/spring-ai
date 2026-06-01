@@ -34,6 +34,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel.GeminiRequest;
+import org.springframework.ai.google.genai.common.GoogleGenAiServiceTier;
 import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.google.genai.tool.MockWeatherService;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -773,6 +774,29 @@ public class CreateGeminiRequestTests {
 
 		assertThat(request.config().toolConfig()).isPresent();
 		assertThat(request.config().toolConfig().get().includeServerSideToolInvocations().get()).isTrue();
+	}
+
+	@Test
+	public void createRequestWithServiceTier() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model("DEFAULT_MODEL")
+				.serviceTier(GoogleGenAiServiceTier.PRIORITY)
+				.build())
+			.build();
+
+		GeminiRequest request = client
+			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+
+		assertThat(request.config().serviceTier()).isPresent();
+		assertThat(request.config().serviceTier().get().toString()).isEqualTo("priority");
+
+		request = client.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content",
+				GoogleGenAiChatOptions.builder().serviceTier(GoogleGenAiServiceTier.STANDARD).build())));
+
+		assertThat(request.config().serviceTier()).isPresent();
+		assertThat(request.config().serviceTier().get().toString()).isEqualTo("standard");
 	}
 
 }

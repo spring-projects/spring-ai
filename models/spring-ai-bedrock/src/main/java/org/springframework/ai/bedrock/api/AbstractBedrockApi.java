@@ -46,7 +46,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ResponseStream;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
-import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
@@ -92,7 +92,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * @param region The AWS region to use.
 	 */
 	public AbstractBedrockApi(String modelId, String region) {
-		this(modelId, ProfileCredentialsProvider.builder().build(), region, ModelOptionsUtils.JSON_MAPPER, Duration.ofMinutes(5));
+		this(modelId, ProfileCredentialsProvider.builder().build(), region, JacksonUtils.getDefaultJsonMapper(), Duration.ofMinutes(5));
 	}
 	/**
 	 * Create a new AbstractBedrockApi instance using default credentials provider and object mapper.
@@ -102,7 +102,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * @param timeout The timeout to use.
 	 */
 	public AbstractBedrockApi(String modelId, String region, Duration timeout) {
-		this(modelId, ProfileCredentialsProvider.builder().build(), region, ModelOptionsUtils.JSON_MAPPER, timeout);
+		this(modelId, ProfileCredentialsProvider.builder().build(), region, JacksonUtils.getDefaultJsonMapper(), timeout);
 	}
 
 	/**

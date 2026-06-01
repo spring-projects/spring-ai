@@ -20,27 +20,15 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.Objects;
 
-import com.github.victools.jsonschema.generator.Option;
-import com.github.victools.jsonschema.generator.SchemaGenerator;
-import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
-import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
-import com.github.victools.jsonschema.module.jackson.JacksonOption;
-import com.github.victools.jsonschema.module.jackson.JacksonSchemaModule;
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.core.JacksonException;
-import tools.jackson.core.util.DefaultIndenter;
-import tools.jackson.core.util.DefaultPrettyPrinter;
 import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectWriter;
 import tools.jackson.databind.json.JsonMapper;
 
-import org.springframework.ai.model.KotlinModule;
 import org.springframework.ai.util.JacksonUtils;
-import org.springframework.core.KotlinDetector;
+import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.core.ParameterizedTypeReference;
 
 import static org.springframework.ai.util.LoggingMarkers.SENSITIVE_DATA_MARKER;
@@ -75,7 +63,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	private final JsonMapper jsonMapper;
 
 	/** Holds the generated JSON schema for the target type. */
-	private String jsonSchema;
+	private final String jsonSchema;
 
 	/** The text cleaner used to preprocess LLM responses before parsing. */
 	private final ResponseTextCleaner textCleaner;
@@ -154,7 +142,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 		this.type = type;
 		this.jsonMapper = jsonMapper != null ? jsonMapper : getJsonMapper();
 		this.textCleaner = textCleaner != null ? textCleaner : createDefaultTextCleaner();
-		generateSchema();
+		this.jsonSchema = Objects.requireNonNull(generateSchema(), "JSON schema cannot be null");
 	}
 
 	/**
@@ -185,44 +173,13 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
 	/**
 	 * Generates the JSON schema for the target type.
+	 * <p>
+	 * This method can be overridden in subclasses to customize the JSON schema generation
+	 * logic.
+	 * @return the generated JSON schema
 	 */
-	private void generateSchema() {
-		JacksonSchemaModule jacksonModule = new JacksonSchemaModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
-				JacksonOption.RESPECT_JSONPROPERTY_ORDER);
-		SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(
-				com.github.victools.jsonschema.generator.SchemaVersion.DRAFT_2020_12,
-				com.github.victools.jsonschema.generator.OptionPreset.PLAIN_JSON)
-			.with(jacksonModule)
-			.with(Option.FORBIDDEN_ADDITIONAL_PROPERTIES_BY_DEFAULT);
-
-		configBuilder.forFields().withRequiredCheck(f -> true);
-
-		if (KotlinDetector.isKotlinReflectPresent()) {
-			configBuilder.with(new KotlinModule());
-		}
-
-		SchemaGeneratorConfig config = configBuilder.build();
-		SchemaGenerator generator = new SchemaGenerator(config);
-		JsonNode jsonNode = generator.generateSchema(this.type);
-		postProcessSchema(jsonNode);
-		ObjectWriter objectWriter = this.jsonMapper.writer()
-			.with(new DefaultPrettyPrinter()
-				.withObjectIndenter(new DefaultIndenter().withLinefeed(System.lineSeparator())));
-		try {
-			this.jsonSchema = objectWriter.writeValueAsString(jsonNode);
-		}
-		catch (JacksonException e) {
-			logger.error("Could not pretty print json schema for jsonNode: {}", jsonNode);
-			throw new RuntimeException("Could not pretty print json schema for " + this.type, e);
-		}
-	}
-
-	/**
-	 * Empty template method that allows for customization of the JSON schema in
-	 * subclasses.
-	 * @param jsonNode the JSON schema, in the form of a JSON node
-	 */
-	protected void postProcessSchema(@NonNull JsonNode jsonNode) {
+	protected String generateSchema() {
+		return JsonSchemaGenerator.generateForType(this.type);
 	}
 
 	/**
@@ -279,6 +236,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * Provides the generated JSON schema for the target type.
 	 * @return The generated JSON schema.
 	 */
+	@Override
 	public String getJsonSchema() {
 		return this.jsonSchema;
 	}

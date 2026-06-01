@@ -18,6 +18,8 @@ package org.springframework.ai.moderation;
 
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Represents a single message intended for moderation, encapsulating the text content.
  * This class provides a basic structure for messages that can be submitted to moderation
@@ -48,7 +50,7 @@ public class ModerationMessage {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}

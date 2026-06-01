@@ -17,6 +17,7 @@
 package org.springframework.ai.openai.chat.proxy;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +44,7 @@ import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -63,6 +65,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * provider.
  *
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 @Testcontainers
 @SpringBootTest(classes = OllamaWithOpenAiChatModelIT.Config.class)
@@ -79,7 +82,9 @@ class OllamaWithOpenAiChatModelIT {
 
 	static OllamaContainer ollamaContainer;
 
-	static String baseUrl = "http://localhost:11434/v1";
+	static String getBaseUrl() {
+		return SKIP_CONTAINER_CREATION ? "http://localhost:11434/v1" : ollamaContainer.getEndpoint() + "/v1";
+	}
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
@@ -90,7 +95,7 @@ class OllamaWithOpenAiChatModelIT {
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
 		if (!SKIP_CONTAINER_CREATION) {
-			ollamaContainer = new OllamaContainer("ollama/ollama:0.10.1").withReuse(true);
+			ollamaContainer = new OllamaContainer("ollama/ollama:0.23.1").withReuse(true);
 			ollamaContainer.start();
 			logger.info(
 					"Start pulling the '" + DEFAULT_OLLAMA_MODEL + " ' generative ... would take several minutes ...");
@@ -98,7 +103,7 @@ class OllamaWithOpenAiChatModelIT {
 			ollamaContainer.execInContainer("ollama", "pull", MULTIMODAL_MODEL);
 			logger.info(DEFAULT_OLLAMA_MODEL + " pulling competed!");
 
-			baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434) + "/v1";
+			// No need to set baseUrl here, it's evaluated dynamically
 		}
 	}
 
@@ -304,7 +309,12 @@ class OllamaWithOpenAiChatModelIT {
 		@Bean
 		public OpenAiChatModel openAiSdkChatModel() {
 			return OpenAiChatModel.builder()
-				.options(OpenAiChatOptions.builder().baseUrl(baseUrl).model(DEFAULT_OLLAMA_MODEL).build())
+				.options(OpenAiChatOptions.builder()
+					.baseUrl(getBaseUrl())
+					.apiKey(new NoopApiKey())
+					.model(DEFAULT_OLLAMA_MODEL)
+					.timeout(Duration.ofMinutes(5))
+					.build())
 				.build();
 		}
 

@@ -93,7 +93,7 @@ public class StreamableMcpAnnotationsWithLLMIT {
 				McpServerSpecificationFactoryAutoConfiguration.class));
 
 	private final ApplicationContextRunner clientApplicationContext = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.anthropic.apiKey=" + System.getenv("ANTHROPIC_API_KEY"))
+		.withPropertyValues("spring.ai.anthropic.api-key=" + System.getenv("ANTHROPIC_API_KEY"))
 		.withConfiguration(anthropicAutoConfig(McpToolCallbackAutoConfiguration.class, McpClientAutoConfiguration.class,
 				StreamableHttpWebFluxTransportAutoConfiguration.class,
 				McpClientAnnotationScannerAutoConfiguration.class, AnthropicChatAutoConfiguration.class,
@@ -150,8 +150,8 @@ public class StreamableMcpAnnotationsWithLLMIT {
 
 						assertThat(builder).isNotNull();
 
-						ChatClient chatClient = builder.defaultToolCallbacks(tcp)
-							.defaultToolContext(Map.of("progressToken", "test-progress-token"))
+						ChatClient chatClient = builder
+							.defaultTools(t -> t.callbacks(tcp).context(Map.of("progressToken", "test-progress-token")))
 							.build();
 
 						String cResponse = chatClient.prompt()

@@ -15,7 +15,7 @@ The link:https://github.com/spring-ai-community/spring-ai-tool-search-tool[Tool 
 * **Token savings** - Only discovered tool definitions are sent to the LLM
 * **Improved accuracy** - Models select tools more reliably from smaller, relevant sets
 * **Scalability** - Manage hundreds of tools without context bloat
-* **Portability** - Works with OpenAI, Anthropic, Gemini, Ollama, Azure OpenAI, and more
+* **Portability** - Works with OpenAI, Anthropic, Gemini, Ollama and more
 
 == Blog Post
 

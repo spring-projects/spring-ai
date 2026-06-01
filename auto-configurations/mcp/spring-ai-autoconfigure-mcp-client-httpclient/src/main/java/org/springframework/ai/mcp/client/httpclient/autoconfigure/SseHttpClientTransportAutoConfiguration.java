@@ -66,6 +66,7 @@ import org.springframework.core.log.LogAccessor;
 @EnableConfigurationProperties({ McpSseClientProperties.class, McpClientCommonProperties.class })
 @ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
+@Deprecated(since = "2.0.0", forRemoval = true)
 public class SseHttpClientTransportAutoConfiguration {
 
 	private static final LogAccessor logger = new LogAccessor(SseHttpClientTransportAutoConfiguration.class);

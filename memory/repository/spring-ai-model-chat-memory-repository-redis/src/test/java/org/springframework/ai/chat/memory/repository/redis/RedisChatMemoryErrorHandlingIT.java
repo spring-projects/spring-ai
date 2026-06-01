@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.chat.memory.repository.redis;
 
 import java.time.Duration;
@@ -35,8 +36,6 @@ import redis.clients.jedis.exceptions.JedisConnectionException;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 
@@ -48,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  * Integration tests for RedisChatMemoryRepository focused on error handling scenarios.
  *
  * @author Brian Sam-Bodden
+ * @author Yanming Zhou
  */
 @Testcontainers
 class RedisChatMemoryErrorHandlingIT {
@@ -64,17 +64,17 @@ class RedisChatMemoryErrorHandlingIT {
 
 	@BeforeEach
 	void setUp() {
-		jedisClient = new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort());
-		chatMemory = RedisChatMemoryRepository.builder()
-			.jedisClient(jedisClient)
+		this.jedisClient = new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort());
+		this.chatMemory = RedisChatMemoryRepository.builder()
+			.jedisClient(this.jedisClient)
 			.indexName("test-error-" + RedisChatMemoryConfig.DEFAULT_INDEX_NAME)
 			.build();
 	}
 
 	@AfterEach
 	void tearDown() {
-		if (jedisClient != null) {
-			jedisClient.close();
+		if (this.jedisClient != null) {
+			this.jedisClient.close();
 		}
 	}
 
@@ -83,27 +83,27 @@ class RedisChatMemoryErrorHandlingIT {
 		this.contextRunner.run(context -> {
 			// Using null conversation ID
 			assertThatExceptionOfType(IllegalArgumentException.class)
-				.isThrownBy(() -> chatMemory.add(null, new UserMessage("Test message")))
+				.isThrownBy(() -> this.chatMemory.add(null, new UserMessage("Test message")))
 				.withMessageContaining("Conversation ID must not be null");
 
 			// Using empty conversation ID
 			UserMessage message = new UserMessage("Test message");
-			assertThatCode(() -> chatMemory.add("", message)).doesNotThrowAnyException();
+			assertThatCode(() -> this.chatMemory.add("", message)).doesNotThrowAnyException();
 
 			// Reading with null conversation ID
-			assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> chatMemory.get(null, 10))
+			assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> this.chatMemory.get(null, 10))
 				.withMessageContaining("Conversation ID must not be null");
 
 			// Reading with non-existent conversation ID should return empty list
-			List<Message> messages = chatMemory.get("non-existent-id", 10);
+			List<Message> messages = this.chatMemory.get("non-existent-id", 10);
 			assertThat(messages).isNotNull().isEmpty();
 
 			// Clearing with null conversation ID
-			assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> chatMemory.clear(null))
+			assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> this.chatMemory.clear(null))
 				.withMessageContaining("Conversation ID must not be null");
 
 			// Clearing non-existent conversation should not throw exception
-			assertThatCode(() -> chatMemory.clear("non-existent-id")).doesNotThrowAnyException();
+			assertThatCode(() -> this.chatMemory.clear("non-existent-id")).doesNotThrowAnyException();
 		});
 	}
 
@@ -114,25 +114,25 @@ class RedisChatMemoryErrorHandlingIT {
 
 			// Null message
 			assertThatExceptionOfType(IllegalArgumentException.class)
-				.isThrownBy(() -> chatMemory.add(conversationId, (Message) null))
+				.isThrownBy(() -> this.chatMemory.add(conversationId, (Message) null))
 				.withMessageContaining("Message must not be null");
 
 			// Null message list
 			assertThatExceptionOfType(IllegalArgumentException.class)
-				.isThrownBy(() -> chatMemory.add(conversationId, (List<Message>) null))
+				.isThrownBy(() -> this.chatMemory.add(conversationId, (List<Message>) null))
 				.withMessageContaining("Messages must not be null");
 
 			// Empty message list should not throw exception
-			assertThatCode(() -> chatMemory.add(conversationId, List.of())).doesNotThrowAnyException();
+			assertThatCode(() -> this.chatMemory.add(conversationId, List.of())).doesNotThrowAnyException();
 
 			// Message with empty content (not null - which is not allowed)
 			UserMessage emptyContentMessage = UserMessage.builder().text("").build();
 
-			assertThatCode(() -> chatMemory.add(conversationId, emptyContentMessage)).doesNotThrowAnyException();
+			assertThatCode(() -> this.chatMemory.add(conversationId, emptyContentMessage)).doesNotThrowAnyException();
 
 			// Message with empty metadata
 			UserMessage userMessage = UserMessage.builder().text("Hello").build();
-			assertThatCode(() -> chatMemory.add(conversationId, userMessage)).doesNotThrowAnyException();
+			assertThatCode(() -> this.chatMemory.add(conversationId, userMessage)).doesNotThrowAnyException();
 		});
 	}
 
@@ -141,7 +141,7 @@ class RedisChatMemoryErrorHandlingIT {
 		this.contextRunner.run(context -> {
 			// Create chat memory with short TTL
 			RedisChatMemoryRepository ttlChatMemory = RedisChatMemoryRepository.builder()
-				.jedisClient(jedisClient)
+				.jedisClient(this.jedisClient)
 				.indexName("test-ttl-" + RedisChatMemoryConfig.DEFAULT_INDEX_NAME)
 				.timeToLive(Duration.ofSeconds(1))
 				.build();
@@ -185,9 +185,9 @@ class RedisChatMemoryErrorHandlingIT {
 			// Test with a simple conversation ID first to verify basic functionality
 			String simpleId = "simple-test-id";
 			UserMessage simpleMessage = new UserMessage("Simple test message");
-			chatMemory.add(simpleId, simpleMessage);
+			this.chatMemory.add(simpleId, simpleMessage);
 
-			List<Message> simpleMessages = chatMemory.get(simpleId, 10);
+			List<Message> simpleMessages = this.chatMemory.get(simpleId, 10);
 			assertThat(simpleMessages).hasSize(1);
 			assertThat(simpleMessages.get(0).getText()).isEqualTo("Simple test message");
 
@@ -197,10 +197,10 @@ class RedisChatMemoryErrorHandlingIT {
 			UserMessage message = new UserMessage(specialMessage);
 
 			// Add message with special chars ID
-			chatMemory.add(specialCharsId, message);
+			this.chatMemory.add(specialCharsId, message);
 
 			// Verify that message can be retrieved
-			List<Message> specialCharMessages = chatMemory.get(specialCharsId, 10);
+			List<Message> specialCharMessages = this.chatMemory.get(specialCharsId, 10);
 			assertThat(specialCharMessages).hasSize(1);
 			assertThat(specialCharMessages.get(0).getText()).isEqualTo(specialMessage);
 
@@ -210,8 +210,8 @@ class RedisChatMemoryErrorHandlingIT {
 			UserMessage complexIdMessage = new UserMessage(complexMessage);
 
 			// Add and retrieve message with complex ID
-			chatMemory.add(complexId, complexIdMessage);
-			List<Message> complexIdMessages = chatMemory.get(complexId, 10);
+			this.chatMemory.add(complexId, complexIdMessage);
+			List<Message> complexIdMessages = this.chatMemory.get(complexId, 10);
 			assertThat(complexIdMessages).hasSize(1);
 			assertThat(complexIdMessages.get(0).getText()).isEqualTo(complexMessage);
 
@@ -225,8 +225,8 @@ class RedisChatMemoryErrorHandlingIT {
 			UserMessage longIdMessage = new UserMessage(longIdMessageText);
 
 			// Add and retrieve message with long ID
-			chatMemory.add(longId, longIdMessage);
-			List<Message> longIdMessages = chatMemory.get(longId, 10);
+			this.chatMemory.add(longId, longIdMessage);
+			List<Message> longIdMessages = this.chatMemory.get(longId, 10);
 			assertThat(longIdMessages).hasSize(1);
 			assertThat(longIdMessages.get(0).getText()).isEqualTo(longIdMessageText);
 		});
@@ -238,7 +238,7 @@ class RedisChatMemoryErrorHandlingIT {
 			String conversationId = "concurrent-access-test-" + UUID.randomUUID();
 
 			// Clear any existing data for this conversation
-			chatMemory.clear(conversationId);
+			this.chatMemory.clear(conversationId);
 
 			// Define thread setup for concurrent access
 			int threadCount = 3;
@@ -264,7 +264,7 @@ class RedisChatMemoryErrorHandlingIT {
 							String messageText = String.format("Message %d from thread %d", j, threadId);
 							expectedMessageTexts.add(messageText);
 							UserMessage message = new UserMessage(messageText);
-							chatMemory.add(conversationId, message);
+							this.chatMemory.add(conversationId, message);
 						}
 					}
 					catch (InterruptedException e) {
@@ -283,7 +283,7 @@ class RedisChatMemoryErrorHandlingIT {
 			Thread.sleep(500);
 
 			// Retrieve all messages (including extras to make sure we get everything)
-			List<Message> messages = chatMemory.get(conversationId, totalExpectedMessages + 5);
+			List<Message> messages = this.chatMemory.get(conversationId, totalExpectedMessages + 5);
 
 			// We don't check exact message count as Redis async operations might result
 			// in slight variations
@@ -305,7 +305,7 @@ class RedisChatMemoryErrorHandlingIT {
 
 			// Order check - messages might be in different order than creation,
 			// but order should be consistent between retrievals
-			List<Message> messagesAgain = chatMemory.get(conversationId, totalExpectedMessages + 5);
+			List<Message> messagesAgain = this.chatMemory.get(conversationId, totalExpectedMessages + 5);
 			for (int i = 0; i < messages.size(); i++) {
 				assertThat(messagesAgain.get(i).getText()).isEqualTo(messages.get(i).getText());
 			}
@@ -313,7 +313,6 @@ class RedisChatMemoryErrorHandlingIT {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
 	static class TestApplication {
 
 		@Bean

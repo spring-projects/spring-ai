@@ -54,7 +54,7 @@ class GoogleGenAiToolCallAdvisorIT extends AbstractToolCallAdvisorIT {
 
 		Flux<String> response = chatClient.prompt()
 			.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
-			.toolCallbacks(createWeatherToolCallback())
+			.tools(t -> t.callbacks(createWeatherToolCallback()))
 			.stream()
 			.content();
 

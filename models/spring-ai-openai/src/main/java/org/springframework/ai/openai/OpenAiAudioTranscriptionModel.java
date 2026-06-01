@@ -130,8 +130,14 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 			.value(new ByteArrayInputStream(audioBytes))
 			.filename(filename)
 			.build();
-		String model = options.getModel() != null ? options.getModel()
-				: OpenAiAudioTranscriptionOptions.DEFAULT_TRANSCRIPTION_MODEL;
+		String model;
+		if (options.getDeploymentName() != null) {
+			model = options.getDeploymentName();
+		}
+		else {
+			model = options.getModel();
+		}
+		Assert.notNull(model, "Model must not be null");
 		TranscriptionCreateParams.Builder builder = TranscriptionCreateParams.builder().file(fileField).model(model);
 
 		if (options.getResponseFormat() != null) {

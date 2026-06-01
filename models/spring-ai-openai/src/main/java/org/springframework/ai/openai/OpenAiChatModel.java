@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import com.openai.client.OpenAIClient;
@@ -84,10 +85,8 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
@@ -95,6 +94,7 @@ import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
@@ -109,6 +109,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Soby Chacko
  * @author Ilayaperumal Gopinathan
+ * @author Thomas Vitale
  */
 public final class OpenAiChatModel implements ChatModel {
 
@@ -130,7 +131,9 @@ public final class OpenAiChatModel implements ChatModel {
 
 	private final ToolCallingManager toolCallingManager;
 
-	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+	private final ToolExecutionEligibilityChecker toolExecutionEligibilityChecker;
+
+	private final AtomicBoolean internalToolExecutionWarned = new AtomicBoolean(false);
 
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
@@ -167,8 +170,8 @@ public final class OpenAiChatModel implements ChatModel {
 
 		this.observationRegistry = Objects.requireNonNullElse(builder.observationRegistry, ObservationRegistry.NOOP);
 		this.toolCallingManager = Objects.requireNonNullElse(builder.toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER);
-		this.toolExecutionEligibilityPredicate = Objects.requireNonNullElse(builder.toolExecutionEligibilityPredicate,
-				new DefaultToolExecutionEligibilityPredicate());
+		this.toolExecutionEligibilityChecker = Objects.requireNonNullElse(builder.toolExecutionEligibilityChecker,
+				chatResponse -> chatResponse != null && chatResponse.hasToolCalls());
 	}
 
 	/**
@@ -182,6 +185,7 @@ public final class OpenAiChatModel implements ChatModel {
 	@Override
 	public ChatResponse call(Prompt prompt) {
 		Prompt requestPrompt = buildRequestPrompt(prompt);
+		verifyPromptChatOptions(requestPrompt);
 		return this.internalCall(requestPrompt, null);
 	}
 
@@ -197,7 +201,7 @@ public final class OpenAiChatModel implements ChatModel {
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
-			.provider(AiProvider.OPENAI_SDK.value())
+			.provider(AiProvider.OPENAI.value())
 			.build();
 
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
@@ -241,7 +245,12 @@ public final class OpenAiChatModel implements ChatModel {
 
 		Assert.state(prompt.getOptions() != null, "Prompt options must not be null");
 		Assert.state(response != null, "Chat response must not be null");
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+		if (this.toolExecutionEligibilityChecker.isToolExecutionRequired(prompt.getOptions(), response)) {
+			if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
+				logger.warn(
+						"Internal tool execution in OpenAiChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
+								+ "Use ChatClient with ToolCallAdvisor instead.");
+			}
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -263,6 +272,7 @@ public final class OpenAiChatModel implements ChatModel {
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 		Prompt requestPrompt = buildRequestPrompt(prompt);
+		verifyPromptChatOptions(requestPrompt);
 		return internalStream(requestPrompt, null);
 	}
 
@@ -295,7 +305,8 @@ public final class OpenAiChatModel implements ChatModel {
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
-				.provider(AiProvider.OPENAI_SDK.value())
+				.provider(AiProvider.OPENAI.value())
+				.streaming(true)
 				.build();
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
 					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
@@ -439,7 +450,12 @@ public final class OpenAiChatModel implements ChatModel {
 						finalMetadata != null ? finalMetadata : ChatResponseMetadata.builder().build());
 				observationContext.setResponse(aggregated);
 				Assert.state(prompt.getOptions() != null, "ChatOptions must not be null");
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), aggregated)) {
+				if (this.toolExecutionEligibilityChecker.isToolExecutionRequired(prompt.getOptions(), aggregated)) {
+					if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
+						logger.warn(
+								"Internal tool execution in OpenAiChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
+										+ "Use ChatClient with ToolCallAdvisor instead.");
+					}
 					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult tetoolExecutionResult;
 						try {
@@ -551,21 +567,38 @@ public final class OpenAiChatModel implements ChatModel {
 		Assert.notNull(result, "OpenAI ChatCompletion must not be null");
 		result.model();
 		result.id();
-		return ChatResponseMetadata.builder()
+		ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder()
 			.id(result.id())
 			.usage(usage)
 			.model(result.model())
-			.keyValue("created", result.created())
-			.build();
+			.keyValue("created", result.created());
+
+		result._additionalProperties().forEach((key, jsonValue) -> {
+			try {
+				Object value = JacksonUtils.getDefaultJsonMapper().convertValue(jsonValue, Object.class);
+				metadataBuilder.keyValue(key, value);
+			}
+			catch (Exception e) {
+				logger.error("Error parsing JSON value for key '{}': {}", key, jsonValue, e);
+				metadataBuilder.keyValue(key, jsonValue);
+			}
+		});
+
+		return metadataBuilder.build();
 	}
 
 	private ChatResponseMetadata from(ChatResponseMetadata chatResponseMetadata, Usage usage) {
 		Assert.notNull(chatResponseMetadata, "OpenAI ChatResponseMetadata must not be null");
-		return ChatResponseMetadata.builder()
+		ChatResponseMetadata.Builder builder = ChatResponseMetadata.builder()
 			.id(chatResponseMetadata.getId())
 			.usage(usage)
 			.model(chatResponseMetadata.getModel())
-			.build();
+			.promptMetadata(chatResponseMetadata.getPromptMetadata())
+			.rateLimit(chatResponseMetadata.getRateLimit());
+
+		chatResponseMetadata.entrySet().forEach(e -> builder.keyValue(e.getKey(), e.getValue()));
+
+		return builder.build();
 	}
 
 	/**
@@ -617,34 +650,22 @@ public final class OpenAiChatModel implements ChatModel {
 			.model(chunk.model())
 			.usage(chunk.usage()
 				.orElse(CompletionUsage.builder().promptTokens(0).completionTokens(0).totalTokens(0).build()))
+			.putAllAdditionalProperties(chunk._additionalProperties())
 			.build();
 	}
 
 	private DefaultUsage getDefaultUsage(CompletionUsage usage) {
+		Long cacheRead = usage.promptTokensDetails().flatMap(details -> details.cachedTokens()).orElse(null);
 		return new DefaultUsage(Math.toIntExact(usage.promptTokens()), Math.toIntExact(usage.completionTokens()),
-				Math.toIntExact(usage.totalTokens()), usage);
+				Math.toIntExact(usage.totalTokens()), usage, cacheRead, null);
 	}
 
-	/**
-	 * Builds the request prompt by merging runtime options with default options.
-	 * @param prompt the original prompt
-	 * @return the prompt with merged options
-	 */
-	Prompt buildRequestPrompt(Prompt prompt) {
-		OpenAiChatOptions.Builder requestBuilder = this.options.mutate();
+	private void verifyPromptChatOptions(Prompt prompt) {
+		var chatOptions = prompt.getOptions();
 
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions().getTopK() != null) {
-				logger.warn("The topK option is not supported by OpenAI chat models. Ignoring.");
-			}
-			requestBuilder.combineWith(prompt.getOptions().mutate());
+		if (chatOptions != null && chatOptions.getTopK() != null) {
+			logger.warn("The topK option is not supported by OpenAI chat models. Ignoring.");
 		}
-
-		OpenAiChatOptions requestOptions = requestBuilder.build();
-
-		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
-
-		return new Prompt(prompt.getInstructions(), requestOptions);
 	}
 
 	/**
@@ -997,7 +1018,7 @@ public final class OpenAiChatModel implements ChatModel {
 				}
 				else {
 					try {
-						var node = ModelOptionsUtils.JSON_MAPPER.readTree(json);
+						var node = JacksonUtils.getDefaultJsonMapper().readTree(json);
 						builder.toolChoice(parseToolChoice(node));
 					}
 					catch (Exception e) {
@@ -1263,7 +1284,7 @@ public final class OpenAiChatModel implements ChatModel {
 
 		private @Nullable ObservationRegistry observationRegistry;
 
-		private @Nullable ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+		private @Nullable ToolExecutionEligibilityChecker toolExecutionEligibilityChecker;
 
 		private Builder() {
 		}
@@ -1299,10 +1320,14 @@ public final class OpenAiChatModel implements ChatModel {
 		}
 
 		/**
-		 * Sets the tool calling manager.
+		 * Sets the tool calling manager used for internal tool execution.
 		 * @param toolCallingManager the tool calling manager
 		 * @return this builder
+		 * @deprecated since 2.0.0 for removal in 3.0.0 — internal tool execution in
+		 * {@link OpenAiChatModel} is superseded by {@code ToolCallAdvisor} used via
+		 * {@code ChatClient}.
 		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
 			this.toolCallingManager = toolCallingManager;
 			return this;
@@ -1322,10 +1347,38 @@ public final class OpenAiChatModel implements ChatModel {
 		 * Sets the predicate to determine tool execution eligibility.
 		 * @param toolExecutionEligibilityPredicate the predicate
 		 * @return this builder
+		 * @deprecated since 2.0.0 for removal in 3.0.0 — replaced by
+		 * {@link #toolExecutionEligibilityChecker(ToolExecutionEligibilityChecker)}. For
+		 * the recommended long-term approach, internal tool execution in
+		 * {@link OpenAiChatModel} is superseded by {@code ToolCallAdvisor} used via
+		 * {@code ChatClient}.
 		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		@SuppressWarnings({ "deprecation", "removal" })
 		public Builder toolExecutionEligibilityPredicate(
 				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
-			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
+			this.toolExecutionEligibilityChecker = new ToolExecutionEligibilityChecker() {
+				@Override
+				public Boolean apply(ChatResponse chatResponse) {
+					return chatResponse != null && chatResponse.hasToolCalls();
+				}
+
+				@Override
+				public boolean isToolExecutionRequired(ChatOptions promptOptions, ChatResponse chatResponse) {
+					return toolExecutionEligibilityPredicate.test(promptOptions, chatResponse);
+				}
+			};
+			return this;
+		}
+
+		/**
+		 * Sets the checker to determine tool execution eligibility.
+		 * @param toolExecutionEligibilityChecker the checker
+		 * @return this builder
+		 */
+		public Builder toolExecutionEligibilityChecker(
+				ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
+			this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
 			return this;
 		}
 

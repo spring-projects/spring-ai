@@ -17,6 +17,7 @@
 package org.springframework.ai.model.mistralai.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.mistralai.MistralAiChatModel;
@@ -49,6 +50,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author Yanming Zhou
+ * @author Sebastien Deleuze
  * @since 0.8.1
  */
 @AutoConfiguration
@@ -75,7 +77,7 @@ public class MistralAiChatAutoConfiguration {
 
 		var chatModel = MistralAiChatModel.builder()
 			.mistralAiApi(mistralAiApi)
-			.defaultOptions(chatProperties.getOptions())
+			.defaultOptions(chatProperties.toOptions())
 			.toolCallingManager(toolCallingManager)
 			.toolExecutionEligibilityPredicate(mistralAiToolExecutionEligibilityPredicate
 				.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
@@ -88,8 +90,8 @@ public class MistralAiChatAutoConfiguration {
 		return chatModel;
 	}
 
-	private MistralAiApi mistralAiApi(String apiKey, String commonApiKey, String baseUrl, String commonBaseUrl,
-			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
+	private MistralAiApi mistralAiApi(@Nullable String apiKey, @Nullable String commonApiKey, @Nullable String baseUrl,
+			@Nullable String commonBaseUrl, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		var resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;

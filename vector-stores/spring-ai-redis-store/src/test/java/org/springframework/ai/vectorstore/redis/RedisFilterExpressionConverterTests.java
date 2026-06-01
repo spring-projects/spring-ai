@@ -28,6 +28,7 @@ import org.springframework.ai.vectorstore.filter.Filter.Value;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore.MetadataField;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.GTE;
@@ -122,10 +123,14 @@ class RedisFilterExpressionConverterTests {
 	@Test
 	void testComplexIdentifiers() {
 		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("country 1 2 3"))
+			.convertExpression(new Expression(EQ, new Key("country 1 2 3"), new Value("BG")));
+		assertThat(vectorExpr).isEqualTo("@country 1 2 3:{BG}");
+
+		vectorExpr = converter(RedisVectorStore.MetadataField.tag("\"country 1 2 3\""))
 			.convertExpression(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
 		assertThat(vectorExpr).isEqualTo("@\"country 1 2 3\":{BG}");
 
-		vectorExpr = converter(RedisVectorStore.MetadataField.tag("country 1 2 3"))
+		vectorExpr = converter(RedisVectorStore.MetadataField.tag("'country 1 2 3'"))
 			.convertExpression(new Expression(EQ, new Key("'country 1 2 3'"), new Value("BG")));
 		assertThat(vectorExpr).isEqualTo("@'country 1 2 3':{BG}");
 	}
@@ -199,17 +204,61 @@ class RedisFilterExpressionConverterTests {
 	@Test
 	void testWhitespaceInFieldNames() {
 		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("value with spaces"))
-			.convertExpression(new Expression(EQ, new Key("\"value with spaces\""), new Value("test")));
+			.convertExpression(new Expression(EQ, new Key("value with spaces"), new Value("test")));
 
-		assertThat(vectorExpr).isEqualTo("@\"value with spaces\":{test}");
+		assertThat(vectorExpr).isEqualTo("@value with spaces:{test}");
+	}
+
+	// Security tests - key injection prevention via whitelist validation
+
+	@Test
+	void unknownKeyIsRejected() {
+		// A key not present in the configured metadata fields must be rejected
+		assertThatThrownBy(() -> converter(RedisVectorStore.MetadataField.tag("country"))
+			.convertExpression(new Expression(EQ, new Key("unknown_field"), new Value("v"))))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Not allowed filter identifier name: unknown_field");
 	}
 
 	@Test
-	void testNestedQuotedFieldNames() {
-		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("value \"with\" quotes"))
-			.convertExpression(new Expression(EQ, new Key("\"value \\\"with\\\" quotes\""), new Value("test")));
+	void keyWithInjectionPayloadIsRejected() {
+		// Malicious key attempting to inject query syntax is rejected because
+		// it is not in the configured metadata fields
+		assertThatThrownBy(() -> converter(RedisVectorStore.MetadataField.tag("category"))
+			.convertExpression(new Expression(EQ, new Key("category:{evil} @secret"), new Value("v"))))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Not allowed filter identifier name");
+	}
 
-		assertThat(vectorExpr).isEqualTo("@\"value \\\"with\\\" quotes\":{test}");
+	@Test
+	void keyWithColonInjectionIsRejected() {
+		assertThatThrownBy(() -> converter(RedisVectorStore.MetadataField.tag("field"))
+			.convertExpression(new Expression(EQ, new Key("field:evil"), new Value("v"))))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Not allowed filter identifier name");
+	}
+
+	@Test
+	void quotedKeyValidated() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("'country'"))
+			.convertExpression(new Expression(EQ, new Key("'country'"), new Value("BG")));
+		assertThat(vectorExpr).isEqualTo("@'country':{BG}");
+	}
+
+	@Test
+	void quotedKeyNotInWhitelistIsRejected() {
+		assertThatThrownBy(() -> converter(RedisVectorStore.MetadataField.tag("country"))
+			.convertExpression(new Expression(EQ, new Key("'unknown'"), new Value("v"))))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Not allowed filter identifier name: 'unknown'");
+	}
+
+	@Test
+	void numericInjectionIsRejected() {
+		assertThatThrownBy(() -> converter(RedisVectorStore.MetadataField.numeric("year"))
+			.convertExpression(new Expression(EQ, new Key("year"), new Value("2020] @admin:{true"))))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Numeric value must be a Number");
 	}
 
 }

@@ -81,6 +81,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Soby Chacko
  * @author Thomas Vitale
+ * @author chabinhwang
  */
 public class OracleVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -177,7 +178,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 				final Document document = documents.get(i);
 				final String content = document.getText();
 				final byte[] json = toJson(document.getMetadata());
-				final VECTOR embeddingVector = toVECTOR(embeddings.get(documents.indexOf(document)));
+				final VECTOR embeddingVector = toVECTOR(embeddings.get(i));
 
 				org.springframework.jdbc.core.StatementCreatorUtils.setParameterValue(ps, 1, Types.VARCHAR,
 						document.getId());
@@ -311,8 +312,8 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		Assert.notNull(filterExpression, "Filter expression must not be null");
 
 		try {
-			String jsonPath = this.filterExpressionConverter.convertExpression(filterExpression);
-			String sql = String.format("DELETE FROM %s WHERE JSON_EXISTS(metadata, '%s')", this.tableName, jsonPath);
+			String filterClause = this.filterExpressionConverter.convertExpression(filterExpression);
+			String sql = String.format("DELETE FROM %s WHERE %s", this.tableName, filterClause);
 
 			logger.debug("Executing delete with filter: {}", sql);
 
@@ -355,7 +356,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 
 			if (request.getSimilarityThreshold() == SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL) {
 				if (StringUtils.hasText(nativeFilterExpression)) {
-					jsonPathFilter = String.format("where JSON_EXISTS( metadata, '%s' )\n", nativeFilterExpression);
+					jsonPathFilter = "where " + nativeFilterExpression + "\n";
 				}
 
 				final String sql = this.searchAccuracy == DEFAULT_SEARCH_ACCURACY ? String.format("""
@@ -384,7 +385,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 			}
 			else if (request.getSimilarityThreshold() == SIMILARITY_THRESHOLD_EXACT_MATCH) {
 				if (StringUtils.hasText(nativeFilterExpression)) {
-					jsonPathFilter = String.format("where JSON_EXISTS( metadata, '%s' )\n", nativeFilterExpression);
+					jsonPathFilter = "where " + nativeFilterExpression + "\n";
 				}
 
 				final String sql = String.format("""
@@ -412,7 +413,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 						? (1d - request.getSimilarityThreshold()) * 2d - 1d : 1d - request.getSimilarityThreshold();
 
 				if (StringUtils.hasText(nativeFilterExpression)) {
-					jsonPathFilter = String.format(" and JSON_EXISTS( metadata, '%s' )", nativeFilterExpression);
+					jsonPathFilter = " and " + nativeFilterExpression;
 				}
 
 				final String sql = this.distanceType == OracleVectorStore.OracleVectorStoreDistanceType.DOT

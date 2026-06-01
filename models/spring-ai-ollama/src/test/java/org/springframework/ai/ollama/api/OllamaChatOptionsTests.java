@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
-import tools.jackson.core.JacksonException;
 
 import org.springframework.ai.ollama.api.OllamaChatOptions.Builder;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
@@ -155,8 +154,9 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 
 	@Test
 	void testOutputSchemaOptionWithJsonAsString() {
-		assertThatThrownBy(() -> OllamaChatOptions.builder().outputSchema("json")).isInstanceOf(JacksonException.class)
-			.hasMessageContaining("Unrecognized token 'json'");
+		assertThatThrownBy(() -> OllamaChatOptions.builder().outputSchema("json"))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Conversion from JSON to java.util.Map<java.lang.String, java.lang.Object> failed");
 	}
 
 	@Test
@@ -338,7 +338,7 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 	@Test
 	void testGetOutputSchemaHandlesAllFormatTypes() {
 		var nullFormatOptions = OllamaChatOptions.builder().build();
-		assertThatThrownBy(nullFormatOptions::getOutputSchema).isInstanceOf(IllegalStateException.class);
+		assertThat(nullFormatOptions.getOutputSchema()).isNull();
 
 		var stringFormatOptions = OllamaChatOptions.builder().format("json").build();
 		assertThat(stringFormatOptions.getOutputSchema()).isEqualTo("json");
@@ -358,7 +358,7 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 	}
 
 	/**
-	 * Tests that setOutputSchema() properly handles JSON Schema strings.
+	 * Tests that outputSchema() properly handles JSON Schema strings.
 	 */
 	@Test
 	void testSetOutputSchemaWithValidJsonSchema() {

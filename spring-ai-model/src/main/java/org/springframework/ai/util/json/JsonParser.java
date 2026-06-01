@@ -17,33 +17,23 @@
 package org.springframework.ai.util.json;
 
 import java.lang.reflect.Type;
-import java.math.BigDecimal;
 
 import org.jspecify.annotations.Nullable;
-import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.util.JacksonUtils;
-import org.springframework.util.Assert;
-import org.springframework.util.ClassUtils;
+import org.springframework.ai.util.JsonHelper;
 
 /**
  * Utilities to perform parsing operations between JSON and Java.
+ *
+ * @deprecated Use {@link JacksonUtils} or {@link JsonHelper} instead
  */
+@Deprecated(forRemoval = true)
 public final class JsonParser {
 
-	private static final JsonMapper jsonMapper;
-
-	static {
-		jsonMapper = JsonMapper.builder()
-			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-			.disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
-			.addModules(JacksonUtils.instantiateAvailableModules())
-			.build();
-	}
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private JsonParser() {
 	}
@@ -51,142 +41,60 @@ public final class JsonParser {
 	/**
 	 * Returns a Jackson {@link JsonMapper} instance tailored for JSON-parsing operations
 	 * for tool calling and structured output.
+	 * @deprecated Use {@link JacksonUtils#getDefaultJsonMapper} instead
 	 */
+	@Deprecated(forRemoval = true)
 	public static JsonMapper getJsonMapper() {
-		return jsonMapper;
+		return JacksonUtils.getDefaultJsonMapper();
 	}
 
 	/**
 	 * Converts a JSON string to a Java object.
+	 * @deprecated Use {@link JsonHelper#fromJson(String, Class)} instead
 	 */
-	public static <T> T fromJson(String json, Class<T> type) {
-		Assert.notNull(json, "json cannot be null");
-		Assert.notNull(type, "type cannot be null");
-
-		try {
-			return jsonMapper.readValue(json, type);
-		}
-		catch (JacksonException ex) {
-			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getName()), ex);
-		}
+	@Deprecated(forRemoval = true)
+	public static <T> @Nullable T fromJson(String json, Class<T> type) {
+		return jsonHelper.fromJson(json, type);
 	}
 
 	/**
 	 * Converts a JSON string to a Java object.
+	 * @deprecated Use {@link JsonHelper#fromJson(String, Type)} instead
 	 */
-	public static <T> T fromJson(String json, Type type) {
-		Assert.notNull(json, "json cannot be null");
-		Assert.notNull(type, "type cannot be null");
-
-		try {
-			return jsonMapper.readValue(json, jsonMapper.constructType(type));
-		}
-		catch (JacksonException ex) {
-			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getTypeName()), ex);
-		}
+	@Deprecated(forRemoval = true)
+	public static <T> @Nullable T fromJson(String json, Type type) {
+		return jsonHelper.fromJson(json, type);
 	}
 
 	/**
 	 * Converts a JSON string to a Java object.
+	 * @deprecated Use
+	 * {@link JsonHelper#fromJson(String, org.springframework.core.ParameterizedTypeReference)}
+	 * instead
 	 */
-	public static <T> T fromJson(String json, TypeReference<T> type) {
-		Assert.notNull(json, "json cannot be null");
-		Assert.notNull(type, "type cannot be null");
-
-		try {
-			return jsonMapper.readValue(json, type);
-		}
-		catch (JacksonException ex) {
-			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getType().getTypeName()),
-					ex);
-		}
-	}
-
-	/**
-	 * Checks if a string is a valid JSON string.
-	 */
-	private static boolean isValidJson(String input) {
-		try {
-			jsonMapper.readTree(input);
-			return true;
-		}
-		catch (JacksonException e) {
-			return false;
-		}
+	@Deprecated(forRemoval = true)
+	public static <T> @Nullable T fromJson(String json, TypeReference<T> type) {
+		return jsonHelper.fromJson(json, type.getType());
 	}
 
 	/**
 	 * Converts a Java object to a JSON string if it's not already a valid JSON string.
+	 * @deprecated Use {@link JsonHelper#toJson(Object, boolean)} instead
 	 */
+	@Deprecated(forRemoval = true)
 	public static String toJson(@Nullable Object object) {
-		if (object instanceof String str && isValidJson(str)) {
-			return str;
-		}
-		try {
-			return jsonMapper.writeValueAsString(object);
-		}
-		catch (JacksonException ex) {
-			throw new IllegalStateException("Conversion from Object to JSON failed", ex);
-		}
+		return jsonHelper.toJson(object, true);
 	}
 
 	/**
 	 * Convert a Java Object to a typed Object. Based on the implementation in
 	 * MethodToolCallback.
+	 * @deprecated Use {@link JsonHelper#convertToTypedObject} instead
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@Deprecated(forRemoval = true)
 	public static Object toTypedObject(Object value, Class<?> type) {
-		Assert.notNull(value, "value cannot be null");
-		Assert.notNull(type, "type cannot be null");
-
-		var javaType = ClassUtils.resolvePrimitiveIfNecessary(type);
-
-		if (javaType == String.class) {
-			return value.toString();
-		}
-		else if (javaType == Byte.class) {
-			return Byte.parseByte(value.toString());
-		}
-		else if (javaType == Integer.class) {
-			BigDecimal bigDecimal = new BigDecimal(value.toString());
-			return bigDecimal.intValueExact();
-		}
-		else if (javaType == Short.class) {
-			return Short.parseShort(value.toString());
-		}
-		else if (javaType == Long.class) {
-			BigDecimal bigDecimal = new BigDecimal(value.toString());
-			return bigDecimal.longValueExact();
-		}
-		else if (javaType == Double.class) {
-			return Double.parseDouble(value.toString());
-		}
-		else if (javaType == Float.class) {
-			return Float.parseFloat(value.toString());
-		}
-		else if (javaType == Boolean.class) {
-			return Boolean.parseBoolean(value.toString());
-		}
-		else if (javaType.isEnum()) {
-			return Enum.valueOf((Class<Enum>) javaType, value.toString());
-		}
-
-		Object result = null;
-		if (value instanceof String jsonString) {
-			try {
-				result = JsonParser.fromJson(jsonString, javaType);
-			}
-			catch (JacksonException e) {
-				// ignore
-			}
-		}
-
-		if (result == null) {
-			String json = JsonParser.toJson(value);
-			result = JsonParser.fromJson(json, javaType);
-		}
-
-		return result;
+		return jsonHelper.convertToTypedObject(value, type);
 	}
 
 }

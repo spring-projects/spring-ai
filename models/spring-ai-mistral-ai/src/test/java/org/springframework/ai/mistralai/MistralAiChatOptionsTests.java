@@ -26,6 +26,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mistralai.MistralAiChatOptions.Builder;
 import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ReasoningEffort;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
@@ -37,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Tests for {@link MistralAiChatOptions}.
  *
  * @author Alexandros Pappas
+ * @author Nicolas Krier
  */
 class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOptions, Builder> {
 
@@ -82,6 +84,7 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 			.safePrompt(true)
 			.randomSeed(123)
 			.stop(List.of("stop1", "stop2"))
+			.reasoningEffort(ReasoningEffort.HIGH)
 			.responseFormat(new ResponseFormat("json_object"))
 			.toolChoice(MistralAiApi.ChatCompletionRequest.ToolChoice.AUTO)
 			.internalToolExecutionEnabled(true)
@@ -98,15 +101,17 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 	@Test
 	void testSetters() {
 		ResponseFormat responseFormat = new ResponseFormat("json_object");
-		MistralAiChatOptions options = new MistralAiChatOptions();
-		options.setModel("test-model");
-		options.setTemperature(0.7);
-		options.setTopP(0.9);
-		options.setMaxTokens(100);
-		options.setSafePrompt(true);
-		options.setRandomSeed(123);
-		options.setResponseFormat(responseFormat);
-		options.setStopSequences(List.of("stop1", "stop2"));
+		MistralAiChatOptions options = MistralAiChatOptions.builder()
+			.model("test-model")
+			.temperature(0.7)
+			.topP(0.9)
+			.maxTokens(100)
+			.safePrompt(true)
+			.randomSeed(123)
+			.responseFormat(responseFormat)
+			.stop(List.of("stop1", "stop2"))
+			.reasoningEffort(ReasoningEffort.HIGH)
+			.build();
 
 		assertThat(options.getModel()).isEqualTo("test-model");
 		assertThat(options.getTemperature()).isEqualTo(0.7);
@@ -116,6 +121,7 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 		assertThat(options.getRandomSeed()).isEqualTo(123);
 		assertThat(options.getStopSequences()).isEqualTo(List.of("stop1", "stop2"));
 		assertThat(options.getResponseFormat()).isEqualTo(responseFormat);
+		assertThat(options.getReasoningEffort()).isEqualTo(ReasoningEffort.HIGH);
 	}
 
 	@Test
@@ -130,6 +136,7 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 		assertThat(options.getStopSequences()).isNull();
 		assertThat(options.getResponseFormat()).isNull();
 		assertThat(options.getOutputSchema()).isNull();
+		assertThat(options.getReasoningEffort()).isNull();
 	}
 
 	@Test
@@ -177,6 +184,7 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 		assertThat(copiedOptions).isNotSameAs(emptyOptions).isEqualTo(emptyOptions);
 		assertThat(copiedOptions.getModel()).isNull();
 		assertThat(copiedOptions.getTemperature()).isNull();
+		assertThat(copiedOptions.getReasoningEffort()).isNull();
 	}
 
 	@Test
@@ -188,9 +196,12 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 			.toolContext(Map.of("original", "value"))
 			.build();
 
-		MistralAiChatOptions copy = original.copy();
-		copy.setModel("modified-model");
-		copy.setTemperature(0.8);
+		MistralAiChatOptions copy = MistralAiChatOptions.builder()
+			.model("modified-model")
+			.temperature(0.8)
+			.stop(original.getStop())
+			.toolContext(original.getToolContext())
+			.build();
 
 		// Original should remain unchanged
 		assertThat(original.getModel()).isEqualTo("original-model");
@@ -276,12 +287,13 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 			.maxTokens(100)
 			.build();
 
-		// Create equivalent object using setters
-		MistralAiChatOptions setterOptions = new MistralAiChatOptions();
-		setterOptions.setModel("test-model");
-		setterOptions.setTemperature(0.7);
-		setterOptions.setTopP(0.9);
-		setterOptions.setMaxTokens(100);
+		// Create equivalent object using builder (formerly setters)
+		MistralAiChatOptions setterOptions = MistralAiChatOptions.builder()
+			.model("test-model")
+			.temperature(0.7)
+			.topP(0.9)
+			.maxTokens(100)
+			.build();
 
 		assertThat(builderOptions).isEqualTo(setterOptions);
 	}
@@ -434,10 +446,8 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 
 	@Test
 	void testSetOutputSchema() {
-		MistralAiChatOptions options = new MistralAiChatOptions();
 		String schema = "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}}}";
-
-		options.setOutputSchema(schema);
+		MistralAiChatOptions options = MistralAiChatOptions.builder().outputSchema(schema).build();
 
 		assertThat(options.getResponseFormat()).isNotNull();
 		assertThat(options.getResponseFormat().getType()).isEqualTo(ResponseFormat.Type.JSON_SCHEMA);

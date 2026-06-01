@@ -122,7 +122,7 @@ public class StreamableMcpAnnotations2IT {
 				// "spring.ai.mcp.server.protocol=SSE",
 				"spring.ai.mcp.server.version=1.0.0",
 				"spring.ai.mcp.server.streamable-http.keep-alive-interval=1s",
-				// "spring.ai.mcp.server.requestTimeout=1m",
+				// "spring.ai.mcp.server.request-timeout=1m",
 				"spring.ai.mcp.server.streamable-http.mcp-endpoint=/mcp") // @formatter:on
 			.run(serverContext -> {
 				// Verify all required beans are present
@@ -160,9 +160,8 @@ public class StreamableMcpAnnotations2IT {
 						assertThat(mcpClient.listTools().tools()).hasSize(2);
 
 						// Call a tool that sends progress notifications
-						CallToolRequest toolRequest = CallToolRequest.builder()
-							.name("tool1")
-							.arguments(Map.of())
+						CallToolRequest toolRequest = CallToolRequest.builder("tool1")
+							.arguments(Map.of("input", "Test Input"))
 							.progressToken("test-progress-token")
 							.build();
 
@@ -238,12 +237,11 @@ public class StreamableMcpAnnotations2IT {
 						assertThat(mcpClient.listResources()).isNotNull();
 						assertThat(mcpClient.listResources().resources()).hasSize(1);
 						assertThat(mcpClient.listResources().resources().get(0))
-							.isEqualToComparingFieldByFieldRecursively(Resource.builder()
-								.uri("file://resource")
-								.name("Test Resource")
-								.mimeType("text/plain")
-								.description("Test resource description")
-								.build());
+							.isEqualToComparingFieldByFieldRecursively(
+									Resource.builder("file://resource", "Test Resource")
+										.mimeType("text/plain")
+										.description("Test resource description")
+										.build());
 
 						// PROMPT / COMPLETION
 
@@ -379,8 +377,10 @@ public class StreamableMcpAnnotations2IT {
 					var systemInfo = Map.of("os", System.getProperty("os.name"), "os_version",
 							System.getProperty("os.version"), "java_version", System.getProperty("java.version"));
 					String jsonContent = JsonMapper.shared().writeValueAsString(systemInfo);
-					return new ReadResourceResult(List
-						.of(new McpSchema.TextResourceContents(request.uri(), "application/json", jsonContent)));
+					return ReadResourceResult
+						.builder(List
+							.of(new McpSchema.TextResourceContents(request.uri(), "application/json", jsonContent)))
+						.build();
 				}
 				catch (Exception e) {
 					throw new RuntimeException("Failed to generate system info", e);
@@ -396,9 +396,11 @@ public class StreamableMcpAnnotations2IT {
 
 				ctx.log(l -> l.logger("test-logger").message(message));
 
-				var userMessage = new PromptMessage(Role.USER, new TextContent(message));
+				var userMessage = new PromptMessage(Role.USER, TextContent.builder(message).build());
 
-				return new GetPromptResult("A personalized greeting message", List.of(userMessage));
+				return GetPromptResult.builder(List.of(userMessage))
+					.description("A personalized greeting message")
+					.build();
 			}
 
 			// the code-completion is a reference to the prompt code completion
@@ -469,8 +471,8 @@ public class StreamableMcpAnnotations2IT {
 				String userPrompt = ((McpSchema.TextContent) llmRequest.messages().get(0).content()).text();
 				String modelHint = llmRequest.modelPreferences().hints().get(0).name();
 
-				return CreateMessageResult.builder()
-					.content(new McpSchema.TextContent("Response " + userPrompt + " with model hint " + modelHint))
+				return CreateMessageResult
+					.builder(Role.ASSISTANT, "Response " + userPrompt + " with model hint " + modelHint, modelHint)
 					.build();
 			}
 

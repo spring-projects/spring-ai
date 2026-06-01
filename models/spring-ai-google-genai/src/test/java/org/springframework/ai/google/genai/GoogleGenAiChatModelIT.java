@@ -113,7 +113,7 @@ class GoogleGenAiChatModelIT {
 	@Test
 	void googleSearchToolFlash() {
 		Prompt prompt = createPrompt(
-				GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_2_0_FLASH).googleSearchRetrieval(true).build());
+				GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_2_5_FLASH).googleSearchRetrieval(true).build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew", "Bob");
 	}
@@ -441,7 +441,7 @@ class GoogleGenAiChatModelIT {
 			.genAiClient(genAiClient())
 			.toolCallingManager(toolCallingManager)
 			.defaultOptions(GoogleGenAiChatOptions.builder()
-				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
+				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
 				.temperature(0.1)
 				.build())
 			.build();
@@ -476,7 +476,7 @@ class GoogleGenAiChatModelIT {
 			.genAiClient(genAiClient())
 			.toolCallingManager(toolCallingManager)
 			.defaultOptions(GoogleGenAiChatOptions.builder()
-				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
+				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
 				.temperature(0.1)
 				.build())
 			.build();
@@ -746,7 +746,7 @@ class GoogleGenAiChatModelIT {
 			return GoogleGenAiChatModel.builder()
 				.genAiClient(genAiClient)
 				.defaultOptions(
-						GoogleGenAiChatOptions.builder().model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH).build())
+						GoogleGenAiChatOptions.builder().model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH).build())
 				.build();
 		}
 

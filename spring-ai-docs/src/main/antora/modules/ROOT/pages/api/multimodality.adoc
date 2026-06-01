@@ -68,7 +68,6 @@ Spring AI provides multimodal support for the following chat models:
 
 * xref:api/chat/anthropic-chat.adoc#_multi_modal_support[Anthropic Claude]
 * xref:api/chat/bedrock-converse.adoc#_multimodal[AWS Bedrock Converse]
-* xref:api/chat/azure-openai-chat.adoc#_multimodal[Azure Open AI (e.g. GPT models)]
 * xref:api/chat/mistralai-chat.adoc#_multimodal[Mistral AI (e.g. Mistral Pixtral models)]
 * xref:api/chat/ollama-chat.adoc#_multimodal[Ollama (e.g. LLaVA, BakLLaVA, Llama models)]
 * xref:api/chat/openai-chat.adoc#_multimodal[OpenAI (e.g. GPT models)]

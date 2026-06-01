@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -41,6 +42,7 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -57,8 +59,8 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 	private static final Logger logger = LoggerFactory.getLogger(FunctionCallbackWithPlainFunctionBeanIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
-				"spring.ai.openai.chat.options.model=" + "gpt-4o-mini")
+		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"),
+				"spring.ai.openai.chat.model=" + "gpt-4o-mini")
 		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class,
 				org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
@@ -97,6 +99,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			// Test weatherFunction
 			UserMessage userMessage = new UserMessage("Turn the light on in the living room");
 
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 					OpenAiChatOptions.builder().toolNames("turnLivingRoomLightOnSupplier").build()));
 
@@ -115,6 +118,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			// Test weatherFunction
 			UserMessage userMessage = new UserMessage("Turn the light on in the kitchen and in the living room");
 
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 			ChatResponse response = chatModel
 				.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().toolNames("turnLight").build()));
 
@@ -134,6 +138,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			// Test weatherFunction
 			UserMessage userMessage = new UserMessage("Turn the light on in the kitchen and in the living room");
 
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 					OpenAiChatOptions.builder().toolNames("turnLightConsumer").build()));
 
@@ -159,6 +164,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				.toolNames("trainReservation")
 				.build();
 
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
 
 			logger.info("Response: {}", response.getResult().getOutput().getText());
@@ -171,7 +177,10 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
-			ChatClient chatClient = ChatClient.builder(chatModel).build();
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+			ChatClient chatClient = ChatClient.builder(chatModel)
+				.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(toolCallingManager).build())
+				.build();
 
 			String content = chatClient.prompt(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.")
@@ -186,10 +195,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities. You can call the following functions 'weatherFunction'");
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder()
-						.toolNames("weatherFunctionWithContext")
-						.toolContext(Map.of("sessionId", "123"))
-						.build()));
+					OpenAiChatOptions.builder().toolNames("weatherFunctionWithContext").build()));
 
 			logger.info("Response: {}", response);
 
@@ -204,7 +210,12 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
-			ChatClient chatClient = ChatClient.builder(chatModel).build();
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+			ChatClient chatClient = ChatClient.builder(chatModel)
+				.defaultAdvisors(org.springframework.ai.chat.client.advisor.ToolCallAdvisor.builder()
+					.toolCallingManager(toolCallingManager)
+					.build())
+				.build();
 
 			String content = chatClient.prompt(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.")
@@ -219,10 +230,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities. You can call the following functions 'weatherFunction'");
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-					OpenAiChatOptions.builder()
-						.toolNames("weatherFunctionWithClassBiFunction")
-						.toolContext(Map.of("sessionId", "123"))
-						.build()));
+					OpenAiChatOptions.builder().toolNames("weatherFunctionWithClassBiFunction").build()));
 
 			logger.info("Response: {}", response);
 
@@ -272,7 +280,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder()
 				.toolNames("weatherFunction")
 				.build();
-
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
 
 			logger.info("Response: {}", response.getResult().getOutput().getText());

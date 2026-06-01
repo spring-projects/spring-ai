@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
@@ -62,6 +61,7 @@ import org.springframework.util.StringUtils;
  * @author Soby Chacko
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author chabinhwang
  */
 public class PineconeVectorStore extends AbstractObservationVectorStore {
 
@@ -138,10 +138,10 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 		List<VectorWithUnsignedIndices> upsertVectors = new ArrayList<>();
-		for (Document document : documents) {
+		for (int i = 0; i < documents.size(); i++) {
+			Document document = documents.get(i);
 			upsertVectors.add(io.pinecone.commons.IndexInterface.buildUpsertVectorWithUnsignedIndices(document.getId(),
-					EmbeddingUtils.toList(embeddings.get(documents.indexOf(document))), null, null,
-					metadataToStruct(document)));
+					EmbeddingUtils.toList(embeddings.get(i)), null, null, metadataToStruct(document)));
 		}
 		this.pinecone.getIndexConnection(this.pineconeIndexName).upsert(upsertVectors, namespace);
 	}
@@ -264,7 +264,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 			if (!matchingDocs.isEmpty()) {
 				// Then delete those documents by ID
-				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).collect(Collectors.toList());
+				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).toList();
 				delete(idsToDelete, this.pineconeNamespace);
 				logger.debug("Deleted {} documents matching filter expression", idsToDelete.size());
 			}

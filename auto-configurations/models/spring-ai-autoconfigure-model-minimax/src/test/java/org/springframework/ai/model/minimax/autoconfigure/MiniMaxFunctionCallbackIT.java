@@ -46,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Geng Rong
  * @author Issam El-atif
+ * @author Sebastien Deleuze
  */
 @EnabledIfEnvironmentVariable(named = "MINIMAX_API_KEY", matches = ".+")
 public class MiniMaxFunctionCallbackIT {
@@ -53,14 +54,14 @@ public class MiniMaxFunctionCallbackIT {
 	private final Logger logger = LoggerFactory.getLogger(MiniMaxFunctionCallbackIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.minimax.apiKey=" + System.getenv("MINIMAX_API_KEY"))
+		.withPropertyValues("spring.ai.minimax.api-key=" + System.getenv("MINIMAX_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(MiniMaxChatAutoConfiguration.class, RestClientAutoConfiguration.class,
 				SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test
 	void functionCallTest() {
-		this.contextRunner.withPropertyValues("spring.ai.minimax.chat.options.model=abab6.5s-chat").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.minimax.chat.model=abab6.5s-chat").run(context -> {
 
 			MiniMaxChatModel chatModel = context.getBean(MiniMaxChatModel.class);
 
@@ -79,7 +80,7 @@ public class MiniMaxFunctionCallbackIT {
 
 	@Test
 	void streamFunctionCallTest() {
-		this.contextRunner.withPropertyValues("spring.ai.minimax.chat.options.model=abab6.5s-chat").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.minimax.chat.model=abab6.5s-chat").run(context -> {
 
 			MiniMaxChatModel chatModel = context.getBean(MiniMaxChatModel.class);
 

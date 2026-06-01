@@ -45,6 +45,7 @@ import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.embedding.EmbeddingResultMetadata;
 import org.springframework.ai.embedding.EmbeddingResultMetadata.ModalityType;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.ImageBuilder;
@@ -64,6 +65,8 @@ import org.springframework.util.StringUtils;
  * @since 1.0.0
  */
 public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final Logger logger = LoggerFactory.getLogger(VertexAiMultimodalEmbeddingModel.class);
 
@@ -124,11 +127,14 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 			mergedOptions = builder.build();
 		}
 
+		String model = mergedOptions.getModel();
+		Assert.state(model != null, "model must not be null");
+
 		// Create the Vertex AI Prediction Service client.
 		try (PredictionServiceClient client = PredictionServiceClient
 			.create(this.connectionDetails.getPredictionServiceSettings())) {
 
-			EndpointName endpointName = this.connectionDetails.getEndpointName(mergedOptions.getModel());
+			EndpointName endpointName = this.connectionDetails.getEndpointName(model);
 
 			for (Document document : request.getInstructions()) {
 				EmbeddingResponse singleDocResponse = this.doSingleDocumentPrediction(client, endpointName, document,
@@ -159,10 +165,11 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 		}
 
 		// optional text parameter
-		if (StringUtils.hasText(document.getText())) {
-			instanceBuilder.text(document.getText());
+		String documentText = document.getText();
+		if (StringUtils.hasText(documentText)) {
+			instanceBuilder.text(documentText);
 			documentMetadata.put(ModalityType.TEXT,
-					new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, document.getText()));
+					new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, documentText));
 		}
 
 		Media media = document.getMedia();
@@ -171,7 +178,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 				instanceBuilder.text(media.getData().toString());
 				documentMetadata.put(ModalityType.TEXT,
 						new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, media.getData()));
-				if (StringUtils.hasText(document.getText())) {
+				if (StringUtils.hasText(documentText)) {
 					logger.warn("Media type String overrides the Document text content!");
 				}
 			}
@@ -206,7 +213,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 
 		PredictRequest.Builder predictRequestBuilder = PredictRequest.newBuilder()
 			.setEndpoint(endpointName.toString())
-			.setParameters(VertexAiEmbeddingUtils.jsonToValue(ModelOptionsUtils.toJsonString(Map.of())))
+			.setParameters(VertexAiEmbeddingUtils.jsonToValue(jsonHelper.toJson(Map.of())))
 			.addAllInstances(instances);
 
 		PredictResponse embeddingResponse = client.predict(predictRequestBuilder.build());
@@ -218,7 +225,8 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 				Value textEmbedding = prediction.getStructValue().getFieldsOrThrow("textEmbedding");
 				float[] textVector = VertexAiEmbeddingUtils.toVector(textEmbedding);
 
-				var docMetadata = documentMetadata.get(ModalityType.TEXT);
+				DocumentMetadata docMetadata = documentMetadata.get(ModalityType.TEXT);
+				Assert.state(docMetadata != null, "TEXT document metadata must not be null");
 				embeddingList.add(new Embedding(textVector, index++, new EmbeddingResultMetadata(docMetadata.documentId,
 						ModalityType.TEXT, docMetadata.mimeType, docMetadata.data)));
 			}
@@ -226,7 +234,8 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 				Value imageEmbedding = prediction.getStructValue().getFieldsOrThrow("imageEmbedding");
 				float[] imageVector = VertexAiEmbeddingUtils.toVector(imageEmbedding);
 
-				var docMetadata = documentMetadata.get(ModalityType.IMAGE);
+				DocumentMetadata docMetadata = documentMetadata.get(ModalityType.IMAGE);
+				Assert.state(docMetadata != null, "IMAGE document metadata must not be null");
 				embeddingList
 					.add(new Embedding(imageVector, index++, new EmbeddingResultMetadata(docMetadata.documentId,
 							ModalityType.IMAGE, docMetadata.mimeType, docMetadata.data)));
@@ -240,7 +249,8 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 						.getFieldsOrThrow("embedding");
 					float[] videoVector = VertexAiEmbeddingUtils.toVector(embeddings);
 
-					var docMetadata = documentMetadata.get(ModalityType.VIDEO);
+					DocumentMetadata docMetadata = documentMetadata.get(ModalityType.VIDEO);
+					Assert.state(docMetadata != null, "VIDEO document metadata must not be null");
 					embeddingList
 						.add(new Embedding(videoVector, index++, new EmbeddingResultMetadata(docMetadata.documentId,
 								ModalityType.VIDEO, docMetadata.mimeType, docMetadata.data)));
@@ -252,8 +262,9 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 
 		Map<String, Object> metadataToUse = Map.of("deployment-model-id",
 				StringUtils.hasText(deploymentModelId) ? deploymentModelId : "unknown");
-		EmbeddingResponseMetadata responseMetadata = generateResponseMetadata(mergedOptions.getModel(), 0,
-				metadataToUse);
+		String model = mergedOptions.getModel();
+		Assert.state(model != null, "model must not be null");
+		EmbeddingResponseMetadata responseMetadata = generateResponseMetadata(model, 0, metadataToUse);
 		return new EmbeddingResponse(embeddingList, responseMetadata);
 
 	}

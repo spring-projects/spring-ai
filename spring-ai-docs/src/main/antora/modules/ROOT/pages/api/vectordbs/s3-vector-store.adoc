@@ -166,7 +166,7 @@ VectorStore s3VectorStore(S3VectorsClient s3VectorsClient, EmbeddingModel embedd
 // This can be any EmbeddingModel implementation
 @Bean
 public EmbeddingModel embeddingModel() {
-    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+    return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
 }
 ----
 

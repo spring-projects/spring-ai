@@ -48,6 +48,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Geng Rong
  * @author Hyunsang Han
  * @author Yanming Zhou
+ * @author Sebastien Deleuze
  */
 @AutoConfiguration
 @ConditionalOnClass(DeepSeekApi.class)
@@ -72,7 +73,7 @@ public class DeepSeekChatAutoConfiguration {
 
 		var chatModel = DeepSeekChatModel.builder()
 			.deepSeekApi(deepSeekApi)
-			.defaultOptions(chatProperties.getOptions())
+			.defaultOptions(chatProperties.toOptions())
 			.toolCallingManager(toolCallingManager)
 			.toolExecutionEligibilityPredicate(deepseekToolExecutionEligibilityPredicate
 				.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))

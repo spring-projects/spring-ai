@@ -52,7 +52,7 @@ public class MistralAiAutoConfigurationIT {
 	private static final Log logger = LogFactory.getLog(MistralAiAutoConfigurationIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.mistralai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"));
+		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"));
 
 	@Test
 	void generate() {

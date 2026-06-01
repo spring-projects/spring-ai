@@ -54,7 +54,7 @@ public class PaymentStatusPromptIT {
 	private final Logger logger = LoggerFactory.getLogger(WeatherServicePromptIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.mistralai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"))
+		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(MistralAiChatAutoConfiguration.class,
 				RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
 				ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class));
@@ -62,8 +62,7 @@ public class PaymentStatusPromptIT {
 	@Test
 	void functionCallTest() {
 		this.contextRunner
-			.withPropertyValues(
-					"spring.ai.mistralai.chat.options.model=" + MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
+			.withPropertyValues("spring.ai.mistralai.chat.model=" + MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
 			.run(context -> {
 
 				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);

@@ -104,7 +104,7 @@ public class AnthropicCacheOptions {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -120,14 +120,6 @@ public class AnthropicCacheOptions {
 	public int hashCode() {
 		return Objects.hash(this.strategy, this.messageTypeTtl, this.messageTypeMinContentLengths,
 				this.multiBlockSystemCaching);
-	}
-
-	@Override
-	public String toString() {
-		return "AnthropicCacheOptions{" + "strategy=" + this.strategy + ", contentLengthFunction="
-				+ this.contentLengthFunction + ", messageTypeTtl=" + this.messageTypeTtl
-				+ ", messageTypeMinContentLengths=" + this.messageTypeMinContentLengths + ", multiBlockSystemCaching="
-				+ this.multiBlockSystemCaching + '}';
 	}
 
 	public static final class Builder {

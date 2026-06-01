@@ -16,12 +16,6 @@
 
 package org.springframework.ai.google.genai.schema;
 
-/**
- * @author Christian Tzolov
- * @author Dan Dobrin
- * @since 1.0.0
- */
-
 import java.util.Map;
 
 import tools.jackson.databind.JsonNode;
@@ -29,11 +23,16 @@ import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.JsonNodeFactory;
 import tools.jackson.databind.node.ObjectNode;
 
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.util.Assert;
 
 /**
  * Utility class for converting JSON Schema to OpenAPI schema format.
+ *
+ * @author Christian Tzolov
+ * @author Dan Dobrin
+ * @author Sebastien Deleuze
+ * @since 1.0.0
  */
 public final class JsonSchemaConverter {
 
@@ -49,7 +48,7 @@ public final class JsonSchemaConverter {
 	 */
 	public static ObjectNode fromJson(String jsonString) {
 		try {
-			return (ObjectNode) JsonParser.getJsonMapper().readTree(jsonString);
+			return (ObjectNode) JacksonUtils.getDefaultJsonMapper().readTree(jsonString);
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to parse JSON: " + jsonString, e);
@@ -68,7 +67,8 @@ public final class JsonSchemaConverter {
 
 		try {
 			// Convert to OpenAPI schema using our custom conversion logic
-			ObjectNode openApiSchema = convertSchema(jsonSchemaNode, JsonParser.getJsonMapper().getNodeFactory());
+			ObjectNode openApiSchema = convertSchema(jsonSchemaNode,
+					JacksonUtils.getDefaultJsonMapper().getNodeFactory());
 
 			// Add OpenAPI-specific metadata
 			if (!openApiSchema.has("openapi")) {
@@ -122,7 +122,7 @@ public final class JsonSchemaConverter {
 			if (typeNode.isArray()) {
 				ArrayNode nonNullTypes = factory.arrayNode();
 				for (JsonNode typeValue : typeNode) {
-					if (typeValue.isTextual() && "null".equals(typeValue.asText())) {
+					if (typeValue.isString() && "null".equals(typeValue.asString())) {
 						nullable = true;
 					}
 					else {
@@ -136,7 +136,7 @@ public final class JsonSchemaConverter {
 					target.set("type", nonNullTypes);
 				}
 			}
-			else if (typeNode.isTextual() && "null".equals(typeNode.asText())) {
+			else if (typeNode.isString() && "null".equals(typeNode.asString())) {
 				nullable = true;
 			}
 			else {
@@ -156,8 +156,8 @@ public final class JsonSchemaConverter {
 			var fields = source.get("properties").properties();
 			for (Map.Entry<String, JsonNode> entry : fields) {
 				if (entry.getValue() instanceof ObjectNode) {
-					properties.set(entry.getKey(),
-							convertSchema((ObjectNode) entry.getValue(), JsonParser.getJsonMapper().getNodeFactory()));
+					properties.set(entry.getKey(), convertSchema((ObjectNode) entry.getValue(),
+							JacksonUtils.getDefaultJsonMapper().getNodeFactory()));
 				}
 			}
 		}
@@ -174,8 +174,8 @@ public final class JsonSchemaConverter {
 				target.put("additionalProperties", additionalProps.asBoolean());
 			}
 			else if (additionalProps.isObject()) {
-				target.set("additionalProperties",
-						convertSchema((ObjectNode) additionalProps, JsonParser.getJsonMapper().getNodeFactory()));
+				target.set("additionalProperties", convertSchema((ObjectNode) additionalProps,
+						JacksonUtils.getDefaultJsonMapper().getNodeFactory()));
 			}
 		}
 
@@ -183,7 +183,8 @@ public final class JsonSchemaConverter {
 		if (source.has("items")) {
 			JsonNode items = source.get("items");
 			if (items.isObject()) {
-				target.set("items", convertSchema((ObjectNode) items, JsonParser.getJsonMapper().getNodeFactory()));
+				target.set("items",
+						convertSchema((ObjectNode) items, JacksonUtils.getDefaultJsonMapper().getNodeFactory()));
 			}
 		}
 

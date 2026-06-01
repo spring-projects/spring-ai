@@ -92,9 +92,7 @@ public class SyncStatelessMcpResourceProvider {
 					var mimeType = resourceAnnotation.mimeType();
 					var meta = MetaUtils.getMeta(resourceAnnotation.metaProvider());
 
-					var mcpResource = McpSchema.Resource.builder()
-						.uri(uri)
-						.name(name)
+					var mcpResource = McpSchema.Resource.builder(uri, name)
 						.description(description)
 						.mimeType(mimeType)
 						.meta(meta)
@@ -145,9 +143,7 @@ public class SyncStatelessMcpResourceProvider {
 					var mimeType = resourceAnnotation.mimeType();
 					var meta = MetaUtils.getMeta(resourceAnnotation.metaProvider());
 
-					var mcpResourceTemplate = McpSchema.ResourceTemplate.builder()
-						.uriTemplate(uri)
-						.name(name)
+					var mcpResourceTemplate = McpSchema.ResourceTemplate.builder(uri, name)
 						.description(description)
 						.mimeType(mimeType)
 						.meta(meta)

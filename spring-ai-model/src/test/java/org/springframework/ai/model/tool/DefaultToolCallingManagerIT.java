@@ -91,10 +91,11 @@ class DefaultToolCallingManagerIT {
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultToolCallingObservationConvention.DEFAULT_NAME)
 			.that()
-			.hasContextualNameEqualTo(SpringAiKind.TOOL_CALL.value() + " " + toolCallback.getToolDefinition().name())
+			.hasContextualNameEqualTo(
+					AiOperationType.EXECUTE_TOOL.value() + " " + toolCallback.getToolDefinition().name())
 			.hasLowCardinalityKeyValue(
 					ToolCallingObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
-					AiOperationType.FRAMEWORK.value())
+					AiOperationType.EXECUTE_TOOL.value())
 			.hasLowCardinalityKeyValue(
 					ToolCallingObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(),
 					AiProvider.SPRING_AI.value())

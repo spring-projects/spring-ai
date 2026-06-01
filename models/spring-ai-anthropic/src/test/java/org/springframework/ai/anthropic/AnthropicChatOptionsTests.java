@@ -47,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * copy, mutate, combineWith, equals/hashCode, and validation.
  *
  * @author Soby Chacko
+ * @author Sebastien Deleuze
  */
 class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOptions, Builder> {
 
@@ -132,12 +133,6 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		// Verify collections are deep copied
 		assertThat(copied.getStopSequences()).isNotSameAs(original.getStopSequences());
 		assertThat(copied.getToolContext()).isNotSameAs(original.getToolContext());
-
-		// Modify copy and verify original is unchanged
-		copied.setModel("modified-model");
-		copied.setMaxTokens(200);
-		assertThat(original.getModel()).isEqualTo("test-model");
-		assertThat(original.getMaxTokens()).isEqualTo(100);
 
 		// Modify original collections and verify copy is unchanged
 		mutableStops.add("stop3");
@@ -234,17 +229,16 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 
 	@Test
 	void testToolCallbacksValidationRejectsNull() {
-		AnthropicChatOptions options = new AnthropicChatOptions();
-
-		assertThatThrownBy(() -> options.setToolCallbacks(null)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(
+				() -> AnthropicChatOptions.builder().toolCallbacks((org.springframework.ai.tool.ToolCallback[]) null))
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("toolCallbacks cannot be null");
 	}
 
 	@Test
 	void testToolNamesValidationRejectsNull() {
-		AnthropicChatOptions options = new AnthropicChatOptions();
-
-		assertThatThrownBy(() -> options.setToolNames(null)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> AnthropicChatOptions.builder().toolNames((String[]) null))
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("toolNames cannot be null");
 	}
 
@@ -256,7 +250,7 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 
 	@Test
 	void testUnsupportedPenaltyMethodsReturnNull() {
-		AnthropicChatOptions options = new AnthropicChatOptions();
+		AnthropicChatOptions options = AnthropicChatOptions.builder().build();
 
 		// Anthropic API does not support these OpenAI-specific parameters
 		assertThat(options.getFrequencyPenalty()).isNull();
@@ -354,9 +348,9 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		AnthropicChatOptions options = AnthropicChatOptions.builder().outputSchema("{\"type\":\"object\"}").build();
 		assertThat(options.getOutputConfig()).isNotNull();
 
-		options.setOutputSchema(null);
-		assertThat(options.getOutputConfig()).isNull();
-		assertThat(options.getOutputSchema()).isNull();
+		AnthropicChatOptions options2 = options.mutate().outputSchema(null).build();
+		assertThat(options2.getOutputConfig()).isNull();
+		assertThat(options2.getOutputSchema()).isNull();
 	}
 
 	@Test
