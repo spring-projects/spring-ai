@@ -66,11 +66,14 @@ public class AnthropicCacheOptions {
 		this.strategy = (strategy != null ? strategy : AnthropicCacheStrategy.NONE);
 		this.contentLengthFunction = (contentLengthFunction != null ? contentLengthFunction
 				: s -> s != null ? s.length() : 0);
-		this.messageTypeTtl = (messageTypeTtl != null ? Map.copyOf(messageTypeTtl) : Stream.of(MessageType.values())
-			.collect(Collectors.toUnmodifiableMap(mt -> mt, mt -> AnthropicCacheTtl.FIVE_MINUTES)));
-		this.messageTypeMinContentLengths = (messageTypeMinContentLengths != null
-				? Map.copyOf(messageTypeMinContentLengths) : Stream.of(MessageType.values())
-					.collect(Collectors.toUnmodifiableMap(mt -> mt, mt -> DEFAULT_MIN_CONTENT_LENGTH)));
+		this.messageTypeTtl = Stream.of(MessageType.values())
+			.collect(Collectors.toUnmodifiableMap(mt -> mt,
+					mt -> (messageTypeTtl != null && messageTypeTtl.containsKey(mt)) ? messageTypeTtl.get(mt)
+							: AnthropicCacheTtl.FIVE_MINUTES));
+		this.messageTypeMinContentLengths = Stream.of(MessageType.values())
+			.collect(Collectors.toUnmodifiableMap(mt -> mt,
+					mt -> (messageTypeMinContentLengths != null && messageTypeMinContentLengths.containsKey(mt))
+							? messageTypeMinContentLengths.get(mt) : DEFAULT_MIN_CONTENT_LENGTH));
 		this.multiBlockSystemCaching = (multiBlockSystemCaching != null ? multiBlockSystemCaching : false);
 	}
 
@@ -119,49 +122,53 @@ public class AnthropicCacheOptions {
 
 	public static final class Builder {
 
-		private AnthropicCacheStrategy strategy = AnthropicCacheStrategy.NONE;
+		private @Nullable AnthropicCacheStrategy strategy;
 
-		private Function<@Nullable String, Integer> contentLengthFunction = s -> s != null ? s.length() : 0;
+		private @Nullable Function<@Nullable String, Integer> contentLengthFunction;
 
-		private Map<MessageType, AnthropicCacheTtl> messageTypeTtl = Stream.of(MessageType.values())
-			.collect(Collectors.toMap(mt -> mt, mt -> AnthropicCacheTtl.FIVE_MINUTES, (m1, m2) -> m1, HashMap::new));
+		private @Nullable Map<MessageType, AnthropicCacheTtl> messageTypeTtl;
 
-		private Map<MessageType, Integer> messageTypeMinContentLengths = Stream.of(MessageType.values())
-			.collect(Collectors.toMap(mt -> mt, mt -> DEFAULT_MIN_CONTENT_LENGTH, (m1, m2) -> m1, HashMap::new));
+		private @Nullable Map<MessageType, Integer> messageTypeMinContentLengths;
 
-		private boolean multiBlockSystemCaching = false;
+		private @Nullable Boolean multiBlockSystemCaching;
 
-		public Builder strategy(AnthropicCacheStrategy strategy) {
+		public Builder strategy(@Nullable AnthropicCacheStrategy strategy) {
 			this.strategy = strategy;
 			return this;
 		}
 
-		public Builder contentLengthFunction(Function<@Nullable String, Integer> contentLengthFunction) {
+		public Builder contentLengthFunction(@Nullable Function<@Nullable String, Integer> contentLengthFunction) {
 			this.contentLengthFunction = contentLengthFunction;
 			return this;
 		}
 
-		public Builder messageTypeTtl(Map<MessageType, AnthropicCacheTtl> messageTypeTtl) {
+		public Builder messageTypeTtl(@Nullable Map<MessageType, AnthropicCacheTtl> messageTypeTtl) {
 			this.messageTypeTtl = messageTypeTtl;
 			return this;
 		}
 
 		public Builder messageTypeTtl(MessageType messageType, AnthropicCacheTtl ttl) {
+			if (this.messageTypeTtl == null) {
+				this.messageTypeTtl = new HashMap<>();
+			}
 			this.messageTypeTtl.put(messageType, ttl);
 			return this;
 		}
 
-		public Builder messageTypeMinContentLengths(Map<MessageType, Integer> messageTypeMinContentLengths) {
+		public Builder messageTypeMinContentLengths(@Nullable Map<MessageType, Integer> messageTypeMinContentLengths) {
 			this.messageTypeMinContentLengths = messageTypeMinContentLengths;
 			return this;
 		}
 
 		public Builder messageTypeMinContentLength(MessageType messageType, Integer minContentLength) {
+			if (this.messageTypeMinContentLengths == null) {
+				this.messageTypeMinContentLengths = new HashMap<>();
+			}
 			this.messageTypeMinContentLengths.put(messageType, minContentLength);
 			return this;
 		}
 
-		public Builder multiBlockSystemCaching(boolean multiBlockSystemCaching) {
+		public Builder multiBlockSystemCaching(@Nullable Boolean multiBlockSystemCaching) {
 			this.multiBlockSystemCaching = multiBlockSystemCaching;
 			return this;
 		}
