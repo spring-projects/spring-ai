@@ -17,6 +17,7 @@
 package org.springframework.ai.model.openai.autoconfigure;
 
 import com.openai.client.OpenAIClient;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.image.observation.ImageModelObservationConvention;
@@ -53,26 +54,32 @@ public class OpenAiImageAutoConfiguration {
 	@ConditionalOnMissingBean
 	public OpenAiImageModel openAiImageModel(OpenAiCommonProperties commonProperties,
 			OpenAiImageProperties imageProperties, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<MeterRegistry> meterRegistry,
 			ObjectProvider<ImageModelObservationConvention> observationConvention) {
 
 		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties, imageProperties);
 
-		var imageModel = new OpenAiImageModel(openAiClient(resolvedProperties), imageProperties.toOptions(),
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		var imageModel = new OpenAiImageModel(openAiClient(resolvedProperties, observationRegistry, meterRegistry),
+				imageProperties.toOptions(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(imageModel::setObservationConvention);
 
 		return imageModel;
 	}
 
-	private OpenAIClient openAiClient(OpenAiCommonProperties commonProperties) {
+	private OpenAIClient openAiClient(OpenAiCommonProperties commonProperties,
+			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry) {
+
+		MeterRegistry meterRegistryToUse = commonProperties.isConnectionPoolMetricsEnabled()
+				? meterRegistry.getIfAvailable() : null;
 
 		return OpenAiSetup.setupSyncClient(commonProperties.getBaseUrl(), commonProperties.getApiKey(),
 				commonProperties.getCredential(), commonProperties.getMicrosoftDeploymentName(),
 				commonProperties.getMicrosoftFoundryServiceVersion(), commonProperties.getOrganizationId(),
 				commonProperties.isMicrosoftFoundry(), commonProperties.isGitHubModels(), commonProperties.getModel(),
 				commonProperties.getTimeout(), commonProperties.getMaxRetries(), commonProperties.getProxy(),
-				commonProperties.getCustomHeaders());
+				commonProperties.getCustomHeaders(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				meterRegistryToUse, null);
 	}
 
 }

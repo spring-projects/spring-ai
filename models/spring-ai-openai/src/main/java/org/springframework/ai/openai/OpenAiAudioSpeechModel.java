@@ -25,6 +25,7 @@ import com.openai.client.OpenAIClient;
 import com.openai.core.http.Headers;
 import com.openai.models.audio.speech.SpeechCreateParams;
 import com.openai.models.audio.speech.SpeechModel;
+import io.micrometer.observation.ObservationRegistry;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +76,7 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
 						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders()));
+						this.options.getCustomHeaders(), ObservationRegistry.NOOP, null, null));
 	}
 
 	/**

@@ -17,11 +17,14 @@
 package org.springframework.ai.model.openai.autoconfigure;
 
 import com.openai.client.OpenAIClient;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.setup.OpenAiSetup;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -48,12 +51,13 @@ public class OpenAiAudioSpeechAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public OpenAiAudioSpeechModel openAiSdkAudioSpeechModel(OpenAiCommonProperties commonProperties,
-			OpenAiAudioSpeechProperties speechProperties) {
+			OpenAiAudioSpeechProperties speechProperties, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<MeterRegistry> meterRegistry) {
 
 		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
 				speechProperties);
 
-		OpenAIClient openAIClient = this.openAiClient(resolvedProperties);
+		OpenAIClient openAIClient = this.openAiClient(resolvedProperties, observationRegistry, meterRegistry);
 
 		return OpenAiAudioSpeechModel.builder()
 			.openAiClient(openAIClient)
@@ -61,14 +65,19 @@ public class OpenAiAudioSpeechAutoConfiguration {
 			.build();
 	}
 
-	private OpenAIClient openAiClient(OpenAiCommonProperties commonProperties) {
+	private OpenAIClient openAiClient(OpenAiCommonProperties commonProperties,
+			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry) {
+
+		MeterRegistry meterRegistryToUse = commonProperties.isConnectionPoolMetricsEnabled()
+				? meterRegistry.getIfAvailable() : null;
 
 		return OpenAiSetup.setupSyncClient(commonProperties.getBaseUrl(), commonProperties.getApiKey(),
 				commonProperties.getCredential(), commonProperties.getMicrosoftDeploymentName(),
 				commonProperties.getMicrosoftFoundryServiceVersion(), commonProperties.getOrganizationId(),
 				commonProperties.isMicrosoftFoundry(), commonProperties.isGitHubModels(), commonProperties.getModel(),
 				commonProperties.getTimeout(), commonProperties.getMaxRetries(), commonProperties.getProxy(),
-				commonProperties.getCustomHeaders());
+				commonProperties.getCustomHeaders(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				meterRegistryToUse, null);
 	}
 
 }

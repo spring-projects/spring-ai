@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -56,6 +57,7 @@ import com.openai.models.chat.completions.ChatCompletionToolChoiceOption;
 import com.openai.models.chat.completions.ChatCompletionToolMessageParam;
 import com.openai.models.chat.completions.ChatCompletionUserMessageParam;
 import com.openai.models.completions.CompletionUsage;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
@@ -158,7 +160,9 @@ public final class OpenAiChatModel implements ChatModel {
 						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
 						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders()));
+						this.options.getCustomHeaders(),
+						Objects.requireNonNullElse(builder.observationRegistry, ObservationRegistry.NOOP),
+						builder.meterRegistry, builder.dispatcherExecutor));
 
 		this.openAiClientAsync = Objects.requireNonNullElseGet(builder.openAiClientAsync,
 				() -> OpenAiSetup.setupAsyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
@@ -166,7 +170,9 @@ public final class OpenAiChatModel implements ChatModel {
 						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
 						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders()));
+						this.options.getCustomHeaders(),
+						Objects.requireNonNullElse(builder.observationRegistry, ObservationRegistry.NOOP),
+						builder.meterRegistry, builder.dispatcherExecutor));
 
 		this.observationRegistry = Objects.requireNonNullElse(builder.observationRegistry, ObservationRegistry.NOOP);
 		this.toolCallingManager = Objects.requireNonNullElse(builder.toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER);
@@ -1306,6 +1312,10 @@ public final class OpenAiChatModel implements ChatModel {
 
 		private @Nullable ObservationRegistry observationRegistry;
 
+		private @Nullable MeterRegistry meterRegistry;
+
+		private @Nullable ExecutorService dispatcherExecutor;
+
 		private @Nullable ToolExecutionEligibilityChecker toolExecutionEligibilityChecker;
 
 		private Builder() {
@@ -1362,6 +1372,27 @@ public final class OpenAiChatModel implements ChatModel {
 		 */
 		public Builder observationRegistry(ObservationRegistry observationRegistry) {
 			this.observationRegistry = observationRegistry;
+			return this;
+		}
+
+		public Builder meterRegistry(@Nullable MeterRegistry meterRegistry) {
+			this.meterRegistry = meterRegistry;
+			return this;
+		}
+
+		/**
+		 * Sets the executor used by the underlying OkHttp dispatcher for both the sync
+		 * and async clients. The caller owns the executor's lifecycle — Spring AI will
+		 * not shut it down. Typical use: pass
+		 * {@code Executors.newVirtualThreadPerTaskExecutor()} on Java 21+ to back HTTP
+		 * dispatch with virtual threads. When omitted, an internal platform-thread
+		 * executor is created and managed by the HTTP client.
+		 * @param dispatcherExecutor the dispatcher executor; null restores the default
+		 * @return this builder
+		 * @since 2.0.0
+		 */
+		public Builder dispatcherExecutor(java.util.concurrent.ExecutorService dispatcherExecutor) {
+			this.dispatcherExecutor = dispatcherExecutor;
 			return this;
 		}
 

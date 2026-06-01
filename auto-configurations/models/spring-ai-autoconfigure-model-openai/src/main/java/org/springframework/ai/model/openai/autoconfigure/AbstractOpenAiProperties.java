@@ -108,6 +108,11 @@ public class AbstractOpenAiProperties {
 	 */
 	private Map<String, String> customHeaders = new HashMap<>();
 
+	/**
+	 * Whether to enable connection pool metrics for the underlying OkHttp client.
+	 */
+	private boolean connectionPoolMetricsEnabled = false;
+
 	public @Nullable String getBaseUrl() {
 		return this.baseUrl;
 	}
@@ -224,6 +229,14 @@ public class AbstractOpenAiProperties {
 
 	public void setCustomHeaders(Map<String, String> customHeaders) {
 		this.customHeaders = customHeaders;
+	}
+
+	public boolean isConnectionPoolMetricsEnabled() {
+		return this.connectionPoolMetricsEnabled;
+	}
+
+	public void setConnectionPoolMetricsEnabled(boolean connectionPoolMetricsEnabled) {
+		this.connectionPoolMetricsEnabled = connectionPoolMetricsEnabled;
 	}
 
 }

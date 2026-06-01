@@ -25,6 +25,7 @@ import com.openai.client.OpenAIClient;
 import com.openai.core.MultipartField;
 import com.openai.models.audio.transcriptions.TranscriptionCreateParams;
 import com.openai.models.audio.transcriptions.TranscriptionCreateResponse;
+import io.micrometer.observation.ObservationRegistry;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,7 +82,7 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
 						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders()));
+						this.options.getCustomHeaders(), ObservationRegistry.NOOP, null, null));
 	}
 
 	/**

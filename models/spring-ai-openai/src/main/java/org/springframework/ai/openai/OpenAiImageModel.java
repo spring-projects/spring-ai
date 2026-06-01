@@ -147,7 +147,8 @@ public class OpenAiImageModel implements ImageModel {
 						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
 						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders()));
+						this.options.getCustomHeaders(),
+						observationRegistry != null ? observationRegistry : ObservationRegistry.NOOP, null, null));
 		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
 	}
 
