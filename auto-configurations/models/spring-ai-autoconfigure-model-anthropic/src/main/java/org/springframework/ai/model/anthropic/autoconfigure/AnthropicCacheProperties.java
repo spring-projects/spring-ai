@@ -68,20 +68,12 @@ public class AnthropicCacheProperties {
 	}
 
 	public AnthropicCacheOptions toOptions() {
-		AnthropicCacheOptions.Builder builder = AnthropicCacheOptions.builder();
-		if (this.strategy != null) {
-			builder.strategy(this.strategy);
-		}
-		if (this.messageTypeTtl != null) {
-			builder.messageTypeTtl(this.messageTypeTtl);
-		}
-		if (this.messageTypeMinContentLengths != null) {
-			builder.messageTypeMinContentLengths(this.messageTypeMinContentLengths);
-		}
-		if (this.multiBlockSystemCaching != null) {
-			builder.multiBlockSystemCaching(this.multiBlockSystemCaching);
-		}
-		return builder.build();
+		return AnthropicCacheOptions.builder()
+			.strategy(this.strategy)
+			.messageTypeTtl(this.messageTypeTtl)
+			.messageTypeMinContentLengths(this.messageTypeMinContentLengths)
+			.multiBlockSystemCaching(this.multiBlockSystemCaching)
+			.build();
 	}
 
 }
