@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.anthropic.http.okhttp;
+package org.springframework.ai.openai.http.okhttp;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,17 +33,16 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.X509TrustManager;
 
-import com.anthropic.backends.Backend;
-import com.anthropic.core.RequestOptions;
-import com.anthropic.core.Timeout;
-import com.anthropic.core.http.Headers;
-import com.anthropic.core.http.HttpClient;
-import com.anthropic.core.http.HttpMethod;
-import com.anthropic.core.http.HttpRequest;
-import com.anthropic.core.http.HttpRequestBody;
-import com.anthropic.core.http.HttpResponse;
-import com.anthropic.core.http.ProxyAuthenticator;
-import com.anthropic.errors.AnthropicIoException;
+import com.openai.core.RequestOptions;
+import com.openai.core.Timeout;
+import com.openai.core.http.Headers;
+import com.openai.core.http.HttpClient;
+import com.openai.core.http.HttpMethod;
+import com.openai.core.http.HttpRequest;
+import com.openai.core.http.HttpRequestBody;
+import com.openai.core.http.HttpResponse;
+import com.openai.core.http.ProxyAuthenticator;
+import com.openai.errors.OpenAIIoException;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.observation.ObservationRegistry;
@@ -63,37 +62,36 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.observation.conventions.SpringAiOkHttpObservabilityUtils;
 
 /**
- * OkHttp-backed {@link HttpClient} for the Anthropic Java SDK, with Micrometer's
+ * OkHttp-backed {@link HttpClient} for the OpenAI Java SDK, with Micrometer's
  * {@link OkHttpObservationInterceptor} attached so each HTTP attempt produces an
  * observation (span + metric + traceparent propagation). When a {@link MeterRegistry} is
  * supplied, {@link OkHttpConnectionPoolMetrics} is also bound. We own this code because
- * the SDK's stock {@code AnthropicOkHttpClient.Builder} doesn't expose an interceptor
- * seam — see the SDK's
- * <a href="https://platform.claude.com/docs/en/api/sdks/java#custom-http-client">Custom
- * HTTP client</a> guide for the integration pattern and
- * <a href="https://github.com/anthropics/anthropic-sdk-java/pull/315">anthropic-sdk-java
- * #315</a> for the upstream fix being tracked.
+ * the SDK's stock {@code OpenAiOkHttpClient.Builder} doesn't expose an interceptor seam —
+ * see the SDK's <a href="https://github.com/openai/openai-java#custom-http-client">Custom
+ * HTTP client</a> guide for the integration pattern.
  *
  * <p>
  * <b>Attribution:</b> the body of this class is a Java port of {@code OkHttpClient} from
- * {@code anthropic-java-client-okhttp} (Apache License 2.0, authored by Anthropic). Only
- * the Micrometer wiring in {@link Builder#build()} is original to Spring AI.
+ * {@code openai-java-client-okhttp} (Apache License 2.0, authored by OpenAI). Only the
+ * Micrometer wiring in {@link Builder#build()} is original to Spring AI.
  *
  * @author Soby Chacko
+ * @author Ilayaperumal Gopinathan
  * @since 2.0.0
  */
-public final class SpringAiAnthropicHttpClient implements HttpClient {
+public final class SpringAiOpenAiHttpClient implements HttpClient {
 
 	private final OkHttpClient okHttpClient;
 
-	private final Backend backend;
-
 	private final boolean ownsDispatcherExecutor;
 
-	private SpringAiAnthropicHttpClient(OkHttpClient okHttpClient, Backend backend, boolean ownsDispatcherExecutor) {
+	private SpringAiOpenAiHttpClient(OkHttpClient okHttpClient, boolean ownsDispatcherExecutor) {
 		this.okHttpClient = okHttpClient;
-		this.backend = backend;
 		this.ownsDispatcherExecutor = ownsDispatcherExecutor;
+	}
+
+	public OkHttpClient getOkHttpClient() {
+		return this.okHttpClient;
 	}
 
 	public static Builder builder() {
@@ -102,16 +100,15 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 
 	@Override
 	public HttpResponse execute(HttpRequest request, RequestOptions requestOptions) {
-		HttpRequest preparedRequest = prepareRequest(request);
-		Call call = newCall(preparedRequest, requestOptions);
+		Call call = newCall(request, requestOptions);
 		try {
-			return this.backend.prepareResponse(toHttpResponse(call.execute()));
+			return toHttpResponse(call.execute());
 		}
 		catch (IOException e) {
-			throw new AnthropicIoException("Request failed", e);
+			throw new OpenAIIoException("Request failed", e);
 		}
 		finally {
-			HttpRequestBody body = preparedRequest.body();
+			HttpRequestBody body = request.body();
 			if (body != null) {
 				body.close();
 			}
@@ -120,19 +117,18 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 
 	@Override
 	public CompletableFuture<HttpResponse> executeAsync(HttpRequest request, RequestOptions requestOptions) {
-		HttpRequest preparedRequest = prepareRequest(request);
 		CompletableFuture<HttpResponse> future = new CompletableFuture<>();
 
-		Call call = newCall(preparedRequest, requestOptions);
+		Call call = newCall(request, requestOptions);
 		call.enqueue(new Callback() {
 			@Override
 			public void onResponse(Call call, Response response) {
-				future.complete(SpringAiAnthropicHttpClient.this.backend.prepareResponse(toHttpResponse(response)));
+				future.complete(toHttpResponse(response));
 			}
 
 			@Override
 			public void onFailure(Call call, IOException e) {
-				future.completeExceptionally(new AnthropicIoException("Request failed", e));
+				future.completeExceptionally(new OpenAIIoException("Request failed", e));
 			}
 		});
 
@@ -140,7 +136,7 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 			if (error instanceof CancellationException) {
 				call.cancel();
 			}
-			HttpRequestBody body = preparedRequest.body();
+			HttpRequestBody body = request.body();
 			if (body != null) {
 				body.close();
 			}
@@ -151,7 +147,6 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 
 	@Override
 	public void close() {
-		this.backend.close();
 		if (this.ownsDispatcherExecutor) {
 			this.okHttpClient.dispatcher().executorService().shutdown();
 		}
@@ -164,12 +159,6 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 				// Matches SDK behavior: cache close errors during shutdown are swallowed.
 			}
 		}
-	}
-
-	private HttpRequest prepareRequest(HttpRequest request) {
-		HttpRequest prepared = this.backend.prepareRequest(request);
-		HttpRequest resolved = resolveUrl(prepared);
-		return this.backend.authorizeRequest(resolved);
 	}
 
 	private Call newCall(HttpRequest request, RequestOptions requestOptions) {
@@ -187,17 +176,13 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 		return client.newCall(toRequestWithStainlessHeaders(request, client));
 	}
 
-	// URL is expected to be fully resolved by `prepareRequest()`; read directly from
-	// baseUrl.
 	private static Request toRequestWithStainlessHeaders(HttpRequest request, OkHttpClient client) {
 		RequestBody body = toOkHttpRequestBody(request.body());
 		if (body == null && requiresBody(request.method())) {
 			body = RequestBody.create("", null);
 		}
 
-		String baseUrl = request.baseUrl();
-		Request.Builder builder = new Request.Builder().url(baseUrl != null ? baseUrl : "")
-			.method(request.method().name(), body);
+		Request.Builder builder = new Request.Builder().url(request.url()).method(request.method().name(), body);
 
 		Headers headers = request.headers();
 		for (String name : headers.names()) {
@@ -225,7 +210,7 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 			body = RequestBody.create("", null);
 		}
 
-		Request.Builder builder = new Request.Builder().url(toUrl(request)).method(request.method().name(), body);
+		Request.Builder builder = new Request.Builder().url(request.url()).method(request.method().name(), body);
 
 		Headers headers = request.headers();
 		for (String name : headers.names()) {
@@ -246,37 +231,6 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 		}
 
 		return builder.build();
-	}
-
-	private HttpRequest resolveUrl(HttpRequest request) {
-		return request.toBuilder().baseUrl(computeBaseAndPath(request)).build();
-	}
-
-	private String computeBaseAndPath(HttpRequest request) {
-		String base = request.baseUrl() != null ? request.baseUrl() : this.backend.baseUrl();
-		HttpUrl.Builder builder = HttpUrl.get(base).newBuilder();
-		for (String segment : request.pathSegments()) {
-			builder.addPathSegment(segment);
-		}
-		for (String key : request.queryParams().keys()) {
-			for (String value : request.queryParams().values(key)) {
-				builder.addQueryParameter(key, value);
-			}
-		}
-		return builder.toString();
-	}
-
-	private static String toUrl(HttpRequest request) {
-		HttpUrl.Builder builder = HttpUrl.get(Objects.requireNonNull(request.baseUrl())).newBuilder();
-		for (String segment : request.pathSegments()) {
-			builder.addPathSegment(segment);
-		}
-		for (String key : request.queryParams().keys()) {
-			for (String value : request.queryParams().values(key)) {
-				builder.addQueryParameter(key, value);
-			}
-		}
-		return builder.toString();
 	}
 
 	private static boolean requiresBody(HttpMethod method) {
@@ -315,7 +269,7 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 	}
 
 	private static HttpResponse toHttpResponse(Response response) {
-		final Headers headers = toAnthropicHeaders(response.headers());
+		final Headers headers = toOpenAiHeaders(response.headers());
 		return new HttpResponse() {
 			@Override
 			public int statusCode() {
@@ -381,7 +335,7 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 			length = source.contentLength();
 		}
 		catch (IOException e) {
-			throw new AnthropicIoException("Could not read content length", e);
+			throw new OpenAIIoException("Could not read content length", e);
 		}
 		final boolean isOneShot = source.isOneShot();
 
@@ -409,7 +363,7 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 					sink.flush();
 				}
 				catch (IOException e) {
-					throw new AnthropicIoException("Failed to write request body", e);
+					throw new OpenAIIoException("Failed to write request body", e);
 				}
 			}
 
@@ -419,7 +373,7 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 		};
 	}
 
-	private static Headers toAnthropicHeaders(okhttp3.Headers okHttpHeaders) {
+	private static Headers toOpenAiHeaders(okhttp3.Headers okHttpHeaders) {
 		Headers.Builder builder = Headers.builder();
 		for (int i = 0, n = okHttpHeaders.size(); i < n; i++) {
 			builder.put(okHttpHeaders.name(i), okHttpHeaders.value(i));
@@ -428,9 +382,9 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 	}
 
 	/**
-	 * Builder for {@link SpringAiAnthropicHttpClient}. Mirrors the upstream
-	 * {@code com.anthropic.client.okhttp.OkHttpClient.Builder} surface, with two
-	 * additional optional inputs: an {@link ObservationRegistry} (defaults to
+	 * Builder for {@link SpringAiOpenAiHttpClient}. Mirrors the upstream
+	 * {@code com.openai.client.okhttp.OkHttpClient.Builder} surface, with two additional
+	 * optional inputs: an {@link ObservationRegistry} (defaults to
 	 * {@link ObservationRegistry#NOOP}) and a {@link MeterRegistry} (optional; when
 	 * supplied, OkHttp connection-pool gauges are bound to it).
 	 */
@@ -441,8 +395,6 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 		private Timeout timeout = Timeout.builder().build();
 
 		private @Nullable Proxy proxy;
-
-		private @Nullable Backend backend;
 
 		private @Nullable ProxyAuthenticator proxyAuthenticator;
 
@@ -481,11 +433,6 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 			return this;
 		}
 
-		public Builder backend(Backend backend) {
-			this.backend = backend;
-			return this;
-		}
-
 		public Builder proxyAuthenticator(@Nullable ProxyAuthenticator proxyAuthenticator) {
 			this.proxyAuthenticator = proxyAuthenticator;
 			return this;
@@ -503,7 +450,7 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 
 		/**
 		 * Sets the executor used by the OkHttp dispatcher. When supplied, the caller owns
-		 * the executor's lifecycle — {@link SpringAiAnthropicHttpClient#close()} will not
+		 * the executor's lifecycle — {@link SpringAiOpenAiHttpClient#close()} will not
 		 * shut it down. When null, an internal default is created and closed with the
 		 * client.
 		 */
@@ -557,9 +504,7 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 			return this;
 		}
 
-		public SpringAiAnthropicHttpClient build() {
-			Backend resolvedBackend = Objects.requireNonNull(this.backend, "backend");
-
+		public SpringAiOpenAiHttpClient build() {
 			OkHttpClient.Builder okBuilder = new OkHttpClient.Builder()
 				// SDK's RetryingHttpClient owns retries; disable here to avoid doubling.
 				.retryOnConnectionFailure(false)
@@ -611,7 +556,48 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 
 			SpringAiOkHttpObservabilityUtils.bindConnectionPoolMetrics(okClient, this.meterRegistry, this.meterTags);
 
-			return new SpringAiAnthropicHttpClient(okClient, resolvedBackend, ownsDispatcherExecutor);
+			return new SpringAiOpenAiHttpClient(okClient, ownsDispatcherExecutor);
+		}
+
+		/**
+		 * Builds and returns the configured {@link OkHttpClient} without wrapping it in a
+		 * {@link SpringAiOpenAiHttpClient}. Useful when a caller needs to add further
+		 * interceptors (e.g. header-stripping) before the final wrapping via
+		 * {@link #buildWithClient(OkHttpClient)}, avoiding the creation and immediate
+		 * discard of an intermediate client instance.
+		 */
+		public OkHttpClient buildOkHttpClient() {
+			OkHttpClient.Builder okBuilder = new OkHttpClient.Builder().retryOnConnectionFailure(false)
+				.pingInterval(Duration.ofMinutes(1))
+				.connectTimeout(this.timeout.connect())
+				.readTimeout(this.timeout.read())
+				.writeTimeout(this.timeout.write())
+				.callTimeout(this.timeout.request())
+				.proxy(this.proxy);
+
+			SpringAiOkHttpObservabilityUtils.configureObservability(okBuilder, this.observationRegistry,
+					OBSERVATION_NAME, this.dispatcherExecutorService);
+
+			if (this.maxIdleConnections != null && this.keepAliveDuration != null) {
+				okBuilder.connectionPool(new ConnectionPool(this.maxIdleConnections, this.keepAliveDuration.toNanos(),
+						TimeUnit.NANOSECONDS));
+			}
+
+			if (this.sslSocketFactory != null && this.trustManager != null) {
+				okBuilder.sslSocketFactory(this.sslSocketFactory, this.trustManager);
+			}
+
+			if (this.hostnameVerifier != null) {
+				okBuilder.hostnameVerifier(this.hostnameVerifier);
+			}
+
+			OkHttpClient okClient = okBuilder.build();
+			okClient.dispatcher().setMaxRequestsPerHost(okClient.dispatcher().getMaxRequests());
+			return okClient;
+		}
+
+		public SpringAiOpenAiHttpClient buildWithClient(OkHttpClient okClient) {
+			return new SpringAiOpenAiHttpClient(okClient, false);
 		}
 
 	}

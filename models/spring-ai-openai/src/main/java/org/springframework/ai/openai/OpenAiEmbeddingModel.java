@@ -167,7 +167,8 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
 						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders()));
+						this.options.getCustomHeaders(),
+						observationRegistry != null ? observationRegistry : ObservationRegistry.NOOP, null, null));
 		this.metadataMode = Objects.requireNonNullElse(metadataMode, MetadataMode.EMBED);
 		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
 	}

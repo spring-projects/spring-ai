@@ -52,7 +52,8 @@ public class OpenAiSetupEmptyApiKeyTests {
 			server.start();
 
 			OpenAIClient client = OpenAiSetup.setupSyncClient(server.url("/v1").toString(), "", null, null, null, null,
-					false, false, "gpt-4", Duration.ofSeconds(10), 0, null, null);
+					false, false, "gpt-4", Duration.ofSeconds(10), 0, null, null,
+					io.micrometer.observation.ObservationRegistry.NOOP, null, null);
 
 			assertThat(client).isNotNull();
 
@@ -89,7 +90,8 @@ public class OpenAiSetupEmptyApiKeyTests {
 			assertThat(options.getApiKey()).as("NoopApiKey.getValue() should return empty string").isEmpty();
 
 			OpenAIClient client = OpenAiSetup.setupSyncClient(options.getBaseUrl(), options.getApiKey(), null, null,
-					null, null, false, false, "gpt-4", Duration.ofSeconds(10), 0, null, null);
+					null, null, false, false, "gpt-4", Duration.ofSeconds(10), 0, null, null,
+					io.micrometer.observation.ObservationRegistry.NOOP, null, null);
 
 			client.chat()
 				.completions()

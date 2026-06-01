@@ -22,6 +22,7 @@ import java.util.List;
 import com.openai.client.OpenAIClient;
 import com.openai.models.moderations.ModerationCreateParams;
 import com.openai.models.moderations.ModerationCreateResponse;
+import io.micrometer.observation.ObservationRegistry;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +72,8 @@ public final class OpenAiModerationModel implements ModerationModel {
 						this.options.getMicrosoftDeploymentName(), this.options.getMicrosoftFoundryServiceVersion(),
 						this.options.getOrganizationId(), this.options.isMicrosoftFoundry(),
 						this.options.isGitHubModels(), this.options.getModel(), this.options.getTimeout(),
-						this.options.getMaxRetries(), this.options.getProxy(), this.options.getCustomHeaders()));
+						this.options.getMaxRetries(), this.options.getProxy(), this.options.getCustomHeaders(),
+						ObservationRegistry.NOOP, null, null));
 	}
 
 	public static Builder builder() {
