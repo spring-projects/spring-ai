@@ -57,22 +57,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
-	public void testFromOptionsWithThinkingBudget() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.temperature(0.8)
-			.thinkingBudget(20000)
-			.build();
-
-		GoogleGenAiChatOptions copy = GoogleGenAiChatOptions.fromOptions(original);
-
-		assertThat(copy.getModel()).isEqualTo("test-model");
-		assertThat(copy.getTemperature()).isEqualTo(0.8);
-		assertThat(copy.getThinkingBudget()).isEqualTo(20000);
-		assertThat(copy).isNotSameAs(original);
-	}
-
-	@Test
 	public void testEqualsAndHashCodeWithThinkingBudget() {
 		GoogleGenAiChatOptions options1 = GoogleGenAiChatOptions.builder()
 			.model("test-model")
@@ -144,19 +128,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
-	public void testFromOptionsWithThinkingLevel() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
-			.build();
-
-		GoogleGenAiChatOptions copy = GoogleGenAiChatOptions.fromOptions(original);
-
-		assertThat(copy.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.LOW);
-		assertThat(copy).isNotSameAs(original);
-	}
-
-	@Test
 	public void testEqualsAndHashCodeWithThinkingLevel() {
 		GoogleGenAiChatOptions options1 = GoogleGenAiChatOptions.builder()
 			.model("test-model")
@@ -213,19 +184,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 
 		assertThat(options.getModel()).isEqualTo("test-model");
 		assertThat(options.getIncludeServerSideToolInvocations()).isTrue();
-	}
-
-	@Test
-	public void testFromOptionsWithIncludeServerSideToolInvocations() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.includeServerSideToolInvocations(true)
-			.build();
-
-		GoogleGenAiChatOptions copy = GoogleGenAiChatOptions.fromOptions(original);
-
-		assertThat(copy.getIncludeServerSideToolInvocations()).isTrue();
-		assertThat(copy).isNotSameAs(original);
 	}
 
 	@Test

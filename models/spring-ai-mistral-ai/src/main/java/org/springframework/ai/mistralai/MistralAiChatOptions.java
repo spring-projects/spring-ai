@@ -197,10 +197,6 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 		return new Builder();
 	}
 
-	public static MistralAiChatOptions fromOptions(MistralAiChatOptions fromOptions) {
-		return fromOptions.mutate().build();
-	}
-
 	@Override
 	public String getModel() {
 		return this.model;

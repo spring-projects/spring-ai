@@ -199,7 +199,7 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 			.toolNames(Set.of("function1"))
 			.build();
 
-		var copiedOptions = OllamaChatOptions.fromOptions(originalOptions);
+		var copiedOptions = originalOptions.mutate().build();
 
 		// Test the copied options directly rather than through toMap()
 		assertThat(copiedOptions.getModel()).isEqualTo("llama2");

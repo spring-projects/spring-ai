@@ -308,10 +308,6 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.internalToolExecutionEnabled, other.internalToolExecutionEnabled);
 	}
 
-	public static DeepSeekChatOptions fromOptions(DeepSeekChatOptions fromOptions) {
-		return fromOptions.mutate().build();
-	}
-
 	// public Builder class exposed to users. Avoids having to deal with noisy generic parameters.
 	public static class Builder extends AbstractBuilder<Builder> {
 
