@@ -718,9 +718,12 @@ public class DefaultChatClient implements ChatClient {
 				Observation parentObservation = contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
 				observation.parentObservation(parentObservation);
 				// Briefly make the parent observation current while starting this one, so
-				// Micrometer tracing derives the span's parent from the parent observation rather
-				// than from whatever scope happens to be open on the current thread (e.g. the
-				// servlet HTTP span). This keeps span parenting correct without relying on
+				// Micrometer tracing derives the span's parent from the parent
+				// observation rather
+				// than from whatever scope happens to be open on the current thread (e.g.
+				// the
+				// servlet HTTP span). This keeps span parenting correct without relying
+				// on
 				// automatic context propagation.
 				try (Observation.Scope ignored = parentObservation != null ? parentObservation.openScope()
 						: Observation.Scope.NOOP) {

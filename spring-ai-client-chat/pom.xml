@@ -110,6 +110,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-tracing-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
 			<groupId>tools.jackson.module</groupId>
 			<artifactId>jackson-module-kotlin</artifactId>
 			<scope>test</scope>
