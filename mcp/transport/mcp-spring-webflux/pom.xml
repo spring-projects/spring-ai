@@ -24,7 +24,7 @@
 
 	<dependencies>
 
-        <dependency>
+		<dependency>
 			<groupId>io.modelcontextprotocol.sdk</groupId>
 			<artifactId>mcp-core</artifactId>
 			<version>${mcp.sdk.version}</version>
