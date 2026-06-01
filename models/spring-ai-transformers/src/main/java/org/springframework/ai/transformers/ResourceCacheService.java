@@ -19,8 +19,11 @@ package org.springframework.ai.transformers;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.UUID;
 
 import org.apache.commons.logging.Log;
@@ -100,16 +103,18 @@ public class ResourceCacheService {
 	 */
 	public Resource getCachedResource(Resource originalResource) {
 		try {
-			if (this.excludedUriSchemas.contains(originalResource.getURI().getScheme())) {
+			URI originalResourceUri = originalResource.getURI();
+			if (this.excludedUriSchemas.contains(originalResourceUri.getScheme())) {
 				logger.info("The " + originalResource.toString() + " resource with URI schema ["
-						+ originalResource.getURI().getScheme() + "] is excluded from caching");
+						+ originalResourceUri.getScheme() + "] is excluded from caching");
 				return originalResource;
 			}
 
 			File cachedFile = getCachedFile(originalResource);
-			if (!cachedFile.exists()) {
+			if (shouldCacheResource(originalResource, originalResourceUri, cachedFile)) {
 				FileCopyUtils.copy(StreamUtils.copyToByteArray(originalResource.getInputStream()), cachedFile);
 				logger.info("Caching the " + originalResource.toString() + " resource to: " + cachedFile);
+				writeCacheMetadata(originalResource, originalResourceUri, cachedFile);
 			}
 			return new FileUrlResource(cachedFile.getAbsolutePath());
 		}
@@ -118,12 +123,87 @@ public class ResourceCacheService {
 		}
 	}
 
+	private boolean shouldCacheResource(Resource originalResource, URI originalResourceUri, File cachedFile) {
+		if (!cachedFile.exists()) {
+			return true;
+		}
+		if (isRemoteResource(originalResourceUri)) {
+			return false;
+		}
+
+		Path metadataFile = getMetadataFile(cachedFile);
+		if (!Files.exists(metadataFile)) {
+			return true;
+		}
+
+		try {
+			return !getCacheMetadata(originalResource, originalResourceUri).equals(readCacheMetadata(metadataFile));
+		}
+		catch (IOException e) {
+			throw new IllegalStateException("Failed to read cache metadata for: " + originalResource.getDescription(),
+					e);
+		}
+	}
+
+	private boolean isRemoteResource(URI originalResourceUri) {
+		String scheme = originalResourceUri.getScheme();
+		return "http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme);
+	}
+
 	private File getCachedFile(Resource originalResource) throws IOException {
 		var resourceParentFolder = new File(this.cacheDirectory,
 				UUID.nameUUIDFromBytes(pathWithoutLastSegment(originalResource.getURI())).toString());
 		resourceParentFolder.mkdirs();
 		String newFileName = getCacheName(originalResource);
 		return new File(resourceParentFolder, newFileName);
+	}
+
+	private Path getMetadataFile(File cachedFile) {
+		return cachedFile.toPath().resolveSibling(cachedFile.getName() + ".metadata");
+	}
+
+	private Properties getCacheMetadata(Resource originalResource, URI originalResourceUri) {
+		Properties properties = new Properties();
+		properties.setProperty("uri", originalResourceUri.toASCIIString());
+		properties.setProperty("lastModified", Long.toString(getLastModified(originalResource)));
+		properties.setProperty("contentLength", Long.toString(getContentLength(originalResource)));
+		return properties;
+	}
+
+	private long getLastModified(Resource originalResource) {
+		try {
+			return originalResource.lastModified();
+		}
+		catch (IOException e) {
+			return -1;
+		}
+	}
+
+	private long getContentLength(Resource originalResource) {
+		try {
+			return originalResource.contentLength();
+		}
+		catch (IOException e) {
+			return -1;
+		}
+	}
+
+	private Properties readCacheMetadata(Path metadataFile) throws IOException {
+		Properties properties = new Properties();
+		try (var inputStream = Files.newInputStream(metadataFile)) {
+			properties.load(inputStream);
+		}
+		return properties;
+	}
+
+	private void writeCacheMetadata(Resource originalResource, URI originalResourceUri, File cachedFile)
+			throws IOException {
+		if (isRemoteResource(originalResourceUri)) {
+			return;
+		}
+		try (var outputStream = Files.newOutputStream(getMetadataFile(cachedFile))) {
+			getCacheMetadata(originalResource, originalResourceUri).store(outputStream, null);
+		}
 	}
 
 	private byte[] pathWithoutLastSegment(URI uri) {
