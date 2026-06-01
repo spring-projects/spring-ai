@@ -30,17 +30,9 @@
 	<description>Spring AI Vector Store - Redis </description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<scm>
-		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
-	</scm>
-
 	<properties>
 		<testcontainers-redis.version>2.2.0</testcontainers-redis.version>
 		<jedis.version>5.2.0</jedis.version>
-		<maven.compiler.target>17</maven.compiler.target>
-		<maven.compiler.source>17</maven.compiler.source>
 	</properties>
 
 	<dependencies>
@@ -80,7 +72,6 @@
 			<artifactId>spring-boot-starter-data-redis-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-
 
 		<dependency>
 			<groupId>com.redis</groupId>

@@ -29,17 +29,6 @@
 	<name>Spring AI Vector Store - Weaviate </name>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<scm>
-		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
-	</scm>
-
-	<properties>
-		<maven.compiler.target>17</maven.compiler.target>
-		<maven.compiler.source>17</maven.compiler.source>
-	</properties>
-
 	<dependencyManagement>
 		<dependencies>
 			<!-- Override transitive grpc-netty-shaded to fix CVE-2025-55163 -->

@@ -30,17 +30,6 @@
 
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<scm>
-		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
-	</scm>
-
-	<properties>
-		<maven.compiler.target>17</maven.compiler.target>
-		<maven.compiler.source>17</maven.compiler.source>
-	</properties>
-
 	<dependencyManagement>
 		<dependencies>
 			<!-- Override transitive protobuf-java to fix CVE-2024-7254 (SNYK-JAVA-COMGOOGLEPROTOBUF-8055227) -->

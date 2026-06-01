@@ -31,12 +31,6 @@
 	<description>Amazon Bedrock models support using the Converse API</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<scm>
-		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
-	</scm>
-
 	<dependencies>
 
 		<!-- production dependencies -->
@@ -112,7 +106,6 @@
 			<artifactId>awaitility</artifactId>
 			<scope>test</scope>
 		</dependency>
-
 
 	</dependencies>
 

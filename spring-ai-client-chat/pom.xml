@@ -30,12 +30,6 @@
 	<description>Spring AI Chat Client AI programming</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<scm>
-		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
-	</scm>
-
 	<dependencies>
 
 		<dependency>
@@ -71,7 +65,6 @@
 			<groupId>io.projectreactor</groupId>
 			<artifactId>reactor-core</artifactId>
 		</dependency>
-
 
 		<!-- Spring Framework -->
 		<dependency>
@@ -140,6 +133,5 @@
 	<profiles>
 		<!-- ANTLR profile moved to spring-ai-vector-store -->
 	</profiles>
-
 
 </project>
