@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -116,12 +117,20 @@ class SyncMcpToolCallbackTests {
 		assertThat(response).isNotNull();
 	}
 
+	/**
+	 * When streaming tool call aggregation fails, the callback can receive null or empty
+	 * input. Previously this was silently replaced with {@code "{}"} and the MCP tool was
+	 * invoked — producing empty-looking results that caused the model to retry
+	 * indefinitely. The fix should throw a {@link ToolExecutionException} so the standard
+	 * error processor surfaces a clear error to the model instead.
+	 *
+	 * <p>
+	 * <b>Loop safety:</b> each assertion invokes the callback exactly once and verifies
+	 * that the exception is thrown. There is no recursion or retry loop in this test.
+	 */
 	@Test
-	void callShouldHandleNullOrEmptyInput() {
+	void callShouldThrowOnNullOrEmptyInput() {
 		when(this.tool.name()).thenReturn("testTool");
-		CallToolResult callResult = mock(CallToolResult.class);
-		when(callResult.content()).thenReturn(List.of());
-		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
 
 		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
 			.mcpClient(this.mcpClient)
@@ -129,17 +138,23 @@ class SyncMcpToolCallbackTests {
 			.prefixedToolName("testClient_testTool")
 			.build();
 
-		// Test with null input
-		String responseNull = callback.call(null);
-		assertThat(responseNull).isEqualTo("[]");
+		assertThatThrownBy(() -> callback.call(null)).isInstanceOf(ToolExecutionException.class)
+			.cause()
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("null or empty");
 
-		// Test with empty string input
-		String responseEmpty = callback.call("");
-		assertThat(responseEmpty).isEqualTo("[]");
+		assertThatThrownBy(() -> callback.call("")).isInstanceOf(ToolExecutionException.class)
+			.cause()
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("null or empty");
 
-		// Test with whitespace-only input
-		String responseWhitespace = callback.call("   ");
-		assertThat(responseWhitespace).isEqualTo("[]");
+		assertThatThrownBy(() -> callback.call("   ")).isInstanceOf(ToolExecutionException.class)
+			.cause()
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("null or empty");
+
+		// Critical: the underlying MCP client must NOT have been invoked.
+		verifyNoInteractions(this.mcpClient);
 	}
 
 	@Test

@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -112,60 +113,54 @@ class AsyncMcpToolCallbackTest {
 																			// prefixed
 	}
 
+	/**
+	 * When streaming tool call aggregation fails, the callback can receive null input.
+	 * Previously this was silently replaced with {@code "{}"} and the MCP tool was
+	 * invoked — producing empty-looking results that caused the model to retry
+	 * indefinitely. The fix should throw a {@link ToolExecutionException} so the standard
+	 * error processor surfaces a clear error to the model instead.
+	 *
+	 * <p>
+	 * <b>Loop safety:</b> the callback is invoked exactly once per assertion. There is no
+	 * recursion or retry loop.
+	 */
 	@Test
-	void callShouldHandleNullInput() {
+	void callShouldThrowOnNullInput() {
 		when(this.tool.name()).thenReturn("testTool");
-		var callToolResult = McpSchema.CallToolResult.builder()
-			.addTextContent("Success with empty input")
-			.isError(false)
-			.build();
-		when(this.mcpClient.callTool(any(McpSchema.CallToolRequest.class))).thenReturn(Mono.just(callToolResult));
 
-		// Act
 		var callback = AsyncMcpToolCallback.builder()
 			.mcpClient(this.mcpClient)
 			.tool(this.tool)
 			.prefixedToolName("testTool")
 			.build();
 
-		String result = callback.call(null);
+		assertThatThrownBy(() -> callback.call(null)).isInstanceOf(ToolExecutionException.class)
+			.cause()
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("null or empty");
 
-		// Assert
-		assertThat(result).contains("Success with empty input");
-
-		// Verify empty JSON object was used
-		ArgumentCaptor<McpSchema.CallToolRequest> requestCaptor = ArgumentCaptor
-			.forClass(McpSchema.CallToolRequest.class);
-		verify(this.mcpClient).callTool(requestCaptor.capture());
-		assertThat(requestCaptor.getValue().arguments()).isEmpty();
+		verifyNoInteractions(this.mcpClient);
 	}
 
+	/**
+	 * Same as {@link #callShouldThrowOnNullInput()} but for the empty-string variant.
+	 */
 	@Test
-	void callShouldHandleEmptyInput() {
+	void callShouldThrowOnEmptyInput() {
 		when(this.tool.name()).thenReturn("testTool");
-		var callToolResult = McpSchema.CallToolResult.builder()
-			.addTextContent("Success with empty input")
-			.isError(false)
-			.build();
-		when(this.mcpClient.callTool(any(McpSchema.CallToolRequest.class))).thenReturn(Mono.just(callToolResult));
 
-		// Act
 		var callback = AsyncMcpToolCallback.builder()
 			.mcpClient(this.mcpClient)
 			.tool(this.tool)
 			.prefixedToolName("testTool")
 			.build();
 
-		String result = callback.call("");
+		assertThatThrownBy(() -> callback.call("")).isInstanceOf(ToolExecutionException.class)
+			.cause()
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("null or empty");
 
-		// Assert
-		assertThat(result).contains("Success with empty input");
-
-		// Verify empty JSON object was used
-		ArgumentCaptor<McpSchema.CallToolRequest> requestCaptor = ArgumentCaptor
-			.forClass(McpSchema.CallToolRequest.class);
-		verify(this.mcpClient).callTool(requestCaptor.capture());
-		assertThat(requestCaptor.getValue().arguments()).isEmpty();
+		verifyNoInteractions(this.mcpClient);
 	}
 
 	@Test
