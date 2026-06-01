@@ -21,6 +21,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.minimax.MiniMaxEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 /**
  * Configuration properties for MiniMax embedding model.
@@ -35,12 +36,6 @@ public class MiniMaxEmbeddingProperties extends MiniMaxParentProperties {
 
 	private MetadataMode metadataMode = MetadataMode.EMBED;
 
-	private final Options options = new Options();
-
-	public Options getOptions() {
-		return this.options;
-	}
-
 	public MetadataMode getMetadataMode() {
 		return this.metadataMode;
 	}
@@ -49,24 +44,46 @@ public class MiniMaxEmbeddingProperties extends MiniMaxParentProperties {
 		this.metadataMode = metadataMode;
 	}
 
-	public static class Options {
+	private @Nullable String model;
 
-		private @Nullable String model;
+	public @Nullable String getModel() {
+		return this.model;
+	}
 
+	public void setModel(@Nullable String model) {
+		this.model = model;
+	}
+
+	public MiniMaxEmbeddingOptions toOptions() {
+		MiniMaxEmbeddingOptions.Builder builder = MiniMaxEmbeddingOptions.builder();
+		if (this.model != null) {
+			builder.model(this.model);
+		}
+		return builder.build();
+	}
+
+	private Options options = new Options();
+
+	@DeprecatedConfigurationProperty(replacement = "spring.ai.minimax.embedding")
+	@Deprecated(since = "2.0.0", forRemoval = true)
+	public Options getOptions() {
+		return this.options;
+	}
+
+	public void setOptions(Options options) {
+		this.options = options;
+	}
+
+	public class Options {
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.minimax.embedding.model")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable String getModel() {
-			return this.model;
+			return MiniMaxEmbeddingProperties.this.getModel();
 		}
 
 		public void setModel(@Nullable String model) {
-			this.model = model;
-		}
-
-		public MiniMaxEmbeddingOptions toOptions() {
-			MiniMaxEmbeddingOptions.Builder builder = MiniMaxEmbeddingOptions.builder();
-			if (this.model != null) {
-				builder.model(this.model);
-			}
-			return builder.build();
+			MiniMaxEmbeddingProperties.this.setModel(model);
 		}
 
 	}

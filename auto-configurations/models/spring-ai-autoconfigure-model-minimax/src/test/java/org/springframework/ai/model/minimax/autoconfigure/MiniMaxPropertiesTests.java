@@ -123,8 +123,8 @@ public class MiniMaxPropertiesTests {
 				assertThat(embeddingProperties.getApiKey()).isNull();
 				assertThat(embeddingProperties.getBaseUrl()).isNull();
 
-				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(embeddingProperties.getOptions().toOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.toOptions().getModel()).isEqualTo("MODEL_XYZ");
 			});
 	}
 
@@ -151,8 +151,8 @@ public class MiniMaxPropertiesTests {
 				assertThat(embeddingProperties.getApiKey()).isEqualTo("456");
 				assertThat(embeddingProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
 
-				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(embeddingProperties.getOptions().toOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.toOptions().getModel()).isEqualTo("MODEL_XYZ");
 			});
 	}
 
@@ -263,8 +263,8 @@ public class MiniMaxPropertiesTests {
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
 
-				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(embeddingProperties.getOptions().toOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.toOptions().getModel()).isEqualTo("MODEL_XYZ");
 			});
 	}
 

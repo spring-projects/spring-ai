@@ -20,6 +20,7 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.google.genai.text.GoogleGenAiTextEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 /**
  * Configuration properties for Google GenAI Text Embedding.
@@ -35,64 +36,107 @@ public class GoogleGenAiTextEmbeddingProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.google.genai.embedding.text";
 
-	/**
-	 * Google GenAI Text Embedding API options.
-	 */
-	private final Options options = new Options();
+	private @Nullable String model;
 
+	private GoogleGenAiTextEmbeddingOptions.@Nullable TaskType taskType;
+
+	private @Nullable Integer dimensions;
+
+	private @Nullable String title;
+
+	public @Nullable String getModel() {
+		return this.model;
+	}
+
+	public void setModel(@Nullable String model) {
+		this.model = model;
+	}
+
+	public GoogleGenAiTextEmbeddingOptions.@Nullable TaskType getTaskType() {
+		return this.taskType;
+	}
+
+	public void setTaskType(GoogleGenAiTextEmbeddingOptions.@Nullable TaskType taskType) {
+		this.taskType = taskType;
+	}
+
+	public @Nullable Integer getDimensions() {
+		return this.dimensions;
+	}
+
+	public void setDimensions(@Nullable Integer dimensions) {
+		this.dimensions = dimensions;
+	}
+
+	public @Nullable String getTitle() {
+		return this.title;
+	}
+
+	public void setTitle(@Nullable String title) {
+		this.title = title;
+	}
+
+	public GoogleGenAiTextEmbeddingOptions toOptions() {
+		return GoogleGenAiTextEmbeddingOptions.builder()
+			.model(this.model)
+			.taskType(this.taskType)
+			.dimensions(this.dimensions)
+			.title(this.title)
+			.build();
+	}
+
+	private Options options = new Options();
+
+	@DeprecatedConfigurationProperty(replacement = "spring.ai.google.genai.embedding.text")
+	@Deprecated(since = "2.0.0", forRemoval = true)
 	public Options getOptions() {
 		return this.options;
 	}
 
-	public static class Options {
+	public void setOptions(Options options) {
+		this.options = options;
+	}
 
-		private @Nullable String model;
+	public class Options {
 
-		private GoogleGenAiTextEmbeddingOptions.@Nullable TaskType taskType;
-
-		private @Nullable Integer dimensions;
-
-		private @Nullable String title;
-
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.google.genai.embedding.text.model")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable String getModel() {
-			return this.model;
+			return GoogleGenAiTextEmbeddingProperties.this.getModel();
 		}
 
 		public void setModel(@Nullable String model) {
-			this.model = model;
+			GoogleGenAiTextEmbeddingProperties.this.setModel(model);
 		}
 
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.google.genai.embedding.text.task-type")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public GoogleGenAiTextEmbeddingOptions.@Nullable TaskType getTaskType() {
-			return this.taskType;
+			return GoogleGenAiTextEmbeddingProperties.this.getTaskType();
 		}
 
 		public void setTaskType(GoogleGenAiTextEmbeddingOptions.@Nullable TaskType taskType) {
-			this.taskType = taskType;
+			GoogleGenAiTextEmbeddingProperties.this.setTaskType(taskType);
 		}
 
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.google.genai.embedding.text.dimensions")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable Integer getDimensions() {
-			return this.dimensions;
+			return GoogleGenAiTextEmbeddingProperties.this.getDimensions();
 		}
 
 		public void setDimensions(@Nullable Integer dimensions) {
-			this.dimensions = dimensions;
+			GoogleGenAiTextEmbeddingProperties.this.setDimensions(dimensions);
 		}
 
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.google.genai.embedding.text.title")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable String getTitle() {
-			return this.title;
+			return GoogleGenAiTextEmbeddingProperties.this.getTitle();
 		}
 
 		public void setTitle(@Nullable String title) {
-			this.title = title;
-		}
-
-		public GoogleGenAiTextEmbeddingOptions toOptions() {
-			return GoogleGenAiTextEmbeddingOptions.builder()
-				.model(this.model)
-				.taskType(this.taskType)
-				.dimensions(this.dimensions)
-				.title(this.title)
-				.build();
+			GoogleGenAiTextEmbeddingProperties.this.setTitle(title);
 		}
 
 	}

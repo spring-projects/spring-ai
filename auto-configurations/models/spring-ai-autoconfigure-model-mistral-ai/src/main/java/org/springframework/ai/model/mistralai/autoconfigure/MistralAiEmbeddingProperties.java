@@ -21,6 +21,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.mistralai.MistralAiEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 /**
  * Configuration properties for MistralAI embedding model.
@@ -36,14 +37,8 @@ public class MistralAiEmbeddingProperties extends MistralAiParentProperties {
 
 	public MetadataMode metadataMode = MetadataMode.EMBED;
 
-	private final Options options = new Options();
-
 	public MistralAiEmbeddingProperties() {
 		super.setBaseUrl(MistralAiCommonProperties.DEFAULT_BASE_URL);
-	}
-
-	public Options getOptions() {
-		return this.options;
 	}
 
 	public MetadataMode getMetadataMode() {
@@ -54,30 +49,62 @@ public class MistralAiEmbeddingProperties extends MistralAiParentProperties {
 		this.metadataMode = metadataMode;
 	}
 
-	public static class Options {
+	private @Nullable String model;
 
-		private @Nullable String model;
+	private @Nullable String encodingFormat;
 
-		private @Nullable String encodingFormat;
+	public @Nullable String getModel() {
+		return this.model;
+	}
 
+	public void setModel(@Nullable String model) {
+		this.model = model;
+	}
+
+	public @Nullable String getEncodingFormat() {
+		return this.encodingFormat;
+	}
+
+	public void setEncodingFormat(@Nullable String encodingFormat) {
+		this.encodingFormat = encodingFormat;
+	}
+
+	public MistralAiEmbeddingOptions toOptions() {
+		return MistralAiEmbeddingOptions.builder().model(this.model).encodingFormat(this.encodingFormat).build();
+	}
+
+	private Options options = new Options();
+
+	@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.embedding")
+	@Deprecated(since = "2.0.0", forRemoval = true)
+	public Options getOptions() {
+		return this.options;
+	}
+
+	public void setOptions(Options options) {
+		this.options = options;
+	}
+
+	public class Options {
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.embedding.model")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable String getModel() {
-			return this.model;
+			return MistralAiEmbeddingProperties.this.getModel();
 		}
 
 		public void setModel(@Nullable String model) {
-			this.model = model;
+			MistralAiEmbeddingProperties.this.setModel(model);
 		}
 
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.embedding.encoding-format")
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable String getEncodingFormat() {
-			return this.encodingFormat;
+			return MistralAiEmbeddingProperties.this.getEncodingFormat();
 		}
 
 		public void setEncodingFormat(@Nullable String encodingFormat) {
-			this.encodingFormat = encodingFormat;
-		}
-
-		public MistralAiEmbeddingOptions toOptions() {
-			return MistralAiEmbeddingOptions.builder().model(this.model).encodingFormat(this.encodingFormat).build();
+			MistralAiEmbeddingProperties.this.setEncodingFormat(encodingFormat);
 		}
 
 	}

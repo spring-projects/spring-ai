@@ -51,8 +51,8 @@ public class OpenAiImagePropertiesTests {
 				assertThat(commonProperties.getApiKey()).isEqualTo("abc123");
 				assertThat(commonProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
 
-				assertThat(imageProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(imageProperties.getOptions().getN()).isEqualTo(2);
+				assertThat(imageProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(imageProperties.getN()).isEqualTo(2);
 			});
 	}
 
@@ -83,15 +83,15 @@ public class OpenAiImagePropertiesTests {
 				assertThat(commonProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
 				assertThat(commonProperties.getApiKey()).isEqualTo("API_KEY");
 
-				assertThat(imageProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(imageProperties.getOptions().getN()).isEqualTo(3);
-				assertThat(imageProperties.getOptions().getWidth()).isEqualTo(1024);
-				assertThat(imageProperties.getOptions().getHeight()).isEqualTo(1792);
-				assertThat(imageProperties.getOptions().getQuality()).isEqualTo("hd");
-				assertThat(imageProperties.getOptions().getResponseFormat()).isEqualTo("url");
-				assertThat(imageProperties.getOptions().getSize()).isEqualTo("1024x1792");
-				assertThat(imageProperties.getOptions().getStyle()).isEqualTo("vivid");
-				assertThat(imageProperties.getOptions().getUser()).isEqualTo("userXYZ");
+				assertThat(imageProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(imageProperties.getN()).isEqualTo(3);
+				assertThat(imageProperties.getWidth()).isEqualTo(1024);
+				assertThat(imageProperties.getHeight()).isEqualTo(1792);
+				assertThat(imageProperties.getQuality()).isEqualTo("hd");
+				assertThat(imageProperties.getResponseFormat()).isEqualTo("url");
+				assertThat(imageProperties.getSize()).isEqualTo("1024x1792");
+				assertThat(imageProperties.getStyle()).isEqualTo("vivid");
+				assertThat(imageProperties.getUser()).isEqualTo("userXYZ");
 			});
 	}
 
