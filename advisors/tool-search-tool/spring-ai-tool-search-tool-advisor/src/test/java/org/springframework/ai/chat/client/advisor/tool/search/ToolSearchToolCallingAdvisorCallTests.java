@@ -181,7 +181,6 @@ public class ToolSearchToolCallingAdvisorCallTests {
 
 		ToolCallingChatOptions toolOptions = mock(ToolCallingChatOptions.class,
 				Mockito.withSettings().strictness(Strictness.LENIENT));
-		when(toolOptions.copy()).thenReturn(toolOptions);
 		when(toolOptions.getInternalToolExecutionEnabled()).thenReturn(false);
 		doReturn(ToolCallingChatOptions.builder()).when(toolOptions).mutate();
 
@@ -814,17 +813,6 @@ public class ToolSearchToolCallingAdvisorCallTests {
 		@Override
 		public Map<String, Object> getToolContext() {
 			return this.toolContext;
-		}
-
-		@Override
-		@SuppressWarnings("unchecked")
-		public TestToolCallingChatOptions copy() {
-			TestToolCallingChatOptions copy = new TestToolCallingChatOptions();
-			copy.internalToolExecutionEnabled = this.internalToolExecutionEnabled;
-			copy.toolCallbacks = new ArrayList<>(this.toolCallbacks);
-			copy.toolNames = new java.util.HashSet<>(this.toolNames);
-			copy.toolContext = new java.util.HashMap<>(this.toolContext);
-			return copy;
 		}
 
 		@Override

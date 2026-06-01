@@ -52,10 +52,10 @@ Gradle::
 [source,gradle]
 ----
 dependencies {
-    implementation 'org.springframework.ai:tool-search-tool-advisor'
+    implementation 'org.springframework.ai:spring-ai-tool-search-tool-advisor'
 
     // Choose a search strategy
-    implementation 'org.springframework.ai:tool-index-lucene'
+    implementation 'org.springframework.ai:spring-ai-tool-index-lucene'
 }
 ----
 ======

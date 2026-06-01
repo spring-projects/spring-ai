@@ -295,17 +295,6 @@ class ToolSearchToolCallingAdvisorStreamTests {
 		}
 
 		@Override
-		@SuppressWarnings("unchecked")
-		public TestToolCallingChatOptions copy() {
-			TestToolCallingChatOptions copy = new TestToolCallingChatOptions();
-			copy.internalToolExecutionEnabled = this.internalToolExecutionEnabled;
-			copy.toolCallbacks = new ArrayList<>(this.toolCallbacks);
-			copy.toolNames = new HashSet<>(this.toolNames);
-			copy.toolContext = new HashMap<>(this.toolContext);
-			return copy;
-		}
-
-		@Override
 		public ToolCallingChatOptions.Builder<?> mutate() {
 			return ToolCallingChatOptions.builder()
 				.toolCallbacks(this.toolCallbacks)

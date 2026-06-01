@@ -1502,15 +1502,15 @@ Three strategies are provided out of the box:
 | Strategy | Module | Best For
 
 | **Semantic**
-| `tool-index-vectorstore`
+| `spring-ai-tool-index-vectorstore`
 | Natural-language queries, fuzzy matching
 
 | **Keyword**
-| `tool-index-lucene`
+| `spring-ai-tool-index-lucene`
 | Exact term matching, known tool names
 
 | **Regex**
-| `tool-index-regex`
+| `spring-ai-tool-index-regex`
 | Tool name patterns (`get_*_data`)
 |===
 
@@ -1589,7 +1589,7 @@ The following options are available on `ToolSearchToolCallingAdvisor.Builder`:
 
 === ToolIndex API
 
-The `ToolIndex` interface and its companion types (`ToolSearchRequest`, `ToolSearchResponse`, `ToolReference`, `SearchType`) live in the `spring-ai-tool-search-tool-api` module under the package `org.springframework.ai.chat.client.advisor.tool.search.api`.
+The `ToolIndex` interface and its companion types (`ToolSearchRequest`, `ToolSearchResponse`, `ToolReference`) live in the `spring-ai-tool-search-tool-api` module under the package `org.springframework.ai.chat.client.advisor.tool.search.api`.
 The built-in index implementations (`spring-ai-tool-index-lucene`, `spring-ai-tool-index-vectorstore`, `spring-ai-tool-index-regex`) all depend on this module, so it is pulled in transitively when you use any of them.
 To implement a custom `ToolIndex` without pulling in a concrete search engine, depend only on the API artifact:
 

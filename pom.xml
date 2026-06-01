@@ -40,11 +40,11 @@
 		<module>spring-ai-vector-store</module>
 		<module>spring-ai-rag</module>
 		<module>advisors/spring-ai-advisors-vector-store</module>
-		<module>advisors/tool-search-tool/tool-search-tool-api</module>
-		<module>advisors/tool-search-tool/tool-search-tool-advisor</module>
-		<module>advisors/tool-search-tool/tool-indexes/tool-index-lucene</module>
-		<module>advisors/tool-search-tool/tool-indexes/tool-index-regex</module>
-		<module>advisors/tool-search-tool/tool-indexes/tool-index-vectorstore</module>
+		<module>advisors/tool-search-tool/spring-ai-tool-search-tool-api</module>
+		<module>advisors/tool-search-tool/spring-ai-tool-search-tool-advisor</module>
+		<module>advisors/tool-search-tool/tool-indexes/spring-ai-tool-index-lucene</module>
+		<module>advisors/tool-search-tool/tool-indexes/spring-ai-tool-index-regex</module>
+		<module>advisors/tool-search-tool/tool-indexes/spring-ai-tool-index-vectorstore</module>
 
 		<module>memory/repository/spring-ai-model-chat-memory-repository-cassandra</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-jdbc</module>
@@ -266,12 +266,6 @@
 
 		<!-- production dependencies -->
 		<spring-boot.version>4.1.0-RC1</spring-boot.version>
-		<azure-identity.version>1.18.2</azure-identity.version>
-		<openai-sdk.version>4.34.0</openai-sdk.version>
-		<anthropic-sdk.version>2.30.0</anthropic-sdk.version>
-		<jtokkit.version>1.1.0</jtokkit.version>
-		<kotlin.version>2.3.20</kotlin.version>
-		<lucene.version>9.12.3</lucene.version>
 
 		<!-- Third-party dependencies -->
 		<anthropic-sdk.version>2.34.0</anthropic-sdk.version>
@@ -294,6 +288,7 @@
 		<jsonschema.version>5.0.0</jsonschema.version>
 		<jsoup.version>1.22.1</jsoup.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
+		<lucene.version>9.12.3</lucene.version>
 		<kotlin.version>2.3.20</kotlin.version>
 		<milvus.version>2.5.8</milvus.version>
 		<mockk-jvm.version>1.13.13</mockk-jvm.version>
