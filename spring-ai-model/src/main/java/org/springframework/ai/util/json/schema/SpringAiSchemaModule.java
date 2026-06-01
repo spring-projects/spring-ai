@@ -26,7 +26,7 @@ import org.springframework.util.StringUtils;
  * JSON Schema Generator Module for Spring AI.
  * <p>
  * This module provides a set of customizations to the JSON Schema generator to support
- * the Spring AI framework. It allows to extract descriptions from
+ * the Spring AI framework. It allows extracting descriptions from
  * {@code @ToolParam(description = ...)} annotations and to determine whether a property
  * is required based on the presence of a series of annotations.
  *

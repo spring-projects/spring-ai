@@ -36,8 +36,6 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.content.Media;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ByteArrayResource;
@@ -50,6 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * content.
  *
  * @author Brian Sam-Bodden
+ * @author Yanming Zhou
  */
 @Testcontainers
 class RedisChatMemoryMediaIT {
@@ -671,7 +670,6 @@ class RedisChatMemoryMediaIT {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
 	static class TestApplication {
 
 		@Bean

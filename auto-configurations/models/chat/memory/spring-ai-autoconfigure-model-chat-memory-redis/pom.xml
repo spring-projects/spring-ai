@@ -15,12 +15,6 @@
 
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<scm>
-		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
-	</scm>
-
 	<dependencies>
 		<!-- production dependencies -->
 		<dependency>
@@ -53,10 +47,6 @@
 			<optional>true</optional>
 		</dependency>
 
-
-
-
-
 		<dependency>
 			<groupId>redis.clients</groupId>
 			<artifactId>jedis</artifactId>
@@ -72,7 +62,7 @@
 		<!-- Test dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
+			<artifactId>spring-boot-starter-data-redis-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 

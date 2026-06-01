@@ -128,6 +128,7 @@ The prefix `spring.ai.google.genai.chat` is the property prefix that lets you co
 | spring.ai.google.genai.chat.auto-cache-threshold | Automatically cache prompts that exceed this token threshold. When set, prompts larger than this value will be automatically cached for reuse. Set to null to disable auto-caching. | -
 | spring.ai.google.genai.chat.auto-cache-ttl | Time-to-live (Duration) for auto-cached content in ISO-8601 format (e.g., `PT1H` for 1 hour). Used when auto-caching is enabled. | PT1H
 | spring.ai.google.genai.chat.enable-cached-content | Enable the `GoogleGenAiCachedContentService` bean for managing cached content. | true
+| spring.ai.google.genai.chat.service-tier | The service tier to use for the request. Valid values: `STANDARD`, `PRIORITY`, `FLEX`. | -
 
 |====
 

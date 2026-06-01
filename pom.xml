@@ -993,12 +993,12 @@
 			</distributionManagement>
 		</profile>
 		<profile>
-	    <id>sonatype</id>
-	    <properties>
-	        <maven.test.skip>true</maven.test.skip>
-	    </properties>
-	    <build>
-	        <plugins>
+		<id>sonatype</id>
+		<properties>
+			<maven.test.skip>true</maven.test.skip>
+		</properties>
+		<build>
+			<plugins>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-gpg-plugin</artifactId>
@@ -1016,18 +1016,18 @@
 						<!-- Passphrase consumed from MAVEN_GPG_PASSPHRASE environment variable. -->
 					</configuration>
 				</plugin>
-	            <plugin>
-	                <groupId>org.sonatype.central</groupId>
-	                <artifactId>central-publishing-maven-plugin</artifactId>
-	                <extensions>true</extensions>
-	                <configuration>
-	                    <publishingServerId>central</publishingServerId>
-	                    <autoPublish>true</autoPublish>
-	                    <excludeArtifacts>spring-ai-integration-tests</excludeArtifacts>
-	                </configuration>
-	            </plugin>
-	        </plugins>
-	    </build>
+				<plugin>
+					<groupId>org.sonatype.central</groupId>
+					<artifactId>central-publishing-maven-plugin</artifactId>
+					<extensions>true</extensions>
+					<configuration>
+						<publishingServerId>central</publishingServerId>
+						<autoPublish>true</autoPublish>
+						<excludeArtifacts>spring-ai-integration-tests</excludeArtifacts>
+					</configuration>
+				</plugin>
+			</plugins>
+		</build>
 	</profile>
 
 

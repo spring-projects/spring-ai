@@ -282,20 +282,22 @@ public class MistralAiApi {
 
 		// @formatter:off
 		// Premier Models
+		@Deprecated(forRemoval = true) // Retirement planned the 31st of July 2026
 		MAGISTRAL_MEDIUM("magistral-medium-latest"),
-		MISTRAL_MEDIUM("mistral-medium-latest"),
 		CODESTRAL("codestral-latest"),
-		DEVSTRAL_MEDIUM("devstral-medium-latest"),
-		MISTRAL_LARGE("mistral-large-latest"),
 		// Free Models
 		MINISTRAL_3B("ministral-3b-latest"),
 		MINISTRAL_8B("ministral-8b-latest"),
 		MINISTRAL_14B("ministral-14b-latest"),
-		@Deprecated(forRemoval = true) // Retirement planed the 31st of July 2026
-		MAGISTRAL_SMALL("magistral-small-latest"),
-		DEVSTRAL_SMALL("devstral-small-latest"),
 		MISTRAL_SMALL("mistral-small-latest"),
+		MISTRAL_MEDIUM("mistral-medium-latest"),
+		MISTRAL_LARGE("mistral-large-latest"),
+		@Deprecated(forRemoval = true) // Retirement planned the 31st of July 2026
+		DEVSTRAL("devstral-latest"),
+		@Deprecated(forRemoval = true) // Retirement planned the 31st of July 2026
+		MAGISTRAL_SMALL("magistral-small-latest"),
 		// Free Models - Research
+		@Deprecated(forRemoval = true) // Retirement planned the 31st of July 2026
 		OPEN_MISTRAL_NEMO("open-mistral-nemo");
 		// @formatter:on
 
@@ -550,7 +552,7 @@ public class MistralAiApi {
 		}
 
 		@Override
-		public boolean equals(Object o) {
+		public boolean equals(@Nullable Object o) {
 			if (this == o) {
 				return true;
 			}
@@ -953,7 +955,7 @@ public class MistralAiApi {
 			}
 
 			@Override
-			public boolean equals(Object o) {
+			public boolean equals(@Nullable Object o) {
 				if (this == o) {
 					return true;
 				}

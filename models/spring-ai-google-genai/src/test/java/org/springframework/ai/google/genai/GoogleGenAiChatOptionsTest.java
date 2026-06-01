@@ -21,6 +21,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions.Builder;
+import org.springframework.ai.google.genai.common.GoogleGenAiServiceTier;
 import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
 
@@ -282,6 +283,65 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 		GoogleGenAiChatOptions options3 = GoogleGenAiChatOptions.builder()
 			.model("test-model")
 			.includeServerSideToolInvocations(false)
+			.build();
+
+		assertThat(options1).isEqualTo(options2);
+		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
+		assertThat(options1).isNotEqualTo(options3);
+	}
+
+	@Test
+	public void testServiceTierWithBuilder() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier(GoogleGenAiServiceTier.PRIORITY)
+			.build();
+
+		assertThat(options.getModel()).isEqualTo("test-model");
+		assertThat(options.getServiceTier()).isEqualTo(GoogleGenAiServiceTier.PRIORITY);
+	}
+
+	@Test
+	public void testFromOptionsWithServiceTier() {
+		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier(GoogleGenAiServiceTier.STANDARD)
+			.build();
+
+		GoogleGenAiChatOptions copy = GoogleGenAiChatOptions.fromOptions(original);
+
+		assertThat(copy.getServiceTier()).isEqualTo(GoogleGenAiServiceTier.STANDARD);
+		assertThat(copy).isNotSameAs(original);
+	}
+
+	@Test
+	public void testCopyWithServiceTier() {
+		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier(GoogleGenAiServiceTier.FLEX)
+			.build();
+
+		GoogleGenAiChatOptions copy = original.copy();
+
+		assertThat(copy.getServiceTier()).isEqualTo(GoogleGenAiServiceTier.FLEX);
+		assertThat(copy).isNotSameAs(original);
+	}
+
+	@Test
+	public void testEqualsAndHashCodeWithServiceTier() {
+		GoogleGenAiChatOptions options1 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier(GoogleGenAiServiceTier.PRIORITY)
+			.build();
+
+		GoogleGenAiChatOptions options2 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier(GoogleGenAiServiceTier.PRIORITY)
+			.build();
+
+		GoogleGenAiChatOptions options3 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier(GoogleGenAiServiceTier.STANDARD)
 			.build();
 
 		assertThat(options1).isEqualTo(options2);

@@ -17,6 +17,7 @@
 package org.springframework.ai.model.anthropic.autoconfigure;
 
 import com.anthropic.client.AnthropicClient;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
@@ -53,7 +54,7 @@ public class AnthropicChatAutoConfiguration {
 	@ConditionalOnMissingBean
 	public AnthropicChatModel anthropicChatModel(AnthropicConnectionProperties connectionProperties,
 			AnthropicChatProperties chatProperties, ToolCallingManager toolCallingManager,
-			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
 			ObjectProvider<ToolExecutionEligibilityPredicate> anthropicToolExecutionEligibilityPredicate) {
 
@@ -82,6 +83,7 @@ public class AnthropicChatAutoConfiguration {
 			.options(options)
 			.toolCallingManager(toolCallingManager)
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.meterRegistry(chatProperties.isConnectionPoolMetricsEnabled() ? meterRegistry.getIfAvailable() : null)
 			.toolExecutionEligibilityPredicate(anthropicToolExecutionEligibilityPredicate
 				.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
 			.build();

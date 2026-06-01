@@ -18,6 +18,8 @@ package org.springframework.ai.audio.transcription;
 
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.model.ModelResult;
 
 /**
@@ -53,7 +55,7 @@ public class AudioTranscription implements ModelResult<String> {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}

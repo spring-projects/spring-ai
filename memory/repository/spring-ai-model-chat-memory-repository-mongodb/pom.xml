@@ -32,12 +32,6 @@
 
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<scm>
-		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
-	</scm>
-
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
@@ -56,14 +50,7 @@
 			<artifactId>mongodb-driver-sync</artifactId>
 		</dependency>
 
-
 		<!-- Test dependencies -->
-
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
@@ -92,7 +79,7 @@
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-mongodb</artifactId>
+			<artifactId>spring-boot-starter-data-mongodb-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 

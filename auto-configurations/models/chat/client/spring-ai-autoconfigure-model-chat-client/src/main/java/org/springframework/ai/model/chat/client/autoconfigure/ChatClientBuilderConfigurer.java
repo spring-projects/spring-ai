@@ -21,6 +21,7 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientBuilderCustomizer;
 import org.springframework.ai.chat.client.ChatClientCustomizer;
 
 /**
@@ -36,8 +37,15 @@ public class ChatClientBuilderConfigurer {
 
 	private @Nullable List<ChatClientCustomizer> customizers;
 
+	private @Nullable List<ChatClientBuilderCustomizer> builderCustomizers;
+
+	@Deprecated(since = "2.0.0", forRemoval = true)
 	void setChatClientCustomizers(List<ChatClientCustomizer> customizers) {
 		this.customizers = customizers;
+	}
+
+	void setChatClientBuilderCustomizers(List<ChatClientBuilderCustomizer> builderCustomizers) {
+		this.builderCustomizers = builderCustomizers;
 	}
 
 	/**
@@ -51,9 +59,15 @@ public class ChatClientBuilderConfigurer {
 		return builder;
 	}
 
+	@SuppressWarnings("removal")
 	private void applyCustomizers(ChatClient.Builder builder) {
 		if (this.customizers != null) {
 			for (ChatClientCustomizer customizer : this.customizers) {
+				customizer.customize(builder);
+			}
+		}
+		if (this.builderCustomizers != null) {
+			for (ChatClientBuilderCustomizer customizer : this.builderCustomizers) {
 				customizer.customize(builder);
 			}
 		}

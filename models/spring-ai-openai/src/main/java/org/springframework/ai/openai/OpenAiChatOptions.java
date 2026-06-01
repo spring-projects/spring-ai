@@ -602,7 +602,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}

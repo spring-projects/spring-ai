@@ -15,13 +15,6 @@
 	<description>Spring AI OpenAI Auto Configuration</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<scm>
-		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
-	</scm>
-
-
 	<dependencies>
 
 		<!-- Spring AI dependencies -->
@@ -66,12 +59,6 @@
 		</dependency>
 
 		<!-- Boot dependencies -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter</artifactId>
-			<optional>true</optional>
-		</dependency>
-
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webclient</artifactId>

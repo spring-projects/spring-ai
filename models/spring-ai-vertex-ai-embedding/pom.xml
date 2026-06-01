@@ -30,12 +30,6 @@
 	<description>Vertex AI Embedding models support</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<scm>
-		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
-	</scm>
-
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
@@ -50,16 +44,16 @@
 
 	<dependencies>
 
-        <dependency>
-            <groupId>com.google.cloud</groupId>
-            <artifactId>google-cloud-aiplatform</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+		<dependency>
+			<groupId>com.google.cloud</groupId>
+			<artifactId>google-cloud-aiplatform</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
 
 		<!-- production dependencies -->
 		<dependency>

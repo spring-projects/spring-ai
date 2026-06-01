@@ -26,6 +26,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
+import org.springframework.ai.google.genai.common.GoogleGenAiServiceTier;
 import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
@@ -94,6 +95,8 @@ public class GoogleGenAiChatProperties {
 	private @Nullable List<GoogleGenAiSafetySetting> safetySettings;
 
 	private @Nullable Map<String, String> labels;
+
+	private @Nullable GoogleGenAiServiceTier serviceTier;
 
 	public @Nullable List<String> getStopSequences() {
 		return this.stopSequences;
@@ -295,6 +298,20 @@ public class GoogleGenAiChatProperties {
 		this.labels = labels;
 	}
 
+	/**
+	 * @since 2.0.0
+	 */
+	public @Nullable GoogleGenAiServiceTier getServiceTier() {
+		return this.serviceTier;
+	}
+
+	/**
+	 * @since 2.0.0
+	 */
+	public void setServiceTier(@Nullable GoogleGenAiServiceTier serviceTier) {
+		this.serviceTier = serviceTier;
+	}
+
 	public GoogleGenAiChatOptions toOptions() {
 		GoogleGenAiChatOptions.Builder builder = GoogleGenAiChatOptions.builder();
 		builder.model(this.model);
@@ -369,6 +386,9 @@ public class GoogleGenAiChatProperties {
 		}
 		if (this.labels != null) {
 			builder.labels(this.labels);
+		}
+		if (this.serviceTier != null) {
+			builder.serviceTier(this.serviceTier);
 		}
 		return builder.build();
 	}

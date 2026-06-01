@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -64,6 +65,7 @@ import com.anthropic.models.messages.UserLocation;
 import com.anthropic.models.messages.WebSearchResultBlock;
 import com.anthropic.models.messages.WebSearchTool20260209;
 import com.anthropic.models.messages.WebSearchToolResultBlock;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
@@ -116,6 +118,17 @@ import org.springframework.util.MimeType;
  * observability. API credentials are auto-detected from {@code ANTHROPIC_API_KEY} if not
  * configured.
  *
+ * <p>
+ * <b>Observability.</b> Two layers of Micrometer observations are emitted: a
+ * {@code gen_ai.client.operation} span per chat-model call (with token usage, model
+ * metadata, and request parameters), and an {@code okhttp.requests} span per outbound
+ * HTTP attempt (with HTTP method, URI, status code, and {@code traceparent} propagation).
+ * Optional OkHttp connection-pool gauges are bound to the
+ * {@link io.micrometer.core.instrument.MeterRegistry} when supplied. For synchronous
+ * calls the HTTP span nests under the chat-model span; for streaming calls the HTTP span
+ * fires but is not parented under the chat-model span due to an SDK-internal thread
+ * boundary — see {@link #stream(org.springframework.ai.chat.prompt.Prompt)}.
+ *
  * @author Christian Tzolov
  * @author luocongqiu
  * @author Mariusz Bernacki
@@ -155,6 +168,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 	private final ObservationRegistry observationRegistry;
 
+	private final @Nullable MeterRegistry meterRegistry;
+
+	private final @Nullable ExecutorService dispatcherExecutor;
+
 	private final ToolCallingManager toolCallingManager;
 
 	private final ToolExecutionEligibilityChecker toolExecutionEligibilityChecker;
@@ -177,6 +194,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	private AnthropicChatModel(@Nullable AnthropicClient anthropicClient,
 			@Nullable AnthropicClientAsync anthropicClientAsync, @Nullable AnthropicChatOptions options,
 			@Nullable ToolCallingManager toolCallingManager, @Nullable ObservationRegistry observationRegistry,
+			@Nullable MeterRegistry meterRegistry, @Nullable ExecutorService dispatcherExecutor,
 			@Nullable ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
 
 		if (options == null) {
@@ -186,17 +204,24 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			this.options = options;
 		}
 
+		// Must precede the AnthropicSetup calls below so the HTTP client gets the user's
+		// registries and dispatcher.
+		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
+		this.meterRegistry = meterRegistry;
+		this.dispatcherExecutor = dispatcherExecutor;
+
 		this.anthropicClient = Objects.requireNonNullElseGet(anthropicClient,
 				() -> AnthropicSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders()));
+						this.options.getCustomHeaders(), this.observationRegistry, this.meterRegistry,
+						this.dispatcherExecutor));
 
 		this.anthropicClientAsync = Objects.requireNonNullElseGet(anthropicClientAsync,
 				() -> AnthropicSetup.setupAsyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders()));
+						this.options.getCustomHeaders(), this.observationRegistry, this.meterRegistry,
+						this.dispatcherExecutor));
 
-		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
 		this.toolCallingManager = Objects.requireNonNullElse(toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER);
 		this.toolExecutionEligibilityChecker = Objects.requireNonNullElse(toolExecutionEligibilityChecker,
 				chatResponse -> chatResponse != null && chatResponse.hasToolCalls());
@@ -234,6 +259,21 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		return this.internalCall(requestPrompt, null);
 	}
 
+	/**
+	 * Streams the chat completion as a {@link Flux} of {@link ChatResponse} events.
+	 *
+	 * <p>
+	 * <b>Observability note.</b> The outbound HTTP attempt is observed as
+	 * {@code okhttp.requests} with timer + {@code traceparent}, but for streaming calls
+	 * the HTTP span is not parented under the chat-model's
+	 * {@code gen_ai.client.operation} span. The SDK's async path internally schedules the
+	 * HTTP call on {@code ForkJoinPool.commonPool()} before Spring AI's HTTP client runs,
+	 * which drops the calling thread's observation context. Filter by
+	 * {@code okhttp.requests} + host {@code api.anthropic.com} and correlate by trace ID
+	 * or timestamp if you need to join the spans in your tracing UI.
+	 * @param prompt the prompt
+	 * @return a {@link Flux} of streamed {@link ChatResponse} events
+	 */
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 		Prompt requestPrompt = buildRequestPrompt(prompt);
@@ -1593,6 +1633,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		private @Nullable ObservationRegistry observationRegistry;
 
+		private @Nullable MeterRegistry meterRegistry;
+
+		private @Nullable ExecutorService dispatcherExecutor;
+
 		private @Nullable ToolExecutionEligibilityChecker toolExecutionEligibilityChecker;
 
 		private Builder() {
@@ -1653,6 +1697,36 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		/**
+		 * Sets the meter registry used to bind OkHttp connection-pool gauges (active/idle
+		 * connections). Optional; when omitted, no pool gauges are registered.
+		 * Auto-configuration wires the application's {@link MeterRegistry} bean here
+		 * automatically.
+		 * @param meterRegistry the meter registry
+		 * @return this builder
+		 * @since 2.0.0
+		 */
+		public Builder meterRegistry(@Nullable MeterRegistry meterRegistry) {
+			this.meterRegistry = meterRegistry;
+			return this;
+		}
+
+		/**
+		 * Sets the executor used by the underlying OkHttp dispatcher for both the sync
+		 * and async clients. The caller owns the executor's lifecycle — Spring AI will
+		 * not shut it down. Typical use: pass
+		 * {@code Executors.newVirtualThreadPerTaskExecutor()} on Java 21+ to back HTTP
+		 * dispatch with virtual threads. When omitted, an internal platform-thread
+		 * executor is created and managed by the HTTP client.
+		 * @param dispatcherExecutor the dispatcher executor; null restores the default
+		 * @return this builder
+		 * @since 2.0.0
+		 */
+		public Builder dispatcherExecutor(@Nullable ExecutorService dispatcherExecutor) {
+			this.dispatcherExecutor = dispatcherExecutor;
+			return this;
+		}
+
+		/**
 		 * Sets the predicate to determine tool execution eligibility.
 		 * @param toolExecutionEligibilityPredicate the predicate
 		 * @return this builder
@@ -1697,7 +1771,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		 */
 		public AnthropicChatModel build() {
 			return new AnthropicChatModel(this.anthropicClient, this.anthropicClientAsync, this.options,
-					this.toolCallingManager, this.observationRegistry, this.toolExecutionEligibilityChecker);
+					this.toolCallingManager, this.observationRegistry, this.meterRegistry, this.dispatcherExecutor,
+					this.toolExecutionEligibilityChecker);
 		}
 
 	}

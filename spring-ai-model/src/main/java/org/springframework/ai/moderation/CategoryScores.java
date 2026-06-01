@@ -18,6 +18,8 @@ package org.springframework.ai.moderation;
 
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * This class represents the scores for different categories of content. Each category has
  * a score ranging from 0.0 to 1.0. The scores represent the severity or intensity of the
@@ -151,7 +153,7 @@ public final class CategoryScores {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
