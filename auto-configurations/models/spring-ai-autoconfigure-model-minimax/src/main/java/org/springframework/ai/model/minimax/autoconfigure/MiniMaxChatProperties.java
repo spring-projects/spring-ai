@@ -177,50 +177,22 @@ public class MiniMaxChatProperties extends MiniMaxParentProperties {
 	}
 
 	public MiniMaxChatOptions toOptions() {
-		MiniMaxChatOptions.Builder builder = MiniMaxChatOptions.builder();
-		if (this.model != null) {
-			builder.model(this.model);
-		}
-		if (this.frequencyPenalty != null) {
-			builder.frequencyPenalty(this.frequencyPenalty);
-		}
-		if (this.maxTokens != null) {
-			builder.maxTokens(this.maxTokens);
-		}
-		if (this.n != null) {
-			builder.N(this.n);
-		}
-		if (this.presencePenalty != null) {
-			builder.presencePenalty(this.presencePenalty);
-		}
-		if (this.responseFormat != null) {
-			builder.responseFormat(this.responseFormat);
-		}
-		if (this.seed != null) {
-			builder.seed(this.seed);
-		}
-		if (this.stop != null) {
-			builder.stop(this.stop);
-		}
-		if (this.temperature != null) {
-			builder.temperature(this.temperature);
-		}
-		if (this.topP != null) {
-			builder.topP(this.topP);
-		}
-		if (this.maskSensitiveInfo != null) {
-			builder.maskSensitiveInfo(this.maskSensitiveInfo);
-		}
-		if (this.tools != null) {
-			builder.tools(this.tools);
-		}
-		if (this.toolChoice != null) {
-			builder.toolChoice(this.toolChoice);
-		}
-		if (this.internalToolExecutionEnabled != null) {
-			builder.internalToolExecutionEnabled(this.internalToolExecutionEnabled);
-		}
-		return builder.build();
+		return MiniMaxChatOptions.builder()
+			.model(this.model)
+			.frequencyPenalty(this.frequencyPenalty)
+			.maxTokens(this.maxTokens)
+			.N(this.n)
+			.presencePenalty(this.presencePenalty)
+			.responseFormat(this.responseFormat)
+			.seed(this.seed)
+			.stop(this.stop)
+			.temperature(this.temperature)
+			.topP(this.topP)
+			.maskSensitiveInfo(this.maskSensitiveInfo)
+			.tools(this.tools)
+			.toolChoice(this.toolChoice)
+			.internalToolExecutionEnabled(this.internalToolExecutionEnabled)
+			.build();
 	}
 
 	private Options options = new Options();

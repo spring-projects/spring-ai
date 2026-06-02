@@ -46,11 +46,7 @@ public class MistralAiModerationProperties extends MistralAiParentProperties {
 	}
 
 	public MistralAiModerationOptions toOptions() {
-		MistralAiModerationOptions.Builder builder = MistralAiModerationOptions.builder();
-		if (this.model != null) {
-			builder.model(this.model);
-		}
-		return builder.build();
+		return MistralAiModerationOptions.builder().model(this.model).build();
 	}
 
 	private Options options = new Options();

@@ -372,7 +372,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 
 		private @Nullable Integer n;
 
-		private String model = StabilityAiApi.DEFAULT_IMAGE_MODEL;
+		private @Nullable String model;
 
 		private @Nullable Integer width;
 
@@ -400,7 +400,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 			return this;
 		}
 
-		public Builder model(String model) {
+		public Builder model(@Nullable String model) {
 			this.model = model;
 			return this;
 		}

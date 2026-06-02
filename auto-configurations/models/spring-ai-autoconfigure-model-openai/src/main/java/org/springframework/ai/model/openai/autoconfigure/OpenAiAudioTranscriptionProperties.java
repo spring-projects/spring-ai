@@ -100,24 +100,14 @@ public class OpenAiAudioTranscriptionProperties extends AbstractOpenAiProperties
 	}
 
 	public OpenAiAudioTranscriptionOptions toOptions() {
-		OpenAiAudioTranscriptionOptions.Builder builder = OpenAiAudioTranscriptionOptions.builder();
-		builder.model(this.getModel());
-		if (this.responseFormat != null) {
-			builder.responseFormat(this.responseFormat);
-		}
-		if (this.prompt != null) {
-			builder.prompt(this.prompt);
-		}
-		if (this.language != null) {
-			builder.language(this.language);
-		}
-		if (this.temperature != null) {
-			builder.temperature(this.temperature);
-		}
-		if (this.timestampGranularities != null) {
-			builder.timestampGranularities(this.timestampGranularities);
-		}
-		return builder.build();
+		return OpenAiAudioTranscriptionOptions.builder()
+			.model(this.model)
+			.responseFormat(this.responseFormat)
+			.prompt(this.prompt)
+			.language(this.language)
+			.temperature(this.temperature)
+			.timestampGranularities(this.timestampGranularities)
+			.build();
 	}
 
 	private Options options = new Options();

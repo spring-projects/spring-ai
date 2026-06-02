@@ -75,20 +75,12 @@ public class VertexAiTextEmbeddingProperties {
 	}
 
 	public VertexAiTextEmbeddingOptions toOptions() {
-		VertexAiTextEmbeddingOptions.Builder builder = VertexAiTextEmbeddingOptions.builder();
-		if (this.model != null) {
-			builder.model(this.model);
-		}
-		if (this.taskType != null) {
-			builder.taskType(this.taskType);
-		}
-		if (this.outputDimensionality != null) {
-			builder.dimensions(this.outputDimensionality);
-		}
-		if (this.title != null) {
-			builder.title(this.title);
-		}
-		return builder.build();
+		return VertexAiTextEmbeddingOptions.builder()
+			.model(this.model)
+			.taskType(this.taskType)
+			.dimensions(this.outputDimensionality)
+			.title(this.title)
+			.build();
 	}
 
 	private Options options = new Options();

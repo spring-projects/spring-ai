@@ -55,11 +55,7 @@ public class MiniMaxEmbeddingProperties extends MiniMaxParentProperties {
 	}
 
 	public MiniMaxEmbeddingOptions toOptions() {
-		MiniMaxEmbeddingOptions.Builder builder = MiniMaxEmbeddingOptions.builder();
-		if (this.model != null) {
-			builder.model(this.model);
-		}
-		return builder.build();
+		return MiniMaxEmbeddingOptions.builder().model(this.model).build();
 	}
 
 	private Options options = new Options();

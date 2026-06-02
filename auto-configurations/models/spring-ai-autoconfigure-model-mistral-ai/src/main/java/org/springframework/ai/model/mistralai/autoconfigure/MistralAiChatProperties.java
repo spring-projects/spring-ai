@@ -194,53 +194,23 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 	}
 
 	public MistralAiChatOptions toOptions() {
-		MistralAiChatOptions.Builder builder = MistralAiChatOptions.builder();
-		if (this.model != null) {
-			builder.model(this.model);
-		}
-		if (this.temperature != null) {
-			builder.temperature(this.temperature);
-		}
-		if (this.topP != null) {
-			builder.topP(this.topP);
-		}
-		if (this.maxTokens != null) {
-			builder.maxTokens(this.maxTokens);
-		}
-		if (this.safePrompt != null) {
-			builder.safePrompt(this.safePrompt);
-		}
-		if (this.randomSeed != null) {
-			builder.randomSeed(this.randomSeed);
-		}
-		if (this.responseFormat != null) {
-			builder.responseFormat(this.responseFormat);
-		}
-		if (this.stop != null) {
-			builder.stop(this.stop);
-		}
-		if (this.frequencyPenalty != null) {
-			builder.frequencyPenalty(this.frequencyPenalty);
-		}
-		if (this.presencePenalty != null) {
-			builder.presencePenalty(this.presencePenalty);
-		}
-		if (this.n != null) {
-			builder.n(this.n);
-		}
-		if (this.tools != null) {
-			builder.tools(this.tools);
-		}
-		if (this.toolChoice != null) {
-			builder.toolChoice(this.toolChoice);
-		}
-		if (this.reasoningEffort != null) {
-			builder.reasoningEffort(this.reasoningEffort);
-		}
-		if (this.internalToolExecutionEnabled != null) {
-			builder.internalToolExecutionEnabled(this.internalToolExecutionEnabled);
-		}
-		return builder.build();
+		return MistralAiChatOptions.builder()
+			.model(this.model)
+			.temperature(this.temperature)
+			.topP(this.topP)
+			.maxTokens(this.maxTokens)
+			.safePrompt(this.safePrompt)
+			.randomSeed(this.randomSeed)
+			.responseFormat(this.responseFormat)
+			.stop(this.stop)
+			.frequencyPenalty(this.frequencyPenalty)
+			.presencePenalty(this.presencePenalty)
+			.n(this.n)
+			.tools(this.tools)
+			.toolChoice(this.toolChoice)
+			.reasoningEffort(this.reasoningEffort)
+			.internalToolExecutionEnabled(this.internalToolExecutionEnabled)
+			.build();
 	}
 
 	public MistralAiChatProperties() {

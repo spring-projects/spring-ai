@@ -314,87 +314,35 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 	}
 
 	public OpenAiChatOptions toOptions() {
-		OpenAiChatOptions.Builder builder = OpenAiChatOptions.builder();
-		builder.model(this.getModel());
-		if (this.frequencyPenalty != null) {
-			builder.frequencyPenalty(this.frequencyPenalty);
-		}
-		if (this.logitBias != null) {
-			builder.logitBias(this.logitBias);
-		}
-		if (this.logprobs != null) {
-			builder.logprobs(this.logprobs);
-		}
-		if (this.topLogprobs != null) {
-			builder.topLogprobs(this.topLogprobs);
-		}
-		if (this.maxTokens != null) {
-			builder.maxTokens(this.maxTokens);
-		}
-		if (this.maxCompletionTokens != null) {
-			builder.maxCompletionTokens(this.maxCompletionTokens);
-		}
-		if (this.n != null) {
-			builder.n(this.n);
-		}
-		if (this.outputModalities != null) {
-			builder.outputModalities(this.outputModalities);
-		}
-		if (this.outputAudio != null) {
-			builder.outputAudio(this.outputAudio);
-		}
-		if (this.presencePenalty != null) {
-			builder.presencePenalty(this.presencePenalty);
-		}
-		if (this.responseFormat != null) {
-			builder.responseFormat(this.responseFormat);
-		}
-		if (this.streamOptions != null) {
-			builder.streamOptions(this.streamOptions);
-		}
-		if (this.seed != null) {
-			builder.seed(this.seed);
-		}
-		if (this.stop != null) {
-			builder.stopSequences(this.stop);
-		}
-		if (this.temperature != null) {
-			builder.temperature(this.temperature);
-		}
-		if (this.topP != null) {
-			builder.topP(this.topP);
-		}
-		if (this.toolChoice != null) {
-			builder.toolChoice(this.toolChoice);
-		}
-		if (this.user != null) {
-			builder.user(this.user);
-		}
-		if (this.parallelToolCalls != null) {
-			builder.parallelToolCalls(this.parallelToolCalls);
-		}
-		if (this.store != null) {
-			builder.store(this.store);
-		}
-		if (this.metadata != null) {
-			builder.metadata(this.metadata);
-		}
-		if (this.reasoningEffort != null) {
-			builder.reasoningEffort(this.reasoningEffort);
-		}
-		if (this.verbosity != null) {
-			builder.verbosity(this.verbosity);
-		}
-		if (this.serviceTier != null) {
-			builder.serviceTier(this.serviceTier);
-		}
-		if (this.extraBody != null) {
-			builder.extraBody(this.extraBody);
-		}
-		if (this.internalToolExecutionEnabled != null) {
-			builder.internalToolExecutionEnabled(this.internalToolExecutionEnabled);
-		}
-		return builder.build();
+		return OpenAiChatOptions.builder()
+			.model(this.model)
+			.frequencyPenalty(this.frequencyPenalty)
+			.logitBias(this.logitBias)
+			.logprobs(this.logprobs)
+			.topLogprobs(this.topLogprobs)
+			.maxTokens(this.maxTokens)
+			.maxCompletionTokens(this.maxCompletionTokens)
+			.n(this.n)
+			.outputModalities(this.outputModalities)
+			.outputAudio(this.outputAudio)
+			.presencePenalty(this.presencePenalty)
+			.responseFormat(this.responseFormat)
+			.streamOptions(this.streamOptions)
+			.seed(this.seed)
+			.stopSequences(this.stop)
+			.temperature(this.temperature)
+			.topP(this.topP)
+			.toolChoice(this.toolChoice)
+			.user(this.user)
+			.parallelToolCalls(this.parallelToolCalls)
+			.store(this.store)
+			.metadata(this.metadata)
+			.reasoningEffort(this.reasoningEffort)
+			.verbosity(this.verbosity)
+			.serviceTier(this.serviceTier)
+			.extraBody(this.extraBody)
+			.internalToolExecutionEnabled(this.internalToolExecutionEnabled)
+			.build();
 	}
 
 	private Options options = new Options();

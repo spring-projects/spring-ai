@@ -155,7 +155,7 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 
 	@Override
 	public @Nullable String getFormat() {
-		return (this.responseFormat != null) ? this.responseFormat.toLowerCase() : null;
+		return this.responseFormat.toLowerCase();
 	}
 
 	@Override
@@ -251,9 +251,7 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 				}
 				this.isMicrosoftFoundry = castFrom.isMicrosoftFoundry();
 				this.isGitHubModels = castFrom.isGitHubModels();
-				if (castFrom.getTimeout() != null) {
-					this.timeout = castFrom.getTimeout();
-				}
+				this.timeout = castFrom.getTimeout();
 				this.maxRetries = castFrom.getMaxRetries();
 				if (castFrom.getProxy() != null) {
 					this.proxy = castFrom.getProxy();
@@ -273,9 +271,7 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 				if (castFrom.getInput() != null) {
 					this.input = castFrom.getInput();
 				}
-				if (castFrom.getResponseFormat() != null) {
-					this.responseFormat = castFrom.getResponseFormat();
-				}
+				this.responseFormat = castFrom.getResponseFormat();
 			}
 			return this;
 		}

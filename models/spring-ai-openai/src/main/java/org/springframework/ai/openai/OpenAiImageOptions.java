@@ -307,9 +307,7 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 				}
 				this.isMicrosoftFoundry = castFrom.isMicrosoftFoundry();
 				this.isGitHubModels = castFrom.isGitHubModels();
-				if (castFrom.getTimeout() != null) {
-					this.timeout = castFrom.getTimeout();
-				}
+				this.timeout = castFrom.getTimeout();
 				this.maxRetries = castFrom.getMaxRetries();
 				if (castFrom.getProxy() != null) {
 					this.proxy = castFrom.getProxy();
@@ -339,17 +337,17 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 			return this;
 		}
 
-		public Builder N(Integer n) {
+		public Builder N(@Nullable Integer n) {
 			this.n = n;
 			return this;
 		}
 
-		public Builder responseFormat(String responseFormat) {
+		public Builder responseFormat(@Nullable String responseFormat) {
 			this.responseFormat = responseFormat;
 			return this;
 		}
 
-		public Builder width(Integer width) {
+		public Builder width(@Nullable Integer width) {
 			this.width = width;
 			if (this.width != null && this.height != null) {
 				this.size = this.width + "x" + this.height;
@@ -357,7 +355,7 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 			return this;
 		}
 
-		public Builder height(Integer height) {
+		public Builder height(@Nullable Integer height) {
 			this.height = height;
 			if (this.width != null && this.height != null) {
 				this.size = this.width + "x" + this.height;
@@ -365,22 +363,22 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 			return this;
 		}
 
-		public Builder user(String user) {
+		public Builder user(@Nullable String user) {
 			this.user = user;
 			return this;
 		}
 
-		public Builder style(String style) {
+		public Builder style(@Nullable String style) {
 			this.style = style;
 			return this;
 		}
 
-		public Builder quality(String quality) {
+		public Builder quality(@Nullable String quality) {
 			this.quality = quality;
 			return this;
 		}
 
-		public Builder size(String size) {
+		public Builder size(@Nullable String size) {
 			this.size = size;
 			return this;
 		}

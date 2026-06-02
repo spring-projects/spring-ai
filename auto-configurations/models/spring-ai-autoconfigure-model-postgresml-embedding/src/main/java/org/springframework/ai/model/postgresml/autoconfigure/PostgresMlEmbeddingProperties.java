@@ -92,20 +92,12 @@ public class PostgresMlEmbeddingProperties {
 	}
 
 	public PostgresMlEmbeddingOptions toOptions() {
-		PostgresMlEmbeddingOptions.Builder builder = PostgresMlEmbeddingOptions.builder();
-		if (this.transformer != null) {
-			builder.transformer(this.transformer);
-		}
-		if (this.vectorType != null) {
-			builder.vectorType(this.vectorType);
-		}
-		if (this.kwargs != null) {
-			builder.kwargs(this.kwargs);
-		}
-		if (this.metadataMode != null) {
-			builder.metadataMode(this.metadataMode);
-		}
-		return builder.build();
+		return PostgresMlEmbeddingOptions.builder()
+			.transformer(this.transformer)
+			.vectorType(this.vectorType)
+			.kwargs(this.kwargs)
+			.metadataMode(this.metadataMode)
+			.build();
 	}
 
 	private Options options = new Options();

@@ -173,9 +173,7 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 			if (from == null) {
 				return this;
 			}
-			if (from.getModel() != null) {
-				this.model = from.getModel();
-			}
+			this.model = from.getModel();
 			if (from instanceof AbstractOpenAiOptions castFrom) {
 				if (castFrom.getBaseUrl() != null) {
 					this.baseUrl = castFrom.getBaseUrl();
@@ -197,9 +195,7 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 				}
 				this.isMicrosoftFoundry = castFrom.isMicrosoftFoundry();
 				this.isGitHubModels = castFrom.isGitHubModels();
-				if (castFrom.getTimeout() != null) {
-					this.timeout = castFrom.getTimeout();
-				}
+				this.timeout = castFrom.getTimeout();
 				this.maxRetries = castFrom.getMaxRetries();
 				if (castFrom.getProxy() != null) {
 					this.proxy = castFrom.getProxy();
@@ -216,9 +212,7 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 				}
 			}
 			if (from instanceof OpenAiAudioTranscriptionOptions castFrom) {
-				if (castFrom.getResponseFormat() != null) {
-					this.responseFormat = castFrom.getResponseFormat();
-				}
+				this.responseFormat = castFrom.getResponseFormat();
 				if (castFrom.getPrompt() != null) {
 					this.prompt = castFrom.getPrompt();
 				}
@@ -243,7 +237,7 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 			return this;
 		}
 
-		public Builder responseFormat(AudioResponseFormat responseFormat) {
+		public Builder responseFormat(@Nullable AudioResponseFormat responseFormat) {
 			this.responseFormat = responseFormat;
 			return this;
 		}

@@ -80,20 +80,12 @@ public class OpenAiEmbeddingProperties extends AbstractOpenAiProperties {
 	}
 
 	public OpenAiEmbeddingOptions toOptions() {
-		OpenAiEmbeddingOptions.Builder builder = OpenAiEmbeddingOptions.builder();
-		if (this.getModel() != null) {
-			builder.model(this.getModel());
-		}
-		if (this.user != null) {
-			builder.user(this.user);
-		}
-		if (this.encodingFormat != null) {
-			builder.encodingFormat(this.encodingFormat);
-		}
-		if (this.dimensions != null) {
-			builder.dimensions(this.dimensions);
-		}
-		return builder.build();
+		return OpenAiEmbeddingOptions.builder()
+			.model(this.model)
+			.user(this.user)
+			.encodingFormat(this.encodingFormat)
+			.dimensions(this.dimensions)
+			.build();
 	}
 
 	private Options options = new Options();
