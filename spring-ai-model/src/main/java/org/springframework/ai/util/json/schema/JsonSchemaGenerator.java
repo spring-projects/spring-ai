@@ -85,9 +85,9 @@ public final class JsonSchemaGenerator {
 	 */
 	private static final boolean PROPERTY_REQUIRED_BY_DEFAULT = true;
 
-	private static final SchemaGenerator TYPE_SCHEMA_GENERATOR;
+	private static final SchemaGenerator typeSchemaGenerator;
 
-	private static final SchemaGenerator SUBTYPE_SCHEMA_GENERATOR;
+	private static final SchemaGenerator subtypeSchemaGenerator;
 
 	/*
 	 * Initialize JSON Schema generators.
@@ -112,12 +112,12 @@ public final class JsonSchemaGenerator {
 		}
 
 		SchemaGeneratorConfig typeSchemaGeneratorConfig = schemaGeneratorConfigBuilder.build();
-		TYPE_SCHEMA_GENERATOR = new SchemaGenerator(typeSchemaGeneratorConfig);
+		typeSchemaGenerator = new SchemaGenerator(typeSchemaGeneratorConfig);
 
 		SchemaGeneratorConfig subtypeSchemaGeneratorConfig = schemaGeneratorConfigBuilder
 			.without(Option.SCHEMA_VERSION_INDICATOR)
 			.build();
-		SUBTYPE_SCHEMA_GENERATOR = new SchemaGenerator(subtypeSchemaGeneratorConfig);
+		subtypeSchemaGenerator = new SchemaGenerator(subtypeSchemaGeneratorConfig);
 	}
 
 	private JsonSchemaGenerator() {
@@ -155,7 +155,7 @@ public final class JsonSchemaGenerator {
 			if (isMethodParameterRequired(method, i)) {
 				required.add(parameterName);
 			}
-			ObjectNode parameterNode = generateSchema(SUBTYPE_SCHEMA_GENERATOR, parameterType);
+			ObjectNode parameterNode = generateSchema(subtypeSchemaGenerator, parameterType);
 			// victools generates self-contained schemas where $defs and the $ref
 			// pointers into them are rooted at the sub-schema. Inlining the
 			// sub-schema under properties.<paramName> re-parents existing
@@ -188,7 +188,7 @@ public final class JsonSchemaGenerator {
 	 */
 	public static String generateForType(Type type, SchemaOption... schemaOptions) {
 		Assert.notNull(type, "type cannot be null");
-		ObjectNode schema = generateSchema(TYPE_SCHEMA_GENERATOR, type);
+		ObjectNode schema = generateSchema(typeSchemaGenerator, type);
 		if ((type == Void.class) && !schema.has("properties")) {
 			schema.putObject("properties");
 		}
