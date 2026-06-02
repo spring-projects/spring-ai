@@ -30,7 +30,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.jspecify.annotations.Nullable;
-import tools.jackson.core.type.TypeReference;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
@@ -56,7 +55,8 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -77,6 +77,8 @@ import org.springframework.util.StringUtils;
  * @since 2.0.0
  */
 public class ToolSearchToolCallingAdvisor extends ToolCallAdvisor {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final String TOOL_SEARCH_TOOL_SESSION_ID_KEY = "toolSearchToolSessionId";
 
@@ -315,7 +317,7 @@ public class ToolSearchToolCallingAdvisor extends ToolCallAdvisor {
 				: List.of(toolSearchToolResponses.get(toolSearchToolResponses.size() - 1));
 
 		return toolSearchToolResponses.stream()
-			.map(r -> JsonParser.fromJson(r.responseData(), new TypeReference<List<String>>() {
+			.map(r -> jsonHelper.fromJson(r.responseData(), new ParameterizedTypeReference<List<String>>() {
 			}))
 			.flatMap(List::stream)
 			.toList();
