@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jspecify.annotations.Nullable;
+import org.springframework.ai.tool.ToolCallback;
 
 /**
  * Implementation of {@link ChatOptions.Builder} to create {@link DefaultChatOptions}.
@@ -131,7 +132,14 @@ public class DefaultChatOptionsBuilder<B extends DefaultChatOptionsBuilder<B>> i
 				this.presencePenalty = that.presencePenalty;
 			}
 			if (that.stopSequences != null) {
-				this.stopSequences = new ArrayList<>(that.stopSequences);
+				if (this.stopSequences == null) {
+					this.stopSequences = new ArrayList<>(that.stopSequences);
+				}
+				else {
+					List<String> merged = new ArrayList<>(this.stopSequences);
+					merged.addAll(that.stopSequences);
+					this.stopSequences = merged;
+				}
 			}
 			if (that.temperature != null) {
 				this.temperature = that.temperature;
