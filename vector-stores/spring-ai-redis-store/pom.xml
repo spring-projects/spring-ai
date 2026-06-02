@@ -30,11 +30,6 @@
 	<description>Spring AI Vector Store - Redis </description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<properties>
-		<testcontainers-redis.version>2.2.0</testcontainers-redis.version>
-		<jedis.version>5.2.0</jedis.version>
-	</properties>
-
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
