@@ -27,6 +27,11 @@ import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Unit tests for {@link OpenAiEmbeddingOptions}.
+ *
+ * @author guan xu
+ */
 class OpenAiEmbeddingOptionsTests {
 
 	@Test
