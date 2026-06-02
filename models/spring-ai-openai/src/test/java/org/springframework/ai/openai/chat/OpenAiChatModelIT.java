@@ -107,6 +107,18 @@ public class OpenAiChatModelIT {
 	private OpenAiChatModel chatModel;
 
 	@Test
+	void reasoningContentTest() {
+		var promptOptions = OpenAiChatOptions.builder()
+			.model("o3-mini")
+			.reasoningEffort(ReasoningEffort.LOW.toString())
+			.build();
+
+		var prompt = new Prompt("What is 2+2? Think step by step.", promptOptions);
+		ChatResponse response = this.chatModel.call(prompt);
+
+		assertThat((Object) response.getResult().getOutput().getMetadata().get("reasoningContent")).isNotNull();
+	}
+
 	void roleTest() {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and what they did.");

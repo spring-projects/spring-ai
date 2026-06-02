@@ -78,7 +78,7 @@ class OllamaWithOpenAiChatModelIT {
 	private static final String MULTIMODAL_MODEL = "gemma3:4b";
 
 	private static final boolean SKIP_CONTAINER_CREATION = Boolean
-		.parseBoolean(System.getenv().getOrDefault("OLLAMA_WITH_REUSE", "false"));
+		.parseBoolean(System.getenv().getOrDefault("OLLAMA_WITH_REUSE", "true"));
 
 	static OllamaContainer ollamaContainer;
 
@@ -144,6 +144,19 @@ class OllamaWithOpenAiChatModelIT {
 			.collect(Collectors.joining());
 
 		assertThat(stitchedResponseContent).containsIgnoringCase("Copenhag");
+
+		// Validate reasoning content is populated in stream (might be empty, but
+		// shouldn't be null)
+		String stitchedReasoningContent = responses.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getMetadata)
+			.map(metadata -> metadata.get("reasoningContent") != null ? metadata.get("reasoningContent").toString()
+					: "")
+			.collect(Collectors.joining());
+
+		assertThat(stitchedReasoningContent).isNotNull();
 	}
 
 	@Test
@@ -251,6 +264,10 @@ class OllamaWithOpenAiChatModelIT {
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
+
+		// Validate reasoning content is populated (might be empty for models that don't
+		// support it, but shouldn't be null)
+		assertThat((Object) response.getResult().getOutput().getMetadata().get("reasoningContent")).isNotNull();
 	}
 
 	@Test
