@@ -18,7 +18,6 @@ package org.springframework.ai.openai.chat;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -51,6 +52,7 @@ import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -71,6 +73,7 @@ import org.springframework.ai.openai.OpenAiChatOptions.AudioParameters.Voice;
 import org.springframework.ai.openai.OpenAiChatOptions.StreamOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.support.ToolCallbacks;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -395,20 +398,26 @@ public class OpenAiChatModelIT {
 
 	@Test
 	void functionCallTest() {
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.");
-
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = OpenAiChatOptions.builder()
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+		Prompt prompt = new Prompt(List
+			.of(new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.")),
+				options);
+
+		ChatResponse response = this.chatModel.call(prompt);
+
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			response = this.chatModel.call(prompt);
+		}
 
 		logger.info("Response: {}", response);
 
@@ -417,30 +426,30 @@ public class OpenAiChatModelIT {
 
 	@Test
 	void streamFunctionCallTest() {
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo, and Paris in Celsius.");
-
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = OpenAiChatOptions.builder()
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
+		Prompt prompt = new Prompt(
+				List.of(new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris in Celsius.")),
+				options);
 
-		String content = response.collectList()
-			.block()
-			.stream()
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getText)
-			.collect(Collectors.joining());
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
 
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
+
+		String content = aggregatedRef.get().getResult().getOutput().getText();
 		logger.info("Response: {}", content);
 
 		assertThat(content).containsAnyOf("30.0", "30");
@@ -450,20 +459,19 @@ public class OpenAiChatModelIT {
 
 	@Test
 	void functionCallUsageTest() {
-
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.");
-
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = OpenAiChatOptions.builder()
-			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
-				.description("Get the weather in location")
-				.inputType(MockWeatherService.Request.class)
-				.build()))
+		ToolCallback weatherToolCallback = FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+			.description("Get the weather in location")
+			.inputType(MockWeatherService.Request.class)
 			.build();
 
-		ChatResponse chatResponse = this.chatModel.call(new Prompt(messages, promptOptions));
+		ChatResponse chatResponse = ChatClient.create(this.chatModel)
+			.prompt()
+			.advisors(ToolCallAdvisor.builder().build())
+			.user("What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.")
+			.tools(t -> t.callbacks(weatherToolCallback))
+			.call()
+			.chatResponse();
+
 		logger.info("Response: {}", chatResponse);
 		Usage usage = chatResponse.getMetadata().getUsage();
 
@@ -478,23 +486,25 @@ public class OpenAiChatModelIT {
 
 	@Test
 	void streamFunctionCallUsageTest() {
-
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.");
-
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = OpenAiChatOptions.builder()
-			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
-				.description("Get the weather in location")
-				.inputType(MockWeatherService.Request.class)
-				.build()))
-			.streamOptions(StreamOptions.builder().includeUsage(true).build())
-			.reasoningEffort(ReasoningEffort.MINIMAL.toString())
+		ToolCallback weatherToolCallback = FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+			.description("Get the weather in location")
+			.inputType(MockWeatherService.Request.class)
 			.build();
 
-		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
-		Usage usage = response.last().block().getMetadata().getUsage();
+		ChatResponse lastResponse = ChatClient.create(this.chatModel)
+			.prompt()
+			.advisors(ToolCallAdvisor.builder().build())
+			.options(OpenAiChatOptions.builder()
+				.streamOptions(StreamOptions.builder().includeUsage(true).build())
+				.reasoningEffort(ReasoningEffort.MINIMAL.toString()))
+			.user("What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.")
+			.tools(t -> t.callbacks(weatherToolCallback))
+			.stream()
+			.chatResponse()
+			.last()
+			.block();
+
+		Usage usage = lastResponse.getMetadata().getUsage();
 
 		logger.info("Usage: {}", usage);
 		assertThat(usage).isNotNull();

@@ -19,18 +19,22 @@ package org.springframework.ai.model.openai.autoconfigure.tool;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -62,12 +66,20 @@ public class OpenAiFunctionCallbackIT {
 		this.contextRunner.withPropertyValues("spring.ai.openai.chat.temperature=1").run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+
+			var chatClient = ChatClient
+				.builder(chatModel, ObservationRegistry.NOOP, null, null,
+						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+				.build();
 
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.");
 
-			ChatResponse response = chatModel
-				.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().toolNames("WeatherInfo").build()));
+			ChatResponse response = chatClient
+				.prompt(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().toolNames("WeatherInfo").build()))
+				.call()
+				.chatResponse();
 
 			logger.info("Response: {}", response);
 
@@ -81,12 +93,20 @@ public class OpenAiFunctionCallbackIT {
 		this.contextRunner.withPropertyValues("spring.ai.openai.chat.temperature=1").run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+
+			var chatClient = ChatClient
+				.builder(chatModel, ObservationRegistry.NOOP, null, null,
+						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+				.build();
 
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities. You can call the following functions 'WeatherInfo'");
 
-			Flux<ChatResponse> response = chatModel
-				.stream(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().toolNames("WeatherInfo").build()));
+			Flux<ChatResponse> response = chatClient
+				.prompt(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().toolNames("WeatherInfo").build()))
+				.stream()
+				.chatResponse();
 
 			String content = response.collectList()
 				.block()

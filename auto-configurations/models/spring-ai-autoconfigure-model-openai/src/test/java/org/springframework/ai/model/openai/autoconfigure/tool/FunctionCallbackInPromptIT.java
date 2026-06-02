@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -57,6 +58,8 @@ public class FunctionCallbackInPromptIT {
 
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
+				ChatClient chatClient = ChatClient.builder(chatModel).build();
+
 				UserMessage userMessage = new UserMessage(
 						"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.");
 
@@ -68,7 +71,9 @@ public class FunctionCallbackInPromptIT {
 								.build()))
 					.build();
 
-				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
+				Prompt prompt = new Prompt(List.of(userMessage), promptOptions);
+
+				ChatResponse response = chatClient.prompt(prompt).call().chatResponse();
 
 				logger.info("Response: {}", response);
 
@@ -96,16 +101,21 @@ public class FunctionCallbackInPromptIT {
 								.build()))
 					.build();
 
-				Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage), promptOptions));
+				Flux<ChatResponse> response = ChatClient.create(chatModel)
+					.prompt(new Prompt(List.of(userMessage), promptOptions))
+					.stream()
+					.chatResponse();
 
 				String content = response.collectList()
-					.block()
+					.blockOptional()
 					.stream()
+					.flatMap(List::stream)
 					.map(ChatResponse::getResults)
 					.flatMap(List::stream)
 					.map(Generation::getOutput)
 					.map(AssistantMessage::getText)
 					.collect(Collectors.joining());
+
 				logger.info("Response: {}", content);
 
 				assertThat(content).contains("30", "10", "15");
