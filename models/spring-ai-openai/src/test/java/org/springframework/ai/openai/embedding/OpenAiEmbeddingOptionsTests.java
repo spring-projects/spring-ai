@@ -17,10 +17,12 @@
 package org.springframework.ai.openai.embedding;
 
 import java.util.List;
+import java.util.Map;
 
 import com.openai.models.embeddings.EmbeddingCreateParams;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -65,16 +67,31 @@ class OpenAiEmbeddingOptionsTests {
 
 	@Test
 	void genericEmbeddingOptionsAreMerged() {
-		org.springframework.ai.embedding.EmbeddingOptions source = org.springframework.ai.embedding.EmbeddingOptions
-			.builder()
-			.model("generic-model")
-			.dimensions(1024)
-			.build();
+		EmbeddingOptions source = EmbeddingOptions.builder().model("generic-model").dimensions(1024).build();
 
 		OpenAiEmbeddingOptions merged = OpenAiEmbeddingOptions.builder().merge(source).build();
 
 		assertThat(merged.getModel()).isEqualTo("generic-model");
 		assertThat(merged.getDimensions()).isEqualTo(1024);
+	}
+
+	@Test
+	void testOptionsBuilderMergeCustomHeaders() {
+		OpenAiEmbeddingOptions defaultOptions = OpenAiEmbeddingOptions.builder()
+			.customHeaders(Map.of("default-header", "default-value"))
+			.build();
+
+		OpenAiEmbeddingOptions requestOptions = OpenAiEmbeddingOptions.builder()
+			.customHeaders(Map.of("merged-header1", "merged-value1", "merged-header2", "merged-value2"))
+			.build();
+
+		OpenAiEmbeddingOptions mergedOptions = OpenAiEmbeddingOptions.builder()
+			.from(defaultOptions)
+			.merge(requestOptions)
+			.build();
+		assertThat(mergedOptions.getCustomHeaders()).containsEntry("default-header", "default-value")
+			.containsEntry("merged-header1", "merged-value1")
+			.containsEntry("merged-header2", "merged-value2");
 	}
 
 }
