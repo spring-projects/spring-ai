@@ -189,38 +189,56 @@ class DeepSeekChatModelFunctionCallingIT {
 	 */
 	@Test
 	void functionCallMultiRoundWithReasoningContentPreserved() {
+
 		UserMessage userMessage = new UserMessage(
 				"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = DeepSeekChatOptions.builder()
-			.model(DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue())
-			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
-				.description("Get the weather in location")
-				.inputType(MockWeatherService.Request.class)
-				.build()))
-			.build();
+				.model(DeepSeekApi.ChatModel.DEEPSEEK_REASONER.getValue())
+				.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+						.description("Get the weather in location")
+						.inputType(MockWeatherService.Request.class)
+						.build()))
+				.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
-		// Preserve the assistant message (may contain tool_calls and reasoningContent)
+		// This test must exercise the reasoner + tool-calling scenario.
+		// In this scenario, DeepSeek returns reasoning content on the assistant message.
 		AssistantMessage firstAssistantMessage = response.getResult().getOutput();
+
+		assertThat(firstAssistantMessage)
+				.as("The first assistant message should be a DeepSeek assistant message")
+				.isInstanceOf(DeepSeekAssistantMessage.class);
+
+		DeepSeekAssistantMessage firstDeepSeekAssistantMessage = (DeepSeekAssistantMessage) firstAssistantMessage;
+
+		assertThat(firstDeepSeekAssistantMessage.getReasoningContent())
+				.as("The first assistant message should contain reasoning content")
+				.isNotBlank();
+
+		// Add the previous assistant message back to the conversation history.
+		// Since this message was produced by a reasoner model in a tool-calling round,
+		// its reasoning content must be sent back in all subsequent requests.
 		messages.add(firstAssistantMessage);
 		messages.add(new UserMessage("Which of these cities has the highest temperature?"));
 
+		// The second request is the actual regression check.
+		//
+		// Without the fix, Spring AI drops the reasoning content when building this
+		// follow-up request. DeepSeek then rejects the request with HTTP 400.
+		//
+		// With the fix applied, the reasoning content is preserved in the follow-up
+		// request, so the API accepts it and the second round succeeds.
 		ChatResponse response2 = this.chatModel.call(new Prompt(messages, promptOptions));
 
-		assertThat(response2.getResult().getOutput().getText()).isNotEmpty();
-
-		// If the first response contained reasoningContent, the second round should also
-		// preserve it
-		if (firstAssistantMessage instanceof DeepSeekAssistantMessage) {
-			logger.info("First response has reasoningContent: {}",
-					((DeepSeekAssistantMessage) firstAssistantMessage).getReasoningContent());
-		}
+		assertThat(response2.getResult().getOutput().getText())
+				.as("The second round should succeed when the previous reasoning content is preserved")
+				.isNotBlank();
 	}
 
 }
