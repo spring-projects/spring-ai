@@ -27,7 +27,11 @@ import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSocketFactory;
@@ -43,12 +47,17 @@ import com.openai.core.http.HttpRequestBody;
 import com.openai.core.http.HttpResponse;
 import com.openai.core.http.ProxyAuthenticator;
 import com.openai.errors.OpenAIIoException;
+import io.micrometer.context.ContextExecutorService;
+import io.micrometer.context.ContextSnapshotFactory;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.binder.okhttp3.OkHttpConnectionPoolMetrics;
+import io.micrometer.core.instrument.binder.okhttp3.OkHttpObservationInterceptor;
 import io.micrometer.observation.ObservationRegistry;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.ConnectionPool;
+import okhttp3.Dispatcher;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -58,8 +67,6 @@ import okhttp3.Response;
 import okio.BufferedSink;
 import okio.Okio;
 import org.jspecify.annotations.Nullable;
-
-import org.springframework.ai.observation.conventions.SpringAiOkHttpObservabilityUtils;
 
 /**
  * OkHttp-backed {@link HttpClient} for the OpenAI Java SDK, with Micrometer's
@@ -515,8 +522,10 @@ public final class SpringAiOpenAiHttpClient implements HttpClient {
 				.callTimeout(this.timeout.request())
 				.proxy(this.proxy);
 
-			boolean ownsDispatcherExecutor = SpringAiOkHttpObservabilityUtils.configureObservability(okBuilder,
-					this.observationRegistry, OBSERVATION_NAME, this.dispatcherExecutorService);
+			OkHttpObservationInterceptor observationInterceptor = OkHttpObservationInterceptor
+				.builder(this.observationRegistry, OBSERVATION_NAME)
+				.build();
+			okBuilder.addInterceptor(observationInterceptor);
 
 			if (this.proxyAuthenticator != null) {
 				final ProxyAuthenticator pa = this.proxyAuthenticator;
@@ -527,6 +536,14 @@ public final class SpringAiOpenAiHttpClient implements HttpClient {
 					return authed.map(req -> toRequestComputeUrl(req, null)).orElse(null);
 				});
 			}
+
+			ExecutorService userDispatcherExecutor = this.dispatcherExecutorService;
+			boolean ownsDispatcherExecutor = userDispatcherExecutor == null;
+			ExecutorService dispatcherBase = (userDispatcherExecutor != null) ? userDispatcherExecutor
+					: defaultDispatcherExecutor();
+			ExecutorService dispatcherExecutor = ContextExecutorService.wrap(dispatcherBase,
+					ContextSnapshotFactory.builder().build());
+			okBuilder.dispatcher(new Dispatcher(dispatcherExecutor));
 
 			if (this.maxIdleConnections != null && this.keepAliveDuration != null) {
 				okBuilder.connectionPool(new ConnectionPool(this.maxIdleConnections, this.keepAliveDuration.toNanos(),
@@ -554,50 +571,33 @@ public final class SpringAiOpenAiHttpClient implements HttpClient {
 			// the SDK's tuning at the bottom of `OkHttpClient.Builder.build()`.
 			okClient.dispatcher().setMaxRequestsPerHost(okClient.dispatcher().getMaxRequests());
 
-			SpringAiOkHttpObservabilityUtils.bindConnectionPoolMetrics(okClient, this.meterRegistry, this.meterTags);
+			if (this.meterRegistry != null) {
+				new OkHttpConnectionPoolMetrics(okClient.connectionPool(), this.meterTags).bindTo(this.meterRegistry);
+			}
 
 			return new SpringAiOpenAiHttpClient(okClient, ownsDispatcherExecutor);
 		}
 
-		/**
-		 * Builds and returns the configured {@link OkHttpClient} without wrapping it in a
-		 * {@link SpringAiOpenAiHttpClient}. Useful when a caller needs to add further
-		 * interceptors (e.g. header-stripping) before the final wrapping via
-		 * {@link #buildWithClient(OkHttpClient)}, avoiding the creation and immediate
-		 * discard of an intermediate client instance.
-		 */
-		public OkHttpClient buildOkHttpClient() {
-			OkHttpClient.Builder okBuilder = new OkHttpClient.Builder().retryOnConnectionFailure(false)
-				.pingInterval(Duration.ofMinutes(1))
-				.connectTimeout(this.timeout.connect())
-				.readTimeout(this.timeout.read())
-				.writeTimeout(this.timeout.write())
-				.callTimeout(this.timeout.request())
-				.proxy(this.proxy);
-
-			SpringAiOkHttpObservabilityUtils.configureObservability(okBuilder, this.observationRegistry,
-					OBSERVATION_NAME, this.dispatcherExecutorService);
-
-			if (this.maxIdleConnections != null && this.keepAliveDuration != null) {
-				okBuilder.connectionPool(new ConnectionPool(this.maxIdleConnections, this.keepAliveDuration.toNanos(),
-						TimeUnit.NANOSECONDS));
-			}
-
-			if (this.sslSocketFactory != null && this.trustManager != null) {
-				okBuilder.sslSocketFactory(this.sslSocketFactory, this.trustManager);
-			}
-
-			if (this.hostnameVerifier != null) {
-				okBuilder.hostnameVerifier(this.hostnameVerifier);
-			}
-
-			OkHttpClient okClient = okBuilder.build();
-			okClient.dispatcher().setMaxRequestsPerHost(okClient.dispatcher().getMaxRequests());
-			return okClient;
+		public SpringAiOpenAiHttpClient buildWithInterceptor(okhttp3.Interceptor interceptor) {
+			SpringAiOpenAiHttpClient baseClient = build();
+			OkHttpClient modifiedOkClient = baseClient.getOkHttpClient()
+				.newBuilder()
+				.addInterceptor(interceptor)
+				.build();
+			return new SpringAiOpenAiHttpClient(modifiedOkClient, baseClient.ownsDispatcherExecutor);
 		}
 
-		public SpringAiOpenAiHttpClient buildWithClient(OkHttpClient okClient) {
-			return new SpringAiOpenAiHttpClient(okClient, false);
+		// Replicates OkHttp's default dispatcher so wrapping for context propagation
+		// preserves the standard "OkHttp Dispatcher-N" thread names.
+		private static ExecutorService defaultDispatcherExecutor() {
+			AtomicInteger counter = new AtomicInteger(1);
+			ThreadFactory threadFactory = runnable -> {
+				Thread thread = new Thread(runnable, "OkHttp Dispatcher-" + counter.getAndIncrement());
+				thread.setDaemon(false);
+				return thread;
+			};
+			return new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<>(),
+					threadFactory);
 		}
 
 	}
