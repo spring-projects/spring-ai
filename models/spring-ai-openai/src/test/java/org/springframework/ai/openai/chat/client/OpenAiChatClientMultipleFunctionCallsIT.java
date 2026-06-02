@@ -85,10 +85,10 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 		// @formatter:off
 		response = chatClientBuilder.build().prompt()
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities."))
-				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()))
+					.build())
 				.call()
 				.content();
 		// @formatter:on
@@ -116,10 +116,10 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultTools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.defaultTools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()))
+					.build())
 				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities."))
 			.build()
 			.prompt().call().content();
@@ -221,10 +221,10 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.")
-				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()))
+					.build())
 				.stream()
 				.content();
 		// @formatter:on
@@ -250,10 +250,10 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 
 		String content = chatClient.prompt()
 			.user("What's the weather like in Shanghai?")
-			.tools(t -> t.callbacks(FunctionToolCallback.builder("currentTemp", function)
+			.tools(FunctionToolCallback.builder("currentTemp", function)
 				.description("get current temp")
 				.inputType(MyFunction.Req.class)
-				.build()))
+				.build())
 			.call()
 			.content();
 

@@ -495,7 +495,7 @@ Then register the bean via the `ToolSpec` consumer:
 [source,java]
 ----
 chatClient.prompt("What's the weather like in Copenhagen?")
-    .tools(t -> t.callbacks(currentWeather))
+    .tools(currentWeather)
     .call().content();
 ----
 

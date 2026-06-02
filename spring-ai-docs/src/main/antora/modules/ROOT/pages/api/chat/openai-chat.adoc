@@ -323,7 +323,7 @@ ToolCallback weatherCallback = FunctionToolCallback.builder("getCurrentWeather",
 String response = ChatClient.create(chatModel)
     .prompt()
     .user("What's the weather in Paris, Tokyo, and New York?")
-    .tools(t -> t.callbacks(weatherCallback))
+    .tools(weatherCallback)
     .call()
     .content();
 
@@ -331,7 +331,7 @@ String response = ChatClient.create(chatModel)
 Flux<String> stream = ChatClient.create(chatModel)
     .prompt()
     .user("What's the weather in Paris, Tokyo, and New York?")
-    .tools(t -> t.callbacks(weatherCallback))
+    .tools(weatherCallback)
     .stream()
     .content();
 ----

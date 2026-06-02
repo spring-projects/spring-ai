@@ -149,7 +149,7 @@ public class BedrockNovaChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", (WeatherRequest request) -> {
+				.tools(FunctionToolCallback.builder("getCurrentWeather", (WeatherRequest request) -> {
 						if (request.location().contains("Paris")) {
 							return new WeatherResponse(15, request.unit());
 						}
@@ -163,7 +163,7 @@ public class BedrockNovaChatClientIT {
 					})
 					.description("Get the weather for a city in Celsius")
 					.inputType(WeatherRequest.class)
-					.build()))
+					.build())
 				.call()
 				.content();
 		// @formatter:on
@@ -220,10 +220,10 @@ public class BedrockNovaChatClientIT {
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
 
 		WeatherService.Response response = chatClient.prompt()
-			.tools(t -> t.callbacks(FunctionToolCallback.builder("weather", new WeatherService())
+			.tools(FunctionToolCallback.builder("weather", new WeatherService())
 				.description("Get the current weather")
 				.inputType(Void.class)
-				.build()))
+				.build())
 			.user("Get current weather in Amsterdam")
 			.call()
 			.entity(WeatherService.Response.class);
@@ -238,10 +238,10 @@ public class BedrockNovaChatClientIT {
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
 
 		Flux<ChatResponse> responses = chatClient.prompt()
-			.tools(t -> t.callbacks(FunctionToolCallback.builder("weather", new WeatherService())
+			.tools(FunctionToolCallback.builder("weather", new WeatherService())
 				.description("Get the current weather")
 				.inputType(Void.class)
-				.build()))
+				.build())
 			.user("Get current weather in Amsterdam")
 			.stream()
 			.chatResponse();

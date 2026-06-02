@@ -241,7 +241,7 @@ class DefaultChatClientUtilsTests {
 			.create(chatModel)
 			.prompt()
 			.options(chatOptions)
-			.tools(t -> t.callbacks(toolCallback));
+			.tools(toolCallback);
 
 		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
 
@@ -306,7 +306,7 @@ class DefaultChatClientUtilsTests {
 			.create(chatModel)
 			.prompt()
 			.options(chatOptions)
-			.tools(t -> t.callbacks(toolCallback2));
+			.tools(toolCallback2);
 
 		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
 
@@ -370,7 +370,7 @@ class DefaultChatClientUtilsTests {
 			.create(chatModel)
 			.prompt()
 			.options(chatOptions)
-			.tools(t -> t.callbacks(toolCallback1));
+			.tools(toolCallback1);
 
 		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
 

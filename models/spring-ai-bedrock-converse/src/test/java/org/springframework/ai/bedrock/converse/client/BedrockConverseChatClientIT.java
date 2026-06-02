@@ -235,10 +235,10 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel)
 				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()))
+					.build())
 				.call()
 				.content();
 		// @formatter:on
@@ -254,10 +254,10 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel)
 				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()))
+					.build())
 				.call()
 				.chatResponse();
 		// @formatter:on
@@ -288,10 +288,10 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel)
 				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()))
+					.build())
 				.advisors(new SimpleLoggerAdvisor())
 				.call()
 				.content();
@@ -307,10 +307,10 @@ class BedrockConverseChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-			.defaultTools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+			.defaultTools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
-				.build()))
+				.build())
 			.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius."))
 			.build()
 			.prompt()
@@ -329,10 +329,10 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		Flux<ChatResponse> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()))
+					.build())
 				.stream()
 				.chatResponse();
 		// @formatter:on
@@ -370,10 +370,10 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in Paris? Return the temperature in Celsius.")
-				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()))
+					.build())
 				.stream()
 				.content();
 		// @formatter:on

@@ -139,7 +139,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 				.prompt()
 				.advisors(counter)
 				.user("weather?")
-				.tools(t -> t.callbacks(weatherTool))
+				.tools(weatherTool)
 				.call()
 				.content();
 
@@ -159,7 +159,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 				.advisors(counter)
 				.advisors(a -> a.param(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey(), false))
 				.user("weather?")
-				.tools(t -> t.callbacks(weatherTool))
+				.tools(weatherTool)
 				.call()
 				.content();
 
@@ -224,7 +224,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 				.prompt()
 				.advisors(ToolCallAdvisor.builder().build(), counter)
 				.user("weather?")
-				.tools(t -> t.callbacks(weatherTool))
+				.tools(weatherTool)
 				.call()
 				.content();
 
@@ -249,7 +249,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 				.build()
 				.prompt()
 				.user("weather?")
-				.tools(t -> t.callbacks(weatherTool))
+				.tools(weatherTool)
 				.call()
 				.content();
 
@@ -264,7 +264,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 				.prompt()
 				.advisors(ToolCallAdvisor.builder().build(), ToolCallAdvisor.builder().build())
 				.user("weather?")
-				.tools(t -> t.callbacks(weatherTool))
+				.tools(weatherTool)
 				.call()
 				.content()).isInstanceOf(IllegalStateException.class).hasMessageContaining("At most one ToolAdvisor");
 		}
@@ -279,7 +279,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 				.prompt()
 				.advisors(new NoOpToolCallHandlingAdvisor(), counter)
 				.user("weather?")
-				.tools(t -> t.callbacks(weatherTool))
+				.tools(weatherTool)
 				.call()
 				.content();
 
@@ -305,7 +305,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 				.prompt()
 				.advisors(counter)
 				.user("weather?")
-				.tools(t -> t.callbacks(weatherTool))
+				.tools(weatherTool)
 				.stream()
 				.content()
 				.collectList()
@@ -327,7 +327,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 				.advisors(counter)
 				.advisors(a -> a.param(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey(), false))
 				.user("weather?")
-				.tools(t -> t.callbacks(weatherTool))
+				.tools(weatherTool)
 				.stream()
 				.content()
 				.collectList()

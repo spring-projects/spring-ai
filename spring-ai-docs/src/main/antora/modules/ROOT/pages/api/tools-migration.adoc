@@ -63,10 +63,10 @@ After:
 String response = ChatClient.create(chatModel)
     .prompt()
     .user("What's the weather like in San Francisco?")
-    .tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+    .tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
             .description("Get the weather in location")
             .inputType(MockWeatherService.Request.class)
-            .build()))
+            .build())
     .call()
     .content();
 ----
@@ -116,12 +116,12 @@ And you can use the same `ChatClient#tools()` API to register method-based tool 
 String response = ChatClient.create(chatModel)
     .prompt()
     .user("What's the weather like in San Francisco?")
-    .tools(t -> t.callbacks(MethodToolCallback.builder()
+    .tools(MethodToolCallback.builder()
             .toolDefinition(ToolDefinition.builder(toolMethod)
                 .description("Get the weather in location")
                 .build())
             .toolMethod(toolMethod)
-            .build()))
+            .build())
     .call()
     .content();
 ----
@@ -176,10 +176,10 @@ After:
 [source,java]
 ----
 ChatClient.builder(chatModel)
-    .defaultTools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+    .defaultTools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
             .description("Get the weather in location")
             .inputType(MockWeatherService.Request.class)
-            .build()))
+            .build())
     .build()
 ----
 

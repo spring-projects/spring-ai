@@ -364,7 +364,7 @@ class AnthropicChatModelIT {
 			.advisors(ToolCallAdvisor.builder().build())
 			.options(AnthropicChatOptions.builder().model(Model.CLAUDE_HAIKU_4_5.asString()))
 			.user("What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.")
-			.tools(t -> t.callbacks(weatherToolCallback))
+			.tools(weatherToolCallback)
 			.stream()
 			.chatResponse()
 			.collectList()

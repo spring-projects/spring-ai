@@ -79,7 +79,7 @@ class FunctionCallWithFunctionBeanIT {
 					.advisors(ToolCallAdvisor.builder().build())
 					.user("What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan?"
 							+ " Return the temperature in Celsius.")
-					.tools(t -> t.callbacks(weatherToolCallback))
+					.tools(weatherToolCallback)
 					.call()
 					.content();
 
@@ -94,7 +94,7 @@ class FunctionCallWithFunctionBeanIT {
 					.advisors(ToolCallAdvisor.builder().build())
 					.user("What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan?"
 							+ " Return the temperature in Celsius.")
-					.tools(t -> t.callbacks(weatherToolCallback3))
+					.tools(weatherToolCallback3)
 					.call()
 					.content();
 
@@ -118,7 +118,7 @@ class FunctionCallWithFunctionBeanIT {
 					.advisors(ToolCallAdvisor.builder().build())
 					.user("What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan?"
 							+ " Return the temperature in Celsius.")
-					.tools(t -> t.callbacks(weatherToolCallback))
+					.tools(weatherToolCallback)
 					.stream()
 					.content();
 
@@ -134,7 +134,7 @@ class FunctionCallWithFunctionBeanIT {
 					.advisors(ToolCallAdvisor.builder().build())
 					.user("What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan?"
 							+ " Return the temperature in Celsius.")
-					.tools(t -> t.callbacks(weatherToolCallback3))
+					.tools(weatherToolCallback3)
 					.stream()
 					.content();
 

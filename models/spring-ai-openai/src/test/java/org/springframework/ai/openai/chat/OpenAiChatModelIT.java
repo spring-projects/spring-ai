@@ -468,7 +468,7 @@ public class OpenAiChatModelIT {
 			.prompt()
 			.advisors(ToolCallAdvisor.builder().build())
 			.user("What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.")
-			.tools(t -> t.callbacks(weatherToolCallback))
+			.tools(weatherToolCallback)
 			.call()
 			.chatResponse();
 
@@ -498,7 +498,7 @@ public class OpenAiChatModelIT {
 				.streamOptions(StreamOptions.builder().includeUsage(true).build())
 				.reasoningEffort(ReasoningEffort.MINIMAL.toString()))
 			.user("What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.")
-			.tools(t -> t.callbacks(weatherToolCallback))
+			.tools(weatherToolCallback)
 			.stream()
 			.chatResponse()
 			.last()

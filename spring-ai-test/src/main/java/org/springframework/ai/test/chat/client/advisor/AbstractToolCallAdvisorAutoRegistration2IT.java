@@ -101,7 +101,7 @@ public abstract class AbstractToolCallAdvisorAutoRegistration2IT {
 			String response = ChatClient.create(getChatModel())
 				.prompt()
 				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
-				.tools(tool -> tool.callbacks(createWeatherToolCallback()))
+				.tools(createWeatherToolCallback())
 				.call()
 				.content();
 
@@ -113,7 +113,7 @@ public abstract class AbstractToolCallAdvisorAutoRegistration2IT {
 		void autoRegisteredAdvisorWithDownstreamMemory() {
 			String response = ChatClient.create(getChatModel())
 				.prompt()
-				.tools(tool -> tool.callbacks(createWeatherToolCallback()))
+				.tools(createWeatherToolCallback())
 				.advisors(MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(500).build())
 					.build())
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "auto-register-with-memory"))
@@ -134,7 +134,7 @@ public abstract class AbstractToolCallAdvisorAutoRegistration2IT {
 				.prompt()
 				.advisors(a -> a.param(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey(), false))
 				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
-				.tools(tool -> tool.callbacks(createWeatherToolCallback()))
+				.tools(createWeatherToolCallback())
 				.call()
 				.content();
 
@@ -148,7 +148,7 @@ public abstract class AbstractToolCallAdvisorAutoRegistration2IT {
 
 			String response = chatClient.prompt()
 				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
-				.tools(tool -> tool.callbacks(createWeatherToolCallback()))
+				.tools(createWeatherToolCallback())
 				.call()
 				.content();
 
@@ -165,7 +165,7 @@ public abstract class AbstractToolCallAdvisorAutoRegistration2IT {
 			String response = chatClient.prompt()
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "default-advisors-memory"))
 				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
-				.tools(tool -> tool.callbacks(createWeatherToolCallback()))
+				.tools(createWeatherToolCallback())
 				.call()
 				.content();
 
@@ -178,7 +178,7 @@ public abstract class AbstractToolCallAdvisorAutoRegistration2IT {
 			String response = ChatClient.create(getChatModel())
 				.prompt()
 				.user("What's the weather in Tokyo?")
-				.tools(tool -> tool.callbacks(createReturnDirectWeatherToolCallback()))
+				.tools(createReturnDirectWeatherToolCallback())
 				.call()
 				.content();
 
@@ -203,7 +203,7 @@ public abstract class AbstractToolCallAdvisorAutoRegistration2IT {
 				.prompt()
 				.advisors(counter)
 				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
-				.tools(tool -> tool.callbacks(createWeatherToolCallback()))
+				.tools(createWeatherToolCallback())
 				.call()
 				.content();
 
@@ -222,7 +222,7 @@ public abstract class AbstractToolCallAdvisorAutoRegistration2IT {
 				.advisors(counter)
 				.advisors(a -> a.param(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey(), false))
 				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
-				.tools(tool -> tool.callbacks(createWeatherToolCallback()))
+				.tools(createWeatherToolCallback())
 				.call()
 				.content();
 
@@ -239,7 +239,7 @@ public abstract class AbstractToolCallAdvisorAutoRegistration2IT {
 				.prompt()
 				.advisors(counter)
 				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
-				.tools(tool -> tool.callbacks(createWeatherToolCallback()))
+				.tools(createWeatherToolCallback())
 				.call()
 				.content();
 
@@ -274,7 +274,7 @@ public abstract class AbstractToolCallAdvisorAutoRegistration2IT {
 			String content = collect(ChatClient.create(getChatModel())
 				.prompt()
 				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
-				.tools(tool -> tool.callbacks(createWeatherToolCallback()))
+				.tools(createWeatherToolCallback())
 				.stream()
 				.content());
 
@@ -290,7 +290,7 @@ public abstract class AbstractToolCallAdvisorAutoRegistration2IT {
 					.build())
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "stream-auto-register-with-memory"))
 				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
-				.tools(tool -> tool.callbacks(createWeatherToolCallback()))
+				.tools(createWeatherToolCallback())
 				.stream()
 				.content());
 
@@ -304,7 +304,7 @@ public abstract class AbstractToolCallAdvisorAutoRegistration2IT {
 				.prompt()
 				.advisors(a -> a.param(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey(), false))
 				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
-				.tools(tool -> tool.callbacks(createWeatherToolCallback()))
+				.tools(createWeatherToolCallback())
 				.stream()
 				.content());
 
@@ -317,7 +317,7 @@ public abstract class AbstractToolCallAdvisorAutoRegistration2IT {
 			String content = collect(ChatClient.create(getChatModel())
 				.prompt()
 				.user("What's the weather in Tokyo?")
-				.tools(tool -> tool.callbacks(createReturnDirectWeatherToolCallback()))
+				.tools(createReturnDirectWeatherToolCallback())
 				.stream()
 				.content());
 
@@ -342,7 +342,7 @@ public abstract class AbstractToolCallAdvisorAutoRegistration2IT {
 				.prompt()
 				.advisors(counter)
 				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
-				.tools(tool -> tool.callbacks(createWeatherToolCallback()))
+				.tools(createWeatherToolCallback())
 				.stream()
 				.content());
 
@@ -360,7 +360,7 @@ public abstract class AbstractToolCallAdvisorAutoRegistration2IT {
 				.advisors(counter)
 				.advisors(a -> a.param(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey(), false))
 				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
-				.tools(tool -> tool.callbacks(createWeatherToolCallback()))
+				.tools(createWeatherToolCallback())
 				.stream()
 				.content());
 
@@ -387,7 +387,7 @@ public abstract class AbstractToolCallAdvisorAutoRegistration2IT {
 				.advisors(counter)
 				.advisors(AdvisorParams.toolCallAdvisorAutoRegister(false))
 				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
-				.tools(tool -> tool.callbacks(createWeatherToolCallback()))
+				.tools(createWeatherToolCallback())
 				.call()
 				.content();
 

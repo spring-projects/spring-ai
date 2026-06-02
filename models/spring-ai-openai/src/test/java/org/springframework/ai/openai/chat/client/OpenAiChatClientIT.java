@@ -275,10 +275,10 @@ class OpenAiChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?"))
-				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()))
+					.build())
 				.call()
 				.content();
 		// @formatter:on
@@ -293,10 +293,10 @@ class OpenAiChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultTools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.defaultTools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()))
+					.build())
 				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?"))
 			.build()
 			.prompt().call().content();
@@ -313,10 +313,10 @@ class OpenAiChatClientIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
-				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()))
+					.build())
 				.stream()
 				.content();
 		// @formatter:on

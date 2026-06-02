@@ -268,10 +268,10 @@ public class ChatClientTests {
 						.param("param2", "value2")
 						.metadata("smetadata1", "svalue1")
 						.metadata("smetadata2", "svalue2"))
-				.defaultTools(t -> t.callbacks(
+				.defaultTools(
 						FunctionToolCallback.builder("fun1", mockFunction).description("fun1").inputType(String.class).build(),
 						FunctionToolCallback.builder("fun2", mockFunction).description("fun2").inputType(String.class).build(),
-						FunctionToolCallback.builder("fun3", mockFunction).description("fun3description").inputType(String.class).build()))
+						FunctionToolCallback.builder("fun3", mockFunction).description("fun3description").inputType(String.class).build())
 				.defaultUser(u -> u.text("Default user text {uparam1}, {uparam2}")
 						.param("uparam1", "value1")
 						.param("uparam2", "value2")
@@ -346,8 +346,8 @@ public class ChatClientTests {
 		// @formatter:off
 		chatClient = chatClient.mutate()
 				.defaultSystem("Mutated default system text {param1}, {param2}")
-				.defaultTools(t -> t.callbacks(
-						FunctionToolCallback.builder("fun4", mockFunction).description("fun4").inputType(String.class).build()))
+				.defaultTools(
+						FunctionToolCallback.builder("fun4", mockFunction).description("fun4").inputType(String.class).build())
 				.defaultUser("Mutated default user text {uparam1}, {uparam2}")
 				.build();
 		// @formatter:on
@@ -435,10 +435,10 @@ public class ChatClientTests {
 						.param("param2", "value2")
 						.metadata("smetadata1", "svalue1")
 						.metadata("smetadata2", "svalue2"))
-				.defaultTools(t -> t.callbacks(
+				.defaultTools(
 						FunctionToolCallback.builder("fun1", mockFunction).description("fun1").inputType(String.class).build(),
 						FunctionToolCallback.builder("fun2", mockFunction).description("fun2").inputType(String.class).build(),
-						FunctionToolCallback.builder("fun3", mockFunction).description("fun3description").inputType(String.class).build()))
+						FunctionToolCallback.builder("fun3", mockFunction).description("fun3description").inputType(String.class).build())
 				.defaultUser(u -> u.text("Default user text {uparam1}, {uparam2}")
 						.param("uparam1", "value1")
 						.param("uparam2", "value2")
@@ -454,8 +454,8 @@ public class ChatClientTests {
 					.user(u -> u.param("uparam1", "userValue1")
 						.param("uparam2", "userValue2")
 						.metadata("umetadata2", "userData2"))
-					.tools(t -> t.callbacks(
-							FunctionToolCallback.builder("fun5", mockFunction).description("fun5").inputType(String.class).build()))
+					.tools(
+							FunctionToolCallback.builder("fun5", mockFunction).description("fun5").inputType(String.class).build())
 				.mutate().build() // mutate and build new prompt
 				.prompt().call().content();
 		// @formatter:on
@@ -495,8 +495,8 @@ public class ChatClientTests {
 						.user(u -> u.param("uparam1", "userValue1")
 							.param("uparam2", "userValue2")
 							.metadata("umetadata2", "userData2"))
-						.tools(t -> t.callbacks(
-							FunctionToolCallback.builder("fun5", mockFunction).description("fun5").inputType(String.class).build()))
+						.tools(
+							FunctionToolCallback.builder("fun5", mockFunction).description("fun5").inputType(String.class).build())
 					.mutate().build() // mutate and build new prompt
 					.prompt().stream().content());
 		// @formatter:on
@@ -650,8 +650,8 @@ public class ChatClientTests {
 		// @formatter:off
 		ChatClient client = ChatClient.builder(this.chatModel)
 				.defaultSystem("System text")
-				.defaultTools(t -> t.callbacks(
-						FunctionToolCallback.builder("function1", mockFunction).description("function1").inputType(String.class).build()))
+				.defaultTools(
+						FunctionToolCallback.builder("function1", mockFunction).description("function1").inputType(String.class).build())
 				.build();
 
 		String response = client.prompt()
