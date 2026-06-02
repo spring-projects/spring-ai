@@ -154,7 +154,6 @@ public class DefaultChatOptionsBuilder<B extends DefaultChatOptionsBuilder<B>> i
 	}
 
 	public ChatOptions build() {
-		// TODO: Assert.notNull() as required
 		return new DefaultChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 				this.stopSequences, this.temperature, this.topK, this.topP);
 	}
