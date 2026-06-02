@@ -22,6 +22,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1166,7 +1167,43 @@ public class DefaultChatClient implements ChatClient {
 		public ChatClientRequestSpec tools(Object... toolObjects) {
 			Assert.notNull(toolObjects, "toolObjects cannot be null");
 			Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
-			this.toolCallbacks.addAll(Arrays.asList(ToolCallbacks.from(toolObjects)));
+
+			List<Object> pojos = new ArrayList<>();
+			for (Object toolObject : toolObjects) {
+				if (toolObject instanceof ToolCallback toolCallback) {
+					this.toolCallbacks.add(toolCallback);
+				}
+				else if (toolObject instanceof ToolCallbackProvider toolCallbackProvider) {
+					this.toolCallbackProviders.add(toolCallbackProvider);
+				}
+				else if (toolObject instanceof ToolCallback[] callbacks) {
+					this.toolCallbacks.addAll(Arrays.asList(callbacks));
+				}
+				else if (toolObject instanceof ToolCallbackProvider[] providers) {
+					this.toolCallbackProviders.addAll(Arrays.asList(providers));
+				}
+				else if (toolObject instanceof Collection<?> collection) {
+					for (Object element : collection) {
+						if (element instanceof ToolCallback toolCallback) {
+							this.toolCallbacks.add(toolCallback);
+						}
+						else if (element instanceof ToolCallbackProvider toolCallbackProvider) {
+							this.toolCallbackProviders.add(toolCallbackProvider);
+						}
+						else {
+							pojos.add(element);
+						}
+					}
+				}
+				else {
+					pojos.add(toolObject);
+				}
+			}
+
+			if (!pojos.isEmpty()) {
+				this.toolCallbacks.addAll(Arrays.asList(ToolCallbacks.from(pojos.toArray())));
+			}
+
 			return this;
 		}
 

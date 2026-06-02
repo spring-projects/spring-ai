@@ -1788,6 +1788,30 @@ class DefaultChatClientTests {
 	}
 
 	@Test
+	void whenToolsObjectsContainCallbackAndProviderThenReturn() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		ToolCallback toolCallback = mock(ToolCallback.class);
+		ToolCallbackProvider toolCallbackProvider = mock(ToolCallbackProvider.class);
+		spec = spec.tools(toolCallback, toolCallbackProvider);
+		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
+		assertThat(defaultSpec.getToolCallbacks()).contains(toolCallback);
+		assertThat(defaultSpec.getToolCallbackProviders()).contains(toolCallbackProvider);
+	}
+
+	@Test
+	void whenToolsObjectsContainCollectionThenReturn() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		ToolCallback toolCallback = mock(ToolCallback.class);
+		ToolCallbackProvider toolCallbackProvider = mock(ToolCallbackProvider.class);
+		spec = spec.tools(List.of(toolCallback, toolCallbackProvider));
+		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
+		assertThat(defaultSpec.getToolCallbacks()).contains(toolCallback);
+		assertThat(defaultSpec.getToolCallbackProviders()).contains(toolCallbackProvider);
+	}
+
+	@Test
 	void whenFunctionNameIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
