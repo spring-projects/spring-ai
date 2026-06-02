@@ -152,10 +152,11 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 
 		AnthropicChatOptions merged = base.mutate().combineWith(combine.mutate()).build();
 
-		// Non-empty collections from combine take precedence
+		// Combine stopSequences
 		assertThat(merged.getStopSequences()).containsExactly("base-stop", "combine-stop1", "combine-stop2");
+		// Combine toolNames
 		assertThat(merged.getToolNames()).containsExactlyInAnyOrder("base-tool", "combine-tool1", "combine-tool2");
-		// Empty collections don't combine
+		// Combine toolContext
 		assertThat(merged.getToolContext()).containsEntry("base-key", "base-value");
 		assertThat(merged.getToolContext()).containsEntry("combine-key1", "combine-value1");
 		assertThat(merged.getToolContext()).containsEntry("combine-key2", "combine-value2");

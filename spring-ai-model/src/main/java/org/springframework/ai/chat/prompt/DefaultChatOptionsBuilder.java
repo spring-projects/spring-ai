@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jspecify.annotations.Nullable;
-import org.springframework.ai.tool.ToolCallback;
 
 /**
  * Implementation of {@link ChatOptions.Builder} to create {@link DefaultChatOptions}.
