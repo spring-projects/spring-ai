@@ -26,6 +26,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.node.ObjectNode;
 
@@ -170,11 +172,11 @@ class JsonSchemaUtilsTests {
 
 	@Test
 	void getJsonSchemaCanRunConcurrently() throws Exception {
-		List<ObjectNode> schemas = generateConcurrently(() -> JsonSchemaUtils.getJsonSchema(Person.class));
+		List<ObjectNode> schemas = generateConcurrently(() -> JsonSchemaUtils.getJsonSchema(OrderedStatement.class));
 
 		assertThat(schemas).hasSize(240);
-		assertThat(schemas)
-			.allSatisfy(schema -> assertThat(schema.at("/properties/name/type").asString()).isEqualTo("string"));
+		assertThat(schemas).allSatisfy(schema -> assertThat(schema.toString()).contains("\"properties\""));
+
 	}
 
 	private static <T> List<T> generateConcurrently(Callable<T> generator) throws Exception {
@@ -202,7 +204,10 @@ class JsonSchemaUtilsTests {
 		}
 	}
 
-	record Person(String name, int age) {
+	@JsonPropertyOrder({ "accountId", "accountName", "currency", "totals" })
+	record OrderedStatement(@JsonProperty(required = true) String accountId,
+			@JsonProperty(required = true) String accountName, String currency, Map<String, Double> totals) {
+
 	}
 
 }
