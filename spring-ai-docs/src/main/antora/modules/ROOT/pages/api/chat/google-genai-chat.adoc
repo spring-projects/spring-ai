@@ -158,46 +158,92 @@ TIP: In addition to the model specific `GoogleGenAiChatOptions` you can use a po
 
 == Tool Calling
 
-The Google GenAI model supports tool calling (function calling) capabilities, allowing models to use tools during conversations.
-Here's an example of how to define and use `@Tool`-based tools:
+You can register custom Java functions with the `GoogleGenAiChatModel` and have the Google GenAI model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
+This is a powerful technique to connect the LLM capabilities with external tools and APIs.
+Read more about xref:api/tools.adoc[Tool Calling].
+
+`GoogleGenAiChatModel` does not execute tool calls internally.
+Tool execution must be handled externally using one of two supported approaches:
+
+* **xref:api/tools.adoc#_advisor_controlled_tool_execution_with_toolcalladvisor[ChatClient with ToolCallAdvisor]** — the recommended approach for most use cases. `ToolCallAdvisor` is automatically registered when tools are present and manages the tool-call loop transparently.
+* **xref:api/tools.adoc#_user_controlled_tool_execution[User-controlled tool execution]** — use `DefaultToolCallingManager` directly when you need full control over the loop (for example, when combining tool calling with direct `ChatModel` access).
+
+=== Tool Calling via ChatClient (Recommended)
+
+Use `ChatClient` for both synchronous and streaming tool execution.
+`ToolCallAdvisor` is auto-registered when tools are present, so no explicit advisor configuration is required.
 
 [source,java]
 ----
+ToolCallback weatherCallback = FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
+    .description("Get the weather in location")
+    .inputType(WeatherService.Request.class)
+    .build();
 
-public class WeatherService {
+// Synchronous
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .user("What's the weather in Paris, Tokyo, and New York?")
+    .tools(t -> t.callbacks(weatherCallback))
+    .call()
+    .content();
 
-    @Tool(description = "Get the weather in location")
-    public String weatherByLocation(@ToolParam(description= "City or state name") String location) {
-        ...
-    }
-}
-
-String response = ChatClient.create(this.chatModel)
-        .prompt("What's the weather like in Boston?")
-        .tools(new WeatherService())
-        .call()
-        .content();
+// Streaming
+Flux<String> stream = ChatClient.create(chatModel)
+    .prompt()
+    .user("What's the weather in Paris, Tokyo, and New York?")
+    .tools(t -> t.callbacks(weatherCallback))
+    .stream()
+    .content();
 ----
 
-You can use the java.util.function beans as tools as well:
+=== User-Controlled Tool Execution
+
+Use this pattern when you need direct access to the `ChatModel` API.
+Set `internalToolExecutionEnabled(false)` on the options and drive the tool-call loop yourself using `DefaultToolCallingManager`.
 
 [source,java]
 ----
-@Bean
-@Description("Get the weather in location. Return temperature in 36°F or 36°C format.")
-public Function<Request, Response> weatherFunction() {
-    return new MockWeatherService();
-}
+ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
-String response = ChatClient.create(this.chatModel)
-        .prompt("What's the weather like in Boston?")
-        .toolNames("weatherFunction")
-        .inputType(Request.class)
-        .call()
-        .content();
+GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+    .internalToolExecutionEnabled(false)
+    .toolCallbacks(List.of(
+        FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
+            .description("Get the weather in location")
+            .inputType(WeatherService.Request.class)
+            .build()))
+    .build();
+
+Prompt prompt = new Prompt("What's the weather in Paris, Tokyo, and New York?", options);
+ChatResponse response = chatModel.call(prompt);
+while (response.hasToolCalls()) {
+    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, response);
+    prompt = new Prompt(result.conversationHistory(), options);
+    response = chatModel.call(prompt);
+}
 ----
 
-Find more in xref:api/tools.adoc[Tools] documentation.
+For streaming, aggregate each streaming response with `MessageAggregator` to detect tool calls across chunks:
+
+[source,java]
+----
+AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+new MessageAggregator()
+    .aggregate(chatModel.stream(prompt), aggregatedRef::set)
+    .collectList().block();
+
+while (aggregatedRef.get().hasToolCalls()) {
+    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+    prompt = new Prompt(result.conversationHistory(), options);
+    aggregatedRef.set(null);
+    new MessageAggregator()
+        .aggregate(chatModel.stream(prompt), aggregatedRef::set)
+        .collectList().block();
+}
+
+String content = aggregatedRef.get().getResult().getOutput().getText();
+----
 
 == Server-Side Tool Invocations [[server-side-tool-invocations]]
 

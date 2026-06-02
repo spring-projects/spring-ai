@@ -28,6 +28,9 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.model.google.genai.autoconfigure.chat.GoogleGenAiChatAutoConfiguration;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.tool.ToolCallback;
@@ -60,8 +63,10 @@ public class FunctionCallWithFunctionBeanIT {
 		contextRunner.run(context -> {
 
 			GoogleGenAiChatModel chatModel = context.getBean(GoogleGenAiChatModel.class);
+			ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
 			var options = GoogleGenAiChatOptions.builder()
+				.internalToolExecutionEnabled(false)
 				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue())
 				.toolNames("CurrentWeatherService")
 				.build();
@@ -70,6 +75,11 @@ public class FunctionCallWithFunctionBeanIT {
 					+ "Return the temperature in Celsius.", options);
 
 			ChatResponse response = chatModel.call(prompt);
+			while(response.hasToolCalls()){
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt,response);
+				prompt= new Prompt(toolExecutionResult.conversationHistory(),options);
+				response = chatModel.call(prompt);
+			}
 
 			logger.info("Response: {}", response);
 
@@ -91,8 +101,10 @@ public class FunctionCallWithFunctionBeanIT {
 		contextRunner.run(context -> {
 
 			GoogleGenAiChatModel chatModel = context.getBean(GoogleGenAiChatModel.class);
+			ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
 			var options = GoogleGenAiChatOptions.builder()
+				.internalToolExecutionEnabled(false)
 				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue())
 				.toolNames("CurrentWeatherService")
 				.build();
@@ -101,6 +113,11 @@ public class FunctionCallWithFunctionBeanIT {
 					+ "Return the temperature in Celsius.", options);
 
 			ChatResponse response = chatModel.call(prompt);
+			while (response.hasToolCalls()) {
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+				 prompt= new Prompt(toolExecutionResult.conversationHistory(),options);
+				 response = chatModel.call(prompt);
+			}
 
 			logger.info("Response: {}", response);
 
