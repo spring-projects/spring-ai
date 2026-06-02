@@ -19,27 +19,27 @@ package org.springframework.ai.deepseek.chat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.deepseek.DeepSeekAssistantMessage;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.deepseek.DeepSeekTestConfiguration;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.deepseek.api.MockWeatherService;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -102,7 +102,17 @@ class DeepSeekChatModelFunctionCallingIT {
 				.build()))
 			.build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+		Prompt prompt = new Prompt(messages, promptOptions);
+
+		ChatResponse response = this.chatModel.call(prompt);
+
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			response = this.chatModel.call(prompt);
+		}
 
 		logger.info("Response: {}", response);
 
@@ -124,17 +134,21 @@ class DeepSeekChatModelFunctionCallingIT {
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
-		String content = response.collectList()
-			.block()
-			.stream()
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getText)
-			.filter(Objects::nonNull)
-			.collect(Collectors.joining());
+		Prompt prompt = new Prompt(messages, promptOptions);
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
+
+		String content = aggregatedRef.get().getResult().getOutput().getText();
 		logger.info("Response: {}", content);
 
 		assertThat(content).contains("30", "10", "15");
@@ -149,10 +163,20 @@ class DeepSeekChatModelFunctionCallingIT {
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
+
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
 		Prompt prompt = new Prompt("What's the weather like in San Francisco? Return the temperature in Celsius.",
 				promptOptions);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
+
+		while (chatResponse.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			chatResponse = this.chatModel.call(prompt);
+		}
+
 		assertThat(chatResponse).isNotNull();
 		assertThat(chatResponse.getResult().getOutput()).isNotNull();
 		assertThat(chatResponse.getResult().getOutput().getText()).contains("San Francisco");
@@ -169,10 +193,23 @@ class DeepSeekChatModelFunctionCallingIT {
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
+
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
 		Prompt prompt = new Prompt("What's the weather like in San Francisco? Return the temperature in Celsius.",
 				promptOptions);
 
-		ChatResponse chatResponse = this.chatModel.stream(prompt).blockLast();
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
+
+		ChatResponse chatResponse = aggregatedRef.get();
 		assertThat(chatResponse).isNotNull();
 		assertThat(chatResponse.getMetadata()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
