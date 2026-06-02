@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.anthropic.client.AnthropicClient;
@@ -99,9 +98,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -175,10 +171,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 	private final ToolCallingManager toolCallingManager;
 
-	private final ToolExecutionEligibilityChecker toolExecutionEligibilityChecker;
-
-	private final AtomicBoolean internalToolExecutionWarned = new AtomicBoolean(false);
-
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	/**
@@ -195,8 +187,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	private AnthropicChatModel(@Nullable AnthropicClient anthropicClient,
 			@Nullable AnthropicClientAsync anthropicClientAsync, @Nullable AnthropicChatOptions options,
 			@Nullable ToolCallingManager toolCallingManager, @Nullable ObservationRegistry observationRegistry,
-			@Nullable MeterRegistry meterRegistry, @Nullable ExecutorService dispatcherExecutor,
-			@Nullable ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
+			@Nullable MeterRegistry meterRegistry, @Nullable ExecutorService dispatcherExecutor) {
 
 		if (options == null) {
 			this.options = AnthropicChatOptions.builder().build();
@@ -224,8 +215,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 						this.dispatcherExecutor));
 
 		this.toolCallingManager = Objects.requireNonNullElse(toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER);
-		this.toolExecutionEligibilityChecker = Objects.requireNonNullElse(toolExecutionEligibilityChecker,
-				chatResponse -> chatResponse != null && chatResponse.hasToolCalls());
 	}
 
 	/**
@@ -354,77 +343,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			// @formatter:on
 
 			// Aggregate streaming responses and handle tool execution on final response
-			return new MessageAggregator().aggregate(flux, observationContext::setResponse)
-				.flatMap(chatResponse -> handleStreamingToolExecution(prompt, chatResponse));
+			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
 		});
-	}
-
-	/**
-	 * Handles the pivot from receiving a tool-call request to executing the tools and
-	 * starting the recursive streaming call with the results. This method is triggered
-	 * via {@code .flatMap()} after the initial stream from the model is fully consumed by
-	 * the {@link MessageAggregator}.
-	 * @param prompt The original prompt containing tool definitions.
-	 * @param chatResponse The aggregated response from the first API call, which contains
-	 * the tool call requests.
-	 * @return A new {@link Flux} of {@link ChatResponse} events. If tools were executed,
-	 * this Flux is the stream of the model's final answer. Otherwise, it's the original
-	 * response.
-	 */
-	private Flux<ChatResponse> handleStreamingToolExecution(Prompt prompt, ChatResponse chatResponse) {
-		ChatOptions promptOptions = prompt.getOptions();
-		if (promptOptions != null
-				&& this.toolExecutionEligibilityChecker.isToolExecutionRequired(promptOptions, chatResponse)) {
-			// Only execute tools when the model's turn is complete and its stated reason
-			// for stopping is that it wants to use a tool.
-			if (chatResponse.hasFinishReasons(java.util.Set.of("tool_use"))) {
-				return Flux.deferContextual(ctx -> {
-					ToolExecutionResult toolExecutionResult;
-					try {
-						if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
-							logger.warn(
-									"Internal tool execution in AnthropicChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
-											+ "Use ChatClient with ToolCallAdvisor instead.");
-						}
-						org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder.setContext(ctx);
-						toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
-					}
-					finally {
-						org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder.clearContext();
-					}
-					if (toolExecutionResult.returnDirect()) {
-						// Return tool execution result directly to the client
-						return Flux.just(ChatResponse.builder()
-							.from(chatResponse)
-							.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-							.build());
-					}
-					else {
-						// RECURSIVE CALL: Return a *new stream* by calling internalStream
-						// again.
-						// The new prompt contains the full history, including the tool
-						// results.
-						return this.internalStream(
-								new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-								chatResponse); // Pass previous response for usage
-												// accumulation
-					}
-				}).subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic()); // Run
-																					// blocking
-																					// tool
-																					// execution
-																					// on
-																					// a
-																					// different
-																					// thread
-			}
-			else {
-				// Tool execution required but not at tool_use finish - skip this response
-				return Flux.empty();
-			}
-		}
-		// No tool execution needed - pass through the response
-		return Flux.just(chatResponse);
 	}
 
 	/**
@@ -644,29 +564,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 				return chatResponse;
 			});
-
-		ChatOptions promptOptions = prompt.getOptions();
-		if (promptOptions != null
-				&& this.toolExecutionEligibilityChecker.isToolExecutionRequired(promptOptions, response)) {
-			if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
-				logger.warn(
-						"Internal tool execution in AnthropicChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
-								+ "Use ChatClient with ToolCallAdvisor instead.");
-			}
-			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-			if (toolExecutionResult.returnDirect()) {
-				// Return tool execution result directly to the client.
-				return ChatResponse.builder()
-					.from(response)
-					.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-					.build();
-			}
-			else {
-				// Send the tool execution result back to the model.
-				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						response);
-			}
-		}
 
 		return response;
 	}
@@ -1634,8 +1531,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		private @Nullable ExecutorService dispatcherExecutor;
 
-		private @Nullable ToolExecutionEligibilityChecker toolExecutionEligibilityChecker;
-
 		private Builder() {
 		}
 
@@ -1724,52 +1619,12 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		/**
-		 * Sets the predicate to determine tool execution eligibility.
-		 * @param toolExecutionEligibilityPredicate the predicate
-		 * @return this builder
-		 * @deprecated since 2.0.0 for removal in 3.0.0 — replaced by
-		 * {@link #toolExecutionEligibilityChecker(ToolExecutionEligibilityChecker)}. For
-		 * the recommended long-term approach, internal tool execution in
-		 * {@link AnthropicChatModel} is superseded by {@code ToolCallAdvisor} used via
-		 * {@code ChatClient}.
-		 */
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		@SuppressWarnings({ "deprecation", "removal" })
-		public Builder toolExecutionEligibilityPredicate(
-				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
-			this.toolExecutionEligibilityChecker = new ToolExecutionEligibilityChecker() {
-				@Override
-				public Boolean apply(ChatResponse chatResponse) {
-					return chatResponse != null && chatResponse.hasToolCalls();
-				}
-
-				@Override
-				public boolean isToolExecutionRequired(ChatOptions promptOptions, ChatResponse chatResponse) {
-					return toolExecutionEligibilityPredicate.test(promptOptions, chatResponse);
-				}
-			};
-			return this;
-		}
-
-		/**
-		 * Sets the checker to determine tool execution eligibility.
-		 * @param toolExecutionEligibilityChecker the checker
-		 * @return this builder
-		 */
-		public Builder toolExecutionEligibilityChecker(
-				ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
-			this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
-			return this;
-		}
-
-		/**
 		 * Builds a new {@link AnthropicChatModel} instance.
 		 * @return the configured chat model
 		 */
 		public AnthropicChatModel build() {
 			return new AnthropicChatModel(this.anthropicClient, this.anthropicClientAsync, this.options,
-					this.toolCallingManager, this.observationRegistry, this.meterRegistry, this.dispatcherExecutor,
-					this.toolExecutionEligibilityChecker);
+					this.toolCallingManager, this.observationRegistry, this.meterRegistry, this.dispatcherExecutor);
 		}
 
 	}

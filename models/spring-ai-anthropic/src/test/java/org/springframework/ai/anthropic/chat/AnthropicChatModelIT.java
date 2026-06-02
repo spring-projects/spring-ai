@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import com.anthropic.models.messages.Model;
@@ -46,12 +47,14 @@ import org.springframework.ai.anthropic.AnthropicWebSearchTool;
 import org.springframework.ai.anthropic.Citation;
 import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -59,6 +62,10 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -281,13 +288,11 @@ class AnthropicChatModelIT {
 
 	@Test
 	void functionCallTest() {
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = AnthropicChatOptions.builder()
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_HAIKU_4_5.asString())
+			.internalToolExecutionEnabled(false)
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -295,28 +300,32 @@ class AnthropicChatModelIT {
 				.build())
 			.build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+		Prompt prompt = new Prompt(
+				List.of(new UserMessage(
+						"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.")),
+				options);
+
+		ChatResponse response = this.chatModel.call(prompt);
+
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			response = this.chatModel.call(prompt);
+		}
 
 		logger.info("Response: {}", response);
 
-		Generation generation = response.getResult();
-		assertThat(generation).isNotNull();
-		assertThat(generation.getOutput()).isNotNull();
-		assertThat(generation.getOutput().getText()).contains("30", "10", "15");
-		assertThat(response.getMetadata()).isNotNull();
-		assertThat(response.getMetadata().getUsage()).isNotNull();
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isGreaterThan(100);
 	}
 
 	@Test
 	void streamFunctionCallTest() {
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = AnthropicChatOptions.builder()
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_HAIKU_4_5.asString())
+			.internalToolExecutionEnabled(false)
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -324,39 +333,43 @@ class AnthropicChatModelIT {
 				.build())
 			.build();
 
-		Flux<ChatResponse> responseFlux = this.chatModel.stream(new Prompt(messages, promptOptions));
+		Prompt prompt = new Prompt(
+				List.of(new UserMessage(
+						"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.")),
+				options);
 
-		String content = responseFlux.collectList()
-			.block()
-			.stream()
-			.filter(cr -> cr.getResult() != null)
-			.map(cr -> cr.getResult().getOutput().getText())
-			.filter(text -> text != null)
-			.collect(java.util.stream.Collectors.joining());
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
 
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
+
+		String content = aggregatedRef.get().getResult().getOutput().getText();
 		logger.info("Streaming Response: {}", content);
 		assertThat(content).contains("30", "10", "15");
 	}
 
 	@Test
 	void streamFunctionCallUsageTest() {
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
-
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_HAIKU_4_5.asString())
-			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
-				.description(
-						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
-				.inputType(MockWeatherService.Request.class)
-				.build())
+		ToolCallback weatherToolCallback = FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+			.description(
+					"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+			.inputType(MockWeatherService.Request.class)
 			.build();
 
-		Flux<ChatResponse> responseFlux = this.chatModel.stream(new Prompt(messages, promptOptions));
-
-		ChatResponse lastResponse = responseFlux.collectList()
+		ChatResponse lastResponse = ChatClient.create(this.chatModel)
+			.prompt()
+			.advisors(ToolCallAdvisor.builder().build())
+			.options(AnthropicChatOptions.builder().model(Model.CLAUDE_HAIKU_4_5.asString()))
+			.user("What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.")
+			.tools(t -> t.callbacks(weatherToolCallback))
+			.stream()
+			.chatResponse()
+			.collectList()
 			.block()
 			.stream()
 			.filter(cr -> cr.getMetadata() != null && cr.getMetadata().getUsage() != null

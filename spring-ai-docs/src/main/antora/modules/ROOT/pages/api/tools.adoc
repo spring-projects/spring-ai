@@ -1217,6 +1217,39 @@ System.out.println(chatResponse.getResult().getOutput().getText());
 
 NOTE: When choosing the user-controlled tool execution approach, we recommend using a `ToolCallingManager` to manage the tool calling operations. This way, you can benefit from the built-in support provided by Spring AI for tool execution. However, nothing prevents you from implementing your own tool execution logic.
 
+The same pattern works with the streaming API.
+Because tool calls span multiple stream chunks, each streaming call must be aggregated first using `MessageAggregator` before checking for tool calls:
+
+[source,java]
+----
+ChatModel chatModel = ...
+ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+
+ChatOptions chatOptions = ToolCallingChatOptions.builder()
+    .toolCallbacks(new CustomerTools())
+    .internalToolExecutionEnabled(false)
+    .build();
+Prompt prompt = new Prompt("Tell me more about the customer with ID 42", chatOptions);
+
+AtomicReference<ChatResponse> aggregatedResponseRef = new AtomicReference<>();
+new MessageAggregator()
+    .aggregate(chatModel.stream(prompt), aggregatedResponseRef::set)
+    .collectList().block();
+
+while (aggregatedResponseRef.get().hasToolCalls()) {
+    ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedResponseRef.get());
+
+    prompt = new Prompt(toolExecutionResult.conversationHistory(), chatOptions);
+
+    aggregatedResponseRef.set(null);
+    new MessageAggregator()
+        .aggregate(chatModel.stream(prompt), aggregatedResponseRef::set)
+        .collectList().block();
+}
+
+System.out.println(aggregatedResponseRef.get().getResult().getOutput().getText());
+----
+
 The next examples shows a minimal implementation of the user-controlled tool execution approach combined with the usage of the `ChatMemory` API:
 
 [source,java]
