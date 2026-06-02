@@ -253,9 +253,10 @@ if (response.getMetadata().getRateLimit() instanceof AnthropicRateLimit anthropi
 
 If Anthropic does not return any rate-limit headers on a given response, `getRateLimit()` returns an `EmptyRateLimit` instance instead, matching the convention used by other Spring AI providers.
 
-NOTE: Rate-limit metadata is currently only populated on the synchronous `call(Prompt)` path.
-The streaming `stream(Prompt)` path does not yet read rate-limit headers off the response; `getRateLimit()` returns an `EmptyRateLimit` for streamed responses.
-Streaming support is planned as a follow-up.
+Rate-limit metadata is populated on both the synchronous `call(Prompt)` and the streaming `stream(Prompt)` paths.
+For streaming responses the headers are read once at stream start and attached to the response chunk that carries the final usage, so `getRateLimit()` resolves to a populated `AnthropicRateLimit` there.
+
+NOTE: To read the response headers, the streaming path consumes the Anthropic SDK's blocking stream on a `Schedulers.boundedElastic()` worker, so a streaming call holds a worker thread for the duration of the stream.
 
 == Tool Calling
 

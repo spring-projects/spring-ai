@@ -30,6 +30,7 @@ import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.core.JsonValue;
 import com.anthropic.core.http.HttpResponseFor;
+import com.anthropic.core.http.StreamResponse;
 import com.anthropic.models.messages.Base64ImageSource;
 import com.anthropic.models.messages.Base64PdfSource;
 import com.anthropic.models.messages.CacheControlEphemeral;
@@ -72,6 +73,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -82,6 +85,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
@@ -277,11 +281,12 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * support. This method is called recursively to support multi-turn tool calling.
 	 *
 	 * <p>
-	 * Note: rate-limit headers are not currently surfaced on the streaming path. The SDK
-	 * supports it via {@code withRawResponse().createStreaming(...)} but the wire-up is
-	 * deferred to a follow-up. For rate-limit metadata, use the synchronous
-	 * {@link #call(Prompt)} path; {@code getRateLimit()} resolves to
-	 * {@link org.springframework.ai.chat.metadata.EmptyRateLimit} for streamed responses.
+	 * Rate-limit headers are read from the streaming response via
+	 * {@code withRawResponse().createStreaming(...)} and attached to the aggregated
+	 * {@link ChatResponse}. Because that SDK call exposes the stream as a blocking
+	 * {@link StreamResponse}, the events are pulled on
+	 * {@link Schedulers#boundedElastic()}; a streaming call therefore holds a worker
+	 * thread for the duration of the stream.
 	 * @param prompt The prompt for the chat completion. In a recursive tool-call
 	 * scenario, this prompt will contain the full conversation history including the tool
 	 * results.
@@ -317,28 +322,26 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			// Track streaming state for usage accumulation and tool calls
 			StreamingState streamingState = new StreamingState();
 
-			Flux<ChatResponse> chatResponseFlux = Flux.create(sink -> {
-				this.anthropicClientAsync.messages().createStreaming(request).subscribe(event -> {
-					try {
-						ChatResponse chatResponse = convertStreamEventToChatResponse(event, previousChatResponse,
-								streamingState);
-						if (chatResponse != null) {
-							sink.next(chatResponse);
-						}
+			// Use the raw streaming response so rate-limit headers (available once at
+			// stream start) can be captured. The SDK exposes this as a blocking
+			// StreamResponse, so events are pulled on a boundedElastic worker.
+			Flux<ChatResponse> chatResponseFlux = Mono
+				.fromFuture(() -> this.anthropicClientAsync.messages().withRawResponse().createStreaming(request))
+				.flatMapMany(rawResponse -> {
+					streamingState.setRateLimit(AnthropicRateLimit.from(rawResponse.headers()));
+					StreamResponse<RawMessageStreamEvent> streamResponse = rawResponse.parse();
+					return Flux.fromStream(streamResponse.stream())
+						.doFinally(signal -> streamResponse.close())
+						.subscribeOn(Schedulers.boundedElastic());
+				})
+				.<ChatResponse>handle((event, sink) -> {
+					ChatResponse chatResponse = convertStreamEventToChatResponse(event, previousChatResponse,
+							streamingState);
+					if (chatResponse != null) {
+						sink.next(chatResponse);
 					}
-					catch (Exception e) {
-						logger.error("Error processing streaming event", e);
-						sink.error(e);
-					}
-				}).onCompleteFuture().whenComplete((result, throwable) -> {
-					if (throwable != null) {
-						sink.error(throwable);
-					}
-					else {
-						sink.complete();
-					}
-				});
-			});
+				})
+				.doOnError(e -> logger.error("Error processing streaming response", e));
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponseFlux
@@ -496,6 +499,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder()
 				.id(streamingState.getMessageId())
 				.model(streamingState.getModel())
+				.rateLimit(streamingState.getRateLimit())
 				.usage(accumulatedUsage);
 
 			List<Citation> citations = streamingState.getCitations();
@@ -1480,6 +1484,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		private final List<AnthropicWebSearchResult> accumulatedWebSearchResults = new ArrayList<>();
 
+		private final AtomicReference<RateLimit> rateLimit = new AtomicReference<>(new EmptyRateLimit());
+
 		void setMessageInfo(String id, String modelName, long tokens) {
 			this.messageId.set(id);
 			this.model.set(modelName);
@@ -1496,6 +1502,14 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		long getInputTokens() {
 			return this.inputTokens.get();
+		}
+
+		void setRateLimit(RateLimit rateLimit) {
+			this.rateLimit.set(rateLimit);
+		}
+
+		RateLimit getRateLimit() {
+			return this.rateLimit.get();
 		}
 
 		/**
