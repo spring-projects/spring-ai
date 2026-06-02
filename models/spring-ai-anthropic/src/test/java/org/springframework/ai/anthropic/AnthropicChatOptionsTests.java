@@ -154,7 +154,7 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 
 		// Non-empty collections from override take precedence
 		assertThat(merged.getStopSequences()).containsExactly("override-stop1", "override-stop2");
-		assertThat(merged.getToolNames()).containsExactly("override-tool");
+		assertThat(merged.getToolNames()).containsExactly("base-tool", "override-tool");
 		// Empty collections don't override
 		assertThat(merged.getToolContext()).containsEntry("base-key", "base-value");
 	}
