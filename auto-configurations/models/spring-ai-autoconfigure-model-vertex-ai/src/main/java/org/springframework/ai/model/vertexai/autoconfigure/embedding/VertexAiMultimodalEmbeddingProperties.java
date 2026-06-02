@@ -55,14 +55,10 @@ public class VertexAiMultimodalEmbeddingProperties {
 	}
 
 	public VertexAiMultimodalEmbeddingOptions toOptions() {
-		VertexAiMultimodalEmbeddingOptions.Builder builder = VertexAiMultimodalEmbeddingOptions.builder();
-		if (this.model != null) {
-			builder.model(this.model);
-		}
-		if (this.outputDimensionality != null) {
-			builder.dimensions(this.outputDimensionality);
-		}
-		return builder.build();
+		return VertexAiMultimodalEmbeddingOptions.builder()
+			.model(this.model)
+			.dimensions(this.outputDimensionality)
+			.build();
 	}
 
 	private Options options = new Options();

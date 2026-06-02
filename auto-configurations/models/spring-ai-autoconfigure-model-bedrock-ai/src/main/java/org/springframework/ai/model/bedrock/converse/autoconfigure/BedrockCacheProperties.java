@@ -34,11 +34,7 @@ public class BedrockCacheProperties {
 	}
 
 	public BedrockCacheOptions toOptions() {
-		BedrockCacheOptions.Builder builder = BedrockCacheOptions.builder();
-		if (this.strategy != null) {
-			builder.strategy(this.strategy);
-		}
-		return builder.build();
+		return BedrockCacheOptions.builder().strategy(this.strategy).build();
 	}
 
 }

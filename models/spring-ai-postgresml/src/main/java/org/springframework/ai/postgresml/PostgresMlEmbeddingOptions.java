@@ -103,12 +103,12 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 
 		private @Nullable MetadataMode metadataMode;
 
-		public Builder transformer(String transformer) {
+		public Builder transformer(@Nullable String transformer) {
 			this.transformer = transformer;
 			return this;
 		}
 
-		public Builder vectorType(VectorType vectorType) {
+		public Builder vectorType(@Nullable VectorType vectorType) {
 			this.vectorType = vectorType;
 			return this;
 		}
@@ -120,7 +120,7 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
-		public Builder metadataMode(MetadataMode metadataMode) {
+		public Builder metadataMode(@Nullable MetadataMode metadataMode) {
 			this.metadataMode = metadataMode;
 			return this;
 		}

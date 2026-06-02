@@ -397,116 +397,44 @@ public class OllamaChatProperties {
 	}
 
 	public OllamaChatOptions toOptions() {
-		OllamaChatOptions.Builder builder = OllamaChatOptions.builder();
-		if (this.model != null) {
-			builder.model(this.model);
-		}
-		if (this.format != null) {
-			builder.format(this.format);
-		}
-		if (this.keepAlive != null) {
-			builder.keepAlive(this.keepAlive);
-		}
-		if (this.truncate != null) {
-			builder.truncate(this.truncate);
-		}
-		if (this.thinkOption != null) {
-			builder.thinkOption(this.thinkOption);
-		}
-		if (this.useNUMA != null) {
-			builder.useNUMA(this.useNUMA);
-		}
-		if (this.numCtx != null) {
-			builder.numCtx(this.numCtx);
-		}
-		if (this.numBatch != null) {
-			builder.numBatch(this.numBatch);
-		}
-		if (this.numGPU != null) {
-			builder.numGPU(this.numGPU);
-		}
-		if (this.mainGPU != null) {
-			builder.mainGPU(this.mainGPU);
-		}
-		if (this.lowVRAM != null) {
-			builder.lowVRAM(this.lowVRAM);
-		}
-		if (this.f16KV != null) {
-			builder.f16KV(this.f16KV);
-		}
-		if (this.logitsAll != null) {
-			builder.logitsAll(this.logitsAll);
-		}
-		if (this.vocabOnly != null) {
-			builder.vocabOnly(this.vocabOnly);
-		}
-		if (this.useMMap != null) {
-			builder.useMMap(this.useMMap);
-		}
-		if (this.useMLock != null) {
-			builder.useMLock(this.useMLock);
-		}
-		if (this.numThread != null) {
-			builder.numThread(this.numThread);
-		}
-		if (this.numKeep != null) {
-			builder.numKeep(this.numKeep);
-		}
-		if (this.seed != null) {
-			builder.seed(this.seed);
-		}
-		if (this.numPredict != null) {
-			builder.numPredict(this.numPredict);
-		}
-		if (this.topK != null) {
-			builder.topK(this.topK);
-		}
-		if (this.topP != null) {
-			builder.topP(this.topP);
-		}
-		if (this.minP != null) {
-			builder.minP(this.minP);
-		}
-		if (this.tfsZ != null) {
-			builder.tfsZ(this.tfsZ);
-		}
-		if (this.typicalP != null) {
-			builder.typicalP(this.typicalP);
-		}
-		if (this.repeatLastN != null) {
-			builder.repeatLastN(this.repeatLastN);
-		}
-		if (this.temperature != null) {
-			builder.temperature(this.temperature);
-		}
-		if (this.repeatPenalty != null) {
-			builder.repeatPenalty(this.repeatPenalty);
-		}
-		if (this.presencePenalty != null) {
-			builder.presencePenalty(this.presencePenalty);
-		}
-		if (this.frequencyPenalty != null) {
-			builder.frequencyPenalty(this.frequencyPenalty);
-		}
-		if (this.mirostat != null) {
-			builder.mirostat(this.mirostat);
-		}
-		if (this.mirostatTau != null) {
-			builder.mirostatTau(this.mirostatTau);
-		}
-		if (this.mirostatEta != null) {
-			builder.mirostatEta(this.mirostatEta);
-		}
-		if (this.penalizeNewline != null) {
-			builder.penalizeNewline(this.penalizeNewline);
-		}
-		if (this.stop != null) {
-			builder.stop(this.stop);
-		}
-		if (this.internalToolExecutionEnabled != null) {
-			builder.internalToolExecutionEnabled(this.internalToolExecutionEnabled);
-		}
-		return builder.build();
+		return OllamaChatOptions.builder()
+			.model(this.model)
+			.format(this.format)
+			.keepAlive(this.keepAlive)
+			.truncate(this.truncate)
+			.thinkOption(this.thinkOption)
+			.useNUMA(this.useNUMA)
+			.numCtx(this.numCtx)
+			.numBatch(this.numBatch)
+			.numGPU(this.numGPU)
+			.mainGPU(this.mainGPU)
+			.lowVRAM(this.lowVRAM)
+			.f16KV(this.f16KV)
+			.logitsAll(this.logitsAll)
+			.vocabOnly(this.vocabOnly)
+			.useMMap(this.useMMap)
+			.useMLock(this.useMLock)
+			.numThread(this.numThread)
+			.numKeep(this.numKeep)
+			.seed(this.seed)
+			.numPredict(this.numPredict)
+			.topK(this.topK)
+			.topP(this.topP)
+			.minP(this.minP)
+			.tfsZ(this.tfsZ)
+			.typicalP(this.typicalP)
+			.repeatLastN(this.repeatLastN)
+			.temperature(this.temperature)
+			.repeatPenalty(this.repeatPenalty)
+			.presencePenalty(this.presencePenalty)
+			.frequencyPenalty(this.frequencyPenalty)
+			.mirostat(this.mirostat)
+			.mirostatTau(this.mirostatTau)
+			.mirostatEta(this.mirostatEta)
+			.penalizeNewline(this.penalizeNewline)
+			.stop(this.stop)
+			.internalToolExecutionEnabled(this.internalToolExecutionEnabled)
+			.build();
 	}
 
 	private Options options = new Options();

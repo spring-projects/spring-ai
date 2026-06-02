@@ -125,35 +125,17 @@ public class OpenAiImageProperties extends AbstractOpenAiProperties {
 	}
 
 	public OpenAiImageOptions toOptions() {
-		OpenAiImageOptions.Builder builder = OpenAiImageOptions.builder();
-		if (this.getModel() != null) {
-			builder.model(this.getModel());
-		}
-		if (this.n != null) {
-			builder.N(this.n);
-		}
-		if (this.width != null) {
-			builder.width(this.width);
-		}
-		if (this.height != null) {
-			builder.height(this.height);
-		}
-		if (this.responseFormat != null) {
-			builder.responseFormat(this.responseFormat);
-		}
-		if (this.style != null) {
-			builder.style(this.style);
-		}
-		if (this.user != null) {
-			builder.user(this.user);
-		}
-		if (this.quality != null) {
-			builder.quality(this.quality);
-		}
-		if (this.size != null) {
-			builder.size(this.size);
-		}
-		return builder.build();
+		return OpenAiImageOptions.builder()
+			.model(this.model)
+			.n(this.n)
+			.width(this.width)
+			.height(this.height)
+			.responseFormat(this.responseFormat)
+			.style(this.style)
+			.user(this.user)
+			.quality(this.quality)
+			.size(this.size)
+			.build();
 	}
 
 	private Options options = new Options();

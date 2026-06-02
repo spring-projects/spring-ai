@@ -126,7 +126,7 @@ public class MistralAiOcrOptions implements ModelOptions {
 
 	public static final class Builder {
 
-		private String model = MistralOcrApi.OCRModel.MISTRAL_OCR_LATEST.getValue();
+		private @Nullable String model;
 
 		private @Nullable String id;
 
@@ -141,7 +141,7 @@ public class MistralAiOcrOptions implements ModelOptions {
 		private Builder() {
 		}
 
-		public Builder model(String model) {
+		public Builder model(@Nullable String model) {
 			this.model = model;
 			return this;
 		}

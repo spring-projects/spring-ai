@@ -198,9 +198,7 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 				}
 				this.isMicrosoftFoundry = castFrom.isMicrosoftFoundry();
 				this.isGitHubModels = castFrom.isGitHubModels();
-				if (castFrom.getTimeout() != null) {
-					this.timeout = castFrom.getTimeout();
-				}
+				this.timeout = castFrom.getTimeout();
 				this.maxRetries = castFrom.getMaxRetries();
 				if (castFrom.getProxy() != null) {
 					this.proxy = castFrom.getProxy();
@@ -235,17 +233,17 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 			return this;
 		}
 
-		public Builder user(String user) {
+		public Builder user(@Nullable String user) {
 			this.user = user;
 			return this;
 		}
 
-		public Builder encodingFormat(EncodingFormat encodingFormat) {
+		public Builder encodingFormat(@Nullable EncodingFormat encodingFormat) {
 			this.encodingFormat = encodingFormat;
 			return this;
 		}
 
-		public Builder dimensions(Integer dimensions) {
+		public Builder dimensions(@Nullable Integer dimensions) {
 			this.dimensions = dimensions;
 			return this;
 		}

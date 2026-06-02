@@ -86,21 +86,13 @@ public class OpenAiAudioSpeechProperties extends AbstractOpenAiProperties {
 	}
 
 	public OpenAiAudioSpeechOptions toOptions() {
-		OpenAiAudioSpeechOptions.Builder builder = OpenAiAudioSpeechOptions.builder();
-		builder.model(this.getModel());
-		if (this.input != null) {
-			builder.input(this.input);
-		}
-		if (this.voice != null) {
-			builder.voice(this.voice);
-		}
-		if (this.responseFormat != null) {
-			builder.responseFormat(this.responseFormat);
-		}
-		if (this.speed != null) {
-			builder.speed(this.speed);
-		}
-		return builder.build();
+		return OpenAiAudioSpeechOptions.builder()
+			.model(this.getModel())
+			.input(this.input)
+			.voice(this.voice)
+			.responseFormat(this.responseFormat)
+			.speed(this.speed)
+			.build();
 	}
 
 	private Options options = new Options();

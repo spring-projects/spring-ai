@@ -230,57 +230,25 @@ public class AnthropicChatProperties {
 	}
 
 	public AnthropicChatOptions toOptions() {
-		AnthropicChatOptions.Builder builder = AnthropicChatOptions.builder();
-		builder.model(this.getModel());
-		if (this.maxTokens != null) {
-			builder.maxTokens(this.maxTokens);
-		}
-		if (this.metadata != null) {
-			builder.metadata(this.metadata);
-		}
-		if (this.stopSequences != null) {
-			builder.stopSequences(this.stopSequences);
-		}
-		if (this.temperature != null) {
-			builder.temperature(this.temperature);
-		}
-		if (this.topP != null) {
-			builder.topP(this.topP);
-		}
-		if (this.topK != null) {
-			builder.topK(this.topK);
-		}
-		if (this.toolChoice != null) {
-			builder.toolChoice(this.toolChoice);
-		}
-		if (this.thinking != null) {
-			builder.thinking(this.thinking);
-		}
-		if (this.disableParallelToolUse != null) {
-			builder.disableParallelToolUse(this.disableParallelToolUse);
-		}
-		if (this.internalToolExecutionEnabled != null) {
-			builder.internalToolExecutionEnabled(this.internalToolExecutionEnabled);
-		}
-		if (this.outputConfig != null) {
-			builder.outputConfig(this.outputConfig);
-		}
-		if (this.webSearchTool != null) {
-			builder.webSearchTool(this.webSearchTool);
-		}
-		if (this.serviceTier != null) {
-			builder.serviceTier(this.serviceTier);
-		}
-		if (this.inferenceGeo != null) {
-			builder.inferenceGeo(this.inferenceGeo);
-		}
-		if (this.cacheOptions != null) {
-			builder.cacheOptions(this.cacheOptions.toOptions());
-		}
-		if (this.httpHeaders != null && !this.httpHeaders.isEmpty()) {
-			builder.httpHeaders(this.httpHeaders);
-		}
-		return builder.build();
+		return AnthropicChatOptions.builder()
+			.model(this.getModel())
+			.maxTokens(this.maxTokens)
+			.metadata(this.metadata)
+			.stopSequences(this.stopSequences)
+			.temperature(this.temperature)
+			.topP(this.topP)
+			.topK(this.topK)
+			.toolChoice(this.toolChoice)
+			.thinking(this.thinking)
+			.disableParallelToolUse(this.disableParallelToolUse)
+			.internalToolExecutionEnabled(this.internalToolExecutionEnabled)
+			.outputConfig(this.outputConfig)
+			.webSearchTool(this.webSearchTool)
+			.serviceTier(this.serviceTier)
+			.inferenceGeo(this.inferenceGeo)
+			.cacheOptions(this.cacheOptions != null ? this.cacheOptions.toOptions() : null)
+			.httpHeaders(this.httpHeaders)
+			.build();
 	}
 
 	@DeprecatedConfigurationProperty(replacement = "spring.ai.anthropic.chat")

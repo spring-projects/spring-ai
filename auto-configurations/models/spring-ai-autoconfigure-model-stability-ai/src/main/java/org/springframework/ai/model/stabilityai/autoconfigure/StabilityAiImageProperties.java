@@ -146,41 +146,19 @@ public class StabilityAiImageProperties extends StabilityAiParentProperties {
 	}
 
 	public StabilityAiImageOptions toOptions() {
-		StabilityAiImageOptions.Builder builder = StabilityAiImageOptions.builder();
-		if (this.model != null) {
-			builder.model(this.model);
-		}
-		if (this.n != null) {
-			builder.N(this.n);
-		}
-		if (this.width != null) {
-			builder.width(this.width);
-		}
-		if (this.height != null) {
-			builder.height(this.height);
-		}
-		if (this.responseFormat != null) {
-			builder.responseFormat(this.responseFormat);
-		}
-		if (this.cfgScale != null) {
-			builder.cfgScale(this.cfgScale);
-		}
-		if (this.clipGuidancePreset != null) {
-			builder.clipGuidancePreset(this.clipGuidancePreset);
-		}
-		if (this.sampler != null) {
-			builder.sampler(this.sampler);
-		}
-		if (this.seed != null) {
-			builder.seed(this.seed);
-		}
-		if (this.steps != null) {
-			builder.steps(this.steps);
-		}
-		if (this.stylePreset != null) {
-			builder.stylePreset(this.stylePreset);
-		}
-		return builder.build();
+		return StabilityAiImageOptions.builder()
+			.model(this.model)
+			.n(this.n)
+			.width(this.width)
+			.height(this.height)
+			.responseFormat(this.responseFormat)
+			.cfgScale(this.cfgScale)
+			.clipGuidancePreset(this.clipGuidancePreset)
+			.sampler(this.sampler)
+			.seed(this.seed)
+			.steps(this.steps)
+			.stylePreset(this.stylePreset)
+			.build();
 	}
 
 	private Options options = new Options();

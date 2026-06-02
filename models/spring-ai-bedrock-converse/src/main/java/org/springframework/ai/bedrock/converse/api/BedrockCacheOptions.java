@@ -79,14 +79,14 @@ public class BedrockCacheOptions {
 	 */
 	public static class Builder {
 
-		private BedrockCacheStrategy strategy = BedrockCacheStrategy.NONE;
+		private @Nullable BedrockCacheStrategy strategy;
 
 		/**
 		 * Sets the caching strategy.
 		 * @param strategy the BedrockCacheStrategy to use
 		 * @return this Builder instance
 		 */
-		public Builder strategy(BedrockCacheStrategy strategy) {
+		public Builder strategy(@Nullable BedrockCacheStrategy strategy) {
 			this.strategy = strategy;
 			return this;
 		}

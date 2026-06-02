@@ -16,6 +16,8 @@
 
 package org.springframework.ai.mistralai.moderation;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.mistralai.api.MistralAiModerationApi;
 import org.springframework.ai.moderation.ModerationOptions;
 
@@ -32,7 +34,7 @@ public class MistralAiModerationOptions implements ModerationOptions {
 	 */
 	private final String model;
 
-	protected MistralAiModerationOptions(String model) {
+	protected MistralAiModerationOptions(@Nullable String model) {
 		this.model = (model != null ? model : DEFAULT_MODEL);
 	}
 
@@ -47,12 +49,12 @@ public class MistralAiModerationOptions implements ModerationOptions {
 
 	public static final class Builder {
 
-		private String model = DEFAULT_MODEL;
+		private @Nullable String model;
 
 		private Builder() {
 		}
 
-		public Builder model(String model) {
+		public Builder model(@Nullable String model) {
 			this.model = model;
 			return this;
 		}

@@ -65,7 +65,7 @@ public class MiniMaxEmbeddingOptions implements EmbeddingOptions {
 		public Builder() {
 		}
 
-		public Builder model(String model) {
+		public Builder model(@Nullable String model) {
 			this.model = model;
 			return this;
 		}

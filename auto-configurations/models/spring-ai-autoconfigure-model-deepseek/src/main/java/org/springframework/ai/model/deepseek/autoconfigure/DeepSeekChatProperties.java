@@ -184,41 +184,19 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 	}
 
 	public DeepSeekChatOptions toOptions() {
-		DeepSeekChatOptions.Builder builder = DeepSeekChatOptions.builder();
-		if (this.model != null) {
-			builder.model(this.model);
-		}
-		if (this.frequencyPenalty != null) {
-			builder.frequencyPenalty(this.frequencyPenalty);
-		}
-		if (this.maxTokens != null) {
-			builder.maxTokens(this.maxTokens);
-		}
-		if (this.presencePenalty != null) {
-			builder.presencePenalty(this.presencePenalty);
-		}
-		if (this.responseFormat != null) {
-			builder.responseFormat(this.responseFormat);
-		}
-		if (this.stop != null) {
-			builder.stop(this.stop);
-		}
-		if (this.temperature != null) {
-			builder.temperature(this.temperature);
-		}
-		if (this.topP != null) {
-			builder.topP(this.topP);
-		}
-		if (this.logprobs != null) {
-			builder.logprobs(this.logprobs);
-		}
-		if (this.topLogprobs != null) {
-			builder.topLogprobs(this.topLogprobs);
-		}
-		if (this.internalToolExecutionEnabled != null) {
-			builder.internalToolExecutionEnabled(this.internalToolExecutionEnabled);
-		}
-		return builder.build();
+		return DeepSeekChatOptions.builder()
+			.model(this.model)
+			.frequencyPenalty(this.frequencyPenalty)
+			.maxTokens(this.maxTokens)
+			.presencePenalty(this.presencePenalty)
+			.responseFormat(this.responseFormat)
+			.stop(this.stop)
+			.temperature(this.temperature)
+			.topP(this.topP)
+			.logprobs(this.logprobs)
+			.topLogprobs(this.topLogprobs)
+			.internalToolExecutionEnabled(this.internalToolExecutionEnabled)
+			.build();
 	}
 
 	private Options options = new Options();

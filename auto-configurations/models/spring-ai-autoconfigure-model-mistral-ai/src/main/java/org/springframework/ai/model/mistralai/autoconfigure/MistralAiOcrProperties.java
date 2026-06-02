@@ -69,14 +69,7 @@ public class MistralAiOcrProperties extends MistralAiParentProperties {
 	}
 
 	public MistralAiOcrOptions toOptions() {
-		MistralAiOcrOptions.Builder builder = MistralAiOcrOptions.builder();
-		if (this.model != null) {
-			builder.model(this.model);
-		}
-		if (this.includeImageBase64 != null) {
-			builder.includeImageBase64(this.includeImageBase64);
-		}
-		return builder.build();
+		return MistralAiOcrOptions.builder().model(this.model).includeImageBase64(this.includeImageBase64).build();
 	}
 
 	public @Nullable String getId() {

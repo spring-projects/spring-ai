@@ -65,17 +65,11 @@ public class OllamaEmbeddingProperties {
 	}
 
 	public OllamaEmbeddingOptions toOptions() {
-		OllamaEmbeddingOptions.Builder builder = OllamaEmbeddingOptions.builder();
-		if (this.model != null) {
-			builder.model(this.model);
-		}
-		if (this.truncate != null) {
-			builder.truncate(this.truncate);
-		}
-		if (this.keepAlive != null) {
-			builder.keepAlive(this.keepAlive);
-		}
-		return builder.build();
+		return OllamaEmbeddingOptions.builder()
+			.model(this.model)
+			.truncate(this.truncate)
+			.keepAlive(this.keepAlive)
+			.build();
 	}
 
 	private Options options = new Options();
