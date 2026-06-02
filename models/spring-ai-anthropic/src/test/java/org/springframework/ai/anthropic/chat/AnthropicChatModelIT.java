@@ -275,6 +275,25 @@ class AnthropicChatModelIT {
 	}
 
 	@Test
+	void streamingRateLimitMetadata() {
+		Prompt prompt = new Prompt("Tell me a very short joke.");
+
+		List<ChatResponse> responses = this.chatModel.stream(prompt).collectList().block();
+
+		assertThat(responses).isNotEmpty();
+
+		// Rate-limit headers arrive once at stream start and are attached to the
+		// message_delta chunk.
+		ChatResponse responseWithRateLimit = responses.stream()
+			.filter(response -> response.getMetadata().getRateLimit() instanceof AnthropicRateLimit)
+			.reduce((first, second) -> second)
+			.orElse(null);
+
+		assertThat(responseWithRateLimit).as("A streamed chunk should carry rate-limit metadata").isNotNull();
+		validateRateLimitMetadata(responseWithRateLimit);
+	}
+
+	@Test
 	void functionCallTest() {
 		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 

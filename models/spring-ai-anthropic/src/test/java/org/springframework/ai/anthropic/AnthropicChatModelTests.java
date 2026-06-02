@@ -21,24 +21,31 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.core.JsonValue;
 import com.anthropic.core.http.Headers;
 import com.anthropic.core.http.HttpResponseFor;
+import com.anthropic.core.http.StreamResponse;
 import com.anthropic.models.messages.ContentBlock;
 import com.anthropic.models.messages.ContentBlockParam;
 import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
+import com.anthropic.models.messages.MessageDeltaUsage;
 import com.anthropic.models.messages.MessageParam;
 import com.anthropic.models.messages.Model;
 import com.anthropic.models.messages.OutputConfig;
+import com.anthropic.models.messages.RawMessageDeltaEvent;
+import com.anthropic.models.messages.RawMessageStreamEvent;
 import com.anthropic.models.messages.StopReason;
 import com.anthropic.models.messages.TextBlock;
 import com.anthropic.models.messages.ToolResultBlockParam;
 import com.anthropic.models.messages.ToolUseBlock;
 import com.anthropic.models.messages.Usage;
+import com.anthropic.services.async.MessageServiceAsync;
 import com.anthropic.services.blocking.MessageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,6 +56,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
+import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -62,6 +70,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -86,6 +95,12 @@ class AnthropicChatModelTests {
 
 	@Mock
 	private MessageService.WithRawResponse messageServiceWithRawResponse;
+
+	@Mock
+	private MessageServiceAsync messageServiceAsync;
+
+	@Mock
+	private MessageServiceAsync.WithRawResponse messageServiceAsyncWithRawResponse;
 
 	private AnthropicChatModel chatModel;
 
@@ -541,6 +556,90 @@ class AnthropicChatModelTests {
 		assertThat(rateLimit.getTokensLimit()).isEqualTo(50000L);
 		assertThat(rateLimit.getTokensRemaining()).isEqualTo(49000L);
 		assertThat(rateLimit.getTokensReset()).isNotNull().isPositive();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void streamingClosesStreamResponse() {
+		StreamResponse<RawMessageStreamEvent> streamResponse = mock(StreamResponse.class);
+		given(streamResponse.stream()).willReturn(Stream.empty());
+
+		HttpResponseFor<StreamResponse<RawMessageStreamEvent>> rawResponse = mock(HttpResponseFor.class);
+		given(rawResponse.parse()).willReturn(streamResponse);
+		given(rawResponse.headers()).willReturn(Headers.builder().build());
+
+		given(this.anthropicClientAsync.messages()).willReturn(this.messageServiceAsync);
+		given(this.messageServiceAsync.withRawResponse()).willReturn(this.messageServiceAsyncWithRawResponse);
+		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class)))
+			.willReturn(CompletableFuture.completedFuture(rawResponse));
+
+		this.chatModel.stream(new Prompt("test")).collectList().block();
+
+		// The blocking StreamResponse must be released once the stream terminates.
+		// close() runs in the doFinally callback on the boundedElastic worker, which
+		// can lag block() returning, so allow a short window.
+		verify(streamResponse, timeout(1000)).close();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void streamingAttachesRateLimitHeadersToResponse() {
+		Instant resetAt = Instant.now().plus(30, ChronoUnit.SECONDS);
+		Headers rateLimitHeaders = Headers.builder()
+			.put("anthropic-ratelimit-requests-limit", "100")
+			.put("anthropic-ratelimit-requests-remaining", "99")
+			.put("anthropic-ratelimit-requests-reset", resetAt.toString())
+			.put("anthropic-ratelimit-tokens-limit", "50000")
+			.put("anthropic-ratelimit-tokens-remaining", "49000")
+			.put("anthropic-ratelimit-tokens-reset", resetAt.toString())
+			.build();
+
+		// A message_delta event carries the final usage and triggers the metadata
+		// build that attaches the captured rate limit. The SDK builders require every
+		// field to be set explicitly, hence the Optional.empty() plumbing.
+		RawMessageStreamEvent messageDelta = RawMessageStreamEvent.ofMessageDelta(RawMessageDeltaEvent.builder()
+			.delta(RawMessageDeltaEvent.Delta.builder()
+				.container(Optional.empty())
+				.stopDetails(Optional.empty())
+				.stopReason(StopReason.END_TURN)
+				.stopSequence(Optional.empty())
+				.build())
+			.usage(MessageDeltaUsage.builder()
+				.cacheCreationInputTokens(Optional.empty())
+				.cacheReadInputTokens(Optional.empty())
+				.inputTokens(Optional.empty())
+				.outputTokens(5L)
+				.outputTokensDetails(Optional.empty())
+				.serverToolUse(Optional.empty())
+				.build())
+			.build());
+
+		StreamResponse<RawMessageStreamEvent> streamResponse = mock(StreamResponse.class);
+		given(streamResponse.stream()).willReturn(Stream.of(messageDelta));
+
+		HttpResponseFor<StreamResponse<RawMessageStreamEvent>> rawResponse = mock(HttpResponseFor.class);
+		given(rawResponse.parse()).willReturn(streamResponse);
+		given(rawResponse.headers()).willReturn(rateLimitHeaders);
+
+		given(this.anthropicClientAsync.messages()).willReturn(this.messageServiceAsync);
+		given(this.messageServiceAsync.withRawResponse()).willReturn(this.messageServiceAsyncWithRawResponse);
+		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class)))
+			.willReturn(CompletableFuture.completedFuture(rawResponse));
+
+		List<ChatResponse> responses = this.chatModel.stream(new Prompt("test")).collectList().block();
+
+		assertThat(responses).isNotNull();
+		ChatResponse responseWithRateLimit = responses.stream()
+			.filter(response -> response.getMetadata().getRateLimit() instanceof AnthropicRateLimit)
+			.findFirst()
+			.orElse(null);
+
+		assertThat(responseWithRateLimit).as("The message_delta chunk should carry rate-limit metadata").isNotNull();
+		RateLimit rateLimit = responseWithRateLimit.getMetadata().getRateLimit();
+		assertThat(rateLimit.getRequestsLimit()).isEqualTo(100L);
+		assertThat(rateLimit.getRequestsRemaining()).isEqualTo(99L);
+		assertThat(rateLimit.getTokensLimit()).isEqualTo(50000L);
+		assertThat(rateLimit.getTokensRemaining()).isEqualTo(49000L);
 	}
 
 }
