@@ -29,6 +29,9 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -37,9 +40,11 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration test for tool calling via prompt-level function callbacks.
+ * Integration test for tool calling via prompt-level function callbacks using
+ * user-controlled tool execution.
  *
  * @author Soby Chacko
+ * @author Christian Tzolov
  */
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 class FunctionCallWithPromptFunctionIT {
@@ -56,18 +61,28 @@ class FunctionCallWithPromptFunctionIT {
 		this.contextRunner.run(context -> {
 
 			AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
+			ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
-			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, in Paris and in Tokyo?"
-					+ " Return the temperature in Celsius.");
-
-			var promptOptions = AnthropicChatOptions.builder()
+			AnthropicChatOptions options = AnthropicChatOptions.builder()
+				.internalToolExecutionEnabled(false)
 				.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
 					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();
 
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
+			Prompt prompt = new Prompt(
+					List.of(new UserMessage("What's the weather like in San Francisco, in Paris and in Tokyo?"
+							+ " Return the temperature in Celsius.")),
+					options);
+
+			ChatResponse response = chatModel.call(prompt);
+
+			while (response.hasToolCalls()) {
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+				prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+				response = chatModel.call(prompt);
+			}
 
 			logger.info("Response: {}", response);
 

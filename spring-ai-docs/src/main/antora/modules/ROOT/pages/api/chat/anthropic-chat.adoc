@@ -209,7 +209,6 @@ ChatResponse response = chatModel.call(
 | toolChoice | Controls which tool (if any) is called by the model. Use `ToolChoiceAuto`, `ToolChoiceAny`, `ToolChoiceTool`, or `ToolChoiceNone`. | AUTO
 | toolCallbacks | List of tool callbacks to register with the model. | -
 | toolNames | Set of tool names to be resolved at runtime. | -
-| internalToolExecutionEnabled | If false, tool calls are proxied to the client for manual handling. If true, Spring AI handles tool calls internally. | true
 | disableParallelToolUse | When true, the model will use at most one tool per response. | false
 |====
 
@@ -264,12 +263,52 @@ You can register custom Java functions or methods with the `AnthropicChatModel` 
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
 Read more about xref:api/tools.adoc[Tool Calling].
 
-=== Basic Tool Calling
+`AnthropicChatModel` does not execute tool calls internally.
+Tool execution must be handled externally using one of two supported approaches:
+
+* **xref:api/tools.adoc#_chatclient_tool_execution[ChatClient with ToolCallAdvisor]** — the recommended approach for most use cases. `ToolCallAdvisor` is automatically registered and manages the tool-call loop transparently.
+* **xref:api/tools.adoc#_user_controlled_tool_execution[User-controlled tool execution]** — use `DefaultToolCallingManager` directly when you need full control over the loop (for example, when combining tool calling with prompt caching).
+
+=== Tool Calling via ChatClient (Recommended)
+
+Use `ChatClient` with `ToolCallAdvisor` for both synchronous and streaming tool execution.
+`ToolCallAdvisor` is auto-registered when tools are present, so no explicit advisor configuration is required.
 
 [source,java]
 ----
-var chatOptions = AnthropicChatOptions.builder()
-    .model("claude-sonnet-4-20250514")
+ToolCallback weatherCallback = FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
+    .description("Get the weather in location")
+    .inputType(WeatherService.Request.class)
+    .build();
+
+// Synchronous
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .user("What's the weather in Paris, Tokyo, and New York?")
+    .tools(t -> t.callbacks(weatherCallback))
+    .call()
+    .content();
+
+// Streaming
+Flux<String> stream = ChatClient.create(chatModel)
+    .prompt()
+    .user("What's the weather in Paris, Tokyo, and New York?")
+    .tools(t -> t.callbacks(weatherCallback))
+    .stream()
+    .content();
+----
+
+=== User-Controlled Tool Execution
+
+Use this pattern when you need direct access to the `ChatModel` API — for example, when combining tool calling with xref:api/chat/anthropic-chat.adoc#_prompt_caching[prompt caching].
+Set `internalToolExecutionEnabled(false)` on the options and drive the tool-call loop yourself using `DefaultToolCallingManager`.
+
+[source,java]
+----
+ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+AnthropicChatOptions options = AnthropicChatOptions.builder()
+    .internalToolExecutionEnabled(false)
     .toolCallbacks(List.of(
         FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
             .description("Get the weather in location")
@@ -277,15 +316,40 @@ var chatOptions = AnthropicChatOptions.builder()
             .build()))
     .build();
 
-var chatModel = new AnthropicChatModel(chatOptions);
+Prompt prompt = new Prompt("What's the weather in Paris, Tokyo, and New York?", options);
+ChatResponse response = chatModel.call(prompt);
 
-ChatResponse response = chatModel.call(
-    new Prompt("What's the weather like in San Francisco?", chatOptions));
+while (response.hasToolCalls()) {
+    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, response);
+    prompt = new Prompt(result.conversationHistory(), options);
+    response = chatModel.call(prompt);
+}
+----
+
+For streaming, aggregate each streaming response with `MessageAggregator` to detect tool calls across chunks:
+
+[source,java]
+----
+AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+new MessageAggregator()
+    .aggregate(chatModel.stream(prompt), aggregatedRef::set)
+    .collectList().block();
+
+while (aggregatedRef.get().hasToolCalls()) {
+    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+    prompt = new Prompt(result.conversationHistory(), options);
+    aggregatedRef.set(null);
+    new MessageAggregator()
+        .aggregate(chatModel.stream(prompt), aggregatedRef::set)
+        .collectList().block();
+}
+
+String content = aggregatedRef.get().getResult().getOutput().getText();
 ----
 
 === Tool Choice Options
 
-Control how Claude uses tools with the `toolChoice` option:
+Control which tool Claude selects with the `toolChoice` option:
 
 [source,java]
 ----
@@ -320,29 +384,6 @@ The Anthropic Java SDK provides convenient static factory methods for common too
 * `ToolChoice.any()` can be used instead of `ToolChoice.ofAny(...)`.
 * `ToolChoice.none()` can be used instead of `ToolChoice.ofNone(...)`.
 ====
-
-=== Streaming Tool Calling
-
-The Anthropic SDK module fully supports tool calling in streaming mode. When Claude decides to call a tool during streaming:
-
-1. Tool call arguments are accumulated from partial JSON deltas
-2. Tools are executed when the content block completes
-3. Results are sent back to Claude
-4. The conversation continues recursively until Claude provides a final response
-
-[source,java]
-----
-Flux<ChatResponse> stream = chatModel.stream(
-    new Prompt("What's the weather in Paris, Tokyo, and New York?", chatOptions));
-
-String response = stream
-    .collectList()
-    .block()
-    .stream()
-    .map(r -> r.getResult().getOutput().getContent())
-    .filter(Objects::nonNull)
-    .collect(Collectors.joining());
-----
 
 == Streaming
 

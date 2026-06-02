@@ -40,6 +40,9 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -134,25 +137,32 @@ class AnthropicPromptCachingIT {
 	void shouldCacheSystemAndTools() {
 		String systemPrompt = loadPrompt("system-and-tools-cache-prompt.txt");
 
-		MockWeatherService weatherService = new MockWeatherService();
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_20250514.asString())
 			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS).build())
 			.maxTokens(200)
 			.temperature(0.3)
-			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", weatherService)
+			.internalToolExecutionEnabled(false)
+			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get current weather for a location")
 				.inputType(MockWeatherService.Request.class)
 				.build())
 			.build();
 
-		ChatResponse response = this.chatModel.call(
-				new Prompt(
-						List.of(new SystemMessage(systemPrompt),
-								new UserMessage(
-										"What's the weather like in San Francisco and should I go for a walk?")),
-						options));
+		Prompt prompt = new Prompt(
+				List.of(new SystemMessage(systemPrompt),
+						new UserMessage("What's the weather like in San Francisco and should I go for a walk?")),
+				options);
+
+		ChatResponse response = this.chatModel.call(prompt);
+
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			response = this.chatModel.call(prompt);
+		}
 
 		assertThat(response).isNotNull();
 		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
