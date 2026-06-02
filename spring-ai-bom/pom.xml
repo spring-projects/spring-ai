@@ -129,25 +129,19 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-tool-search-tool-api</artifactId>
+				<artifactId>spring-ai-tool-search-tool</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-tool-index-lucene</artifactId>
+				<artifactId>spring-ai-tool-search-tool-lucene</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-tool-index-regex</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-tool-index-vectorstore</artifactId>
+				<artifactId>spring-ai-tool-search-tool-vectorstore</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			

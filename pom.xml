@@ -37,14 +37,10 @@
 		<module>spring-ai-client-chat</module>
 		<module>spring-ai-model</module>
 		<module>spring-ai-test</module>
+		<module>spring-ai-tool-search-tool</module>
 		<module>spring-ai-vector-store</module>
 		<module>spring-ai-rag</module>
 		<module>advisors/spring-ai-advisors-vector-store</module>
-		<module>advisors/tool-search-tool/spring-ai-tool-search-tool-api</module>
-		<module>advisors/tool-search-tool/spring-ai-tool-search-tool-advisor</module>
-		<module>advisors/tool-search-tool/tool-indexes/spring-ai-tool-index-lucene</module>
-		<module>advisors/tool-search-tool/tool-indexes/spring-ai-tool-index-regex</module>
-		<module>advisors/tool-search-tool/tool-indexes/spring-ai-tool-index-vectorstore</module>
 
 		<module>memory/repository/spring-ai-model-chat-memory-repository-cassandra</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-jdbc</module>

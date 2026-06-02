@@ -37,13 +37,7 @@ Maven::
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-tool-search-tool-advisor</artifactId>
-</dependency>
-
-<!-- Choose a search strategy -->
-<dependency>
-    <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-tool-index-lucene</artifactId>
+    <artifactId>spring-ai-tool-search-tool</artifactId>
 </dependency>
 ----
 
@@ -52,10 +46,7 @@ Gradle::
 [source,gradle]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-tool-search-tool-advisor'
-
-    // Choose a search strategy
-    implementation 'org.springframework.ai:spring-ai-tool-index-lucene'
+    implementation 'org.springframework.ai:spring-ai-tool-search-tool'
 }
 ----
 ======

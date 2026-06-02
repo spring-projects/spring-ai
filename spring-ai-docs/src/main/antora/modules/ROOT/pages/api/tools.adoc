@@ -1495,13 +1495,7 @@ The flow at runtime is:
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-tool-search-tool-advisor</artifactId>
-</dependency>
-
-<!-- Choose a search strategy (see Search Strategies below) -->
-<dependency>
-    <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-tool-index-vectorstore</artifactId>
+    <artifactId>spring-ai-tool-search-tool</artifactId>
 </dependency>
 ----
 
@@ -1540,18 +1534,18 @@ Three strategies are provided out of the box:
 
 [cols="1,2,2", options="header"]
 |===
-| Strategy | Module | Best For
+| Strategy | Implementation | Best For
 
 | **Semantic**
-| `spring-ai-tool-index-vectorstore`
+| `VectorToolIndex`
 | Natural-language queries, fuzzy matching
 
 | **Keyword**
-| `spring-ai-tool-index-lucene`
+| `LuceneToolIndex`
 | Exact term matching, known tool names
 
 | **Regex**
-| `spring-ai-tool-index-regex`
+| `RegexToolIndex`
 | Tool name patterns (`get_*_data`)
 |===
 
@@ -1630,15 +1624,14 @@ The following options are available on `ToolSearchToolCallingAdvisor.Builder`:
 
 === ToolIndex API
 
-The `ToolIndex` interface and its companion types (`ToolSearchRequest`, `ToolSearchResponse`, `ToolReference`) live in the `spring-ai-tool-search-tool-api` module under the package `org.springframework.ai.chat.client.advisor.tool.search.api`.
-The built-in index implementations (`spring-ai-tool-index-lucene`, `spring-ai-tool-index-vectorstore`, `spring-ai-tool-index-regex`) all depend on this module, so it is pulled in transitively when you use any of them.
-To implement a custom `ToolIndex` without pulling in a concrete search engine, depend only on the API artifact:
+The `ToolIndex` interface and its companion types (`ToolSearchRequest`, `ToolSearchResponse`, `ToolReference`) live in the `spring-ai-tool-search-tool` module under the package `org.springframework.ai.tool.toolsearch`.
+The built-in index implementations (`LuceneToolIndex`, `VectorToolIndex`, `RegexToolIndex`) are also provided in this module.
 
 [source,xml]
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-tool-search-tool-api</artifactId>
+    <artifactId>spring-ai-tool-search-tool</artifactId>
 </dependency>
 ----
 
