@@ -17,22 +17,23 @@
 package org.springframework.ai.model.deepseek.autoconfigure.tool;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.model.deepseek.autoconfigure.DeepSeekChatAutoConfiguration;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -71,13 +72,24 @@ public class FunctionCallbackInPromptIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
 			var promptOptions = DeepSeekChatOptions.builder()
+				.internalToolExecutionEnabled(false)
 				.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();
 
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
+			ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+			Prompt prompt = new Prompt(List.of(userMessage), promptOptions);
+
+			ChatResponse response = chatModel.call(prompt);
+
+			while (response.hasToolCalls()) {
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+				prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+				response = chatModel.call(prompt);
+			}
 
 			logger.info("Response: {}", response);
 
@@ -96,22 +108,29 @@ public class FunctionCallbackInPromptIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
 			var promptOptions = DeepSeekChatOptions.builder()
+				.internalToolExecutionEnabled(false)
 				.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();
 
-			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage), promptOptions));
+			ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
-			String content = response.collectList()
-				.block()
-				.stream()
-				.map(ChatResponse::getResults)
-				.flatMap(List::stream)
-				.map(Generation::getOutput)
-				.map(AssistantMessage::getText)
-				.collect(Collectors.joining());
+			Prompt prompt = new Prompt(List.of(userMessage), promptOptions);
+
+			AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+			new MessageAggregator().aggregate(chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+
+			while (aggregatedRef.get().hasToolCalls()) {
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt,
+						aggregatedRef.get());
+				prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+				aggregatedRef.set(null);
+				new MessageAggregator().aggregate(chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+			}
+
+			String content = aggregatedRef.get().getResult().getOutput().getText();
 			logger.info("Response: {}", content);
 
 			assertThat(content).containsAnyOf("30.0", "30");

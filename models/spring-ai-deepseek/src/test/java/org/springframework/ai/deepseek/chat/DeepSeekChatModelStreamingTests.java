@@ -73,7 +73,10 @@ public class DeepSeekChatModelStreamingTests {
 
 		given(this.api.chatCompletionStream(isA(ChatCompletionRequest.class)))
 			.willReturn(Flux.fromIterable(chunks).index().map(n -> {
-				if (n.getT1() == 256) {
+				// The downstream consumer prefetches a buffer of 256 items (indices
+				// 0..255). Release the latch once that buffer has been filled by the
+				// producer.
+				if (n.getT1() == 255) {
 					latch.countDown();
 				}
 				return n.getT2();
