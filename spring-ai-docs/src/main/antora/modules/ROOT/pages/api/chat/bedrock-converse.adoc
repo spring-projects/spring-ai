@@ -288,6 +288,42 @@ String response = chatClient.prompt()
     .content();
 ----
 
+==== Multi-Block System Message Caching
+
+When using advisors (e.g., RAG context injection), your system prompt may consist of multiple `SystemMessage` instances: a static prefix (your base instructions) and a dynamic suffix (advisor-injected context that changes each request).
+
+By default, when `SYSTEM_ONLY` or `SYSTEM_AND_TOOLS` caching is enabled, each `SystemMessage` is emitted as a separate `SystemContentBlock` and the cache point is placed *after the last block*.
+If any part of that content changes between requests, the entire system cache is invalidated — resulting in a 1.25x cache write cost on every request instead of the much cheaper cache read.
+
+The `multiBlockSystemCaching` option solves this by placing the cache point *after the second-to-last* system block (i.e., at the boundary between the static prefix and the dynamic suffix), so the static portion remains cached even as the last block changes freely.
+
+[source,java]
+----
+BedrockCacheOptions cacheOptions = BedrockCacheOptions.builder()
+    .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
+    .multiBlockSystemCaching(true)
+    .build();
+
+BedrockChatOptions chatOptions = BedrockChatOptions.builder()
+    .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
+    .cacheOptions(cacheOptions)
+    .build();
+
+// Static system prompt (will be cached)
+SystemMessage staticPrompt = new SystemMessage("You are an expert assistant...");
+// Dynamic RAG context (injected by advisor, changes each request)
+SystemMessage dynamicContext = new SystemMessage("Relevant context: " + ragResults);
+
+Prompt prompt = new Prompt(List.of(staticPrompt, dynamicContext, new UserMessage("...")), chatOptions);
+----
+
+This produces a Bedrock `system` array of the form `[text(static), cachePoint, text(dynamic)]` so only the static prefix participates in the cache key.
+
+NOTE: If only a single `SystemMessage` is present, the cache point is placed after that single block (same as the default behavior).
+The `multiBlockSystemCaching` option only changes placement when there are two or more system messages.
+
+IMPORTANT: Message ordering matters. The cache point is always placed after the second-to-last system block, so static content must come before dynamic content in the message list. If you register your base instructions as the first `SystemMessage` and let advisors append dynamic context after, this ordering is naturally satisfied.
+
 ==== Using ChatClient Fluent API
 
 [source,java]

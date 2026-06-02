@@ -471,6 +471,70 @@ class BedrockProxyChatModelIT {
 	}
 
 	@Test
+	void testMultiBlockSystemPromptCaching() {
+		String model = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
+
+		String basePrompt = """
+				You are an expert software architect with deep knowledge of distributed systems,
+				microservices, cloud computing, and software design patterns. Your role is to provide
+				detailed technical guidance on system architecture, design decisions, and best practices.
+
+				Key areas of expertise:
+				- Distributed systems design and architecture
+				- Microservices patterns and anti-patterns
+				- Cloud-native application development
+				- Event-driven architectures
+				- Database design and scaling strategies
+				- API design and RESTful services
+				- Security best practices
+				- Performance optimization and scalability
+
+				""";
+
+		// Repeat to exceed 4096 token minimum for Claude Haiku 4.5.
+		String staticSystemPrompt = basePrompt.repeat(40)
+				+ "When answering questions, provide clear, structured responses with examples.";
+
+		BedrockCacheOptions cacheOptions = BedrockCacheOptions.builder()
+			.strategy(BedrockCacheStrategy.SYSTEM_ONLY)
+			.multiBlockSystemCaching(true)
+			.build();
+
+		BedrockChatOptions chatOptions = BedrockChatOptions.builder()
+			.model(model)
+			.cacheOptions(cacheOptions)
+			.maxTokens(500)
+			.build();
+
+		// Each call mutates the trailing dynamic system block. With
+		// multiBlockSystemCaching, the static prefix should still get a cache read
+		// despite the dynamic block changing each request.
+		List<String> questions = List.of("What is a monolith?", "What is a microservice?",
+				"What is event-driven architecture?", "What is a service mesh?", "What is CQRS?");
+		AtomicInteger questionIndex = new AtomicInteger(0);
+		Awaitility.await().atMost(Duration.ofMinutes(2)).pollInterval(Duration.ofSeconds(3)).untilAsserted(() -> {
+			int idx = questionIndex.getAndIncrement();
+			String question = questions.get(idx % questions.size());
+			String dynamicContext = "Dynamic context for turn " + idx + ": timestamp=" + System.nanoTime();
+
+			ChatResponse response = this.chatModel.call(new Prompt(List.of(new SystemMessage(staticSystemPrompt),
+					new SystemMessage(dynamicContext), new UserMessage(question)), chatOptions));
+			assertThat(response.getResults()).hasSize(1);
+			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+
+			Integer cacheRead = response.getMetadata().get("cacheReadInputTokens");
+			Integer cacheWrite = response.getMetadata().get("cacheWriteInputTokens");
+			logger.info("[multiBlockSystem] attempt={}, cacheWrite={}, cacheRead={}", idx, cacheWrite, cacheRead);
+
+			assertThat(cacheRead).as("Static prefix should eventually be read from cache despite dynamic block changes")
+				.isNotNull()
+				.isPositive();
+			assertThat(cacheRead).as("Cache read should meet the 4096 token minimum for Claude Haiku 4.5")
+				.isGreaterThan(4096);
+		});
+	}
+
+	@Test
 	void testToolsOnlyPromptCaching() {
 		// IMPORTANT: This test requires a Claude model - Amazon Nova models do NOT
 		// support tool caching and will return ValidationException.
