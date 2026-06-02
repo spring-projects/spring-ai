@@ -30,11 +30,6 @@
 	<description>Spring AI Elasticsearch Vector Store</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<properties>
-		<!-- testing -->
-		<hikari-cp.version>4.0.3</hikari-cp.version>
-	</properties>
-
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
