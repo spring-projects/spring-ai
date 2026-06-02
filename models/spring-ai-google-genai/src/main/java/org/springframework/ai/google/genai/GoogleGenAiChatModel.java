@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -52,7 +51,6 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -74,7 +72,6 @@ import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.google.genai.cache.GoogleGenAiCachedContentService;
@@ -85,10 +82,6 @@ import org.springframework.ai.google.genai.metadata.GoogleGenAiUsage;
 import org.springframework.ai.google.genai.schema.GoogleGenAiToolCallingManager;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolExecutionResult;
-import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -153,8 +146,6 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
-	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
-
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private final Client genAiClient;
@@ -183,14 +174,6 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	 */
 	private final ToolCallingManager toolCallingManager;
 
-	/**
-	 * The tool execution eligibility predicate used to determine if a tool can be
-	 * executed.
-	 */
-	private final ToolExecutionEligibilityChecker toolExecutionEligibilityChecker;
-
-	private final AtomicBoolean internalToolExecutionWarned = new AtomicBoolean(false);
-
 	private final JsonMapper jsonMapper = JacksonUtils.getDefaultJsonMapper()
 		.rebuild()
 		.addMixIn(Schema.class, SchemaMixin.class)
@@ -214,37 +197,17 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	public GoogleGenAiChatModel(Client genAiClient, GoogleGenAiChatOptions options,
 			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
 			ObservationRegistry observationRegistry) {
-		this(genAiClient, options, toolCallingManager, retryTemplate, observationRegistry,
-				chatResponse -> chatResponse != null && chatResponse.hasToolCalls());
-	}
-
-	/**
-	 * Creates a new instance of GoogleGenAiChatModel.
-	 * @param genAiClient the GenAI Client instance to use
-	 * @param options the default options to use
-	 * @param toolCallingManager the tool calling manager to use. It is wrapped in a
-	 * {@link GoogleGenAiToolCallingManager} to ensure compatibility with Vertex AI's
-	 * OpenAPI schema format.
-	 * @param retryTemplate the retry template to use
-	 * @param observationRegistry the observation registry to use
-	 * @param toolExecutionEligibilityChecker the tool execution eligibility checker
-	 */
-	public GoogleGenAiChatModel(Client genAiClient, GoogleGenAiChatOptions options,
-			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
-			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
 
 		Assert.notNull(genAiClient, "GenAI Client must not be null");
 		Assert.notNull(options, "GoogleGenAiChatOptions must not be null");
 		Assert.notNull(options.getModel(), "GoogleGenAiChatOptions.modelName must not be null");
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
 		Assert.notNull(toolCallingManager, "ToolCallingManager must not be null");
-		Assert.notNull(toolExecutionEligibilityChecker, "ToolExecutionEligibilityChecker must not be null");
 
 		this.genAiClient = genAiClient;
 		this.options = options;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
-		this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
 		this.cachedContentService = (genAiClient != null && genAiClient.caches != null && genAiClient.async != null
 				&& genAiClient.async.caches != null) ? new GoogleGenAiCachedContentService(genAiClient) : null;
 
@@ -254,29 +217,6 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		else {
 			this.toolCallingManager = new GoogleGenAiToolCallingManager(toolCallingManager);
 		}
-	}
-
-	/**
-	 * @deprecated since 2.0.0 for removal in 3.0.0 — replaced by
-	 * {@link #GoogleGenAiChatModel(Client, GoogleGenAiChatOptions, ToolCallingManager, RetryTemplate, ObservationRegistry, ToolExecutionEligibilityChecker)}.
-	 */
-	@Deprecated(since = "2.0.0", forRemoval = true)
-	@SuppressWarnings({ "deprecation", "removal" })
-	public GoogleGenAiChatModel(Client genAiClient, GoogleGenAiChatOptions defaultOptions,
-			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
-			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
-		this(genAiClient, defaultOptions, toolCallingManager, retryTemplate, observationRegistry,
-				new ToolExecutionEligibilityChecker() {
-					@Override
-					public Boolean apply(ChatResponse chatResponse) {
-						return chatResponse != null && chatResponse.hasToolCalls();
-					}
-
-					@Override
-					public boolean isToolExecutionRequired(ChatOptions promptOptions, ChatResponse chatResponse) {
-						return toolExecutionEligibilityPredicate.test(promptOptions, chatResponse);
-					}
-				});
 	}
 
 	private static GeminiMessageType toGeminiMessageType(MessageType type) {
@@ -494,27 +434,6 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				});
 			});
 
-		if (this.toolExecutionEligibilityChecker.isToolExecutionRequired(options, response)) {
-			if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
-				logger.warn(
-						"Internal tool execution in GoogleGenAiChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
-								+ "Use ChatClient with ToolCallAdvisor instead.");
-			}
-			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-			if (toolExecutionResult.returnDirect()) {
-				// Return tool execution result directly to the client.
-				return ChatResponse.builder()
-					.from(response)
-					.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-					.build();
-			}
-			else {
-				// Send the tool execution result back to the model.
-				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						response);
-			}
-		}
-
 		return response;
 
 	}
@@ -574,43 +493,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 							observationContext.setResponse(aggregatedResponse);
 						});
 
-				Flux<ChatResponse> resultFlux = aggregatedFlux.concatWith(Flux.deferContextual(ctx -> {
-					ChatResponse aggregatedResponse = aggregatedResponseRef.get();
-					if (aggregatedResponse != null && this.toolExecutionEligibilityChecker
-						.isToolExecutionRequired(options, aggregatedResponse)) {
-						// FIXME: bounded elastic needs to be used since tool calling
-						// is currently only synchronous
-						ToolExecutionResult toolExecutionResult;
-						try {
-							if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
-								logger.warn(
-										"Internal tool execution in GoogleGenAiChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
-												+ "Use ChatClient with ToolCallAdvisor instead.");
-							}
-							ToolCallReactiveContextHolder.setContext(ctx);
-							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, aggregatedResponse);
-						}
-						finally {
-							ToolCallReactiveContextHolder.clearContext();
-						}
-						if (toolExecutionResult.returnDirect()) {
-							// Return tool execution result directly to the client.
-							return Flux.just(ChatResponse.builder()
-								.from(aggregatedResponse)
-								.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-								.build());
-						}
-						else {
-							// Send the tool execution result back to the model.
-							return this.internalStream(
-									new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-									aggregatedResponse);
-						}
-					}
-					return Flux.empty();
-				}).subscribeOn(Schedulers.boundedElastic()));
-
-				return resultFlux.doOnError(observation::error)
+				return aggregatedFlux.doOnError(observation::error)
 					.doFinally(s -> observation.stop())
 					.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
@@ -1066,9 +949,6 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 		@Nullable private ToolCallingManager toolCallingManager;
 
-		private ToolExecutionEligibilityChecker toolExecutionEligibilityChecker = chatResponse -> chatResponse != null
-				&& chatResponse.hasToolCalls();
-
 		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
 
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
@@ -1100,45 +980,6 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			return this;
 		}
 
-		/**
-		 * Sets the predicate to determine tool execution eligibility.
-		 * @param toolExecutionEligibilityPredicate the predicate
-		 * @return this builder
-		 * @deprecated since 2.0.0 for removal in 3.0.0 — replaced by
-		 * {@link #toolExecutionEligibilityChecker(ToolExecutionEligibilityChecker)}. For
-		 * the recommended long-term approach, internal tool execution in
-		 * {@link GoogleGenAiChatModel} is superseded by {@code ToolCallAdvisor} used via
-		 * {@code ChatClient}.
-		 */
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		@SuppressWarnings({ "deprecation", "removal" })
-		public Builder toolExecutionEligibilityPredicate(
-				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
-			this.toolExecutionEligibilityChecker = new ToolExecutionEligibilityChecker() {
-				@Override
-				public Boolean apply(ChatResponse chatResponse) {
-					return chatResponse != null && chatResponse.hasToolCalls();
-				}
-
-				@Override
-				public boolean isToolExecutionRequired(ChatOptions promptOptions, ChatResponse chatResponse) {
-					return toolExecutionEligibilityPredicate.test(promptOptions, chatResponse);
-				}
-			};
-			return this;
-		}
-
-		/**
-		 * Sets the checker to determine tool execution eligibility.
-		 * @param toolExecutionEligibilityChecker the checker
-		 * @return this builder
-		 */
-		public Builder toolExecutionEligibilityChecker(
-				ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
-			this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
-			return this;
-		}
-
 		public Builder retryTemplate(RetryTemplate retryTemplate) {
 			this.retryTemplate = retryTemplate;
 			return this;
@@ -1153,10 +994,12 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			Assert.notNull(this.genAiClient, "GenAI Client must not be null");
 			if (this.toolCallingManager != null) {
 				return new GoogleGenAiChatModel(this.genAiClient, this.options, this.toolCallingManager,
-						this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityChecker);
+						this.retryTemplate, this.observationRegistry);
 			}
-			return new GoogleGenAiChatModel(this.genAiClient, this.options, DEFAULT_TOOL_CALLING_MANAGER,
-					this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityChecker);
+
+			return new GoogleGenAiChatModel(this.genAiClient, this.options,
+					ToolCallingManager.builder().observationRegistry(this.observationRegistry).build(),
+					this.retryTemplate, this.observationRegistry);
 		}
 
 	}

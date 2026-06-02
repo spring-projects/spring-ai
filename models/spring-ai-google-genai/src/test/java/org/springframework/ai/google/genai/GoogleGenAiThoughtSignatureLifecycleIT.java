@@ -18,6 +18,7 @@ package org.springframework.ai.google.genai;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -34,8 +35,12 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.google.genai.tool.MockWeatherService;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -85,6 +90,8 @@ class GoogleGenAiThoughtSignatureLifecycleIT {
 	@Autowired
 	private GoogleGenAiChatModel chatModel;
 
+	private final ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
 	/**
 	 * Tests that thought signatures are properly handled when includeThoughts is
 	 * explicitly set to false. In this case, no thought signatures should be present in
@@ -106,7 +113,14 @@ class GoogleGenAiThoughtSignatureLifecycleIT {
 				.build()))
 			.build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+		var prompt = new Prompt(messages, promptOptions);
+		ChatResponse response = this.chatModel.call(prompt);
+
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			response = this.chatModel.call(prompt);
+		}
 
 		assertThat(response).isNotNull();
 		logger.info("Response: {}", response.getResult().getOutput().getText());
@@ -147,7 +161,19 @@ class GoogleGenAiThoughtSignatureLifecycleIT {
 
 		// Execute streaming call
 		logger.info("=== Testing Thought Signatures with Streaming ===");
-		ChatResponse lastResponse = this.chatModel.stream(new Prompt(messages, promptOptions)).blockLast();
+		var prompt = new Prompt(messages, promptOptions);
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt,
+					aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
+
+		ChatResponse lastResponse = aggregatedRef.get();
 
 		assertThat(lastResponse).isNotNull();
 		logger.info("Final streaming response: {}", lastResponse.getResult().getOutput().getText());
@@ -218,7 +244,6 @@ class GoogleGenAiThoughtSignatureLifecycleIT {
 		var promptOptions = GoogleGenAiChatOptions.builder()
 			.model(model)
 			.includeThoughts(true) // Enable thought signatures
-			.internalToolExecutionEnabled(true) // Enable automatic tool execution
 			.toolCallbacks(List.of(
 					FunctionToolCallback.builder("check_flight", new MockFlightService())
 						.description("Gets the current status of a flight including departure time and delay status.")
@@ -233,10 +258,14 @@ class GoogleGenAiThoughtSignatureLifecycleIT {
 		logger.info("=== Scenario 1: Sequential Function Calling with {} ===", modelName);
 		logger.info("Prompt: {}", userMessage.getText());
 
-		// Single call that triggers multiple sequential function executions
-		// If thought signatures are not propagated properly in the internal loop,
-		// this would fail with HTTP 400 validation error
-		ChatResponse response = this.chatModel.call(new Prompt(userMessage, promptOptions));
+		var prompt = new Prompt(userMessage, promptOptions);
+		ChatResponse response = this.chatModel.call(prompt);
+
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			response = this.chatModel.call(prompt);
+		}
 
 		assertThat(response).isNotNull();
 		String responseText = response.getResult().getOutput().getText();

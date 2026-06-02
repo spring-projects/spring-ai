@@ -20,16 +20,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.model.google.genai.autoconfigure.chat.GoogleGenAiChatAutoConfiguration;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.tool.ToolCallback;
@@ -51,13 +55,20 @@ public class FunctionCallWithFunctionWrapperIT {
 	@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
 	void functionCallWithApiKey() {
 		ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.google.genai.api-key=" + System.getenv("GOOGLE_API_KEY"))
+			.withPropertyValues("spring.ai.google.genai.api-key=" + System.getenv("GOOGLE_API_KEY"),
+					"spring.ai.google.genai.chat.model=" + GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue())
 			.withConfiguration(AutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class,
 					SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class));
 
 		contextRunner.run(context -> {
 
 			GoogleGenAiChatModel chatModel = context.getBean(GoogleGenAiChatModel.class);
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+
+			var chatClient = ChatClient
+				.builder(chatModel, ObservationRegistry.NOOP, null, null,
+						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+				.build();
 
 			Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunction = new MockWeatherService();
 
@@ -75,7 +86,7 @@ public class FunctionCallWithFunctionWrapperIT {
 			Prompt prompt = new Prompt("What's the weather like in San Francisco, Paris and in Tokyo?"
 					+ "Return the temperature in Celsius.", options);
 
-			ChatResponse response = chatModel.call(prompt);
+			ChatResponse response = chatClient.prompt(prompt).call().chatResponse();
 
 			logger.info("Response: {}", response);
 
@@ -89,13 +100,20 @@ public class FunctionCallWithFunctionWrapperIT {
 	void functionCallWithVertexAi() {
 		ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.google.genai.project-id=" + System.getenv("GOOGLE_CLOUD_PROJECT"),
-					"spring.ai.google.genai.location=" + System.getenv("GOOGLE_CLOUD_LOCATION"))
+					"spring.ai.google.genai.location=" + System.getenv("GOOGLE_CLOUD_LOCATION"),
+					"spring.ai.google.genai.chat.model=" + GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue())
 			.withConfiguration(AutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class,
 					SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class));
 
 		contextRunner.run(context -> {
 
 			GoogleGenAiChatModel chatModel = context.getBean(GoogleGenAiChatModel.class);
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+
+			var chatClient = ChatClient
+				.builder(chatModel, ObservationRegistry.NOOP, null, null,
+						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+				.build();
 
 			Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunction = new MockWeatherService();
 
@@ -113,39 +131,12 @@ public class FunctionCallWithFunctionWrapperIT {
 			Prompt prompt = new Prompt("What's the weather like in San Francisco, Paris and in Tokyo?"
 					+ "Return the temperature in Celsius.", options);
 
-			ChatResponse response = chatModel.call(prompt);
+			ChatResponse response = chatClient.prompt(prompt).call().chatResponse();
 
 			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getText()).contains("30.789", "10.456", "15.123");
 		});
 	}
-
-	// public static class MockWeatherService implements
-	// Function<MockWeatherService.Request, MockWeatherService.Response> {
-	//
-	// public record Request(String location, String unit) {
-	// }
-	//
-	// public record Response(double temperature, String unit, String description) {
-	// }
-	//
-	// @Override
-	// public Response apply(Request request) {
-	// double temperature = 0;
-	// if (request.location.contains("Paris")) {
-	// temperature = 15.5;
-	// }
-	// else if (request.location.contains("Tokyo")) {
-	// temperature = 10.5;
-	// }
-	// else if (request.location.contains("San Francisco")) {
-	// temperature = 30.5;
-	// }
-	// return new Response(temperature, request.unit != null ? request.unit : "°C",
-	// "sunny");
-	// }
-	//
-	// }
 
 }
