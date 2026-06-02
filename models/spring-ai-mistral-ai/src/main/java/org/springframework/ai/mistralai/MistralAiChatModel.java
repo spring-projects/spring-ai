@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import io.micrometer.observation.Observation;
@@ -32,7 +31,6 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -50,7 +48,6 @@ import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.mistralai.api.MistralAiApi;
@@ -63,10 +60,6 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.T
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolExecutionResult;
-import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -125,55 +118,23 @@ public class MistralAiChatModel implements ChatModel {
 	private final ToolCallingManager toolCallingManager;
 
 	/**
-	 * The tool execution eligibility checker used to determine if a tool can be executed.
-	 */
-	private final ToolExecutionEligibilityChecker toolExecutionEligibilityChecker;
-
-	private final AtomicBoolean internalToolExecutionWarned = new AtomicBoolean(false);
-
-	/**
 	 * Conventions to use for generating observations.
 	 */
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions options,
-			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
-			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
+			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
+			ObservationRegistry observationRegistry) {
 		Assert.notNull(mistralAiApi, "mistralAiApi cannot be null");
 		Assert.notNull(options, "options cannot be null");
 		Assert.notNull(toolCallingManager, "toolCallingManager cannot be null");
 		Assert.notNull(retryTemplate, "retryTemplate cannot be null");
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
-		Assert.notNull(toolExecutionEligibilityChecker, "toolExecutionEligibilityChecker cannot be null");
 		this.mistralAiApi = mistralAiApi;
 		this.options = options;
 		this.toolCallingManager = toolCallingManager;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
-		this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
-	}
-
-	/**
-	 * @deprecated since 2.0.0 for removal in 3.0.0 — replaced by
-	 * {@link #MistralAiChatModel(MistralAiApi, MistralAiChatOptions, ToolCallingManager, RetryTemplate, ObservationRegistry, ToolExecutionEligibilityChecker)}.
-	 */
-	@Deprecated(since = "2.0.0", forRemoval = true)
-	@SuppressWarnings({ "deprecation", "removal" })
-	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions defaultOptions,
-			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
-			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
-		this(mistralAiApi, defaultOptions, toolCallingManager, retryTemplate, observationRegistry,
-				new ToolExecutionEligibilityChecker() {
-					@Override
-					public Boolean apply(ChatResponse chatResponse) {
-						return chatResponse != null && chatResponse.hasToolCalls();
-					}
-
-					@Override
-					public boolean isToolExecutionRequired(ChatOptions promptOptions, ChatResponse chatResponse) {
-						return toolExecutionEligibilityPredicate.test(promptOptions, chatResponse);
-					}
-				});
 	}
 
 	public static ChatResponseMetadata from(MistralAiApi.ChatCompletion result) {
@@ -254,28 +215,6 @@ public class MistralAiChatModel implements ChatModel {
 				return chatResponse;
 			});
 
-		ChatOptions options = Objects.requireNonNull(prompt.getOptions());
-		if (this.toolExecutionEligibilityChecker.isToolExecutionRequired(options, response)) {
-			if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
-				logger.warn(
-						"Internal tool execution in MistralAiChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
-								+ "Use ChatClient with ToolCallAdvisor instead.");
-			}
-			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-			if (toolExecutionResult.returnDirect()) {
-				// Return tool execution result directly to the client.
-				return ChatResponse.builder()
-					.from(response)
-					.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-					.build();
-			}
-			else {
-				// Send the tool execution result back to the model.
-				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						response);
-			}
-		}
-
 		return response;
 	}
 
@@ -348,45 +287,10 @@ public class MistralAiChatModel implements ChatModel {
 				});
 
 			// @formatter:off
-			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response -> {
-				ChatOptions options = Objects.requireNonNull(prompt.getOptions());
-				if (this.toolExecutionEligibilityChecker.isToolExecutionRequired(options, response)) {
-					// FIXME: bounded elastic needs to be used since tool calling
-					//  is currently only synchronous
-					return Flux.deferContextual(ctx -> {
-						ToolExecutionResult toolExecutionResult;
-						try {
-							if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
-								logger.warn(
-										"Internal tool execution in MistralAiChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
-												+ "Use ChatClient with ToolCallAdvisor instead.");
-							}
-							ToolCallReactiveContextHolder.setContext(ctx);
-							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-						}
-						finally {
-							ToolCallReactiveContextHolder.clearContext();
-						}
-						if (toolExecutionResult.returnDirect()) {
-							// Return tool execution result directly to the client.
-							return Flux.just(ChatResponse.builder().from(response)
-									.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-									.build());
-						}
-						else {
-							// Send the tool execution result back to the model.
-							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-									response);
-						}
-					}).subscribeOn(Schedulers.boundedElastic());
-				}
-				else {
-					return Flux.just(response);
-				}
-			})
-			.doOnError(observation::error)
-			.doFinally(s -> observation.stop())
-			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+			Flux<ChatResponse> chatResponseFlux = chatResponse
+				.doOnError(observation::error)
+				.doFinally(s -> observation.stop())
+				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 
 			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
@@ -637,9 +541,6 @@ public class MistralAiChatModel implements ChatModel {
 
 		private ToolCallingManager toolCallingManager = DEFAULT_TOOL_CALLING_MANAGER;
 
-		private ToolExecutionEligibilityChecker toolExecutionEligibilityChecker = chatResponse -> chatResponse != null
-				&& chatResponse.hasToolCalls();
-
 		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
 
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
@@ -671,45 +572,6 @@ public class MistralAiChatModel implements ChatModel {
 			return this;
 		}
 
-		/**
-		 * Sets the predicate to determine tool execution eligibility.
-		 * @param toolExecutionEligibilityPredicate the predicate
-		 * @return this builder
-		 * @deprecated since 2.0.0 for removal in 3.0.0 — replaced by
-		 * {@link #toolExecutionEligibilityChecker(ToolExecutionEligibilityChecker)}. For
-		 * the recommended long-term approach, internal tool execution in
-		 * {@link MistralAiChatModel} is superseded by {@code ToolCallAdvisor} used via
-		 * {@code ChatClient}.
-		 */
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		@SuppressWarnings({ "deprecation", "removal" })
-		public Builder toolExecutionEligibilityPredicate(
-				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
-			this.toolExecutionEligibilityChecker = new ToolExecutionEligibilityChecker() {
-				@Override
-				public Boolean apply(ChatResponse chatResponse) {
-					return chatResponse != null && chatResponse.hasToolCalls();
-				}
-
-				@Override
-				public boolean isToolExecutionRequired(ChatOptions promptOptions, ChatResponse chatResponse) {
-					return toolExecutionEligibilityPredicate.test(promptOptions, chatResponse);
-				}
-			};
-			return this;
-		}
-
-		/**
-		 * Sets the checker to determine tool execution eligibility.
-		 * @param toolExecutionEligibilityChecker the checker
-		 * @return this builder
-		 */
-		public Builder toolExecutionEligibilityChecker(
-				ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
-			this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
-			return this;
-		}
-
 		public Builder retryTemplate(RetryTemplate retryTemplate) {
 			this.retryTemplate = retryTemplate;
 			return this;
@@ -723,7 +585,7 @@ public class MistralAiChatModel implements ChatModel {
 		public MistralAiChatModel build() {
 			Assert.state(this.mistralAiApi != null, "MistralAiApi must not be null");
 			return new MistralAiChatModel(this.mistralAiApi, this.options, this.toolCallingManager, this.retryTemplate,
-					this.observationRegistry, this.toolExecutionEligibilityChecker);
+					this.observationRegistry);
 		}
 
 	}

@@ -32,6 +32,9 @@ import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.model.mistralai.autoconfigure.MistralAiChatAutoConfiguration;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -66,10 +69,12 @@ public class PaymentStatusPromptIT {
 			.run(context -> {
 
 				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
+				ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
 				UserMessage userMessage = new UserMessage("What's the status of my transaction with id T1001?");
 
 				var promptOptions = MistralAiChatOptions.builder()
+					.internalToolExecutionEnabled(false)
 					.toolCallbacks(List.of(FunctionToolCallback
 						.builder("retrievePaymentStatus",
 								(Transaction transaction) -> new Status(DATA.get(transaction).status()))
@@ -78,7 +83,15 @@ public class PaymentStatusPromptIT {
 						.build()))
 					.build();
 
-				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
+				Prompt prompt = new Prompt(List.of(userMessage), promptOptions);
+
+				ChatResponse response = chatModel.call(prompt);
+
+				while (response.hasToolCalls()) {
+					ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+					prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+					response = chatModel.call(prompt);
+				}
 
 				logger.info("Response: {}", response);
 

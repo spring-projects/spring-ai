@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -50,6 +51,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -326,13 +328,24 @@ class MistralAiChatModelIT {
 
 		var promptOptions = MistralAiChatOptions.builder()
 			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
+			.internalToolExecutionEnabled(false)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+		Prompt prompt = new Prompt(messages, promptOptions);
+
+		ChatResponse response = this.chatModel.call(prompt);
+
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			response = this.chatModel.call(prompt);
+		}
 
 		logger.info("Response: {}", response);
 
@@ -351,23 +364,32 @@ class MistralAiChatModelIT {
 
 		var promptOptions = MistralAiChatOptions.builder()
 			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
+			.internalToolExecutionEnabled(false)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(messages, promptOptions));
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
-		String content = response.collectList()
-			.blockOptional()
-			.stream()
-			.flatMap(List::stream)
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getText)
-			.collect(Collectors.joining());
+		Prompt prompt = new Prompt(messages, promptOptions);
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.streamingChatModel.stream(prompt), aggregatedRef::set)
+			.collectList()
+			.block();
+
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.streamingChatModel.stream(prompt), aggregatedRef::set)
+				.collectList()
+				.block();
+		}
+
+		String content = aggregatedRef.get().getResult().getOutput().getText();
 		logger.info("Response: {}", content);
 
 		assertThat(content).containsAnyOf("10.0", "10");
@@ -445,14 +467,32 @@ class MistralAiChatModelIT {
 
 		var promptOptions = MistralAiChatOptions.builder()
 			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
+			.internalToolExecutionEnabled(false)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(messages, promptOptions));
-		ChatResponse chatResponse = response.last().block();
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+		Prompt prompt = new Prompt(messages, promptOptions);
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.streamingChatModel.stream(prompt), aggregatedRef::set)
+			.collectList()
+			.block();
+
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.streamingChatModel.stream(prompt), aggregatedRef::set)
+				.collectList()
+				.block();
+		}
+
+		ChatResponse chatResponse = aggregatedRef.get();
 
 		logger.info("Response: {}", chatResponse);
 		assertThat(chatResponse.getMetadata()).isNotNull();

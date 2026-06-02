@@ -37,7 +37,10 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.T
 import org.springframework.ai.model.mistralai.autoconfigure.MistralAiChatAutoConfiguration;
 import org.springframework.ai.model.mistralai.autoconfigure.tool.WeatherServicePromptIT.MyWeatherService.Request;
 import org.springframework.ai.model.mistralai.autoconfigure.tool.WeatherServicePromptIT.MyWeatherService.Response;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -72,6 +75,7 @@ public class WeatherServicePromptIT {
 			.run(context -> {
 
 				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
+				ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
 				UserMessage userMessage = new UserMessage("What's the weather like in Paris? Use Celsius.");
 				// UserMessage userMessage = new UserMessage("What's the weather like in
@@ -80,13 +84,22 @@ public class WeatherServicePromptIT {
 
 				var promptOptions = MistralAiChatOptions.builder()
 					.toolChoice(ToolChoice.AUTO)
+					.internalToolExecutionEnabled(false)
 					.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeatherService", new MyWeatherService())
 						.description("Get the current weather in requested location")
 						.inputType(MyWeatherService.Request.class)
 						.build()))
 					.build();
 
-				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
+				Prompt prompt = new Prompt(List.of(userMessage), promptOptions);
+
+				ChatResponse response = chatModel.call(prompt);
+
+				while (response.hasToolCalls()) {
+					ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+					prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+					response = chatModel.call(prompt);
+				}
 
 				logger.info("Response: {}", response);
 
@@ -101,10 +114,12 @@ public class WeatherServicePromptIT {
 			.run(context -> {
 
 				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
+				ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
 				UserMessage userMessage = new UserMessage("What's the weather like in Paris? Use Celsius.");
 
 				ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder()
+					.internalToolExecutionEnabled(false)
 					.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeatherService", new MyWeatherService())
 						.description("Get the current weather in requested location")
 						.inputType(MyWeatherService.Request.class)
@@ -112,7 +127,15 @@ public class WeatherServicePromptIT {
 
 					.build();
 
-				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
+				Prompt prompt = new Prompt(List.of(userMessage), functionOptions);
+
+				ChatResponse response = chatModel.call(prompt);
+
+				while (response.hasToolCalls()) {
+					ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+					prompt = new Prompt(toolExecutionResult.conversationHistory(), functionOptions);
+					response = chatModel.call(prompt);
+				}
 
 				logger.info("Response: {}", response);
 

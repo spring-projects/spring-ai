@@ -73,7 +73,7 @@ public class MistralAiChatModelStreamingTests {
 
 		given(this.api.chatCompletionStream(isA(ChatCompletionRequest.class)))
 			.willReturn(Flux.fromIterable(chunks).index().map(n -> {
-				if (n.getT1() == 256) {
+				if (n.getT1() == 255) {
 					latch.countDown();
 				}
 				return n.getT2();
