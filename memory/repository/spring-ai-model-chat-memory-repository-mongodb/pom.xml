@@ -36,7 +36,7 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-client-chat</artifactId>
-			<version>${project.version}</version>
+			<version>${project.parent.version}</version>
 		</dependency>
 
 		<!-- MongoDB -->
@@ -55,7 +55,7 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-test</artifactId>
-			<version>${project.version}</version>
+			<version>${project.parent.version}</version>
 			<scope>test</scope>
 		</dependency>
 

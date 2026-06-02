@@ -19,13 +19,13 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-redis-semantic-cache</artifactId>
-			<version>${project.version}</version>
+			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-transformers</artifactId>
-			<version>${project.version}</version>
+			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
 
@@ -79,7 +79,7 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-openai</artifactId>
-			<version>${project.version}</version>
+			<version>${project.parent.version}</version>
 			<scope>test</scope>
 		</dependency>
 

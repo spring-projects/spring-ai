@@ -20,7 +20,7 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-model-chat-memory-repository-redis</artifactId>
-			<version>${project.version}</version>
+			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
 

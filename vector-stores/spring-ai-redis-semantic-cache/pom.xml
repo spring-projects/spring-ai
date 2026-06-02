@@ -18,25 +18,25 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-model</artifactId>
-			<version>${project.version}</version>
+			<version>${project.parent.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-client-chat</artifactId>
-			<version>${project.version}</version>
+			<version>${project.parent.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-redis-store</artifactId>
-			<version>${project.version}</version>
+			<version>${project.parent.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-vector-store</artifactId>
-			<version>${project.version}</version>
+			<version>${project.parent.version}</version>
 		</dependency>
 		
 		<dependency>
@@ -87,14 +87,14 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-openai</artifactId>
-			<version>${project.version}</version>
+			<version>${project.parent.version}</version>
 			<scope>test</scope>
 		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-transformers</artifactId>
-			<version>${project.version}</version>
+			<version>${project.parent.version}</version>
 			<scope>test</scope>
 		</dependency>
 

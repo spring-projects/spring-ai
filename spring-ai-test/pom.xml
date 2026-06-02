@@ -42,13 +42,13 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-client-chat</artifactId>
-			<version>${project.version}</version>
+			<version>${project.parent.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-vector-store</artifactId>
-			<version>${project.version}</version>
+			<version>${project.parent.version}</version>
 		</dependency>
 
 		<dependency>

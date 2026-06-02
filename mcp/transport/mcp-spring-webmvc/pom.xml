@@ -39,7 +39,7 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>mcp-spring-webflux</artifactId>
-			<version>${project.version}</version>
+			<version>${project.parent.version}</version>
 			<scope>test</scope>
 		</dependency>
 
