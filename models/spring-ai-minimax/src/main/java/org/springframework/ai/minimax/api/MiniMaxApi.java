@@ -629,6 +629,10 @@ public class MiniMaxApi {
 			 * Model will not call a function and instead generates a message
 			 */
 			public static final String NONE = "none";
+			/**
+			 * Model must call at least one tool, but it can choose which one.
+			 */
+			public static final String REQUIRED = "required";
 
 			/**
 			 * Specifying a particular function forces the model to call that function.
