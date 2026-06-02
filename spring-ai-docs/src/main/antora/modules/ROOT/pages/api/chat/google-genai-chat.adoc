@@ -118,10 +118,9 @@ The prefix `spring.ai.google.genai.chat` is the property prefix that lets you co
 | spring.ai.google.genai.chat.presence-penalty | Presence penalties for reducing repetition. | -
 | spring.ai.google.genai.chat.thinking-budget | Thinking budget for the thinking process. See <<thinking-config>>. | -
 | spring.ai.google.genai.chat.thinking-level | The level of thinking tokens the model should generate. Valid values: `LOW`, `HIGH`, `THINKING_LEVEL_UNSPECIFIED`. See <<thinking-config>>. | -
-| spring.ai.google.genai.chat.include-thoughts | Enable thought signatures for function calling. **Required** for Gemini 3 Pro to avoid validation errors during the internal tool execution loop. See <<thought-signatures>>. | false
+| spring.ai.google.genai.chat.include-thoughts | Enable thought signatures for function calling. **Required** for Gemini 3 Pro to avoid validation errors during the tool-call loop. See <<thought-signatures>>. | false
 | spring.ai.google.genai.chat.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
 | spring.ai.google.genai.chat.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
-| spring.ai.google.genai.chat.internal-tool-execution-enabled | If true, the tool execution should be performed, otherwise the response from the model is returned back to the user. Default is null, but if it's null, `ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_ENABLED` which is true will take into account | -
 | spring.ai.google.genai.chat.safety-settings | List of safety settings to control safety filters, as defined by https://ai.google.dev/gemini-api/docs/safety-settings[Google GenAI Safety Settings]. Each safety setting can have a method, threshold, and category. | -
 | spring.ai.google.genai.chat.cached-content-name | The name of cached content to use for this request. When set along with `use-cached-content=true`, the cached content will be used as context. See <<cached-content>>. | -
 | spring.ai.google.genai.chat.use-cached-content | Whether to use cached content if available. When true and `cached-content-name` is set, the system will use the cached content. | false
@@ -158,12 +157,15 @@ TIP: In addition to the model specific `GoogleGenAiChatOptions` you can use a po
 
 == Tool Calling
 
-The Google GenAI model supports tool calling (function calling) capabilities, allowing models to use tools during conversations.
-Here's an example of how to define and use `@Tool`-based tools:
+`GoogleGenAiChatModel` does not execute tool calls internally.
+Tool execution must be handled externally using one of the two supported approaches below.
+
+=== Tool Calling via ChatClient (Recommended)
+
+The recommended approach is to use `ChatClient` with the `ToolCallAdvisor`, which is automatically registered and manages the tool-call loop transparently for both synchronous and streaming scenarios.
 
 [source,java]
 ----
-
 public class WeatherService {
 
     @Tool(description = "Get the weather in location")
@@ -179,7 +181,7 @@ String response = ChatClient.create(this.chatModel)
         .content();
 ----
 
-You can use the java.util.function beans as tools as well:
+You can use `java.util.function` beans as tools as well:
 
 [source,java]
 ----
@@ -192,9 +194,35 @@ public Function<Request, Response> weatherFunction() {
 String response = ChatClient.create(this.chatModel)
         .prompt("What's the weather like in Boston?")
         .toolNames("weatherFunction")
-        .inputType(Request.class)
         .call()
         .content();
+----
+
+=== User-Controlled Tool Execution
+
+For advanced use cases where you need full control over the tool-call loop, use `DefaultToolCallingManager` directly and set `internalToolExecutionEnabled(false)` on the prompt options so the model returns tool calls without executing them:
+
+[source,java]
+----
+ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+        .internalToolExecutionEnabled(false)
+        .toolCallbacks(List.of(
+            FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
+                .description("Get the weather in a given location")
+                .inputType(WeatherRequest.class)
+                .build()))
+        .build();
+
+Prompt prompt = new Prompt("What's the weather like in Boston?", options);
+ChatResponse response = chatModel.call(prompt);
+
+while (response.hasToolCalls()) {
+    ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+    prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+    response = chatModel.call(prompt);
+}
 ----
 
 Find more in xref:api/tools.adoc[Tools] documentation.
@@ -448,11 +476,11 @@ NOTE: Enabling thinking features increases token usage and API costs. Use approp
 
 == Thought Signatures [[thought-signatures]]
 
-Gemini 3 Pro introduces thought signatures, which are opaque byte arrays that preserve the model's reasoning context during function calling. When `includeThoughts` is enabled, the model returns thought signatures that must be passed back within the **same turn** during the internal tool execution loop.
+Gemini 3 Pro introduces thought signatures, which are opaque byte arrays that preserve the model's reasoning context during function calling. When `includeThoughts` is enabled, the model returns thought signatures that must be passed back within the **same turn** during the tool-call loop.
 
 === When Thought Signatures Matter
 
-**IMPORTANT**: Thought signature validation only applies to the **current turn** - specifically during the internal tool execution loop when the model makes function calls (both parallel and sequential). The API does **not** validate thought signatures for previous turns in conversation history.
+**IMPORTANT**: Thought signature validation only applies to the **current turn** - specifically during the tool-call loop when the model makes function calls (both parallel and sequential). The API does **not** validate thought signatures for previous turns in conversation history.
 
 Per https://ai.google.dev/gemini-api/docs/thought-signatures[Google's documentation]:
 
@@ -488,17 +516,13 @@ ChatResponse response = chatModel.call(
     ));
 ----
 
-=== Automatic Handling
+=== Automatic Handling via ChatClient (Recommended)
 
-Spring AI automatically handles thought signatures during the internal tool execution loop. When `internalToolExecutionEnabled` is true (the default), Spring AI:
+When using `ChatClient` with `ToolCallAdvisor` (the recommended approach), Spring AI automatically handles thought signatures:
 
 1. **Extracts** thought signatures from model responses
 2. **Attaches** them to the correct `functionCall` parts when sending back function responses
 3. **Propagates** them correctly during function calls within a single turn (both parallel and sequential)
-
-You don't need to manually manage thought signatures - Spring AI ensures they are properly attached to `functionCall` parts as required by the API specification.
-
-=== Example with Function Calling
 
 [source,java]
 ----
@@ -520,9 +544,9 @@ String response = ChatClient.create(this.chatModel)
         .content();
 ----
 
-=== Manual Tool Execution Mode
+=== User-Controlled Tool Execution with Thought Signatures
 
-If you set `internalToolExecutionEnabled=false` to manually control the tool execution loop, you must handle thought signatures yourself when using Gemini 3 Pro with `includeThoughts=true`.
+When using a manual tool execution loop, you must preserve thought signatures by keeping the original `AssistantMessage` (with its metadata) in the conversation history. Spring AI automatically attaches the signatures to the correct `functionCall` parts when converting messages.
 
 **Requirements for manual tool execution with thought signatures:**
 

@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -481,7 +482,10 @@ class GoogleGenAiChatModelIT {
 				.build())
 			.build();
 
-		ChatClient chatClient = ChatClient.builder(chatModelWithTools).build();
+		ChatClient chatClient = ChatClient
+			.builder(chatModelWithTools, ObservationRegistry.NOOP, null, null,
+					ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+			.build();
 
 		// Create a prompt that will trigger the tool call with a specific request that
 		// should invoke the tool
