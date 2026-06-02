@@ -17,7 +17,6 @@
 package org.springframework.ai.model.tool;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -166,7 +165,7 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 			if (this.toolCallbacks == null) {
 				this.toolCallbacks = new ArrayList<>();
 			}
-			this.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
+			this.toolCallbacks.addAll(List.of(toolCallbacks));
 			return self();
 		}
 
@@ -234,10 +233,24 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 			super.combineWith(other);
 			if (other instanceof Builder<?> that) {
 				if (that.toolCallbacks != null) {
-					this.toolCallbacks = new ArrayList<>(that.toolCallbacks);
+					if (this.toolCallbacks == null) {
+						this.toolCallbacks = new ArrayList<>(that.toolCallbacks);
+					}
+					else {
+						List<ToolCallback> merged = new ArrayList<>(this.toolCallbacks);
+						merged.addAll(that.toolCallbacks);
+						this.toolCallbacks = merged;
+					}
 				}
 				if (that.toolNames != null) {
-					this.toolNames = new HashSet<>(that.toolNames);
+					if (this.toolNames == null) {
+						this.toolNames = new HashSet<>(that.toolNames);
+					}
+					else {
+						Set<String> merged = new HashSet<>(this.toolNames);
+						merged.addAll(that.toolNames);
+						this.toolNames = merged;
+					}
 				}
 				if (that.toolContext != null) {
 					if (this.toolContext == null) {
