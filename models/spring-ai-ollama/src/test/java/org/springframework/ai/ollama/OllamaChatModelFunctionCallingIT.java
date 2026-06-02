@@ -30,8 +30,9 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
@@ -69,9 +70,18 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
+			.internalToolExecutionEnabled(false)
 			.build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+		ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+		Prompt prompt = new Prompt(messages, promptOptions);
+		ChatResponse response = this.chatModel.call(prompt);
+
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			response = this.chatModel.call(prompt);
+		}
 
 		logger.info("Response: {}", response);
 
@@ -113,18 +123,24 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
+			.internalToolExecutionEnabled(false)
 			.build();
 
-		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
+		ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+		Prompt prompt = new Prompt(messages, promptOptions);
 
-		String content = response.collectList()
-			.block()
-			.stream()
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getText)
-			.collect(Collectors.joining());
+		String content = this.chatModel.stream(prompt).flatMap(response -> {
+			if (response.hasToolCalls()) {
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+				return this.chatModel.stream(new Prompt(toolExecutionResult.conversationHistory(), promptOptions));
+			}
+			return Flux.just(response);
+		})
+			.mapNotNull(r -> (r.getResult() == null || r.getResult().getOutput() == null) ? null
+					: r.getResult().getOutput().getText())
+			.collect(Collectors.joining())
+			.block();
+
 		logger.info("Response: {}", content);
 
 		assertThat(content).contains("30", "10", "15");

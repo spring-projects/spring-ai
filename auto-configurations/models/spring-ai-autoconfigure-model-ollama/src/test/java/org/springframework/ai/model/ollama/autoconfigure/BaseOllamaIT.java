@@ -30,7 +30,6 @@ import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfigurat
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
-import org.springframework.ai.ollama.api.OllamaChatOptions.Builder;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
@@ -112,7 +111,7 @@ public abstract class BaseOllamaIT {
 	/**
 	 * Merge options customizer {@code other} with the options coming from the model.
 	 */
-	protected static OllamaChatOptions mergeOptions(OllamaChatModel chatModel, Builder other) {
+	protected static OllamaChatOptions mergeOptions(OllamaChatModel chatModel, OllamaChatOptions.Builder other) {
 		return (OllamaChatOptions) chatModel.getOptions().mutate().combineWith(other).build();
 	}
 

@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -81,7 +82,10 @@ class FunctionCallbackInPromptIT extends BaseOllamaIT {
 							.inputType(MockWeatherService.Request.class)
 							.build())));
 
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
+			ChatResponse response = ChatClient.create(chatModel)
+				.prompt(new Prompt(List.of(userMessage), promptOptions))
+				.call()
+				.chatResponse();
 
 			logger.info("Response: {}", response);
 
@@ -106,7 +110,10 @@ class FunctionCallbackInPromptIT extends BaseOllamaIT {
 							.inputType(MockWeatherService.Request.class)
 							.build())));
 
-			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage), promptOptions));
+			Flux<ChatResponse> response = ChatClient.create(chatModel)
+				.prompt(new Prompt(List.of(userMessage), promptOptions))
+				.stream()
+				.chatResponse();
 
 			String content = response.collectList()
 				.blockOptional()
