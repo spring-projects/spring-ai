@@ -134,9 +134,9 @@ public class MessageAggregator {
 						&& chatResponse.getMetadata().getPromptMetadata().iterator().hasNext()) {
 					metadataPromptMetadataRef.set(chatResponse.getMetadata().getPromptMetadata());
 				}
-				if (chatResponse.getMetadata().getRateLimit() != null
-						&& !(metadataRateLimitRef.get() instanceof EmptyRateLimit)) {
-					metadataRateLimitRef.set(chatResponse.getMetadata().getRateLimit());
+				RateLimit incomingRateLimit = chatResponse.getMetadata().getRateLimit();
+				if (incomingRateLimit != null && !(incomingRateLimit instanceof EmptyRateLimit)) {
+					metadataRateLimitRef.set(incomingRateLimit);
 				}
 				if (StringUtils.hasText(chatResponse.getMetadata().getId())) {
 					metadataIdRef.set(chatResponse.getMetadata().getId());
