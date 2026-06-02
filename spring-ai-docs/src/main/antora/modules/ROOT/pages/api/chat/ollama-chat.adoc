@@ -151,7 +151,6 @@ The remaining `options` properties are based on the link:https://github.com/olla
 | spring.ai.ollama.chat.stop              | Sets the stop sequences to use. When this pattern is encountered the LLM will stop generating text and return. Multiple stop patterns may be set by specifying multiple separate stop parameters in a modelfile. | -
 | spring.ai.ollama.chat.tool-names         | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
 | spring.ai.ollama.chat.tool-callbacks     | Tool Callbacks to register with the ChatModel. | -
-| spring.ai.ollama.chat.internal-tool-execution-enabled | If false, the Spring AI will not handle the tool calls internally, but will proxy them to the client. Then it is the client's responsibility to handle the tool calls, dispatch them to the appropriate function, and return the results. If true (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | true
 |====
 
 TIP: All properties prefixed with `spring.ai.ollama.chat` can be overridden at runtime by adding request-specific <<chat-options>> to the `Prompt` call.
@@ -250,6 +249,87 @@ This is a powerful technique to connect the LLM capabilities with external tools
 Read more about xref:api/tools.adoc[Tool Calling].
 
 TIP: You need Ollama 0.2.8 or newer to use the functional calling capabilities and Ollama 0.4.6 or newer to use them in streaming mode.
+
+`OllamaChatModel` does not execute tool calls internally.
+Tool execution must be handled externally using one of two supported approaches:
+
+* **xref:api/tools.adoc#_chatclient_tool_execution[ChatClient with ToolCallAdvisor]** — the recommended approach for most use cases. `ToolCallAdvisor` manages the tool-call loop transparently.
+* **xref:api/tools.adoc#_user_controlled_tool_execution[User-controlled tool execution]** — use `ToolCallingManager` directly when you need full control over the loop.
+
+=== Tool Calling via ChatClient (Recommended)
+
+Use `ChatClient` with `ToolCallAdvisor` for both synchronous and streaming tool execution.
+
+[source,java]
+----
+ToolCallback weatherCallback = FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
+    .description("Get the weather in location")
+    .inputType(WeatherService.Request.class)
+    .build();
+
+// Synchronous
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .user("What's the weather in Paris, Tokyo, and New York?")
+    .tools(t -> t.callbacks(weatherCallback))
+    .call()
+    .content();
+
+// Streaming
+Flux<String> stream = ChatClient.create(chatModel)
+    .prompt()
+    .user("What's the weather in Paris, Tokyo, and New York?")
+    .tools(t -> t.callbacks(weatherCallback))
+    .stream()
+    .content();
+----
+
+=== User-Controlled Tool Execution
+
+Use this pattern when you need direct access to the `ChatModel` API.
+Set `internalToolExecutionEnabled(false)` on the options and drive the tool-call loop yourself using `ToolCallingManager`.
+
+[source,java]
+----
+ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+
+OllamaChatOptions options = OllamaChatOptions.builder()
+    .internalToolExecutionEnabled(false)
+    .toolCallbacks(List.of(
+        FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
+            .description("Get the weather in location")
+            .inputType(WeatherService.Request.class)
+            .build()))
+    .build();
+
+Prompt prompt = new Prompt("What's the weather in Paris, Tokyo, and New York?", options);
+ChatResponse response = chatModel.call(prompt);
+
+while (response.hasToolCalls()) {
+    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, response);
+    prompt = new Prompt(result.conversationHistory(), options);
+    response = chatModel.call(prompt);
+}
+----
+
+For streaming, use `flatMap` to detect tool calls and re-stream with the updated conversation history:
+
+[source,java]
+----
+ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+Prompt prompt = new Prompt("What's the weather in Paris, Tokyo, and New York?", options);
+
+String content = chatModel.stream(prompt).flatMap(response -> {
+    if (response.hasToolCalls()) {
+        ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, response);
+        return chatModel.stream(new Prompt(result.conversationHistory(), options));
+    }
+    return Flux.just(response);
+})
+.mapNotNull(r -> r.getResult() != null ? r.getResult().getOutput().getText() : null)
+.collect(Collectors.joining())
+.block();
+----
 
 == Thinking Mode (Reasoning)
 
