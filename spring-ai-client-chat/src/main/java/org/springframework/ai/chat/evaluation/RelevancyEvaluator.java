@@ -80,7 +80,7 @@ public class RelevancyEvaluator implements Evaluator {
 
 		boolean passing = false;
 		float score = 0;
-		if ("yes".equalsIgnoreCase(evaluationResponse)) {
+		if ("yes".equalsIgnoreCase(evaluationResponse.strip())) {
 			passing = true;
 			score = 1;
 		}
