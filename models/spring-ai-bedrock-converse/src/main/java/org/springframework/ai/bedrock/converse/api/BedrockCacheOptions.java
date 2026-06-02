@@ -54,8 +54,11 @@ public class BedrockCacheOptions {
 
 	private final BedrockCacheStrategy strategy;
 
-	protected BedrockCacheOptions(@Nullable BedrockCacheStrategy strategy) {
+	private final boolean multiBlockSystemCaching;
+
+	protected BedrockCacheOptions(@Nullable BedrockCacheStrategy strategy, boolean multiBlockSystemCaching) {
 		this.strategy = (strategy != null ? strategy : BedrockCacheStrategy.NONE);
+		this.multiBlockSystemCaching = multiBlockSystemCaching;
 	}
 
 	/**
@@ -75,11 +78,29 @@ public class BedrockCacheOptions {
 	}
 
 	/**
+	 * Returns whether multi-block system message caching is enabled. When enabled, each
+	 * {@link org.springframework.ai.chat.messages.SystemMessage} is emitted as a separate
+	 * {@code SystemContentBlock} in the Bedrock Converse request, with a
+	 * {@code CachePoint} placed after the second-to-last text block. This allows a static
+	 * system prompt prefix to be cached while dynamic content (e.g., advisor-injected RAG
+	 * context) in the last block can change freely without invalidating the cache. When
+	 * disabled (default), the cache point is placed after the last system block, so any
+	 * change to the last block invalidates the cache.
+	 * @return {@code true} if each system message is emitted as a separate content block
+	 * with the cache point placed before the last block; {@code false} otherwise
+	 */
+	public boolean isMultiBlockSystemCaching() {
+		return this.multiBlockSystemCaching;
+	}
+
+	/**
 	 * Builder for constructing BedrockCacheOptions instances.
 	 */
 	public static class Builder {
 
 		private BedrockCacheStrategy strategy = BedrockCacheStrategy.NONE;
+
+		private boolean multiBlockSystemCaching = false;
 
 		/**
 		 * Sets the caching strategy.
@@ -92,11 +113,26 @@ public class BedrockCacheOptions {
 		}
 
 		/**
+		 * Sets whether multi-block system message caching is enabled. When enabled, each
+		 * {@link org.springframework.ai.chat.messages.SystemMessage} is emitted as a
+		 * separate {@code SystemContentBlock} and the cache point is placed after the
+		 * second-to-last block, allowing a static prefix to be cached while the last
+		 * (dynamic) block can change freely.
+		 * @param multiBlockSystemCaching {@code true} to enable multi-block system
+		 * caching; defaults to {@code false}
+		 * @return this Builder instance
+		 */
+		public Builder multiBlockSystemCaching(boolean multiBlockSystemCaching) {
+			this.multiBlockSystemCaching = multiBlockSystemCaching;
+			return this;
+		}
+
+		/**
 		 * Builds the BedrockCacheOptions instance.
 		 * @return the configured BedrockCacheOptions
 		 */
 		public BedrockCacheOptions build() {
-			return new BedrockCacheOptions(this.strategy);
+			return new BedrockCacheOptions(this.strategy, this.multiBlockSystemCaching);
 		}
 
 	}

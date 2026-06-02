@@ -455,29 +455,30 @@ public class BedrockProxyChatModel implements ChatModel {
 			logger.debug("Cache strategy: {}, shouldCacheSystem: {}", cacheOptions.getStrategy(), shouldCacheSystem);
 		}
 
-		// Build system messages with optional caching on last message
 		List<org.springframework.ai.chat.messages.Message> systemMessageList = prompt.getInstructions()
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
 			.toList();
 
+		// With multi-block system caching, place the cache point after the
+		// second-to-last block so a trailing dynamic block can vary without
+		// invalidating the cached prefix.
+		boolean multiBlockSystemCaching = cacheOptions != null && cacheOptions.isMultiBlockSystemCaching()
+				&& systemMessageList.size() > 1;
+		int cacheBoundaryIndex = multiBlockSystemCaching ? systemMessageList.size() - 2 : systemMessageList.size() - 1;
+
 		List<SystemContentBlock> systemMessages = new ArrayList<>();
 		for (int i = 0; i < systemMessageList.size(); i++) {
 			org.springframework.ai.chat.messages.Message sysMessage = systemMessageList.get(i);
 
-			// Add the text content block
 			SystemContentBlock textBlock = SystemContentBlock.builder().text(sysMessage.getText()).build();
 			systemMessages.add(textBlock);
 
-			// Apply cache point marker after last system message if caching is enabled
-			// SystemContentBlock is a UNION type - text and cachePoint must be separate
-			// blocks
-			boolean isLastSystem = (i == systemMessageList.size() - 1);
-			if (isLastSystem && shouldCacheSystem) {
+			// SystemContentBlock is a union: text and cachePoint must be separate blocks.
+			if (i == cacheBoundaryIndex && shouldCacheSystem) {
 				CachePointBlock cachePoint = CachePointBlock.builder().type("default").build();
 				SystemContentBlock cachePointBlock = SystemContentBlock.builder().cachePoint(cachePoint).build();
 				systemMessages.add(cachePointBlock);
-				logger.debug("Applied cache point after system message");
 			}
 		}
 
