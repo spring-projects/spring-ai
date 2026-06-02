@@ -213,17 +213,10 @@ public final class OpenAiSetup {
 			.proxy(proxy)
 			.dispatcherExecutorService(dispatcherExecutor);
 
-		// Build the OkHttpClient directly (no intermediate SpringAiOpenAiHttpClient
-		// wrapper) so no executor is created and discarded before we add the
-		// Authorization-stripping interceptor.
-		okhttp3.OkHttpClient baseOkClient = httpBuilder.buildOkHttpClient();
-
-		okhttp3.OkHttpClient strippedOkClient = baseOkClient.newBuilder().addInterceptor(chain -> {
+		SpringAiOpenAiHttpClient httpClient = httpBuilder.buildWithInterceptor(chain -> {
 			okhttp3.Request request = chain.request().newBuilder().removeHeader("Authorization").build();
 			return chain.proceed(request);
-		}).build();
-
-		SpringAiOpenAiHttpClient httpClient = SpringAiOpenAiHttpClient.builder().buildWithClient(strippedOkClient);
+		});
 
 		ClientOptions.Builder clientOptions = ClientOptions.builder()
 			.httpClient(httpClient)
