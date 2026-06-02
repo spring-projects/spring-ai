@@ -16,8 +16,11 @@
 
 package org.springframework.ai.deepseek;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 
@@ -52,6 +55,54 @@ public class DeepSeekChatCompletionRequestTests {
 
 		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
 		assertThat(request.temperature()).isEqualTo(99.9D);
+	}
+
+	// gh-5038: DeepSeek thinking mode requires the previous assistant message's
+	// reasoning_content to be passed back, otherwise the next request fails with
+	// "The reasoning_content in the thinking mode must be passed back to the API." (400).
+	// inbound (buildGeneration) already captures reasoningContent into
+	// DeepSeekAssistantMessage; this test pins outbound roundtrip in createRequest.
+	@Test
+	public void createRequestPreservesReasoningContentFromDeepSeekAssistantMessage() {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		var assistantMessage = DeepSeekAssistantMessage.builder()
+			.content("final answer")
+			.reasoningContent("step-by-step thinking trace")
+			.build();
+
+		var prompt = client.buildRequestPrompt(
+				new Prompt(List.of(new UserMessage("question"), assistantMessage, new UserMessage("follow-up")),
+						DeepSeekChatOptions.builder().model("deepseek-reasoner").build()));
+
+		var request = client.createRequest(prompt, false);
+
+		assertThat(request.messages()).hasSize(3);
+		var serializedAssistant = request.messages().get(1);
+		assertThat(serializedAssistant.role()).isEqualTo(DeepSeekApi.ChatCompletionMessage.Role.ASSISTANT);
+		assertThat(serializedAssistant.content()).isEqualTo("final answer");
+		assertThat(serializedAssistant.reasoningContent()).isEqualTo("step-by-step thinking trace");
+	}
+
+	// Plain AssistantMessage (not a DeepSeekAssistantMessage) has no reasoningContent
+	// to forward; verify the outbound field stays null and we don't NPE.
+	@Test
+	public void createRequestKeepsReasoningContentNullForPlainAssistantMessage() {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		var assistantMessage = new org.springframework.ai.chat.messages.AssistantMessage("final answer");
+
+		var prompt = client.buildRequestPrompt(
+				new Prompt(List.of(new UserMessage("question"), assistantMessage, new UserMessage("follow-up")),
+						DeepSeekChatOptions.builder().model("deepseek-chat").build()));
+
+		var request = client.createRequest(prompt, false);
+
+		assertThat(request.messages()).hasSize(3);
+		var serializedAssistant = request.messages().get(1);
+		assertThat(serializedAssistant.role()).isEqualTo(DeepSeekApi.ChatCompletionMessage.Role.ASSISTANT);
+		assertThat(serializedAssistant.content()).isEqualTo("final answer");
+		assertThat(serializedAssistant.reasoningContent()).isNull();
 	}
 
 }
