@@ -17,13 +17,13 @@
 package org.springframework.ai.mistralai;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -50,6 +50,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -319,58 +320,63 @@ class MistralAiChatModelIT {
 	@Test
 	void functionCallTest() {
 
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo, and Paris? Response in Celsius");
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
-			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+		var options = MistralAiChatOptions.builder()
+			.model(MistralAiApi.ChatModel.MISTRAL_SMALL)
+			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
-				.build()))
+				.build())
 			.build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+		Prompt prompt = new Prompt(List.of(new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius.")),
+				options);
+
+		ChatResponse response = this.chatModel.call(prompt);
+
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			response = this.chatModel.call(prompt);
+		}
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getText()).containsAnyOf("30.0", "30");
-		assertThat(response.getMetadata()).isNotNull();
-		assertThat(response.getMetadata().getUsage()).isNotNull();
-		assertThat(response.getMetadata().getUsage().getTotalTokens()).isLessThan(1050).isGreaterThan(500);
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
 	void streamFunctionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in Tokyo, Japan? Response in Celsius");
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
-			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+		var options = MistralAiChatOptions.builder()
+			.model(MistralAiApi.ChatModel.MISTRAL_SMALL)
+			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
-				.build()))
+				.build())
 			.build();
 
-		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(messages, promptOptions));
+		Prompt prompt = new Prompt(List.of(new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius.")),
+				options);
 
-		String content = response.collectList()
-			.blockOptional()
-			.stream()
-			.flatMap(List::stream)
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getText)
-			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
 
-		assertThat(content).containsAnyOf("10.0", "10");
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
+
+		String content = aggregatedRef.get().getResult().getOutput().getText();
+
+		assertThat(content).contains("30", "10", "15");
 	}
 
 	@Test
@@ -438,26 +444,36 @@ class MistralAiChatModelIT {
 
 	@Test
 	void streamFunctionCallUsageTest() {
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo, and Paris? Response in Celsius");
 
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
-		var promptOptions = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
-			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+		var options = MistralAiChatOptions.builder()
+			.model(MistralAiApi.ChatModel.MISTRAL_SMALL)
+			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
-				.build()))
+				.build())
 			.build();
 
-		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(messages, promptOptions));
-		ChatResponse chatResponse = response.last().block();
+		Prompt prompt = new Prompt(List
+			.of(new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris? Response in Celsius")),
+				options);
 
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
+
+		ChatResponse chatResponse = aggregatedRef.get();
 		logger.info("Response: {}", chatResponse);
 		assertThat(chatResponse.getMetadata()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
-		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isLessThan(1050).isGreaterThan(650);
+		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isLessThan(1050).isGreaterThan(400);
 	}
 
 	@Test

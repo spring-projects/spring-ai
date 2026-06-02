@@ -20,11 +20,14 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -32,6 +35,7 @@ import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.model.mistralai.autoconfigure.MistralAiChatAutoConfiguration;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -51,7 +55,7 @@ public class PaymentStatusPromptIT {
 			new Transaction("T1003"), new StatusDate("Paid", "2021-10-07"), new Transaction("T1004"),
 			new StatusDate("Paid", "2021-10-05"), new Transaction("T1005"), new StatusDate("Pending", "2021-10-08"));
 
-	private final Logger logger = LoggerFactory.getLogger(WeatherServicePromptIT.class);
+	private final Logger logger = LoggerFactory.getLogger(PaymentStatusPromptIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"))
@@ -66,6 +70,12 @@ public class PaymentStatusPromptIT {
 			.run(context -> {
 
 				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
+				ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+
+				var chatClient = ChatClient
+					.builder(chatModel, ObservationRegistry.NOOP, null, null,
+							ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+					.build();
 
 				UserMessage userMessage = new UserMessage("What's the status of my transaction with id T1001?");
 
@@ -78,7 +88,9 @@ public class PaymentStatusPromptIT {
 						.build()))
 					.build();
 
-				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
+				ChatResponse response = chatClient.prompt(new Prompt(List.of(userMessage), promptOptions))
+					.call()
+					.chatResponse();
 
 				logger.info("Response: {}", response);
 

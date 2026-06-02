@@ -21,16 +21,20 @@ import java.util.Map;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
@@ -60,38 +64,68 @@ class PaymentStatusBeanOpenAiIT {
 			new StatusDate("Unpaid", "2021-10-06"), "T1003", new StatusDate("Paid", "2021-10-07"), "T1004",
 			new StatusDate("Paid", "2021-10-05"), "T1005", new StatusDate("Pending", "2021-10-08"));
 
-	private final Logger logger = LoggerFactory.getLogger(PaymentStatusBeanIT.class);
+	private final Logger logger = LoggerFactory.getLogger(PaymentStatusBeanOpenAiIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"),
-				"spring.ai.openai.chat.base-url=https://api.mistral.ai")
+		.withPropertyValues("spring.ai.openai.chat.api-key=" + System.getenv("MISTRAL_AI_API_KEY"),
+				"spring.ai.openai.chat.base-url=https://api.mistral.ai/v1")
 		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class, RestClientAutoConfiguration.class,
 				SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class,
 				WebClientAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test
+	void helloWorld() {
+
+		this.contextRunner.run(context -> {
+
+			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+
+			var chatClient = ChatClient
+				.builder(chatModel, ObservationRegistry.NOOP, null, null,
+						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+				.build();
+
+			ChatResponse response = chatClient
+				.prompt(new Prompt(List.of(new UserMessage("Tell me a joke?")),
+						OpenAiChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue()).build()))
+				.call()
+				.chatResponse();
+
+			logger.info("Response: {}", response);
+
+			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+		});
+	}
+
+	@Test
 	void functionCallTest() {
 
-		this.contextRunner
-			.withPropertyValues(
-					"spring.ai.openai.chat.options.model=" + MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
-			.run(context -> {
+		this.contextRunner.run(context -> {
 
-				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 
-				ChatResponse response = chatModel
-					.call(new Prompt(List.of(new UserMessage("What's the status of my transaction with id T1001?")),
-							OpenAiChatOptions.builder()
-								.toolNames("retrievePaymentStatus")
-								.toolNames("retrievePaymentDate")
-								.build()));
+			var chatClient = ChatClient
+				.builder(chatModel, ObservationRegistry.NOOP, null, null,
+						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+				.build();
 
-				logger.info("Response: {}", response);
+			ChatResponse response = chatClient
+				.prompt(new Prompt(List.of(new UserMessage("What's the status of my transaction with id T1001?")),
+						OpenAiChatOptions.builder()
+							.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
+							.toolNames("retrievePaymentStatus", "retrievePaymentDate")
+							.build()))
+				.call()
+				.chatResponse();
 
-				assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("T1001");
-				assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("paid");
-			});
+			logger.info("Response: {}", response);
+
+			assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("T1001");
+			assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("paid");
+		});
 	}
 
 	record StatusDate(String status, String date) {
