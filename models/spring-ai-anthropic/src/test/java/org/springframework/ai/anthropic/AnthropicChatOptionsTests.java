@@ -144,19 +144,22 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 			.toolContext(Map.of("base-key", "base-value"))
 			.build();
 
-		AnthropicChatOptions override = AnthropicChatOptions.builder()
-			.stopSequences(List.of("override-stop1", "override-stop2"))
-			.toolNames(Set.of("override-tool"))
-			// toolContext is empty, should not override
+		AnthropicChatOptions combine = AnthropicChatOptions.builder()
+			.stopSequences(List.of("combine-stop1", "combine-stop2"))
+			.toolNames(Set.of("combine-tool1", "combine-tool2"))
+			.toolContext(Map.of("combine-key1", "combine-value1", "combine-key2", "combine-value2"))
 			.build();
 
-		AnthropicChatOptions merged = base.mutate().combineWith(override.mutate()).build();
+		AnthropicChatOptions merged = base.mutate().combineWith(combine.mutate()).build();
 
-		// Non-empty collections from override take precedence
-		assertThat(merged.getStopSequences()).containsExactly("override-stop1", "override-stop2");
-		assertThat(merged.getToolNames()).containsExactly("override-tool");
-		// Empty collections don't override
+		// Combine stopSequences
+		assertThat(merged.getStopSequences()).containsExactly("base-stop", "combine-stop1", "combine-stop2");
+		// Combine toolNames
+		assertThat(merged.getToolNames()).containsExactlyInAnyOrder("base-tool", "combine-tool1", "combine-tool2");
+		// Combine toolContext
 		assertThat(merged.getToolContext()).containsEntry("base-key", "base-value");
+		assertThat(merged.getToolContext()).containsEntry("combine-key1", "combine-value1");
+		assertThat(merged.getToolContext()).containsEntry("combine-key2", "combine-value2");
 	}
 
 	@Test

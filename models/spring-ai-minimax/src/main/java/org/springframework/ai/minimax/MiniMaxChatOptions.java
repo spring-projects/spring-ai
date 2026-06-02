@@ -17,7 +17,6 @@
 package org.springframework.ai.minimax;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -215,7 +214,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	public @Nullable List<String> getStop() {
-		return (this.stop != null) ? Collections.unmodifiableList(this.stop) : null;
+		return this.stop;
 	}
 
 	@Override
@@ -233,7 +232,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	public @Nullable List<MiniMaxApi.FunctionTool> getTools() {
-		return (this.tools != null) ? Collections.unmodifiableList(this.tools) : null;
+		return this.tools;
 	}
 
 	public @Nullable String getToolChoice() {

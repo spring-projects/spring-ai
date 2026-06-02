@@ -16,7 +16,6 @@
 
 package org.springframework.ai.chat.prompt;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -78,7 +77,7 @@ public class DefaultChatOptions implements ChatOptions {
 
 	@Override
 	public @Nullable List<String> getStopSequences() {
-		return this.stopSequences != null ? Collections.unmodifiableList(this.stopSequences) : null;
+		return this.stopSequences;
 	}
 
 	@Override

@@ -20,7 +20,6 @@ import java.net.Proxy;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.ApiKey;
+import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -592,6 +592,9 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 	@Override
 	public boolean equals(@Nullable Object o) {
+		if (this == o) {
+			return true;
+		}
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
@@ -805,71 +808,6 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		protected @Nullable Map<String, Object> extraBody;
 
 		@Override
-		public B toolCallbacks(@Nullable List<ToolCallback> toolCallbacks) {
-			this.toolCallbacks = toolCallbacks;
-			return self();
-		}
-
-		@Override
-		public B toolCallbacks(ToolCallback... toolCallbacks) {
-			if (this.toolCallbacks == null) {
-				this.toolCallbacks = new ArrayList<>();
-			}
-			this.toolCallbacks.addAll(java.util.Arrays.asList(toolCallbacks));
-			return self();
-		}
-
-		@Override
-		public B toolNames(@Nullable Set<String> toolNames) {
-			this.toolNames = toolNames;
-			return self();
-		}
-
-		@Override
-		public B toolNames(String... toolNames) {
-			if (this.toolNames == null) {
-				this.toolNames = new HashSet<>();
-			}
-			this.toolNames.addAll(Set.of(toolNames));
-			return self();
-		}
-
-		@Override
-		public B toolContext(@Nullable Map<String, Object> context) {
-			if (context != null) {
-				if (this.toolContext == null) {
-					this.toolContext = new HashMap<>();
-				}
-				this.toolContext.putAll(context);
-			}
-			else {
-				this.toolContext = null;
-			}
-			return self();
-		}
-
-		@Override
-		public B toolContext(String key, Object value) {
-			if (this.toolContext == null) {
-				this.toolContext = new HashMap<>();
-			}
-			this.toolContext.put(key, value);
-			return self();
-		}
-
-		@Override
-		public B internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-			return self();
-		}
-
-		@Override
-		public B frequencyPenalty(@Nullable Double frequencyPenalty) {
-			this.frequencyPenalty = frequencyPenalty;
-			return self();
-		}
-
-		@Override
 		public B maxTokens(@Nullable Integer maxTokens) {
 			if (this.maxCompletionTokens != null) {
 				logger.warn(
@@ -880,36 +818,6 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			else {
 				this.maxTokens = maxTokens;
 			}
-			return self();
-		}
-
-		@Override
-		public B presencePenalty(@Nullable Double presencePenalty) {
-			this.presencePenalty = presencePenalty;
-			return self();
-		}
-
-		@Override
-		public B stopSequences(@Nullable List<String> stopSequences) {
-			this.stopSequences = stopSequences;
-			return self();
-		}
-
-		@Override
-		public B temperature(@Nullable Double temperature) {
-			this.temperature = temperature;
-			return self();
-		}
-
-		@Override
-		public B topK(@Nullable Integer topK) {
-			this.topK = topK;
-			return self();
-		}
-
-		@Override
-		public B topP(@Nullable Double topP) {
-			this.topP = topP;
 			return self();
 		}
 
