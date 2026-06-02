@@ -21,11 +21,14 @@ import java.util.Map;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -33,6 +36,7 @@ import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.model.mistralai.autoconfigure.MistralAiChatAutoConfiguration;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -70,13 +74,21 @@ class PaymentStatusBeanIT {
 			.run(context -> {
 
 				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
+				ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 
-				ChatResponse response = chatModel
-					.call(new Prompt(List.of(new UserMessage("What's the status of my transaction with id T1001?")),
+				var chatClient = ChatClient
+					.builder(chatModel, ObservationRegistry.NOOP, null, null,
+							ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+					.build();
+
+				ChatResponse response = chatClient
+					.prompt(new Prompt(List.of(new UserMessage("What's the status of my transaction with id T1001?")),
 							MistralAiChatOptions.builder()
 								.toolNames("retrievePaymentStatus")
 								.toolNames("retrievePaymentDate")
-								.build()));
+								.build()))
+					.call()
+					.chatResponse();
 
 				logger.info("Response: {}", response);
 
