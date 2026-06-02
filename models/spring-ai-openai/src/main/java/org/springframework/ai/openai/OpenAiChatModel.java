@@ -234,10 +234,9 @@ public final class OpenAiChatModel implements ChatModel {
 							choice.message()._role().asString().isPresent() ? choice.message()._role().asStringOrThrow()
 									: "",
 							"index", choice.index(), "finishReason", choice.finishReason().value().toString(),
-							"refusal", choice.message().refusal().isPresent() ? choice.message().refusal().get() : "",
-							"annotations", choice.message().annotations().isPresent()
-									? choice.message().annotations().get() : List.of(Map.of()),
-							"reasoningContent", getReasoningContent(choice));
+							"refusal", choice.message().refusal().orElse(""), "annotations",
+							choice.message().annotations().orElse((List) List.of(Map.of())), "reasoningContent",
+							getReasoningContent(choice));
 					return buildGeneration(choice, metadata, request);
 				}).toList();
 
@@ -335,11 +334,9 @@ public final class OpenAiChatModel implements ChatModel {
 
 							Map<String, Object> metadata = Map.of("id", id, "role", roleMap.getOrDefault(id, ""),
 									"index", choice.index(), "finishReason", choice.finishReason().value(), "refusal",
-									choice.message().refusal().isPresent() ? choice.message().refusal().get() : "",
-									"annotations",
-									choice.message().annotations().isPresent() ? choice.message().annotations().get()
-											: List.of(),
-									"chunkChoice", chunk.choices().get((int) choice.index()), "reasoningContent",
+									choice.message().refusal().orElse(""), "annotations",
+									choice.message().annotations().orElse(List.of()), "chunkChoice",
+									chunk.choices().get((int) choice.index()), "reasoningContent",
 									getReasoningContent(choice));
 
 							return buildGeneration(choice, metadata, request);
@@ -635,7 +632,9 @@ public final class OpenAiChatModel implements ChatModel {
 						.message(ChatCompletionMessage.builder()
 							.content(chunkChoice.delta().content())
 							.refusal(chunkChoice.delta().refusal())
-							.build());
+							.putAllAdditionalProperties(chunkChoice.delta()._additionalProperties())
+							.build())
+						.putAllAdditionalProperties(chunkChoice._additionalProperties());
 
 					// Handle optional logprobs
 					if (chunkChoice.logprobs().isPresent()) {
@@ -1144,15 +1143,13 @@ public final class OpenAiChatModel implements ChatModel {
 
 	private String getReasoningContent(ChatCompletion.Choice choice) {
 		String reasoningContent = "";
-		Map<String, JsonValue> additionalProperties = choice._additionalProperties();
+		Map<String, JsonValue> additionalProperties = choice.message()._additionalProperties();
 		if (additionalProperties.get("reasoning_content") != null) {
-			reasoningContent = additionalProperties.get("reasoning_content").asString().isPresent()
-					? additionalProperties.get("reasoning_content").asString().get().toString() : "";
+			reasoningContent = (String) additionalProperties.get("reasoning_content").asString().orElse("");
 		}
 		else {
 			if (additionalProperties.get("reasoning") != null) {
-				reasoningContent = additionalProperties.get("reasoning").asString().isPresent()
-						? additionalProperties.get("reasoning").asString().get().toString() : "";
+				reasoningContent = (String) additionalProperties.get("reasoning").asString().orElse("");
 			}
 		}
 		return reasoningContent;

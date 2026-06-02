@@ -248,8 +248,8 @@ class OpenAiChatModelTests {
 					.role(JsonValue.from("assistant"))
 					.annotations(List.of())
 					.toolCalls(List.of())
+					.putAdditionalProperty("reasoning_content", JsonValue.from("Test reasoning content"))
 					.build())
-				.putAdditionalProperty("reasoning_content", JsonValue.from("Test reasoning content"))
 				.build())
 			.build());
 
@@ -288,8 +288,8 @@ class OpenAiChatModelTests {
 					.role(JsonValue.from("assistant"))
 					.annotations(List.of())
 					.toolCalls(List.of())
+					.putAdditionalProperty("reasoning", JsonValue.from("Test reasoning content"))
 					.build())
-				.putAdditionalProperty("reasoning", JsonValue.from("Test reasoning content"))
 				.build())
 			.build());
 
