@@ -360,7 +360,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			.withMetricType(this.metricType)
 			.withOutFields(outFieldNames)
 			.withTopK(request.getTopK())
-			.withVectors(List.of(EmbeddingUtils.toList(embedding)))
+			.withFloatVectors(List.of(EmbeddingUtils.toList(embedding)))
 			.withVectorFieldName(this.embeddingFieldName);
 
 		if (StringUtils.hasText(nativeFilterExpressions)) {
