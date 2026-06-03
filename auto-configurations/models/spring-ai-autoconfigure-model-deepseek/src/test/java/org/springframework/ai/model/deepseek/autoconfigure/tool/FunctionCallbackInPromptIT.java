@@ -31,7 +31,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.model.deepseek.autoconfigure.DeepSeekChatAutoConfiguration;
-import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
@@ -72,14 +71,13 @@ public class FunctionCallbackInPromptIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
 			var promptOptions = DeepSeekChatOptions.builder()
-				.internalToolExecutionEnabled(false)
 				.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();
 
-			ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 
 			Prompt prompt = new Prompt(List.of(userMessage), promptOptions);
 
@@ -108,14 +106,13 @@ public class FunctionCallbackInPromptIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
 			var promptOptions = DeepSeekChatOptions.builder()
-				.internalToolExecutionEnabled(false)
 				.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();
 
-			ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 
 			Prompt prompt = new Prompt(List.of(userMessage), promptOptions);
 
