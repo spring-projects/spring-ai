@@ -284,7 +284,12 @@ public class DeepSeekChatModel implements ChatModel {
 					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry);
 
-			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
+			Observation parentObservation = contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
+			observation.parentObservation(parentObservation);
+			try (Observation.Scope ignored = parentObservation != null ? parentObservation.openScope()
+					: Observation.Scope.NOOP) {
+				observation.start();
+			}
 
 			// @formatter:off
 			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
