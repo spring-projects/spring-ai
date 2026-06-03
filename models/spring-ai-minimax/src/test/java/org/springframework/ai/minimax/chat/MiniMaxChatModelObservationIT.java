@@ -28,12 +28,13 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.observation.ChatModelObservationDocumentation.HighCardinalityKeyNames;
+import org.springframework.ai.chat.observation.ChatModelObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxChatOptions;
 import org.springframework.ai.minimax.api.MiniMaxApi;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
@@ -44,8 +45,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.chat.observation.ChatModelObservationDocumentation.HighCardinalityKeyNames;
-import static org.springframework.ai.chat.observation.ChatModelObservationDocumentation.LowCardinalityKeyNames;
 
 /**
  * Integration tests for observation instrumentation in {@link MiniMaxChatModel}.
@@ -180,8 +179,8 @@ public class MiniMaxChatModelObservationIT {
 		@Bean
 		public MiniMaxChatModel minimaxChatModel(MiniMaxApi minimaxApi, TestObservationRegistry observationRegistry) {
 			return new MiniMaxChatModel(minimaxApi, MiniMaxChatOptions.builder().build(),
-					ToolCallingManager.builder().build(), RetryUtils.DEFAULT_RETRY_TEMPLATE, observationRegistry,
-					new DefaultToolExecutionEligibilityPredicate());
+					ToolCallingManager.builder().observationRegistry(observationRegistry).build(),
+					RetryUtils.DEFAULT_RETRY_TEMPLATE, observationRegistry);
 		}
 
 	}

@@ -146,7 +146,7 @@ The prefix `spring.ai.minimax.chat` is the property prefix that lets you configu
 | spring.ai.minimax.chat.stop | The model will stop generating characters specified by stop, and currently only supports a single stop word in the format of ["stop_word1"] | -
 | spring.ai.minimax.chat.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
 | spring.ai.minimax.chat.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
-| spring.ai.minimax.chat.internal-tool-execution-enabled | If false, the Spring AI will not handle the tool calls internally, but will proxy them to the client. Then it is the client's responsibility to handle the tool calls, dispatch them to the appropriate function, and return the results. If true (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | true
+| spring.ai.minimax.chat.internal-tool-execution-enabled (Removed and no longer valid) | MiniMaxChatModel no longer executes tool calls internally. Use ChatClient with ToolCallAdvisor instead. | -
 |====
 
 NOTE: You can override the common `spring.ai.minimax.base-url` and `spring.ai.minimax.api-key` for the `ChatModel` implementations.
@@ -177,6 +177,117 @@ ChatResponse response = chatModel.call(
 ----
 
 TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-minimax/src/main/java/org/springframework/ai/minimax/MiniMaxChatOptions.java[MiniMaxChatOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
+
+== Tool Calling
+
+`MiniMaxChatModel` does not execute tool calls internally.
+Tool execution must be handled externally using one of two supported approaches:
+
+* **ChatClient with ToolCallAdvisor** — the recommended approach for most use cases.
+  `ToolCallAdvisor` is automatically registered and manages the tool-call loop transparently.
+* **User-controlled tool execution** — use `DefaultToolCallingManager` directly when you need full control over the loop.
+
+=== Tool Calling via ChatClient (Recommended)
+
+The simplest way to use tools is with the `ChatClient` high-level API.
+`ToolCallAdvisor` handles the tool-call loop automatically for both synchronous and streaming calls.
+
+Here's an example using `@Tool`-annotated methods:
+
+[source,java]
+----
+public class WeatherService {
+
+    @Tool(description = "Get the weather in location")
+    public String weatherByLocation(@ToolParam(description = "City or state name") String location) {
+        // ...
+    }
+}
+
+String response = ChatClient.create(this.chatModel)
+        .prompt("What's the weather like in Boston?")
+        .tools(new WeatherService())
+        .call()
+        .content();
+----
+
+You can use `java.util.function` beans as tools as well:
+
+[source,java]
+----
+@Bean
+public Function<Request, Response> weatherFunction() {
+    return request -> new Response(String.format("%s°C", 10));
+}
+
+String response = ChatClient.create(this.chatModel)
+        .prompt("What's the weather like in Boston?")
+        .toolNames("weatherFunction")
+        .call()
+        .content();
+----
+
+=== User-Controlled Tool Execution
+
+For scenarios where you need explicit control over the tool-call loop, you can drive the loop manually using `DefaultToolCallingManager`.
+
+==== Synchronous
+
+[source,java]
+----
+ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+var options = MiniMaxChatOptions.builder()
+        .toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
+            .description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+            .inputType(WeatherService.Request.class)
+            .build()))
+        .build();
+
+var prompt = new Prompt("What's the weather like in San Francisco, Tokyo and Paris?", options);
+
+ChatResponse response = chatModel.call(prompt);
+
+while (response.hasToolCalls()) {
+    ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+    prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+    response = chatModel.call(prompt);
+}
+
+System.out.println(response.getResult().getOutput().getText());
+----
+
+==== Streaming
+
+Because tool calls span multiple stream chunks, each streaming call must be aggregated first using `MessageAggregator` before checking for tool calls.
+
+[source,java]
+----
+ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+var options = MiniMaxChatOptions.builder()
+        .toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
+            .description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+            .inputType(WeatherService.Request.class)
+            .build()))
+        .build();
+
+var prompt = new Prompt("What's the weather like in San Francisco, Tokyo and Paris?", options);
+
+AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+new MessageAggregator().aggregate(chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+
+while (aggregatedRef.get().hasToolCalls()) {
+    ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+    prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+    aggregatedRef.set(null);
+    new MessageAggregator().aggregate(chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+}
+
+System.out.println(aggregatedRef.get().getResult().getOutput().getText());
+----
+
+Find more in xref:api/tools.adoc[Tools] documentation.
 
 == Sample Controller
 
