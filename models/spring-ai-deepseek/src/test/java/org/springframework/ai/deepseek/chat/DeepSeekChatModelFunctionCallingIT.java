@@ -229,7 +229,17 @@ class DeepSeekChatModelFunctionCallingIT {
 				.build()))
 			.build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+		Prompt prompt = new Prompt(messages, promptOptions);
+
+		ChatResponse response = this.chatModel.call(prompt);
+
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			response = this.chatModel.call(prompt);
+		}
 
 		logger.info("Response: {}", response);
 
