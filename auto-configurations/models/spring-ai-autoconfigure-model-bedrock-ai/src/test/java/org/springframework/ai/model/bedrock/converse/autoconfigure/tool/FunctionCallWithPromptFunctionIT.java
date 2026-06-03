@@ -18,6 +18,7 @@ package org.springframework.ai.model.bedrock.converse.autoconfigure.tool;
 
 import java.util.List;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.bedrock.autoconfigure.BedrockTestUtils;
 import org.springframework.ai.model.bedrock.autoconfigure.RequiresAwsCredentials;
 import org.springframework.ai.model.bedrock.converse.autoconfigure.BedrockConverseProxyChatAutoConfiguration;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -54,6 +56,13 @@ public class FunctionCallWithPromptFunctionIT {
 			.run(context -> {
 
 				BedrockProxyChatModel chatModel = context.getBean(BedrockProxyChatModel.class);
+				ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+
+				var chatClient = org.springframework.ai.chat.client.ChatClient
+					.builder(chatModel, ObservationRegistry.NOOP, null, null,
+							org.springframework.ai.chat.client.advisor.ToolCallAdvisor.builder()
+								.toolCallingManager(toolCallingManager))
+					.build();
 
 				UserMessage userMessage = new UserMessage(
 						"What's the weather like in San Francisco, in Paris and in Tokyo? Return the temperature in Celsius.");
@@ -66,7 +75,9 @@ public class FunctionCallWithPromptFunctionIT {
 								.build()))
 					.build();
 
-				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
+				ChatResponse response = chatClient.prompt(new Prompt(List.of(userMessage), promptOptions))
+					.call()
+					.chatResponse();
 
 				logger.info("Response: {}", response);
 

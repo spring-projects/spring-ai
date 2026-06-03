@@ -25,8 +25,6 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -35,7 +33,6 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.document.Document;
@@ -64,7 +61,6 @@ import software.amazon.awssdk.services.bedrockruntime.model.OutputConfig;
 import software.amazon.awssdk.services.bedrockruntime.model.OutputFormat;
 import software.amazon.awssdk.services.bedrockruntime.model.OutputFormatStructure;
 import software.amazon.awssdk.services.bedrockruntime.model.S3Location;
-import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 import software.amazon.awssdk.services.bedrockruntime.model.Tool;
@@ -105,10 +101,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolExecutionResult;
-import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.JsonHelper;
@@ -155,8 +147,6 @@ public class BedrockProxyChatModel implements ChatModel {
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
-	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
-
 	private final BedrockRuntimeClient bedrockRuntimeClient;
 
 	private final BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
@@ -171,14 +161,6 @@ public class BedrockProxyChatModel implements ChatModel {
 	private final ToolCallingManager toolCallingManager;
 
 	/**
-	 * The tool execution eligibility predicate used to determine if a tool can be
-	 * executed.
-	 */
-	private final ToolExecutionEligibilityChecker toolExecutionEligibilityChecker;
-
-	private final AtomicBoolean internalToolExecutionWarned = new AtomicBoolean(false);
-
-	/**
 	 * Conventions to use for generating observations.
 	 */
 	private @Nullable ChatModelObservationConvention observationConvention;
@@ -189,26 +171,16 @@ public class BedrockProxyChatModel implements ChatModel {
 			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, BedrockChatOptions options,
 			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager) {
 		this(bedrockRuntimeClient, bedrockRuntimeAsyncClient, options, observationRegistry, toolCallingManager,
-				chatResponse -> chatResponse != null && chatResponse.hasToolCalls());
+				new MediaFetcher());
 	}
 
 	public BedrockProxyChatModel(BedrockRuntimeClient bedrockRuntimeClient,
 			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, BedrockChatOptions options,
-			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager,
-			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
-		this(bedrockRuntimeClient, bedrockRuntimeAsyncClient, options, observationRegistry, toolCallingManager,
-				toolExecutionEligibilityChecker, new MediaFetcher());
-	}
-
-	public BedrockProxyChatModel(BedrockRuntimeClient bedrockRuntimeClient,
-			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, BedrockChatOptions options,
-			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager,
-			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, MediaFetcher mediaFetcher) {
+			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager, MediaFetcher mediaFetcher) {
 
 		Assert.notNull(bedrockRuntimeClient, "bedrockRuntimeClient must not be null");
 		Assert.notNull(bedrockRuntimeAsyncClient, "bedrockRuntimeAsyncClient must not be null");
 		Assert.notNull(toolCallingManager, "toolCallingManager must not be null");
-		Assert.notNull(toolExecutionEligibilityChecker, "toolExecutionEligibilityChecker must not be null");
 		Assert.notNull(mediaFetcher, "mediaFetcher must not be null");
 
 		this.bedrockRuntimeClient = bedrockRuntimeClient;
@@ -216,56 +188,7 @@ public class BedrockProxyChatModel implements ChatModel {
 		this.options = options;
 		this.observationRegistry = observationRegistry;
 		this.toolCallingManager = toolCallingManager;
-		this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
 		this.mediaFetcher = mediaFetcher;
-	}
-
-	/**
-	 * @deprecated since 2.0.0 for removal in 3.0.0 — replaced by
-	 * {@link #BedrockProxyChatModel(BedrockRuntimeClient, BedrockRuntimeAsyncClient, BedrockChatOptions, ObservationRegistry, ToolCallingManager, ToolExecutionEligibilityChecker, MediaFetcher)}.
-	 */
-	@Deprecated(since = "2.0.0", forRemoval = true)
-	@SuppressWarnings({ "deprecation", "removal" })
-	public BedrockProxyChatModel(BedrockRuntimeClient bedrockRuntimeClient,
-			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, BedrockChatOptions defaultOptions,
-			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager,
-			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
-		this(bedrockRuntimeClient, bedrockRuntimeAsyncClient, defaultOptions, observationRegistry, toolCallingManager,
-				toolExecutionEligibilityPredicate, new MediaFetcher());
-	}
-
-	/**
-	 * @deprecated since 2.0.0 for removal in 3.0.0 — replaced by
-	 * {@link #BedrockProxyChatModel(BedrockRuntimeClient, BedrockRuntimeAsyncClient, BedrockChatOptions, ObservationRegistry, ToolCallingManager, ToolExecutionEligibilityChecker, MediaFetcher)}.
-	 */
-	@Deprecated(since = "2.0.0", forRemoval = true)
-	@SuppressWarnings({ "deprecation", "removal" })
-	public BedrockProxyChatModel(BedrockRuntimeClient bedrockRuntimeClient,
-			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, BedrockChatOptions defaultOptions,
-			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager,
-			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate, MediaFetcher mediaFetcher) {
-		this(bedrockRuntimeClient, bedrockRuntimeAsyncClient, defaultOptions, observationRegistry, toolCallingManager,
-				new ToolExecutionEligibilityChecker() {
-					@Override
-					public Boolean apply(ChatResponse chatResponse) {
-						return chatResponse != null && chatResponse.hasToolCalls();
-					}
-
-					@Override
-					public boolean isToolExecutionRequired(ChatOptions promptOptions, ChatResponse chatResponse) {
-						return toolExecutionEligibilityPredicate.test(promptOptions, chatResponse);
-					}
-				}, mediaFetcher);
-	}
-
-	private static BedrockChatOptions from(ChatOptions options) {
-		return BedrockChatOptions.builder()
-			.model(options.getModel())
-			.maxTokens(options.getMaxTokens())
-			.stopSequences(options.getStopSequences())
-			.temperature(options.getTemperature())
-			.topP(options.getTopP())
-			.build();
 	}
 
 	/**
@@ -307,29 +230,6 @@ public class BedrockProxyChatModel implements ChatModel {
 				return response;
 			});
 
-		ChatOptions options = prompt.getOptions();
-		Assert.state(options != null, "Prompt options must not be null");
-
-		if (this.toolExecutionEligibilityChecker.isToolExecutionRequired(options, chatResponse)
-				&& chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
-			if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
-				logger.warn(
-						"Internal tool execution in BedrockProxyChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
-								+ "Use ChatClient with ToolCallAdvisor instead.");
-			}
-			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
-			if (toolExecutionResult.returnDirect()) {
-				// Return tool execution result directly to the client.
-				return ChatResponse.builder()
-					.from(chatResponse)
-					.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-					.build();
-			}
-			else {
-				// Send the tool execution result back to the model.
-				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), options), chatResponse);
-			}
-		}
 		return chatResponse;
 	}
 
@@ -864,50 +764,10 @@ public class BedrockProxyChatModel implements ChatModel {
 			ChatOptions options = prompt.getOptions();
 			Assert.state(options != null, "Prompt options must not be null");
 
-			Flux<ChatResponse> chatResponseFlux = chatResponses.concatMap(chatResponse -> {
-
-				if (this.toolExecutionEligibilityChecker.isToolExecutionRequired(options, chatResponse)
-						&& chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
-
-					// FIXME: bounded elastic needs to be used since tool calling
-					// is currently only synchronous
-					return Flux.deferContextual(ctx -> {
-						ToolExecutionResult toolExecutionResult;
-						try {
-							if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
-								logger.warn(
-										"Internal tool execution in BedrockProxyChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
-												+ "Use ChatClient with ToolCallAdvisor instead.");
-							}
-							ToolCallReactiveContextHolder.setContext(ctx);
-							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
-						}
-						finally {
-							ToolCallReactiveContextHolder.clearContext();
-						}
-
-						if (toolExecutionResult.returnDirect()) {
-							// Return tool execution result directly to the client.
-							return Flux.just(ChatResponse.builder()
-								.from(chatResponse)
-								.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-								.build());
-						}
-						else {
-							// Send the tool execution result back to the model.
-							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), options),
-									chatResponse);
-						}
-					}).subscribeOn(Schedulers.boundedElastic());
-				}
-				else {
-					return Flux.just(chatResponse);
-				}
-			})// @formatter:off
-			.doOnError(observation::error)
-			.doFinally(s -> observation.stop())
-			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
-			// @formatter:on
+			Flux<ChatResponse> chatResponseFlux = chatResponses.concatMap(chatResponse -> Flux.just(chatResponse))
+				.doOnError(observation::error)
+				.doFinally(s -> observation.stop())
+				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
 			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
 		});
@@ -944,9 +804,6 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		private @Nullable ToolCallingManager toolCallingManager;
 
-		private ToolExecutionEligibilityChecker toolExecutionEligibilityChecker = chatResponse -> chatResponse != null
-				&& chatResponse.hasToolCalls();
-
 		private BedrockChatOptions options = BedrockChatOptions.builder().build();
 
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
@@ -977,45 +834,6 @@ public class BedrockProxyChatModel implements ChatModel {
 		@Deprecated(since = "2.0.0", forRemoval = true)
 		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
 			this.toolCallingManager = toolCallingManager;
-			return this;
-		}
-
-		/**
-		 * Sets the predicate to determine tool execution eligibility.
-		 * @param toolExecutionEligibilityPredicate the predicate
-		 * @return this builder
-		 * @deprecated since 2.0.0 for removal in 3.0.0 — replaced by
-		 * {@link #toolExecutionEligibilityChecker(ToolExecutionEligibilityChecker)}. For
-		 * the recommended long-term approach, internal tool execution in
-		 * {@link BedrockProxyChatModel} is superseded by {@code ToolCallAdvisor} used via
-		 * {@code ChatClient}.
-		 */
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		@SuppressWarnings({ "deprecation", "removal" })
-		public Builder toolExecutionEligibilityPredicate(
-				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
-			this.toolExecutionEligibilityChecker = new ToolExecutionEligibilityChecker() {
-				@Override
-				public Boolean apply(ChatResponse chatResponse) {
-					return chatResponse != null && chatResponse.hasToolCalls();
-				}
-
-				@Override
-				public boolean isToolExecutionRequired(ChatOptions promptOptions, ChatResponse chatResponse) {
-					return toolExecutionEligibilityPredicate.test(promptOptions, chatResponse);
-				}
-			};
-			return this;
-		}
-
-		/**
-		 * Sets the checker to determine tool execution eligibility.
-		 * @param toolExecutionEligibilityChecker the checker
-		 * @return this builder
-		 */
-		public Builder toolExecutionEligibilityChecker(
-				ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
-			this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
 			return this;
 		}
 
@@ -1123,19 +941,11 @@ public class BedrockProxyChatModel implements ChatModel {
 				this.bedrockRuntimeAsyncClient = builder.build();
 			}
 
-			BedrockProxyChatModel bedrockProxyChatModel = null;
+			this.toolCallingManager = this.toolCallingManager != null ? this.toolCallingManager
+					: ToolCallingManager.builder().observationRegistry(this.observationRegistry).build();
 
-			if (this.toolCallingManager != null) {
-				bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
-						this.bedrockRuntimeAsyncClient, this.options, this.observationRegistry, this.toolCallingManager,
-						this.toolExecutionEligibilityChecker);
-
-			}
-			else {
-				bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
-						this.bedrockRuntimeAsyncClient, this.options, this.observationRegistry,
-						DEFAULT_TOOL_CALLING_MANAGER, this.toolExecutionEligibilityChecker);
-			}
+			BedrockProxyChatModel bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
+					this.bedrockRuntimeAsyncClient, this.options, this.observationRegistry, this.toolCallingManager);
 
 			if (this.customObservationConvention != null) {
 				bedrockProxyChatModel.setObservationConvention(this.customObservationConvention);
