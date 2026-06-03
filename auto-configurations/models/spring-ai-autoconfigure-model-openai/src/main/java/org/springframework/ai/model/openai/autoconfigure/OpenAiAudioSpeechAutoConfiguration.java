@@ -45,6 +45,7 @@ import org.springframework.context.annotation.Conditional;
  * @author Issam El-atif
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
+ * @author Jewoo Shin
  */
 @AutoConfiguration
 @EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiAudioSpeechProperties.class })
@@ -53,7 +54,7 @@ import org.springframework.context.annotation.Conditional;
 public class OpenAiAudioSpeechAutoConfiguration {
 
 	@Bean
-	@Conditional(OpenAiConnectionCondition.AudioSpeech.class)
+	@Conditional(OnAvailableOpenAiConnection.class)
 	@ConditionalOnMissingBean
 	public OpenAiAudioSpeechModel openAiSdkAudioSpeechModel(OpenAiCommonProperties commonProperties,
 			OpenAiAudioSpeechProperties speechProperties, ObjectProvider<ObservationRegistry> observationRegistry,

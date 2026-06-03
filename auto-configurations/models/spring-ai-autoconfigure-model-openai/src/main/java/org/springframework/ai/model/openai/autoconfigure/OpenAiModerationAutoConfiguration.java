@@ -45,6 +45,7 @@ import org.springframework.context.annotation.Conditional;
  * @author Issam El-atif
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
+ * @author Jewoo Shin
  */
 @AutoConfiguration
 @EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiModerationProperties.class })
@@ -53,7 +54,7 @@ import org.springframework.context.annotation.Conditional;
 public class OpenAiModerationAutoConfiguration {
 
 	@Bean
-	@Conditional(OpenAiConnectionCondition.Moderation.class)
+	@Conditional(OnAvailableOpenAiConnection.class)
 	@ConditionalOnMissingBean
 	public OpenAiModerationModel openAiSdkModerationModel(OpenAiCommonProperties commonProperties,
 			OpenAiModerationProperties moderationProperties, ObjectProvider<ObservationRegistry> observationRegistry,

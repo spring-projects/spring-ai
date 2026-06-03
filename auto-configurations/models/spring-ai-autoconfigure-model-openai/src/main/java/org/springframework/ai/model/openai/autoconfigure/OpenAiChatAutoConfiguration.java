@@ -50,6 +50,7 @@ import org.springframework.context.annotation.Conditional;
  * @author Issam El-atif
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
+ * @author Jewoo Shin
  */
 @AutoConfiguration
 @EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiChatProperties.class })
@@ -58,7 +59,7 @@ import org.springframework.context.annotation.Conditional;
 public class OpenAiChatAutoConfiguration {
 
 	@Bean
-	@Conditional(OpenAiConnectionCondition.Chat.class)
+	@Conditional(OnAvailableOpenAiConnection.class)
 	@ConditionalOnMissingBean
 	public OpenAiChatModel openAiChatModel(OpenAiCommonProperties commonProperties, OpenAiChatProperties chatProperties,
 			ToolCallingManager toolCallingManager, ObjectProvider<ObservationRegistry> observationRegistry,

@@ -47,6 +47,7 @@ import org.springframework.context.annotation.Conditional;
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
  * @author guan xu
+ * @author Jewoo Shin
  */
 @AutoConfiguration
 @ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.OPENAI,
@@ -55,7 +56,7 @@ import org.springframework.context.annotation.Conditional;
 public class OpenAiEmbeddingAutoConfiguration {
 
 	@Bean
-	@Conditional(OpenAiConnectionCondition.Embedding.class)
+	@Conditional(OnAvailableOpenAiConnection.class)
 	@ConditionalOnMissingBean
 	public OpenAiEmbeddingModel openAiEmbeddingModel(OpenAiCommonProperties commonProperties,
 			OpenAiEmbeddingProperties embeddingProperties, ObjectProvider<ObservationRegistry> observationRegistry,

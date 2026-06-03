@@ -34,15 +34,18 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.type.MethodMetadata;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Condition-level tests for {@link OpenAiConnectionCondition} using all six OpenAI
+ * Condition-level tests for {@link OnAvailableOpenAiConnection} using all six OpenAI
  * auto-configurations. Verifies that model beans are only created when a valid credential
  * source is configured for the corresponding sub-model, and that no model beans are
  * created (and the context does not fail) when no credential is provided. Env-var
  * fallback ({@code OPENAI_API_KEY}) is covered via System Stubs.
+ *
+ * @author Jewoo Shin
  */
 @ExtendWith(SystemStubsExtension.class)
 class OpenAiConnectionConditionAutoConfigurationTests {
@@ -257,9 +260,13 @@ class OpenAiConnectionConditionAutoConfigurationTests {
 			}
 		};
 
-		OpenAiConnectionCondition.Chat condition = new OpenAiConnectionCondition.Chat();
+		MethodMetadata methodMetadata = Mockito.mock(MethodMetadata.class);
+		Mockito.when(methodMetadata.getDeclaringClassName()).thenReturn(OpenAiChatAutoConfiguration.class.getName());
+		Mockito.when(methodMetadata.getMethodName()).thenReturn("openAiChatModel");
+
+		OnAvailableOpenAiConnection condition = new OnAvailableOpenAiConnection();
 		org.springframework.boot.autoconfigure.condition.ConditionOutcome outcome = condition
-			.getMatchOutcome(conditionContext, null);
+			.getMatchOutcome(conditionContext, methodMetadata);
 
 		appCtx.close();
 		assertThat(outcome.isMatch()).isTrue();

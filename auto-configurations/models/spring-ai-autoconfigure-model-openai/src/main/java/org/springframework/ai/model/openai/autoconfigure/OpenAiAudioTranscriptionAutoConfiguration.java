@@ -48,6 +48,7 @@ import org.springframework.context.annotation.Conditional;
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
  * @author guan xu
+ * @author Jewoo Shin
  */
 @AutoConfiguration
 @ConditionalOnProperty(name = SpringAIModelProperties.AUDIO_TRANSCRIPTION_MODEL, havingValue = SpringAIModels.OPENAI,
@@ -56,7 +57,7 @@ import org.springframework.context.annotation.Conditional;
 public class OpenAiAudioTranscriptionAutoConfiguration {
 
 	@Bean
-	@Conditional(OpenAiConnectionCondition.AudioTranscription.class)
+	@Conditional(OnAvailableOpenAiConnection.class)
 	@ConditionalOnMissingBean
 	public OpenAiAudioTranscriptionModel openAiSdkAudioTranscriptionModel(OpenAiCommonProperties commonProperties,
 			OpenAiAudioTranscriptionProperties transcriptionProperties,

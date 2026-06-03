@@ -48,6 +48,7 @@ import org.springframework.context.annotation.Conditional;
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
  * @author guan xu
+ * @author Jewoo Shin
  */
 @AutoConfiguration
 @ConditionalOnProperty(name = SpringAIModelProperties.IMAGE_MODEL, havingValue = SpringAIModels.OPENAI,
@@ -56,7 +57,7 @@ import org.springframework.context.annotation.Conditional;
 public class OpenAiImageAutoConfiguration {
 
 	@Bean
-	@Conditional(OpenAiConnectionCondition.Image.class)
+	@Conditional(OnAvailableOpenAiConnection.class)
 	@ConditionalOnMissingBean
 	public OpenAiImageModel openAiImageModel(OpenAiCommonProperties commonProperties,
 			OpenAiImageProperties imageProperties, ObjectProvider<ObservationRegistry> observationRegistry,
