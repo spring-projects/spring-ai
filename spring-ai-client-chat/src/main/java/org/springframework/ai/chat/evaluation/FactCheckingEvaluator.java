@@ -139,7 +139,8 @@ public class FactCheckingEvaluator implements Evaluator {
 			.call()
 			.content();
 
-		boolean passing = "yes".equalsIgnoreCase(evaluationResponse);
+		String normalizedResponse = (evaluationResponse != null) ? evaluationResponse.strip() : "";
+		boolean passing = "yes".equalsIgnoreCase(normalizedResponse);
 		return new EvaluationResponse(passing, "", Collections.emptyMap());
 	}
 
