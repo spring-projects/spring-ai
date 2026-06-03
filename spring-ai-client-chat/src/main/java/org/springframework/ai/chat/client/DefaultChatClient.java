@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -912,23 +911,6 @@ public class DefaultChatClient implements ChatClient {
 					ccr.advisorObservationConvention, ccr.toolCallAdvisorBuilder);
 		}
 
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
-				Map<String, Object> userParams, Map<String, Object> userMetadata, @Nullable String systemText,
-				Map<String, Object> systemParams, Map<String, Object> systemMetadata, List<ToolCallback> toolCallbacks,
-				List<ToolCallbackProvider> toolCallbackProviders, List<Message> messages, List<String> toolNames,
-				List<Media> media, ChatOptions.@Nullable Builder<?> customizer, List<Advisor> advisors,
-				Map<String, Object> advisorParams, ObservationRegistry observationRegistry,
-				@Nullable ChatClientObservationConvention chatClientObservationConvention,
-				Map<String, Object> toolContext, @Nullable TemplateRenderer templateRenderer,
-				@Nullable AdvisorObservationConvention advisorObservationConvention) {
-
-			this(chatModel, userText, userParams, userMetadata, systemText, systemParams, systemMetadata, toolCallbacks,
-					toolCallbackProviders, messages, toolNames, media, customizer, advisors, advisorParams,
-					observationRegistry, chatClientObservationConvention, toolContext, templateRenderer,
-					advisorObservationConvention, null);
-		}
-
 		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
 				Map<String, Object> userParams, Map<String, Object> userMetadata, @Nullable String systemText,
 				Map<String, Object> systemParams, Map<String, Object> systemMetadata, List<ToolCallback> toolCallbacks,
@@ -938,7 +920,7 @@ public class DefaultChatClient implements ChatClient {
 				@Nullable ChatClientObservationConvention chatClientObservationConvention,
 				Map<String, Object> toolContext, @Nullable TemplateRenderer templateRenderer,
 				@Nullable AdvisorObservationConvention advisorObservationConvention,
-				ToolCallAdvisor.@Nullable Builder<?> toolCallAdvisorBuilder) {
+				ToolCallAdvisor.Builder<?> toolCallAdvisorBuilder) {
 
 			Assert.notNull(chatModel, "chatModel cannot be null");
 			Assert.notNull(userParams, "userParams cannot be null");
@@ -954,9 +936,10 @@ public class DefaultChatClient implements ChatClient {
 			Assert.notNull(advisorParams, "advisorParams cannot be null");
 			Assert.notNull(observationRegistry, "observationRegistry cannot be null");
 			Assert.notNull(toolContext, "toolContext cannot be null");
+			Assert.notNull(toolCallAdvisorBuilder, "toolCallAdvisorBuilder cannot be null");
 
 			this.chatModel = chatModel;
-			this.toolCallAdvisorBuilder = Objects.requireNonNullElse(toolCallAdvisorBuilder, ToolCallAdvisor.builder());
+			this.toolCallAdvisorBuilder = toolCallAdvisorBuilder;
 			this.optionsCustomizer = customizer != null ? customizer.clone() : null;
 
 			this.userText = userText;
@@ -1299,12 +1282,13 @@ public class DefaultChatClient implements ChatClient {
 
 			// At the stack bottom add the model call advisors.
 			// They play the role of the last advisors in the advisor chain.
-			this.advisors.add(ChatModelCallAdvisor.builder().chatModel(this.chatModel).build());
-			this.advisors.add(ChatModelStreamAdvisor.builder().chatModel(this.chatModel).build());
+			List<Advisor> chain = new ArrayList<>(this.advisors);
+			chain.add(ChatModelCallAdvisor.builder().chatModel(this.chatModel).build());
+			chain.add(ChatModelStreamAdvisor.builder().chatModel(this.chatModel).build());
 
 			return DefaultAroundAdvisorChain.builder(this.observationRegistry)
 				.observationConvention(this.advisorObservationConvention)
-				.pushAll(this.advisors)
+				.pushAll(chain)
 				.build();
 		}
 
