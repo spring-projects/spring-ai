@@ -241,7 +241,12 @@ public class MistralAiChatModel implements ChatModel {
 					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry);
 
-			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
+			Observation parentObservation = contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
+			observation.parentObservation(parentObservation);
+			try (Observation.Scope ignored = parentObservation != null ? parentObservation.openScope()
+					: Observation.Scope.NOOP) {
+				observation.start();
+			}
 
 			Flux<ChatCompletionChunk> completionChunks = RetryUtils.execute(this.retryTemplate,
 					() -> this.mistralAiApi.chatCompletionStream(request));

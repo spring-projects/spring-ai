@@ -307,7 +307,12 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry);
 
-			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
+			Observation parentObservation = contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
+			observation.parentObservation(parentObservation);
+			try (Observation.Scope ignored = parentObservation != null ? parentObservation.openScope()
+					: Observation.Scope.NOOP) {
+				observation.start();
+			}
 
 			// Track streaming state for usage accumulation and tool calls
 			StreamingState streamingState = new StreamingState();
