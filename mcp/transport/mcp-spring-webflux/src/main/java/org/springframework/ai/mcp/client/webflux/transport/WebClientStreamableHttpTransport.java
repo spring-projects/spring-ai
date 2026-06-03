@@ -22,6 +22,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -116,6 +118,9 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 	private final boolean resumableStreams;
 
 	private final AtomicReference<McpTransportSession<Disposable>> activeSession = new AtomicReference<>();
+
+	// Track all active subscriptions for proper cleanup
+	private final Set<Disposable> activeSubscriptions = ConcurrentHashMap.newKeySet();
 
 	private final AtomicReference<Function<Mono<McpSchema.JSONRPCMessage>, Mono<McpSchema.JSONRPCMessage>>> handler = new AtomicReference<>();
 
@@ -216,6 +221,15 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 	public Mono<Void> closeGracefully() {
 		return Mono.defer(() -> {
 			logger.debug("Graceful close triggered");
+
+			// Dispose all tracked subscriptions to prevent connection leak
+			activeSubscriptions.forEach(Disposable::dispose);
+			int disposedCount = activeSubscriptions.size();
+			activeSubscriptions.clear();
+			if (disposedCount > 0) {
+				logger.debug("Disposed {} active subscriptions", disposedCount);
+			}
+
 			McpTransportSession<Disposable> currentSession = this.activeSession.getAndUpdate(this::createClosedSession);
 			if (currentSession != null) {
 				return Mono.from(currentSession.closeGracefully());
@@ -284,6 +298,7 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 					@Nullable Disposable ref = disposableRef.getAndSet(null);
 					if (ref != null) {
 						transportSession.removeConnection(ref);
+						activeSubscriptions.remove(ref);
 					}
 				})
 				.contextWrite(ctx)
@@ -329,7 +344,12 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 						.markInitialized(response.headers().asHttpHeaders().getFirst(HttpHeaders.MCP_SESSION_ID))) {
 						// Once we have a session, we try to open an async stream for
 						// the server to send notifications and requests out-of-band.
-						reconnect((McpTransportStream<Disposable>) null).contextWrite(sink.contextView()).subscribe();
+						Disposable innerConnection = reconnect((McpTransportStream<Disposable>) null)
+							.contextWrite(sink.contextView())
+							.subscribe();
+					
+						// Track inner subscription for cleanup
+						activeSubscriptions.add(innerConnection);
 					}
 
 					String sessionRepresentation = sessionIdOrPlaceholder(transportSession);
@@ -392,6 +412,7 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 					@Nullable Disposable ref = disposableRef.getAndSet(null);
 					if (ref != null) {
 						transportSession.removeConnection(ref);
+						activeSubscriptions.remove(ref);
 					}
 				})
 				.contextWrite(sink.contextView())
