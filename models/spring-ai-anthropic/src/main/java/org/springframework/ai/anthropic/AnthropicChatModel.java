@@ -664,6 +664,19 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 		}
 
+		// Pre-compute last tool result message index for tool result caching. A
+		// breakpoint on the final tool result of the request caches the prior tool
+		// outputs so they are read from cache on subsequent tool-calling rounds.
+		int lastToolIndex = -1;
+		if (cacheResolver.isCachingEnabled() && requestOptions.getCacheOptions().isCacheToolResults()) {
+			for (int i = nonSystemMessages.size() - 1; i >= 0; i--) {
+				if (nonSystemMessages.get(i).getMessageType() == MessageType.TOOL) {
+					lastToolIndex = i;
+					break;
+				}
+			}
+		}
+
 		// Process non-system messages
 		for (int i = 0; i < nonSystemMessages.size(); i++) {
 			org.springframework.ai.chat.messages.Message message = nonSystemMessages.get(i);
@@ -739,13 +752,31 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolResponseMessage = (ToolResponseMessage) message;
-				List<ContentBlockParam> toolResultBlocks = toolResponseMessage.getResponses()
-					.stream()
-					.map(response -> ContentBlockParam.ofToolResult(ToolResultBlockParam.builder()
+				List<ToolResponseMessage.ToolResponse> responses = toolResponseMessage.getResponses();
+
+				// Compute cache control for the last tool result message of the request.
+				// The breakpoint is placed on its final block, caching everything before
+				// it (tools + system + prior messages + earlier tool results).
+				CacheControlEphemeral toolCacheControl = null;
+				if (i == lastToolIndex) {
+					String combinedText = combineToolResponsesText(responses);
+					toolCacheControl = cacheResolver.resolve(MessageType.TOOL, combinedText);
+				}
+
+				List<ContentBlockParam> toolResultBlocks = new ArrayList<>();
+				for (int r = 0; r < responses.size(); r++) {
+					ToolResponseMessage.ToolResponse response = responses.get(r);
+					ToolResultBlockParam.Builder toolResultBuilder = ToolResultBlockParam.builder()
 						.toolUseId(response.id())
-						.content(response.responseData())
-						.build()))
-					.toList();
+						.content(response.responseData());
+					if (toolCacheControl != null && r == responses.size() - 1) {
+						toolResultBuilder.cacheControl(toolCacheControl);
+					}
+					toolResultBlocks.add(ContentBlockParam.ofToolResult(toolResultBuilder.build()));
+				}
+				if (toolCacheControl != null) {
+					cacheResolver.useCacheBlock();
+				}
 				builder.addUserMessageOfBlockParams(toolResultBlocks);
 			}
 		}
@@ -889,6 +920,17 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			String text = messages.get(i).getText();
 			if (text != null) {
 				combined.append(text);
+			}
+		}
+		return combined.toString();
+	}
+
+	private String combineToolResponsesText(List<ToolResponseMessage.ToolResponse> responses) {
+		StringBuilder combined = new StringBuilder();
+		for (ToolResponseMessage.ToolResponse response : responses) {
+			String data = response.responseData();
+			if (data != null) {
+				combined.append(data);
 			}
 		}
 		return combined.toString();

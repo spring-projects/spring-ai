@@ -68,6 +68,32 @@ class AnthropicCacheOptionsTests {
 	}
 
 	@Test
+	void cacheToolResultsDefaultsToFalse() {
+		AnthropicCacheOptions options = AnthropicCacheOptions.builder().build();
+		assertThat(options.isCacheToolResults()).isFalse();
+	}
+
+	@Test
+	void cacheToolResultsBuilderOverride() {
+		AnthropicCacheOptions options = AnthropicCacheOptions.builder().cacheToolResults(true).build();
+		assertThat(options.isCacheToolResults()).isTrue();
+	}
+
+	@Test
+	void cacheToolResultsParticipatesInEqualsAndHashCode() {
+		AnthropicCacheOptions withFlag = AnthropicCacheOptions.builder()
+			.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+			.cacheToolResults(true)
+			.build();
+		AnthropicCacheOptions withoutFlag = AnthropicCacheOptions.builder()
+			.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+			.build();
+
+		assertThat(withFlag).isNotEqualTo(withoutFlag);
+		assertThat(withFlag.hashCode()).isNotEqualTo(withoutFlag.hashCode());
+	}
+
+	@Test
 	void disabledSingletonHasNoneStrategy() {
 		assertThat(AnthropicCacheOptions.disabled().getStrategy()).isEqualTo(AnthropicCacheStrategy.NONE);
 	}

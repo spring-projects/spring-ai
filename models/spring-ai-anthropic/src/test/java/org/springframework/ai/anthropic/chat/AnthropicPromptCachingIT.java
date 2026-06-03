@@ -34,9 +34,11 @@ import org.springframework.ai.anthropic.AnthropicCacheTtl;
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.AnthropicTestConfiguration;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -385,6 +387,82 @@ class AnthropicPromptCachingIT {
 				usage3.cacheReadInputTokens().orElse(0L));
 		logger.info("Turn 4 - Created: {}, Read: {}", usage4.cacheCreationInputTokens().orElse(0L),
 				usage4.cacheReadInputTokens().orElse(0L));
+	}
+
+	@Test
+	void shouldCacheToolResultsAcrossToolCallingRounds() {
+		// A deliberately large tool result, comfortably above Anthropic's minimum
+		// cacheable prefix (~1024 tokens). The system/tool/user prefix in front of it is
+		// intentionally small: on its own it is below the minimum and would not cache, so
+		// any cache read can only come from the tool result being part of the cached
+		// prefix, which is exactly what the cacheToolResults breakpoint enables.
+		StringBuilder largeToolResult = new StringBuilder("Detailed hourly weather report for San Francisco.\n");
+		for (int hour = 0; hour < 160; hour++) {
+			largeToolResult.append("Hour ")
+				.append(hour)
+				.append(": temperature 18C, humidity 72%, wind 12 km/h from the west, visibility 10 km, ")
+				.append("pressure 1013 hPa, no precipitation expected, UV index moderate.\n");
+		}
+
+		// A marker captured once keeps this test's two calls sharing a single cache entry
+		// while avoiding collisions with content cached by previous runs.
+		String runMarker = "Session " + System.currentTimeMillis();
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.cacheOptions(AnthropicCacheOptions.builder()
+				.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+				.cacheToolResults(true)
+				.messageTypeMinContentLength(MessageType.USER, 0)
+				.build())
+			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get current weather for a location")
+				.inputType(MockWeatherService.Request.class)
+				.build())
+			.internalToolExecutionEnabled(false)
+			.maxTokens(80)
+			.temperature(0.3)
+			.build();
+
+		List<Message> conversation = List.of(new SystemMessage("You are a weather assistant. " + runMarker),
+				new UserMessage("What's the detailed weather in San Francisco?"),
+				AssistantMessage.builder()
+					.content("")
+					.toolCalls(List.of(new AssistantMessage.ToolCall("toolu_sf_1", "function", "getCurrentWeather",
+							"{\"location\":\"San Francisco, CA\",\"unit\":\"C\"}")))
+					.build(),
+				ToolResponseMessage.builder()
+					.responses(List.of(new ToolResponseMessage.ToolResponse("toolu_sf_1", "getCurrentWeather",
+							largeToolResult.toString())))
+					.build());
+
+		Prompt prompt = new Prompt(conversation, options);
+
+		// First call writes the prefix, including the large tool result, to cache.
+		ChatResponse first = this.chatModel.call(prompt);
+		assertThat(first).isNotNull();
+		Usage firstUsage = getSdkUsage(first);
+		assertThat(firstUsage).isNotNull();
+		long firstCreation = firstUsage.cacheCreationInputTokens().orElse(0L);
+		long firstRead = firstUsage.cacheReadInputTokens().orElse(0L);
+		assertThat(firstCreation > 0 || firstRead > 0)
+			.withFailMessage("Expected the tool result prefix to be cached, but got creation=%d, read=%d",
+					firstCreation, firstRead)
+			.isTrue();
+
+		// Second identical call reads that prefix back. Because the non-tool-result
+		// prefix
+		// is below the cache minimum, a non-zero read confirms the tool result itself was
+		// cached by the cacheToolResults breakpoint.
+		ChatResponse second = this.chatModel.call(prompt);
+		assertThat(second).isNotNull();
+		Usage secondUsage = getSdkUsage(second);
+		assertThat(secondUsage).isNotNull();
+		long secondRead = secondUsage.cacheReadInputTokens().orElse(0L);
+		assertThat(secondRead).as("Second call should read the cached tool result").isGreaterThan(0);
+
+		logger.info("Tool result caching - call 1 creation: {}, read: {}; call 2 read: {}", firstCreation, firstRead,
+				secondRead);
 	}
 
 	@Test
