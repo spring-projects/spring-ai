@@ -229,7 +229,7 @@ public class EvaluationAdvisorDemoApplication {
         return args -> {
 
             ChatClient chatClient = ChatClient.builder(anthropicChatModel)
-                    .defaultTools(new MyTools())
+                    .defaultTools(t -> t.instances(new MyTools()))
                     .defaultAdvisors(
 
                         SelfRefineEvaluationAdvisor.builder()

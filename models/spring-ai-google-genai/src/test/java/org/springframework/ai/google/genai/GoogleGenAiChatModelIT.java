@@ -452,7 +452,7 @@ class GoogleGenAiChatModelIT {
 		// Create a prompt that will trigger the tool call with a specific request that
 		// should invoke the tool
 		String response = chatClient.prompt()
-			.tools(new ScientistTools())
+			.tools(t -> t.instances(new ScientistTools()))
 			.user("List 3 famous scientists and their discoveries. Make sure to use the tool to get this information.")
 			.call()
 			.content();
@@ -490,7 +490,7 @@ class GoogleGenAiChatModelIT {
 		// Create a prompt that will trigger the tool call with a specific request that
 		// should invoke the tool
 		String response = chatClient.prompt()
-			.tools(new CurrentTimeTools())
+			.tools(t -> t.instances(new CurrentTimeTools()))
 			.user("Get the current time in the users timezone. Make sure to use the getCurrentDateTime tool to get this information.")
 			.call()
 			.content();

@@ -2111,6 +2111,67 @@ class DefaultChatClientTests {
 	}
 
 	@Test
+	void whenToolObjectsContainsToolCallbackThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
+		ToolCallback toolCallback = mock(ToolCallback.class);
+		assertThatThrownBy(() -> chatClient.prompt().tools(toolCallback)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("ToolCallback instances are not accepted here");
+	}
+
+	@Test
+	void whenToolObjectsContainsToolCallbackProviderThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
+		ToolCallbackProvider provider = mock(ToolCallbackProvider.class);
+		assertThatThrownBy(() -> chatClient.prompt().tools(provider)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("ToolCallbackProvider instances are not accepted here");
+	}
+
+	@Test
+	void whenToolObjectsContainsCollectionWithToolCallbackThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
+		ToolCallback toolCallback = mock(ToolCallback.class);
+		assertThatThrownBy(() -> chatClient.prompt().tools(List.of(toolCallback)))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Collections containing ToolCallback or ToolCallbackProvider");
+	}
+
+	@Test
+	void whenToolObjectsContainsArrayWithToolCallbackThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
+		ToolCallback toolCallback = mock(ToolCallback.class);
+		assertThatThrownBy(() -> chatClient.prompt().tools(new Object[] { new ToolCallback[] { toolCallback } }))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("ToolCallback instances are not accepted here");
+	}
+
+	@Test
+	void whenToolSpecInstancesContainsToolCallbackThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
+		ToolCallback toolCallback = mock(ToolCallback.class);
+		assertThatThrownBy(() -> chatClient.prompt().tools(t -> t.instances(toolCallback)))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("ToolCallback instances are not accepted here");
+	}
+
+	@Test
+	void whenToolSpecInstancesContainsToolCallbackProviderThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
+		ToolCallbackProvider provider = mock(ToolCallbackProvider.class);
+		assertThatThrownBy(() -> chatClient.prompt().tools(t -> t.instances(provider)))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("ToolCallbackProvider instances are not accepted here");
+	}
+
+	@Test
+	void whenToolSpecInstancesListContainsToolCallbackThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
+		ToolCallback toolCallback = mock(ToolCallback.class);
+		assertThatThrownBy(() -> chatClient.prompt().tools(t -> t.instances(List.of(toolCallback))))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("ToolCallback instances are not accepted here");
+	}
+
+	@Test
 	void whenSystemTextIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();

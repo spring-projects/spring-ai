@@ -180,7 +180,7 @@ public class BedrockNovaChatClientIT {
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
 
 		String response = chatClient.prompt()
-			.tools(new DummyWeatherForecastTools())
+			.tools(t -> t.instances(new DummyWeatherForecastTools()))
 			.user("Get current weather in Amsterdam")
 			.call()
 			.content();
@@ -198,7 +198,7 @@ public class BedrockNovaChatClientIT {
 
 		Flux<ChatResponse> responses = chatClient.prompt()
 			.options(ToolCallingChatOptions.builder().model(modelName))
-			.tools(new DummyWeatherForecastTools())
+			.tools(t -> t.instances(new DummyWeatherForecastTools()))
 			.user("Get current weather in Amsterdam")
 			.stream()
 			.chatResponse();

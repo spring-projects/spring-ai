@@ -50,7 +50,7 @@ ChatModel chatModel = ...
 
 String response = ChatClient.create(chatModel)
         .prompt("What day is tomorrow?")
-        .tools(new DateTimeTools())
+        .tools(t -> t.instances(new DateTimeTools()))
         .call()
         .content();
 
@@ -112,7 +112,7 @@ ChatModel chatModel = ...
 
 String response = ChatClient.create(chatModel)
         .prompt("Can you set an alarm 10 minutes from now?")
-        .tools(new DateTimeTools())
+        .tools(t -> t.instances(new DateTimeTools()))
         .call()
         .content();
 
@@ -221,7 +221,7 @@ When using the declarative specification approach, you can pass the tool class i
 ----
 ChatClient.create(chatModel)
     .prompt("What day is tomorrow?")
-    .tools(new DateTimeTools())
+    .tools(t -> t.instances(new DateTimeTools()))
     .call()
     .content();
 ----
@@ -244,7 +244,7 @@ WARNING: Default tools are shared across all the chat requests performed by all 
 ----
 ChatModel chatModel = ...
 ChatClient chatClient = ChatClient.builder(chatModel)
-    .defaultTools(new DateTimeTools())
+    .defaultTools(t -> t.instances(new DateTimeTools()))
     .build();
 ----
 
@@ -1140,7 +1140,7 @@ var chatClient = ChatClient.builder(chatModel)
     .build();
 
 String response = chatClient.prompt("What day is tomorrow?")
-    .tools(new DateTimeTools())
+    .tools(t -> t.instances(new DateTimeTools()))
     .call()
     .content();
 ----
@@ -1515,7 +1515,7 @@ var smartToolRetrieverAdvisor = ToolSearchToolCallingAdvisor.builder()
 
 // 3. Use with ChatClient — tools are registered but NOT sent to the LLM initially
 ChatClient chatClient = ChatClient.builder(chatModel)
-    .defaultTools(new MyTools())
+    .defaultTools(t -> t.instances(new MyTools()))
     .defaultAdvisors(smartToolRetrieverAdvisor)
     .build();
 

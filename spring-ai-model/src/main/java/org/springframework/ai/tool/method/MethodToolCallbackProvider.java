@@ -59,6 +59,7 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 	private MethodToolCallbackProvider(List<Object> toolObjects) {
 		Assert.notNull(toolObjects, "toolObjects cannot be null");
 		Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
+		Assert.notEmpty(toolObjects, "toolObjects cannot be empty");
 		assertToolAnnotatedMethodsPresent(toolObjects);
 		this.toolObjects = toolObjects;
 		validateToolCallbacks(getToolCallbacks());
@@ -75,9 +76,11 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 				.toList();
 
 			if (toolMethods.isEmpty()) {
-				throw new IllegalStateException("No @Tool annotated methods found in " + toolObject + ". "
-						+ "Did you mean to pass a ToolCallback or ToolCallbackProvider? If so, you have to use"
-						+ " .tools(toolSpec -> toolSpec.callbacks(...)) instead of .tools(...)");
+				throw new IllegalArgumentException("No @Tool annotated methods found in class '%s'. "
+					.formatted(toolObject.getClass().getName())
+						+ "Each object passed to tools() or ToolSpec.instances() must declare at least one @Tool annotated method. "
+						+ "To register a ToolCallback or ToolCallbackProvider directly, "
+						+ "use toolCallbacks() or tools(t -> t.callbacks(...)) instead.");
 			}
 		}
 	}

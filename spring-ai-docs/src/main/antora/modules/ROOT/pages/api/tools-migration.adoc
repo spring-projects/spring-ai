@@ -133,7 +133,7 @@ Or with the declarative approach:
 String response = ChatClient.create(chatModel)
     .prompt()
     .user("What's the weather like in San Francisco?")
-    .tools(new WeatherTools())
+    .tools(t -> t.instances(new WeatherTools()))
     .call()
     .content();
 ----
@@ -255,7 +255,7 @@ class Home {
 
 String response = ChatClient.create(this.chatModel).prompt()
         .user("Turn the light in the living room On.")
-        .tools(new Home())
+        .tools(t -> t.instances(new Home()))
         .call()
         .content();
 ----

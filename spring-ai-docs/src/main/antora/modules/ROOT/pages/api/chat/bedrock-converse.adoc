@@ -816,7 +816,7 @@ public class WeatherService {
 
 String response = ChatClient.create(this.chatModel)
         .prompt("What's the weather like in Boston?")
-        .tools(new WeatherService())
+        .tools(t -> t.instances(new WeatherService()))
         .call()
         .content();
 ----

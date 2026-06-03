@@ -22,6 +22,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,6 +103,30 @@ public class DefaultChatClient implements ChatClient {
 	private static final ChatClientMessageAggregator CHAT_CLIENT_MESSAGE_AGGREGATOR = new ChatClientMessageAggregator();
 
 	private final DefaultChatClientRequestSpec defaultChatClientRequest;
+
+	static void assertNoToolCallbackInstances(Object... toolObjects) {
+		for (Object obj : toolObjects) {
+			if (obj instanceof ToolCallback) {
+				throw new IllegalArgumentException(
+						"ToolCallback instances are not accepted here. Use toolCallbacks(ToolCallback...) or tools(t -> t.callbacks(...)) instead.");
+			}
+			if (obj instanceof ToolCallbackProvider) {
+				throw new IllegalArgumentException(
+						"ToolCallbackProvider instances are not accepted here. Use toolCallbacks(ToolCallbackProvider...) or tools(t -> t.callbacks(...)) instead.");
+			}
+			if (obj instanceof Collection<?> col) {
+				for (Object element : col) {
+					if (element instanceof ToolCallback || element instanceof ToolCallbackProvider) {
+						throw new IllegalArgumentException(
+								"Collections containing ToolCallback or ToolCallbackProvider instances are not accepted here. Use toolCallbacks() or tools(t -> t.callbacks(...)) instead.");
+					}
+				}
+			}
+			if (obj instanceof Object[] arr) {
+				assertNoToolCallbackInstances(arr);
+			}
+		}
+	}
 
 	public DefaultChatClient(DefaultChatClientRequestSpec defaultChatClientRequest) {
 		Assert.notNull(defaultChatClientRequest, "defaultChatClientRequest cannot be null");
@@ -802,6 +827,7 @@ public class DefaultChatClient implements ChatClient {
 		public ToolSpec instances(Object... toolObjects) {
 			Assert.notNull(toolObjects, "toolObjects cannot be null");
 			Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
+			assertNoToolCallbackInstances(toolObjects);
 			this.toolCallbacks.addAll(Arrays.asList(ToolCallbacks.from(toolObjects)));
 			return this;
 		}
@@ -810,6 +836,7 @@ public class DefaultChatClient implements ChatClient {
 		public ToolSpec instances(List<Object> toolObjects) {
 			Assert.notNull(toolObjects, "toolObjects cannot be null");
 			Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
+			assertNoToolCallbackInstances(toolObjects.toArray());
 			this.toolCallbacks.addAll(Arrays.asList(ToolCallbacks.from(toolObjects.toArray(new Object[0]))));
 			return this;
 		}
@@ -1166,6 +1193,7 @@ public class DefaultChatClient implements ChatClient {
 		public ChatClientRequestSpec tools(Object... toolObjects) {
 			Assert.notNull(toolObjects, "toolObjects cannot be null");
 			Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
+			assertNoToolCallbackInstances(toolObjects);
 			this.toolCallbacks.addAll(Arrays.asList(ToolCallbacks.from(toolObjects)));
 			return this;
 		}

@@ -60,16 +60,18 @@ class MethodToolCallbackProviderTests {
 	void whenToolObjectHasNoToolAnnotatedMethodThenThrow() {
 		assertThatThrownBy(
 				() -> MethodToolCallbackProvider.builder().toolObjects(new NoToolAnnotatedMethodObject()).build())
-			.isInstanceOf(IllegalStateException.class)
-			.hasMessageContaining("No @Tool annotated methods found in");
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("No @Tool annotated methods found in class")
+			.hasMessageContaining(NoToolAnnotatedMethodObject.class.getName());
 	}
 
 	@Test
 	void whenToolObjectHasOnlyFunctionalTypeToolMethodsThenThrow() {
 		assertThatThrownBy(() -> MethodToolCallbackProvider.builder()
 			.toolObjects(new OnlyFunctionalTypeToolMethodsObject())
-			.build()).isInstanceOf(IllegalStateException.class)
-			.hasMessageContaining("No @Tool annotated methods found in");
+			.build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("No @Tool annotated methods found in class")
+			.hasMessageContaining(OnlyFunctionalTypeToolMethodsObject.class.getName());
 	}
 
 	@Test

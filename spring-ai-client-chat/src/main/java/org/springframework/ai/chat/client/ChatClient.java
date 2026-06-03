@@ -365,7 +365,12 @@ public interface ChatClient {
 
 		ChatClientRequestSpec tools(Consumer<ToolSpec> consumer);
 
-		ChatClientRequestSpec tools(Object... toolObjects);
+		/**
+		 * @deprecated as of 2.0.0, in favor of {@code t -> t.instances(Object...)} in
+		 * {@link #tools(Consumer)}. To be removed in 3.0.0.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		ChatClientRequestSpec tools(Object... toolInstances);
 
 		/**
 		 * @deprecated as of 2.0.0, in favor of {@link #tools(Consumer)}. To be removed in
@@ -426,22 +431,68 @@ public interface ChatClient {
 
 	}
 
+	/**
+	 * Specification for configuring tools on a {@link ChatClient} request or default
+	 * builder. Combining tool instances, callbacks, context, and a custom advisor in a
+	 * single consumer lambda.
+	 */
 	interface ToolSpec {
 
-		ToolSpec instances(Object... toolObjects);
+		/**
+		 * Register objects whose {@link org.springframework.ai.tool.annotation.Tool
+		 * @Tool}-annotated methods are exposed as tools.
+		 * @param toolInstances one or more objects with {@code @Tool}-annotated methods;
+		 * must not contain {@link ToolCallback} or {@link ToolCallbackProvider} instances
+		 */
+		ToolSpec instances(Object... toolInstances);
 
-		ToolSpec instances(List<Object> toolObjects);
+		/**
+		 * Register objects whose {@link org.springframework.ai.tool.annotation.Tool
+		 * @Tool}-annotated methods are exposed as tools.
+		 * @param toolInstances list of objects with {@code @Tool}-annotated methods; must
+		 * not contain {@link ToolCallback} or {@link ToolCallbackProvider} instances
+		 */
+		ToolSpec instances(List<Object> toolInstances);
 
+		/**
+		 * Register pre-built {@link ToolCallback} instances directly.
+		 * @param toolCallbacks one or more tool callbacks
+		 */
 		ToolSpec callbacks(ToolCallback... toolCallbacks);
 
+		/**
+		 * Register pre-built {@link ToolCallback} instances directly.
+		 * @param toolCallbacks list of tool callbacks
+		 */
 		ToolSpec callbacks(List<ToolCallback> toolCallbacks);
 
+		/**
+		 * Register a {@link ToolCallbackProvider} whose callbacks are resolved lazily at
+		 * call time.
+		 * @param toolCallbackProvider one or more providers
+		 */
 		ToolSpec callbacks(ToolCallbackProvider... toolCallbackProvider);
 
+		/**
+		 * Supply additional context entries made available to tools during execution via
+		 * {@link org.springframework.ai.tool.execution.ToolExecutionContext}.
+		 * @param toolContext map of context key-value pairs
+		 */
 		ToolSpec context(Map<String, Object> toolContext);
 
+		/**
+		 * Supply a single context entry made available to tools during execution.
+		 * @param key context key
+		 * @param value context value
+		 */
 		ToolSpec context(String key, Object value);
 
+		/**
+		 * Use a custom {@link ToolAdvisor} to handle tool execution for this request.
+		 * Suppresses the auto-registration of the default
+		 * {@link org.springframework.ai.chat.client.advisor.ToolCallAdvisor}.
+		 * @param toolAdvisor the advisor to use
+		 */
 		ToolSpec advisor(ToolAdvisor toolAdvisor);
 
 	}
@@ -479,7 +530,12 @@ public interface ChatClient {
 
 		Builder defaultTools(Consumer<ToolSpec> consumer);
 
-		Builder defaultTools(Object... toolObjects);
+		/**
+		 * @deprecated as of 2.0.0, in favor of {@code t -> t.instances(Object...)} in
+		 * {@link #defaultTools(Consumer)}. To be removed in 3.0.0.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		Builder defaultTools(Object... toolInstances);
 
 		/**
 		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)}. To be

@@ -348,7 +348,7 @@ class AnthropicChatClientIT {
 
 		Flux<ChatResponse> responses = chatClient.prompt()
 			.options(ToolCallingChatOptions.builder().model(modelName))
-			.tools(new MyTools())
+			.tools(t -> t.instances(new MyTools()))
 			.user("Get current weather in Amsterdam and Paris")
 			.stream()
 			.chatResponse();

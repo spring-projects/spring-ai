@@ -269,6 +269,96 @@ import org.springframework.ai.google.genai.GoogleGenAiEmbeddingConnectionDetails
 import org.springframework.ai.google.genai.embedding.GoogleGenAiEmbeddingConnectionDetails;
 ----
 
+=== ChatClient Tool API Changes
+
+==== Deprecated: `tools(Object...)` and `defaultTools(Object...)`
+
+`ChatClientRequestSpec.tools(Object... toolInstances)` and `ChatClient.Builder.defaultTools(Object... toolInstances)` are deprecated for removal in 3.0.0.
+The replacement is the `Consumer<ToolSpec>` form, which gives access to the full tool configuration including instances, callbacks, context, and a custom advisor — all in one place.
+
+===== Impact
+
+Code that calls `.tools(myBean)` or `.defaultTools(myBean)` will produce deprecation warnings at compile time.
+
+===== Migration
+
+[source,java]
+----
+// Before
+chatClient.prompt("What day is tomorrow?")
+    .tools(new DateTimeTools())
+    .call().content();
+
+ChatClient.builder(chatModel)
+    .defaultTools(new DateTimeTools())
+    .build();
+
+// After
+chatClient.prompt("What day is tomorrow?")
+    .tools(t -> t.instances(new DateTimeTools()))
+    .call().content();
+
+ChatClient.builder(chatModel)
+    .defaultTools(t -> t.instances(new DateTimeTools()))
+    .build();
+----
+
+==== New: Runtime Guard Against Wrong Types in `tools(Object...)` and `ToolSpec.instances()`
+
+Passing a `ToolCallback` or `ToolCallbackProvider` instance — or a `Collection` or array containing them — to `tools(Object...)` or `ToolSpec.instances()` now throws `IllegalArgumentException` immediately.
+Previously this would fail deep inside `MethodToolCallbackProvider` with a confusing `IllegalStateException` after an unnecessary reflection scan.
+
+===== Impact
+
+Code that accidentally passes a `ToolCallback` or `ToolCallbackProvider` to these methods will now fail fast at the call site rather than later during callback resolution.
+
+===== Migration
+
+Use the dedicated `callbacks()` method on `ToolSpec` or the `toolCallbacks()` method directly:
+
+[source,java]
+----
+// Before — accidentally passed a ToolCallback to tools()
+ToolCallback cb = FunctionToolCallback.builder("name", fn).build();
+chatClient.prompt("...").tools(cb); // silently failed or confusing error
+
+// After — use the correct method
+chatClient.prompt("...")
+    .tools(t -> t.callbacks(cb))
+    .call().content();
+
+// Or for a ToolCallbackProvider
+chatClient.prompt("...")
+    .tools(t -> t.callbacks(myToolCallbackProvider))
+    .call().content();
+----
+
+==== Changed: `MethodToolCallbackProvider` Exception Type
+
+`MethodToolCallbackProvider` now throws `IllegalArgumentException` (was `IllegalStateException`) when an object with no `@Tool`-annotated methods is passed to it.
+The error message also now includes the fully qualified class name to make the offending type immediately identifiable.
+
+===== Impact
+
+Code that catches `IllegalStateException` from `MethodToolCallbackProvider` will no longer catch this error.
+
+===== Migration
+
+Update any catch clauses from `IllegalStateException` to `IllegalArgumentException`, or catch `IllegalArgumentException` in addition:
+
+[source,java]
+----
+// Before
+try {
+    MethodToolCallbackProvider.builder().toolObjects(myBean).build();
+} catch (IllegalStateException e) { ... }
+
+// After
+try {
+    MethodToolCallbackProvider.builder().toolObjects(myBean).build();
+} catch (IllegalArgumentException e) { ... }
+----
+
 [[upgrading-to-2-0-0-M7]]
 == Upgrading to 2.0.0-M7
 
@@ -290,18 +380,18 @@ Remove the explicit `ToolCallAdvisor` from the chain and let auto-registration h
 ----
 // Before — manual registration
 chatClient.prompt("What's the weather?")
-    .tools(weatherTool)
+    .tools(t -> t.instances(weatherTool))
     .advisors(ToolCallAdvisor.builder().build())
     .call().content();
 
 // After — auto-registration handles it; no explicit advisor needed
 chatClient.prompt("What's the weather?")
-    .tools(weatherTool)
+    .tools(t -> t.instances(weatherTool))
     .call().content();
 
 // Or, to keep full control, disable auto-registration explicitly
 chatClient.prompt("What's the weather?")
-    .tools(weatherTool)
+    .tools(t -> t.instances(weatherTool))
     .advisors(
         AdvisorParams.toolCallAdvisorAutoRegister(false),
         ToolCallAdvisor.builder().build()

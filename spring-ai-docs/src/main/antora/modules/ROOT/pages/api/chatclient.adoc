@@ -850,7 +850,7 @@ This means you do not need to add a `ToolCallAdvisor` manually for the common ca
 String response = ChatClient.builder(chatModel)
     .build()
     .prompt("What day is tomorrow?")
-    .tools(new DateTimeTools())   // ToolCallAdvisor is auto-registered here
+    .tools(t -> t.instances(new DateTimeTools()))   // ToolCallAdvisor is auto-registered here
     .call()
     .content();
 ----
@@ -864,7 +864,7 @@ You can disable the auto-registration per call using `AdvisorParams.toolCallAdvi
 [source,java]
 ----
 chatClient.prompt("What day is tomorrow?")
-    .tools(new DateTimeTools())
+    .tools(t -> t.instances(new DateTimeTools()))
     .advisors(AdvisorParams.toolCallAdvisorAutoRegister(false))
     .call()
     .content();
@@ -893,7 +893,7 @@ Alternatively, you can pass the advisor separately via `.advisors()`:
 [source,java]
 ----
 chatClient.prompt("What day is tomorrow?")
-    .tools(new DateTimeTools())
+    .tools(t -> t.instances(new DateTimeTools()))
     .advisors(customAdvisor)    // auto-registration suppressed
     .call()
     .content();
@@ -958,7 +958,7 @@ ChatClient chatClient = ChatClient
 
 // Every prompt that registers tools will use customManager in the auto-registered advisor
 chatClient.prompt("What day is tomorrow?")
-    .tools(new DateTimeTools())
+    .tools(t -> t.instances(new DateTimeTools()))
     .call()
     .content();
 ----
