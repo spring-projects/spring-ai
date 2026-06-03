@@ -138,16 +138,24 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 
 	@Test
 	void testCombineWithCollections() {
+		AnthropicCitationDocument baseDoc = AnthropicCitationDocument.builder().plainText("base-doc").build();
 		AnthropicChatOptions base = AnthropicChatOptions.builder()
 			.stopSequences(List.of("base-stop"))
 			.toolNames(Set.of("base-tool"))
 			.toolContext(Map.of("base-key", "base-value"))
+			.customHeaders(Map.of("base-header", "base-header-value"))
+			.httpHeaders(Map.of("base-http-header", "base-http-header-value"))
+			.citationDocuments(List.of(baseDoc))
 			.build();
 
+		AnthropicCitationDocument combineDoc = AnthropicCitationDocument.builder().plainText("combine-doc").build();
 		AnthropicChatOptions combine = AnthropicChatOptions.builder()
 			.stopSequences(List.of("combine-stop1", "combine-stop2"))
 			.toolNames(Set.of("combine-tool1", "combine-tool2"))
 			.toolContext(Map.of("combine-key1", "combine-value1", "combine-key2", "combine-value2"))
+			.customHeaders(Map.of("combine-header", "combine-header-value"))
+			.httpHeaders(Map.of("combine-http-header", "combine-http-header-value"))
+			.citationDocuments(List.of(combineDoc))
 			.build();
 
 		AnthropicChatOptions merged = base.mutate().combineWith(combine.mutate()).build();
@@ -160,6 +168,14 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		assertThat(merged.getToolContext()).containsEntry("base-key", "base-value");
 		assertThat(merged.getToolContext()).containsEntry("combine-key1", "combine-value1");
 		assertThat(merged.getToolContext()).containsEntry("combine-key2", "combine-value2");
+		// Combine customHeaders
+		assertThat(merged.getCustomHeaders()).containsEntry("base-header", "base-header-value");
+		assertThat(merged.getCustomHeaders()).containsEntry("combine-header", "combine-header-value");
+		// Combine httpHeaders
+		assertThat(merged.getHttpHeaders()).containsEntry("base-http-header", "base-http-header-value");
+		assertThat(merged.getHttpHeaders()).containsEntry("combine-http-header", "combine-http-header-value");
+		// Combine citationDocuments
+		assertThat(merged.getCitationDocuments()).containsExactly(baseDoc, combineDoc);
 	}
 
 	@Test

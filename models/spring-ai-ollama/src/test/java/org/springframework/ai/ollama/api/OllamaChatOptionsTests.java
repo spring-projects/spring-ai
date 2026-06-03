@@ -380,4 +380,25 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 		assertThat(options.getOutputSchema()).isEqualToIgnoringWhitespace(jsonSchemaAsText);
 	}
 
+	@Test
+	void testCombineWithCollections() {
+		var base = OllamaChatOptions.builder()
+			.stop(List.of("base-stop"))
+			.toolNames(Set.of("base-tool"))
+			.toolContext(Map.of("base-key", "base-value"));
+
+		var combine = OllamaChatOptions.builder()
+			.stop(List.of("combine-stop1", "combine-stop2"))
+			.toolNames(Set.of("combine-tool1", "combine-tool2"))
+			.toolContext(Map.of("combine-key1", "combine-value1", "combine-key2", "combine-value2"));
+
+		var merged = base.combineWith(combine).build();
+
+		assertThat(merged.getStop()).containsExactly("base-stop", "combine-stop1", "combine-stop2");
+		assertThat(merged.getToolNames()).containsExactlyInAnyOrder("base-tool", "combine-tool1", "combine-tool2");
+		assertThat(merged.getToolContext()).containsEntry("base-key", "base-value");
+		assertThat(merged.getToolContext()).containsEntry("combine-key1", "combine-value1");
+		assertThat(merged.getToolContext()).containsEntry("combine-key2", "combine-value2");
+	}
+
 }
