@@ -28,12 +28,15 @@ import com.anthropic.core.JsonValue;
 import com.anthropic.core.http.Headers;
 import com.anthropic.core.http.HttpResponseFor;
 import com.anthropic.models.messages.ContentBlock;
+import com.anthropic.models.messages.ContentBlockParam;
 import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
+import com.anthropic.models.messages.MessageParam;
 import com.anthropic.models.messages.Model;
 import com.anthropic.models.messages.OutputConfig;
 import com.anthropic.models.messages.StopReason;
 import com.anthropic.models.messages.TextBlock;
+import com.anthropic.models.messages.ToolResultBlockParam;
 import com.anthropic.models.messages.ToolUseBlock;
 import com.anthropic.models.messages.Usage;
 import com.anthropic.services.blocking.MessageService;
@@ -48,6 +51,7 @@ import org.mockito.quality.Strictness;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
@@ -240,6 +244,82 @@ class AnthropicChatModelTests {
 	}
 
 	@Test
+	void cacheToolResultsPlacesBreakpointOnLastToolResultBlock() {
+		Message mockResponse = createMockMessage("Done.", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+
+		AnthropicCacheOptions cacheOptions = AnthropicCacheOptions.builder()
+			.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+			.cacheToolResults(true)
+			.build();
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.cacheOptions(cacheOptions)
+			.internalToolExecutionEnabled(false)
+			.build();
+
+		this.chatModel.call(new Prompt(toolCallingConversation(), options));
+
+		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
+		verify(this.messageService).create(captor.capture());
+
+		assertThat(lastToolResultBlock(captor.getValue()).cacheControl()).isPresent();
+	}
+
+	@Test
+	void cacheToolResultsDisabledByDefaultLeavesToolResultsUncached() {
+		Message mockResponse = createMockMessage("Done.", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+
+		// CONVERSATION_HISTORY alone (without cacheToolResults) must not place a
+		// breakpoint on tool result blocks.
+		AnthropicCacheOptions cacheOptions = AnthropicCacheOptions.builder()
+			.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+			.build();
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.cacheOptions(cacheOptions)
+			.internalToolExecutionEnabled(false)
+			.build();
+
+		this.chatModel.call(new Prompt(toolCallingConversation(), options));
+
+		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
+		verify(this.messageService).create(captor.capture());
+
+		assertThat(lastToolResultBlock(captor.getValue()).cacheControl()).isEmpty();
+	}
+
+	@Test
+	void cacheToolResultsOnlyBreaksTheLastToolResultMessage() {
+		Message mockResponse = createMockMessage("Done.", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+
+		AnthropicCacheOptions cacheOptions = AnthropicCacheOptions.builder()
+			.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+			.cacheToolResults(true)
+			.build();
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.cacheOptions(cacheOptions)
+			.internalToolExecutionEnabled(false)
+			.build();
+
+		// Two tool-calling rounds: only the final tool result should carry a breakpoint.
+		List<org.springframework.ai.chat.messages.Message> messages = List.of(
+				new UserMessage("What's the weather in Paris and Berlin?"), assistantToolCall("toolu_1", "Paris"),
+				toolResult("toolu_1", "Sunny and 25C in Paris."), assistantToolCall("toolu_2", "Berlin"),
+				toolResult("toolu_2", "Cloudy and 12C in Berlin."));
+
+		this.chatModel.call(new Prompt(messages, options));
+
+		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
+		verify(this.messageService).create(captor.capture());
+
+		List<ToolResultBlockParam> toolResults = toolResultBlocks(captor.getValue());
+		assertThat(toolResults).hasSize(2);
+		assertThat(toolResults.get(0).cacheControl()).isEmpty();
+		assertThat(toolResults.get(1).cacheControl()).isPresent();
+	}
+
+	@Test
 	void multiTurnConversation() {
 		Message mockResponse = createMockMessage("Paris is the capital of France.", StopReason.END_TURN);
 		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
@@ -349,6 +429,45 @@ class AnthropicChatModelTests {
 		assertThat(betaHeader).contains("files-api-2025-04-14");
 		// Verify container body property is set
 		assertThat(request._additionalBodyProperties()).containsKey("container");
+	}
+
+	private static List<org.springframework.ai.chat.messages.Message> toolCallingConversation() {
+		return List.of(new UserMessage("What's the weather in Paris?"), assistantToolCall("toolu_1", "Paris"),
+				toolResult("toolu_1", "Sunny and 25C in Paris."));
+	}
+
+	private static AssistantMessage assistantToolCall(String id, String city) {
+		return AssistantMessage.builder()
+			.content("")
+			.toolCalls(
+					List.of(new AssistantMessage.ToolCall(id, "function", "getWeather", "{\"city\":\"" + city + "\"}")))
+			.build();
+	}
+
+	private static ToolResponseMessage toolResult(String id, String data) {
+		return ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse(id, "getWeather", data)))
+			.build();
+	}
+
+	private static List<ToolResultBlockParam> toolResultBlocks(MessageCreateParams request) {
+		List<ToolResultBlockParam> blocks = new java.util.ArrayList<>();
+		for (MessageParam message : request.messages()) {
+			if (message.content().isBlockParams()) {
+				for (ContentBlockParam block : message.content().asBlockParams()) {
+					if (block.isToolResult()) {
+						blocks.add(block.asToolResult());
+					}
+				}
+			}
+		}
+		return blocks;
+	}
+
+	private static ToolResultBlockParam lastToolResultBlock(MessageCreateParams request) {
+		List<ToolResultBlockParam> blocks = toolResultBlocks(request);
+		assertThat(blocks).isNotEmpty();
+		return blocks.get(blocks.size() - 1);
 	}
 
 	private Message createMockMessage(String text, StopReason stopReason) {

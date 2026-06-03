@@ -58,11 +58,13 @@ public class AnthropicCacheOptions {
 
 	private final boolean multiBlockSystemCaching;
 
+	private final boolean cacheToolResults;
+
 	protected AnthropicCacheOptions(@Nullable AnthropicCacheStrategy strategy,
 			@Nullable Function<@Nullable String, Integer> contentLengthFunction,
 			@Nullable Map<MessageType, AnthropicCacheTtl> messageTypeTtl,
-			@Nullable Map<MessageType, Integer> messageTypeMinContentLengths,
-			@Nullable Boolean multiBlockSystemCaching) {
+			@Nullable Map<MessageType, Integer> messageTypeMinContentLengths, @Nullable Boolean multiBlockSystemCaching,
+			@Nullable Boolean cacheToolResults) {
 		this.strategy = (strategy != null ? strategy : AnthropicCacheStrategy.NONE);
 		this.contentLengthFunction = (contentLengthFunction != null ? contentLengthFunction
 				: s -> s != null ? s.length() : 0);
@@ -75,6 +77,7 @@ public class AnthropicCacheOptions {
 					mt -> (messageTypeMinContentLengths != null && messageTypeMinContentLengths.containsKey(mt))
 							? messageTypeMinContentLengths.get(mt) : DEFAULT_MIN_CONTENT_LENGTH));
 		this.multiBlockSystemCaching = (multiBlockSystemCaching != null ? multiBlockSystemCaching : false);
+		this.cacheToolResults = (cacheToolResults != null ? cacheToolResults : false);
 	}
 
 	public static AnthropicCacheOptions.Builder builder() {
@@ -101,6 +104,20 @@ public class AnthropicCacheOptions {
 		return this.multiBlockSystemCaching;
 	}
 
+	/**
+	 * Whether a {@code cache_control} breakpoint is placed on the last tool result
+	 * message of a request, so that tool outputs are written to (and read from) the cache
+	 * across tool-calling rounds. Takes effect with strategies whose eligible message
+	 * types include tool results, i.e.
+	 * {@link AnthropicCacheStrategy#CONVERSATION_HISTORY}; it is a no-op for strategies
+	 * that only target tool definitions or system messages.
+	 * @return {@code true} if tool result caching is enabled
+	 * @since 2.0.0
+	 */
+	public boolean isCacheToolResults() {
+		return this.cacheToolResults;
+	}
+
 	@Override
 	public boolean equals(@Nullable Object o) {
 		if (this == o) {
@@ -109,7 +126,8 @@ public class AnthropicCacheOptions {
 		if (!(o instanceof AnthropicCacheOptions that)) {
 			return false;
 		}
-		return this.multiBlockSystemCaching == that.multiBlockSystemCaching && this.strategy == that.strategy
+		return this.multiBlockSystemCaching == that.multiBlockSystemCaching
+				&& this.cacheToolResults == that.cacheToolResults && this.strategy == that.strategy
 				&& Objects.equals(this.messageTypeTtl, that.messageTypeTtl)
 				&& Objects.equals(this.messageTypeMinContentLengths, that.messageTypeMinContentLengths);
 	}
@@ -117,7 +135,7 @@ public class AnthropicCacheOptions {
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.strategy, this.messageTypeTtl, this.messageTypeMinContentLengths,
-				this.multiBlockSystemCaching);
+				this.multiBlockSystemCaching, this.cacheToolResults);
 	}
 
 	public static final class Builder {
@@ -131,6 +149,8 @@ public class AnthropicCacheOptions {
 		private @Nullable Map<MessageType, Integer> messageTypeMinContentLengths;
 
 		private @Nullable Boolean multiBlockSystemCaching;
+
+		private @Nullable Boolean cacheToolResults;
 
 		public Builder strategy(@Nullable AnthropicCacheStrategy strategy) {
 			this.strategy = strategy;
@@ -173,9 +193,22 @@ public class AnthropicCacheOptions {
 			return this;
 		}
 
+		/**
+		 * Place a {@code cache_control} breakpoint on the last tool result message of the
+		 * request so that tool outputs are cached across tool-calling rounds. Takes
+		 * effect with {@link AnthropicCacheStrategy#CONVERSATION_HISTORY}.
+		 * @param cacheToolResults whether to cache tool result messages
+		 * @return this builder
+		 * @since 2.0.0
+		 */
+		public Builder cacheToolResults(@Nullable Boolean cacheToolResults) {
+			this.cacheToolResults = cacheToolResults;
+			return this;
+		}
+
 		public AnthropicCacheOptions build() {
 			return new AnthropicCacheOptions(this.strategy, this.contentLengthFunction, this.messageTypeTtl,
-					this.messageTypeMinContentLengths, this.multiBlockSystemCaching);
+					this.messageTypeMinContentLengths, this.multiBlockSystemCaching, this.cacheToolResults);
 		}
 
 	}

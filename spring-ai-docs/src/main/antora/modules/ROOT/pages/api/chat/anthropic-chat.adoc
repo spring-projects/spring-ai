@@ -1012,7 +1012,24 @@ var cacheOptions = AnthropicCacheOptions.builder()
 | `messageTypeMinContentLength` | Minimum content length required before caching a message type. | `1`
 | `contentLengthFunction` | Custom function to compute content length (e.g., token counting). | `String::length`
 | `multiBlockSystemCaching` | When `true`, each system message becomes a separate cacheable block; cache control is applied to the second-to-last block (static prefix pattern). When `false`, all system messages are joined into one block. | `false`
+| `cacheToolResults` | When `true`, a cache breakpoint is placed on the last tool result message of a request so tool outputs are cached across tool-calling rounds. Takes effect with `CONVERSATION_HISTORY`. | `false`
 |====
+
+=== Caching Tool Results
+
+When a turn triggers tool calls, each round appends an assistant `tool_use` message and a user `tool_result` message, and the growing history is sent back to Anthropic on every round. By default the `CONVERSATION_HISTORY` breakpoint lands on the last user message, so tool results — which are appended after it — fall outside every breakpoint and are billed as uncached input on each round. This is wasteful when tool outputs are large.
+
+Enable `cacheToolResults` to place a breakpoint on the last tool result block of the request. On the next round Anthropic reads the previous round's tool results from cache instead of reprocessing them:
+
+[source,java]
+----
+var cacheOptions = AnthropicCacheOptions.builder()
+    .strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+    .cacheToolResults(true)
+    .build();
+----
+
+The breakpoint moves to the latest tool result on each round, so the previous rounds' tool outputs are read from cache while the newest is written. This consumes one additional cache breakpoint (Anthropic allows up to four per request), leaving room for the tool, system, and last-user breakpoints under `CONVERSATION_HISTORY`. The TTL and minimum content length are configurable via `messageTypeTtl(MessageType.TOOL, ...)` and `messageTypeMinContentLength(MessageType.TOOL, ...)`.
 
 === Multi-Block System Caching
 
