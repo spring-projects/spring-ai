@@ -35,6 +35,12 @@ import org.springframework.ai.util.JsonHelper;
 /**
  * Helper class for creating strongly-typed Ollama options.
  *
+ * <p>Extends {@link OllamaCommonOptions} to inherit the model-loading fields
+ * ({@code useNUMA}, {@code numCtx}, {@code numBatch}, {@code numGPU}, {@code mainGPU},
+ * {@code lowVRAM}, {@code f16KV}, {@code logitsAll}, {@code vocabOnly}, {@code useMMap},
+ * {@code useMLock}, {@code numThread}) and common request fields ({@code model},
+ * {@code keepAlive}, {@code truncate}).
+ *
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
@@ -46,152 +52,18 @@ import org.springframework.ai.util.JsonHelper;
  * Valid Parameters and Values</a>
  * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama Types</a>
  */
-public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
+public class OllamaChatOptions extends OllamaCommonOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate");
 
-	protected OllamaChatOptions(@Nullable Boolean useNUMA, @Nullable Integer numCtx, @Nullable Integer numBatch,
-			@Nullable Integer numGPU, @Nullable Integer mainGPU, @Nullable Boolean lowVRAM, @Nullable Boolean f16KV,
-			@Nullable Boolean logitsAll, @Nullable Boolean vocabOnly, @Nullable Boolean useMMap,
-			@Nullable Boolean useMLock, @Nullable Integer numThread, @Nullable Integer numKeep, @Nullable Integer seed,
-			@Nullable Integer numPredict, @Nullable Integer topK, @Nullable Double topP, @Nullable Double minP,
-			@Nullable Float tfsZ, @Nullable Float typicalP, @Nullable Integer repeatLastN, @Nullable Double temperature,
-			@Nullable Double repeatPenalty, @Nullable Double presencePenalty, @Nullable Double frequencyPenalty,
-			@Nullable Integer mirostat, @Nullable Float mirostatTau, @Nullable Float mirostatEta,
-			@Nullable Boolean penalizeNewline, @Nullable List<String> stop, @Nullable String model,
-			@Nullable Object format, @Nullable String keepAlive, @Nullable Boolean truncate,
-			@Nullable ThinkOption thinkOption, @Nullable Boolean internalToolExecutionEnabled,
-			@Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames,
-			@Nullable Map<String, Object> toolContext) {
-		this.useNUMA = useNUMA;
-		this.numCtx = numCtx;
-		this.numBatch = numBatch;
-		this.numGPU = numGPU;
-		this.mainGPU = mainGPU;
-		this.lowVRAM = lowVRAM;
-		this.f16KV = f16KV;
-		this.logitsAll = logitsAll;
-		this.vocabOnly = vocabOnly;
-		this.useMMap = useMMap;
-		this.useMLock = useMLock;
-		this.numThread = numThread;
-		this.numKeep = numKeep;
-		this.seed = seed;
-		this.numPredict = numPredict;
-		this.topK = topK;
-		this.topP = topP;
-		this.minP = minP;
-		this.tfsZ = tfsZ;
-		this.typicalP = typicalP;
-		this.repeatLastN = repeatLastN;
-		this.temperature = temperature;
-		this.repeatPenalty = repeatPenalty;
-		this.presencePenalty = presencePenalty;
-		this.frequencyPenalty = frequencyPenalty;
-		this.mirostat = mirostat;
-		this.mirostatTau = mirostatTau;
-		this.mirostatEta = mirostatEta;
-		this.penalizeNewline = penalizeNewline;
-		this.stop = stop != null ? List.copyOf(stop) : null;
-		this.model = model != null ? model : OllamaModel.MISTRAL.id();
-		this.format = format;
-		this.keepAlive = keepAlive;
-		this.truncate = truncate;
-		this.thinkOption = thinkOption;
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
-		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : null;
-		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
-	}
-
-	// Following fields are options which must be set when the model is loaded into
-	// memory.
-	// See: https://github.com/ggerganov/llama.cpp/blob/master/examples/main/README.md
+	// Following fields are predict options used at runtime.
+	// Model-loading options (useNUMA, numCtx, numBatch, numGPU, mainGPU, lowVRAM,
+	// f16KV, logitsAll, vocabOnly, useMMap, useMLock, numThread) and common request
+	// fields (model, keepAlive, truncate) are inherited from OllamaCommonOptions.
 
 	// @formatter:off
-
-	/**
-	 * Whether to use NUMA. (Default: false)
-	 */
-	private final @Nullable Boolean useNUMA;
-
-	/**
-	 * Sets the size of the context window used to generate the next token. (Default: 2048)
-	 */
-	private final @Nullable Integer numCtx;
-
-	/**
-	 * Prompt processing maximum batch size. (Default: 512)
-	 */
-	private final @Nullable Integer numBatch;
-
-	/**
-	 * The number of layers to send to the GPU(s). On macOS, it defaults to 1
-	 * to enable metal support, 0 to disable.
-	 * (Default: -1, which indicates that numGPU should be set dynamically)
-	 */
-	private final @Nullable Integer numGPU;
-
-	/**
-	 * When using multiple GPUs this option controls which GPU is used
-	 * for small tensors for which the overhead of splitting the computation
-	 * across all GPUs is not worthwhile. The GPU in question will use slightly
-	 * more VRAM to store a scratch buffer for temporary results.
-	 * By default, GPU 0 is used.
-	 */
-	private final @Nullable Integer mainGPU;
-
-	/**
-	 * (Default: false)
-	 */
-	private final @Nullable Boolean lowVRAM;
-
-	/**
-	 * (Default: true)
-	 */
-	private final @Nullable Boolean f16KV;
-
-	/**
-	 * Return logits for all the tokens, not just the last one.
-	 * To enable completions to return logprobs, this must be true.
-	 */
-	private final @Nullable Boolean logitsAll;
-
-	/**
-	 * Load only the vocabulary, not the weights.
-	 */
-	private final @Nullable Boolean vocabOnly;
-
-	/**
-	 * By default, models are mapped into memory, which allows the system to load only the necessary parts
-	 * of the model as needed. However, if the model is larger than your total amount of RAM or if your system is low
-	 * on available memory, using mmap might increase the risk of pageouts, negatively impacting performance.
-	 * Disabling mmap results in slower load times but may reduce pageouts if you're not using mlock.
-	 * Note that if the model is larger than the total amount of RAM, turning off mmap would prevent
-	 * the model from loading at all.
-	 * (Default: null)
-	 */
-	private final @Nullable Boolean useMMap;
-
-	/**
-	 * Lock the model in memory, preventing it from being swapped out when memory-mapped.
-	 * This can improve performance but trades away some of the advantages of memory-mapping
-	 * by requiring more RAM to run and potentially slowing down load times as the model loads into RAM.
-	 * (Default: false)
-	 */
-	private final @Nullable Boolean useMLock;
-
-	/**
-	 * Set the number of threads to use during generation. For optimal performance, it is recommended to set this value
-	 * to the number of physical CPU cores your system has (as opposed to the logical number of cores).
-	 * Using the correct number of threads can greatly improve performance.
-	 * By default, Ollama will detect this value for optimal performance.
-	 */
-	private final @Nullable Integer numThread;
-
-	// Following fields are predict options used at runtime.
 
 	/**
 	 * (Default: 4)
@@ -306,34 +178,14 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 */
 	private final @Nullable List<String> stop;
 
-
 	// Following fields are not part of the Ollama Options API but part of the Request.
-
-	/**
-	 * NOTE: Synthetic field not part of the official Ollama API.
-	 * Used to allow overriding the model name with prompt options.
-	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">parameters</a>.
-	 */
-	private final String model;
+	// model, keepAlive and truncate are inherited from OllamaCommonOptions.
 
 	/**
 	 * Sets the desired format of output from the LLM. The only valid values are null or "json".
 	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">advanced parameters</a>.
 	 */
 	private final @Nullable Object format;
-
-	/**
-	 * Sets the length of time for Ollama to keep the model loaded. Valid values for this
-	 * setting are parsed by <a href="https://pkg.go.dev/time#ParseDuration">ParseDuration in Go</a>.
-	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">advanced parameters</a>.
-	 */
-	private final @Nullable String keepAlive;
-
-	/**
-	 * Truncates the end of each input to fit within context length. Returns error if false and context length is exceeded.
-	 * Defaults to true.
-	 */
-	private final @Nullable Boolean truncate;
 
 	/**
 	 * The model should think before responding, if supported.
@@ -381,6 +233,49 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 	private final @Nullable Map<String, Object> toolContext;
 
+	// @formatter:on
+
+	protected OllamaChatOptions(@Nullable Boolean useNUMA, @Nullable Integer numCtx, @Nullable Integer numBatch,
+			@Nullable Integer numGPU, @Nullable Integer mainGPU, @Nullable Boolean lowVRAM, @Nullable Boolean f16KV,
+			@Nullable Boolean logitsAll, @Nullable Boolean vocabOnly, @Nullable Boolean useMMap,
+			@Nullable Boolean useMLock, @Nullable Integer numThread, @Nullable Integer numKeep, @Nullable Integer seed,
+			@Nullable Integer numPredict, @Nullable Integer topK, @Nullable Double topP, @Nullable Double minP,
+			@Nullable Float tfsZ, @Nullable Float typicalP, @Nullable Integer repeatLastN, @Nullable Double temperature,
+			@Nullable Double repeatPenalty, @Nullable Double presencePenalty, @Nullable Double frequencyPenalty,
+			@Nullable Integer mirostat, @Nullable Float mirostatTau, @Nullable Float mirostatEta,
+			@Nullable Boolean penalizeNewline, @Nullable List<String> stop, @Nullable String model,
+			@Nullable Object format, @Nullable String keepAlive, @Nullable Boolean truncate,
+			@Nullable ThinkOption thinkOption, @Nullable Boolean internalToolExecutionEnabled,
+			@Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames,
+			@Nullable Map<String, Object> toolContext) {
+		super(model != null ? model : OllamaModel.MISTRAL.id(), keepAlive, truncate, useNUMA, numCtx, numBatch, numGPU,
+				mainGPU, lowVRAM, f16KV, logitsAll, vocabOnly, useMMap, useMLock, numThread);
+		this.numKeep = numKeep;
+		this.seed = seed;
+		this.numPredict = numPredict;
+		this.topK = topK;
+		this.topP = topP;
+		this.minP = minP;
+		this.tfsZ = tfsZ;
+		this.typicalP = typicalP;
+		this.repeatLastN = repeatLastN;
+		this.temperature = temperature;
+		this.repeatPenalty = repeatPenalty;
+		this.presencePenalty = presencePenalty;
+		this.frequencyPenalty = frequencyPenalty;
+		this.mirostat = mirostat;
+		this.mirostatTau = mirostatTau;
+		this.mirostatEta = mirostatEta;
+		this.penalizeNewline = penalizeNewline;
+		this.stop = stop != null ? List.copyOf(stop) : null;
+		this.format = format;
+		this.thinkOption = thinkOption;
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
+		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : null;
+		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -397,8 +292,13 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	// -------------------
-	// Getters and Setters
+	// Getters
 	// -------------------
+
+	// getModel, getKeepAlive, getTruncate, getUseNUMA, getNumCtx, getNumBatch,
+	// getNumGPU, getMainGPU, getLowVRAM, getF16KV, getLogitsAll, getVocabOnly,
+	// getUseMMap, getUseMLock, getNumThread are inherited from OllamaCommonOptions.
+
 	@Override
 	public String getModel() {
 		return this.model;
@@ -407,71 +307,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 	public @Nullable Object getFormat() {
 		return this.format;
-	}
-
-
-	public @Nullable String getKeepAlive() {
-		return this.keepAlive;
-	}
-
-
-	public @Nullable Boolean getUseNUMA() {
-		return this.useNUMA;
-	}
-
-
-	public @Nullable Integer getNumCtx() {
-		return this.numCtx;
-	}
-
-
-	public @Nullable Integer getNumBatch() {
-		return this.numBatch;
-	}
-
-
-	public @Nullable Integer getNumGPU() {
-		return this.numGPU;
-	}
-
-
-	public @Nullable Integer getMainGPU() {
-		return this.mainGPU;
-	}
-
-
-	public @Nullable Boolean getLowVRAM() {
-		return this.lowVRAM;
-	}
-
-
-	public @Nullable Boolean getF16KV() {
-		return this.f16KV;
-	}
-
-
-	public @Nullable Boolean getLogitsAll() {
-		return this.logitsAll;
-	}
-
-
-	public @Nullable Boolean getVocabOnly() {
-		return this.vocabOnly;
-	}
-
-
-	public @Nullable Boolean getUseMMap() {
-		return this.useMMap;
-	}
-
-
-	public @Nullable Boolean getUseMLock() {
-		return this.useMLock;
-	}
-
-
-	public @Nullable Integer getNumThread() {
-		return this.numThread;
 	}
 
 
@@ -579,11 +414,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 	public @Nullable List<String> getStop() {
 		return this.stop;
-	}
-
-
-	public @Nullable Boolean getTruncate() {
-		return this.truncate;
 	}
 
 
