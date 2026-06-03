@@ -22,7 +22,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.awaitility.Awaitility;
@@ -44,6 +46,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -52,7 +55,10 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -264,19 +270,29 @@ class BedrockProxyChatModelIT {
 	@Test
 	void functionCallTest() {
 
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
 		UserMessage userMessage = new UserMessage(
 				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-		var promptOptions = BedrockChatOptions.builder()
+		var options = BedrockChatOptions.builder()
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location. Return in 36°C format")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+		var prompt = new Prompt(messages, options);
+
+		ChatResponse response = this.chatModel.call(prompt);
+
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			response = this.chatModel.call(prompt);
+		}
 
 		logger.info("Response: {}", response);
 
@@ -286,6 +302,8 @@ class BedrockProxyChatModelIT {
 
 	@Test
 	void functionCallTestWithToolCallingOptions() {
+
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
 		UserMessage userMessage = new UserMessage(
 				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
@@ -299,7 +317,15 @@ class BedrockProxyChatModelIT {
 				.build()))
 			.build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+		var prompt = new Prompt(messages, promptOptions);
+
+		ChatResponse response = this.chatModel.call(prompt);
+
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			response = this.chatModel.call(prompt);
+		}
 
 		logger.info("Response: {}", response);
 
@@ -309,6 +335,8 @@ class BedrockProxyChatModelIT {
 
 	@Test
 	void streamFunctionCallTest() {
+
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
 		UserMessage userMessage = new UserMessage(
 				// "What's the weather like in San Francisco? Return the result in
@@ -326,14 +354,19 @@ class BedrockProxyChatModelIT {
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
+		var prompt = new Prompt(messages, promptOptions);
 
-		String content = response.collectList()
-			.block()
-			.stream()
-			.filter(cr -> cr.getResult() != null)
-			.map(cr -> cr.getResult().getOutput().getText())
-			.collect(Collectors.joining());
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
+
+		String content = aggregatedRef.get().getResult().getOutput().getText();
 
 		logger.info("Response: {}", content);
 		assertThat(content).contains("30", "10", "15");
@@ -343,9 +376,9 @@ class BedrockProxyChatModelIT {
 	@ValueSource(ints = { 50, 60 })
 	void streamFunctionCallTestWithMaxTokens(int maxTokens) {
 
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
 		UserMessage userMessage = new UserMessage(
-				// "What's the weather like in San Francisco? Return the result in
-				// Celsius.");
 				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
@@ -360,8 +393,19 @@ class BedrockProxyChatModelIT {
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
-		ChatResponse lastResponse = response.blockLast();
+		var prompt = new Prompt(messages, promptOptions);
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+
+		while (aggregatedRef.get().hasToolCalls() && aggregatedRef.get().hasFinishReasons(Set.of("tool_use"))) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
+
+		ChatResponse lastResponse = aggregatedRef.get();
 		String finishReason = lastResponse.getResult().getMetadata().getFinishReason();
 
 		logger.info("Finish reason: {}", finishReason);
@@ -536,6 +580,8 @@ class BedrockProxyChatModelIT {
 
 	@Test
 	void testToolsOnlyPromptCaching() {
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
 		// IMPORTANT: This test requires a Claude model - Amazon Nova models do NOT
 		// support tool caching and will return ValidationException.
 		// Claude Haiku 4.5 requires 4096+ tokens of tool definitions for caching.
@@ -564,7 +610,17 @@ class BedrockProxyChatModelIT {
 		AtomicInteger cityIndex = new AtomicInteger(0);
 		Awaitility.await().atMost(Duration.ofMinutes(2)).pollInterval(Duration.ofSeconds(3)).untilAsserted(() -> {
 			String city = cities.get(cityIndex.getAndIncrement() % cities.size());
-			ChatResponse response = this.chatModel.call(new Prompt("What's the weather in " + city + "?", chatOptions));
+
+			var prompt = new Prompt("What's the weather in " + city + "?", chatOptions);
+
+			ChatResponse response = this.chatModel.call(prompt);
+
+			while (response.hasToolCalls()) {
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+				prompt = new Prompt(toolExecutionResult.conversationHistory(), chatOptions);
+				response = this.chatModel.call(prompt);
+			}
+
 			assertThat(response.getResults()).hasSize(1);
 			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 			Integer cacheRead = response.getMetadata().get("cacheReadInputTokens");
@@ -579,6 +635,8 @@ class BedrockProxyChatModelIT {
 
 	@Test
 	void testSystemAndToolsPromptCaching() {
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
 		// NOTE: Testing combined caching requires both large system prompt and multiple
 		// tools
 		// IMPORTANT: This test requires a Claude model that supports tool caching.
@@ -629,8 +687,18 @@ class BedrockProxyChatModelIT {
 		AtomicInteger cityIndex = new AtomicInteger(0);
 		Awaitility.await().atMost(Duration.ofMinutes(2)).pollInterval(Duration.ofSeconds(3)).untilAsserted(() -> {
 			String city = cities.get(cityIndex.getAndIncrement() % cities.size());
-			ChatResponse response = this.chatModel.call(new Prompt(List.of(new SystemMessage(largeSystemPrompt),
-					new UserMessage("What's the weather in " + city + "?")), chatOptions));
+
+			var prompt = new Prompt(List.of(new SystemMessage(largeSystemPrompt),
+					new UserMessage("What's the weather in " + city + "?")), chatOptions);
+
+			ChatResponse response = this.chatModel.call(prompt);
+
+			while (response.hasToolCalls()) {
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+				prompt = new Prompt(toolExecutionResult.conversationHistory(), chatOptions);
+				response = this.chatModel.call(prompt);
+			}
+
 			assertThat(response.getResults()).hasSize(1);
 			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 			Integer cacheRead = response.getMetadata().get("cacheReadInputTokens");

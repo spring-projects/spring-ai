@@ -40,7 +40,6 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.util.MimeType;
 
@@ -63,8 +62,7 @@ class BedrockProxyChatModelTest {
 
 	private BedrockProxyChatModel newModel() {
 		return new BedrockProxyChatModel(this.syncClient, this.asyncClient, BedrockChatOptions.builder().build(),
-				ObservationRegistry.NOOP, ToolCallingManager.builder().build(),
-				new DefaultToolExecutionEligibilityPredicate());
+				ObservationRegistry.NOOP, ToolCallingManager.builder().build());
 	}
 
 	@Test
@@ -200,7 +198,7 @@ class BedrockProxyChatModelTest {
 	void allowlistRejectsUnlistedStringUrlMediaThrowsRuntimeException() {
 		BedrockProxyChatModel model = new BedrockProxyChatModel(this.syncClient, this.asyncClient,
 				BedrockChatOptions.builder().build(), ObservationRegistry.NOOP, ToolCallingManager.builder().build(),
-				new DefaultToolExecutionEligibilityPredicate(), new MediaFetcher(java.util.Set.of("trusted-cdn.com")));
+				new MediaFetcher(java.util.Set.of("trusted-cdn.com")));
 		Media media = Media.builder().mimeType(MimeType.valueOf("image/png")).data("http://evil.com/image.png").build();
 
 		assertThatThrownBy(() -> model.mapMediaToContentBlock(media)).isInstanceOf(RuntimeException.class)
