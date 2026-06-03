@@ -19,6 +19,7 @@ package org.springframework.ai.model.minimax.autoconfigure;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -64,12 +66,21 @@ public class MiniMaxFunctionCallbackIT {
 		this.contextRunner.withPropertyValues("spring.ai.minimax.chat.model=abab6.5s-chat").run(context -> {
 
 			MiniMaxChatModel chatModel = context.getBean(MiniMaxChatModel.class);
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+
+			var chatClient = org.springframework.ai.chat.client.ChatClient
+				.builder(chatModel, ObservationRegistry.NOOP, null, null,
+						org.springframework.ai.chat.client.advisor.ToolCallAdvisor.builder()
+							.toolCallingManager(toolCallingManager))
+				.build();
 
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
-			ChatResponse response = chatModel
-				.call(new Prompt(List.of(userMessage), MiniMaxChatOptions.builder().toolNames("WeatherInfo").build()));
+			ChatResponse response = chatClient
+				.prompt(new Prompt(List.of(userMessage), MiniMaxChatOptions.builder().toolNames("WeatherInfo").build()))
+				.call()
+				.chatResponse();
 
 			logger.info("Response: {}", response);
 
@@ -83,12 +94,21 @@ public class MiniMaxFunctionCallbackIT {
 		this.contextRunner.withPropertyValues("spring.ai.minimax.chat.model=abab6.5s-chat").run(context -> {
 
 			MiniMaxChatModel chatModel = context.getBean(MiniMaxChatModel.class);
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+
+			var chatClient = org.springframework.ai.chat.client.ChatClient
+				.builder(chatModel, ObservationRegistry.NOOP, null, null,
+						org.springframework.ai.chat.client.advisor.ToolCallAdvisor.builder()
+							.toolCallingManager(toolCallingManager))
+				.build();
 
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
-			Flux<ChatResponse> response = chatModel.stream(
-					new Prompt(List.of(userMessage), MiniMaxChatOptions.builder().toolNames("WeatherInfo").build()));
+			Flux<ChatResponse> response = chatClient
+				.prompt(new Prompt(List.of(userMessage), MiniMaxChatOptions.builder().toolNames("WeatherInfo").build()))
+				.stream()
+				.chatResponse();
 
 			String content = response.collectList()
 				.block()

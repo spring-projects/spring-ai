@@ -19,24 +19,25 @@ package org.springframework.ai.minimax.chat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxChatOptions;
 import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.minimax.api.MockWeatherService;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,6 +52,8 @@ public class MiniMaxChatOptionsTests {
 	private static final Logger logger = LoggerFactory.getLogger(MiniMaxChatOptionsTests.class);
 
 	private final MiniMaxChatModel chatModel = new MiniMaxChatModel(new MiniMaxApi(System.getenv("MINIMAX_API_KEY")));
+
+	private final ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
 	@Test
 	void testMarkSensitiveInfo() {
@@ -82,8 +85,16 @@ public class MiniMaxChatOptionsTests {
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
+		var prompt = new Prompt(messages, options);
 
-		ChatResponse response = this.chatModel.call(new Prompt(messages, options));
+		ChatResponse response = this.chatModel.call(prompt);
+
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			response = this.chatModel.call(prompt);
+		}
+
 		String responseContent = response.getResult().getOutput().getText();
 
 		assertThat(responseContent).contains("30");
@@ -102,15 +113,21 @@ public class MiniMaxChatOptionsTests {
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, options));
-		String content = Objects.requireNonNull(response.collectList().block())
-			.stream()
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getText)
-			.filter(Objects::nonNull)
-			.collect(Collectors.joining());
+		var prompt = new Prompt(messages, options);
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt,
+					aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
+
+		String content = Objects.requireNonNull(aggregatedRef.get().getResult()).getOutput().getText();
+
 		logger.info("Response: {}", content);
 
 		assertThat(content).contains("15");

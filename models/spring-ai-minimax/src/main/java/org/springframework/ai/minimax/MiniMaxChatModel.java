@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -30,7 +29,6 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
@@ -48,7 +46,6 @@ import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletion;
@@ -63,10 +60,6 @@ import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionRequest;
 import org.springframework.ai.minimax.api.MiniMaxApiConstants;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolExecutionResult;
-import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.core.retry.RetryTemplate;
@@ -82,6 +75,7 @@ import org.springframework.util.CollectionUtils;
  * @author Alexandros Pappas
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
+ * @author Christian Tzolov
  * @see ChatModel
  * @see StreamingChatModel
  * @see MiniMaxApi
@@ -117,13 +111,6 @@ public class MiniMaxChatModel implements ChatModel {
 	 * The tool calling manager.
 	 */
 	private final ToolCallingManager toolCallingManager;
-
-	/**
-	 * The tool execution eligibility checker used to determine if a tool can be executed.
-	 */
-	private final ToolExecutionEligibilityChecker toolExecutionEligibilityChecker;
-
-	private final AtomicBoolean internalToolExecutionWarned = new AtomicBoolean(false);
 
 	/**
 	 * Conventions to use for generating observations.
@@ -171,8 +158,7 @@ public class MiniMaxChatModel implements ChatModel {
 	 */
 	public MiniMaxChatModel(MiniMaxApi miniMaxApi, MiniMaxChatOptions options, ToolCallingManager toolCallingManager,
 			RetryTemplate retryTemplate) {
-		this(miniMaxApi, options, toolCallingManager, retryTemplate, ObservationRegistry.NOOP,
-				chatResponse -> chatResponse != null && chatResponse.hasToolCalls());
+		this(miniMaxApi, options, toolCallingManager, retryTemplate, ObservationRegistry.NOOP);
 	}
 
 	/**
@@ -182,46 +168,19 @@ public class MiniMaxChatModel implements ChatModel {
 	 * @param options The MiniMaxChatOptions to configure the chat model.
 	 * @param retryTemplate The retry template.
 	 * @param observationRegistry The ObservationRegistry used for instrumentation.
-	 * @param toolExecutionEligibilityChecker The tool execution eligibility checker.
 	 */
 	public MiniMaxChatModel(MiniMaxApi miniMaxApi, MiniMaxChatOptions options, ToolCallingManager toolCallingManager,
-			RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
-			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
+			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
 		Assert.notNull(miniMaxApi, "MiniMaxApi must not be null");
 		Assert.notNull(options, "Options must not be null");
 		Assert.notNull(toolCallingManager, "toolCallingManager cannot be null");
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
 		Assert.notNull(observationRegistry, "ObservationRegistry must not be null");
-		Assert.notNull(toolExecutionEligibilityChecker, "toolExecutionEligibilityChecker cannot be null");
 		this.miniMaxApi = miniMaxApi;
 		this.options = options;
 		this.toolCallingManager = toolCallingManager;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
-		this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
-	}
-
-	/**
-	 * @deprecated since 2.0.0 for removal in 3.0.0 — replaced by
-	 * {@link #MiniMaxChatModel(MiniMaxApi, MiniMaxChatOptions, ToolCallingManager, RetryTemplate, ObservationRegistry, ToolExecutionEligibilityChecker)}.
-	 */
-	@Deprecated(since = "2.0.0", forRemoval = true)
-	@SuppressWarnings({ "deprecation", "removal" })
-	public MiniMaxChatModel(MiniMaxApi miniMaxApi, MiniMaxChatOptions options, ToolCallingManager toolCallingManager,
-			RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
-			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
-		this(miniMaxApi, options, toolCallingManager, retryTemplate, observationRegistry,
-				new ToolExecutionEligibilityChecker() {
-					@Override
-					public Boolean apply(ChatResponse chatResponse) {
-						return chatResponse != null && chatResponse.hasToolCalls();
-					}
-
-					@Override
-					public boolean isToolExecutionRequired(ChatOptions promptOptions, ChatResponse chatResponse) {
-						return toolExecutionEligibilityPredicate.test(promptOptions, chatResponse);
-					}
-				});
 	}
 
 	private static Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
@@ -325,27 +284,6 @@ public class MiniMaxChatModel implements ChatModel {
 				return chatResponse;
 			});
 
-		ChatOptions promptOptions = Objects.requireNonNull(requestPrompt.getOptions());
-		if (this.toolExecutionEligibilityChecker.isToolExecutionRequired(promptOptions, response)) {
-			if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
-				logger.warn(
-						"Internal tool execution in MiniMaxChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
-								+ "Use ChatClient with ToolCallAdvisor instead.");
-			}
-			var toolExecutionResult = this.toolCallingManager.executeToolCalls(requestPrompt, response);
-			if (toolExecutionResult.returnDirect()) {
-				// Return tool execution result directly to the client.
-				return ChatResponse.builder()
-					.from(response)
-					.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-					.build();
-			}
-			else {
-				// Send the tool execution result back to the model.
-				return this.call(new Prompt(toolExecutionResult.conversationHistory(), requestPrompt.getOptions()));
-			}
-		}
-
 		return response;
 	}
 
@@ -419,39 +357,7 @@ public class MiniMaxChatModel implements ChatModel {
 						}
 					});
 
-			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
-						ChatOptions promptOptions = Objects.requireNonNull(requestPrompt.getOptions());
-						if (this.toolExecutionEligibilityChecker.isToolExecutionRequired(promptOptions, response)) {
-							// FIXME: bounded elastic needs to be used since tool calling
-							//  is currently only synchronous
-							return Flux.deferContextual(ctx -> {
-								ToolExecutionResult toolExecutionResult;
-								try {
-									if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
-										logger.warn(
-												"Internal tool execution in MiniMaxChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
-														+ "Use ChatClient with ToolCallAdvisor instead.");
-									}
-									ToolCallReactiveContextHolder.setContext(ctx);
-									toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-								}
-								finally {
-									ToolCallReactiveContextHolder.clearContext();
-								}
-								if (toolExecutionResult.returnDirect()) {
-									// Return tool execution result directly to the client.
-									return Flux.just(ChatResponse.builder().from(response)
-											.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-											.build());
-								}
-								else {
-									// Send the tool execution result back to the model.
-									return this.stream(new Prompt(toolExecutionResult.conversationHistory(), requestPrompt.getOptions()));
-								}
-							}).subscribeOn(Schedulers.boundedElastic());
-						}
-						return Flux.just(response);
-					})
+			Flux<ChatResponse> flux = chatResponse.flatMap(response -> Flux.just(response))
 					.doOnError(observation::error)
 					.doFinally(signalType -> observation.stop())
 					.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
