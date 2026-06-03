@@ -44,8 +44,8 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	// @formatter:off
 	/**
 	 * ID of the model to use.
-	 * You can use DeepSeek legacy model names (deepseek-chat, deepseek-reasoner) or the
-	 * newer DeepSeek V4 model names (deepseek-v4-flash, deepseek-v4-pro).
+	 * You can use the DeepSeek v4 model names (deepseek-v4-flash, deepseek-v4-pro) or the legacy model
+	 * names (deepseek-chat, deepseek-reasoner).
 	 */
 	private final String model;
 	/**

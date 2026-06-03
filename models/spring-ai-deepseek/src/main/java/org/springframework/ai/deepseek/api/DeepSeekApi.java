@@ -47,16 +47,17 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
- * Single class implementation of the DeepSeek Chat Completion API:
- * https://platform.deepseek.com/api-docs/api/create-chat-completion
+ * Single class implementation of the <a href="https://api-docs.deepseek.com/">DeepSeek
+ * Chat Completion API</a>.
  *
  * @author Geng Rong
+ * @author Sebastien Deleuze
  */
 public class DeepSeekApi {
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
 
-	public static final DeepSeekApi.ChatModel DEFAULT_CHAT_MODEL = ChatModel.DEEPSEEK_CHAT;
+	public static final DeepSeekApi.ChatModel DEFAULT_CHAT_MODEL = ChatModel.DEEPSEEK_V4_FLASH;
 
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 

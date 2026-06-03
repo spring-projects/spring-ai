@@ -44,7 +44,6 @@ import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.deepseek.DeepSeekAssistantMessage;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.deepseek.DeepSeekTestConfiguration;
-import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -233,15 +232,9 @@ class DeepSeekChatModelIT {
 		assertThat(response.getResult().getOutput().getText()).isEqualTo(",2,3]}}");
 	}
 
-	/**
-	 * For deepseek-reasoner model only. The reasoning contents of the assistant message,
-	 * before the final answer.
-	 */
 	@Test
-	void reasonerModelTest() {
-		var promptOptions = DeepSeekChatOptions.builder()
-			.model(DeepSeekApi.ChatModel.DEEPSEEK_REASONER.getValue())
-			.build();
+	void reasoningTest() {
+		var promptOptions = DeepSeekChatOptions.builder().build();
 		Prompt prompt = new Prompt("9.11 and 9.8, which is greater?", promptOptions);
 		ChatResponse response = this.chatModel.call(prompt);
 
@@ -250,16 +243,11 @@ class DeepSeekChatModelIT {
 		assertThat(deepSeekAssistantMessage.getText()).isNotEmpty();
 	}
 
-	/**
-	 * the deepseek-reasoner model Multi-round Conversation.
-	 */
 	@Test
-	void reasonerModelMultiRoundTest() {
+	void reasoningMultiRoundTest() {
 		List<Message> messages = new ArrayList<>();
 		messages.add(new UserMessage("9.11 and 9.8, which is greater?"));
-		var promptOptions = DeepSeekChatOptions.builder()
-			.model(DeepSeekApi.ChatModel.DEEPSEEK_REASONER.getValue())
-			.build();
+		var promptOptions = DeepSeekChatOptions.builder().build();
 
 		Prompt prompt = new Prompt(messages, promptOptions);
 		ChatResponse response = this.chatModel.call(prompt);
