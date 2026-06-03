@@ -64,4 +64,5 @@
 	<suppress files="spring-ai-integration-tests" id="bannedNullabilityImports" />
 
 	<suppress files="spring-ai-integration-tests" checks="JavadocPackage" />
+	<suppress files="spring-ai-google-genai-embedding" checks="JavadocPackage" />
 </suppressions>
