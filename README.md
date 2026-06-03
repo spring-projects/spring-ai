@@ -79,21 +79,19 @@ The recommended JDK is specified in the `.sdkmanrc` file, which can be installed
 
 **NOTE:** Building Spring AI requires components that depend on your specific CPU architecture (PyTorch for example). MacOS can seamlessly run x86 Java applications on ARM processors using Rosetta, but this will fail when building this project because it tries to download architecture-specific native dependencies. (Note: this is only an issue for building the project, not for consuming the libraries). If you are unsure if you have the correct JDK distribution for your CPU, run the command `java -XshowSettings:properties -version 2>&1 | grep os.arch` from a fresh terminal to validate that it matches your machine.
 
-To build with running unit tests
-
+To build with running unit tests:
 ```shell
 ./mvnw clean package
 ```
 
-To build including integration tests.
-
+To build including integration tests:
 ```shell
 ./mvnw clean verify -Pintegration-tests
 ```
 
 Note that you should set API key environment variables for OpenAI or other model providers before running.  If the API key isn't set for a specific model provider, the integration test is skipped.
 
-To run a specific integration test allowing for up to two attempts to succeed.  This is useful when a hosted service is not reliable or times out.
+To run a specific integration test allowing for up to two attempts to succeed (this is useful when a hosted service is not reliable or times out):
 ```shell
 ./mvnw -pl vector-stores/spring-ai-pgvector-store -am -Pintegration-tests -Dfailsafe.failIfNoSpecifiedTests=false -Dfailsafe.rerunFailingTestsCount=2 -Dit.test=PgVectorStoreIT verify
 ```
@@ -112,20 +110,18 @@ can be done with the profile `-Pci-fast-integration-tests` and is used in the ma
 
 A full integration test is done twice a day in the [Spring AI Integration Test Repository](https://github.com/spring-projects/spring-ai-integration-tests)
 
-One way to run integration tests on part of the code is to first do a quick compile and install of the project
-
+One way to run integration tests on part of the code is to first do a quick compile and install of the project:
 ```shell
 ./mvnw clean install -DskipTests -Dmaven.javadoc.skip=true
 ```
-Then run the integration test for a specific module using the `-pl` option
-
+Then run the integration test for a specific module using the `-pl` option:
 ```shell
 ./mvnw verify -Pintegration-tests -pl spring-ai-spring-boot-testcontainers
 ```
 
 ### Documentation
 
-To build the docs
+To build the docs:
 ```shell
 ./mvnw -pl spring-ai-docs antora
 ```
@@ -137,15 +133,14 @@ The docs are then in the directory `spring-ai-docs/target/antora/site/index.html
 The code is formatted using the [java-format plugin](https://github.com/spring-io/spring-javaformat) as part of the build. Correct
 formatting is enforced by CI.
 
-### Updating License Headers
-
-To update the year on license headers using the [license-maven-plugin](https://oss.carbou.me/license-maven-plugin/#goals)
+To format the code specifically:
 ```shell
-./mvnw license:update-file-header -Plicense
+./mvnw process-sources
 ```
+
 ### Javadocs
 
-To check javadocs using the [javadoc:javadoc](https://maven.apache.org/plugins/maven-javadoc-plugin/)
+To check javadocs using the [javadoc:javadoc](https://maven.apache.org/plugins/maven-javadoc-plugin/):
 ```shell
 ./mvnw javadoc:javadoc
 ```
