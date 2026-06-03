@@ -89,6 +89,7 @@ import org.springframework.util.StringUtils;
  * @author Jonatan Ivanov
  * @author Wenli Tian
  * @author Sebastien Deleuze
+ * @author guan xu
  * @since 1.0.0
  */
 public class DefaultChatClient implements ChatClient {
@@ -757,6 +758,8 @@ public class DefaultChatClient implements ChatClient {
 
 	public static class DefaultToolSpec implements ToolSpec {
 
+		private final List<String> toolNames = new ArrayList<>();
+
 		private final Map<String, Object> context = new HashMap<>();
 
 		private final List<ToolCallback> toolCallbacks = new ArrayList<>();
@@ -764,6 +767,10 @@ public class DefaultChatClient implements ChatClient {
 		private final List<ToolCallbackProvider> toolCallbackProviders = new ArrayList<>();
 
 		private @Nullable ToolAdvisor toolAdvisor;
+
+		public List<String> getToolNames() {
+			return this.toolNames;
+		}
 
 		public Map<String, Object> getContext() {
 			return this.context;
@@ -795,6 +802,22 @@ public class DefaultChatClient implements ChatClient {
 			Assert.noNullElements(context.keySet(), "context keys cannot contain null elements");
 			Assert.noNullElements(context.values(), "context values cannot contain null elements");
 			this.context.putAll(context);
+			return this;
+		}
+
+		@Override
+		public ToolSpec names(String... names) {
+			Assert.notNull(names, "toolNames cannot be null");
+			Assert.noNullElements(names, "toolNames cannot contain null elements");
+			this.toolNames.addAll(Arrays.asList(names));
+			return this;
+		}
+
+		@Override
+		public ToolSpec names(List<String> names) {
+			Assert.notNull(names, "toolNames cannot be null");
+			Assert.noNullElements(names, "toolNames cannot contain null elements");
+			this.toolNames.addAll(names);
 			return this;
 		}
 
@@ -1048,10 +1071,10 @@ public class DefaultChatClient implements ChatClient {
 				.builder(this.chatModel, this.observationRegistry, this.chatClientObservationConvention,
 						this.advisorObservationConvention, this.toolCallAdvisorBuilder)
 				.defaultTemplateRenderer(this.templateRenderer)
-				.defaultTools(t -> t.callbacks(this.toolCallbacks)
+				.defaultTools(t -> t.names(StringUtils.toStringArray(this.toolNames))
+					.callbacks(this.toolCallbacks)
 					.callbacks(this.toolCallbackProviders.toArray(new ToolCallbackProvider[0]))
-					.context(this.toolContext))
-				.defaultToolNames(StringUtils.toStringArray(this.toolNames));
+					.context(this.toolContext));
 
 			if (!CollectionUtils.isEmpty(this.advisors)) {
 				builder.defaultAdvisors(a -> a.advisors(this.advisors).params(this.advisorParams));
@@ -1085,6 +1108,7 @@ public class DefaultChatClient implements ChatClient {
 			var toolSpec = new DefaultToolSpec();
 			consumer.accept(toolSpec);
 
+			this.toolNames.addAll(toolSpec.getToolNames());
 			this.toolContext.putAll(toolSpec.getContext());
 			this.toolCallbacks.addAll(toolSpec.getToolCallbacks());
 			this.toolCallbackProviders.addAll(toolSpec.getToolCallbackProviders());
@@ -1146,10 +1170,7 @@ public class DefaultChatClient implements ChatClient {
 
 		@Override
 		public ChatClientRequestSpec toolNames(String... toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
-			this.toolNames.addAll(List.of(toolNames));
-			return this;
+			return tools(t -> t.names(toolNames));
 		}
 
 		@Override

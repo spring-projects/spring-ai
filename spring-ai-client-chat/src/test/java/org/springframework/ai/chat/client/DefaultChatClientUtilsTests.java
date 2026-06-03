@@ -220,7 +220,7 @@ class DefaultChatClientUtilsTests {
 			.create(chatModel)
 			.prompt()
 			.options(chatOptions)
-			.toolNames(toolNames.toArray(new String[0]));
+			.tools(t -> t.names(toolNames.toArray(new String[0])));
 
 		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
 
@@ -284,7 +284,7 @@ class DefaultChatClientUtilsTests {
 			.create(chatModel)
 			.prompt()
 			.options(chatOptions)
-			.toolNames(toolNames2.toArray(new String[0]));
+			.tools(t -> t.names(toolNames2.toArray(new String[0])));
 
 		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
 
@@ -349,7 +349,7 @@ class DefaultChatClientUtilsTests {
 			.create(chatModel)
 			.prompt()
 			.options(chatOptions)
-			.toolNames(toolNames1.toArray(new String[0]));
+			.tools(t -> t.names(toolNames1.toArray(new String[0])));
 
 		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
 
@@ -466,7 +466,7 @@ class DefaultChatClientUtilsTests {
 			.system(s -> s.text(systemText).params(systemParams))
 			.user(u -> u.text(userText).params(userParams).media(media))
 			.messages(messages)
-			.toolNames(toolNames.toArray(new String[0]))
+			.tools(t -> t.names(toolNames.toArray(new String[0])))
 			.tools(t -> t.callbacks(toolCallback).context(toolContext))
 			.options(chatOptions)
 			.advisors(a -> a.params(advisorParams));

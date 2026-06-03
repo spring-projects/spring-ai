@@ -1754,7 +1754,7 @@ class DefaultChatClientTests {
 	void whenToolNamesElementIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.toolNames("myTool", null)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> spec.tools(t -> t.names("myTool", null))).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("toolNames cannot contain null elements");
 	}
 
@@ -1763,7 +1763,7 @@ class DefaultChatClientTests {
 		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
 		String toolName = "myTool";
-		spec = spec.toolNames(toolName);
+		spec = spec.tools(t -> t.names(toolName));
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
 		assertThat(defaultSpec.getToolNames()).contains(toolName);
 	}
@@ -1917,7 +1917,8 @@ class DefaultChatClientTests {
 	void whenFunctionBeanNamesElementIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.toolNames("myFunction", null)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> spec.tools(t -> t.names("myFunction", null)))
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("toolNames cannot contain null elements");
 	}
 
@@ -1926,7 +1927,7 @@ class DefaultChatClientTests {
 		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
 		String functionBeanName = "myFunction";
-		spec = spec.toolNames(functionBeanName);
+		spec = spec.tools(t -> t.names(functionBeanName));
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
 		assertThat(defaultSpec.getToolNames()).contains(functionBeanName);
 	}

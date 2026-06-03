@@ -78,7 +78,7 @@ public class OpenAiPaymentTransactionIT {
 	public void transactionPaymentStatuses(String functionName) {
 		List<TransactionStatusResponse> content = this.chatClient.prompt()
 			.advisors(new SimpleLoggerAdvisor())
-			.toolNames(functionName)
+			.tools(t -> t.names(functionName))
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
 					""")
@@ -109,7 +109,7 @@ public class OpenAiPaymentTransactionIT {
 
 		Flux<String> flux = this.chatClient.prompt()
 			.advisors(new SimpleLoggerAdvisor())
-			.toolNames(functionName)
+			.tools(t -> t.names(functionName))
 			.user(u -> u.text("""
 					What is the status of my payment transactions 001, 002 and 003?
 

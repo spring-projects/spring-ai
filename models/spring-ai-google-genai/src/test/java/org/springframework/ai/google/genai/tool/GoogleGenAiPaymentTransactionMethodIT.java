@@ -78,7 +78,7 @@ public class GoogleGenAiPaymentTransactionMethodIT {
 
 		String content = this.chatClient.prompt()
 			.advisors(new SimpleLoggerAdvisor())
-			.toolNames("getPaymentStatus")
+			.tools(t -> t.names("getPaymentStatus"))
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
 					If required invoke the function per transaction.
@@ -96,7 +96,7 @@ public class GoogleGenAiPaymentTransactionMethodIT {
 
 		Flux<String> streamContent = this.chatClient.prompt()
 			.advisors(new SimpleLoggerAdvisor())
-			.toolNames("getPaymentStatuses")
+			.tools(t -> t.names("getPaymentStatuses"))
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
 					If required invoke the function per transaction.

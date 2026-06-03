@@ -131,7 +131,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 				.prompt()
 				.advisors(createToolSearchToolCallingAdvisor(toolIndex))
 				.user("Use the weather tool to get the current temperature in San Francisco, Tokyo, and Paris. Report the exact readings in Celsius.")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(t -> t.callbacks(createWeatherToolCallback()))
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "chat_memory_conversation_id"))
 				.call()
 				.content();
@@ -149,7 +149,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(500).build())
 							.build())
 				.user("Use the weather tool to get the current temperature in San Francisco, Tokyo, and Paris. Report the exact readings in Celsius.")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(t -> t.callbacks(createWeatherToolCallback()))
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "chat_memory_conversation_id"))
 				.call()
 				.content();
@@ -167,7 +167,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 
 			String response = chatClient.prompt()
 				.user("Use the weather tool to get the current temperature in San Francisco, Tokyo, and Paris. Report the exact readings in Celsius.")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(t -> t.callbacks(createWeatherToolCallback()))
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "chat_memory_conversation_id"))
 				.call()
 				.content();
@@ -186,7 +186,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 
 			String response = chatClient.prompt()
 				.user("Use the weather tool to get the current temperature in San Francisco, Tokyo, and Paris. Report the exact readings in Celsius.")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(t -> t.callbacks(createWeatherToolCallback()))
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "chat_memory_conversation_id"))
 				.call()
 				.content();
@@ -207,7 +207,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 				.prompt()
 				.advisors(createToolSearchToolCallingAdvisor(toolIndex))
 				.user("Use the weather tool to get the current temperature in San Francisco, Tokyo, and Paris. Report the exact readings in Celsius.")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(t -> t.callbacks(createWeatherToolCallback()))
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "chat_memory_conversation_id"))
 				.stream()
 				.content();
@@ -226,7 +226,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(500).build())
 							.build())
 				.user("Use the weather tool to get the current temperature in San Francisco, Tokyo, and Paris. Report the exact readings in Celsius.")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(t -> t.callbacks(createWeatherToolCallback()))
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "chat_memory_conversation_id"))
 				.stream()
 				.content();
@@ -245,7 +245,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 
 			Flux<String> response = chatClient.prompt()
 				.user("Use the weather tool to get the current temperature in San Francisco, Tokyo, and Paris. Report the exact readings in Celsius.")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(t -> t.callbacks(createWeatherToolCallback()))
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "chat_memory_conversation_id"))
 				.stream()
 				.content();
@@ -265,7 +265,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 
 			Flux<String> response = chatClient.prompt()
 				.user("Use the weather tool to get the current temperature in San Francisco, Tokyo, and Paris. Report the exact readings in Celsius.")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(t -> t.callbacks(createWeatherToolCallback()))
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "chat_memory_conversation_id"))
 				.stream()
 				.content();

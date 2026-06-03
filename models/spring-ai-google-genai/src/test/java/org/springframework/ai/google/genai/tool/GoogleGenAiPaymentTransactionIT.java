@@ -73,16 +73,17 @@ public class GoogleGenAiPaymentTransactionIT {
 
 	@Test
 	public void paymentStatuses() {
-		// @formatter:off
 		String content = this.chatClient.prompt()
-				.advisors(new SimpleLoggerAdvisor())
-				.toolNames("paymentStatus")
-				.user("""
-				What is the status of my payment transactions 001, 002 and 003?
-				If required invoke the function per transaction.
-				""").call().content();
-		// @formatter:on
-		logger.info("" + content);
+			.advisors(new SimpleLoggerAdvisor())
+			.tools(t -> t.names("paymentStatusWithContext"))
+			.user("""
+					What is the status of my payment transactions 001, 002 and 003?
+					If required invoke the function per transaction.
+					""")
+			.call()
+			.content();
+
+		logger.info(content);
 
 		assertThat(content).contains("001", "002", "003");
 		assertThat(content).contains("pending", "approved", "rejected");
@@ -93,7 +94,7 @@ public class GoogleGenAiPaymentTransactionIT {
 
 		Flux<String> streamContent = this.chatClient.prompt()
 			.advisors(new SimpleLoggerAdvisor())
-			.toolNames("paymentStatus")
+			.tools(t -> t.names("paymentStatusWithContext"))
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
 					If required invoke the function per transaction.

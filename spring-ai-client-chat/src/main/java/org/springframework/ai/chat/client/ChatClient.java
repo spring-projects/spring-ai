@@ -57,6 +57,7 @@ import org.springframework.util.MimeType;
  * @author Josh Long
  * @author Arjen Poutsma
  * @author Thomas Vitale
+ * @author guan xu
  * @since 1.0.0
  */
 public interface ChatClient {
@@ -427,6 +428,10 @@ public interface ChatClient {
 	}
 
 	interface ToolSpec {
+
+		ToolSpec names(String... names);
+
+		ToolSpec names(List<String> names);
 
 		ToolSpec instances(Object... toolObjects);
 

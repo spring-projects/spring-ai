@@ -53,6 +53,7 @@ import org.springframework.util.Assert;
  * @author Josh Long
  * @author Arjen Poutsma
  * @author Thomas Vitale
+ * @author guan xu
  * @since 1.0.0
  */
 public class DefaultChatClientBuilder implements Builder {
@@ -169,6 +170,12 @@ public class DefaultChatClientBuilder implements Builder {
 		return this;
 	}
 
+	@Override
+	public Builder defaultTools(Object... toolObjects) {
+		this.defaultRequest.tools(toolObjects);
+		return this;
+	}
+
 	/**
 	 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)}. To be removed
 	 * in 3.0.0.
@@ -176,13 +183,7 @@ public class DefaultChatClientBuilder implements Builder {
 	@Deprecated(since = "2.0.0", forRemoval = true)
 	@Override
 	public Builder defaultToolNames(String... toolNames) {
-		this.defaultRequest.toolNames(toolNames);
-		return this;
-	}
-
-	@Override
-	public Builder defaultTools(Object... toolObjects) {
-		this.defaultRequest.tools(toolObjects);
+		this.defaultRequest.tools(t -> t.names(toolNames));
 		return this;
 	}
 

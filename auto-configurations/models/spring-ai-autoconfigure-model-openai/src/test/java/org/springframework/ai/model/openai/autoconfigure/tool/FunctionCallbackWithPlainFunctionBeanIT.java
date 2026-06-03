@@ -184,8 +184,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			String content = chatClient.prompt(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.")
-				.toolNames("weatherFunctionWithContext")
-				.toolContext(Map.of("sessionId", "123"))
+				.tools(t -> t.names("weatherFunctionWithContext").context(Map.of("sessionId", "123")))
 				.call()
 				.content();
 			logger.info(content);
@@ -219,8 +218,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			String content = chatClient.prompt(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.")
-				.toolNames("weatherFunctionWithClassBiFunction")
-				.toolContext(Map.of("sessionId", "123"))
+				.tools(t -> t.names("weatherFunctionWithClassBiFunction").context(Map.of("sessionId", "123")))
 				.call()
 				.content();
 			logger.info(content);
