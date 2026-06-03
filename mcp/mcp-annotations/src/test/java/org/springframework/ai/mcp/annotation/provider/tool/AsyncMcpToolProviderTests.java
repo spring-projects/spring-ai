@@ -533,11 +533,13 @@ public class AsyncMcpToolProviderTests {
 		StepVerifier.create(result).assertNext(callToolResult -> {
 			assertThat(callToolResult).isNotNull();
 			assertThat(callToolResult.isError()).isFalse();
-			assertThat(callToolResult.content()).hasSize(1);
+			assertThat(callToolResult.content()).hasSize(3);
 			assertThat(callToolResult.content().get(0)).isInstanceOf(TextContent.class);
-			// Flux results are typically concatenated or collected into a single response
-			String content = ((TextContent) callToolResult.content().get(0)).text();
-			assertThat(content).contains("test");
+			assertThat(((TextContent) callToolResult.content().get(0)).text()).isEqualTo("Item1: test");
+			assertThat(callToolResult.content().get(1)).isInstanceOf(TextContent.class);
+			assertThat(((TextContent) callToolResult.content().get(1)).text()).isEqualTo("Item2: test");
+			assertThat(callToolResult.content().get(2)).isInstanceOf(TextContent.class);
+			assertThat(((TextContent) callToolResult.content().get(2)).text()).isEqualTo("Item3: test");
 		}).verifyComplete();
 	}
 
@@ -956,18 +958,13 @@ public class AsyncMcpToolProviderTests {
 
 		assertThat(result).isNotNull();
 		assertThat(result.isError()).isFalse();
-		assertThat(result.content()).hasSize(1);
+		assertThat(result.content()).hasSize(3);
 		assertThat(result.content().get(0)).isInstanceOf(McpSchema.TextContent.class);
-
-		String jsonText = ((TextContent) result.content().get(0)).text();
-		System.out.println("Actual JSON output: " + jsonText);
-
-		// The Flux might be serialized differently than expected, let's check what we
-		// actually get
-		// Based on the error, it seems like we're getting a single object instead of an
-		// array
-		// Let's adjust our assertion to match the actual behavior
-		assertThat(jsonText).contains("Processed: test - Item 1");
+		assertThat(((TextContent) result.content().get(0)).text()).contains("Processed: test - Item 1");
+		assertThat(result.content().get(1)).isInstanceOf(McpSchema.TextContent.class);
+		assertThat(((TextContent) result.content().get(1)).text()).contains("Processed: test - Item 2");
+		assertThat(result.content().get(2)).isInstanceOf(McpSchema.TextContent.class);
+		assertThat(((TextContent) result.content().get(2)).text()).contains("Processed: test - Item 3");
 	}
 
 	@Test
