@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.google.genai;
+package org.springframework.ai.google.genai.embedding;
 
 import com.google.genai.Client;
 import org.jspecify.annotations.Nullable;

@@ -247,6 +247,28 @@ StructuredElicitResult<Person> result =
         new ParameterizedTypeReference<Person>() {});
 ----
 
+=== Google GenAI Embedding: `GoogleGenAiEmbeddingConnectionDetails` Package Change
+
+`GoogleGenAiEmbeddingConnectionDetails` has been moved from `org.springframework.ai.google.genai`
+to `org.springframework.ai.google.genai.embedding`.
+
+==== Impact
+
+Any code that directly imports `GoogleGenAiEmbeddingConnectionDetails` will fail to compile.
+
+==== Migration
+
+Update the import statement:
+
+[source,java]
+----
+// Before
+import org.springframework.ai.google.genai.GoogleGenAiEmbeddingConnectionDetails;
+
+// After
+import org.springframework.ai.google.genai.embedding.GoogleGenAiEmbeddingConnectionDetails;
+----
+
 [[upgrading-to-2-0-0-M7]]
 == Upgrading to 2.0.0-M7
 
