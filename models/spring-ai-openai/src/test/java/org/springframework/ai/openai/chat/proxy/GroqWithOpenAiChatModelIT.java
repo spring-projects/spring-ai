@@ -24,8 +24,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -66,8 +64,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(classes = GroqWithOpenAiChatModelIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "GROQ_API_KEY", matches = ".+")
 class GroqWithOpenAiChatModelIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(GroqWithOpenAiChatModelIT.class);
 
 	private static final String GROQ_BASE_URL = "https://api.groq.com/openai";
 
@@ -191,7 +187,6 @@ class GroqWithOpenAiChatModelIT {
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -220,8 +215,6 @@ class GroqWithOpenAiChatModelIT {
 			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
 			response = this.chatModel.call(prompt);
 		}
-
-		logger.info("Response: {}", response);
 
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
@@ -255,7 +248,6 @@ class GroqWithOpenAiChatModelIT {
 		}
 
 		String content = aggregatedRef.get().getResult().getOutput().getText();
-		logger.info("Response: {}", content);
 
 		assertThat(content).contains("30", "10", "15");
 	}
@@ -268,8 +260,6 @@ class GroqWithOpenAiChatModelIT {
 			.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 			.call()
 			.chatResponse();
-
-		logger.info(response.toString());
 		assertThat(response.getMetadata().getId()).isNotEmpty();
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();

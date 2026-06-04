@@ -26,8 +26,6 @@ import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -65,8 +63,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".+")
 public class GoogleGenAiPaymentTransactionMethodIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiPaymentTransactionMethodIT.class);
-
 	private static final Map<Transaction, Status> DATASET = Map.of(new Transaction("001"), new Status("pending"),
 			new Transaction("002"), new Status("approved"), new Transaction("003"), new Status("rejected"));
 
@@ -85,7 +81,6 @@ public class GoogleGenAiPaymentTransactionMethodIT {
 					""")
 			.call()
 			.content();
-		logger.info(content);
 
 		assertThat(content).contains("001", "002", "003");
 		assertThat(content).contains("pending", "approved", "rejected");
@@ -105,8 +100,6 @@ public class GoogleGenAiPaymentTransactionMethodIT {
 			.content();
 
 		String content = streamContent.collectList().block().stream().collect(Collectors.joining());
-
-		logger.info(content);
 
 		assertThat(content).contains("001", "002", "003");
 		assertThat(content).contains("pending", "approved", "rejected");
@@ -133,13 +126,11 @@ public class GoogleGenAiPaymentTransactionMethodIT {
 
 		@Tool(description = "Get the status of a single payment transaction")
 		public Status getPaymentStatus(Transaction transaction) {
-			logger.info("Single Transaction: " + transaction);
 			return DATASET.get(transaction);
 		}
 
 		@Tool(description = "Get the list statuses of a list of payment transactions")
 		public List<Status> getPaymentStatuses(List<Transaction> transactions) {
-			logger.info("Transactions: " + transactions);
 			return transactions.stream().map(t -> DATASET.get(t)).toList();
 		}
 

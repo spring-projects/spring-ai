@@ -61,7 +61,6 @@ class GoogleGenAiToolCallAdvisorIT extends AbstractToolCallAdvisorIT {
 
 		List<String> chunks = response.collectList().block();
 		String content = Objects.requireNonNull(chunks).stream().collect(Collectors.joining());
-		logger.info("Response: {}", content);
 
 		assertThat(content).contains("30", "10", "15");
 	}

@@ -23,8 +23,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -54,8 +52,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 // https://api-docs.deepseek.com/guides/function_calling")
 @EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".+")
 class DeepSeekChatModelFunctionCallingIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(DeepSeekChatModelFunctionCallingIT.class);
 
 	@Autowired
 	ChatModel chatModel;
@@ -114,8 +110,6 @@ class DeepSeekChatModelFunctionCallingIT {
 			response = this.chatModel.call(prompt);
 		}
 
-		logger.info("Response: {}", response);
-
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
@@ -149,7 +143,6 @@ class DeepSeekChatModelFunctionCallingIT {
 		}
 
 		String content = aggregatedRef.get().getResult().getOutput().getText();
-		logger.info("Response: {}", content);
 
 		assertThat(content).contains("30", "10", "15");
 	}
@@ -240,8 +233,6 @@ class DeepSeekChatModelFunctionCallingIT {
 			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
 			response = this.chatModel.call(prompt);
 		}
-
-		logger.info("Response: {}", response);
 
 		assertThat(response).isNotNull();
 		assertThat(response.getResult()).isNotNull();

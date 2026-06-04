@@ -26,9 +26,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.sql.DataSource;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -62,8 +62,6 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 	private final TransactionTemplate transactionTemplate;
 
 	private final JdbcChatMemoryRepositoryDialect dialect;
-
-	private static final Logger logger = LoggerFactory.getLogger(JdbcChatMemoryRepository.class);
 
 	private JdbcChatMemoryRepository(JdbcTemplate jdbcTemplate, JdbcChatMemoryRepositoryDialect dialect,
 			@Nullable PlatformTransactionManager txManager) {
@@ -171,7 +169,7 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 		private @Nullable PlatformTransactionManager platformTransactionManager;
 
-		private static final Logger logger = LoggerFactory.getLogger(Builder.class);
+		private static final Log logger = LogFactory.getLog(Builder.class);
 
 		private Builder() {
 		}
@@ -240,8 +238,11 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		private void warnIfDialectMismatch(DataSource dataSource, JdbcChatMemoryRepositoryDialect explicitDialect) {
 			JdbcChatMemoryRepositoryDialect detected = JdbcChatMemoryRepositoryDialect.from(dataSource);
 			if (!detected.getClass().equals(explicitDialect.getClass())) {
-				logger.warn("Explicitly set dialect {} will be used instead of detected dialect {} from datasource",
-						explicitDialect.getClass().getSimpleName(), detected.getClass().getSimpleName());
+				if (logger.isWarnEnabled()) {
+					logger.warn("Explicitly set dialect " + explicitDialect.getClass().getSimpleName()
+							+ " will be used instead of detected dialect " + detected.getClass().getSimpleName()
+							+ " from datasource");
+				}
 			}
 		}
 

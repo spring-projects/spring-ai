@@ -31,9 +31,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.RedisClient;
 import redis.clients.jedis.json.Path2;
@@ -75,7 +75,7 @@ import org.springframework.util.MimeType;
  */
 public final class RedisChatMemoryRepository implements ChatMemoryRepository, AdvancedRedisChatMemoryRepository {
 
-	private static final Logger logger = LoggerFactory.getLogger(RedisChatMemoryRepository.class);
+	private static final Log logger = LogFactory.getLog(RedisChatMemoryRepository.class);
 
 	private static final Gson gson = new Gson();
 
@@ -108,7 +108,9 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		}
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Adding {} messages to conversation: {}", messages.size(), conversationId);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Adding " + messages.size() + " messages to conversation: " + conversationId);
+			}
 		}
 
 		// Get the next available timestamp for the first message
@@ -128,8 +130,8 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 				String json = gson.toJson(documentMap);
 
 				if (logger.isDebugEnabled()) {
-					logger.debug("Storing batch message with key: {}, type: {}, content: {}", key,
-							message.getMessageType(), message.getText());
+					logger.debug("Storing batch message with key: " + key + ", type: " + message.getMessageType()
+							+ ", content: " + message.getText());
 				}
 
 				pipeline.jsonSet(key, ROOT_PATH, json);
@@ -147,8 +149,8 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		Assert.notNull(message, "Message must not be null");
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Adding message type: {}, content: {} to conversation: {}", message.getMessageType(),
-					message.getText(), conversationId);
+			logger.debug("Adding message type: " + message.getMessageType() + ", content: " + message.getText()
+					+ " to conversation: " + conversationId);
 		}
 
 		// Get the current highest timestamp for this conversation
@@ -163,7 +165,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		String json = gson.toJson(documentMap);
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Storing message with key: {}, JSON: {}", key, json);
+			logger.debug("Storing message with key: " + key + ", JSON: " + json);
 		}
 
 		this.jedisClient.jsonSet(key, ROOT_PATH, json);
@@ -205,7 +207,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 			}
 
 			if (logger.isDebugEnabled()) {
-				logger.debug("Generated atomic timestamp {} for conversation {}", nextTimestamp, conversationId);
+				logger.debug("Generated atomic timestamp " + nextTimestamp + " for conversation " + conversationId);
 			}
 
 			return nextTimestamp;
@@ -213,8 +215,10 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 
 		catch (Exception e) {
 			// Log error and fall back to current timestamp with nanoTime for uniqueness
-			logger.warn("Error getting atomic timestamp for conversation {}, using fallback: {}", conversationId,
-					e.getMessage());
+			if (logger.isWarnEnabled()) {
+				logger.warn("Error getting atomic timestamp for conversation " + conversationId + ", using fallback: "
+						+ e.getMessage());
+			}
 			// Add nanoseconds to ensure uniqueness even in fallback scenario
 			return Instant.now().toEpochMilli() * 1000 + (System.nanoTime() % 1000);
 		}
@@ -236,12 +240,12 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		SearchResult result = this.jedisClient.ftSearch(this.config.getIndexName(), query);
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Redis search for conversation {} returned {} results", conversationId,
-					result.getDocuments().size());
+			logger.debug("Redis search for conversation " + conversationId + " returned " + result.getDocuments().size()
+					+ " results");
 			result.getDocuments().forEach(doc -> {
 				if (doc.get("$") != null) {
 					JsonObject json = gson.fromJson(doc.getString("$"), JsonObject.class);
-					logger.debug("Document: {}", json);
+					logger.debug("Document: " + json);
 				}
 			});
 		}
@@ -251,7 +255,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 			if (doc.get("$") != null) {
 				JsonObject json = gson.fromJson(doc.getString("$"), JsonObject.class);
 				if (logger.isDebugEnabled()) {
-					logger.debug("Processing JSON document: {}", json);
+					logger.debug("Processing JSON document: " + json);
 				}
 
 				String type = json.get("type").getAsString();
@@ -267,7 +271,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 
 				if (MessageType.ASSISTANT.toString().equals(type)) {
 					if (logger.isDebugEnabled()) {
-						logger.debug("Creating AssistantMessage with content: {}", content);
+						logger.debug("Creating AssistantMessage with content: " + content);
 					}
 
 					// Handle tool calls if present
@@ -295,7 +299,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 
 				else if (MessageType.USER.toString().equals(type)) {
 					if (logger.isDebugEnabled()) {
-						logger.debug("Creating UserMessage with content: {}", content);
+						logger.debug("Creating UserMessage with content: " + content);
 					}
 
 					// Create a UserMessage with the builder to properly set metadata
@@ -305,7 +309,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 
 				else if (MessageType.SYSTEM.toString().equals(type)) {
 					if (logger.isDebugEnabled()) {
-						logger.debug("Creating SystemMessage with content: {}", content);
+						logger.debug("Creating SystemMessage with content: " + content);
 					}
 
 					messages.add(SystemMessage.builder().text(content).metadata(metadata).build());
@@ -313,7 +317,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 
 				else if (MessageType.TOOL.toString().equals(type)) {
 					if (logger.isDebugEnabled()) {
-						logger.debug("Creating ToolResponseMessage with content: {}", content);
+						logger.debug("Creating ToolResponseMessage with content: " + content);
 					}
 
 					// Extract tool responses
@@ -336,15 +340,17 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 				}
 				// Add handling for other message types if needed
 				else {
-					logger.warn("Unknown message type: {}", type);
+					if (logger.isWarnEnabled()) {
+						logger.warn("Unknown message type: " + type);
+					}
 				}
 			}
 		});
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Returning {} messages for conversation {}", messages.size(), conversationId);
-			messages.forEach(message -> logger.debug("Message type: {}, content: {}, class: {}",
-					message.getMessageType(), message.getText(), message.getClass().getSimpleName()));
+			logger.debug("Returning " + messages.size() + " messages for conversation " + conversationId);
+			messages.forEach(message -> logger.debug("Message type: " + message.getMessageType() + ", content: "
+					+ message.getText() + ", class: " + message.getClass().getSimpleName()));
 		}
 
 		return messages;
@@ -420,21 +426,21 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 				}
 
 				if (logger.isDebugEnabled()) {
-					logger.debug("Created Redis search index '{}' with {} schema fields", this.config.getIndexName(),
-							schemaFields.size());
+					logger.debug("Created Redis search index '" + this.config.getIndexName() + "' with "
+							+ schemaFields.size() + " schema fields");
 				}
 			}
 
 			else if (logger.isDebugEnabled()) {
-				logger.debug("Redis search index '{}' already exists", this.config.getIndexName());
+				logger.debug("Redis search index '" + this.config.getIndexName() + "' already exists");
 			}
 		}
 
 		catch (Exception e) {
-			logger.error("Failed to initialize Redis schema: {}", e.getMessage());
-			if (logger.isDebugEnabled()) {
-				logger.debug("Error details", e);
+			if (logger.isErrorEnabled()) {
+				logger.error("Failed to initialize Redis schema: " + e.getMessage());
 			}
+			logger.debug("Error details", e);
 			throw new IllegalStateException("Could not initialize Redis schema", e);
 		}
 	}
@@ -545,8 +551,8 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		});
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Found {} unique conversation IDs using Redis aggregation", conversationIds.size());
-			conversationIds.forEach(id -> logger.debug("Conversation ID: {}", id));
+			logger.debug("Found " + conversationIds.size() + " unique conversation IDs using Redis aggregation");
+			conversationIds.forEach(id -> logger.debug("Conversation ID: " + id));
 		}
 
 		return conversationIds;
@@ -601,7 +607,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		Query query = new Query(queryNode.toString()).setSortBy("timestamp", true).limit(0, limit);
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Searching for messages with content pattern '{}' with limit {}", contentPattern, limit);
+			logger.debug("Searching for messages with content pattern '" + contentPattern + "' with limit " + limit);
 		}
 
 		SearchResult result = this.jedisClient.ftSearch(this.config.getIndexName(), query);
@@ -618,7 +624,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		Query query = new Query(queryNode.toString()).setSortBy("timestamp", true).limit(0, limit);
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Searching for messages of type {} with limit {}", messageType, limit);
+			logger.debug("Searching for messages of type " + messageType + " with limit " + limit);
 		}
 
 		SearchResult result = this.jedisClient.ftSearch(this.config.getIndexName(), query);
@@ -656,8 +662,8 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		Query query = new Query(finalQuery.toString()).setSortBy("timestamp", true).limit(0, limit);
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Searching for messages in time range from {} to {} with limit {}, query: '{}'", fromTime,
-					toTime, limit, finalQuery);
+			logger.debug("Searching for messages in time range from " + fromTime + " to " + toTime + " with limit "
+					+ limit + ", query: '" + finalQuery + "'");
 		}
 
 		SearchResult result = this.jedisClient.ftSearch(this.config.getIndexName(), query);
@@ -730,14 +736,14 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		Query query = new Query(queryNode.toString()).setSortBy("timestamp", true).limit(0, limit);
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Searching for messages with metadata {}={}, query: '{}', limit: {}", metadataKey,
-					metadataValue, queryNode, limit);
+			logger.debug("Searching for messages with metadata " + metadataKey + "=" + metadataValue + ", query: '"
+					+ queryNode + "', limit: " + limit);
 		}
 
 		SearchResult result = this.jedisClient.ftSearch(this.config.getIndexName(), query);
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Search returned {} results", result.getTotalResults());
+			logger.debug("Search returned " + result.getTotalResults() + " results");
 		}
 		return processSearchResult(result);
 	}
@@ -756,7 +762,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 																							// ascending
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Executing custom query '{}' with limit {}", query, limit);
+			logger.debug("Executing custom query '" + query + "' with limit " + limit);
 		}
 
 		return executeSearchQuery(redisQuery);
@@ -789,7 +795,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		}
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Search returned {} messages", messages.size());
+			logger.debug("Search returned " + messages.size() + " messages");
 		}
 
 		return messages;
@@ -810,10 +816,10 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		}
 
 		catch (Exception e) {
-			logger.error("Error executing query '{}': {}", query, e.getMessage());
-			if (logger.isTraceEnabled()) {
-				logger.debug("Error details", e);
+			if (logger.isErrorEnabled()) {
+				logger.error("Error executing query '" + query + "': " + e.getMessage());
 			}
+			logger.debug("Error details", e);
 			return Collections.emptyList();
 		}
 	}
@@ -890,7 +896,9 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		}
 
 		// For unknown message types, return a generic UserMessage
-		logger.warn("Unknown message type: {}, returning generic UserMessage", type);
+		if (logger.isWarnEnabled()) {
+			logger.warn("Unknown message type: " + type + ", returning generic UserMessage");
+		}
 		return UserMessage.builder().text(content).metadata(metadata).build();
 	}
 

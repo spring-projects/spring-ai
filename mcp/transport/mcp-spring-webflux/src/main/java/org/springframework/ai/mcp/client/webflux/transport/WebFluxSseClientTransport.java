@@ -35,9 +35,9 @@ import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.JSONRPCMessage;
 import io.modelcontextprotocol.spec.ProtocolVersions;
 import io.modelcontextprotocol.util.Assert;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -88,7 +88,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Deprecated(since = "2.0.0", forRemoval = true)
 public class WebFluxSseClientTransport implements McpClientTransport {
 
-	private static final Logger logger = LoggerFactory.getLogger(WebFluxSseClientTransport.class);
+	private static final Log logger = LogFactory.getLog(WebFluxSseClientTransport.class);
 
 	private static final String MCP_PROTOCOL_VERSION = ProtocolVersions.MCP_2024_11_05;
 
@@ -272,7 +272,9 @@ public class WebFluxSseClientTransport implements McpClientTransport {
 				}
 			}
 			else {
-				logger.debug("Received unrecognized SSE event type: {}", event);
+				if (logger.isDebugEnabled()) {
+					logger.debug("Received unrecognized SSE event type: " + event);
+				}
 				s.complete();
 			}
 		}).transform(handler)).subscribe();
@@ -313,7 +315,9 @@ public class WebFluxSseClientTransport implements McpClientTransport {
 					.doOnSuccess(response -> logger.debug("Message sent successfully"))
 					.doOnError(error -> {
 						if (!this.isClosing) {
-							logger.error("Error sending message: {}", error.getMessage());
+							if (logger.isErrorEnabled()) {
+								logger.error("Error sending message: " + error.getMessage());
+							}
 						}
 					});
 			}
@@ -360,7 +364,9 @@ public class WebFluxSseClientTransport implements McpClientTransport {
 			sink.next(retrySpec);
 			return;
 		}
-		logger.error("Fatal SSE error, not retrying: {}", retrySpec.failure().getMessage());
+		if (logger.isErrorEnabled()) {
+			logger.error("Fatal SSE error, not retrying: " + retrySpec.failure().getMessage());
+		}
 		sink.error(retrySpec.failure());
 	};
 

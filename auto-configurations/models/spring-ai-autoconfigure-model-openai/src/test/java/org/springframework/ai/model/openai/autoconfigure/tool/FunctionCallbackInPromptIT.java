@@ -21,8 +21,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -42,8 +40,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 public class FunctionCallbackInPromptIT {
-
-	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackInPromptIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"))
@@ -74,8 +70,6 @@ public class FunctionCallbackInPromptIT {
 				Prompt prompt = new Prompt(List.of(userMessage), promptOptions);
 
 				ChatResponse response = chatClient.prompt(prompt).call().chatResponse();
-
-				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 			});
@@ -115,8 +109,6 @@ public class FunctionCallbackInPromptIT {
 					.map(Generation::getOutput)
 					.map(AssistantMessage::getText)
 					.collect(Collectors.joining());
-
-				logger.info("Response: {}", content);
 
 				assertThat(content).contains("30", "10", "15");
 			});

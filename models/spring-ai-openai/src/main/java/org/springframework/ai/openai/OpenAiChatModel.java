@@ -69,9 +69,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import tools.jackson.databind.JsonNode;
 
@@ -122,7 +122,7 @@ public final class OpenAiChatModel implements ChatModel {
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
-	private final Logger logger = LoggerFactory.getLogger(OpenAiChatModel.class);
+	private final Log logger = LogFactory.getLog(OpenAiChatModel.class);
 
 	private final OpenAIClient openAiClient;
 
@@ -204,7 +204,9 @@ public final class OpenAiChatModel implements ChatModel {
 
 				List<ChatCompletion.Choice> choices = chatCompletion.choices();
 				if (choices.isEmpty()) {
-					logger.warn("No choices returned for prompt: {}", prompt);
+					if (logger.isWarnEnabled()) {
+						logger.warn("No choices returned for prompt: " + prompt);
+					}
 					return new ChatResponse(List.of());
 				}
 
@@ -405,7 +407,9 @@ public final class OpenAiChatModel implements ChatModel {
 				metadataBuilder.keyValue(key, value);
 			}
 			catch (Exception e) {
-				logger.error("Error parsing JSON value for key '{}': {}", key, jsonValue, e);
+				if (logger.isErrorEnabled()) {
+					logger.error("Error parsing JSON value for key '" + key + "': " + jsonValue, e);
+				}
 				metadataBuilder.keyValue(key, jsonValue);
 			}
 		});
@@ -505,9 +509,11 @@ public final class OpenAiChatModel implements ChatModel {
 											.build()));
 								}
 								else {
-									logger.info(
-											"Could not process image media with data of type: {}. Only java.net.URI is supported for image URLs.",
-											media.getData().getClass().getSimpleName());
+									if (logger.isInfoEnabled()) {
+										logger.info("Could not process image media with data of type: "
+												+ media.getData().getClass().getSimpleName()
+												+ ". Only java.net.URI is supported for image URLs.");
+									}
 								}
 							}
 							else if (mimeType.startsWith("audio/")) {

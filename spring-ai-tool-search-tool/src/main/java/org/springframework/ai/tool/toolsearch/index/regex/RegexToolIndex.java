@@ -32,8 +32,8 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.tool.toolsearch.ToolIndex;
 import org.springframework.ai.tool.toolsearch.ToolReference;
@@ -54,7 +54,7 @@ import org.springframework.ai.tool.toolsearch.ToolSearchResponse.SearchMetadata;
  */
 public class RegexToolIndex implements Closeable, ToolIndex {
 
-	private static final Logger logger = LoggerFactory.getLogger(RegexToolIndex.class);
+	private static final Log logger = LogFactory.getLog(RegexToolIndex.class);
 
 	private static final int DEFAULT_MAX_RESULTS = 10;
 
@@ -84,7 +84,9 @@ public class RegexToolIndex implements Closeable, ToolIndex {
 		SessionIndex sessionIndex = this.sessionIndexes.remove(sessionId);
 		if (sessionIndex != null) {
 			sessionIndex.clear();
-			logger.debug("Cleared index for session: {}", sessionId);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Cleared index for session: " + sessionId);
+			}
 		}
 	}
 
@@ -93,7 +95,10 @@ public class RegexToolIndex implements Closeable, ToolIndex {
 		String id = String.valueOf(this.counter.getAndIncrement());
 		SessionIndex sessionIndex = getOrCreateSessionIndex(sessionId);
 		sessionIndex.addTool(new ToolEntry(id, toolReference.toolName(), toolReference.summary()));
-		logger.debug("Added tool '{}' to session '{}' with id '{}'", toolReference.toolName(), sessionId, id);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Added tool '" + toolReference.toolName() + "' to session '" + sessionId + "' with id '" + id
+					+ "'");
+		}
 	}
 
 	@Override
@@ -103,7 +108,9 @@ public class RegexToolIndex implements Closeable, ToolIndex {
 			String id = String.valueOf(this.counter.getAndIncrement());
 			sessionIndex.addTool(new ToolEntry(id, ref.toolName(), ref.summary()));
 		}
-		logger.debug("Added {} tools to session '{}'", toolReferences.size(), sessionId);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Added " + toolReferences.size() + " tools to session '" + sessionId + "'");
+		}
 	}
 
 	@Override
@@ -116,7 +123,7 @@ public class RegexToolIndex implements Closeable, ToolIndex {
 
 		SessionIndex sessionIndex = this.sessionIndexes.get(sessionId);
 		if (sessionIndex == null) {
-			logger.debug("No index found for session: {}", sessionId);
+			logger.debug("No index found for session: " + sessionId);
 			return ToolSearchResponse.builder().build();
 		}
 
@@ -125,7 +132,9 @@ public class RegexToolIndex implements Closeable, ToolIndex {
 
 		// Convert natural language query to regex pattern
 		String regexPattern = convertQueryToRegexPattern(query);
-		logger.debug("Converted query '{}' to regex pattern '{}'", query, regexPattern);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Converted query '" + query + "' to regex pattern '" + regexPattern + "'");
+		}
 
 		return this.doSearch(sessionIndex, query, regexPattern, maxResults);
 	}
@@ -192,7 +201,9 @@ public class RegexToolIndex implements Closeable, ToolIndex {
 				processedTokens.remove(processedTokens.size() - 1);
 				pattern = "(?i)(" + String.join("|", processedTokens) + ")";
 			}
-			logger.debug("Pattern truncated to {} tokens to fit max length", processedTokens.size());
+			if (logger.isDebugEnabled()) {
+				logger.debug("Pattern truncated to " + processedTokens.size() + " tokens to fit max length");
+			}
 		}
 
 		return pattern;
@@ -228,7 +239,9 @@ public class RegexToolIndex implements Closeable, ToolIndex {
 			pattern = Pattern.compile(regexPattern);
 		}
 		catch (PatternSyntaxException e) {
-			logger.error("Invalid regex pattern: '{}'. Error: {}", regexPattern, e.getMessage());
+			if (logger.isErrorEnabled()) {
+				logger.error("Invalid regex pattern: '" + regexPattern + "'. Error: " + e.getMessage());
+			}
 			return ToolSearchResponse.builder()
 				.searchMetadata(SearchMetadata.builder()
 					.searchType(this.getClass().getSimpleName())

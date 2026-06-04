@@ -29,8 +29,6 @@ import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
@@ -55,8 +53,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 class FunctionCallbackWithPlainFunctionBeanIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(FunctionCallbackWithPlainFunctionBeanIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"),
@@ -92,8 +88,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			Prompt prompt = new Prompt(List.of(userMessage), options);
 
 			ChatResponse response = chatClient.prompt(prompt).call().chatResponse();
-
-			logger.info("Response: {}", response);
 			assertThat(feedback).hasSize(1);
 			assertThat(feedback.get("turnLivingRoomLightOn")).isEqualTo(Boolean.valueOf(true));
 		});
@@ -118,8 +112,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			Prompt prompt = new Prompt(List.of(userMessage), options);
 
 			ChatResponse response = chatClient.prompt(prompt).call().chatResponse();
-
-			logger.info("Response: {}", response);
 			assertThat(feedback).hasSize(1);
 			assertThat(feedback.get("turnLivingRoomLightOnSupplier")).isEqualTo(Boolean.valueOf(true));
 		});
@@ -144,8 +136,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			Prompt prompt = new Prompt(List.of(userMessage), options);
 
 			ChatResponse response = chatClient.prompt(prompt).call().chatResponse();
-
-			logger.info("Response: {}", response);
 			assertThat(feedback).hasSize(2);
 			assertThat(feedback.get("kitchen")).isEqualTo(Boolean.valueOf(true));
 			assertThat(feedback.get("living room")).isEqualTo(Boolean.valueOf(true));
@@ -171,8 +161,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			Prompt prompt = new Prompt(List.of(userMessage), options);
 
 			ChatResponse response = chatClient.prompt(prompt).call().chatResponse();
-
-			logger.info("Response: {}", response);
 			assertThat(feedback).hasSize(2);
 			assertThat(feedback.get("kitchen")).isEqualTo(Boolean.valueOf(true));
 			assertThat(feedback.get("living room")).isEqualTo(Boolean.valueOf(true));
@@ -203,8 +191,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			Prompt prompt = new Prompt(List.of(userMessage), functionOptions);
 
 			ChatResponse response = chatClient.prompt(prompt).call().chatResponse();
-
-			logger.info("Response: {}", response.getResult().getOutput().getText());
 		});
 	}
 
@@ -225,7 +211,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				.toolContext(Map.of("sessionId", "123"))
 				.call()
 				.content();
-			logger.info(content);
 
 			// Test weatherFunction
 			UserMessage userMessage = new UserMessage(
@@ -242,8 +227,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
 				response = chatModel.call(prompt);
 			}
-
-			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
@@ -269,7 +252,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				.toolContext(Map.of("sessionId", "123"))
 				.call()
 				.content();
-			logger.info(content);
 
 			// Test weatherFunction
 			UserMessage userMessage = new UserMessage(
@@ -288,8 +270,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
 				response = chatModel.call(prompt);
 			}
-
-			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
@@ -317,8 +297,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			ChatResponse response = chatClient.prompt(prompt).call().chatResponse();
 
-			logger.info("Response: {}", response);
-
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 			// Test weatherFunctionTwo
@@ -327,8 +305,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			Prompt promptTwo = new Prompt(List.of(userMessage), optionsTwo);
 
 			response = chatClient.prompt(promptTwo).call().chatResponse();
-
-			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
@@ -357,8 +333,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			Prompt prompt = new Prompt(List.of(userMessage), functionOptions);
 
 			ChatResponse response = chatClient.prompt(prompt).call().chatResponse();
-
-			logger.info("Response: {}", response.getResult().getOutput().getText());
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 		});
@@ -389,7 +363,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				.block();
 
 			String content = aggregatedRef.get().getResult().getOutput().getText();
-			logger.info("Response: {}", content);
 
 			assertThat(content).contains("30", "10", "15");
 
@@ -405,7 +378,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				.block();
 
 			content = aggregatedRefTwo.get().getResult().getOutput().getText();
-			logger.info("Response: {}", content);
 
 			assertThat(content).isNotEmpty().withFailMessage("Content returned from OpenAI model is empty");
 			assertThat(content).contains("30", "10", "15");
@@ -446,7 +418,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 		@Description("Turn light on or off in a room")
 		public Function<LightInfo, Void> turnLight() {
 			return (LightInfo lightInfo) -> {
-				logger.info("Turning light to [" + lightInfo.isOn + "] in " + lightInfo.roomName());
 				feedback.put(lightInfo.roomName(), lightInfo.isOn());
 				return null;
 			};
@@ -455,17 +426,13 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 		@Bean
 		@Description("Turn light on or off in a room")
 		public Consumer<LightInfo> turnLightConsumer() {
-			return (LightInfo lightInfo) -> {
-				logger.info("Turning light to [" + lightInfo.isOn + "] in " + lightInfo.roomName());
-				feedback.put(lightInfo.roomName(), lightInfo.isOn());
-			};
+			return (LightInfo lightInfo) -> feedback.put(lightInfo.roomName(), lightInfo.isOn());
 		}
 
 		@Bean
 		@Description("Turns light on in the living room")
 		public Function<Void, String> turnLivingRoomLightOn() {
 			return (Void v) -> {
-				logger.info("Turning light on in the living room");
 				feedback.put("turnLivingRoomLightOn", Boolean.TRUE);
 				return "Done";
 			};
@@ -475,7 +442,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 		@Description("Turns light on in the living room")
 		public Supplier<String> turnLivingRoomLightOnSupplier() {
 			return () -> {
-				logger.info("Turning light on in the living room");
 				feedback.put("turnLivingRoomLightOnSupplier", Boolean.TRUE);
 				return "Done";
 			};
@@ -484,11 +450,8 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 		@Bean
 		@Description("Schedule a train reservation")
 		public Function<TrainSearchRequest<TrainSearchSchedule>, TrainSearchResponse<TrainSearchScheduleResponse>> trainReservation() {
-			return (TrainSearchRequest<TrainSearchSchedule> request) -> {
-				logger.info("Turning light to [" + request.data().from() + "] in " + request.data().to());
-				return new TrainSearchResponse<>(
-						new TrainSearchScheduleResponse(request.data().from(), request.data().to(), "", "123"));
-			};
+			return (TrainSearchRequest<TrainSearchSchedule> request) -> new TrainSearchResponse<>(
+					new TrainSearchScheduleResponse(request.data().from(), request.data().to(), "", "123"));
 		}
 
 	}

@@ -39,9 +39,9 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateTableStart;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.util.Assert;
 
@@ -65,7 +65,7 @@ public final class CassandraChatMemoryRepositoryConfig {
 
 	public static final String DEFAULT_MESSAGES_COLUMN_NAME = "messages";
 
-	private static final Logger logger = LoggerFactory.getLogger(CassandraChatMemoryRepositoryConfig.class);
+	private static final Log logger = LogFactory.getLog(CassandraChatMemoryRepositoryConfig.class);
 
 	final CqlSession session;
 
@@ -228,7 +228,9 @@ public final class CassandraChatMemoryRepositoryConfig {
 				.addColumn(this.messagesColumn, DataTypes.frozenListOf(SchemaBuilder.udt(this.messageUDT, true)))
 				.build();
 
-			logger.debug("Executing {}", stmt.getQuery());
+			if (logger.isDebugEnabled()) {
+				logger.debug("Executing " + stmt.getQuery());
+			}
 			this.session.execute(stmt);
 		}
 	}

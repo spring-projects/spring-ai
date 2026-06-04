@@ -23,9 +23,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -74,7 +74,7 @@ import org.springframework.util.CollectionUtils;
  */
 public class DeepSeekChatModel implements ChatModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(DeepSeekChatModel.class);
+	private static final Log logger = LogFactory.getLog(DeepSeekChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
@@ -151,13 +151,17 @@ public class DeepSeekChatModel implements ChatModel {
 				var chatCompletion = completionEntity.getBody();
 
 				if (chatCompletion == null) {
-					logger.warn("No chat completion returned for prompt: {}", prompt);
+					if (logger.isWarnEnabled()) {
+						logger.warn("No chat completion returned for prompt: " + prompt);
+					}
 					return new ChatResponse(List.of());
 				}
 
 				List<Choice> choices = chatCompletion.choices();
 				if (choices == null) {
-					logger.warn("No choices returned for prompt: {}", prompt);
+					if (logger.isWarnEnabled()) {
+						logger.warn("No choices returned for prompt: " + prompt);
+					}
 					return new ChatResponse(List.of());
 				}
 

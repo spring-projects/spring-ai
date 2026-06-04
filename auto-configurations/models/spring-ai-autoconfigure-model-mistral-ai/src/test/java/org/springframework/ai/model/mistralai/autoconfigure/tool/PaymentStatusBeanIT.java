@@ -24,8 +24,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
@@ -57,8 +55,6 @@ class PaymentStatusBeanIT {
 			new StatusDate("Unpaid", "2021-10-06"), "T1003", new StatusDate("Paid", "2021-10-07"), "T1004",
 			new StatusDate("Paid", "2021-10-05"), "T1005", new StatusDate("Pending", "2021-10-08"));
 
-	private final Logger logger = LoggerFactory.getLogger(PaymentStatusBeanIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(MistralAiChatAutoConfiguration.class,
@@ -89,8 +85,6 @@ class PaymentStatusBeanIT {
 								.build()))
 					.call()
 					.chatResponse();
-
-				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("T1001");
 				assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("paid");

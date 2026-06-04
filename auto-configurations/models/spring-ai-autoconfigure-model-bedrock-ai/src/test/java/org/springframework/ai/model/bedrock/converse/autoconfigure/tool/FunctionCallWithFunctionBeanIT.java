@@ -22,8 +22,6 @@ import java.util.stream.Collectors;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.converse.BedrockChatOptions;
@@ -48,8 +46,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @RequiresAwsCredentials
 class FunctionCallWithFunctionBeanIT {
-
-	private final Logger logger = LoggerFactory.getLogger(FunctionCallWithFunctionBeanIT.class);
 
 	private final ApplicationContextRunner contextRunner = BedrockTestUtils.getContextRunner()
 		.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class,
@@ -81,8 +77,6 @@ class FunctionCallWithFunctionBeanIT {
 					.call()
 					.chatResponse();
 
-				logger.info("Response: {}", response);
-
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				response = chatClient
@@ -90,8 +84,6 @@ class FunctionCallWithFunctionBeanIT {
 							BedrockChatOptions.builder().toolNames("weatherFunction3").build()))
 					.call()
 					.chatResponse();
-
-				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 			});
@@ -128,8 +120,6 @@ class FunctionCallWithFunctionBeanIT {
 					.filter(cr -> cr.getResult() != null)
 					.map(cr -> cr.getResult().getOutput().getText())
 					.collect(Collectors.joining());
-
-				logger.info("Response: {}", content);
 				assertThat(content).contains("30", "10", "15");
 
 			});

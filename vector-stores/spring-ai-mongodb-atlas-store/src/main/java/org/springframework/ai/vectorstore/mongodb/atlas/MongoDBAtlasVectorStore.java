@@ -25,8 +25,8 @@ import java.util.Optional;
 
 import com.mongodb.MongoCommandException;
 import com.mongodb.client.result.DeleteResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -130,7 +130,7 @@ import org.springframework.util.Assert;
  */
 public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final Logger logger = LoggerFactory.getLogger(MongoDBAtlasVectorStore.class);
+	private static final Log logger = LogFactory.getLog(MongoDBAtlasVectorStore.class);
 
 	public static final String ID_FIELD_NAME = "_id";
 
@@ -285,7 +285,9 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 			BasicQuery query = new BasicQuery(nativeFilterExpression);
 			DeleteResult deleteResult = this.mongoTemplate.remove(query, this.collectionName);
 
-			logger.debug("Deleted {} documents matching filter expression", deleteResult.getDeletedCount());
+			if (logger.isDebugEnabled()) {
+				logger.debug("Deleted " + deleteResult.getDeletedCount() + " documents matching filter expression");
+			}
 		}
 		catch (Exception e) {
 			throw new IllegalStateException("Failed to delete documents by filter", e);

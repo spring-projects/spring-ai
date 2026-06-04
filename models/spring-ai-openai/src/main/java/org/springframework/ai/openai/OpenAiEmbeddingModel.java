@@ -24,9 +24,9 @@ import com.openai.client.OpenAIClient;
 import com.openai.models.embeddings.CreateEmbeddingResponse;
 import com.openai.models.embeddings.EmbeddingCreateParams;
 import io.micrometer.observation.ObservationRegistry;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
@@ -59,7 +59,7 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiEmbeddingModel.class);
+	private static final Log logger = LogFactory.getLog(OpenAiEmbeddingModel.class);
 
 	private final OpenAIClient openAiClient;
 
@@ -204,8 +204,8 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 			.toOpenAiCreateParams(embeddingRequestWithMergedOptions.getInstructions());
 
 		if (logger.isTraceEnabled()) {
-			logger.trace("OpenAiEmbeddingModel call {} with the following options : {} ", options.getModel(),
-					embeddingCreateParams);
+			logger.trace("OpenAiEmbeddingModel call " + options.getModel() + " with the following options : "
+					+ embeddingCreateParams);
 		}
 
 		var observationContext = EmbeddingModelObservationContext.builder()

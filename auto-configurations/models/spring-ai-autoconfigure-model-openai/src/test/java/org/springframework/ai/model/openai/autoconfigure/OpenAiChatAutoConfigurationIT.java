@@ -18,8 +18,6 @@ package org.springframework.ai.model.openai.autoconfigure;
 
 import java.util.stream.Collectors;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
@@ -38,8 +36,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiChatAutoConfigurationIT {
 
-	private static final Log logger = LogFactory.getLog(OpenAiChatAutoConfigurationIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"));
 
@@ -52,7 +48,6 @@ public class OpenAiChatAutoConfigurationIT {
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 				String response = chatModel.call("Hello");
 				assertThat(response).isNotEmpty();
-				logger.info("Response: " + response);
 			});
 	}
 
@@ -72,7 +67,6 @@ public class OpenAiChatAutoConfigurationIT {
 					.collect(Collectors.joining());
 
 				assertThat(response).isNotEmpty();
-				logger.info("Response: " + response);
 			});
 	}
 
@@ -97,7 +91,6 @@ public class OpenAiChatAutoConfigurationIT {
 				assertThat(streamingTokenUsage[0].getTotalTokens()).isGreaterThan(0);
 
 				assertThat(response).isNotEmpty();
-				logger.info("Response: " + response);
 			});
 	}
 

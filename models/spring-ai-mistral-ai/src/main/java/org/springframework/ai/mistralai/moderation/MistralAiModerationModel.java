@@ -20,9 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.mistralai.api.MistralAiModerationApi;
 import org.springframework.ai.mistralai.api.MistralAiModerationApi.MistralAiModerationRequest;
@@ -50,7 +50,7 @@ import org.springframework.util.Assert;
  */
 public class MistralAiModerationModel implements ModerationModel {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final Log logger = LogFactory.getLog(getClass());
 
 	private final MistralAiModerationApi mistralAiModerationApi;
 
@@ -94,7 +94,9 @@ public class MistralAiModerationModel implements ModerationModel {
 			MistralAiModerationRequest mistralAiModerationRequest) {
 		var moderationApiResponse = moderationResponseEntity.getBody();
 		if (moderationApiResponse == null) {
-			logger.warn("No moderation response returned for request: {}", mistralAiModerationRequest);
+			if (logger.isWarnEnabled()) {
+				logger.warn("No moderation response returned for request: " + mistralAiModerationRequest);
+			}
 			return new ModerationResponse(null);
 		}
 

@@ -29,9 +29,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.RedisClient;
 import redis.clients.jedis.json.Path2;
@@ -263,7 +263,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	private static final String JSON_PATH_PREFIX = "$.";
 
-	private static final Logger logger = LoggerFactory.getLogger(RedisVectorStore.class);
+	private static final Log logger = LogFactory.getLog(RedisVectorStore.class);
 
 	private static final Predicate<Object> RESPONSE_OK = Predicate.isEqual("OK");
 
@@ -377,9 +377,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			Optional<Object> errResponse = responses.stream().filter(Predicate.not(RESPONSE_OK)).findAny();
 			if (errResponse.isPresent()) {
 				String message = MessageFormat.format("Could not add document: {0}", errResponse.get());
-				if (logger.isErrorEnabled()) {
-					logger.error(message);
-				}
+				logger.error(message);
 				throw new RuntimeException(message);
 			}
 		}
@@ -399,7 +397,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			Optional<Object> errResponse = responses.stream().filter(Predicate.not(RESPONSE_DEL_OK)).findAny();
 			if (errResponse.isPresent()) {
 				if (logger.isErrorEnabled()) {
-					logger.error("Could not delete document: {}", errResponse.get());
+					logger.error("Could not delete document: " + errResponse.get());
 				}
 			}
 		}
@@ -434,7 +432,9 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 					Optional<Object> errResponse = responses.stream().filter(Predicate.not(RESPONSE_DEL_OK)).findAny();
 
 					if (errResponse.isPresent()) {
-						logger.error("Could not delete document: {}", errResponse.get());
+						if (logger.isErrorEnabled()) {
+							logger.error("Could not delete document: " + errResponse.get());
+						}
 						throw new IllegalStateException("Failed to delete some documents");
 					}
 				}
@@ -442,7 +442,9 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				deletedCount += docs.size();
 			}
 
-			logger.debug("Deleted {} documents matching filter expression", deletedCount);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Deleted " + deletedCount + " documents matching filter expression");
+			}
 		}
 		catch (Exception e) {
 			logger.error("Failed to delete documents by filter", e);
@@ -493,8 +495,8 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		// Add more detailed logging to understand thresholding
 		if (logger.isDebugEnabled()) {
-			logger.debug("Applying filtering with effectiveThreshold: {}", effectiveThreshold);
-			logger.debug("Redis search returned {} documents", result.getTotalResults());
+			logger.debug("Applying filtering with effectiveThreshold: " + effectiveThreshold);
+			logger.debug("Redis search returned " + result.getTotalResults() + " documents");
 		}
 
 		// Apply filtering based on effective threshold (may be different for IP metric)
@@ -502,15 +504,15 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			float score = similarityScore(d);
 			boolean isAboveThreshold = score >= effectiveThreshold;
 			if (logger.isDebugEnabled()) {
-				logger.debug("Document raw_score: {}, normalized_score: {}, above_threshold: {}",
-						d.hasProperty(DISTANCE_FIELD_NAME) ? d.getString(DISTANCE_FIELD_NAME) : "N/A", score,
-						isAboveThreshold);
+				String rawScore = d.hasProperty(DISTANCE_FIELD_NAME) ? d.getString(DISTANCE_FIELD_NAME) : "N/A";
+				logger.debug("Document raw_score: " + rawScore + ", normalized_score: " + score + ", above_threshold: "
+						+ isAboveThreshold);
 			}
 			return isAboveThreshold;
 		}).map(this::toDocument).toList();
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("After filtering, returning {} documents", documents.size());
+			logger.debug("After filtering, returning " + documents.size() + " documents");
 		}
 
 		return documents;
@@ -552,14 +554,16 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				float normalizedTextScore = Math.min(textScore / 10.0f, 1.0f);
 
 				if (logger.isDebugEnabled()) {
-					logger.debug("Text search raw score: {}, normalized: {}", textScore, normalizedTextScore);
+					logger.debug("Text search raw score: " + textScore + ", normalized: " + normalizedTextScore);
 				}
 
 				return normalizedTextScore;
 			}
 			catch (NumberFormatException e) {
 				// If we can't parse the score, fall back to default
-				logger.warn("Could not parse text search score: {}", doc.getString("$score"));
+				if (logger.isWarnEnabled()) {
+					logger.warn("Could not parse text search score: " + doc.getString("$score"));
+				}
 				return 0.9f; // Default high similarity
 			}
 		}
@@ -569,9 +573,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		if (!doc.hasProperty(DISTANCE_FIELD_NAME)) {
 			// For text search, we don't have a vector distance, so use a default high
 			// similarity
-			if (logger.isDebugEnabled()) {
-				logger.debug("No vector distance score found. Using default similarity.");
-			}
+			logger.debug("No vector distance score found. Using default similarity.");
 			return 0.9f; // Default high similarity
 		}
 
@@ -579,7 +581,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		// Different distance metrics need different score transformations
 		if (logger.isDebugEnabled()) {
-			logger.debug("Distance metric: {}, Raw score: {}", this.distanceMetric, rawScore);
+			logger.debug("Distance metric: " + this.distanceMetric + ", Raw score: " + rawScore);
 		}
 
 		// If using IP (inner product), higher is better (it's a dot product)
@@ -595,7 +597,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				// 1 (higher is better)
 				normalizedScore = Math.max((2 - rawScore) / 2, 0);
 				if (logger.isDebugEnabled()) {
-					logger.debug("COSINE raw score: {}, normalized score: {}", rawScore, normalizedScore);
+					logger.debug("COSINE raw score: " + rawScore + ", normalized score: " + normalizedScore);
 				}
 				break;
 
@@ -604,7 +606,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				// For L2, convert to similarity score 0-1 where higher is better
 				normalizedScore = 1.0f / (1.0f + rawScore);
 				if (logger.isDebugEnabled()) {
-					logger.debug("L2 raw score: {}, normalized score: {}", rawScore, normalizedScore);
+					logger.debug("L2 raw score: " + rawScore + ", normalized score: " + normalizedScore);
 				}
 				break;
 
@@ -620,7 +622,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				normalizedScore = Math.min(Math.max(normalizedScore, 0.0f), 1.0f);
 
 				if (logger.isDebugEnabled()) {
-					logger.debug("IP raw score: {}, normalized score: {}", rawScore, normalizedScore);
+					logger.debug("IP raw score: " + rawScore + ", normalized score: " + normalizedScore);
 				}
 				break;
 
@@ -781,13 +783,12 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		if (!isTextField) {
 			// Log detailed metadata fields for debugging
 			if (logger.isDebugEnabled()) {
-				logger.debug("Field not found as TEXT: '{}'", normalizedFieldName);
-				logger.debug("Content field name: '{}'", this.contentFieldName);
-				logger.debug("Available TEXT fields: {}",
-						this.metadataFields.stream()
-							.filter(field -> field.fieldType() == FieldType.TEXT)
-							.map(MetadataField::name)
-							.toList());
+				logger.debug("Field not found as TEXT: '" + normalizedFieldName + "'");
+				logger.debug("Content field name: '" + this.contentFieldName + "'");
+				logger.debug("Available TEXT fields: " + this.metadataFields.stream()
+					.filter(field -> field.fieldType() == FieldType.TEXT)
+					.map(MetadataField::name)
+					.toList());
 			}
 			throw new IllegalArgumentException(String.format("Field '%s' is not a TEXT field", normalizedFieldName));
 		}
@@ -861,7 +862,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		validateTextField(textField);
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Searching text: '{}' in field: '{}'", query, textField);
+			logger.debug("Searching text: '" + query + "' in field: '" + textField + "'");
 		}
 
 		// Special case handling for test cases
@@ -961,7 +962,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		String finalQuery = queryBuilder.toString();
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Final Redis search query: {}", finalQuery);
+			logger.debug("Final Redis search query: " + finalQuery);
 		}
 
 		// Create and execute the query
@@ -979,7 +980,9 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			return result.getDocuments().stream().map(this::toDocument).toList();
 		}
 		catch (Exception e) {
-			logger.error("Error executing text search query: {}", e.getMessage(), e);
+			if (logger.isErrorEnabled()) {
+				logger.error("Error executing text search query: " + e.getMessage(), e);
+			}
 			throw e;
 		}
 	}
@@ -1058,8 +1061,8 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				// Convert similarity score (0.0-1.0) to distance value (0.0-2.0)
 				effectiveRadius = (float) Math.max(2 - (2 * radius), 0);
 				if (logger.isDebugEnabled()) {
-					logger.debug("COSINE similarity threshold: {}, converted distance threshold: {}", radius,
-							effectiveRadius);
+					logger.debug("COSINE similarity threshold: " + radius + ", converted distance threshold: "
+							+ effectiveRadius);
 				}
 				break;
 
@@ -1069,8 +1072,8 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				// Solving for distance: distance = (1/similarity) - 1
 				effectiveRadius = (float) ((1.0 / radius) - 1.0);
 				if (logger.isDebugEnabled()) {
-					logger.debug("L2 similarity threshold: {}, converted distance threshold: {}", radius,
-							effectiveRadius);
+					logger.debug("L2 similarity threshold: " + radius + ", converted distance threshold: "
+							+ effectiveRadius);
 				}
 				break;
 
@@ -1080,8 +1083,8 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				// If similarity = (score+1)/2, then score = 2*similarity - 1
 				effectiveRadius = (float) ((2 * radius) - 1.0);
 				if (logger.isDebugEnabled()) {
-					logger.debug("IP similarity threshold: {}, converted distance threshold: {}", radius,
-							effectiveRadius);
+					logger.debug("IP similarity threshold: " + radius + ", converted distance threshold: "
+							+ effectiveRadius);
 				}
 				break;
 
@@ -1093,7 +1096,9 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		// With our proper handling of IP, we can use the native Redis VECTOR_RANGE query
 		// but we still need to handle very small radius values specially
 		if (this.distanceMetric == DistanceMetric.IP && radius < 0.1) {
-			logger.debug("Using client-side filtering for IP with small radius ({})", radius);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Using client-side filtering for IP with small radius (" + radius + ")");
+			}
 			// For very small similarity thresholds, we'll do filtering in memory to be
 			// extra safe
 			SearchRequest.Builder requestBuilder = SearchRequest.builder()
@@ -1129,8 +1134,8 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		// Log query information for debugging
 		if (logger.isDebugEnabled()) {
-			logger.debug("Range query string: {}", queryString);
-			logger.debug("Effective radius (distance): {}", effectiveRadius);
+			logger.debug("Range query string: " + queryString);
+			logger.debug("Effective radius (distance): " + effectiveRadius);
 		}
 
 		Query query1 = new Query(queryString).addParam("radius", effectiveRadius)
@@ -1142,22 +1147,23 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		// Add more detailed logging to understand thresholding
 		if (logger.isDebugEnabled()) {
-			logger.debug("Vector Range search returned {} documents, applying final radius filter: {}",
-					result.getTotalResults(), radius);
+			logger.debug("Vector Range search returned " + result.getTotalResults()
+					+ " documents, applying final radius filter: " + radius);
 		}
 
 		// Process the results and ensure they match the specified similarity threshold
 		List<Document> documents = result.getDocuments().stream().map(this::toDocument).filter(doc -> {
 			boolean isAboveThreshold = doc.getScore() != null && doc.getScore() >= radius;
 			if (logger.isDebugEnabled()) {
-				logger.debug("Document score: {}, raw distance: {}, above_threshold: {}", doc.getScore(),
-						doc.getMetadata().getOrDefault(DISTANCE_FIELD_NAME, "N/A"), isAboveThreshold);
+				logger.debug("Document score: " + doc.getScore() + ", raw distance: "
+						+ doc.getMetadata().getOrDefault(DISTANCE_FIELD_NAME, "N/A") + ", above_threshold: "
+						+ isAboveThreshold);
 			}
 			return isAboveThreshold;
 		}).toList();
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("After filtering, returning {} documents", documents.size());
+			logger.debug("After filtering, returning " + documents.size() + " documents");
 		}
 
 		return documents;
@@ -1210,7 +1216,9 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			return result.getTotalResults();
 		}
 		catch (Exception e) {
-			logger.error("Error executing count query: {}", e.getMessage(), e);
+			if (logger.isErrorEnabled()) {
+				logger.error("Error executing count query: " + e.getMessage(), e);
+			}
 			throw new IllegalStateException("Failed to execute count query", e);
 		}
 	}

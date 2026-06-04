@@ -20,9 +20,9 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.Objects;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
@@ -30,8 +30,6 @@ import tools.jackson.databind.json.JsonMapper;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.core.ParameterizedTypeReference;
-
-import static org.springframework.ai.util.LoggingMarkers.SENSITIVE_DATA_MARKER;
 
 /**
  * An implementation of {@link StructuredOutputConverter} that transforms the LLM output
@@ -52,7 +50,7 @@ import static org.springframework.ai.util.LoggingMarkers.SENSITIVE_DATA_MARKER;
  */
 public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
-	private final Logger logger = LoggerFactory.getLogger(BeanOutputConverter.class);
+	private final Log logger = LogFactory.getLog(BeanOutputConverter.class);
 
 	/**
 	 * The target class type reference to which the output will be converted.
@@ -190,17 +188,10 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	@SuppressWarnings("unchecked")
 	@Override
 	public T convert(String text) {
-		try {
-			// Clean the text using the configured text cleaner
-			text = this.textCleaner.clean(text);
+		// Clean the text using the configured text cleaner
+		text = this.textCleaner.clean(text);
 
-			return (T) this.jsonMapper.readValue(text, this.jsonMapper.constructType(this.type));
-		}
-		catch (JacksonException e) {
-			logger.error(SENSITIVE_DATA_MARKER,
-					"Could not parse the given text to the desired target type: \"{}\" into {}", text, this.type);
-			throw e;
-		}
+		return (T) this.jsonMapper.readValue(text, this.jsonMapper.constructType(this.type));
 	}
 
 	/**

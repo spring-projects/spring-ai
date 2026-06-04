@@ -22,8 +22,6 @@ import java.util.stream.Collectors;
 import com.anthropic.models.messages.Model;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
@@ -56,8 +54,6 @@ class FunctionCallWithFunctionBeanIT {
 
 	private static final String WEATHER_TOOL_DESCRIPTION = "Get the weather in location. Return temperature in 36°F or 36°C format.";
 
-	private final Logger logger = LoggerFactory.getLogger(FunctionCallWithFunctionBeanIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.anthropic.api-key=" + System.getenv("ANTHROPIC_API_KEY"))
 		.withConfiguration(
@@ -82,8 +78,6 @@ class FunctionCallWithFunctionBeanIT {
 					.tools(weatherToolCallback)
 					.call()
 					.content();
-
-				logger.info("Response: {}", content);
 				assertThat(content).contains("30", "10", "15");
 
 				ToolCallback weatherToolCallback3 = buildToolCallback("weatherFunction3",
@@ -97,8 +91,6 @@ class FunctionCallWithFunctionBeanIT {
 					.tools(weatherToolCallback3)
 					.call()
 					.content();
-
-				logger.info("Response: {}", content);
 				assertThat(content).contains("30", "10", "15");
 			});
 	}
@@ -123,7 +115,6 @@ class FunctionCallWithFunctionBeanIT {
 					.content();
 
 				String content = response.collectList().block().stream().collect(Collectors.joining());
-				logger.info("Response: {}", content);
 				assertThat(content).contains("30", "10", "15");
 
 				ToolCallback weatherToolCallback3 = buildToolCallback("weatherFunction3",
@@ -139,7 +130,6 @@ class FunctionCallWithFunctionBeanIT {
 					.content();
 
 				content = response.collectList().block().stream().collect(Collectors.joining());
-				logger.info("Response: {}", content);
 				assertThat(content).contains("30", "10", "15");
 			});
 	}

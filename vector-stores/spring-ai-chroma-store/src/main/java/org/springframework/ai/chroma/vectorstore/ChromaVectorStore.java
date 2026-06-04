@@ -21,9 +21,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chroma.vectorstore.ChromaApi.AddEmbeddingsRequest;
@@ -82,7 +82,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 	private boolean initialized = false;
 
-	private static final Logger logger = LoggerFactory.getLogger(ChromaVectorStore.class);
+	private static final Log logger = LogFactory.getLog(ChromaVectorStore.class);
 
 	/**
 	 * @param builder {@link VectorStore.Builder} for chroma vector store
@@ -187,14 +187,18 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 			Map<String, Object> whereClause = this.chromaApi.where(whereClauseStr);
 
-			logger.debug("Deleting with where clause: {}", whereClause);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Deleting with where clause: " + whereClause);
+			}
 
 			DeleteEmbeddingsRequest deleteRequest = new DeleteEmbeddingsRequest(null, whereClause);
 			this.chromaApi.deleteEmbeddings(this.tenantName, this.databaseName, this.requireCollectionId(),
 					deleteRequest);
 		}
 		catch (Exception e) {
-			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
+			if (logger.isErrorEnabled()) {
+				logger.error("Failed to delete documents by filter: " + e.getMessage(), e);
+			}
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}

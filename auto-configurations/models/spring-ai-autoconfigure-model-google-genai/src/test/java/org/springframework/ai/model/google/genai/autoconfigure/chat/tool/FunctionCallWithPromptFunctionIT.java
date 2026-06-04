@@ -21,8 +21,6 @@ import java.util.List;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
@@ -46,8 +44,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * in prompt options.
  */
 public class FunctionCallWithPromptFunctionIT {
-
-	private final Logger logger = LoggerFactory.getLogger(FunctionCallWithPromptFunctionIT.class);
 
 	private final String modelName = GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue();
 
@@ -87,16 +83,12 @@ public class FunctionCallWithPromptFunctionIT {
 				.call()
 				.chatResponse();
 
-			logger.info("Response: {}", response);
-
 			assertThat(response.getResult().getOutput().getText()).contains("30.789", "10.456", "15.123");
 
 			// Verify that no function call is made.
 			response = chatClient.prompt(new Prompt(List.of(userMessage), GoogleGenAiChatOptions.builder().build()))
 				.call()
 				.chatResponse();
-
-			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getText()).doesNotContain("30.789", "10.456", "15.123");
 
@@ -141,14 +133,10 @@ public class FunctionCallWithPromptFunctionIT {
 				.call()
 				.chatResponse();
 
-			logger.info("Response: {}", response);
-
 			assertThat(response.getResult().getOutput().getText()).contains("30.789", "10.456", "15.123");
 
 			// Verify that no function call is made.
 			response = chatModel.call(new Prompt(List.of(userMessage), GoogleGenAiChatOptions.builder().build()));
-
-			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getText()).doesNotContain("30.789", "10.456", "15.123");
 

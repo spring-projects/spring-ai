@@ -26,9 +26,9 @@ import com.openai.core.MultipartField;
 import com.openai.models.audio.transcriptions.TranscriptionCreateParams;
 import com.openai.models.audio.transcriptions.TranscriptionCreateResponse;
 import io.micrometer.observation.ObservationRegistry;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.audio.transcription.AudioTranscription;
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
@@ -52,7 +52,7 @@ import org.springframework.util.Assert;
  */
 public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiAudioTranscriptionModel.class);
+	private static final Log logger = LogFactory.getLog(OpenAiAudioTranscriptionModel.class);
 
 	private final OpenAIClient openAiClient;
 
@@ -115,7 +115,9 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 
 		TranscriptionCreateParams params = buildParams(options, audioBytes, filename);
 		if (logger.isTraceEnabled()) {
-			logger.trace("OpenAiAudioTranscriptionModel call with model: {}", options.getModel());
+			if (logger.isTraceEnabled()) {
+				logger.trace("OpenAiAudioTranscriptionModel call with model: " + options.getModel());
+			}
 		}
 
 		TranscriptionCreateResponse response = this.openAiClient.audio().transcriptions().create(params);

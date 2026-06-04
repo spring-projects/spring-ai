@@ -29,8 +29,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -70,8 +68,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  */
 public abstract class AbstractToolSearchToolCallingAdvisorIT {
-
-	protected final Logger logger = LoggerFactory.getLogger(getClass());
 
 	protected abstract ChatModel getChatModel();
 
@@ -134,8 +130,6 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "chat_memory_conversation_id"))
 				.call()
 				.content();
-
-			logger.info("Response: {}", response);
 			assertThat(response).contains("30", "10", "15");
 		}
 
@@ -152,8 +146,6 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "chat_memory_conversation_id"))
 				.call()
 				.content();
-
-			logger.info("Response: {}", response);
 			assertThat(response).contains("30", "10", "15");
 		}
 
@@ -170,8 +162,6 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "chat_memory_conversation_id"))
 				.call()
 				.content();
-
-			logger.info("Response: {}", response);
 			assertThat(response).contains("30", "10", "15");
 		}
 
@@ -189,8 +179,6 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "chat_memory_conversation_id"))
 				.call()
 				.content();
-
-			logger.info("Response: {}", response);
 			assertThat(response).contains("30", "10", "15");
 		}
 
@@ -212,7 +200,6 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 				.content();
 
 			String content = join(response);
-			logger.info("Response: {}", content);
 			assertThat(content).contains("30", "10", "15");
 		}
 
@@ -231,7 +218,6 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 				.content();
 
 			String content = join(response);
-			logger.info("Response: {}", content);
 			assertThat(content).contains("30", "10", "15");
 		}
 
@@ -250,7 +236,6 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 				.content();
 
 			String content = join(response);
-			logger.info("Response: {}", content);
 			assertThat(content).contains("30", "10", "15");
 		}
 
@@ -270,7 +255,6 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 				.content();
 
 			String content = join(response);
-			logger.info("Response: {}", content);
 			assertThat(content).contains("30", "10", "15");
 		}
 

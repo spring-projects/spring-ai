@@ -24,8 +24,6 @@ import java.util.function.Function;
 import com.google.genai.Client;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -49,8 +47,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".+")
 public class GoogleGenAiChatModelToolCallingIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiChatModelToolCallingIT.class);
 
 	@Autowired
 	private GoogleGenAiChatModel chatModel;
@@ -100,8 +96,6 @@ public class GoogleGenAiChatModelToolCallingIT {
 			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
 			response = this.chatModel.call(prompt);
 		}
-		logger.info("Response: {}", response);
-
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
@@ -136,7 +130,6 @@ public class GoogleGenAiChatModelToolCallingIT {
 		}
 
 		assertThat(chatResponse).isNotNull();
-		logger.info("Response: {}", chatResponse);
 		assertThat(chatResponse.getResult().getOutput().getText()).contains("30", "10", "15");
 
 		assertThat(chatResponse.getMetadata()).isNotNull();
@@ -151,9 +144,6 @@ public class GoogleGenAiChatModelToolCallingIT {
 			prompt2 = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
 			response2 = this.chatModel.call(prompt2);
 		}
-
-		logger.info("Response: {}", response2);
-
 		assertThat(response2.getResult().getOutput().getText()).containsIgnoringCase("transaction 696 is PAYED");
 
 	}
@@ -187,9 +177,6 @@ public class GoogleGenAiChatModelToolCallingIT {
 		}
 
 		String responseString = aggregatedRef.get().getResult().getOutput().getText();
-
-		logger.info("Response: {}", responseString);
-
 		assertThat(responseString).contains("10");
 
 	}
@@ -272,9 +259,6 @@ public class GoogleGenAiChatModelToolCallingIT {
 		}
 
 		ChatResponse chatResponse = aggregatedRef.get();
-
-		logger.info("Response: {}", chatResponse);
-
 		assertThat(chatResponse).isNotNull();
 		assertThat(chatResponse.getMetadata()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();

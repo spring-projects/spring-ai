@@ -35,8 +35,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -96,8 +94,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest(classes = OpenAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiChatModelIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModelIT.class);
 
 	// It would be better to use ChatModel.GPT_4O_AUDIO_PREVIEW.asString(); but it can't
 	// be used as a constant.
@@ -166,10 +162,7 @@ public class OpenAiChatModelIT {
 				String responseContent = chatResponse.getResults().get(0).getOutput().getText();
 				answer.append(responseContent);
 			}
-		}).doOnComplete(() -> {
-			logger.info(answer.toString());
-			latch.countDown();
-		});
+		}).doOnComplete(() -> latch.countDown());
 		chatResponseFlux.subscribe();
 		assertThat(latch.await(120, TimeUnit.SECONDS)).isTrue();
 		IntStream.rangeClosed(1, 100).forEach(n -> assertThat(answer).contains(String.valueOf(n)));
@@ -194,10 +187,7 @@ public class OpenAiChatModelIT {
 					answer.append(responseContent);
 				}
 			})
-			.doOnComplete(() -> {
-				logger.info(answer.toString());
-				latch.countDown();
-			});
+			.doOnComplete(() -> latch.countDown());
 		chatResponseFlux.subscribe();
 		assertThat(latch.await(120, TimeUnit.SECONDS)).isTrue();
 		assertThat(answer).contains("1st ");
@@ -217,10 +207,7 @@ public class OpenAiChatModelIT {
 			.stream()
 			.content()
 			.doOnNext(answer::append)
-			.doOnComplete(() -> {
-				logger.info(answer.toString());
-				latch.countDown();
-			});
+			.doOnComplete(() -> latch.countDown());
 		chatResponseFlux.subscribe();
 		assertThat(latch.await(120, TimeUnit.SECONDS)).isTrue();
 		assertThat(answer).contains("1st ");
@@ -359,7 +346,6 @@ public class OpenAiChatModelIT {
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -391,7 +377,6 @@ public class OpenAiChatModelIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -418,8 +403,6 @@ public class OpenAiChatModelIT {
 			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
 			response = this.chatModel.call(prompt);
 		}
-
-		logger.info("Response: {}", response);
 
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
@@ -450,7 +433,6 @@ public class OpenAiChatModelIT {
 		}
 
 		String content = aggregatedRef.get().getResult().getOutput().getText();
-		logger.info("Response: {}", content);
 
 		assertThat(content).containsAnyOf("30.0", "30");
 		assertThat(content).containsAnyOf("10.0", "10");
@@ -471,11 +453,7 @@ public class OpenAiChatModelIT {
 			.tools(weatherToolCallback)
 			.call()
 			.chatResponse();
-
-		logger.info("Response: {}", chatResponse);
 		Usage usage = chatResponse.getMetadata().getUsage();
-
-		logger.info("Usage: {}", usage);
 		assertThat(usage).isNotNull();
 		assertThat(usage).isNotInstanceOf(EmptyUsage.class);
 		assertThat(usage).isInstanceOf(DefaultUsage.class);
@@ -505,8 +483,6 @@ public class OpenAiChatModelIT {
 			.block();
 
 		Usage usage = lastResponse.getMetadata().getUsage();
-
-		logger.info("Usage: {}", usage);
 		assertThat(usage).isNotNull();
 		assertThat(usage).isNotInstanceOf(EmptyUsage.class);
 		assertThat(usage).isInstanceOf(DefaultUsage.class);
@@ -526,8 +502,6 @@ public class OpenAiChatModelIT {
 			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().build()));
-
-		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
 				"fruit stand");
 	}
@@ -545,8 +519,6 @@ public class OpenAiChatModelIT {
 
 		ChatResponse response = this.chatModel
 			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().build()));
-
-		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
 				"fruit stand");
 	}
@@ -573,7 +545,6 @@ public class OpenAiChatModelIT {
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
 		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
@@ -588,8 +559,6 @@ public class OpenAiChatModelIT {
 					.outputModalities(List.of("text", "audio"))
 					.outputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
 					.build()));
-
-		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 
 		byte[] audio = response.getResult().getOutput().getMedia().get(0).getDataAsByteArray();
@@ -624,8 +593,6 @@ public class OpenAiChatModelIT {
 				.call()
 				.chatResponse();
 		// @formatter:on
-
-		logger.info(response.toString());
 		assertThat(response.getMetadata().getId()).isNotEmpty();
 		assertThat(response.getMetadata().getModel()).containsIgnoringCase(model);
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();

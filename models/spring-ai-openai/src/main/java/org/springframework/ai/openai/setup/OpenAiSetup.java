@@ -33,9 +33,9 @@ import com.openai.core.ClientOptions;
 import com.openai.credential.Credential;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.openai.http.okhttp.SpringAiOpenAiHttpClient;
 
@@ -67,7 +67,7 @@ public final class OpenAiSetup {
 	 */
 	private static final String NO_AUTH_PLACEHOLDER_KEY = "no-auth-placeholder";
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiSetup.class);
+	private static final Log logger = LogFactory.getLog(OpenAiSetup.class);
 
 	private OpenAiSetup() {
 	}

@@ -37,9 +37,9 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.RedisClient;
 import redis.clients.jedis.search.Query;
@@ -71,7 +71,7 @@ import org.springframework.util.Assert;
  */
 public final class DefaultSemanticCache implements SemanticCache {
 
-	private static final Logger logger = LoggerFactory.getLogger(DefaultSemanticCache.class);
+	private static final Log logger = LogFactory.getLog(DefaultSemanticCache.class);
 
 	// Default configuration constants
 	private static final String DEFAULT_INDEX_NAME = "semantic-cache-index";
@@ -147,10 +147,8 @@ public final class DefaultSemanticCache implements SemanticCache {
 			// level
 			existing = redisVectorStore.searchByRange(query, this.similarityThreshold);
 
-			if (logger.isDebugEnabled()) {
-				logger.debug(
-						"Using RedisVectorStore's native VECTOR_RANGE query to find similar documents for replacement");
-			}
+			logger
+				.debug("Using RedisVectorStore's native VECTOR_RANGE query to find similar documents for replacement");
 		}
 		else {
 			// Fallback to standard similarity search if not using RedisVectorStore
@@ -161,8 +159,8 @@ public final class DefaultSemanticCache implements SemanticCache {
 		// If similar document exists, delete it first
 		if (!existing.isEmpty()) {
 			if (logger.isDebugEnabled()) {
-				logger.debug("Replacing similar document with id={} and score={}", existing.get(0).getId(),
-						existing.get(0).getScore());
+				logger.debug("Replacing similar document with id=" + existing.get(0).getId() + " and score="
+						+ existing.get(0).getScore());
 			}
 			this.vectorStore.delete(List.of(existing.get(0).getId()));
 		}
@@ -198,10 +196,8 @@ public final class DefaultSemanticCache implements SemanticCache {
 			// level
 			existing = redisVectorStore.searchByRange(query, this.similarityThreshold);
 
-			if (logger.isDebugEnabled()) {
-				logger.debug(
-						"Using RedisVectorStore's native VECTOR_RANGE query to find similar documents for replacement (TTL version)");
-			}
+			logger.debug(
+					"Using RedisVectorStore's native VECTOR_RANGE query to find similar documents for replacement (TTL version)");
 		}
 		else {
 			// Fallback to standard similarity search if not using RedisVectorStore
@@ -212,8 +208,8 @@ public final class DefaultSemanticCache implements SemanticCache {
 		// If similar document exists, delete it first
 		if (!existing.isEmpty()) {
 			if (logger.isDebugEnabled()) {
-				logger.debug("Replacing similar document with id={} and score={}", existing.get(0).getId(),
-						existing.get(0).getScore());
+				logger.debug("Replacing similar document with id=" + existing.get(0).getId() + " and score="
+						+ existing.get(0).getScore());
 			}
 			this.vectorStore.delete(List.of(existing.get(0).getId()));
 		}
@@ -242,8 +238,8 @@ public final class DefaultSemanticCache implements SemanticCache {
 			// For COSINE: distance = 2 - 2 * similarity, so similarity = 1 - distance/2
 			effectiveThreshold = 1 - (this.similarityThreshold / 2);
 			if (logger.isDebugEnabled()) {
-				logger.debug("Converting distance threshold {} to similarity threshold {}", this.similarityThreshold,
-						effectiveThreshold);
+				logger.debug("Converting distance threshold " + this.similarityThreshold + " to similarity threshold "
+						+ effectiveThreshold);
 			}
 		}
 
@@ -253,33 +249,28 @@ public final class DefaultSemanticCache implements SemanticCache {
 			similar = redisVectorStore.searchByRange(query, effectiveThreshold);
 
 			if (logger.isDebugEnabled()) {
-				logger.debug("Using RedisVectorStore's native VECTOR_RANGE query with threshold {}",
-						effectiveThreshold);
+				logger.debug("Using RedisVectorStore's native VECTOR_RANGE query with threshold " + effectiveThreshold);
 			}
 		}
 		else {
 			// Fallback to standard similarity search if not using RedisVectorStore
-			if (logger.isDebugEnabled()) {
-				logger.debug("Falling back to standard similarity search (vectorStore is not RedisVectorStore)");
-			}
+			logger.debug("Falling back to standard similarity search (vectorStore is not RedisVectorStore)");
 			similar = this.vectorStore.similaritySearch(
 					SearchRequest.builder().query(query).topK(5).similarityThreshold(effectiveThreshold).build());
 		}
 
 		if (similar.isEmpty()) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("No documents met the similarity threshold criteria");
-			}
+			logger.debug("No documents met the similarity threshold criteria");
 			return Optional.empty();
 		}
 
 		// Log results for debugging
 		if (logger.isDebugEnabled()) {
-			logger.debug("Query: '{}', found {} matches with similarity >= {}", query, similar.size(),
-					this.similarityThreshold);
+			logger.debug("Query: '" + query + "', found " + similar.size() + " matches with similarity >= "
+					+ this.similarityThreshold);
 			for (Document doc : similar) {
-				logger.debug("  - Document: id={}, score={}, raw_vector_score={}", doc.getId(), doc.getScore(),
-						doc.getMetadata().getOrDefault("vector_score", "N/A"));
+				logger.debug("  - Document: id=" + doc.getId() + ", score=" + doc.getScore() + ", raw_vector_score="
+						+ doc.getMetadata().getOrDefault("vector_score", "N/A"));
 			}
 		}
 
@@ -287,7 +278,8 @@ public final class DefaultSemanticCache implements SemanticCache {
 		Document mostSimilar = similar.get(0);
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Using most similar document: id={}, score={}", mostSimilar.getId(), mostSimilar.getScore());
+			logger
+				.debug("Using most similar document: id=" + mostSimilar.getId() + ", score=" + mostSimilar.getScore());
 		}
 
 		// Get stored response JSON from metadata
@@ -330,8 +322,8 @@ public final class DefaultSemanticCache implements SemanticCache {
 		// If similar document exists with same context, delete it first
 		if (!existing.isEmpty()) {
 			if (logger.isDebugEnabled()) {
-				logger.debug("Replacing similar document with id={} and score={}", existing.get(0).getId(),
-						existing.get(0).getScore());
+				logger.debug("Replacing similar document with id=" + existing.get(0).getId() + " and score="
+						+ existing.get(0).getScore());
 			}
 			this.vectorStore.delete(List.of(existing.get(0).getId()));
 		}
@@ -346,18 +338,18 @@ public final class DefaultSemanticCache implements SemanticCache {
 
 		if (similar.isEmpty()) {
 			if (logger.isDebugEnabled()) {
-				logger.debug("No documents met the similarity threshold criteria for context: {}", contextHash);
+				logger.debug("No documents met the similarity threshold criteria for context: " + contextHash);
 			}
 			return Optional.empty();
 		}
 
 		// Log results for debugging
 		if (logger.isDebugEnabled()) {
-			logger.debug("Query: '{}', context: '{}', found {} matches with similarity >= {}", query, contextHash,
-					similar.size(), this.similarityThreshold);
+			logger.debug("Query: '" + query + "', context: '" + contextHash + "', found " + similar.size()
+					+ " matches with similarity >= " + this.similarityThreshold);
 			for (Document doc : similar) {
-				logger.debug("  - Document: id={}, score={}, context_hash={}", doc.getId(), doc.getScore(),
-						doc.getMetadata().getOrDefault("context_hash", "N/A"));
+				logger.debug("  - Document: id=" + doc.getId() + ", score=" + doc.getScore() + ", context_hash="
+						+ doc.getMetadata().getOrDefault("context_hash", "N/A"));
 			}
 		}
 
@@ -365,7 +357,8 @@ public final class DefaultSemanticCache implements SemanticCache {
 		Document mostSimilar = similar.get(0);
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Using most similar document: id={}, score={}", mostSimilar.getId(), mostSimilar.getScore());
+			logger
+				.debug("Using most similar document: id=" + mostSimilar.getId() + ", score=" + mostSimilar.getScore());
 		}
 
 		// Get stored response JSON from metadata
@@ -397,8 +390,8 @@ public final class DefaultSemanticCache implements SemanticCache {
 		if (this.useDistanceThreshold) {
 			effectiveThreshold = 1 - (this.similarityThreshold / 2);
 			if (logger.isDebugEnabled()) {
-				logger.debug("Converting distance threshold {} to similarity threshold {}", this.similarityThreshold,
-						effectiveThreshold);
+				logger.debug("Converting distance threshold " + this.similarityThreshold + " to similarity threshold "
+						+ effectiveThreshold);
 			}
 		}
 
@@ -410,8 +403,8 @@ public final class DefaultSemanticCache implements SemanticCache {
 
 		if (this.vectorStore instanceof RedisVectorStore redisVectorStore) {
 			if (logger.isDebugEnabled()) {
-				logger.debug("Using RedisVectorStore's native VECTOR_RANGE query with threshold {} and filter: {}",
-						effectiveThreshold, filterExpression);
+				logger.debug("Using RedisVectorStore's native VECTOR_RANGE query with threshold " + effectiveThreshold
+						+ " and filter: " + filterExpression);
 			}
 
 			if (filterExpression != null) {
@@ -430,9 +423,7 @@ public final class DefaultSemanticCache implements SemanticCache {
 		}
 		else {
 			// Fallback to standard similarity search
-			if (logger.isDebugEnabled()) {
-				logger.debug("Falling back to standard similarity search");
-			}
+			logger.debug("Falling back to standard similarity search");
 			SearchRequest.Builder requestBuilder = SearchRequest.builder()
 				.query(query)
 				.topK(5)

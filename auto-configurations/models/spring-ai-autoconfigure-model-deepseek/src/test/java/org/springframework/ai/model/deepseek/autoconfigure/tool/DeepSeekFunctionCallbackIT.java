@@ -21,8 +21,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -56,8 +54,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".+")
 public class DeepSeekFunctionCallbackIT {
 
-	private final Logger logger = LoggerFactory.getLogger(DeepSeekFunctionCallbackIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.deepseek.api-key=" + System.getenv("DEEPSEEK_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(DeepSeekChatAutoConfiguration.class, RestClientAutoConfiguration.class,
@@ -87,8 +83,6 @@ public class DeepSeekFunctionCallbackIT {
 				prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
 				response = chatModel.call(prompt);
 			}
-
-			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
@@ -122,7 +116,6 @@ public class DeepSeekFunctionCallbackIT {
 			}
 
 			String content = aggregatedRef.get().getResult().getOutput().getText();
-			logger.info("Response: {}", content);
 
 			assertThat(content).containsAnyOf("30.0", "30");
 			assertThat(content).containsAnyOf("10.0", "10");

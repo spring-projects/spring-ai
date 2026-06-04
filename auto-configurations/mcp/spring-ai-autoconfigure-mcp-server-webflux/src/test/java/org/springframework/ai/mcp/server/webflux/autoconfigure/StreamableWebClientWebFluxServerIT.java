@@ -55,8 +55,6 @@ import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import net.javacrumbs.jsonunit.core.Option;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 import tools.jackson.databind.json.JsonMapper;
@@ -88,8 +86,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.map;
 
 public class StreamableWebClientWebFluxServerIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(StreamableWebClientWebFluxServerIT.class);
 
 	private static final JacksonMcpJsonMapper jsonMapper = new JacksonMcpJsonMapper(new JsonMapper());
 
@@ -509,10 +505,7 @@ public class StreamableWebClientWebFluxServerIT {
 			return (name, mcpClientSpec) -> {
 
 				// Add logging handler
-				mcpClientSpec = mcpClientSpec.loggingConsumer(logingMessage -> {
-					testContext.loggingNotificationRef.set(logingMessage);
-					logger.info("MCP LOGGING: [{}] {}", logingMessage.level(), logingMessage.data());
-				});
+				mcpClientSpec = mcpClientSpec.loggingConsumer(testContext.loggingNotificationRef::set);
 
 				// Add sampling handler
 				Function<McpSchema.CreateMessageRequest, CreateMessageResult> samplingHandler = llmRequest -> {

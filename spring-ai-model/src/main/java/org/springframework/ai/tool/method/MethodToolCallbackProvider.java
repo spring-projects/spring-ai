@@ -27,8 +27,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -52,7 +52,7 @@ import org.springframework.util.ReflectionUtils;
  */
 public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 
-	private static final Logger logger = LoggerFactory.getLogger(MethodToolCallbackProvider.class);
+	private static final Log logger = LogFactory.getLog(MethodToolCallbackProvider.class);
 
 	private final List<Object> toolObjects;
 
@@ -113,8 +113,10 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 				|| ClassUtils.isAssignable(Consumer.class, toolMethod.getReturnType());
 
 		if (isFunction) {
-			logger.warn("Method {} is annotated with @Tool but returns a functional type. "
-					+ "This is not supported and the method will be ignored.", toolMethod.getName());
+			if (logger.isWarnEnabled()) {
+				logger.warn("Method " + toolMethod.getName() + "is annotated with @Tool but returns a functional type. "
+						+ "This is not supported and the method will be ignored.");
+			}
 		}
 
 		return isFunction;

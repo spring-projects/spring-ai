@@ -23,8 +23,6 @@ import java.util.function.Function;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
@@ -48,8 +46,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * FunctionToolCallback wrapper.
  */
 public class FunctionCallWithFunctionWrapperIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(FunctionCallWithFunctionWrapperIT.class);
 
 	@Test
 	@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
@@ -87,8 +83,6 @@ public class FunctionCallWithFunctionWrapperIT {
 					+ "Return the temperature in Celsius.", options);
 
 			ChatResponse response = chatClient.prompt(prompt).call().chatResponse();
-
-			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getText()).contains("30.789", "10.456", "15.123");
 		});
@@ -132,8 +126,6 @@ public class FunctionCallWithFunctionWrapperIT {
 					+ "Return the temperature in Celsius.", options);
 
 			ChatResponse response = chatClient.prompt(prompt).call().chatResponse();
-
-			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getText()).contains("30.789", "10.456", "15.123");
 		});

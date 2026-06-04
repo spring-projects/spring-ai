@@ -23,11 +23,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.ollama.OllamaContainer;
 import reactor.core.publisher.Flux;
@@ -74,7 +74,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(classes = OllamaWithOpenAiChatModelIT.Config.class)
 class OllamaWithOpenAiChatModelIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(OllamaWithOpenAiChatModelIT.class);
+	private static final Log logger = LogFactory.getLog(OllamaWithOpenAiChatModelIT.class);
 
 	private static final String DEFAULT_OLLAMA_MODEL = "qwen2.5:3b";
 
@@ -207,7 +207,6 @@ class OllamaWithOpenAiChatModelIT {
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -239,9 +238,6 @@ class OllamaWithOpenAiChatModelIT {
 			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
 			response = this.chatModel.call(prompt);
 		}
-
-		logger.info("Response: {}", response);
-
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
@@ -256,8 +252,6 @@ class OllamaWithOpenAiChatModelIT {
 
 		var response = this.chatModel
 			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(MULTIMODAL_MODEL).build()));
-
-		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
 				"fruit stand");
 	}
@@ -270,8 +264,6 @@ class OllamaWithOpenAiChatModelIT {
 			.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 			.call()
 			.chatResponse();
-
-		logger.info(response.toString());
 		assertThat(response.getMetadata().getId()).isNotEmpty();
 		assertThat(response.getMetadata().getModel()).containsIgnoringCase(DEFAULT_OLLAMA_MODEL);
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();

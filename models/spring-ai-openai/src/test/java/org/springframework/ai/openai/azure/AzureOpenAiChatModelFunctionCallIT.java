@@ -24,8 +24,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -51,8 +49,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+"),
 		@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+") })
 class AzureOpenAiChatModelFunctionCallIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiChatModelFunctionCallIT.class);
 
 	@Autowired
 	private String selectedModel;
@@ -86,9 +82,6 @@ class AzureOpenAiChatModelFunctionCallIT {
 			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
 			response = this.chatModel.call(prompt);
 		}
-
-		logger.info("Response: {}", response);
-
 		assertThat(response.getResult()).isNotNull();
 		assertThat(response.getResult().getOutput()).isNotNull();
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
@@ -124,9 +117,6 @@ class AzureOpenAiChatModelFunctionCallIT {
 			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
 			response = this.chatModel.call(prompt);
 		}
-
-		logger.info("Response: {}", response);
-
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
@@ -159,8 +149,6 @@ class AzureOpenAiChatModelFunctionCallIT {
 		}
 
 		String content = aggregatedRef.get().getResult().getOutput().getText();
-		logger.info("Response: {}", content);
-
 		assertThat(content).contains("30", "10", "15");
 
 	}
@@ -185,9 +173,6 @@ class AzureOpenAiChatModelFunctionCallIT {
 		assertThat(responses).isNotEmpty();
 
 		ChatResponse finalResponse = responses.get(responses.size() - 2);
-
-		logger.info("Final Response: {}", finalResponse);
-
 		assertThat(finalResponse.getMetadata()).isNotNull();
 		assertThat(finalResponse.getMetadata().getUsage()).isNotNull();
 
@@ -226,9 +211,6 @@ class AzureOpenAiChatModelFunctionCallIT {
 		}
 
 		String content = aggregatedRef.get().getResult().getOutput().getText();
-
-		logger.info("Response: {}", content);
-
 		assertThat(content).contains("30", "10", "15");
 	}
 

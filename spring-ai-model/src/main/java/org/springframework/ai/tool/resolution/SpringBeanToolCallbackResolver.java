@@ -27,9 +27,9 @@ import com.fasterxml.jackson.annotation.JsonClassDescription;
 import kotlin.jvm.functions.Function0;
 import kotlin.jvm.functions.Function1;
 import kotlin.jvm.functions.Function2;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
@@ -61,7 +61,7 @@ import org.springframework.util.StringUtils;
 @Deprecated(since = "2.0.0", forRemoval = true)
 public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 
-	private static final Logger logger = LoggerFactory.getLogger(SpringBeanToolCallbackResolver.class);
+	private static final Log logger = LogFactory.getLog(SpringBeanToolCallbackResolver.class);
 
 	private static final Map<String, ToolCallback> toolCallbacksCache = new HashMap<>();
 

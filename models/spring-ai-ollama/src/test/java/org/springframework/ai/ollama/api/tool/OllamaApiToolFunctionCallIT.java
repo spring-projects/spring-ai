@@ -23,8 +23,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.ollama.BaseOllamaIT;
 import org.springframework.ai.ollama.api.OllamaApi;
@@ -47,8 +45,6 @@ public class OllamaApiToolFunctionCallIT extends BaseOllamaIT {
 	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final String MODEL = OllamaModel.QWEN_2_5_3B.getName();
-
-	private static final Logger logger = LoggerFactory.getLogger(OllamaApiToolFunctionCallIT.class);
 
 	static OllamaApi ollamaApi;
 
@@ -130,8 +126,6 @@ public class OllamaApiToolFunctionCallIT extends BaseOllamaIT {
 		var functionResponseRequest = OllamaApi.ChatRequest.builder(MODEL).messages(messages).build();
 
 		ChatResponse chatCompletion2 = ollamaApi.chat(functionResponseRequest);
-
-		logger.info("Final response: " + chatCompletion2);
 
 		assertThat(chatCompletion2).isNotNull();
 

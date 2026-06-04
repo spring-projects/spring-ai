@@ -16,21 +16,22 @@
 
 package org.springframework.ai.template.st;
 
-import org.slf4j.Logger;
+import org.apache.commons.logging.Log;
 import org.stringtemplate.v4.STErrorListener;
 import org.stringtemplate.v4.misc.ErrorType;
 import org.stringtemplate.v4.misc.STMessage;
 
 /**
- * An {@link STErrorListener} that delegates to {@link Logger slf4j}.
+ * An {@link STErrorListener} that delegates to {@link Log commons-logging}.
  *
  * @author Sun Yuhan
+ * @author Sebastien Deleuze
  */
-public class Slf4jStErrorListener implements STErrorListener {
+class CommonsLoggingStErrorListener implements STErrorListener {
 
-	private final Logger logger;
+	private final Log logger;
 
-	/* package */ Slf4jStErrorListener(Logger logger) {
+	/* package */ CommonsLoggingStErrorListener(Log logger) {
 		this.logger = logger;
 	}
 

@@ -22,8 +22,6 @@ import java.util.Map;
 import com.google.genai.Client;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -51,8 +49,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
 class GoogleGenAiChatModelMLDevIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiChatModelMLDevIT.class);
-
 	@Autowired
 	private GoogleGenAiChatModel chatModel;
 
@@ -68,9 +64,6 @@ class GoogleGenAiChatModelMLDevIT {
 					.build());
 
 		ChatResponse response = this.chatModel.call(prompt);
-
-		logger.info("Response: {}", response.getResult().getOutput().getText());
-
 		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 	}
 
@@ -86,9 +79,6 @@ class GoogleGenAiChatModelMLDevIT {
 					.build());
 
 		ChatResponse response = this.chatModel.call(prompt);
-
-		logger.info("Response: {}", response.getResult().getOutput().getText());
-
 		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 
 		Map<String, Object> metadata = response.getResult().getOutput().getMetadata();
@@ -118,9 +108,6 @@ class GoogleGenAiChatModelMLDevIT {
 				promptOptions);
 
 		ChatResponse response = this.chatModel.call(prompt);
-
-		logger.info("Response: {}", response.getResult().getOutput().getText());
-
 		// Function call should have been executed — weather data should be in response
 		assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("30");
 
@@ -151,9 +138,6 @@ class GoogleGenAiChatModelMLDevIT {
 				promptOptions);
 
 		ChatResponse response = this.chatModel.call(prompt);
-
-		logger.info("Response: {}", response.getResult().getOutput().getText());
-
 		// Function call should have been executed — weather data should be in response
 		assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("30");
 

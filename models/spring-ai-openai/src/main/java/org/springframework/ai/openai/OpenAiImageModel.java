@@ -22,9 +22,9 @@ import java.util.Objects;
 import com.openai.client.OpenAIClient;
 import com.openai.models.images.ImageGenerateParams;
 import io.micrometer.observation.ObservationRegistry;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageGeneration;
@@ -57,7 +57,7 @@ public class OpenAiImageModel implements ImageModel {
 
 	private static final ImageModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultImageModelObservationConvention();
 
-	private final Logger logger = LoggerFactory.getLogger(OpenAiImageModel.class);
+	private final Log logger = LogFactory.getLog(OpenAiImageModel.class);
 
 	private final OpenAIClient openAiClient;
 
@@ -170,8 +170,8 @@ public class OpenAiImageModel implements ImageModel {
 		ImageGenerateParams imageGenerateParams = options.toOpenAiImageGenerateParams(imagePrompt);
 
 		if (logger.isTraceEnabled()) {
-			logger.trace("OpenAiImageOptions call {} with the following options : {} ", options.getModel(),
-					imageGenerateParams);
+			logger.trace("OpenAiImageOptions call " + options.getModel() + " with the following options : "
+					+ imageGenerateParams);
 		}
 
 		var observationContext = ImageModelObservationContext.builder()

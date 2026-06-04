@@ -22,8 +22,6 @@ import java.util.stream.Collectors;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -52,8 +50,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class OpenAiFunctionCallbackIT {
 
-	private final Logger logger = LoggerFactory.getLogger(OpenAiFunctionCallbackIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"),
 				"spring.ai.openai.chat.model=" + "gpt-4o-mini")
@@ -80,8 +76,6 @@ public class OpenAiFunctionCallbackIT {
 				.prompt(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().toolNames("WeatherInfo").build()))
 				.call()
 				.chatResponse();
-
-			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
@@ -116,7 +110,6 @@ public class OpenAiFunctionCallbackIT {
 				.map(Generation::getOutput)
 				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
-			logger.info("Response: {}", content);
 
 			assertThat(content).containsAnyOf("30.0", "30");
 			assertThat(content).containsAnyOf("10.0", "10");

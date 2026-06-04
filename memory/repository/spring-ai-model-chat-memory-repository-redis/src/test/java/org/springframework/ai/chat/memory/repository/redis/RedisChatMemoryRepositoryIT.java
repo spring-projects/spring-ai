@@ -22,8 +22,6 @@ import com.redis.testcontainers.RedisContainer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import redis.clients.jedis.RedisClient;
@@ -47,8 +45,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Testcontainers
 class RedisChatMemoryRepositoryIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(RedisChatMemoryRepositoryIT.class);
 
 	@Container
 	static RedisContainer redisContainer = new RedisContainer("redis/redis-stack:latest");

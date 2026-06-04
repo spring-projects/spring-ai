@@ -20,8 +20,6 @@ import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.bedrock.converse.BedrockChatOptions;
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
@@ -41,8 +39,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @RequiresAwsCredentials
 public class FunctionCallWithPromptFunctionIT {
-
-	private final Logger logger = LoggerFactory.getLogger(FunctionCallWithPromptFunctionIT.class);
 
 	private final ApplicationContextRunner contextRunner = BedrockTestUtils.getContextRunner()
 		.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class,
@@ -78,8 +74,6 @@ public class FunctionCallWithPromptFunctionIT {
 				ChatResponse response = chatClient.prompt(new Prompt(List.of(userMessage), promptOptions))
 					.call()
 					.chatResponse();
-
-				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 			});

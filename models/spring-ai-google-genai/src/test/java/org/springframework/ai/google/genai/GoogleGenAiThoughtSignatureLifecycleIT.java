@@ -28,10 +28,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -85,8 +82,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
 class GoogleGenAiThoughtSignatureLifecycleIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiThoughtSignatureLifecycleIT.class);
-
 	@Autowired
 	private GoogleGenAiChatModel chatModel;
 
@@ -123,19 +118,8 @@ class GoogleGenAiThoughtSignatureLifecycleIT {
 		}
 
 		assertThat(response).isNotNull();
-		logger.info("Response: {}", response.getResult().getOutput().getText());
-
 		// Verify expected weather data
 		assertThat(response.getResult().getOutput().getText()).contains("30");
-
-		// Verify no thought signatures are present when disabled
-		AssistantMessage assistantMessage = response.getResult().getOutput();
-		if (assistantMessage.getMetadata() != null && assistantMessage.getMetadata().containsKey("thoughtSignatures")) {
-			logger.warn("⚠ Thought signatures found in metadata despite includeThoughts=false");
-		}
-		else {
-			logger.info("✓ No thought signatures present when includeThoughts=false (as expected)");
-		}
 	}
 
 	/**
@@ -160,7 +144,6 @@ class GoogleGenAiThoughtSignatureLifecycleIT {
 			.build();
 
 		// Execute streaming call
-		logger.info("=== Testing Thought Signatures with Streaming ===");
 		var prompt = new Prompt(messages, promptOptions);
 		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
 		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
@@ -176,22 +159,8 @@ class GoogleGenAiThoughtSignatureLifecycleIT {
 		ChatResponse lastResponse = aggregatedRef.get();
 
 		assertThat(lastResponse).isNotNull();
-		logger.info("Final streaming response: {}", lastResponse.getResult().getOutput().getText());
-
 		// Verify expected weather data
 		assertThat(lastResponse.getResult().getOutput().getText()).contains("15");
-
-		// Verify thought signatures are present in streaming response
-		AssistantMessage assistantMessage = lastResponse.getResult().getOutput();
-		if (assistantMessage.getMetadata() != null && assistantMessage.getMetadata().containsKey("thoughtSignatures")) {
-			@SuppressWarnings("unchecked")
-			List<byte[]> thoughtSignatures = (List<byte[]>) assistantMessage.getMetadata().get("thoughtSignatures");
-			logger.info("✓ Streaming response contains {} thought signatures",
-					thoughtSignatures != null ? thoughtSignatures.size() : 0);
-		}
-		else {
-			logger.info("ℹ No thought signatures in streaming response (model may not have generated thoughts)");
-		}
 	}
 
 	// ============================================================
@@ -254,10 +223,6 @@ class GoogleGenAiThoughtSignatureLifecycleIT {
 						.inputType(MockTaxiService.Request.class)
 						.build()))
 			.build();
-
-		logger.info("=== Scenario 1: Sequential Function Calling with {} ===", modelName);
-		logger.info("Prompt: {}", userMessage.getText());
-
 		var prompt = new Prompt(userMessage, promptOptions);
 		ChatResponse response = this.chatModel.call(prompt);
 
@@ -269,28 +234,9 @@ class GoogleGenAiThoughtSignatureLifecycleIT {
 
 		assertThat(response).isNotNull();
 		String responseText = response.getResult().getOutput().getText();
-		logger.info("Final Response: {}", responseText);
-
 		// Verify the response indicates both functions were called
 		// The flight should be "delayed" and a taxi should be "booked"
 		assertThat(responseText).isNotBlank();
-
-		// Check for indicators that both tools were used
-		boolean mentionsFlight = responseText.toLowerCase().contains("flight")
-				|| responseText.toLowerCase().contains("aa100") || responseText.toLowerCase().contains("delayed");
-		boolean mentionsTaxi = responseText.toLowerCase().contains("taxi")
-				|| responseText.toLowerCase().contains("book") || responseText.toLowerCase().contains("10");
-
-		if (mentionsFlight && mentionsTaxi) {
-			logger.info("✓ Response mentions both flight status and taxi booking");
-		}
-		else {
-			logger.warn("⚠ Response may not have triggered both sequential function calls");
-			logger.warn("  mentionsFlight: {}, mentionsTaxi: {}", mentionsFlight, mentionsTaxi);
-		}
-
-		logger.info("✓ {} - Sequential function calling completed without 400 errors", modelName);
-		logger.info("✓ Thought signatures were properly propagated in the internal tool execution loop");
 	}
 
 	// ============================================================
@@ -304,17 +250,11 @@ class GoogleGenAiThoughtSignatureLifecycleIT {
 	 */
 	public static class MockFlightService implements Function<MockFlightService.Request, MockFlightService.Response> {
 
-		private static final Logger log = LoggerFactory.getLogger(MockFlightService.class);
-
 		@Override
 		public Response apply(Request request) {
-			log.info("MockFlightService called with flight: {}", request.flight());
-
 			// Always return delayed to trigger sequential taxi booking
 			String status = "delayed";
 			String departureTime = "12:00 PM";
-
-			log.info("Returning flight status: {}, departure: {}", status, departureTime);
 			return new Response(request.flight(), status, departureTime);
 		}
 
@@ -333,15 +273,9 @@ class GoogleGenAiThoughtSignatureLifecycleIT {
 	 */
 	public static class MockTaxiService implements Function<MockTaxiService.Request, MockTaxiService.Response> {
 
-		private static final Logger log = LoggerFactory.getLogger(MockTaxiService.class);
-
 		@Override
 		public Response apply(Request request) {
-			log.info("MockTaxiService called with time: {}", request.time());
-
 			String bookingId = "TAXI-" + System.currentTimeMillis();
-			log.info("Returning booking confirmation: {}", bookingId);
-
 			return new Response(bookingId, "confirmed", request.time());
 		}
 

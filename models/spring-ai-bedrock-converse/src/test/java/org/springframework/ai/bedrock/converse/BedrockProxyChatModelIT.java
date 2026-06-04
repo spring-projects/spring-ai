@@ -32,8 +32,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.converse.api.BedrockCacheOptions;
@@ -74,8 +72,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RequiresAwsCredentials
 class BedrockProxyChatModelIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(BedrockProxyChatModelIT.class);
-
 	@Autowired
 	protected ChatModel chatModel;
 
@@ -114,7 +110,6 @@ class BedrockProxyChatModelIT {
 		Generation generation = response.getResults().get(0);
 		assertThat(generation.getOutput().getText()).contains("Blackbeard");
 		assertThat(generation.getMetadata().getFinishReason()).isEqualTo("end_turn");
-		logger.info(response.toString());
 	}
 
 	@Test
@@ -213,7 +208,6 @@ class BedrockProxyChatModelIT {
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = beanOutputConverter.convert(generation.getOutput().getText());
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -245,7 +239,6 @@ class BedrockProxyChatModelIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = beanOutputConverter.convert(generationTextFromStream);
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -261,8 +254,6 @@ class BedrockProxyChatModelIT {
 			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
-
-		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
 				"fruit stand");
 	}
@@ -293,9 +284,6 @@ class BedrockProxyChatModelIT {
 			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
 			response = this.chatModel.call(prompt);
 		}
-
-		logger.info("Response: {}", response);
-
 		Generation generation = response.getResult();
 		assertThat(generation.getOutput().getText()).contains("30", "10", "15");
 	}
@@ -326,9 +314,6 @@ class BedrockProxyChatModelIT {
 			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
 			response = this.chatModel.call(prompt);
 		}
-
-		logger.info("Response: {}", response);
-
 		Generation generation = response.getResult();
 		assertThat(generation.getOutput().getText()).contains("30", "10", "15");
 	}
@@ -367,8 +352,6 @@ class BedrockProxyChatModelIT {
 		}
 
 		String content = aggregatedRef.get().getResult().getOutput().getText();
-
-		logger.info("Response: {}", content);
 		assertThat(content).contains("30", "10", "15");
 	}
 
@@ -407,8 +390,6 @@ class BedrockProxyChatModelIT {
 
 		ChatResponse lastResponse = aggregatedRef.get();
 		String finishReason = lastResponse.getResult().getMetadata().getFinishReason();
-
-		logger.info("Finish reason: {}", finishReason);
 		assertThat(finishReason).isEqualTo("max_tokens");
 	}
 
@@ -422,8 +403,6 @@ class BedrockProxyChatModelIT {
 				.call()
 				.chatResponse();
 		// @formatter:on
-
-		logger.info(response.toString());
 		validateChatResponseMetadata(response, model);
 	}
 
@@ -438,8 +417,6 @@ class BedrockProxyChatModelIT {
 				.chatResponse()
 				.blockLast();
 		// @formatter:on
-
-		logger.info(response.toString());
 		validateChatResponseMetadata(response, model);
 	}
 
@@ -499,8 +476,6 @@ class BedrockProxyChatModelIT {
 			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 			Integer cacheRead = response.getMetadata().get("cacheReadInputTokens");
 			Integer cacheWrite = response.getMetadata().get("cacheWriteInputTokens");
-			logger.info("[systemOnly] attempt={}, cacheWrite={}, cacheRead={}", questionIndex.get(), cacheWrite,
-					cacheRead);
 			assertThat(cacheRead).as("Should eventually read from cache").isNotNull().isPositive();
 			assertThat(cacheRead).as("Cache read should meet the 4096 token minimum for Claude Haiku 4.5")
 				.isGreaterThan(4096);
@@ -568,8 +543,6 @@ class BedrockProxyChatModelIT {
 
 			Integer cacheRead = response.getMetadata().get("cacheReadInputTokens");
 			Integer cacheWrite = response.getMetadata().get("cacheWriteInputTokens");
-			logger.info("[multiBlockSystem] attempt={}, cacheWrite={}, cacheRead={}", idx, cacheWrite, cacheRead);
-
 			assertThat(cacheRead).as("Static prefix should eventually be read from cache despite dynamic block changes")
 				.isNotNull()
 				.isPositive();
@@ -625,7 +598,6 @@ class BedrockProxyChatModelIT {
 			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 			Integer cacheRead = response.getMetadata().get("cacheReadInputTokens");
 			Integer cacheWrite = response.getMetadata().get("cacheWriteInputTokens");
-			logger.info("[toolsOnly] attempt={}, cacheWrite={}, cacheRead={}", cityIndex.get(), cacheWrite, cacheRead);
 			assertThat(cacheRead).as("Should eventually read tool definitions from cache").isNotNull().isPositive();
 			assertThat(cacheRead).as("Cache read should meet the 4096 token minimum for Claude Haiku 4.5")
 				.isGreaterThan(4096);
@@ -703,8 +675,6 @@ class BedrockProxyChatModelIT {
 			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 			Integer cacheRead = response.getMetadata().get("cacheReadInputTokens");
 			Integer cacheWrite = response.getMetadata().get("cacheWriteInputTokens");
-			logger.info("[systemAndTools] attempt={}, cacheWrite={}, cacheRead={}", cityIndex.get(), cacheWrite,
-					cacheRead);
 			assertThat(cacheRead).as("Should eventually read from cache").isNotNull().isPositive();
 			assertThat(cacheRead).as("Cache read should meet the 4096 token minimum for Claude Haiku 4.5")
 				.isGreaterThan(4096);
@@ -800,8 +770,6 @@ class BedrockProxyChatModelIT {
 			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 			Integer cacheRead = response.getMetadata().get("cacheReadInputTokens");
 			Integer cacheWrite = response.getMetadata().get("cacheWriteInputTokens");
-			logger.info("[conversationHistory] attempt={}, cacheWrite={}, cacheRead={}", attemptIndex.incrementAndGet(),
-					cacheWrite, cacheRead);
 			assertThat(cacheRead).as("Should eventually read conversation history from cache").isNotNull().isPositive();
 			assertThat(cacheRead).as("Cache read should meet the 4096 token minimum for Claude Haiku 4.5")
 				.isGreaterThan(4096);
@@ -963,9 +931,6 @@ class BedrockProxyChatModelIT {
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
-
-		logger.info("gpt-oss Response: {}", generation.getOutput().getText());
-		logger.info("Response metadata: {}", response.getMetadata());
 	}
 
 	@Test
@@ -992,8 +957,6 @@ class BedrockProxyChatModelIT {
 		// Verify the response contains expected gpt-oss identification
 		assertThat(fullResponse.toLowerCase()).as("gpt-oss model should identify itself")
 			.containsAnyOf("chatgpt", "gpt", "openai", "language model", "ai");
-
-		logger.info("gpt-oss Streaming Response: {}", fullResponse);
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {

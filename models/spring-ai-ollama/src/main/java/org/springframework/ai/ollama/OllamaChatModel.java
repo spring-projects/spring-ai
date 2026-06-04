@@ -27,8 +27,6 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -86,8 +84,6 @@ import org.springframework.util.StringUtils;
 public class OllamaChatModel implements ChatModel {
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
-
-	private static final Logger logger = LoggerFactory.getLogger(OllamaChatModel.class);
 
 	private static final String DONE = "done";
 

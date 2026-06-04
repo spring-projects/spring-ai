@@ -23,9 +23,9 @@ import com.openai.client.OpenAIClient;
 import com.openai.models.moderations.ModerationCreateParams;
 import com.openai.models.moderations.ModerationCreateResponse;
 import io.micrometer.observation.ObservationRegistry;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.moderation.Categories;
 import org.springframework.ai.moderation.CategoryScores;
@@ -50,7 +50,7 @@ import org.springframework.util.Assert;
  */
 public final class OpenAiModerationModel implements ModerationModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiModerationModel.class);
+	private static final Log logger = LogFactory.getLog(OpenAiModerationModel.class);
 
 	private final OpenAIClient openAiClient;
 

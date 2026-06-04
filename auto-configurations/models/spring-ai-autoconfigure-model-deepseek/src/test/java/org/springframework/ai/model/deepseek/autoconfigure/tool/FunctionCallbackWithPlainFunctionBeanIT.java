@@ -22,8 +22,6 @@ import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -57,8 +55,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 // https://api-docs.deepseek.com/guides/function_calling")
 class FunctionCallbackWithPlainFunctionBeanIT {
 
-	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackWithPlainFunctionBeanIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.deepseek.api-key=" + System.getenv("DEEPSEEK_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(DeepSeekChatAutoConfiguration.class, RestClientAutoConfiguration.class,
@@ -87,8 +83,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				response = chatModel.call(prompt);
 			}
 
-			logger.info("Response: {}", response);
-
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 			// Test weatherFunctionTwo
@@ -101,8 +95,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
 				response = chatModel.call(prompt);
 			}
-
-			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
@@ -132,8 +124,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				prompt = new Prompt(toolExecutionResult.conversationHistory(), functionOptions);
 				response = chatModel.call(prompt);
 			}
-
-			logger.info("Response: {}", response);
 		});
 	}
 
@@ -163,7 +153,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			}
 
 			String content = aggregatedRef.get().getResult().getOutput().getText();
-			logger.info("Response: {}", content);
 
 			assertThat(content).containsAnyOf("30.0", "30");
 			assertThat(content).containsAnyOf("10.0", "10");
@@ -185,7 +174,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			}
 
 			content = aggregatedRef.get().getResult().getOutput().getText();
-			logger.info("Response: {}", content);
 
 			assertThat(content).containsAnyOf("30.0", "30");
 			assertThat(content).containsAnyOf("10.0", "10");

@@ -28,8 +28,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropic.AnthropicChatOptions;
@@ -65,8 +63,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 class AnthropicChatClientIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatClientIT.class);
-
 	@Autowired
 	ChatModel chatModel;
 
@@ -85,8 +81,6 @@ class AnthropicChatClientIT {
 				.call()
 				.chatResponse();
 		// @formatter:on
-
-		logger.info("" + response);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
@@ -100,8 +94,6 @@ class AnthropicChatClientIT {
 				.call()
 				.entity(new ParameterizedTypeReference<>() { });
 		// @formatter:on
-
-		logger.info(collection.toString());
 		assertThat(collection).hasSize(5);
 	}
 
@@ -114,8 +106,6 @@ class AnthropicChatClientIT {
 				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms).hasSize(2);
 	}
 
@@ -131,8 +121,6 @@ class AnthropicChatClientIT {
 				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms).hasSize(2);
 	}
 
@@ -147,8 +135,6 @@ class AnthropicChatClientIT {
 				.call()
 				.entity(toStringListConverter);
 		// @formatter:on
-
-		logger.info("ice cream flavors" + flavors);
 		assertThat(flavors).hasSize(5);
 		assertThat(flavors).containsAnyOf("Vanilla", "vanilla");
 	}
@@ -175,8 +161,6 @@ class AnthropicChatClientIT {
 				.call()
 				.entity(ActorsFilms.class);
 		// @formatter:on
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isNotBlank();
 	}
 
@@ -188,8 +172,6 @@ class AnthropicChatClientIT {
 				.call()
 				.entity(ActorsFilms.class);
 		// @formatter:on
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -216,8 +198,6 @@ class AnthropicChatClientIT {
 		// @formatter:on
 
 		ActorsFilms actorsFilms = outputConverter.convert(generationTextFromStream);
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -233,8 +213,6 @@ class AnthropicChatClientIT {
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
 		assertThat(response).contains("30", "10", "15");
 	}
 
@@ -249,8 +227,6 @@ class AnthropicChatClientIT {
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
 		assertThat(response).contains("30", "10", "15");
 	}
 
@@ -268,8 +244,6 @@ class AnthropicChatClientIT {
 			.call()
 			.content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
 		assertThat(response).contains("30", "10", "15");
 	}
 
@@ -287,7 +261,6 @@ class AnthropicChatClientIT {
 		// @formatter:on
 
 		String content = response.collectList().block().stream().collect(Collectors.joining());
-		logger.info("Response: {}", content);
 		assertThat(content).contains("30", "10", "15");
 	}
 
@@ -302,8 +275,6 @@ class AnthropicChatClientIT {
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info(response);
 		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
@@ -319,8 +290,6 @@ class AnthropicChatClientIT {
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info(response);
 		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
@@ -337,7 +306,6 @@ class AnthropicChatClientIT {
 		// @formatter:on
 
 		String content = response.collectList().block().stream().collect(Collectors.joining());
-		logger.info("Response: {}", content);
 		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
@@ -357,10 +325,7 @@ class AnthropicChatClientIT {
 
 		assertThat(chatResponses).isNotEmpty();
 
-		chatResponses.forEach(chatResponse -> {
-			logger.info("ChatResponse Results: {}", chatResponse.getResults());
-			assertThat(chatResponse.hasToolCalls()).isFalse();
-		});
+		chatResponses.forEach(chatResponse -> assertThat(chatResponse.hasToolCalls()).isFalse());
 	}
 
 	public static class MyTools {

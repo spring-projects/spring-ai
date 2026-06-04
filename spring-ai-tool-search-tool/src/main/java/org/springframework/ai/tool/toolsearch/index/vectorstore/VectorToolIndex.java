@@ -25,9 +25,9 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.tool.toolsearch.ToolIndex;
@@ -51,7 +51,7 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
  */
 public class VectorToolIndex implements Closeable, ToolIndex {
 
-	private static final Logger logger = LoggerFactory.getLogger(VectorToolIndex.class);
+	private static final Log logger = LogFactory.getLog(VectorToolIndex.class);
 
 	private static final String METADATA_ID = "id";
 
@@ -79,10 +79,12 @@ public class VectorToolIndex implements Closeable, ToolIndex {
 		if (toolIds != null) {
 			this.vectorStore.delete(toolIds);
 			this.sessionToolIds.remove(sessionId);
-			logger.info("Cleared {} tools for sessionId={}", toolIds.size(), sessionId);
+			if (logger.isInfoEnabled()) {
+				logger.info("Cleared " + toolIds.size() + " tools for sessionId=" + sessionId);
+			}
 		}
-		else {
-			logger.info("No tools found for sessionId={}", sessionId);
+		else if (logger.isInfoEnabled()) {
+			logger.info("No tools found for sessionId=" + sessionId);
 		}
 	}
 
@@ -128,7 +130,9 @@ public class VectorToolIndex implements Closeable, ToolIndex {
 			list.addAll(ids);
 			return list;
 		});
-		logger.info("Indexed {} tools for sessionId={}", documents.size(), sessionId);
+		if (logger.isInfoEnabled()) {
+			logger.info("Indexed " + documents.size() + " tools for sessionId=" + sessionId);
+		}
 	}
 
 	@Override

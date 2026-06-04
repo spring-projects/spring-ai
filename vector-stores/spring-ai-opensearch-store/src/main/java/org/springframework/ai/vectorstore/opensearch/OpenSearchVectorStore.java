@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.JsonpMapper;
@@ -38,8 +40,6 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.CreateIndexResponse;
 import org.opensearch.client.transport.endpoints.BooleanResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -153,7 +153,7 @@ import org.springframework.util.Assert;
  */
 public class OpenSearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenSearchVectorStore.class);
+	private static final Log logger = LogFactory.getLog(OpenSearchVectorStore.class);
 
 	public static final String COSINE_SIMILARITY_FUNCTION = "cosinesimil";
 
@@ -284,14 +284,18 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 				.build();
 
 			DeleteByQueryResponse response = this.openSearchClient.deleteByQuery(request);
-			logger.debug("Deleted {} documents matching filter expression", response.deleted());
+			if (logger.isDebugEnabled()) {
+				logger.debug("Deleted " + response.deleted() + " documents matching filter expression");
+			}
 
 			if (!response.failures().isEmpty()) {
 				throw new IllegalStateException("Failed to delete some documents: " + response.failures());
 			}
 		}
 		catch (Exception e) {
-			logger.error("Failed to delete documents by filter: {}", e.getMessage());
+			if (logger.isErrorEnabled()) {
+				logger.error("Failed to delete documents by filter: " + e.getMessage());
+			}
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}

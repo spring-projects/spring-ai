@@ -23,8 +23,8 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
@@ -42,7 +42,7 @@ import org.springframework.util.StringUtils;
  */
 public final class ToolUtils {
 
-	private static final Logger logger = LoggerFactory.getLogger(ToolUtils.class);
+	private static final Log logger = LogFactory.getLog(ToolUtils.class);
 
 	/**
 	 * Regular expression pattern for recommended tool names. Tool names should contain
@@ -127,9 +127,9 @@ public final class ToolUtils {
 	 */
 	private static void validateToolName(String toolName) {
 		Assert.hasText(toolName, "Tool name cannot be null or empty");
-		if (!RECOMMENDED_NAME_PATTERN.matcher(toolName).matches()) {
-			logger.warn("Tool name '{}' may not be compatible with some LLMs (e.g., OpenAI). "
-					+ "Consider using only alphanumeric characters, underscores, hyphens, and dots.", toolName);
+		if (logger.isWarnEnabled() && !RECOMMENDED_NAME_PATTERN.matcher(toolName).matches()) {
+			logger.warn("Tool name '" + toolName + "' may not be compatible with some LLMs (e.g., OpenAI). "
+					+ "Consider using only alphanumeric characters, underscores, hyphens, and dots.");
 		}
 	}
 

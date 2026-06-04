@@ -25,8 +25,6 @@ import java.util.function.BiFunction;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
@@ -55,8 +53,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class OpenAiChatModelFunctionCallingIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModelFunctionCallingIT.class);
-
 	@Autowired
 	ChatModel chatModel;
 
@@ -73,8 +69,6 @@ class OpenAiChatModelFunctionCallingIT {
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
 		assertThat(state).containsEntry("Light", "ON");
 	}
 
@@ -143,8 +137,6 @@ class OpenAiChatModelFunctionCallingIT {
 			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
 			response = this.chatModel.call(prompt);
 		}
-
-		logger.info("Response: {}", response);
 
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
@@ -220,7 +212,6 @@ class OpenAiChatModelFunctionCallingIT {
 		}
 
 		String content = aggregatedRef.get().getResult().getOutput().getText();
-		logger.info("Response: {}", content);
 
 		assertThat(content).contains("30", "10", "15");
 	}

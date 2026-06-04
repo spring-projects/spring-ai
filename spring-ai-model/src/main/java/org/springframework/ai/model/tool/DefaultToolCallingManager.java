@@ -28,8 +28,8 @@ import java.util.stream.Collectors;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -63,7 +63,7 @@ import org.springframework.util.StringUtils;
  */
 public final class DefaultToolCallingManager implements ToolCallingManager {
 
-	private static final Logger logger = LoggerFactory.getLogger(DefaultToolCallingManager.class);
+	private static final Log logger = LogFactory.getLog(DefaultToolCallingManager.class);
 
 	// @formatter:off
 
@@ -79,8 +79,9 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 	private static final ToolExecutionExceptionProcessor DEFAULT_TOOL_EXECUTION_EXCEPTION_PROCESSOR
 			= DefaultToolExecutionExceptionProcessor.builder().build();
 
-	private static final String POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING
-			= "LLM may have adapted the tool name '{}', especially if the name was truncated due to length limits. If this is the case, you can customize the prefixing and processing logic using McpToolNamePrefixGenerator";
+	private static final String POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING_START = "LLM may have adapted the tool name '";
+	private static final String POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING_END
+			= "', especially if the name was truncated due to length limits. If this is the case, you can customize the prefixing and processing logic using McpToolNamePrefixGenerator";
 
 
 	// @formatter:on
@@ -124,7 +125,10 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				}
 				ToolCallback toolCallback = this.toolCallbackResolver.resolve(toolName);
 				if (toolCallback == null) {
-					logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolName);
+					if (logger.isWarnEnabled()) {
+						logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING_START + toolName
+								+ POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING_END);
+					}
 					throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
 				}
 				toolCallbacks.add(toolCallback);
@@ -193,7 +197,9 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 
-			logger.debug("Executing tool call: {}", toolCall.name());
+			if (logger.isDebugEnabled()) {
+				logger.debug("Executing tool call: " + toolCall.name());
+			}
 
 			String toolName = toolCall.name();
 			String toolInputArguments = toolCall.arguments();
@@ -201,8 +207,10 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			// Handle the possible null parameter situation in streaming mode.
 			final String finalToolInputArguments;
 			if (!StringUtils.hasText(toolInputArguments)) {
-				logger.warn("Tool call arguments are null or empty for tool: {}. Using empty JSON object as default.",
-						toolName);
+				if (logger.isWarnEnabled()) {
+					logger.warn("Tool call arguments are null or empty for tool: " + toolName
+							+ ". Using empty JSON object as default.");
+				}
 				finalToolInputArguments = "{}";
 			}
 			else {
@@ -215,7 +223,10 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				.orElseGet(() -> this.toolCallbackResolver.resolve(toolName));
 
 			if (toolCallback == null) {
-				logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolName);
+				if (logger.isWarnEnabled()) {
+					logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING_START + toolName
+							+ POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING_END);
+				}
 				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
 			}
 

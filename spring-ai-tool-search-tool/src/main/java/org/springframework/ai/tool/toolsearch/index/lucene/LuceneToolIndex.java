@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -47,8 +49,6 @@ import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.QueryBuilder;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.tool.toolsearch.ToolIndex;
 import org.springframework.ai.tool.toolsearch.ToolReference;
@@ -68,7 +68,7 @@ import org.springframework.ai.tool.toolsearch.ToolSearchResponse.SearchMetadata;
  */
 public class LuceneToolIndex implements Closeable, ToolIndex {
 
-	private static final Logger logger = LoggerFactory.getLogger(LuceneToolIndex.class);
+	private static final Log logger = LogFactory.getLog(LuceneToolIndex.class);
 
 	private static final String FIELD_ID = "id";
 
@@ -155,7 +155,7 @@ public class LuceneToolIndex implements Closeable, ToolIndex {
 
 		SessionIndex sessionIndex = this.sessionIndexes.get(sessionId);
 		if (sessionIndex == null) {
-			logger.debug("No index found for session: {}", sessionId);
+			logger.debug("No index found for session: " + sessionId);
 			return ToolSearchResponse.builder().build();
 		}
 
@@ -185,7 +185,9 @@ public class LuceneToolIndex implements Closeable, ToolIndex {
 			sessionIndex.writer.addDocument(doc);
 		}
 		catch (AlreadyClosedException ex) {
-			logger.warn("Skipping add for session '{}': index was concurrently cleared", sessionId);
+			if (logger.isWarnEnabled()) {
+				logger.warn("Skipping add for session '" + sessionId + "': index was concurrently cleared");
+			}
 		}
 		catch (IOException e) {
 			throw new RuntimeException("Failed to add document to index", e);
@@ -258,8 +260,10 @@ public class LuceneToolIndex implements Closeable, ToolIndex {
 		List<ToolReference> foundToolReferences = new ArrayList<>(results.scoreDocs.length);
 		StoredFields storedFields = searcher.storedFields();
 		for (ScoreDoc scoreDoc : results.scoreDocs) {
-			logger.info("Score: {}, name: {}", scoreDoc.score,
-					storedFields.document(scoreDoc.doc).get(FIELD_TOOL_NAME));
+			if (logger.isInfoEnabled()) {
+				logger.info("Score: " + scoreDoc.score + ", name: "
+						+ storedFields.document(scoreDoc.doc).get(FIELD_TOOL_NAME));
+			}
 			if (scoreDoc.score >= minScore) {
 				var doc = storedFields.document(scoreDoc.doc);
 				foundToolReferences.add(ToolReference.builder()

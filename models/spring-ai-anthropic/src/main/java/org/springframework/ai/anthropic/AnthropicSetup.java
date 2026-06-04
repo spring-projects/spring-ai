@@ -31,9 +31,9 @@ import com.anthropic.core.ClientOptions;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.observation.ObservationRegistry;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.anthropic.http.okhttp.SpringAiAnthropicHttpClient;
 
@@ -91,7 +91,7 @@ public final class AnthropicSetup {
 
 	static final String DEFAULT_USER_AGENT = "spring-ai-anthropic-sdk";
 
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicSetup.class);
+	private static final Log logger = LogFactory.getLog(AnthropicSetup.class);
 
 	private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(60);
 
@@ -303,7 +303,9 @@ public final class AnthropicSetup {
 		if (baseUrl == null) {
 			String envBaseUrl = System.getenv(ANTHROPIC_BASE_URL);
 			if (envBaseUrl != null) {
-				logger.debug("Anthropic Base URL detected from environment variable {}.", ANTHROPIC_BASE_URL);
+				if (logger.isDebugEnabled()) {
+					logger.debug("Anthropic Base URL detected from environment variable " + ANTHROPIC_BASE_URL + ".");
+				}
 				return envBaseUrl;
 			}
 		}
@@ -317,13 +319,17 @@ public final class AnthropicSetup {
 	static @Nullable String detectApiKey() {
 		String apiKey = System.getenv(ANTHROPIC_API_KEY);
 		if (apiKey != null) {
-			logger.debug("Anthropic API key detected from environment variable {}.", ANTHROPIC_API_KEY);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Anthropic API key detected from environment variable " + ANTHROPIC_API_KEY + ".");
+			}
 			return apiKey;
 		}
 
 		String authToken = System.getenv(ANTHROPIC_AUTH_TOKEN);
 		if (authToken != null) {
-			logger.debug("Anthropic auth token detected from environment variable {}.", ANTHROPIC_AUTH_TOKEN);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Anthropic auth token detected from environment variable " + ANTHROPIC_AUTH_TOKEN + ".");
+			}
 			return authToken;
 		}
 

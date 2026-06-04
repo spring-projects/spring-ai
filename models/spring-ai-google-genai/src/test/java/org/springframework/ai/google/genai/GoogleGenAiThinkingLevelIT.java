@@ -25,8 +25,6 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
@@ -47,8 +45,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 @EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
 class GoogleGenAiThinkingLevelIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiThinkingLevelIT.class);
 
 	private Client genAiClient;
 
@@ -100,8 +96,6 @@ class GoogleGenAiThinkingLevelIT {
 			.hasMessageContaining(level.name())
 			.hasMessageContaining("not supported")
 			.hasMessageContaining("Gemini 3 Pro");
-
-		logger.info("Correctly rejected ThinkingLevel.{} for model {}", level, modelName);
 	}
 
 	@ParameterizedTest
@@ -119,8 +113,6 @@ class GoogleGenAiThinkingLevelIT {
 		assertThat(response).isNotNull();
 		assertThat(response.getResult()).isNotNull();
 		assertThat(response.getResult().getOutput().getText()).isNotBlank();
-		logger.info("Successfully used ThinkingLevel.{} with model {}. Response: {}", level, modelName,
-				response.getResult().getOutput().getText());
 	}
 
 	@ParameterizedTest
@@ -138,8 +130,6 @@ class GoogleGenAiThinkingLevelIT {
 		assertThat(response).isNotNull();
 		assertThat(response.getResult()).isNotNull();
 		assertThat(response.getResult().getOutput().getText()).isNotBlank();
-		logger.info("Successfully used ThinkingLevel.{} with model {}. Response: {}", level, modelName,
-				response.getResult().getOutput().getText());
 	}
 
 }

@@ -29,8 +29,8 @@ import com.google.cloud.aiplatform.v1.PredictResponse;
 import com.google.cloud.aiplatform.v1.PredictionServiceClient;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
@@ -69,7 +69,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
 
-	private static final Logger logger = LoggerFactory.getLogger(VertexAiMultimodalEmbeddingModel.class);
+	private static final Log logger = LogFactory.getLog(VertexAiMultimodalEmbeddingModel.class);
 
 	private static final MimeType TEXT_MIME_TYPE = MimeTypeUtils.parseMimeType("text/*");
 
@@ -179,7 +179,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 				instanceBuilder.text(media.getData().toString());
 				documentMetadata.put(ModalityType.TEXT,
 						new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, media.getData()));
-				if (StringUtils.hasText(documentText)) {
+				if (logger.isWarnEnabled() && StringUtils.hasText(documentText)) {
 					logger.warn("Media type String overrides the Document text content!");
 				}
 			}
@@ -189,8 +189,8 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 					documentMetadata.put(ModalityType.IMAGE,
 							new DocumentMetadata(document.getId(), media.getMimeType(), media.getData()));
 				}
-				else {
-					logger.warn("Unsupported image mime type: {}", media.getMimeType());
+				else if (logger.isWarnEnabled()) {
+					logger.warn("Unsupported image mime type: " + media.getMimeType());
 					throw new IllegalArgumentException("Unsupported image mime type: " + media.getMimeType());
 				}
 			}
@@ -205,7 +205,9 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 						new DocumentMetadata(document.getId(), media.getMimeType(), media.getData()));
 			}
 			else {
-				logger.warn("Unsupported media type: {}", media.getMimeType());
+				if (logger.isWarnEnabled()) {
+					logger.warn("Unsupported media type: " + media.getMimeType());
+				}
 				throw new IllegalArgumentException("Unsupported media type: " + media.getMimeType());
 			}
 		}

@@ -29,8 +29,6 @@ import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
@@ -73,8 +71,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".+")
 class GoogleGenAiChatModelIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiChatModelIT.class);
 
 	@Autowired
 	private GoogleGenAiChatModel chatModel;
@@ -319,7 +315,6 @@ class GoogleGenAiChatModelIT {
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
-		// logger.info("{}", actorsFilms);
 		assertThat(generationTextFromStream).isNotEmpty();
 	}
 
@@ -351,7 +346,7 @@ class GoogleGenAiChatModelIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
-		// logger.info("{}", actorsFilms);
+		// System.out.println("{}", actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -517,7 +512,6 @@ class GoogleGenAiChatModelIT {
 			.content();
 
 		assertThat(response).isNotEmpty();
-		logger.info("Response: {} in {} ms", response, System.currentTimeMillis() - start);
 	}
 
 	@Test
@@ -542,7 +536,6 @@ class GoogleGenAiChatModelIT {
 			.content();
 
 		assertThat(response).isNotEmpty();
-		logger.info("Response: {} in {} ms", response, System.currentTimeMillis() - start);
 	}
 
 	@Test
@@ -567,7 +560,6 @@ class GoogleGenAiChatModelIT {
 			.content();
 
 		assertThat(response).isNotEmpty();
-		logger.info("Response: {} in {} ms", response, System.currentTimeMillis() - start);
 	}
 
 	@Test
@@ -592,7 +584,6 @@ class GoogleGenAiChatModelIT {
 			.content();
 
 		assertThat(response).isNotEmpty();
-		logger.info("Response: {} in {} ms", response, System.currentTimeMillis() - start);
 	}
 
 	/**
@@ -638,7 +629,6 @@ class GoogleGenAiChatModelIT {
 		String response = chatClient.prompt().user("What is 2+2? Give a brief answer.").call().content();
 
 		assertThat(response).isNotEmpty();
-		logger.info("ThinkingLevel=LOW Response: {} in {} ms", response, System.currentTimeMillis() - start);
 	}
 
 	@Test
@@ -661,7 +651,6 @@ class GoogleGenAiChatModelIT {
 			.content();
 
 		assertThat(response).isNotEmpty();
-		logger.info("ThinkingLevel=HIGH Response: {} in {} ms", response, System.currentTimeMillis() - start);
 	}
 
 	/**

@@ -19,9 +19,9 @@ package org.springframework.ai.chat.metadata;
 import java.util.Map;
 import java.util.Objects;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.model.AbstractResponseMetadata;
 import org.springframework.ai.model.ResponseMetadata;
@@ -38,7 +38,7 @@ import org.springframework.util.Assert;
  */
 public class ChatResponseMetadata extends AbstractResponseMetadata implements ResponseMetadata {
 
-	private static final Logger logger = LoggerFactory.getLogger(ChatResponseMetadata.class);
+	private static final Log logger = LogFactory.getLog(ChatResponseMetadata.class);
 
 	private String id = ""; // Set to blank to preserve backward compat with previous
 
@@ -140,7 +140,9 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 				this.chatResponseMetadata.map.put(key, value);
 			}
 			else {
-				logger.debug("Ignore null value for key [{}]", key);
+				if (logger.isDebugEnabled()) {
+					logger.debug("Ignore null value for key [" + key + "]");
+				}
 			}
 			return this;
 		}

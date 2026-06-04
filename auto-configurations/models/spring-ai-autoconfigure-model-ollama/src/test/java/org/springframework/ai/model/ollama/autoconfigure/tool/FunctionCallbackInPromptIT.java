@@ -21,8 +21,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -42,8 +40,6 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class FunctionCallbackInPromptIT extends BaseOllamaIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(FunctionCallbackInPromptIT.class);
 
 	private static final String MODEL_NAME = OllamaModel.QWEN_2_5_3B.getName();
 
@@ -87,8 +83,6 @@ class FunctionCallbackInPromptIT extends BaseOllamaIT {
 				.call()
 				.chatResponse();
 
-			logger.info("Response: {}", response);
-
 			var result = response.getResult();
 			assertThat(result).isNotNull();
 			assertThat(result.getOutput().getText()).contains("30", "10", "15");
@@ -124,7 +118,6 @@ class FunctionCallbackInPromptIT extends BaseOllamaIT {
 				.map(Generation::getOutput)
 				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
-			logger.info("Response: {}", content);
 
 			assertThat(content).containsAnyOf("30.0", "30");
 			assertThat(content).containsAnyOf("10.0", "10");

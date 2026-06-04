@@ -34,8 +34,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
@@ -87,8 +85,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 class AnthropicChatModelIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatModelIT.class);
-
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
 
@@ -132,7 +128,6 @@ class AnthropicChatModelIT {
 		Generation generation = response.getResults().get(0);
 		assertThat(generation.getOutput().getText()).contains("Blackbeard");
 		assertThat(generation.getMetadata().getFinishReason()).isEqualTo("end_turn");
-		logger.info(response.toString());
 	}
 
 	@Test
@@ -215,7 +210,6 @@ class AnthropicChatModelIT {
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = beanOutputConverter.convert(generation.getOutput().getText());
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -230,8 +224,6 @@ class AnthropicChatModelIT {
 				.call()
 				.chatResponse();
 		// @formatter:on
-
-		logger.info(response.toString());
 		validateChatResponseMetadata(response, model);
 		validateRateLimitMetadata(response);
 	}
@@ -252,7 +244,6 @@ class AnthropicChatModelIT {
 			.reduce("", String::concat);
 
 		assertThat(fullResponse).isNotEmpty();
-		logger.info("Streaming response: {}", fullResponse);
 	}
 
 	@Test
@@ -273,9 +264,6 @@ class AnthropicChatModelIT {
 		assertThat(lastResponseWithUsage).isNotNull();
 
 		var usage = lastResponseWithUsage.getMetadata().getUsage();
-		logger.info("Streaming usage - Input: {}, Output: {}, Total: {}", usage.getPromptTokens(),
-				usage.getCompletionTokens(), usage.getTotalTokens());
-
 		// Verify both input and output tokens are captured
 		assertThat(usage.getPromptTokens()).as("Input tokens should be captured from message_start").isPositive();
 		assertThat(usage.getCompletionTokens()).as("Output tokens should be captured from message_delta").isPositive();
@@ -311,9 +299,6 @@ class AnthropicChatModelIT {
 			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
 			response = this.chatModel.call(prompt);
 		}
-
-		logger.info("Response: {}", response);
-
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isGreaterThan(100);
 	}
@@ -347,7 +332,6 @@ class AnthropicChatModelIT {
 		}
 
 		String content = aggregatedRef.get().getResult().getOutput().getText();
-		logger.info("Streaming Response: {}", content);
 		assertThat(content).contains("30", "10", "15");
 	}
 
@@ -374,9 +358,6 @@ class AnthropicChatModelIT {
 					&& cr.getMetadata().getUsage().getTotalTokens() > 0)
 			.reduce((first, second) -> second)
 			.orElse(null);
-
-		logger.info("Streaming Response with usage: {}", lastResponse);
-
 		assertThat(lastResponse).isNotNull();
 		Usage usage = lastResponse.getMetadata().getUsage();
 		assertThat(usage).isNotNull();
@@ -411,7 +392,6 @@ class AnthropicChatModelIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = beanOutputConverter.convert(generationTextFromStream);
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -427,8 +407,6 @@ class AnthropicChatModelIT {
 				.chatResponse()
 				.blockLast();
 		// @formatter:on
-
-		logger.info(response.toString());
 		validateChatResponseMetadata(response, model);
 	}
 
@@ -449,8 +427,6 @@ class AnthropicChatModelIT {
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
-
-		logger.info("Response: {}", response);
 		for (Generation generation : response.getResults()) {
 			AssistantMessage message = generation.getOutput();
 			if (!message.getToolCalls().isEmpty()) {
@@ -481,8 +457,6 @@ class AnthropicChatModelIT {
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
-
-		logger.info("Response: {}", response);
 		assertThat(response.getResults()).isNotNull();
 		// When tool choice is "any", the model MUST use at least one tool
 		boolean hasToolCalls = response.getResults()
@@ -516,8 +490,6 @@ class AnthropicChatModelIT {
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
-
-		logger.info("Response: {}", response);
 		assertThat(response.getResults()).isNotNull();
 		// When tool choice is a specific tool, the model MUST use that specific tool
 		List<AssistantMessage.ToolCall> allToolCalls = response.getResults()
@@ -546,8 +518,6 @@ class AnthropicChatModelIT {
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
-
-		logger.info("Response: {}", response);
 		assertThat(response.getResults()).isNotNull();
 		// When tool choice is "none", the model MUST NOT use any tools
 		List<AssistantMessage.ToolCall> allToolCalls = response.getResults()
@@ -567,8 +537,6 @@ class AnthropicChatModelIT {
 			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
-
-		logger.info("Response: {}", response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
 				"fruit");
 	}
@@ -583,8 +551,6 @@ class AnthropicChatModelIT {
 			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
-
-		logger.info("Response: {}", response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Spring AI", "portable API");
 	}
 
@@ -646,8 +612,6 @@ class AnthropicChatModelIT {
 			.map(AssistantMessage::getText)
 			.filter(text -> text != null && !text.isBlank())
 			.collect(Collectors.joining());
-
-		logger.info("Thinking streaming response: {}", content);
 		assertThat(content).isNotBlank();
 
 		// Verify signature was captured in the stream
@@ -860,9 +824,8 @@ class AnthropicChatModelIT {
 
 		assertThat(response).isNotNull();
 		String text = response.getResult().getOutput().getText();
-		assertThat(text).isNotEmpty();
-		logger.info("Structured output response: {}", text);
-		// The response should contain JSON with the expected fields
+		assertThat(text).isNotEmpty(); // The response should contain JSON with the
+										// expected fields
 		assertThat(text).contains("name");
 		assertThat(text).contains("capital");
 	}
@@ -892,7 +855,6 @@ class AnthropicChatModelIT {
 		assertThat(response).isNotNull();
 		String text = response.getResult().getOutput().getText();
 		assertThat(text).isNotEmpty();
-		logger.info("Structured output with effort response: {}", text);
 		assertThat(text).contains("answer");
 	}
 
@@ -907,8 +869,6 @@ class AnthropicChatModelIT {
 			.call(new Prompt("What is the latest released version of Spring AI?", options));
 
 		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
-		logger.info("Web search response: {}", response.getResult().getOutput().getText());
-
 		// Verify web search results are surfaced in metadata
 		List<AnthropicWebSearchResult> results = (List<AnthropicWebSearchResult>) response.getMetadata()
 			.get("web-search-results");
@@ -917,12 +877,8 @@ class AnthropicChatModelIT {
 		assertThat(results.get(0).title()).isNotEmpty();
 
 		// Verify web search citations if present
-		List<Citation> citations = (List<Citation>) response.getMetadata().get("citations");
+		List<Citation> citations = response.getMetadata().get("citations");
 		if (citations != null && !citations.isEmpty()) {
-			logger.info("Web search citations received: {}", citations.size());
-			citations.stream()
-				.filter(c -> c.getType() == Citation.LocationType.WEB_SEARCH_RESULT_LOCATION)
-				.forEach(c -> logger.info("Web search citation: url={}, title={}", c.getUrl(), c.getDocumentTitle()));
 			assertThat(citations).anyMatch(c -> c.getType() == Citation.LocationType.WEB_SEARCH_RESULT_LOCATION
 					&& c.getUrl() != null && !c.getUrl().isEmpty());
 		}

@@ -24,8 +24,6 @@ import java.util.function.Function;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mistralai.api.MistralAiApi;
@@ -63,8 +61,6 @@ class PaymentStatusFunctionCallingIT {
 
 	private static final Map<String, Function<Transaction, ?>> FUNCTIONS = Map.of("retrieve_payment_status",
 			new RetrievePaymentStatus(), "retrieve_payment_date", new RetrievePaymentDate());
-
-	private final Logger logger = LoggerFactory.getLogger(PaymentStatusFunctionCallingIT.class);
 
 	private static <T> T jsonToObject(String json, Class<T> targetClass) {
 		return JsonMapper.shared().readValue(json, targetClass);
@@ -133,7 +129,6 @@ class PaymentStatusFunctionCallingIT {
 			.chatCompletionEntity(new ChatCompletionRequest(messages, MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()));
 
 		var responseContent = response.getBody().choices().get(0).message().extractTextContent();
-		logger.info("Final response: {}", responseContent);
 
 		assertThat(responseContent).containsIgnoringCase("T1001").containsIgnoringCase("Paid");
 	}

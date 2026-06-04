@@ -25,8 +25,6 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -59,8 +57,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @RequiresAwsCredentials
 public class BedrockNovaChatClientIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(BedrockNovaChatClientIT.class);
-
 	@Autowired
 	ChatModel chatModel;
 
@@ -74,8 +70,6 @@ public class BedrockNovaChatClientIT {
 				.media(Media.Format.DOC_PDF, new ClassPathResource("/spring-ai-reference-overview.pdf")))
 			.call()
 			.content();
-
-		logger.info(response);
 		assertThat(response).containsAnyOf("Spring AI", "portable API");
 	}
 
@@ -88,8 +82,6 @@ public class BedrockNovaChatClientIT {
 				.media(Media.Format.IMAGE_PNG, new ClassPathResource("/test.png")))
 			.call()
 			.content();
-
-		logger.info(response);
 		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand", "fruit", "fruits");
 	}
 
@@ -108,8 +100,6 @@ public class BedrockNovaChatClientIT {
 				.media(Media.Format.VIDEO_MP4, new ClassPathResource("/test.video.mp4")))
 			.call()
 			.content();
-
-		logger.info(response);
 
 		// Convert response to lowercase for case-insensitive matching
 		String lowerResponse = response.toLowerCase();
@@ -167,9 +157,6 @@ public class BedrockNovaChatClientIT {
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
-
 		assertThat(response).contains("30", "10", "15");
 	}
 

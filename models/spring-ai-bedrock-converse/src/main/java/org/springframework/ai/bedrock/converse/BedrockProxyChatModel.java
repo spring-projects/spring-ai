@@ -29,9 +29,9 @@ import java.util.Map;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
@@ -143,7 +143,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
 
-	private static final Logger logger = LoggerFactory.getLogger(BedrockProxyChatModel.class);
+	private static final Log logger = LogFactory.getLog(BedrockProxyChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
@@ -221,7 +221,9 @@ public class BedrockProxyChatModel implements ChatModel {
 
 				ConverseResponse converseResponse = this.bedrockRuntimeClient.converse(converseRequest);
 
-				logger.debug("ConverseResponse: {}", converseResponse);
+				if (logger.isDebugEnabled()) {
+					logger.debug("ConverseResponse: " + converseResponse);
+				}
 
 				var response = this.toChatResponse(converseResponse, perviousChatResponse);
 
@@ -267,8 +269,8 @@ public class BedrockProxyChatModel implements ChatModel {
 				}
 			}
 			if (logger.isDebugEnabled()) {
-				logger.debug("CONVERSATION_HISTORY caching: lastUserMessageIndex={}, totalMessages={}",
-						lastUserMessageIndex, allNonSystemMessages.size());
+				logger.debug("CONVERSATION_HISTORY caching: lastUserMessageIndex=" + lastUserMessageIndex
+						+ ", totalMessages=" + allNonSystemMessages.size());
 			}
 		}
 
@@ -352,7 +354,7 @@ public class BedrockProxyChatModel implements ChatModel {
 						|| cacheOptions.getStrategy() == BedrockCacheStrategy.SYSTEM_AND_TOOLS);
 
 		if (logger.isDebugEnabled() && cacheOptions != null) {
-			logger.debug("Cache strategy: {}, shouldCacheSystem: {}", cacheOptions.getStrategy(), shouldCacheSystem);
+			logger.debug("Cache strategy: " + cacheOptions.getStrategy() + ", shouldCacheSystem: " + shouldCacheSystem);
 		}
 
 		List<org.springframework.ai.chat.messages.Message> systemMessageList = prompt.getInstructions()

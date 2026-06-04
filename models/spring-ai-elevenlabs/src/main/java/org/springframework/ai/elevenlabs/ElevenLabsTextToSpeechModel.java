@@ -19,9 +19,9 @@ package org.springframework.ai.elevenlabs;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.audio.tts.Speech;
@@ -43,7 +43,7 @@ import org.springframework.util.MultiValueMap;
  */
 public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final Log logger = LogFactory.getLog(getClass());
 
 	private final ElevenLabsApi elevenLabsApi;
 
@@ -78,7 +78,9 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 			var response = this.elevenLabsApi.textToSpeech(requestContext.request, requestContext.voiceId,
 					requestContext.queryParameters);
 			if (response.getBody() == null) {
-				logger.warn("No speech response returned for request: {}", requestContext.request);
+				if (logger.isWarnEnabled()) {
+					logger.warn("No speech response returned for request: " + requestContext.request);
+				}
 				return new byte[0];
 			}
 			return response.getBody();

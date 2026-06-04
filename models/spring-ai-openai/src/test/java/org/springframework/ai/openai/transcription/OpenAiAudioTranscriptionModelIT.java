@@ -19,8 +19,6 @@ package org.springframework.ai.openai.transcription;
 import com.openai.models.audio.AudioResponseFormat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
@@ -45,8 +43,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiAudioTranscriptionModelIT {
 
-	private final Logger logger = LoggerFactory.getLogger(OpenAiAudioTranscriptionModelIT.class);
-
 	@Autowired
 	private OpenAiAudioTranscriptionModel transcriptionModel;
 
@@ -57,7 +53,6 @@ public class OpenAiAudioTranscriptionModelIT {
 
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResult().getOutput()).isNotBlank();
-		logger.info("Transcription: {}", response.getResult().getOutput());
 	}
 
 	@Test
@@ -65,7 +60,6 @@ public class OpenAiAudioTranscriptionModelIT {
 		String text = this.transcriptionModel.transcribe(new ClassPathResource("/speech.flac"));
 
 		assertThat(text).isNotBlank();
-		logger.info("Transcription: {}", text);
 	}
 
 	@Test
@@ -81,7 +75,6 @@ public class OpenAiAudioTranscriptionModelIT {
 
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResult().getOutput()).isNotBlank();
-		logger.info("Transcription with options: {}", response.getResult().getOutput());
 	}
 
 	@Test
@@ -93,7 +86,6 @@ public class OpenAiAudioTranscriptionModelIT {
 		String text = this.transcriptionModel.transcribe(new ClassPathResource("/speech.flac"), options);
 
 		assertThat(text).isNotBlank();
-		logger.info("Verbose transcription: {}", text);
 	}
 
 	@Test
@@ -108,7 +100,6 @@ public class OpenAiAudioTranscriptionModelIT {
 		String text = this.transcriptionModel.transcribe(new ClassPathResource("/speech.flac"), options);
 
 		assertThat(text).isNotBlank();
-		logger.info("Transcription with options: {}", text);
 	}
 
 	@Test
@@ -125,7 +116,6 @@ public class OpenAiAudioTranscriptionModelIT {
 
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResult().getOutput()).isNotBlank();
-		logger.info("VTT transcription: {}", response.getResult().getOutput());
 	}
 
 }

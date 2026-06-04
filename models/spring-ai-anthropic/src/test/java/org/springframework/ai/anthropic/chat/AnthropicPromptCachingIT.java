@@ -25,8 +25,6 @@ import com.anthropic.models.messages.Model;
 import com.anthropic.models.messages.Usage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.anthropic.AnthropicCacheOptions;
 import org.springframework.ai.anthropic.AnthropicCacheStrategy;
@@ -63,8 +61,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(classes = AnthropicTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 class AnthropicPromptCachingIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicPromptCachingIT.class);
 
 	@Autowired
 	private AnthropicChatModel chatModel;
@@ -108,8 +104,6 @@ class AnthropicPromptCachingIT {
 
 		assertThat(response).isNotNull();
 		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
-		logger.info("System-only cache response: {}", response.getResult().getOutput().getText());
-
 		Usage usage = getSdkUsage(response);
 		assertThat(usage).isNotNull();
 
@@ -131,8 +125,6 @@ class AnthropicPromptCachingIT {
 		if (cacheRead > 0) {
 			assertThat(springUsage.getCacheReadInputTokens()).isEqualTo(cacheRead);
 		}
-
-		logger.info("Cache creation tokens: {}, Cache read tokens: {}", cacheCreation, cacheRead);
 	}
 
 	@Test
@@ -167,8 +159,6 @@ class AnthropicPromptCachingIT {
 
 		assertThat(response).isNotNull();
 		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
-		logger.info("System and tools cache response: {}", response.getResult().getOutput().getText());
-
 		Usage usage = getSdkUsage(response);
 		if (usage != null) {
 			long cacheCreation = usage.cacheCreationInputTokens().orElse(0L);
@@ -177,10 +167,8 @@ class AnthropicPromptCachingIT {
 				.withFailMessage("Expected either cache creation or cache read tokens, but got creation=%d, read=%d",
 						cacheCreation, cacheRead)
 				.isTrue();
-			logger.info("Cache creation tokens: {}, Cache read tokens: {}", cacheCreation, cacheRead);
 		}
 		else {
-			logger.debug("Native usage metadata not available for tool-based interactions - this is expected");
 			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 		}
 	}
@@ -211,9 +199,6 @@ class AnthropicPromptCachingIT {
 		Usage usage1 = getSdkUsage(turn1);
 		assertThat(usage1).isNotNull();
 		long turn1Creation = usage1.cacheCreationInputTokens().orElse(0L);
-		logger.info("Turn 1 - Cache creation: {}, Cache read: {}", turn1Creation,
-				usage1.cacheReadInputTokens().orElse(0L));
-
 		// Turn 2
 		conversationHistory.add(new UserMessage("How does quantum entanglement work?"));
 		ChatResponse turn2 = this.chatModel.call(new Prompt(conversationHistory, options));
@@ -223,9 +208,6 @@ class AnthropicPromptCachingIT {
 		Usage usage2 = getSdkUsage(turn2);
 		assertThat(usage2).isNotNull();
 		long turn2Read = usage2.cacheReadInputTokens().orElse(0L);
-		logger.info("Turn 2 - Cache creation: {}, Cache read: {}", usage2.cacheCreationInputTokens().orElse(0L),
-				turn2Read);
-
 		// If caching started in turn 1, turn 2 should see cache reads
 		if (turn1Creation > 0) {
 			assertThat(turn2Read).as("Turn 2 should read cache from Turn 1").isGreaterThan(0);
@@ -276,8 +258,6 @@ class AnthropicPromptCachingIT {
 
 		assertThat(response).isNotNull();
 		assertThat(response.getResult().getOutput().getText()).contains("4");
-		logger.info("Extended TTL cache response: {}", response.getResult().getOutput().getText());
-
 		Usage usage = getSdkUsage(response);
 		assertThat(usage).isNotNull();
 		long cacheCreation = usage.cacheCreationInputTokens().orElse(0L);
@@ -286,8 +266,6 @@ class AnthropicPromptCachingIT {
 			.withFailMessage("Expected either cache creation or cache read tokens, but got creation=%d, read=%d",
 					cacheCreation, cacheRead)
 			.isTrue();
-
-		logger.info("Extended TTL - Cache creation: {}, Cache read: {}", cacheCreation, cacheRead);
 	}
 
 	@Test
@@ -377,15 +355,6 @@ class AnthropicPromptCachingIT {
 			assertThat(usage4.cacheReadInputTokens().orElse(0L)).as("Turn 4 should read cache").isGreaterThan(0);
 		}
 
-		// Summary
-		logger.info("Turn 1 - Created: {}, Read: {}", usage1.cacheCreationInputTokens().orElse(0L),
-				usage1.cacheReadInputTokens().orElse(0L));
-		logger.info("Turn 2 - Created: {}, Read: {}", usage2.cacheCreationInputTokens().orElse(0L),
-				usage2.cacheReadInputTokens().orElse(0L));
-		logger.info("Turn 3 - Created: {}, Read: {}", usage3.cacheCreationInputTokens().orElse(0L),
-				usage3.cacheReadInputTokens().orElse(0L));
-		logger.info("Turn 4 - Created: {}, Read: {}", usage4.cacheCreationInputTokens().orElse(0L),
-				usage4.cacheReadInputTokens().orElse(0L));
 	}
 
 	@Test
@@ -458,9 +427,6 @@ class AnthropicPromptCachingIT {
 		assertThat(secondUsage).isNotNull();
 		long secondRead = secondUsage.cacheReadInputTokens().orElse(0L);
 		assertThat(secondRead).as("Second call should read the cached tool result").isGreaterThan(0);
-
-		logger.info("Tool result caching - call 1 creation: {}, read: {}; call 2 read: {}", firstCreation, firstRead,
-				secondRead);
 	}
 
 	@Test
@@ -484,8 +450,6 @@ class AnthropicPromptCachingIT {
 
 		assertThat(response).isNotNull();
 		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
-		logger.info("Multi-block system cache response: {}", response.getResult().getOutput().getText());
-
 		Usage usage = getSdkUsage(response);
 		assertThat(usage).isNotNull();
 		long cacheCreation = usage.cacheCreationInputTokens().orElse(0L);
@@ -494,8 +458,6 @@ class AnthropicPromptCachingIT {
 			.withFailMessage("Expected either cache creation or cache read tokens, but got creation=%d, read=%d",
 					cacheCreation, cacheRead)
 			.isTrue();
-
-		logger.info("Multi-block - Cache creation: {}, Cache read: {}", cacheCreation, cacheRead);
 	}
 
 }

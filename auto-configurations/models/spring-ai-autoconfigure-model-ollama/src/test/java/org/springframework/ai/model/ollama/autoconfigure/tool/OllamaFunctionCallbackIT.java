@@ -22,8 +22,6 @@ import java.util.stream.Collectors;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -49,8 +47,6 @@ import org.springframework.context.annotation.Configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class OllamaFunctionCallbackIT extends BaseOllamaIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(OllamaFunctionCallbackIT.class);
 
 	private static final String MODEL_NAME = OllamaModel.QWEN_2_5_3B.getName();
 
@@ -88,7 +84,6 @@ class OllamaFunctionCallbackIT extends BaseOllamaIT {
 			UserMessage userMessage = new UserMessage("What is 2+2");
 
 			var response = chatClient.prompt(new Prompt(userMessage)).call().content();
-			logger.info("Response: {}", response);
 
 			assertThat(response).contains("4");
 
@@ -114,8 +109,6 @@ class OllamaFunctionCallbackIT extends BaseOllamaIT {
 				.prompt(new Prompt(List.of(userMessage), options))
 				.call()
 				.chatResponse();
-
-			logger.info("Response: {}", response);
 
 			var result = response.getResult();
 			assertThat(result).isNotNull();
@@ -152,7 +145,6 @@ class OllamaFunctionCallbackIT extends BaseOllamaIT {
 				.map(Generation::getOutput)
 				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
-			logger.info("Response: {}", content);
 
 			assertThat(content).contains("30", "10", "15");
 		});

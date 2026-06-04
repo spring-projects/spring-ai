@@ -21,9 +21,9 @@ import java.util.Map;
 import java.util.Objects;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
@@ -58,7 +58,7 @@ import org.springframework.util.Assert;
  */
 public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(MistralAiEmbeddingModel.class);
+	private static final Log logger = LogFactory.getLog(MistralAiEmbeddingModel.class);
 
 	/**
 	 * Known embedding dimensions for Mistral AI models. Maps model names to their
@@ -127,7 +127,9 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 					.getBody();
 
 				if (apiEmbeddingResponse == null) {
-					logger.warn("No embeddings returned for request: {}", request);
+					if (logger.isWarnEnabled()) {
+						logger.warn("No embeddings returned for request: " + request);
+					}
 					return new EmbeddingResponse(List.of());
 				}
 

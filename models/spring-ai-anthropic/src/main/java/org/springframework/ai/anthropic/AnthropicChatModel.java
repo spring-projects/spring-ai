@@ -68,9 +68,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
@@ -141,7 +141,7 @@ import org.springframework.util.MimeType;
  */
 public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatModel.class);
+	private static final Log logger = LogFactory.getLog(AnthropicChatModel.class);
 
 	private static final String DEFAULT_MODEL = AnthropicChatOptions.DEFAULT_MODEL;
 
@@ -547,7 +547,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 				List<ContentBlock> contentBlocks = message.content();
 				if (contentBlocks.isEmpty()) {
-					logger.warn("No content blocks returned for prompt: {}", prompt);
+					if (logger.isWarnEnabled()) {
+						logger.warn("No content blocks returned for prompt: " + prompt);
+					}
 					return new ChatResponse(List.of());
 				}
 
@@ -1013,7 +1015,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 			else if (block.isContainerUpload() || block.isServerToolUse() || block.isBashCodeExecutionToolResult()
 					|| block.isTextEditorCodeExecutionToolResult() || block.isCodeExecutionToolResult()) {
-				logger.warn("Unsupported content block type: {}", block);
+				if (logger.isWarnEnabled()) {
+					logger.warn("Unsupported content block type: " + block);
+				}
 			}
 		}
 
@@ -1212,7 +1216,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				}
 			}
 			catch (Exception e) {
-				logger.warn("Failed to parse tool arguments JSON: {}", argumentsJson, e);
+				if (logger.isWarnEnabled()) {
+					logger.warn("Failed to parse tool arguments JSON: " + argumentsJson, e);
+				}
 			}
 		}
 		return inputBuilder.build();

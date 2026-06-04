@@ -25,9 +25,9 @@ import com.networknt.schema.Error;
 import com.networknt.schema.Schema;
 import com.networknt.schema.SchemaRegistry;
 import com.networknt.schema.SpecificationVersion;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
@@ -61,7 +61,7 @@ import org.springframework.util.StringUtils;
  */
 public final class StructuredOutputValidationAdvisor implements CallAdvisor, StreamAdvisor {
 
-	private static final Logger logger = LoggerFactory.getLogger(StructuredOutputValidationAdvisor.class);
+	private static final Log logger = LogFactory.getLog(StructuredOutputValidationAdvisor.class);
 
 	private final int advisorOrder;
 
@@ -83,7 +83,9 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		this.advisorOrder = advisorOrder;
 		this.jsonMapper = jsonMapper;
 
-		logger.debug("Generated JSON Schema:\n{}", outputJsonSchema);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Generated JSON Schema:\n" + outputJsonSchema);
+		}
 
 		JsonNode schemaNode;
 		try {
@@ -149,7 +151,9 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 					// However, this might lead to confusion and more complex prompts.
 					// Instead, we rely on the LLM to generate a new output based on the
 					// validation error.
-					logger.warn("JSON validation failed: {}", validationResponse);
+					if (logger.isWarnEnabled()) {
+						logger.warn("JSON validation failed: " + validationResponse);
+					}
 
 					String validationErrorMessage = "Output JSON validation failed because of: "
 							+ validationResponse.errorMessage();
@@ -182,7 +186,9 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		// TODO: should we consider validation for multiple results?
 		String json = chatClientResponse.chatResponse().getResult().getOutput().getText();
 
-		logger.debug("Validating JSON output against schema. Attempts left: {}", this.maxRepeatAttempts);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Validating JSON output against schema. Attempts left: " + this.maxRepeatAttempts);
+		}
 
 		return validateJsonText(json);
 	}

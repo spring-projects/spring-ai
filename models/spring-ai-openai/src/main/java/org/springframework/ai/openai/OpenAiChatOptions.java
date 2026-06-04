@@ -29,9 +29,9 @@ import com.openai.azure.AzureOpenAIServiceVersion;
 import com.openai.credential.Credential;
 import com.openai.models.ChatModel;
 import com.openai.models.chat.completions.ChatCompletionAudioParam;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.ApiKey;
@@ -55,7 +55,7 @@ import org.springframework.ai.tool.ToolCallback;
  */
 public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatOptions.class);
+	private static final Log logger = LogFactory.getLog(OpenAiChatOptions.class);
 
 	public static final String DEFAULT_CHAT_MODEL = ChatModel.GPT_5_MINI.asString();
 
@@ -800,10 +800,12 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		@Override
 		public B maxTokens(@Nullable Integer maxTokens) {
 			if (this.maxCompletionTokens != null) {
-				logger.warn(
-						"Both maxTokens and maxCompletionTokens are set. OpenAI API does not support setting both parameters simultaneously. "
-								+ "As maxToken is deprecated, we will ignore it and use maxCompletionToken ({}).",
-						this.maxCompletionTokens);
+				if (logger.isWarnEnabled()) {
+					logger.warn(
+							"Both maxTokens and maxCompletionTokens are set. OpenAI API does not support setting both parameters simultaneously. "
+									+ "As maxToken is deprecated, we will ignore it and use maxCompletionToken ("
+									+ this.maxCompletionTokens + ").");
+				}
 			}
 			else {
 				this.maxTokens = maxTokens;
@@ -909,10 +911,12 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 		public B maxCompletionTokens(@Nullable Integer maxCompletionTokens) {
 			if (maxCompletionTokens != null && this.maxTokens != null) {
-				logger.warn(
-						"Both maxTokens and maxCompletionTokens are set. OpenAI API does not support setting both parameters simultaneously. "
-								+ "As maxToken is deprecated, we will use maxCompletionToken ({}).",
-						maxCompletionTokens);
+				if (logger.isWarnEnabled()) {
+					logger.warn(
+							"Both maxTokens and maxCompletionTokens are set. OpenAI API does not support setting both parameters simultaneously. "
+									+ "As maxToken is deprecated, we will use maxCompletionToken ("
+									+ maxCompletionTokens + ").");
+				}
 				this.maxTokens(null);
 			}
 			this.maxCompletionTokens = maxCompletionTokens;

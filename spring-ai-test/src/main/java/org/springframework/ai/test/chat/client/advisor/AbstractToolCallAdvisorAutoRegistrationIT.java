@@ -25,8 +25,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.AdvisorParams;
@@ -66,8 +64,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public abstract class AbstractToolCallAdvisorAutoRegistrationIT {
 
-	protected final Logger logger = LoggerFactory.getLogger(getClass());
-
 	protected abstract ChatModel getChatModel();
 
 	protected ToolCallback createWeatherToolCallback() {
@@ -105,7 +101,6 @@ public abstract class AbstractToolCallAdvisorAutoRegistrationIT {
 				.call()
 				.content();
 
-			logger.info("Response: {}", response);
 			assertThat(response).contains("30", "10", "15");
 		}
 
@@ -121,7 +116,6 @@ public abstract class AbstractToolCallAdvisorAutoRegistrationIT {
 				.call()
 				.content();
 
-			logger.info("Response: {}", response);
 			assertThat(response).contains("30", "10", "15");
 		}
 
@@ -135,7 +129,6 @@ public abstract class AbstractToolCallAdvisorAutoRegistrationIT {
 				.call()
 				.content();
 
-			logger.info("Response: {}", response);
 			assertThat(response).contains("30", "10", "15");
 		}
 
@@ -152,7 +145,6 @@ public abstract class AbstractToolCallAdvisorAutoRegistrationIT {
 				.call()
 				.content();
 
-			logger.info("Response: {}", response);
 			assertThat(response).contains("30", "10", "15");
 		}
 
@@ -165,7 +157,6 @@ public abstract class AbstractToolCallAdvisorAutoRegistrationIT {
 				.call()
 				.content();
 
-			logger.info("Response: {}", response);
 			assertThat(response).contains("temp");
 		}
 
@@ -261,7 +252,6 @@ public abstract class AbstractToolCallAdvisorAutoRegistrationIT {
 				.stream()
 				.content());
 
-			logger.info("Response: {}", content);
 			assertThat(content).contains("30", "10", "15");
 		}
 
@@ -277,7 +267,6 @@ public abstract class AbstractToolCallAdvisorAutoRegistrationIT {
 				.stream()
 				.content());
 
-			logger.info("Response: {}", content);
 			assertThat(content).contains("30", "10", "15");
 		}
 
@@ -290,7 +279,6 @@ public abstract class AbstractToolCallAdvisorAutoRegistrationIT {
 				.stream()
 				.content());
 
-			logger.info("Response: {}", content);
 			assertThat(content).contains("temp");
 		}
 

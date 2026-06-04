@@ -20,8 +20,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
@@ -42,8 +40,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Sebastien Deleuze
  */
 public class OpenAiFunctionCallback2IT {
-
-	private final Logger logger = LoggerFactory.getLogger(OpenAiFunctionCallback2IT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"),
@@ -71,8 +67,6 @@ public class OpenAiFunctionCallback2IT {
 				.call().content();
 			// @formatter:on
 
-			logger.info("Response: {}", content);
-
 			assertThat(content).contains("30", "10", "15");
 		});
 	}
@@ -93,8 +87,6 @@ public class OpenAiFunctionCallback2IT {
 				.stream().content()
 				.collectList().block().stream().collect(Collectors.joining());
 			// @formatter:on
-
-			logger.info("Response: {}", content);
 
 			assertThat(content).contains("30", "10", "15");
 		});

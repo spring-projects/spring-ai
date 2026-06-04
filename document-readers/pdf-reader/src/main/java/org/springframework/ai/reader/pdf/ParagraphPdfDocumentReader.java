@@ -20,11 +20,11 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
@@ -63,7 +63,7 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 
 	protected final PDDocument document;
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final Log logger = LogFactory.getLog(getClass());
 
 	private final ParagraphManager paragraphTextExtractor;
 
@@ -173,8 +173,10 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 	public String getTextBetweenParagraphs(Paragraph fromParagraph, Paragraph toParagraph) {
 
 		if (fromParagraph.startPageNumber() < 1) {
-			logger.warn("Skipping paragraph titled '{}' because it has an invalid start page number: {}",
-					fromParagraph.title(), fromParagraph.startPageNumber());
+			if (logger.isWarnEnabled()) {
+				logger.warn("Skipping paragraph titled '" + fromParagraph.title()
+						+ "' because it has an invalid start page number: " + fromParagraph.startPageNumber());
+			}
 			return "";
 		}
 

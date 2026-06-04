@@ -25,8 +25,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -48,8 +46,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 @ActiveProfiles("logging-test")
 class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatClientMultipleFunctionCallsIT.class);
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemTextResource;
@@ -77,8 +73,6 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
-
 		// TODO figure out a better negative assertion here.
 		// assertThat(response).doesNotContain("30", "10", "15");
 
@@ -93,8 +87,6 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
-
 		assertThat(response).contains("30", "10", "15");
 
 		// @formatter:off
@@ -103,8 +95,6 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
 
 		// TODO figure out a better negative assertion here.
 		// assertThat(response).doesNotContain("30", "10", "15");
@@ -124,8 +114,6 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 			.build()
 			.prompt().call().content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -167,8 +155,6 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 			.build()
 			.prompt().call().content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -212,8 +198,6 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 			.call().content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
-
 		assertThat(response).contains("30", "10", "15");
 	}
 
@@ -232,7 +216,6 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 		// @formatter:on
 
 		String content = response.collectList().block().stream().collect(Collectors.joining());
-		logger.info("Response: {}", content);
 
 		assertThat(content).contains("30", "10", "15");
 

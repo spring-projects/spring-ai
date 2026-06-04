@@ -47,9 +47,9 @@ import com.google.genai.types.Tool;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.json.JsonMapper;
@@ -146,7 +146,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final Log logger = LogFactory.getLog(getClass());
 
 	private final Client genAiClient;
 
@@ -762,7 +762,9 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				&& requestOptions.getCachedContentName() != null) {
 			// Set the cached content name in the config
 			configBuilder.cachedContent(requestOptions.getCachedContentName());
-			logger.debug("Using cached content: {}", requestOptions.getCachedContentName());
+			if (logger.isDebugEnabled()) {
+				logger.debug("Using cached content: " + requestOptions.getCachedContentName());
+			}
 		}
 
 		// Handle system instruction

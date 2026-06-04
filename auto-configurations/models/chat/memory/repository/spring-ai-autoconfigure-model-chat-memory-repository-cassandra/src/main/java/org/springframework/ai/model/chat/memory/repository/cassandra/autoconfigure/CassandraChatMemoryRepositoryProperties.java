@@ -18,9 +18,9 @@ package org.springframework.ai.model.chat.memory.repository.cassandra.autoconfig
 
 import java.time.Duration;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.memory.repository.cassandra.CassandraChatMemoryRepositoryConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -37,7 +37,7 @@ public class CassandraChatMemoryRepositoryProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.repository.cassandra";
 
-	private static final Logger logger = LoggerFactory.getLogger(CassandraChatMemoryRepositoryProperties.class);
+	private static final Log logger = LogFactory.getLog(CassandraChatMemoryRepositoryProperties.class);
 
 	private String keyspace = CassandraChatMemoryRepositoryConfig.DEFAULT_KEYSPACE_NAME;
 

@@ -21,14 +21,14 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.TextPosition;
 import org.apache.pdfbox.text.TextPositionComparator;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This class extends PDFTextStripper to provide custom text extraction and formatting
@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 
-	private final static Logger logger = LoggerFactory.getLogger(ForkPDFLayoutTextStripper.class);
+	private final static Log logger = LogFactory.getLog(ForkPDFLayoutTextStripper.class);
 
 	public static final int OUTPUT_SPACE_CHARACTER_WIDTH_IN_PT = 4;
 

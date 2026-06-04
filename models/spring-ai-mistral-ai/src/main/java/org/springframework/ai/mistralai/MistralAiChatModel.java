@@ -27,9 +27,9 @@ import java.util.stream.Stream;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -96,7 +96,7 @@ public class MistralAiChatModel implements ChatModel {
 
 	public static final String THINKING_CONTENT_METADATA = "thinking_content";
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final Log logger = LogFactory.getLog(getClass());
 
 	/**
 	 * The default options used for the chat completion requests.
@@ -192,7 +192,9 @@ public class MistralAiChatModel implements ChatModel {
 				ChatCompletion chatCompletion = completionEntity.getBody();
 
 				if (chatCompletion == null) {
-					logger.warn("No chat completion returned for prompt: {}", prompt);
+					if (logger.isWarnEnabled()) {
+						logger.warn("No chat completion returned for prompt: " + prompt);
+					}
 					return new ChatResponse(List.of());
 				}
 

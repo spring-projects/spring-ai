@@ -22,8 +22,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -49,8 +47,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  */
 public abstract class AbstractToolCallAdvisorIT {
-
-	protected final Logger logger = LoggerFactory.getLogger(getClass());
 
 	/**
 	 * Returns the ChatModel instance to be used in tests.
@@ -95,8 +91,6 @@ public abstract class AbstractToolCallAdvisorIT {
 				.call()
 				.content();
 
-			logger.info("Response: {}", response);
-
 			assertThat(response).contains("30", "10", "15");
 		}
 
@@ -114,8 +108,6 @@ public abstract class AbstractToolCallAdvisorIT {
 				.call()
 				.content();
 
-			logger.info("Response: {}", response);
-
 			assertThat(response).contains("30", "10", "15");
 		}
 
@@ -131,8 +123,6 @@ public abstract class AbstractToolCallAdvisorIT {
 				.tools(createWeatherToolCallback())
 				.call()
 				.content();
-
-			logger.info("Response: {}", response);
 
 			assertThat(response).contains("30", "10", "15");
 		}
@@ -152,8 +142,6 @@ public abstract class AbstractToolCallAdvisorIT {
 				.call()
 				.content();
 
-			logger.info("Response: {}", response);
-
 			assertThat(response).contains("30", "10", "15");
 		}
 
@@ -166,8 +154,6 @@ public abstract class AbstractToolCallAdvisorIT {
 				.tools(createReturnDirectWeatherToolCallback())
 				.call()
 				.content();
-
-			logger.info("Response: {}", response);
 
 			// With returnDirect=true, the raw tool result is returned without LLM
 			// processing
@@ -192,7 +178,6 @@ public abstract class AbstractToolCallAdvisorIT {
 
 			List<String> chunks = response.collectList().block();
 			String content = Objects.requireNonNull(chunks).stream().collect(Collectors.joining());
-			logger.info("Response: {}", content);
 
 			assertThat(content).contains("30", "10", "15");
 		}
@@ -213,7 +198,6 @@ public abstract class AbstractToolCallAdvisorIT {
 
 			List<String> chunks = response.collectList().block();
 			String content = Objects.requireNonNull(chunks).stream().collect(Collectors.joining());
-			logger.info("Response: {}", content);
 
 			assertThat(content).contains("30", "10", "15");
 		}
@@ -233,7 +217,6 @@ public abstract class AbstractToolCallAdvisorIT {
 
 			List<String> chunks = response.collectList().block();
 			String content = Objects.requireNonNull(chunks).stream().collect(Collectors.joining());
-			logger.info("Response: {}", content);
 
 			assertThat(content).contains("30", "10", "15");
 		}
@@ -255,7 +238,6 @@ public abstract class AbstractToolCallAdvisorIT {
 
 			List<String> chunks = response.collectList().block();
 			String content = Objects.requireNonNull(chunks).stream().collect(Collectors.joining());
-			logger.info("Response: {}", content);
 
 			assertThat(content).contains("30", "10", "15");
 		}
@@ -272,7 +254,6 @@ public abstract class AbstractToolCallAdvisorIT {
 
 			List<String> chunks = response.collectList().block();
 			String content = Objects.requireNonNull(chunks).stream().collect(Collectors.joining());
-			logger.info("Response: {}", content);
 
 			// With returnDirect=true, the raw tool result is returned without LLM
 			// processing

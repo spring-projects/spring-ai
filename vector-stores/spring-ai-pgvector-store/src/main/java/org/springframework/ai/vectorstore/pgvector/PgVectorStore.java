@@ -26,9 +26,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.pgvector.PGvector;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.postgresql.util.PGobject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
@@ -173,7 +173,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	public static final int MAX_DOCUMENT_BATCH_SIZE = 10_000;
 
-	private static final Logger logger = LoggerFactory.getLogger(PgVectorStore.class);
+	private static final Log logger = LogFactory.getLog(PgVectorStore.class);
 
 	private static final Map<PgDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			PgDistanceType.COSINE_DISTANCE, VectorStoreSimilarityMetric.COSINE, PgDistanceType.EUCLIDEAN_DISTANCE,
@@ -225,8 +225,10 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		String vectorTable = builder.vectorTableName;
 		this.vectorTableName = vectorTable.isEmpty() ? DEFAULT_TABLE_NAME : vectorTable.trim();
-		logger.info("Using the vector table name: {}. Is empty: {}", this.vectorTableName,
-				this.vectorTableName.isEmpty());
+		if (logger.isInfoEnabled()) {
+			logger.info("Using the vector table name: " + this.vectorTableName + ". Is empty: "
+					+ this.vectorTableName.isEmpty());
+		}
 
 		this.vectorIndexName = this.vectorTableName.equals(DEFAULT_TABLE_NAME) ? DEFAULT_VECTOR_INDEX_NAME
 				: this.vectorTableName + "_index";
@@ -400,17 +402,23 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	@Override
 	public void afterPropertiesSet() {
 
-		logger.info("Initializing PGVectorStore schema for table: {} in schema: {}", this.getVectorTableName(),
-				this.getSchemaName());
+		if (logger.isInfoEnabled()) {
+			logger.info("Initializing PGVectorStore schema for table: " + this.getVectorTableName() + " in schema: "
+					+ this.getSchemaName());
+		}
 
-		logger.info("vectorTableValidationsEnabled {}", this.schemaValidation);
+		if (logger.isInfoEnabled()) {
+			logger.info("vectorTableValidationsEnabled " + this.schemaValidation);
+		}
 
 		if (this.schemaValidation) {
 			this.schemaValidator.validateTableSchema(this.getSchemaName(), this.getVectorTableName(), this.dimensions);
 		}
 
 		if (!this.initializeSchema) {
-			logger.debug("Skipping the schema initialization for the table: {}", this.getFullyQualifiedTableName());
+			if (logger.isDebugEnabled()) {
+				logger.debug("Skipping the schema initialization for the table: " + this.getFullyQualifiedTableName());
+			}
 			return;
 		}
 

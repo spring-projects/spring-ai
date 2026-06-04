@@ -18,8 +18,6 @@ package org.springframework.ai.model.openai.autoconfigure;
 
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -40,8 +38,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class ChatClientAutoConfigurationIT {
-
-	private static final Log logger = LogFactory.getLog(ChatClientAutoConfigurationIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"),
@@ -78,7 +74,6 @@ public class ChatClientAutoConfigurationIT {
 			String response = chatClient.prompt().user("Hello").call().content();
 
 			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
 		});
 	}
 
@@ -96,8 +91,6 @@ public class ChatClientAutoConfigurationIT {
 				.user(u -> u.param("actor", "Tom Hanks"))
 				.call()
 				.entity(ActorsFilms.class);
-
-			logger.info("" + actorsFilms);
 			assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 			assertThat(actorsFilms.movies()).hasSize(5);
 		});

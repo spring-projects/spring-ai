@@ -26,9 +26,9 @@ import com.openai.core.http.Headers;
 import com.openai.models.audio.speech.SpeechCreateParams;
 import com.openai.models.audio.speech.SpeechModel;
 import io.micrometer.observation.ObservationRegistry;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.audio.tts.Speech;
@@ -53,7 +53,7 @@ import org.springframework.util.StringUtils;
  */
 public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiAudioSpeechModel.class);
+	private static final Log logger = LogFactory.getLog(OpenAiAudioSpeechModel.class);
 
 	private static final Double DEFAULT_SPEED = 1.0;
 
@@ -115,9 +115,9 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 		String inputText = getInputText(prompt, mergedOptions);
 
 		if (logger.isTraceEnabled()) {
-			logger.trace("Calling OpenAI SDK audio speech with model: {}, voice: {}, format: {}, speed: {}",
-					mergedOptions.getModel(), mergedOptions.getVoice(), mergedOptions.getResponseFormat(),
-					mergedOptions.getSpeed());
+			logger.trace("Calling OpenAI SDK audio speech with model: " + mergedOptions.getModel() + ", voice: "
+					+ mergedOptions.getVoice() + ", format: " + mergedOptions.getResponseFormat() + ", speed: "
+					+ mergedOptions.getSpeed());
 		}
 
 		String model;
@@ -157,7 +157,9 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 		}
 
 		if (audioBytes.length == 0) {
-			logger.warn("No speech response returned for prompt: {}", prompt);
+			if (logger.isWarnEnabled()) {
+				logger.warn("No speech response returned for prompt: " + prompt);
+			}
 			return new TextToSpeechResponse(List.of(new Speech(new byte[0])));
 		}
 

@@ -33,8 +33,8 @@ import io.qdrant.client.grpc.JsonWithInt.Value;
 import io.qdrant.client.grpc.Points.PointStruct;
 import io.qdrant.client.grpc.Points.ScoredPoint;
 import io.qdrant.client.grpc.Points.SearchPoints;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -128,7 +128,7 @@ import org.springframework.util.Assert;
  */
 public class QdrantVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final Logger logger = LoggerFactory.getLogger(QdrantVectorStore.class);
+	private static final Log logger = LogFactory.getLog(QdrantVectorStore.class);
 
 	public static final String DEFAULT_COLLECTION_NAME = "vector_store";
 
@@ -236,7 +236,9 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 			logger.debug("Deleted documents matching filter expression");
 		}
 		catch (Exception e) {
-			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
+			if (logger.isErrorEnabled()) {
+				logger.error("Failed to delete documents by filter: " + e.getMessage(), e);
+			}
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}

@@ -20,8 +20,8 @@ import java.sql.DatabaseMetaData;
 
 import javax.sql.DataSource;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.jdbc.support.JdbcUtils;
 
@@ -30,7 +30,7 @@ import org.springframework.jdbc.support.JdbcUtils;
  */
 public interface JdbcChatMemoryRepositoryDialect {
 
-	Logger logger = LoggerFactory.getLogger(JdbcChatMemoryRepositoryDialect.class);
+	Log logger = LogFactory.getLog(JdbcChatMemoryRepositoryDialect.class);
 
 	/**
 	 * Returns the SQL to fetch messages for a conversation, ordered by timestamp, with

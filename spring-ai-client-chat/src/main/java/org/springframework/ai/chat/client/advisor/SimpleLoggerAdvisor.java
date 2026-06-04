@@ -18,9 +18,9 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.function.Function;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClientMessageAggregator;
@@ -46,7 +46,7 @@ public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 	public static final Function<@Nullable ChatResponse, String> DEFAULT_RESPONSE_TO_STRING = object -> object != null
 			? JacksonUtils.getDefaultJsonMapper().writerWithDefaultPrettyPrinter().writeValueAsString(object) : "null";
 
-	private static final Logger logger = LoggerFactory.getLogger(SimpleLoggerAdvisor.class);
+	private static final Log logger = LogFactory.getLog(SimpleLoggerAdvisor.class);
 
 	private final Function<@Nullable ChatClientRequest, String> requestToString;
 
@@ -91,11 +91,15 @@ public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 	}
 
 	protected void logRequest(ChatClientRequest request) {
-		logger.debug("request: {}", this.requestToString.apply(request));
+		if (logger.isDebugEnabled()) {
+			logger.debug("request: " + this.requestToString.apply(request));
+		}
 	}
 
 	protected void logResponse(ChatClientResponse chatClientResponse) {
-		logger.debug("response: {}", this.responseToString.apply(chatClientResponse.chatResponse()));
+		if (logger.isDebugEnabled()) {
+			logger.debug("response: " + this.responseToString.apply(chatClientResponse.chatResponse()));
+		}
 	}
 
 	@Override

@@ -25,8 +25,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
@@ -60,8 +58,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 public class WeatherServicePromptIT {
-
-	private final Logger logger = LoggerFactory.getLogger(WeatherServicePromptIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"))
@@ -97,8 +93,6 @@ public class WeatherServicePromptIT {
 					.call()
 					.chatResponse();
 
-				logger.info("Response: {}", response);
-
 				assertThat(response.getResult().getOutput().getText()).containsAnyOf("15", "15.0");
 			});
 	}
@@ -130,8 +124,6 @@ public class WeatherServicePromptIT {
 				ChatResponse response = chatClient.prompt(new Prompt(List.of(userMessage), functionOptions))
 					.call()
 					.chatResponse();
-
-				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getText()).containsAnyOf("15", "15.0");
 			});

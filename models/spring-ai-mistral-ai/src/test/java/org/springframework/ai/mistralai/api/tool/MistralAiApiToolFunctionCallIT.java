@@ -21,8 +21,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mistralai.api.MistralAiApi;
@@ -50,8 +48,6 @@ class MistralAiApiToolFunctionCallIT {
 	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final String MISTRAL_AI_CHAT_MODEL = MistralAiApi.ChatModel.MISTRAL_LARGE.getValue();
-
-	private final Logger logger = LoggerFactory.getLogger(MistralAiApiToolFunctionCallIT.class);
 
 	private final MockWeatherService weatherService = new MockWeatherService();
 
@@ -141,8 +137,6 @@ class MistralAiApiToolFunctionCallIT {
 
 			ResponseEntity<ChatCompletion> chatCompletion2 = this.completionApi
 				.chatCompletionEntity(functionResponseRequest);
-
-			logger.info("Final response: {}", chatCompletion2.getBody());
 
 			assertThat(chatCompletion2.getBody().choices()).isNotEmpty();
 

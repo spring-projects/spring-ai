@@ -16,8 +16,6 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -35,8 +33,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiImageAutoConfigurationIT {
 
-	private static final Log logger = LogFactory.getLog(OpenAiImageAutoConfigurationIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"));
 
@@ -49,7 +45,6 @@ public class OpenAiImageAutoConfigurationIT {
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("forest"));
 				assertThat(imageResponse.getResults()).hasSize(1);
 				assertThat(imageResponse.getResult().getOutput().getB64Json()).isNotEmpty();
-				logger.info("Generated image successfully");
 			});
 	}
 
@@ -64,7 +59,6 @@ public class OpenAiImageAutoConfigurationIT {
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("forest"));
 				assertThat(imageResponse.getResults()).hasSize(1);
 				assertThat(imageResponse.getResult().getOutput().getB64Json()).isNotEmpty();
-				logger.info("Generated image successfully");
 			});
 	}
 

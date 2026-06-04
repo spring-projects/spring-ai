@@ -18,8 +18,8 @@ package org.springframework.ai.model.chat.client.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.tracing.Tracer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
@@ -71,7 +71,7 @@ import org.springframework.context.annotation.Scope;
 		matchIfMissing = true)
 public class ChatClientAutoConfiguration {
 
-	private static final Logger logger = LoggerFactory.getLogger(ChatClientAutoConfiguration.class);
+	private static final Log logger = LogFactory.getLog(ChatClientAutoConfiguration.class);
 
 	private static void logPromptContentWarning() {
 		logger.warn(

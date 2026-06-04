@@ -16,10 +16,10 @@
 
 package org.springframework.ai.chat.memory.repository.neo4j;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import org.neo4j.driver.Driver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.util.Assert;
 
@@ -44,7 +44,7 @@ public final class Neo4jChatMemoryRepositoryConfig {
 
 	public static final String DEFAULT_MEDIA_LABEL = "Media";
 
-	private static final Logger logger = LoggerFactory.getLogger(Neo4jChatMemoryRepositoryConfig.class);
+	private static final Log logger = LogFactory.getLog(Neo4jChatMemoryRepositoryConfig.class);
 
 	private final Driver driver;
 
@@ -118,7 +118,9 @@ public final class Neo4jChatMemoryRepositoryConfig {
 			logger.info("Ensured Neo4j indexes for conversationId and message index.");
 		}
 		catch (Exception e) {
-			logger.warn("Failed to ensure Neo4j indexes for chat memory: {}", e.getMessage());
+			if (logger.isWarnEnabled()) {
+				logger.warn("Failed to ensure Neo4j indexes for chat memory: " + e.getMessage());
+			}
 		}
 	}
 

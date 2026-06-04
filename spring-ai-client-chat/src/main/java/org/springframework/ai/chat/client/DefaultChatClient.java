@@ -32,9 +32,9 @@ import java.util.function.Consumer;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.ChatModelCallAdvisor;
@@ -93,7 +93,7 @@ import org.springframework.util.StringUtils;
  */
 public class DefaultChatClient implements ChatClient {
 
-	private static final Logger logger = LoggerFactory.getLogger(DefaultChatClient.class);
+	private static final Log logger = LogFactory.getLog(DefaultChatClient.class);
 
 	private static final ChatClientObservationConvention DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION = new DefaultChatClientObservationConvention();
 
@@ -1301,11 +1301,15 @@ public class DefaultChatClient implements ChatClient {
 				.filter(a -> a instanceof ToolAdvisor)
 				.forEach(tca -> this.advisors.stream()
 					.filter(a -> a instanceof MemoryAdvisor && a.getOrder() <= tca.getOrder())
-					.forEach(mem -> logger.warn(
-							"ChatMemoryAdvisor '{}' (order={}) is ordered at or before ToolCallAdvisor '{}' (order={}). "
+					.forEach(mem -> {
+						if (logger.isWarnEnabled()) {
+							logger.warn("ChatMemoryAdvisor '" + mem.getName() + "' (order=" + mem.getOrder()
+									+ ") is ordered at or before ToolCallAdvisor '" + tca.getName() + "' (order="
+									+ tca.getOrder() + "). "
 									+ "Memory will not be updated between tool-call iterations. "
-									+ "Set the memory advisor order above {} to fix this.",
-							mem.getName(), mem.getOrder(), tca.getName(), tca.getOrder(), tca.getOrder())));
+									+ "Set the memory advisor order above " + tca.getOrder() + " to fix this.");
+						}
+					}));
 		}
 
 	}

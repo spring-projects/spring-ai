@@ -25,11 +25,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import io.restassured.RestAssured;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.SocatContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -76,7 +76,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Disabled("Requires Docker Model Runner enabled. See https://docs.docker.com/desktop/features/model-runner/")
 class DockerModelRunnerWithOpenAiChatModelIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(DockerModelRunnerWithOpenAiChatModelIT.class);
+	private static final Log logger = LogFactory.getLog(DockerModelRunnerWithOpenAiChatModelIT.class);
 
 	private static final String DEFAULT_MODEL = "ai/gemma3:4B-F16";
 
@@ -100,8 +100,6 @@ class DockerModelRunnerWithOpenAiChatModelIT {
 				    "from": "%s"
 				}
 				""".formatted(DEFAULT_MODEL)).post("/models/create").prettyPeek().then().statusCode(200);
-
-		logger.info(DEFAULT_MODEL + " pulling competed!");
 	}
 
 	@Test
@@ -239,7 +237,6 @@ class DockerModelRunnerWithOpenAiChatModelIT {
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -272,7 +269,6 @@ class DockerModelRunnerWithOpenAiChatModelIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -302,8 +298,6 @@ class DockerModelRunnerWithOpenAiChatModelIT {
 			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
 			response = this.chatModel.call(prompt);
 		}
-
-		logger.info("Response: {}", response);
 
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
@@ -339,7 +333,6 @@ class DockerModelRunnerWithOpenAiChatModelIT {
 		}
 
 		String content = aggregatedRef.get().getResult().getOutput().getText();
-		logger.info("Response: {}", content);
 
 		assertThat(content).contains("30", "10", "15");
 	}
@@ -353,8 +346,6 @@ class DockerModelRunnerWithOpenAiChatModelIT {
 				.call()
 				.chatResponse();
 		// @formatter:on
-
-		logger.info(response.toString());
 		assertThat(response.getMetadata().getId()).isNotEmpty();
 		assertThat(response.getMetadata().getModel()).containsIgnoringCase(DEFAULT_MODEL);
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();

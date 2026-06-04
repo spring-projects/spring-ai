@@ -52,8 +52,6 @@ import net.javacrumbs.jsonunit.assertj.JsonAssertions;
 import net.javacrumbs.jsonunit.core.Option;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 import tools.jackson.databind.json.JsonMapper;
@@ -466,8 +464,6 @@ public class StreamableMcpAnnotationsManualIT {
 
 		public static class McpClientHandlers {
 
-			private static final Logger logger = LoggerFactory.getLogger(McpClientHandlers.class);
-
 			private TestContext testContext;
 
 			private final ObjectProvider<ChatClient.Builder> chatClientBuilderProvider;
@@ -489,9 +485,6 @@ public class StreamableMcpAnnotationsManualIT {
 
 			@McpProgress(clients = "server1")
 			public void progressHandler(ProgressNotification progressNotification) {
-				logger.info("MCP PROGRESS: [{}] progress: {} total: {} message: {}",
-						progressNotification.progressToken(), progressNotification.progress(),
-						progressNotification.total(), progressNotification.message());
 				this.testContext.progressNotifications.add(progressNotification);
 				this.testContext.progressLatch.countDown();
 			}
@@ -499,12 +492,10 @@ public class StreamableMcpAnnotationsManualIT {
 			@McpLogging(clients = "server1")
 			public void loggingHandler(LoggingMessageNotification loggingMessage) {
 				this.testContext.loggingNotificationRef.set(loggingMessage);
-				logger.info("MCP LOGGING: [{}] {}", loggingMessage.level(), loggingMessage.data());
 			}
 
 			@McpSampling(clients = "server1")
 			public CreateMessageResult samplingHandler(CreateMessageRequest llmRequest) {
-				logger.info("MCP SAMPLING: {}", llmRequest);
 
 				String userPrompt = ((McpSchema.TextContent) llmRequest.messages().get(0).content()).text();
 				String modelHint = llmRequest.modelPreferences().hints().get(0).name();
@@ -513,7 +504,6 @@ public class StreamableMcpAnnotationsManualIT {
 				// this.chatClientBuilderProvider.getIfAvailable().build().prompt("Tell me
 				// a joke").call().content();
 				String joke = this.chatClient().prompt("Tell me a joke").call().content();
-				logger.info("Received joke from chat client: {}", joke);
 				return CreateMessageResult
 					.builder(Role.ASSISTANT, "Response " + userPrompt + " with model hint " + modelHint, modelHint)
 					.build();
@@ -521,7 +511,6 @@ public class StreamableMcpAnnotationsManualIT {
 
 			@McpElicitation(clients = "server1")
 			public ElicitResult elicitationHandler(McpSchema.ElicitRequest request) {
-				logger.info("MCP ELICITATION: {}", request);
 				return new ElicitResult(ElicitResult.Action.ACCEPT, Map.of("message", request.message()));
 			}
 

@@ -29,8 +29,6 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.AdvisorParams;
@@ -93,8 +91,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MistralAiChatModelIT {
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
-
-	private static final Logger logger = LoggerFactory.getLogger(MistralAiChatModelIT.class);
 
 	@Autowired
 	private ChatModel chatModel;
@@ -224,7 +220,6 @@ class MistralAiChatModelIT {
 		var outputMetadata = output.getMetadata();
 		var thinkingContent = outputMetadata.get(MistralAiChatModel.THINKING_CONTENT_METADATA);
 		assertThat(thinkingContent).asString().isNotEmpty();
-		logger.info("Thinking content: {}", thinkingContent);
 		assertThat(outputMetadata).doesNotContainKey(MistralAiChatModel.REFERENCE_CONTENT_METADATA);
 		assertThat(outputMetadata).doesNotContainKey(MistralAiChatModel.REFERENCE_THINKING_CONTENT_METADATA);
 	}
@@ -245,7 +240,6 @@ class MistralAiChatModelIT {
 			.toList();
 
 		var content = assistantMessages.stream().map(AssistantMessage::getText).collect(Collectors.joining());
-		logger.info("Content: {}", content);
 		assertThat(content).contains("Jupiter");
 
 		var thinkingContent = assistantMessages.stream()
@@ -254,7 +248,6 @@ class MistralAiChatModelIT {
 			.filter(Objects::nonNull)
 			.map(String.class::cast)
 			.collect(Collectors.joining());
-		logger.info("Thinking content: {}", thinkingContent);
 		assertThat(thinkingContent).isNotEmpty();
 
 		assertThat(hasMetadata(assistantMessages, MistralAiChatModel.REFERENCE_CONTENT_METADATA)).isFalse();
@@ -279,7 +272,6 @@ class MistralAiChatModelIT {
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
-		logger.info(actorsFilms.toString());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -312,7 +304,6 @@ class MistralAiChatModelIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
-		logger.info(actorsFilms.toString());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -341,8 +332,6 @@ class MistralAiChatModelIT {
 			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
 			response = this.chatModel.call(prompt);
 		}
-
-		logger.info("Response: {}", response);
 
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
@@ -391,8 +380,6 @@ class MistralAiChatModelIT {
 		var chatOptions = ChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()).build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage), chatOptions));
-
-		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
 				"fruit stand");
 	}
@@ -410,8 +397,6 @@ class MistralAiChatModelIT {
 		var chatOptions = ChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()).build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), chatOptions));
-
-		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bowl", "basket", "fruit stand");
 	}
@@ -438,7 +423,6 @@ class MistralAiChatModelIT {
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
 		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
@@ -470,7 +454,6 @@ class MistralAiChatModelIT {
 		}
 
 		ChatResponse chatResponse = aggregatedRef.get();
-		logger.info("Response: {}", chatResponse);
 		assertThat(chatResponse.getMetadata()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isLessThan(1050).isGreaterThan(400);
@@ -553,8 +536,6 @@ class MistralAiChatModelIT {
 
 		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 
-		logger.info("Response: {}", response.getResult().getOutput().getText());
-
 		String content = response.getResult().getOutput().getText();
 		assertThat(content).isNotNull();
 		assertThat(content).contains("title");
@@ -571,8 +552,6 @@ class MistralAiChatModelIT {
 		assertThat(movie.director()).isNotBlank();
 		assertThat(movie.year()).isGreaterThan(1900);
 		assertThat(movie.plotSummary()).isNotBlank();
-
-		logger.info("Parsed movie: {}", movie);
 	}
 
 	@Test
@@ -593,8 +572,6 @@ class MistralAiChatModelIT {
 				"Tell me about Paris, France. Include the city name, country, approximate population, and what it is famous for.");
 
 		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), promptOptions));
-
-		logger.info("Response: {}", response.getResult().getOutput().getText());
 
 		String content = response.getResult().getOutput().getText();
 		assertThat(content).isNotNull();
@@ -649,8 +626,6 @@ class MistralAiChatModelIT {
 			.advisors(verifyNativeStructuredOutputAdvisor)
 			.call()
 			.entity(ActorsFilmsRecord.class);
-
-		logger.info("ChatClient entity result: {}", actorsFilms);
 
 		// Verify that native structured output was used
 		assertThat(nativeStructuredOutputUsed.get())

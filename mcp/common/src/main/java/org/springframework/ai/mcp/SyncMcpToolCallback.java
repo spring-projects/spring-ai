@@ -22,9 +22,9 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
@@ -47,7 +47,7 @@ public class SyncMcpToolCallback implements ToolCallback {
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
 
-	private static final Logger logger = LoggerFactory.getLogger(SyncMcpToolCallback.class);
+	private static final Log logger = LogFactory.getLog(SyncMcpToolCallback.class);
 
 	private final McpSyncClient mcpClient;
 
@@ -112,8 +112,10 @@ public class SyncMcpToolCallback implements ToolCallback {
 
 		// Handle the possible null parameter situation in streaming mode.
 		if (!StringUtils.hasText(toolCallInput)) {
-			logger.warn("Tool call arguments are null or empty for MCP tool: {}. Using empty JSON object as default.",
-					this.tool.name());
+			if (logger.isWarnEnabled()) {
+				logger.warn("Tool call arguments are null or empty for MCP tool: " + this.tool.name()
+						+ ". Using empty JSON object as default.");
+			}
 			toolCallInput = "{}";
 		}
 
@@ -140,7 +142,9 @@ public class SyncMcpToolCallback implements ToolCallback {
 		}
 
 		if (response.isError() != null && response.isError()) {
-			logger.error("Error calling tool: {}", response.content());
+			if (logger.isErrorEnabled()) {
+				logger.error("Error calling tool: " + response.content());
+			}
 			throw new ToolExecutionException(this.getToolDefinition(),
 					new IllegalStateException("Error calling tool: " + response.content()));
 		}

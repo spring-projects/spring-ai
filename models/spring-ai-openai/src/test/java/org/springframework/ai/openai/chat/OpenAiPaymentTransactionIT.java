@@ -26,8 +26,6 @@ import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -65,8 +63,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 public class OpenAiPaymentTransactionIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiPaymentTransactionIT.class);
-
 	private static final Map<Transaction, Status> DATASET = Map.of(new Transaction("001"), new Status("pending"),
 			new Transaction("002"), new Status("approved"), new Transaction("003"), new Status("rejected"));
 
@@ -86,8 +82,6 @@ public class OpenAiPaymentTransactionIT {
 			.entity(new ParameterizedTypeReference<List<TransactionStatusResponse>>() {
 
 			});
-
-		logger.info("" + content);
 
 		assertThat(content.get(0).id()).isEqualTo("001");
 		assertThat(content.get(0).status()).isEqualTo("pending");
@@ -121,7 +115,6 @@ public class OpenAiPaymentTransactionIT {
 		String content = flux.collectList().block().stream().collect(Collectors.joining());
 
 		List<TransactionStatusResponse> structure = converter.convert(content);
-		logger.info("" + content);
 
 		assertThat(structure.get(0).id()).isEqualTo("001");
 		assertThat(structure.get(0).status()).isEqualTo("pending");
@@ -159,19 +152,13 @@ public class OpenAiPaymentTransactionIT {
 		@Bean
 		@Description("Get the status of a single payment transaction")
 		public Function<Transaction, Status> paymentStatus() {
-			return transaction -> {
-				logger.info("Single transaction: " + transaction);
-				return DATASET.get(transaction);
-			};
+			return transaction -> DATASET.get(transaction);
 		}
 
 		@Bean
 		@Description("Get the list statuses of a list of payment transactions")
 		public Function<Transactions, Statuses> paymentStatuses() {
-			return transactions -> {
-				logger.info("List of transactions: " + transactions);
-				return new Statuses(transactions.transactions().stream().map(t -> DATASET.get(t)).toList());
-			};
+			return transactions -> new Statuses(transactions.transactions().stream().map(t -> DATASET.get(t)).toList());
 		}
 
 		@Bean
