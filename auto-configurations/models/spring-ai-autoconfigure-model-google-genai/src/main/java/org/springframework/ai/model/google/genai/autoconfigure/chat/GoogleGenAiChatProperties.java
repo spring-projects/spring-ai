@@ -83,8 +83,6 @@ public class GoogleGenAiChatProperties {
 
 	private @Nullable Set<String> toolNames;
 
-	private @Nullable Boolean internalToolExecutionEnabled;
-
 	private @Nullable Boolean googleSearchRetrieval;
 
 	private @Nullable Boolean includeServerSideToolInvocations;
@@ -255,14 +253,6 @@ public class GoogleGenAiChatProperties {
 		this.toolNames = toolNames;
 	}
 
-	public @Nullable Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
 	public @Nullable Boolean getGoogleSearchRetrieval() {
 		return this.googleSearchRetrieval;
 	}
@@ -331,7 +321,6 @@ public class GoogleGenAiChatProperties {
 			.autoCacheThreshold(this.autoCacheThreshold)
 			.autoCacheTtl(this.autoCacheTtl)
 			.toolNames(this.toolNames)
-			.internalToolExecutionEnabled(this.internalToolExecutionEnabled)
 			.googleSearchRetrieval(this.googleSearchRetrieval)
 			.includeServerSideToolInvocations(this.includeServerSideToolInvocations)
 			.safetySettings(this.safetySettings)
@@ -552,16 +541,6 @@ public class GoogleGenAiChatProperties {
 
 		public void setToolNames(@Nullable Set<String> toolNames) {
 			GoogleGenAiChatProperties.this.setToolNames(toolNames);
-		}
-
-		@DeprecatedConfigurationProperty(replacement = "spring.ai.google.genai.chat.internal-tool-execution-enabled")
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		public @Nullable Boolean getInternalToolExecutionEnabled() {
-			return GoogleGenAiChatProperties.this.getInternalToolExecutionEnabled();
-		}
-
-		public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			GoogleGenAiChatProperties.this.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
 		}
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.google.genai.chat.google-search-retrieval")

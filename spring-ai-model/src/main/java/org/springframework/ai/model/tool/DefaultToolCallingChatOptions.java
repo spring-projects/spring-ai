@@ -47,18 +47,14 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 
 	private final @Nullable Map<String, Object> toolContext;
 
-	private final @Nullable Boolean internalToolExecutionEnabled;
-
 	protected DefaultToolCallingChatOptions(@Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames,
-			@Nullable Map<String, Object> toolContext, @Nullable Boolean internalToolExecutionEnabled,
-			@Nullable String model, @Nullable Double frequencyPenalty, @Nullable Integer maxTokens,
-			@Nullable Double presencePenalty, @Nullable List<String> stopSequences, @Nullable Double temperature,
-			@Nullable Integer topK, @Nullable Double topP) {
+			@Nullable Map<String, Object> toolContext, @Nullable String model, @Nullable Double frequencyPenalty,
+			@Nullable Integer maxTokens, @Nullable Double presencePenalty, @Nullable List<String> stopSequences,
+			@Nullable Double temperature, @Nullable Integer topK, @Nullable Double topP) {
 		super(model, frequencyPenalty, maxTokens, presencePenalty, stopSequences, temperature, topK, topP);
 		this.toolCallbacks = (toolCallbacks != null ? List.copyOf(toolCallbacks) : null);
 		this.toolNames = (toolNames != null ? Set.copyOf(toolNames) : null);
 		this.toolContext = (toolContext != null ? Map.copyOf(toolContext) : null);
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
 	@Override
@@ -77,11 +73,6 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 	}
 
 	@Override
-	public @Nullable Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	@Override
 	public ToolCallingChatOptions.Builder<?> mutate() {
 		return DefaultToolCallingChatOptions.builder()
 			.model(getModel())
@@ -94,8 +85,7 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 			.topP(getTopP())
 			.toolCallbacks(getToolCallbacks())
 			.toolNames(getToolNames())
-			.toolContext(getToolContext())
-			.internalToolExecutionEnabled(getInternalToolExecutionEnabled());
+			.toolContext(getToolContext());
 	}
 
 	@Override
@@ -111,14 +101,12 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 		}
 		DefaultToolCallingChatOptions that = (DefaultToolCallingChatOptions) o;
 		return Objects.equals(this.toolCallbacks, that.toolCallbacks) && Objects.equals(this.toolNames, that.toolNames)
-				&& Objects.equals(this.toolContext, that.toolContext)
-				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled);
+				&& Objects.equals(this.toolContext, that.toolContext);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), this.toolCallbacks, this.toolNames, this.toolContext,
-				this.internalToolExecutionEnabled);
+		return Objects.hash(super.hashCode(), this.toolCallbacks, this.toolNames, this.toolContext);
 	}
 
 	public static Builder<?> builder() {
@@ -136,8 +124,6 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 		protected @Nullable Set<String> toolNames;
 
 		protected @Nullable Map<String, Object> toolContext;
-
-		protected @Nullable Boolean internalToolExecutionEnabled;
 
 		@Override
 		public B clone() {
@@ -216,16 +202,10 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 		}
 
 		@Override
-		public B internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-			return self();
-		}
-
-		@Override
 		public ToolCallingChatOptions build() {
-			return new DefaultToolCallingChatOptions(this.toolCallbacks, this.toolNames, this.toolContext,
-					this.internalToolExecutionEnabled, this.model, this.frequencyPenalty, this.maxTokens,
-					this.presencePenalty, this.stopSequences, this.temperature, this.topK, this.topP);
+			return new DefaultToolCallingChatOptions(this.toolCallbacks, this.toolNames, this.toolContext, this.model,
+					this.frequencyPenalty, this.maxTokens, this.presencePenalty, this.stopSequences, this.temperature,
+					this.topK, this.topP);
 		}
 
 		@Override
@@ -261,9 +241,6 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 						merged.putAll(that.toolContext);
 						this.toolContext = merged;
 					}
-				}
-				if (that.internalToolExecutionEnabled != null) {
-					this.internalToolExecutionEnabled = that.internalToolExecutionEnabled;
 				}
 			}
 			return self();

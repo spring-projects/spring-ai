@@ -106,8 +106,6 @@ public class OllamaChatProperties {
 
 	private @Nullable List<String> stop;
 
-	private @Nullable Boolean internalToolExecutionEnabled;
-
 	public @Nullable String getModel() {
 		return this.model;
 	}
@@ -388,14 +386,6 @@ public class OllamaChatProperties {
 		this.stop = stop;
 	}
 
-	public @Nullable Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
 	public OllamaChatOptions toOptions() {
 		return OllamaChatOptions.builder()
 			.model(this.model)
@@ -433,7 +423,6 @@ public class OllamaChatProperties {
 			.mirostatEta(this.mirostatEta)
 			.penalizeNewline(this.penalizeNewline)
 			.stop(this.stop)
-			.internalToolExecutionEnabled(this.internalToolExecutionEnabled)
 			.build();
 	}
 
@@ -799,16 +788,6 @@ public class OllamaChatProperties {
 
 		public void setStop(@Nullable List<String> stop) {
 			OllamaChatProperties.this.setStop(stop);
-		}
-
-		@DeprecatedConfigurationProperty(replacement = "spring.ai.ollama.chat.internal-tool-execution-enabled")
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		public @Nullable Boolean getInternalToolExecutionEnabled() {
-			return OllamaChatProperties.this.getInternalToolExecutionEnabled();
-		}
-
-		public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			OllamaChatProperties.this.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
 		}
 
 	}

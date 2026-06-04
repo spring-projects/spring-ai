@@ -292,7 +292,6 @@ class AnthropicChatModelIT {
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_HAIKU_4_5.asString())
-			.internalToolExecutionEnabled(false)
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -325,7 +324,6 @@ class AnthropicChatModelIT {
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_HAIKU_4_5.asString())
-			.internalToolExecutionEnabled(false)
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -443,7 +441,6 @@ class AnthropicChatModelIT {
 
 		var promptOptions = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_HAIKU_4_5.asString())
-			.internalToolExecutionEnabled(false)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -476,7 +473,6 @@ class AnthropicChatModelIT {
 		var promptOptions = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_20250514.asString())
 			.toolChoice(ToolChoice.ofAny(ToolChoiceAny.builder().build()))
-			.internalToolExecutionEnabled(false)
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -505,7 +501,6 @@ class AnthropicChatModelIT {
 		var promptOptions = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_20250514.asString())
 			.toolChoice(ToolChoice.ofTool(ToolChoiceTool.builder().name("getFunResponse").build()))
-			.internalToolExecutionEnabled(false)
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")

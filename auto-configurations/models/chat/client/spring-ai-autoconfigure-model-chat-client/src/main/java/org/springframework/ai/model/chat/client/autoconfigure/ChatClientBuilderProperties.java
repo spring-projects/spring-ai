@@ -63,6 +63,13 @@ public class ChatClientBuilderProperties {
 	public static class ToolCalling {
 
 		/**
+		 * Whether to auto-register a {@link ToolCallAdvisor} in the advisor chain when
+		 * tools are present on a call. Set to {@code false} to disable automatic tool
+		 * execution and handle tool calls manually (user-controlled tool execution).
+		 */
+		private boolean enabled = true;
+
+		/**
 		 * Order of the auto-registered {@link ToolCallAdvisor} in the advisor chain.
 		 * Controls which advisors are inside the recursive tool-call loop: only advisors
 		 * with a higher order value (i.e. downstream in the request direction)
@@ -77,6 +84,14 @@ public class ChatClientBuilderProperties {
 		 * {@code false} (default), only the final answer is streamed.
 		 */
 		private boolean streamToolCallResponses = false;
+
+		public boolean isEnabled() {
+			return this.enabled;
+		}
+
+		public void setEnabled(boolean enabled) {
+			this.enabled = enabled;
+		}
 
 		public int getAdvisorOrder() {
 			return this.advisorOrder;

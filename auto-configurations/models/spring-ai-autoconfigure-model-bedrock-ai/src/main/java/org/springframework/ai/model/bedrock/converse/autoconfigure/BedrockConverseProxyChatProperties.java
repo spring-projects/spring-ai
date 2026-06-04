@@ -62,8 +62,6 @@ public class BedrockConverseProxyChatProperties {
 
 	private @Nullable Double topP;
 
-	private @Nullable Boolean internalToolExecutionEnabled;
-
 	private @Nullable BedrockCacheProperties cacheOptions;
 
 	private Options options = new Options();
@@ -148,14 +146,6 @@ public class BedrockConverseProxyChatProperties {
 		this.topP = topP;
 	}
 
-	public @Nullable Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
 	public @Nullable BedrockCacheProperties getCacheOptions() {
 		return this.cacheOptions;
 	}
@@ -185,7 +175,6 @@ public class BedrockConverseProxyChatProperties {
 			.temperature(this.temperature)
 			.topK(this.topK)
 			.topP(this.topP)
-			.internalToolExecutionEnabled(this.internalToolExecutionEnabled)
 			.cacheOptions(this.cacheOptions != null ? this.cacheOptions.toOptions() : null)
 			.build();
 	}
@@ -280,17 +269,6 @@ public class BedrockConverseProxyChatProperties {
 
 		public void setTopP(@Nullable Double topP) {
 			BedrockConverseProxyChatProperties.this.setTopP(topP);
-		}
-
-		@DeprecatedConfigurationProperty(
-				replacement = "spring.ai.bedrock.converse.chat.internal-tool-execution-enabled")
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		public @Nullable Boolean getInternalToolExecutionEnabled() {
-			return BedrockConverseProxyChatProperties.this.getInternalToolExecutionEnabled();
-		}
-
-		public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			BedrockConverseProxyChatProperties.this.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
 		}
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.bedrock.converse.chat.cache-options")

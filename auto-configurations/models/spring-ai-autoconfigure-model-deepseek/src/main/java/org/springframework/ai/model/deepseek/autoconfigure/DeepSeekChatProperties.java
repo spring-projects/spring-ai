@@ -69,8 +69,6 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 
 	private @Nullable Integer topLogprobs;
 
-	private @Nullable Boolean internalToolExecutionEnabled;
-
 	public boolean isEnabled() {
 		return this.enabled;
 	}
@@ -175,14 +173,6 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 		this.topLogprobs = topLogprobs;
 	}
 
-	public @Nullable Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
 	public DeepSeekChatOptions toOptions() {
 		return DeepSeekChatOptions.builder()
 			.model(this.model)
@@ -195,7 +185,6 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 			.topP(this.topP)
 			.logprobs(this.logprobs)
 			.topLogprobs(this.topLogprobs)
-			.internalToolExecutionEnabled(this.internalToolExecutionEnabled)
 			.build();
 	}
 
@@ -311,16 +300,6 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 
 		public void setTopLogprobs(@Nullable Integer topLogprobs) {
 			DeepSeekChatProperties.this.setTopLogprobs(topLogprobs);
-		}
-
-		@DeprecatedConfigurationProperty(replacement = "spring.ai.deepseek.chat.internal-tool-execution-enabled")
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		public @Nullable Boolean getInternalToolExecutionEnabled() {
-			return DeepSeekChatProperties.this.getInternalToolExecutionEnabled();
-		}
-
-		public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			DeepSeekChatProperties.this.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
 		}
 
 	}

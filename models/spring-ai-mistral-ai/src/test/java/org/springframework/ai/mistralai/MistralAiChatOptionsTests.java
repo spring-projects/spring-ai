@@ -55,15 +55,14 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 			.stop(List.of("stop1", "stop2"))
 			.responseFormat(new ResponseFormat("json_object"))
 			.toolChoice(MistralAiApi.ChatCompletionRequest.ToolChoice.AUTO)
-			.internalToolExecutionEnabled(true)
 			.toolContext(Map.of("key1", "value1"))
 			.build();
 
 		assertThat(options)
 			.extracting("model", "temperature", "topP", "maxTokens", "safePrompt", "randomSeed", "stop",
-					"responseFormat", "toolChoice", "internalToolExecutionEnabled", "toolContext")
+					"responseFormat", "toolChoice", "toolContext")
 			.containsExactly("test-model", 0.7, 0.9, 100, true, 123, List.of("stop1", "stop2"),
-					new ResponseFormat("json_object"), MistralAiApi.ChatCompletionRequest.ToolChoice.AUTO, true,
+					new ResponseFormat("json_object"), MistralAiApi.ChatCompletionRequest.ToolChoice.AUTO,
 					Map.of("key1", "value1"));
 	}
 
@@ -230,7 +229,6 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 			.maxTokens(100)
 			.safePrompt(true)
 			.randomSeed(123)
-			.internalToolExecutionEnabled(false)
 			.build();
 
 		// Verify all chained methods worked
@@ -240,7 +238,6 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 		assertThat(options.getMaxTokens()).isEqualTo(100);
 		assertThat(options.getSafePrompt()).isTrue();
 		assertThat(options.getRandomSeed()).isEqualTo(123);
-		assertThat(options.getInternalToolExecutionEnabled()).isFalse();
 	}
 
 	@Test

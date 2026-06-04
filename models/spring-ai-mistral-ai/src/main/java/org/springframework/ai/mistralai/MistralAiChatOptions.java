@@ -157,11 +157,6 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	 */
 	private final @Nullable Set<String> toolNames;
 
-	/**
-	 * Whether to enable the tool execution lifecycle internally in ChatModel.
-	 */
-	private final @Nullable Boolean internalToolExecutionEnabled;
-
 	private final @Nullable Map<String, Object> toolContext;
 
 	protected MistralAiChatOptions(@Nullable String model, @Nullable Double temperature, @Nullable Double topP,
@@ -170,8 +165,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 			@Nullable ReasoningEffort reasoningEffort, @Nullable Double frequencyPenalty,
 			@Nullable Double presencePenalty, @Nullable Integer n, @Nullable List<FunctionTool> tools,
 			@Nullable ToolChoice toolChoice, @Nullable List<ToolCallback> toolCallbacks,
-			@Nullable Set<String> toolNames, @Nullable Boolean internalToolExecutionEnabled,
-			@Nullable Map<String, Object> toolContext) {
+			@Nullable Set<String> toolNames, @Nullable Map<String, Object> toolContext) {
 
 		this.model = model != null ? model : MistralAiApi.ChatModel.MISTRAL_SMALL.getValue();
 		this.temperature = temperature != null ? temperature : 0.7;
@@ -189,7 +183,6 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 		this.toolChoice = toolChoice;
 		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
 		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : null;
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
 	}
 
@@ -275,11 +268,6 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	}
 
 	@Override
-	@Nullable public Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	@Override
 	public @Nullable Integer getTopK() {
 		return null;
 	}
@@ -314,7 +302,6 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 			.toolCallbacks(this.getToolCallbacks())
 			.toolNames(this.getToolNames())
 			.toolContext(this.getToolContext())
-			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
 			// Mistral AI specific
 			.safePrompt(this.safePrompt)
 			.randomSeed(this.randomSeed)
@@ -329,8 +316,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	public int hashCode() {
 		return Objects.hash(this.model, this.temperature, this.topP, this.maxTokens, this.safePrompt, this.randomSeed,
 				this.responseFormat, this.stop, this.reasoningEffort, this.frequencyPenalty, this.presencePenalty,
-				this.n, this.tools, this.toolChoice, this.toolCallbacks, this.tools, this.internalToolExecutionEnabled,
-				this.toolContext);
+				this.n, this.tools, this.toolChoice, this.toolCallbacks, this.tools, this.toolContext);
 	}
 
 	@Override
@@ -362,7 +348,6 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 				&& Objects.equals(this.toolChoice, other.toolChoice)
 				&& Objects.equals(this.toolCallbacks, other.toolCallbacks)
 				&& Objects.equals(this.toolNames, other.toolNames)
-				&& Objects.equals(this.internalToolExecutionEnabled, other.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolContext, other.toolContext);
 		// @formatter:on
 	}
@@ -502,7 +487,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 			return new MistralAiChatOptions(this.model, this.temperature, this.topP, this.maxTokens, this.safePrompt,
 					this.randomSeed, this.responseFormat, this.stopSequences, this.reasoningEffort,
 					this.frequencyPenalty, this.presencePenalty, this.n, this.tools, this.toolChoice,
-					this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled, this.toolContext);
+					this.toolCallbacks, this.toolNames, this.toolContext);
 		}
 
 	}

@@ -266,8 +266,6 @@ class ToolSearchToolCallingAdvisorStreamTests {
 
 	private static class TestToolCallingChatOptions implements ToolCallingChatOptions {
 
-		private boolean internalToolExecutionEnabled = true;
-
 		private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 		private Set<String> toolNames = new HashSet<>();
@@ -285,11 +283,6 @@ class ToolSearchToolCallingAdvisorStreamTests {
 		}
 
 		@Override
-		public Boolean getInternalToolExecutionEnabled() {
-			return this.internalToolExecutionEnabled;
-		}
-
-		@Override
 		public Map<String, Object> getToolContext() {
 			return this.toolContext;
 		}
@@ -299,8 +292,7 @@ class ToolSearchToolCallingAdvisorStreamTests {
 			return ToolCallingChatOptions.builder()
 				.toolCallbacks(this.toolCallbacks)
 				.toolNames(this.toolNames)
-				.toolContext(this.toolContext)
-				.internalToolExecutionEnabled(this.internalToolExecutionEnabled);
+				.toolContext(this.toolContext);
 		}
 
 		@Override

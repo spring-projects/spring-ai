@@ -51,6 +51,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -124,11 +125,13 @@ public class ToolSearchToolCallingAdvisor extends ToolCallAdvisor {
 	private final ToolIndexEvictionStrategy evictionStrategy;
 
 	protected ToolSearchToolCallingAdvisor(ToolCallingManager toolCallingManager, int advisorOrder,
-			boolean streamToolCallResponses, ToolIndex toolIndex, String systemMessageSuffix,
-			boolean referenceToolNameAccumulation, @Nullable Integer maxResults, boolean conversationHistoryEnabled,
-			String sessionIdKeyName, ToolIndexEvictionStrategy evictionStrategy) {
+			boolean streamToolCallResponses, ToolExecutionEligibilityChecker toolExecutionEligibilityChecker,
+			ToolIndex toolIndex, String systemMessageSuffix, boolean referenceToolNameAccumulation,
+			@Nullable Integer maxResults, boolean conversationHistoryEnabled, String sessionIdKeyName,
+			ToolIndexEvictionStrategy evictionStrategy) {
 
-		super(toolCallingManager, advisorOrder, conversationHistoryEnabled, streamToolCallResponses);
+		super(toolCallingManager, toolExecutionEligibilityChecker, advisorOrder, conversationHistoryEnabled,
+				streamToolCallResponses);
 		this.toolIndex = toolIndex;
 		this.systemMessageSuffix = systemMessageSuffix;
 		this.referenceToolNameAccumulation = referenceToolNameAccumulation;
@@ -518,9 +521,9 @@ public class ToolSearchToolCallingAdvisor extends ToolCallAdvisor {
 
 			Assert.notNull(this.toolIndex, "toolIndex is required");
 			return new ToolSearchToolCallingAdvisor(getToolCallingManager(), getAdvisorOrder(),
-					isStreamToolCallResponses(), this.toolIndex, Objects.requireNonNull(this.systemMessageSuffix),
-					this.referenceToolNameAccumulation, this.maxResults, this.isConversationHistoryEnabled(),
-					this.sessionIdKeyName, this.evictionStrategy);
+					isStreamToolCallResponses(), getToolExecutionEligibilityChecker(), this.toolIndex,
+					Objects.requireNonNull(this.systemMessageSuffix), this.referenceToolNameAccumulation,
+					this.maxResults, this.isConversationHistoryEnabled(), this.sessionIdKeyName, this.evictionStrategy);
 		}
 
 	}

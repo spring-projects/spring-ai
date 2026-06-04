@@ -95,8 +95,6 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 
 	private @Nullable Map<String, Object> extraBody;
 
-	private @Nullable Boolean internalToolExecutionEnabled;
-
 	public @Nullable String getModel() {
 		return this.model;
 	}
@@ -305,14 +303,6 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 		this.extraBody = extraBody;
 	}
 
-	public @Nullable Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
 	public OpenAiChatOptions toOptions() {
 		return OpenAiChatOptions.builder()
 			.model(this.model)
@@ -341,7 +331,6 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 			.verbosity(this.verbosity)
 			.serviceTier(this.serviceTier)
 			.extraBody(this.extraBody)
-			.internalToolExecutionEnabled(this.internalToolExecutionEnabled)
 			.build();
 	}
 
@@ -772,16 +761,6 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 
 		public void setExtraBody(@Nullable Map<String, Object> extraBody) {
 			OpenAiChatProperties.this.setExtraBody(extraBody);
-		}
-
-		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.chat.internal-tool-execution-enabled")
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		public @Nullable Boolean getInternalToolExecutionEnabled() {
-			return OpenAiChatProperties.this.getInternalToolExecutionEnabled();
-		}
-
-		public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			OpenAiChatProperties.this.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
 		}
 
 	}

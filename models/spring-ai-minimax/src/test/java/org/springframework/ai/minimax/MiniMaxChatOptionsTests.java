@@ -62,16 +62,14 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 			.topP(0.6)
 			.maskSensitiveInfo(false)
 			.toolChoice("test")
-			.internalToolExecutionEnabled(true)
 			.toolContext(Map.of("key1", "value1"))
 			.build();
 
 		assertThat(options)
 			.extracting("model", "frequencyPenalty", "maxTokens", "N", "presencePenalty", "responseFormat", "seed",
-					"stop", "temperature", "topP", "maskSensitiveInfo", "toolChoice", "internalToolExecutionEnabled",
-					"toolContext")
+					"stop", "temperature", "topP", "maskSensitiveInfo", "toolChoice", "toolContext")
 			.containsExactly("test-model", 0.5, 10, 1, 0.5, new MiniMaxApi.ChatCompletionRequest.ResponseFormat("text"),
-					1, List.of("test"), 0.6, 0.6, false, "test", true, Map.of("key1", "value1"));
+					1, List.of("test"), 0.6, 0.6, false, "test", Map.of("key1", "value1"));
 	}
 
 	@Test
@@ -98,7 +96,6 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 			.maskSensitiveInfo(null)
 			.tools(null)
 			.toolChoice(null)
-			.internalToolExecutionEnabled(null)
 			.build();
 
 		assertThat(options.getModel()).isEqualTo(MiniMaxApi.DEFAULT_CHAT_MODEL);
@@ -114,7 +111,6 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 		assertThat(options.getMaskSensitiveInfo()).isNull();
 		assertThat(options.getTools()).isNull();
 		assertThat(options.getToolChoice()).isNull();
-		assertThat(options.getInternalToolExecutionEnabled()).isNull();
 	}
 
 	@Test
@@ -153,7 +149,6 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 			.topP(0.6)
 			.maskSensitiveInfo(false)
 			.toolChoice("test")
-			.internalToolExecutionEnabled(true)
 			.toolContext(Map.of("key1", "value1"))
 			.build();
 
@@ -169,7 +164,6 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 		assertThat(options.getTopP()).isEqualTo(0.6);
 		assertThat(options.getMaskSensitiveInfo()).isEqualTo(false);
 		assertThat(options.getToolChoice()).isEqualTo("test");
-		assertThat(options.getInternalToolExecutionEnabled()).isEqualTo(true);
 		assertThat(options.getToolContext()).isEqualTo(Map.of("key1", "value1"));
 	}
 
@@ -188,7 +182,6 @@ class MiniMaxChatOptionsTests extends AbstractChatOptionsTests<MiniMaxChatOption
 		assertThat(options.getTopP()).isNull();
 		assertThat(options.getMaskSensitiveInfo()).isNull();
 		assertThat(options.getToolChoice()).isNull();
-		assertThat(options.getInternalToolExecutionEnabled()).isNull();
 		assertThat(options.getToolContext()).isNull();
 	}
 

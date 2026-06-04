@@ -263,6 +263,8 @@ Prompt prompt = new Prompt("What day is tomorrow?", chatOptions);
 chatModel.call(prompt);
 ----
 
+NOTE: Calling `ChatModel` directly sends the tool definitions to the AI model, but tool calls in the response are *not* executed automatically. Use `ChatClient` (which auto-registers `ToolCallAdvisor`) for automatic execution, or implement xref:_user_controlled_tool_execution[user-controlled tool execution] to drive the loop yourself.
+
 ==== Adding Default Tools to `ChatModel`
 
 When using the declarative specification approach, you can add default tools to `ChatModel` at construction time by passing the tool class instance to the `toolCallbacks()` method of the `ToolCallingChatOptions` instance used to create the `ChatModel`.
@@ -431,6 +433,8 @@ Prompt prompt = new Prompt("What day is tomorrow?", chatOptions);
 chatModel.call(prompt);
 ----
 
+NOTE: Calling `ChatModel` directly sends the tool definitions to the AI model, but tool calls in the response are *not* executed automatically. Use `ChatClient` (which auto-registers `ToolCallAdvisor`) for automatic execution, or implement xref:_user_controlled_tool_execution[user-controlled tool execution] to drive the loop yourself.
+
 ==== Adding Default Tools to `ChatModel`
 
 When using the programmatic specification approach, you can add default tools to a `ChatModel` at construction time by passing the `MethodToolCallback` instance to the `toolCallbacks()` method of the `ToolCallingChatOptions` instance used to create the `ChatModel`.
@@ -553,6 +557,8 @@ Prompt prompt = new Prompt("What's the weather like in Copenhagen?", chatOptions
 chatModel.call(prompt);
 ----
 
+NOTE: Calling `ChatModel` directly sends the tool definitions to the AI model, but tool calls in the response are *not* executed automatically. Use `ChatClient` (which auto-registers `ToolCallAdvisor`) for automatic execution, or implement xref:_user_controlled_tool_execution[user-controlled tool execution] to drive the loop yourself.
+
 ==== Adding Default Tools to `ChatModel`
 
 When using the programmatic specification approach, you can add default tools to a `ChatModel` at construction time by passing the `FunctionToolCallback` instance to the `toolCallbacks()` method of the `ToolCallingChatOptions` instance used to create the `ChatModel`.
@@ -664,6 +670,8 @@ ChatOptions chatOptions = ToolCallingChatOptions.builder()
 Prompt prompt = new Prompt("What's the weather like in Copenhagen?", chatOptions);
 chatModel.call(prompt);
 ----
+
+NOTE: Calling `ChatModel` directly sends the tool definitions to the AI model, but tool calls in the response are *not* executed automatically. Use `ChatClient` (which auto-registers `ToolCallAdvisor`) for automatic execution, or implement xref:_user_controlled_tool_execution[user-controlled tool execution] to drive the loop yourself.
 
 ==== Adding Default Tools to `ChatModel`
 
@@ -1076,57 +1084,59 @@ ToolCallingManager toolCallingManager() {
 }
 ----
 
-Spring AI supports three approaches to tool execution lifecycle management. The recommended approach is <<_advisor_controlled_tool_execution_with_toolcalladvisor,Advisor-Controlled Tool Execution>> via `ChatClient`. The framework also supports the legacy <<_framework_controlled_tool_execution,Framework-Controlled Tool Execution>> inside `ChatModel` (deprecated since 2.0.0) and a fully <<_user_controlled_tool_execution,User-Controlled Tool Execution>> mode. This section describes these three approaches.
+Spring AI supports three approaches to tool execution lifecycle management. The recommended approach is <<_framework_controlled_tool_execution,Framework-Controlled Tool Execution>> via `ChatClient`, which handles the tool calling loop automatically. For cases that require customizing the tool calling loop, <<_advisor_controlled_tool_execution_with_toolcalladvisor,Advisor-Controlled Tool Execution>> is available. When you need full manual control, a <<_user_controlled_tool_execution,User-Controlled Tool Execution>> mode is also available.
 
 === Framework-Controlled Tool Execution
 
-DEPRECATED: Internal tool execution inside `ChatModel` implementations is deprecated since 2.0.0 and will be removed in 3.0.0. Use <<_advisor_controlled_tool_execution_with_toolcalladvisor,Advisor-Controlled Tool Execution>> via `ChatClient` instead.
-
-When using the default behavior, Spring AI will automatically intercept any tool call request from the model, call the tool and return the result to the model. All of this is done transparently for you by each `ChatModel` implementation using a `ToolCallingManager`.
+When using `ChatClient`, Spring AI automatically handles the entire tool calling lifecycle through the `ToolCallAdvisor`, which is auto-registered in the advisor chain whenever tools are configured. All of this is done transparently — you provide the tools and ask your question; the framework manages the rest.
 
 image::tools/framework-manager.jpg[Framework-controlled tool execution lifecycle, width=700, align="center"]
 
-1. When we want to make a tool available to the model, we include its definition in the chat request (`Prompt`) and invoke the `ChatModel` API which sends the request to the AI model.
-2. When the model decides to call a tool, it sends a response (`ChatResponse`) with the tool name and the input parameters modeled after the defined schema.
-3. The `ChatModel` sends the tool call request to the `ToolCallingManager` API.
-4. The `ToolCallingManager` is responsible for identifying the tool to call and executing it with the provided input parameters.
-5. The result of the tool call is returned to the `ToolCallingManager`.
-6. The `ToolCallingManager` returns the tool execution result back to the `ChatModel`.
-7. The `ChatModel` sends the tool execution result back to the AI model (`ToolResponseMessage`).
-8. The AI model generates the final response using the tool call result as additional context and sends it back to the caller (`ChatResponse`) via the `ChatClient`.
-
-WARNING: Currently, the internal messages exchanged with the model regarding the tool execution are not exposed to the user. If you need to access these messages, you should use the user-controlled tool execution approach.
-
-The logic determining whether a tool call is eligible for execution is handled by the `ToolExecutionEligibilityPredicate` interface.
-
-DEPRECATED: `ToolExecutionEligibilityPredicate` is deprecated since 2.0.0 and will be removed in 3.0.0.
-
-By default, the tool execution eligibility is determined by checking if the `internalToolExecutionEnabled` attribute of `ToolCallingChatOptions` is set to `true` (the default value), and if the `ChatResponse` contains any tool calls.
+1. When we want to make a tool available to the model, we include its definition in the chat request and invoke the `ChatClient` API, which sends the request to the AI model.
+2. When the model decides to call a tool, it sends a response with the tool name and input parameters.
+3. The `ToolCallAdvisor` in the advisor chain intercepts the response and sends the tool call request to the `ToolCallingManager`.
+4. The `ToolCallingManager` identifies and executes the tool with the provided input parameters.
+5. The tool execution result is returned to the `ToolCallingManager`.
+6. The `ToolCallingManager` returns the result to the `ToolCallAdvisor`.
+7. The `ToolCallAdvisor` sends the tool execution result back to the AI model as a `ToolResponseMessage`.
+8. The AI model generates the final response using the tool result as additional context and returns it to the caller via `ChatClient`.
 
 [source,java]
 ----
-public class DefaultToolExecutionEligibilityPredicate implements ToolExecutionEligibilityPredicate {
-
-	@Override
-	public boolean test(ChatOptions promptOptions, ChatResponse chatResponse) {
-		return ToolCallingChatOptions.isInternalToolExecutionEnabled(promptOptions) && chatResponse != null
-				&& chatResponse.hasToolCalls();
-	}
-
-}
+String response = ChatClient.create(chatModel)
+    .prompt("What day is tomorrow?")
+    .tools(new DateTimeTools())
+    .call()
+    .content();
 ----
 
-You can provide your custom implementation of `ToolExecutionEligibilityPredicate` when creating the `ChatModel` bean.
+To disable auto-registration globally for all calls from an auto-configured `ChatClient`, set the following property:
+
+[source,properties]
+----
+spring.ai.chat.client.tool-calling.enabled=false
+----
+
+To disable it for a single call only:
+
+[source,java]
+----
+chatClient.prompt("What day is tomorrow?")
+    .tools(new DateTimeTools())
+    .advisors(AdvisorParams.toolCallAdvisorAutoRegister(false))
+    .call()
+    .content();
+----
 
 === Advisor-Controlled Tool Execution with ToolCallAdvisor
 
-As an alternative to the framework-controlled tool execution, you can use the `ToolCallAdvisor` to implement tool calling as part of the xref:api/chatclient.adoc#_advisors[advisor chain]. This approach provides several advantages:
+For cases that require customizing the tool calling loop, you can configure `ToolCallAdvisor` explicitly. `ToolCallAdvisor` implements the tool calling loop as part of the xref:api/chatclient.adoc#_advisors[advisor chain] and exposes several extension points:
 
 * **Observability**: Other advisors in the chain can intercept and observe each tool call iteration
 * **Integration with Chat Memory**: Works seamlessly with Chat Memory advisors for conversation history management
-* **Extensibility**: The advisor can be extended to customize the tool calling behavior
+* **Extensibility**: Custom `ToolExecutionEligibilityChecker` and hook methods allow fine-grained control over the loop
 
-The `ToolCallAdvisor` implements the tool calling loop and disables the model's internal tool execution. When the model requests a tool call, the advisor executes the tool and sends the result back to the model, continuing until no more tool calls are needed.
+When the model requests a tool call, `ToolCallAdvisor` executes the tool via `ToolCallingManager` and sends the result back to the model, looping until no more tool calls are needed.
 
 [source,java]
 ----
@@ -1153,6 +1163,7 @@ The `ToolCallAdvisor.Builder` supports the following configuration options:
 - `advisorOrder`: The order in which the advisor is applied in the chain. Must be between `BaseAdvisor.HIGHEST_PRECEDENCE` and `BaseAdvisor.LOWEST_PRECEDENCE`.
 - `conversationHistoryEnabled`: Controls whether the advisor maintains conversation history internally during tool call iterations. Default is `true`.
 - `streamToolCallResponses`: When `true`, each tool-call iteration streams its chunks in real time during a `.stream()` call. When `false` (default), only the final answer is streamed.
+- `toolExecutionEligibilityChecker`: A `Function<ChatResponse, Boolean>` that decides whether a model response should trigger the next tool-call iteration. The default checks `chatResponse.hasToolCalls()`. Override this to apply provider-specific stop-reason logic (e.g. checking a finish reason field in addition to tool-call presence).
 
 ==== Conversation History Management
 
@@ -1185,9 +1196,9 @@ For more details about `ToolCallAdvisor`, see xref:api/advisors-recursive.adoc#_
 
 === User-Controlled Tool Execution
 
-There are cases where you'd rather control the tool execution lifecycle yourself. You can do so by setting the `internalToolExecutionEnabled` attribute of `ToolCallingChatOptions` to `false`.
+There are cases where you'd rather control the tool execution lifecycle yourself. To do so, invoke the `ChatModel` directly without adding `ToolCallAdvisor` to the advisor chain.
 
-When you invoke a `ChatModel` with this option, the tool execution will be delegated to the caller, giving you full control over the tool execution lifecycle. It's your responsibility checking for tool calls in the `ChatResponse` and executing them using the `ToolCallingManager`.
+It's your responsibility to check for tool calls in the `ChatResponse` and execute them using the `ToolCallingManager`.
 
 The following example demonstrates a minimal implementation of the user-controlled tool execution approach:
 
@@ -1198,7 +1209,6 @@ ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
 
 ChatOptions chatOptions = ToolCallingChatOptions.builder()
     .toolCallbacks(ToolCallbacks.from(new CustomerTools()))
-    .internalToolExecutionEnabled(false)
     .build();
 Prompt prompt = new Prompt("Tell me more about the customer with ID 42", chatOptions);
 
@@ -1227,7 +1237,6 @@ ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
 
 ChatOptions chatOptions = ToolCallingChatOptions.builder()
     .toolCallbacks(new CustomerTools())
-    .internalToolExecutionEnabled(false)
     .build();
 Prompt prompt = new Prompt("Tell me more about the customer with ID 42", chatOptions);
 
@@ -1260,7 +1269,6 @@ String conversationId = UUID.randomUUID().toString();
 
 ChatOptions chatOptions = ToolCallingChatOptions.builder()
     .toolCallbacks(ToolCallbacks.from(new MathTools()))
-    .internalToolExecutionEnabled(false)
     .build();
 Prompt prompt = new Prompt(
         List.of(new SystemMessage("You are a helpful assistant."), new UserMessage("What is 6 * 8?")),
@@ -1371,7 +1379,7 @@ ToolCallbackResolver toolCallbackResolver(List<FunctionCallback> toolCallbacks) 
 }
 ----
 
-The `ToolCallbackResolver` is used internally by the `ToolCallingManager` to resolve tools dynamically at runtime, supporting both xref:_framework_controlled_tool_execution[] and xref:_user_controlled_tool_execution[].
+The `ToolCallbackResolver` is used internally by the `ToolCallingManager` to resolve tools dynamically at runtime, supporting both xref:_advisor_controlled_tool_execution_with_toolcalladvisor[] and xref:_user_controlled_tool_execution[].
 
 [[tool-argument-augmentation]]
 == Tool Argument Augmentation

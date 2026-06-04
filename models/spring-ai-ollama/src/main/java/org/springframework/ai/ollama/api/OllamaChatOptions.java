@@ -62,9 +62,8 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 			@Nullable Integer mirostat, @Nullable Float mirostatTau, @Nullable Float mirostatEta,
 			@Nullable Boolean penalizeNewline, @Nullable List<String> stop, @Nullable String model,
 			@Nullable Object format, @Nullable String keepAlive, @Nullable Boolean truncate,
-			@Nullable ThinkOption thinkOption, @Nullable Boolean internalToolExecutionEnabled,
-			@Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames,
-			@Nullable Map<String, Object> toolContext) {
+			@Nullable ThinkOption thinkOption, @Nullable List<ToolCallback> toolCallbacks,
+			@Nullable Set<String> toolNames, @Nullable Map<String, Object> toolContext) {
 		this.useNUMA = useNUMA;
 		this.numCtx = numCtx;
 		this.numBatch = numBatch;
@@ -100,7 +99,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.keepAlive = keepAlive;
 		this.truncate = truncate;
 		this.thinkOption = thinkOption;
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
 		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : null;
 		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
@@ -359,8 +357,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 */
 	private final @Nullable ThinkOption thinkOption;
 
-	private final @Nullable Boolean internalToolExecutionEnabled;
-
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
 	 * For Prompt Options the toolCallbacks are automatically enabled for the duration of the prompt execution.
@@ -603,11 +599,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	public @Nullable Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	@Override
 	public @Nullable Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
@@ -686,7 +677,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 			.toolCallbacks(this.getToolCallbacks())
 			.toolNames(this.getToolNames())
 			.toolContext(this.getToolContext())
-			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
 			// StructuredOutputChatOptions
 			.format(this.format)
 			// Ollama Specific
@@ -749,7 +739,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 				&& Objects.equals(this.mirostatEta, that.mirostatEta)
 				&& Objects.equals(this.penalizeNewline, that.penalizeNewline) && Objects.equals(this.stop, that.stop)
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
-				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext);
 	}
 
@@ -761,7 +750,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 				this.topK, this.topP, this.minP, this.tfsZ, this.typicalP, this.repeatLastN, this.temperature,
 				this.repeatPenalty, this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau,
 				this.mirostatEta, this.penalizeNewline, this.stop, this.toolCallbacks, this.toolNames,
-				this.internalToolExecutionEnabled, this.toolContext);
+				this.toolContext);
 	}
 
 	// public Builder class exposed to users. Avoids having to deal with noisy generic
@@ -1157,7 +1146,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 					this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty, this.presencePenalty,
 					this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta, this.penalizeNewline,
 					this.stopSequences, this.model, this.format, this.keepAlive, this.truncate, this.thinkOption,
-					this.internalToolExecutionEnabled, this.toolCallbacks, this.toolNames, this.toolContext);
+					this.toolCallbacks, this.toolNames, this.toolContext);
 		}
 
 	}

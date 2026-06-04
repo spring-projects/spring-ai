@@ -64,8 +64,6 @@ public class AnthropicChatProperties {
 
 	private @Nullable Boolean disableParallelToolUse;
 
-	private @Nullable Boolean internalToolExecutionEnabled;
-
 	private @Nullable OutputConfig outputConfig;
 
 	private @Nullable AnthropicWebSearchTool webSearchTool;
@@ -165,14 +163,6 @@ public class AnthropicChatProperties {
 		this.disableParallelToolUse = disableParallelToolUse;
 	}
 
-	public @Nullable Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
 	public @Nullable OutputConfig getOutputConfig() {
 		return this.outputConfig;
 	}
@@ -241,7 +231,6 @@ public class AnthropicChatProperties {
 			.toolChoice(this.toolChoice)
 			.thinking(this.thinking)
 			.disableParallelToolUse(this.disableParallelToolUse)
-			.internalToolExecutionEnabled(this.internalToolExecutionEnabled)
 			.outputConfig(this.outputConfig)
 			.webSearchTool(this.webSearchTool)
 			.serviceTier(this.serviceTier)
@@ -361,16 +350,6 @@ public class AnthropicChatProperties {
 
 		public void setDisableParallelToolUse(@Nullable Boolean disableParallelToolUse) {
 			AnthropicChatProperties.this.setDisableParallelToolUse(disableParallelToolUse);
-		}
-
-		@DeprecatedConfigurationProperty(replacement = "spring.ai.anthropic.chat.internal-tool-execution-enabled")
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		public @Nullable Boolean getInternalToolExecutionEnabled() {
-			return AnthropicChatProperties.this.getInternalToolExecutionEnabled();
-		}
-
-		public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			AnthropicChatProperties.this.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
 		}
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.anthropic.chat.output-config")

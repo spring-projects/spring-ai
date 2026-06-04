@@ -4,6 +4,83 @@
 [[upgrading-to-2-0-0-RC1]]
 == Upgrading to 2.0.0-RC1
 
+=== Tool Calling
+
+==== Removed: `internalToolExecutionEnabled` from `ToolCallingChatOptions`
+
+The `internalToolExecutionEnabled` option has been removed from `ToolCallingChatOptions` and all provider-specific `ChatOptions` classes (e.g. `OpenAiChatOptions`, `AnthropicChatOptions`). The corresponding Spring Boot configuration property `spring.ai.<provider>.chat.internal-tool-execution-enabled` has also been removed.
+
+===== Impact
+
+Code that sets `.internalToolExecutionEnabled(false)` to opt into user-controlled tool execution will no longer compile.
+Code that sets `.internalToolExecutionEnabled(true)` (explicitly enabling the internal loop) will no longer compile, and the behaviour it implied no longer exists — per-model internal tool execution has been removed from all `ChatModel` implementations.
+
+===== Migration
+
+Remove all calls to `.internalToolExecutionEnabled(...)`. The recommended approaches are:
+
+* **`ToolCallAdvisor` via `ChatClient`** (recommended) — auto-registered when tools are present; no flag needed.
+* **User-controlled loop via `ChatModel` directly** — simply invoke `ChatModel` without `ToolCallAdvisor`. Tool calls will not be executed automatically; check `chatResponse.hasToolCalls()` yourself and drive the loop with `ToolCallingManager`.
+
+[source,java]
+----
+// Before
+ChatOptions options = ToolCallingChatOptions.builder()
+    .toolCallbacks(ToolCallbacks.from(new MyTools()))
+    .internalToolExecutionEnabled(false)   // <-- remove this line
+    .build();
+
+// After
+ChatOptions options = ToolCallingChatOptions.builder()
+    .toolCallbacks(ToolCallbacks.from(new MyTools()))
+    .build();
+----
+
+==== Removed: `ToolExecutionEligibilityPredicate` and `DefaultToolExecutionEligibilityPredicate`
+
+`ToolExecutionEligibilityPredicate` (previously deprecated since 2.0.0) and its default implementation `DefaultToolExecutionEligibilityPredicate` have been removed. These interfaces combined an options-based policy check (`internalToolExecutionEnabled`) with a response check (`hasToolCalls()`). Since the options-based flag is gone, there is no replacement at the `ChatModel` level.
+
+===== Migration
+
+If you implemented `ToolExecutionEligibilityPredicate` to customize when tool execution fires, migrate to `ToolExecutionEligibilityChecker` (see below) and supply it to `ToolCallAdvisor`.
+
+==== New: `ToolExecutionEligibilityChecker` in `ToolCallAdvisor`
+
+`ToolExecutionEligibilityChecker` (`Function<ChatResponse, Boolean>`) can now be set on `ToolCallAdvisor.Builder` to customize when the tool-call loop iterates. The default is `chatResponse -> chatResponse != null && chatResponse.hasToolCalls()`.
+
+This is the extension point for provider-specific stop-reason logic (e.g. checking a finish reason in addition to tool-call presence):
+
+[source,java]
+----
+ToolCallAdvisor advisor = ToolCallAdvisor.builder()
+    .toolExecutionEligibilityChecker(response ->
+        response != null && response.hasToolCalls()
+            && !"stop".equals(response.getResult().getMetadata().getFinishReason()))
+    .build();
+----
+
+Spring Boot users can provide a `ToolExecutionEligibilityChecker` bean; it will be picked up automatically by the auto-configured `ToolCallAdvisor.Builder`:
+
+[source,java]
+----
+@Bean
+ToolExecutionEligibilityChecker myChecker() {
+    return response -> response != null && response.hasToolCalls();
+}
+----
+
+==== New: `spring.ai.chat.client.tool-calling.enabled` Property
+
+A new `spring.ai.chat.client.tool-calling.enabled` property (default `true`) controls whether the `ToolCallAdvisor` is auto-registered by the auto-configured `ChatClient`.
+Set it to `false` to disable automatic tool execution for all calls — tools are still sent to the AI model as definitions, but tool call responses are not executed automatically.
+
+[source,properties]
+----
+spring.ai.chat.client.tool-calling.enabled=false
+----
+
+This is a global alternative to using `AdvisorParams.toolCallAdvisorAutoRegister(false)` on every individual call.
+
 === Options Immutability and Default Values
 
 ==== Strict Immutability for Options

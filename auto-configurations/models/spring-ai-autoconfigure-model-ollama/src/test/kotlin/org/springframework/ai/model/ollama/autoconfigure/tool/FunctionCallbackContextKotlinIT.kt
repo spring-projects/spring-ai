@@ -71,7 +71,6 @@ class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 			val options = OllamaChatOptions.builder()
 				.model(MODEL_NAME)
 				.toolNames("weatherInfo")
-				.internalToolExecutionEnabled(false)
 				.build()
 
 			var prompt = Prompt(listOf(userMessage), options)
@@ -102,7 +101,6 @@ class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 			val options = OllamaChatOptions.builder()
 				.model(MODEL_NAME)
 				.toolNames("weatherInfo")
-				.internalToolExecutionEnabled(false)
 				.build()
 
 			var prompt = Prompt(listOf(userMessage), options)
