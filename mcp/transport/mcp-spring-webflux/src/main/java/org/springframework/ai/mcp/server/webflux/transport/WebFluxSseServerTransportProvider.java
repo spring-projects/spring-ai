@@ -19,7 +19,6 @@ package org.springframework.ai.mcp.server.webflux.transport;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -333,7 +332,7 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 		}
 
 		try {
-			Map<String, List<String>> headers = request.headers().asHttpHeaders().asMultiValueMap();
+			var headers = HeaderUtils.collectHeaders(request);
 			this.securityValidator.validateHeaders(headers);
 		}
 		catch (ServerTransportSecurityException e) {
@@ -405,7 +404,7 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 		}
 
 		try {
-			Map<String, List<String>> headers = request.headers().asHttpHeaders().asMultiValueMap();
+			var headers = HeaderUtils.collectHeaders(request);
 			this.securityValidator.validateHeaders(headers);
 		}
 		catch (ServerTransportSecurityException e) {

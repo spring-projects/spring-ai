@@ -18,7 +18,6 @@ package org.springframework.ai.mcp.server.webmvc.transport;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -73,17 +72,12 @@ class HeaderUtilsTests {
 	void collectHeadersMixedCase() {
 		ServerRequest request = mock(ServerRequest.class);
 		ServerRequest.Headers headers = mock(ServerRequest.Headers.class);
-		HttpHeaders httpHeaders = mock(HttpHeaders.class);
+		HttpHeaders httpHeaders = new HttpHeaders();
+		httpHeaders.addAll("X-Custom", List.of("one", "two"));
+		httpHeaders.add("x-custom", "three");
 
 		when(request.headers()).thenReturn(headers);
 		when(headers.asHttpHeaders()).thenReturn(httpHeaders);
-
-		// Mock headerNames to return mixed case keys
-		when(httpHeaders.headerNames()).thenReturn(Set.of("X-Custom", "x-custom"));
-
-		// Mock header values for each key
-		when(headers.header("X-Custom")).thenReturn(List.of("one", "two"));
-		when(headers.header("x-custom")).thenReturn(List.of("three"));
 
 		Map<String, List<String>> result = HeaderUtils.collectHeaders(request);
 

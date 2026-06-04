@@ -19,7 +19,6 @@ package org.springframework.ai.mcp.server.webmvc.transport;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -272,7 +271,7 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		}
 
 		try {
-			Map<String, List<String>> headers = request.headers().asHttpHeaders().asMultiValueMap();
+			var headers = HeaderUtils.collectHeaders(request);
 			this.securityValidator.validateHeaders(headers);
 		}
 		catch (ServerTransportSecurityException e) {
