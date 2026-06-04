@@ -859,7 +859,21 @@ The `ToolCallAdvisor` is registered at `Ordered.HIGHEST_PRECEDENCE + 300` by def
 
 ==== Disabling Auto-Registration
 
-You can disable the auto-registration per call using `AdvisorParams.toolCallAdvisorAutoRegister(false)`:
+===== Globally (all calls)
+
+Set `spring.ai.chat.client.tool-calling.enabled=false` to disable auto-registration for every call made from the auto-configured `ChatClient`:
+
+[source,properties]
+----
+spring.ai.chat.client.tool-calling.enabled=false
+----
+
+When this property is set, tools are still sent to the AI model as definitions, but tool calls in the response are not executed automatically.
+Use xref:api/tools.adoc#_user_controlled_tool_execution[user-controlled tool execution] to drive the loop yourself.
+
+===== Per call
+
+You can disable auto-registration for a single call using `AdvisorParams.toolCallAdvisorAutoRegister(false)`:
 
 [source,java]
 ----
@@ -900,6 +914,16 @@ chatClient.prompt("What day is tomorrow?")
 ----
 
 ==== Customizing the Default ToolCallAdvisor
+
+The `spring.ai.chat.client.tool-calling.*` properties control the auto-configured `ToolCallAdvisor`:
+
+[cols="3,1,3", options="header"]
+|===
+| Property | Default | Description
+| `spring.ai.chat.client.tool-calling.enabled` | `true` | Set to `false` to disable `ToolCallAdvisor` auto-registration for all calls. Tools are still sent to the model, but tool calls are not executed automatically.
+| `spring.ai.chat.client.tool-calling.advisor-order` | `Ordered.HIGHEST_PRECEDENCE + 300` | Position of the auto-registered `ToolCallAdvisor` in the advisor chain.
+| `spring.ai.chat.client.tool-calling.stream-tool-call-responses` | `false` | When `true`, intermediate tool-call chunks are streamed in real time during `.stream()` calls.
+|===
 
 ===== Spring Boot: advisor order property
 

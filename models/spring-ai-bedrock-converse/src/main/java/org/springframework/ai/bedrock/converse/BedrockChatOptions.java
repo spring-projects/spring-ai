@@ -63,8 +63,6 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 
 	private final @Nullable Map<String, Object> toolContext;
 
-	private final @Nullable Boolean internalToolExecutionEnabled;
-
 	private final @Nullable BedrockCacheOptions cacheOptions;
 
 	private final @Nullable String outputSchema;
@@ -72,8 +70,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	protected BedrockChatOptions(@Nullable String model, @Nullable Double frequencyPenalty, @Nullable Integer maxTokens,
 			@Nullable Double presencePenalty, @Nullable Map<String, String> requestParameters,
 			@Nullable List<String> stopSequences, @Nullable Double temperature, @Nullable Integer topK,
-			@Nullable Double topP, @Nullable Boolean internalToolExecutionEnabled,
-			@Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames,
+			@Nullable Double topP, @Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames,
 			@Nullable Map<String, Object> toolContext, @Nullable BedrockCacheOptions cacheOptions,
 			@Nullable String outputSchema) {
 		this.model = model;
@@ -85,7 +82,6 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		this.temperature = temperature;
 		this.topK = topK;
 		this.topP = topP;
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
 		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : null;
 		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
@@ -156,11 +152,6 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		return this.toolContext;
 	}
 
-	@Override
-	@Nullable public Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
 	public @Nullable BedrockCacheOptions getCacheOptions() {
 		return this.cacheOptions;
 	}
@@ -186,7 +177,6 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 			.toolCallbacks(this.getToolCallbacks())
 			.toolNames(this.getToolNames())
 			.toolContext(this.getToolContext())
-			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
 			// Bedrock Specific
 			.requestParameters(this.requestParameters)
 			.cacheOptions(this.cacheOptions)
@@ -209,7 +199,6 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topK, that.topK)
 				&& Objects.equals(this.topP, that.topP) && Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext)
-				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.cacheOptions, that.cacheOptions)
 				&& Objects.equals(this.outputSchema, that.outputSchema);
 	}
@@ -218,7 +207,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	public int hashCode() {
 		return Objects.hash(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 				this.requestParameters, this.stopSequences, this.temperature, this.topK, this.topP, this.toolCallbacks,
-				this.toolNames, this.toolContext, this.internalToolExecutionEnabled, this.cacheOptions);
+				this.toolNames, this.toolContext, this.cacheOptions);
 	}
 
 	// public Builder class exposed to users. Avoids having to deal with noisy generic
@@ -286,8 +275,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		public BedrockChatOptions build() {
 			return new BedrockChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 					this.requestParameters, this.stopSequences, this.temperature, this.topK, this.topP,
-					this.internalToolExecutionEnabled, this.toolCallbacks, this.toolNames, this.toolContext,
-					this.cacheOptions, this.outputSchema);
+					this.toolCallbacks, this.toolNames, this.toolContext, this.cacheOptions, this.outputSchema);
 		}
 
 	}

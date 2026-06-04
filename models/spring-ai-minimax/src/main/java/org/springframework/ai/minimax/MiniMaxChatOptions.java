@@ -139,11 +139,6 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 
 	private final @Nullable Map<String, Object> toolContext;
 
-	/**
-	 * Whether to enable the tool execution lifecycle internally in ChatModel.
-	 */
-	private final @Nullable Boolean internalToolExecutionEnabled;
-
 	// @formatter:on
 
 	protected MiniMaxChatOptions(@Nullable String model, @Nullable Double frequencyPenalty, @Nullable Integer maxTokens,
@@ -152,7 +147,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 			@Nullable List<String> stop, @Nullable Double temperature, @Nullable Double topP,
 			@Nullable Boolean maskSensitiveInfo, @Nullable List<MiniMaxApi.FunctionTool> tools,
 			@Nullable String toolChoice, @Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames,
-			@Nullable Map<String, Object> toolContext, @Nullable Boolean internalToolExecutionEnabled) {
+			@Nullable Map<String, Object> toolContext) {
 		this.model = model != null ? model : MiniMaxApi.DEFAULT_CHAT_MODEL;
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
@@ -169,7 +164,6 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
 		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : null;
 		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
 	public static Builder builder() {
@@ -255,11 +249,6 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public @Nullable Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	@Override
 	public @Nullable Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
@@ -268,8 +257,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	public int hashCode() {
 		return Objects.hash(this.model, this.frequencyPenalty, this.maxTokens, this.n, this.presencePenalty,
 				this.responseFormat, this.seed, this.stop, this.temperature, this.topP, this.maskSensitiveInfo,
-				this.tools, this.toolChoice, this.toolCallbacks, this.toolNames, this.toolContext,
-				this.internalToolExecutionEnabled);
+				this.tools, this.toolChoice, this.toolCallbacks, this.toolNames, this.toolContext);
 	}
 
 	@Override
@@ -290,8 +278,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.maskSensitiveInfo, that.maskSensitiveInfo)
 				&& Objects.equals(this.tools, that.tools) && Objects.equals(this.toolChoice, that.toolChoice)
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
-				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext)
-				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled);
+				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext);
 	}
 
 	@Override
@@ -310,7 +297,6 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 			.toolCallbacks(this.getToolCallbacks())
 			.toolNames(this.getToolNames())
 			.toolContext(this.getToolContext())
-			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
 			// MiniMax Specific
 			.n(this.n)
 			.responseFormat(this.responseFormat)
@@ -420,7 +406,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 			return new MiniMaxChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.n,
 					this.presencePenalty, this.responseFormat, this.seed, this.stopSequences, this.temperature,
 					this.topP, this.maskSensitiveInfo, this.tools, this.toolChoice, this.toolCallbacks, this.toolNames,
-					this.toolContext, this.internalToolExecutionEnabled);
+					this.toolContext);
 		}
 
 	}

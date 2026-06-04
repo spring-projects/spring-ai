@@ -38,24 +38,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ToolCallingChatOptionsTests {
 
 	@Test
-	void whenToolCallingChatOptionsAndExecutionEnabledTrue() {
-		ToolCallingChatOptions options = ToolCallingChatOptions.builder().internalToolExecutionEnabled(true).build();
-		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options)).isTrue();
-	}
-
-	@Test
-	void whenToolCallingChatOptionsAndExecutionEnabledFalse() {
-		ToolCallingChatOptions options = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
-		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options)).isFalse();
-	}
-
-	@Test
-	void whenToolCallingChatOptionsAndExecutionEnabledDefault() {
-		ToolCallingChatOptions options = DefaultToolCallingChatOptions.builder().build();
-		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options)).isTrue();
-	}
-
-	@Test
 	void whenMergeRuntimeAndDefaultToolNames() {
 		Set<String> runtimeToolNames = Set.of("toolA");
 		Set<String> defaultToolNames = Set.of("toolB");

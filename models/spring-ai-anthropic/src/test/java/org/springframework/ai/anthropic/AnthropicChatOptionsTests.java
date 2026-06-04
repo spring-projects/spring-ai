@@ -78,7 +78,6 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 			.disableParallelToolUse(true)
 			.toolNames("tool1", "tool2")
 			.toolContext(Map.of("key", "value"))
-			.internalToolExecutionEnabled(true)
 			.build();
 
 		assertThat(options.getModel()).isEqualTo("test-model");
@@ -95,7 +94,6 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		assertThat(options.getDisableParallelToolUse()).isTrue();
 		assertThat(options.getToolNames()).containsExactlyInAnyOrder("tool1", "tool2");
 		assertThat(options.getToolContext()).containsEntry("key", "value");
-		assertThat(options.getInternalToolExecutionEnabled()).isTrue();
 	}
 
 	@Test

@@ -146,7 +146,6 @@ class AnthropicPromptCachingIT {
 			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS).build())
 			.maxTokens(200)
 			.temperature(0.3)
-			.internalToolExecutionEnabled(false)
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get current weather for a location")
 				.inputType(MockWeatherService.Request.class)
@@ -419,7 +418,6 @@ class AnthropicPromptCachingIT {
 				.description("Get current weather for a location")
 				.inputType(MockWeatherService.Request.class)
 				.build())
-			.internalToolExecutionEnabled(false)
 			.maxTokens(80)
 			.temperature(0.3)
 			.build();

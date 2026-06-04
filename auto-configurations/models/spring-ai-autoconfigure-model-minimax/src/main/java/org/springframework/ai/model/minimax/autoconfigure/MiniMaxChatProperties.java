@@ -62,8 +62,6 @@ public class MiniMaxChatProperties extends MiniMaxParentProperties {
 
 	private @Nullable String toolChoice;
 
-	private @Nullable Boolean internalToolExecutionEnabled;
-
 	public @Nullable String getModel() {
 		return this.model;
 	}
@@ -168,14 +166,6 @@ public class MiniMaxChatProperties extends MiniMaxParentProperties {
 		this.toolChoice = toolChoice;
 	}
 
-	public @Nullable Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
 	public MiniMaxChatOptions toOptions() {
 		return MiniMaxChatOptions.builder()
 			.model(this.model)
@@ -191,7 +181,6 @@ public class MiniMaxChatProperties extends MiniMaxParentProperties {
 			.maskSensitiveInfo(this.maskSensitiveInfo)
 			.tools(this.tools)
 			.toolChoice(this.toolChoice)
-			.internalToolExecutionEnabled(this.internalToolExecutionEnabled)
 			.build();
 	}
 
@@ -337,16 +326,6 @@ public class MiniMaxChatProperties extends MiniMaxParentProperties {
 
 		public void setToolChoice(@Nullable String toolChoice) {
 			MiniMaxChatProperties.this.setToolChoice(toolChoice);
-		}
-
-		@DeprecatedConfigurationProperty(replacement = "spring.ai.minimax.chat.internal-tool-execution-enabled")
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		public @Nullable Boolean getInternalToolExecutionEnabled() {
-			return MiniMaxChatProperties.this.getInternalToolExecutionEnabled();
-		}
-
-		public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			MiniMaxChatProperties.this.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
 		}
 
 	}

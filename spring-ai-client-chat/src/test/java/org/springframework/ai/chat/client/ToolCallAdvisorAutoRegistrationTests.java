@@ -26,8 +26,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
@@ -44,7 +42,6 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.DefaultToolExecutionResult;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -69,11 +66,6 @@ import static org.mockito.Mockito.when;
  * {@code chain.copy(this).nextCall()}, which invokes the counting advisor once per
  * iteration. The built-in model path calls through the chain only once.
  *
- * <p>
- * A secondary signal is the {@code internalToolExecutionEnabled} flag on the
- * {@link Prompt} options: {@code ToolCallAdvisor} always sets it to {@code false} before
- * forwarding to the model, proving it — not the model — owns the tool-call lifecycle.
- *
  * @author Christian Tzolov
  * @author Sebastien Deleuze
  */
@@ -82,9 +74,6 @@ class ToolCallAdvisorAutoRegistrationTests {
 
 	@Mock
 	ChatModel chatModel;
-
-	@Captor
-	ArgumentCaptor<Prompt> promptCaptor;
 
 	ToolCallback weatherTool;
 
@@ -157,12 +146,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 			assertThat(content).isNotBlank();
 			// ToolCallAdvisor looped: initial call + retry after tool execution
 			assertThat(counter.getCallCount()).isGreaterThanOrEqualTo(2);
-
-			// ToolCallAdvisor disables internal execution on every prompt it sends
-			verify(chatModel, times(2)).call(promptCaptor.capture());
-			promptCaptor.getAllValues()
-				.forEach(p -> assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(p.getOptions()))
-					.isFalse());
+			verify(chatModel, times(2)).call(any(Prompt.class));
 		}
 
 		@Test
@@ -181,12 +165,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 
 			// No ToolCallAdvisor loop — chain traversed exactly once
 			assertThat(counter.getCallCount()).isEqualTo(1);
-
-			// internalToolExecutionEnabled NOT forced to false — model owns tool
-			// execution
-			verify(chatModel, times(1)).call(promptCaptor.capture());
-			assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(promptCaptor.getValue().getOptions()))
-				.isTrue();
+			verify(chatModel, times(1)).call(any(Prompt.class));
 		}
 
 		@Test

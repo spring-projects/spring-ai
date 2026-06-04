@@ -65,7 +65,6 @@ public class ToolCallingManagerTests {
 	void explicitToolCallingExecutionWithNewOptions() {
 		ChatOptions chatOptions = ToolCallingChatOptions.builder()
 			.toolCallbacks(ToolCallbacks.from(this.tools))
-			.internalToolExecutionEnabled(false)
 			.build();
 		Prompt prompt = new Prompt(
 				new UserMessage("What books written by %s are available in the library?".formatted("J.R.R. Tolkien")),
@@ -77,7 +76,6 @@ public class ToolCallingManagerTests {
 	void explicitToolCallingExecutionWithNewOptionsStream() {
 		ChatOptions chatOptions = ToolCallingChatOptions.builder()
 			.toolCallbacks(ToolCallbacks.from(this.tools))
-			.internalToolExecutionEnabled(false)
 			.build();
 		Prompt prompt = new Prompt(new UserMessage("What books written by %s, %s, and %s are available in the library?"
 			.formatted("J.R.R. Tolkien", "Philip Pullman", "C.S. Lewis")), chatOptions);

@@ -19,10 +19,12 @@ package org.springframework.ai.model.chat.client.autoconfigure;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientAttributes;
 import org.springframework.ai.chat.client.DefaultChatClient;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -117,6 +119,48 @@ class ChatClientAutoConfigurationTests {
 				assertThat(context).hasNotFailed();
 				var advisorBuilder = context.getBean(ToolCallAdvisor.Builder.class);
 				assertThat(ReflectionTestUtils.getField(advisorBuilder, "streamToolCallResponses")).isEqualTo(true);
+			});
+	}
+
+	@Test
+	void toolExecutionEligibilityCheckerBeanIsWiredIntoAdvisorBuilder() {
+		var manager = mock(ToolCallingManager.class);
+		ToolExecutionEligibilityChecker customChecker = chatResponse -> false;
+
+		this.contextRunner.withBean(ToolCallingManager.class, () -> manager)
+			.withBean(ToolExecutionEligibilityChecker.class, () -> customChecker)
+			.run(context -> {
+				var advisorBuilder = context.getBean(ToolCallAdvisor.Builder.class);
+				assertThat(ReflectionTestUtils.getField(advisorBuilder, "toolExecutionEligibilityChecker"))
+					.isSameAs(customChecker);
+			});
+	}
+
+	@Test
+	void defaultToolExecutionEligibilityCheckerIsUsedWhenNoBeanPresent() {
+		var manager = mock(ToolCallingManager.class);
+
+		this.contextRunner.withBean(ToolCallingManager.class, () -> manager).run(context -> {
+			var advisorBuilder = context.getBean(ToolCallAdvisor.Builder.class);
+			assertThat(ReflectionTestUtils.getField(advisorBuilder, "toolExecutionEligibilityChecker")).isNotNull();
+		});
+	}
+
+	@Test
+	void toolCallingDisabledPropertySetsAutoRegisterFalse() {
+		var manager = mock(ToolCallingManager.class);
+
+		this.contextRunner.withBean(ToolCallingManager.class, () -> manager)
+			.withPropertyValues("spring.ai.chat.client.tool-calling.enabled=false")
+			.run(context -> {
+				ChatClient.Builder chatClientBuilder = context.getBean(ChatClient.Builder.class);
+				var defaultRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ReflectionTestUtils
+					.getField(chatClientBuilder, "defaultRequest");
+				@SuppressWarnings("unchecked")
+				var advisorParams = (java.util.Map<String, Object>) ReflectionTestUtils.getField(defaultRequest,
+						"advisorParams");
+				assertThat(advisorParams).containsEntry(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey(),
+						false);
 			});
 	}
 

@@ -64,7 +64,6 @@ class FunctionCallWithPromptFunctionIT {
 			ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
 			AnthropicChatOptions options = AnthropicChatOptions.builder()
-				.internalToolExecutionEnabled(false)
 				.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
 					.inputType(MockWeatherService.Request.class)

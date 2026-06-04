@@ -21,6 +21,7 @@ import io.micrometer.tracing.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientBuilderCustomizer;
 import org.springframework.ai.chat.client.ChatClientCustomizer;
@@ -32,6 +33,7 @@ import org.springframework.ai.chat.client.observation.ChatClientObservationConve
 import org.springframework.ai.chat.client.observation.ChatClientPromptContentObservationHandler;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.observation.TracingAwareLoggingObservationHandler;
 import org.springframework.beans.factory.ObjectProvider;
@@ -96,17 +98,23 @@ public class ChatClientAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(ToolCallingManager.class)
 	ToolCallAdvisor.Builder<?> toolCallAdvisorBuilder(ChatClientBuilderProperties properties,
-			ToolCallingManager toolCallingManager) {
-		return ToolCallAdvisor.builder()
+			ToolCallingManager toolCallingManager,
+			ObjectProvider<ToolExecutionEligibilityChecker> toolExecutionEligibilityChecker) {
+		var builder = ToolCallAdvisor.builder()
 			.toolCallingManager(toolCallingManager)
 			.advisorOrder(properties.getToolCalling().getAdvisorOrder())
 			.streamToolCallResponses(properties.getToolCalling().isStreamToolCallResponses());
+
+		toolExecutionEligibilityChecker.ifAvailable(builder::toolExecutionEligibilityChecker);
+
+		return builder;
 	}
 
 	@Bean
 	@Scope("prototype")
 	@ConditionalOnMissingBean
-	ChatClient.Builder chatClientBuilder(ChatClientBuilderConfigurer chatClientBuilderConfigurer, ChatModel chatModel,
+	ChatClient.Builder chatClientBuilder(ChatClientBuilderProperties properties,
+			ChatClientBuilderConfigurer chatClientBuilderConfigurer, ChatModel chatModel,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatClientObservationConvention> chatClientObservationConvention,
 			ObjectProvider<AdvisorObservationConvention> advisorObservationConvention,
@@ -115,6 +123,9 @@ public class ChatClientAutoConfiguration {
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
 				chatClientObservationConvention.getIfUnique(), advisorObservationConvention.getIfUnique(),
 				toolCallAdvisorBuilder.getIfAvailable());
+		if (!properties.getToolCalling().isEnabled()) {
+			builder.defaultAdvisors(AdvisorParams.toolCallAdvisorAutoRegister(false));
+		}
 		return chatClientBuilderConfigurer.configure(builder);
 	}
 

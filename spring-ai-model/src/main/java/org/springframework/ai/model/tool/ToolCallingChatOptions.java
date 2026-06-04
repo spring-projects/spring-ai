@@ -22,7 +22,6 @@ import java.util.Set;
 
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.support.ToolUtils;
@@ -39,8 +38,6 @@ import org.springframework.util.CollectionUtils;
  */
 public interface ToolCallingChatOptions extends ChatOptions {
 
-	boolean DEFAULT_TOOL_EXECUTION_ENABLED = true;
-
 	/**
 	 * ToolCallbacks to be registered with the ChatModel.
 	 */
@@ -50,12 +47,6 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	 * Names of the tools to register with the ChatModel.
 	 */
 	@Nullable Set<String> getToolNames();
-
-	/**
-	 * Whether the {@link ChatModel} is responsible for executing the tools requested by
-	 * the model or if the tools should be executed directly by the caller.
-	 */
-	@Nullable Boolean getInternalToolExecutionEnabled();
 
 	/**
 	 * Get the configured tool context.
@@ -78,20 +69,6 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	 */
 	static ToolCallingChatOptions.Builder<?> builder() {
 		return new DefaultToolCallingChatOptions.Builder<>();
-	}
-
-	static boolean isInternalToolExecutionEnabled(ChatOptions chatOptions) {
-		Assert.notNull(chatOptions, "chatOptions cannot be null");
-		boolean internalToolExecutionEnabled;
-		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions
-				&& toolCallingChatOptions.getInternalToolExecutionEnabled() != null) {
-			internalToolExecutionEnabled = Boolean.TRUE
-				.equals(toolCallingChatOptions.getInternalToolExecutionEnabled());
-		}
-		else {
-			internalToolExecutionEnabled = DEFAULT_TOOL_EXECUTION_ENABLED;
-		}
-		return internalToolExecutionEnabled;
 	}
 
 	static @Nullable Set<String> mergeToolNames(@Nullable Set<String> runtimeToolNames,
@@ -160,12 +137,6 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		 * Names of the tools to register with the ChatModel.
 		 */
 		B toolNames(String... toolNames);
-
-		/**
-		 * Whether the {@link ChatModel} is responsible for executing the tools requested
-		 * by the model or if the tools should be executed directly by the caller.
-		 */
-		B internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled);
 
 		/**
 		 * Add a {@link Map} of context values into tool context.

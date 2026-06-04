@@ -113,11 +113,6 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	private final @Nullable Object toolChoice;
 
 	/**
-	 * Whether to enable the tool execution lifecycle internally in ChatModel.
-	 */
-	private final @Nullable Boolean internalToolExecutionEnabled;
-
-	/**
 	 * Tool Function Callbacks to register with the ChatModel.
 	 * For Prompt Options the toolCallbacks are automatically enabled for the duration of the prompt execution.
 	 * For Default Options the toolCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
@@ -142,7 +137,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 			@Nullable ResponseFormat responseFormat, @Nullable List<String> stop,
 			@Nullable Double temperature, @Nullable Double topP, @Nullable Boolean logprobs,
 			@Nullable Integer topLogprobs, @Nullable List<DeepSeekApi.FunctionTool> tools,
-			@Nullable Object toolChoice, @Nullable Boolean internalToolExecutionEnabled,
+			@Nullable Object toolChoice,
 			@Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames, @Nullable Map<String, Object> toolContext) {
 		this.model = model != null ? model : DeepSeekApi.DEFAULT_CHAT_MODEL.getValue();
 		this.frequencyPenalty = frequencyPenalty;
@@ -156,7 +151,6 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		this.topLogprobs = topLogprobs;
 		this.tools = tools != null ? List.copyOf(tools) : null;
 		this.toolChoice = toolChoice;
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
 		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : null;
 		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
@@ -228,11 +222,6 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		return this.toolNames;
 	}
 
-	@Override
-	public @Nullable Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
 	public @Nullable Boolean getLogprobs() {
 		return this.logprobs;
 	}
@@ -268,7 +257,6 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 			.toolCallbacks(this.getToolCallbacks())
 			.toolNames(this.getToolNames())
 			.toolContext(this.getToolContext())
-			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
 			// DeepSeek Specific
 			.responseFormat(this.responseFormat)
 			.logprobs(this.logprobs)
@@ -282,7 +270,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		return Objects.hash(this.model, this.frequencyPenalty, this.logprobs, this.topLogprobs,
 				this.maxTokens,  this.presencePenalty, this.responseFormat,
 				this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
-				this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled, this.toolContext);
+				this.toolCallbacks, this.toolNames, this.toolContext);
 	}
 
 
@@ -306,8 +294,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolChoice, other.toolChoice)
 				&& Objects.equals(this.toolCallbacks, other.toolCallbacks)
 				&& Objects.equals(this.toolNames, other.toolNames)
-				&& Objects.equals(this.toolContext, other.toolContext)
-				&& Objects.equals(this.internalToolExecutionEnabled, other.internalToolExecutionEnabled);
+				&& Objects.equals(this.toolContext, other.toolContext);
 	}
 
 	// public Builder class exposed to users. Avoids having to deal with noisy generic parameters.
@@ -407,7 +394,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		public DeepSeekChatOptions build() {
 			return new DeepSeekChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 					this.responseFormat, this.stopSequences, this.temperature, this.topP, this.logprobs,
-					this.topLogprobs, this.tools, this.toolChoice, this.internalToolExecutionEnabled,
+					this.topLogprobs, this.tools, this.toolChoice,
 					this.toolCallbacks, this.toolNames, this.toolContext);
 		}
 

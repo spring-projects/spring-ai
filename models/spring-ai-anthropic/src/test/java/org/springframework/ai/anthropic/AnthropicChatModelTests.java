@@ -205,10 +205,8 @@ class AnthropicChatModelTests {
 				JsonValue.from(java.util.Map.of("location", "San Francisco")), StopReason.TOOL_USE);
 		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
 
-		// Disable internal tool execution to verify tool call parsing only
-		AnthropicChatOptions options = AnthropicChatOptions.builder().internalToolExecutionEnabled(false).build();
-
-		ChatResponse response = this.chatModel.call(new Prompt("What's the weather?", options));
+		ChatResponse response = this.chatModel
+			.call(new Prompt("What's the weather?", AnthropicChatOptions.builder().build()));
 
 		assertThat(response.getResult()).isNotNull();
 		AssistantMessage output = response.getResult().getOutput();
@@ -252,10 +250,7 @@ class AnthropicChatModelTests {
 			.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
 			.cacheToolResults(true)
 			.build();
-		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.cacheOptions(cacheOptions)
-			.internalToolExecutionEnabled(false)
-			.build();
+		AnthropicChatOptions options = AnthropicChatOptions.builder().cacheOptions(cacheOptions).build();
 
 		this.chatModel.call(new Prompt(toolCallingConversation(), options));
 
@@ -275,10 +270,7 @@ class AnthropicChatModelTests {
 		AnthropicCacheOptions cacheOptions = AnthropicCacheOptions.builder()
 			.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
 			.build();
-		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.cacheOptions(cacheOptions)
-			.internalToolExecutionEnabled(false)
-			.build();
+		AnthropicChatOptions options = AnthropicChatOptions.builder().cacheOptions(cacheOptions).build();
 
 		this.chatModel.call(new Prompt(toolCallingConversation(), options));
 
@@ -297,10 +289,7 @@ class AnthropicChatModelTests {
 			.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
 			.cacheToolResults(true)
 			.build();
-		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.cacheOptions(cacheOptions)
-			.internalToolExecutionEnabled(false)
-			.build();
+		AnthropicChatOptions options = AnthropicChatOptions.builder().cacheOptions(cacheOptions).build();
 
 		// Two tool-calling rounds: only the final tool result should carry a breakpoint.
 		List<org.springframework.ai.chat.messages.Message> messages = List.of(
@@ -408,10 +397,7 @@ class AnthropicChatModelTests {
 		Message mockResponse = createMockMessage("Created spreadsheet", StopReason.END_TURN);
 		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
 
-		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.skill(AnthropicSkill.XLSX)
-			.internalToolExecutionEnabled(false)
-			.build();
+		AnthropicChatOptions options = AnthropicChatOptions.builder().skill(AnthropicSkill.XLSX).build();
 
 		ChatResponse response = this.chatModel.call(new Prompt("Create an Excel file", options));
 

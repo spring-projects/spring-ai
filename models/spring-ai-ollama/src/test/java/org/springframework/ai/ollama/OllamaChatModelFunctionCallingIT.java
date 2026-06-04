@@ -70,7 +70,6 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
-			.internalToolExecutionEnabled(false)
 			.build();
 
 		ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
@@ -99,7 +98,6 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
-			.internalToolExecutionEnabled(false)
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), promptOptions));
@@ -123,7 +121,6 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
-			.internalToolExecutionEnabled(false)
 			.build();
 
 		ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();

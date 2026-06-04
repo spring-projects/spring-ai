@@ -71,7 +71,6 @@ class AnthropicSkillsIT {
 			.maxTokens(4096)
 			.skill(AnthropicSkill.XLSX)
 			.toolChoice(ToolChoice.ofAny(ToolChoiceAny.builder().build()))
-			.internalToolExecutionEnabled(false)
 			.build();
 
 		Prompt prompt = new Prompt(List.of(userMessage), options);

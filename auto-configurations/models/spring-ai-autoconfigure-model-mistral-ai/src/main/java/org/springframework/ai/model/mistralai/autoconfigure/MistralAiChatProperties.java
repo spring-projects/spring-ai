@@ -71,8 +71,6 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 	private @Nullable ReasoningEffort reasoningEffort;
 
-	private @Nullable Boolean internalToolExecutionEnabled;
-
 	public @Nullable String getModel() {
 		return this.model;
 	}
@@ -185,14 +183,6 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 		this.reasoningEffort = reasoningEffort;
 	}
 
-	public @Nullable Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
 	public MistralAiChatOptions toOptions() {
 		return MistralAiChatOptions.builder()
 			.model(this.model)
@@ -209,7 +199,6 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 			.tools(this.tools)
 			.toolChoice(this.toolChoice)
 			.reasoningEffort(this.reasoningEffort)
-			.internalToolExecutionEnabled(this.internalToolExecutionEnabled)
 			.build();
 	}
 
@@ -359,16 +348,6 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 		public void setToolChoice(@Nullable ToolChoice toolChoice) {
 			MistralAiChatProperties.this.setToolChoice(toolChoice);
-		}
-
-		@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.chat.internal-tool-execution-enabled")
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		public @Nullable Boolean getInternalToolExecutionEnabled() {
-			return MistralAiChatProperties.this.getInternalToolExecutionEnabled();
-		}
-
-		public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			MistralAiChatProperties.this.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
 		}
 
 	}

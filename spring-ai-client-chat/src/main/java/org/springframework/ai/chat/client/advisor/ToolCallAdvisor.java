@@ -37,6 +37,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.core.Ordered;
@@ -66,7 +67,12 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 	 */
 	public static final int DEFAULT_ORDER = Ordered.HIGHEST_PRECEDENCE + 300;
 
+	protected static final ToolExecutionEligibilityChecker DEFAULT_TOOL_EXECUTION_ELIGIBILITY_CHECKER = chatResponse -> chatResponse != null
+			&& chatResponse.hasToolCalls();
+
 	protected final ToolCallingManager toolCallingManager;
+
+	private final ToolExecutionEligibilityChecker toolExecutionEligibilityChecker;
 
 	/**
 	 * Set the order close to {@link Ordered#LOWEST_PRECEDENCE} to ensure an advisor is
@@ -81,13 +87,16 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 
 	private final boolean streamToolCallResponses;
 
-	protected ToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder,
+	protected ToolCallAdvisor(ToolCallingManager toolCallingManager,
+			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, int advisorOrder,
 			boolean conversationHistoryEnabled, boolean streamToolCallResponses) {
 		Assert.notNull(toolCallingManager, "toolCallingManager must not be null");
+		Assert.notNull(toolExecutionEligibilityChecker, "toolExecutionEligibilityChecker must not be null");
 		Assert.isTrue(advisorOrder > BaseAdvisor.HIGHEST_PRECEDENCE && advisorOrder < BaseAdvisor.LOWEST_PRECEDENCE,
 				"advisorOrder must be between HIGHEST_PRECEDENCE and LOWEST_PRECEDENCE");
 
 		this.toolCallingManager = toolCallingManager;
+		this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
 		this.advisorOrder = advisorOrder;
 		this.conversationHistoryEnabled = conversationHistoryEnabled;
 		this.streamToolCallResponses = streamToolCallResponses;
@@ -119,9 +128,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 
 		chatClientRequest = this.doInitializeLoop(chatClientRequest, callAdvisorChain);
 
-		// Overwrite the ToolCallingChatOptions to disable internal tool execution.
-		// Disable internal tool execution to allow ToolCallAdvisor to handle tool calls
-		var optionsCopy = ((ToolCallingChatOptions) options).mutate().internalToolExecutionEnabled(false).build();
+		var optionsCopy = ((ToolCallingChatOptions) options).mutate().build();
 
 		var instructions = chatClientRequest.prompt().getInstructions();
 
@@ -146,11 +153,8 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 
 			// After Call
 
-			// TODO: check that this tool call detection is sufficient for all chat models
-			// that support tool calls. (e.g. Anthropic and Bedrock are checking for
-			// finish status as well)
 			ChatResponse chatResponse = chatClientResponse.chatResponse();
-			isToolCall = chatResponse != null && chatResponse.hasToolCalls();
+			isToolCall = this.toolExecutionEligibilityChecker.isToolCallResponse(chatResponse);
 
 			if (isToolCall) {
 				Assert.notNull(chatResponse, "redundant check that should never fail, but here to help NullAway");
@@ -229,11 +233,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 
 		ChatClientRequest initializedRequest = this.doInitializeLoopStream(chatClientRequest, streamAdvisorChain);
 
-		// Overwrite the ToolCallingChatOptions to disable internal tool execution.
-		// Use the validated options from the original request to satisfy NullAway,
-		// as doInitializeLoopStream should preserve the options contract.
 		var optionsCopy = ((ToolCallingChatOptions.Builder<?>) chatClientRequest.prompt().getOptions().mutate())
-			.internalToolExecutionEnabled(false)
 			.build();
 
 		return this.internalStream(streamAdvisorChain, initializedRequest, optionsCopy,
@@ -292,7 +292,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 		aggregatedResponse = this.doAfterStream(aggregatedResponse, streamAdvisorChain);
 
 		ChatResponse chatResponse = aggregatedResponse.chatResponse();
-		boolean isToolCall = chatResponse != null && chatResponse.hasToolCalls();
+		boolean isToolCall = this.toolExecutionEligibilityChecker.isToolCallResponse(chatResponse);
 
 		if (!isToolCall) {
 			// No tool call - streaming already happened, nothing more to emit
@@ -419,6 +419,8 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 
 		private ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
 
+		private ToolExecutionEligibilityChecker toolExecutionEligibilityChecker = DEFAULT_TOOL_EXECUTION_ELIGIBILITY_CHECKER;
+
 		private int advisorOrder = DEFAULT_ORDER;
 
 		private boolean conversationHistoryEnabled = true;
@@ -445,6 +447,19 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 		 */
 		public T toolCallingManager(ToolCallingManager toolCallingManager) {
 			this.toolCallingManager = toolCallingManager;
+			return self();
+		}
+
+		/**
+		 * Sets the checker that determines whether a model response should trigger tool
+		 * execution. Defaults to
+		 * {@code chatResponse -> chatResponse != null && chatResponse.hasToolCalls()}.
+		 * Override to apply provider-specific stop-reason logic.
+		 * @param toolExecutionEligibilityChecker the checker
+		 * @return this Builder instance for method chaining
+		 */
+		public T toolExecutionEligibilityChecker(ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
+			this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
 			return self();
 		}
 
@@ -511,6 +526,14 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 		}
 
 		/**
+		 * Returns the configured ToolExecutionEligibilityChecker.
+		 * @return the ToolExecutionEligibilityChecker instance
+		 */
+		public ToolExecutionEligibilityChecker getToolExecutionEligibilityChecker() {
+			return this.toolExecutionEligibilityChecker;
+		}
+
+		/**
 		 * Creates a shallow copy of this builder with all current settings. The copy can
 		 * be used as a template from which per-call overrides (e.g.
 		 * {@code conversationHistoryEnabled}, {@code streamToolCallResponses}) are
@@ -519,6 +542,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 		 */
 		public Builder<?> copy() {
 			return new Builder<>().toolCallingManager(this.toolCallingManager)
+				.toolExecutionEligibilityChecker(this.toolExecutionEligibilityChecker)
 				.advisorOrder(this.advisorOrder)
 				.conversationHistoryEnabled(this.conversationHistoryEnabled)
 				.streamToolCallResponses(this.streamToolCallResponses);
@@ -548,8 +572,8 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor 
 		 * is out of valid range
 		 */
 		public ToolCallAdvisor build() {
-			return new ToolCallAdvisor(this.toolCallingManager, this.advisorOrder, this.conversationHistoryEnabled,
-					this.streamToolCallResponses);
+			return new ToolCallAdvisor(this.toolCallingManager, this.toolExecutionEligibilityChecker, this.advisorOrder,
+					this.conversationHistoryEnabled, this.streamToolCallResponses);
 		}
 
 	}

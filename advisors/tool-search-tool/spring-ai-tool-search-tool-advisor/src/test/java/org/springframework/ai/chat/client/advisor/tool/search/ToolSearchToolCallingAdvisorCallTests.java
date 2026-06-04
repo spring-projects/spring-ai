@@ -181,7 +181,6 @@ public class ToolSearchToolCallingAdvisorCallTests {
 
 		ToolCallingChatOptions toolOptions = mock(ToolCallingChatOptions.class,
 				Mockito.withSettings().strictness(Strictness.LENIENT));
-		when(toolOptions.getInternalToolExecutionEnabled()).thenReturn(false);
 		doReturn(ToolCallingChatOptions.builder()).when(toolOptions).mutate();
 
 		Prompt prompt = new Prompt(List.of(originalSystemMessage, userMessage), toolOptions);
@@ -783,8 +782,6 @@ public class ToolSearchToolCallingAdvisorCallTests {
 	 */
 	private static class TestToolCallingChatOptions implements ToolCallingChatOptions {
 
-		private boolean internalToolExecutionEnabled = true;
-
 		private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 		private java.util.Set<String> toolNames = new java.util.HashSet<>();
@@ -806,11 +803,6 @@ public class ToolSearchToolCallingAdvisorCallTests {
 		}
 
 		@Override
-		public Boolean getInternalToolExecutionEnabled() {
-			return this.internalToolExecutionEnabled;
-		}
-
-		@Override
 		public Map<String, Object> getToolContext() {
 			return this.toolContext;
 		}
@@ -820,8 +812,7 @@ public class ToolSearchToolCallingAdvisorCallTests {
 			return ToolCallingChatOptions.builder()
 				.toolCallbacks(this.toolCallbacks)
 				.toolNames(this.toolNames)
-				.toolContext(this.toolContext)
-				.internalToolExecutionEnabled(this.internalToolExecutionEnabled);
+				.toolContext(this.toolContext);
 		}
 
 		// ChatOptions methods - return null or defaults for unused options

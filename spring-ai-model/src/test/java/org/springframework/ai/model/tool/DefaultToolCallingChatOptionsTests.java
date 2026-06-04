@@ -121,7 +121,6 @@ class DefaultToolCallingChatOptionsTests {
 			.toolCallbacks(List.of(callback))
 			.toolNames(Set.of("tool1"))
 			.toolContext(context)
-			.internalToolExecutionEnabled(true)
 			.model("gpt-4")
 			.temperature(0.7)
 			.maxTokens(100)
@@ -136,7 +135,6 @@ class DefaultToolCallingChatOptionsTests {
 			assertThat(o.getToolCallbacks()).containsExactly(callback);
 			assertThat(o.getToolNames()).containsExactly("tool1");
 			assertThat(o.getToolContext()).isEqualTo(context);
-			assertThat(o.getInternalToolExecutionEnabled()).isTrue();
 			assertThat(o.getModel()).isEqualTo("gpt-4");
 			assertThat(o.getTemperature()).isEqualTo(0.7);
 			assertThat(o.getMaxTokens()).isEqualTo(100);
@@ -166,7 +164,6 @@ class DefaultToolCallingChatOptionsTests {
 		assertThat(options.getToolCallbacks()).isNull();
 		assertThat(options.getToolNames()).isNull();
 		assertThat(options.getToolContext()).isNull();
-		assertThat(options.getInternalToolExecutionEnabled()).isNull();
 	}
 
 	@Test
@@ -180,18 +177,6 @@ class DefaultToolCallingChatOptionsTests {
 		assertThat(options.getToolCallbacks()).isEmpty();
 		assertThat(options.getToolNames()).isEmpty();
 		assertThat(options.getToolContext()).isEmpty();
-	}
-
-	@Test
-	void builderInternalToolExecutionEnabledShouldAcceptNullValue() {
-		ToolCallingChatOptions options = ToolCallingChatOptions.builder().internalToolExecutionEnabled(true).build();
-		assertThat(options.getInternalToolExecutionEnabled()).isTrue();
-
-		// Should be able to set back to null in a new builder
-		ToolCallingChatOptions optionsWithNull = ToolCallingChatOptions.builder()
-			.internalToolExecutionEnabled(null)
-			.build();
-		assertThat(optionsWithNull.getInternalToolExecutionEnabled()).isNull();
 	}
 
 }
