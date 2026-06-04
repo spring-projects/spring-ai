@@ -71,7 +71,7 @@ ChatMemoryRepository repository = new InMemoryChatMemoryRepository();
 
 `JdbcChatMemoryRepository` is a built-in implementation that uses JDBC to store messages in a relational database. It supports multiple databases out-of-the-box and is suitable for applications that require persistent storage of chat memory.
 
-Messages are retrieved in ascending timestamp order (oldest-to-newest), which is the expected format for LLM conversation history.
+Messages are retrieved in ascending order (oldest-to-newest), which is the expected format for LLM conversation history. Ordering is maintained by a `sequence_id` column that records each message's position within its conversation.
 
 First, add the following dependency to your project:
 
@@ -150,6 +150,8 @@ The correct dialect can be auto-detected from the JDBC URL when using `JdbcChatM
 ==== Schema Initialization
 
 The auto-configuration will automatically create the `SPRING_AI_CHAT_MEMORY` table on startup, using a vendor-specific SQL script for your database. By default, schema initialization runs only for embedded databases (H2, HSQL, Derby, etc.).
+
+NOTE: As of 2.0.0, the ordering column is `sequence_id BIGINT` (previously a `timestamp` column). This is a breaking schema change. If you are upgrading an existing application, see xref:upgrade-notes.adoc[] for migration steps.
 
 You can control schema initialization using the `spring.ai.chat.memory.repository.jdbc.initialize-schema` property:
 

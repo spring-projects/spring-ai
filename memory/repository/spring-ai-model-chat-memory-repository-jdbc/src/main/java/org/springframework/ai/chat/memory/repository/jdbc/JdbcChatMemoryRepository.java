@@ -19,10 +19,7 @@ package org.springframework.ai.chat.memory.repository.jdbc;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 import javax.sql.DataSource;
 
@@ -111,15 +108,8 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		return new Builder();
 	}
 
-	private record AddBatchPreparedStatement(String conversationId, List<Message> messages,
-			AtomicLong sequenceId) implements BatchPreparedStatementSetter {
-
-		private AddBatchPreparedStatement(String conversationId, List<Message> messages) {
-			// Use second-level granularity to ensure compatibility with all database
-			// timestamp precisions. The timestamp serves as a sequence number for
-			// message ordering, not as a precise temporal record.
-			this(conversationId, messages, new AtomicLong(Instant.now().getEpochSecond()));
-		}
+	private record AddBatchPreparedStatement(String conversationId,
+			List<Message> messages) implements BatchPreparedStatementSetter {
 
 		@Override
 		public void setValues(PreparedStatement ps, int i) throws SQLException {
@@ -128,9 +118,10 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 			ps.setString(1, this.conversationId);
 			ps.setString(2, message.getText());
 			ps.setString(3, message.getMessageType().name());
-			// Convert seconds to milliseconds for Timestamp constructor.
-			// Each message gets a unique second value, ensuring proper ordering.
-			ps.setTimestamp(4, new Timestamp(this.sequenceId.getAndIncrement() * 1000L));
+			// The sequence_id is the message's position within the conversation. Since
+			// saveAll() deletes and reinserts the whole conversation in a single batch,
+			// the batch index is a stable, database-portable ordering key.
+			ps.setLong(4, i);
 		}
 
 		@Override
