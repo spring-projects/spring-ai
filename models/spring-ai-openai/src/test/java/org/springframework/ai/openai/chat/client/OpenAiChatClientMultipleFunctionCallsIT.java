@@ -158,10 +158,11 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultTools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", biFunction)
+				.defaultTools(FunctionToolCallback.builder("getCurrentWeather", biFunction)
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()).context(Map.of("sessionId", "123")))
+					.build())
+				.defaultToolContext(Map.of("sessionId", "123"))
 				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities."))
 			.build()
 			.prompt().call().content();
@@ -200,10 +201,11 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultTools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", biFunction)
+				.defaultTools(FunctionToolCallback.builder("getCurrentWeather", biFunction)
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()).context(Map.of("sessionId", "123")))
+					.build())
+				.defaultToolContext(Map.of("sessionId", "123"))
 				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities."))
 				.build()
 			.prompt()
