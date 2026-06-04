@@ -21,6 +21,7 @@ package org.springframework.ai.chat.memory.repository.jdbc;
  *
  * @author Xiaotong Fan
  * @author Pablo Silberkasten
+ * @author Yanming Zhou
  * @since 1.1.0
  */
 
@@ -34,16 +35,6 @@ public class OracleChatMemoryRepositoryDialect implements JdbcChatMemoryReposito
 	@Override
 	public String getInsertMessageSql() {
 		return "INSERT INTO SPRING_AI_CHAT_MEMORY (CONVERSATION_ID, CONTENT, TYPE, \"TIMESTAMP\", SEQUENCE_ID) VALUES (?, ?, ?, ?, ?)";
-	}
-
-	@Override
-	public String getSelectConversationIdsSql() {
-		return "SELECT DISTINCT conversation_id FROM SPRING_AI_CHAT_MEMORY";
-	}
-
-	@Override
-	public String getDeleteMessagesSql() {
-		return "DELETE FROM SPRING_AI_CHAT_MEMORY WHERE CONVERSATION_ID = ?";
 	}
 
 }
