@@ -21,6 +21,7 @@ package org.springframework.ai.observation.conventions;
  * Semantic Conventions for Generative AI.
  *
  * @author Thomas Vitale
+ * @author Yanming Zhou
  * @since 1.0.0
  * @see <a href="https://opentelemetry.io/docs/specs/semconv/gen-ai">OpenTelemetry
  * Semantic Conventions for Generative AI</a>.
@@ -78,6 +79,11 @@ public enum AiProvider {
 	 * AI system provided by Spring AI.
 	 */
 	SPRING_AI("spring_ai"),
+
+	/**
+	 * AI system provided by Stability AI.
+	 */
+	STABILITY_AI("stability_ai"),
 
 	/**
 	 * AI system provided by Vertex AI.

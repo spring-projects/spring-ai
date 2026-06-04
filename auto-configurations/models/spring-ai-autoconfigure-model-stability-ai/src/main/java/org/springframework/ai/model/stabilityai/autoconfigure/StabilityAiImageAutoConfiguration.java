@@ -16,8 +16,12 @@
 
 package org.springframework.ai.model.stabilityai.autoconfigure;
 
+import io.micrometer.observation.ObservationRegistry;
+
+import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.stabilityai.StabilityAiImageModel;
 import org.springframework.ai.stabilityai.api.StabilityAiApi;
 import org.springframework.beans.factory.ObjectProvider;
@@ -27,6 +31,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
@@ -38,6 +43,7 @@ import org.springframework.web.client.RestClient;
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
+ * @author Yanming Zhou
  * @since 0.8.0
  */
 @AutoConfiguration
@@ -68,8 +74,15 @@ public class StabilityAiImageAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public StabilityAiImageModel stabilityAiImageModel(StabilityAiApi stabilityAiApi,
-			StabilityAiImageProperties stabilityAiImageProperties) {
-		return new StabilityAiImageModel(stabilityAiApi, stabilityAiImageProperties.toOptions());
+			StabilityAiImageProperties stabilityAiImageProperties,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ImageModelObservationConvention> observationConvention,
+			ObjectProvider<RetryTemplate> retryTemplate) {
+		var imageModel = new StabilityAiImageModel(stabilityAiApi, stabilityAiImageProperties.toOptions(),
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE));
+		observationConvention.ifAvailable(imageModel::setObservationConvention);
+		return imageModel;
 	}
 
 }
