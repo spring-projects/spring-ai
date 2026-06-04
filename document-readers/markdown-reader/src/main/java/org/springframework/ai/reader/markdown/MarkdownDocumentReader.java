@@ -21,12 +21,15 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.commonmark.ext.gfm.tables.TablesExtension;
 import org.commonmark.node.AbstractVisitor;
 import org.commonmark.node.BlockQuote;
 import org.commonmark.node.Code;
 import org.commonmark.node.FencedCodeBlock;
 import org.commonmark.node.HardLineBreak;
 import org.commonmark.node.Heading;
+import org.commonmark.node.Image;
+import org.commonmark.node.Link;
 import org.commonmark.node.ListItem;
 import org.commonmark.node.Node;
 import org.commonmark.node.SoftLineBreak;
@@ -39,6 +42,7 @@ import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.reader.markdown.config.MarkdownDocumentReaderConfig;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.util.StringUtils;
 
 /**
  * Reads the given Markdown resource and groups headers, paragraphs, or text divided by
@@ -47,6 +51,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
  * {@link Document}s.
  *
  * @author Piotr Olaszewski
+ * @author Songhee An
  */
 public class MarkdownDocumentReader implements DocumentReader {
 
@@ -101,7 +106,7 @@ public class MarkdownDocumentReader implements DocumentReader {
 	public MarkdownDocumentReader(List<Resource> markdownResources, MarkdownDocumentReaderConfig config) {
 		this.markdownResources = markdownResources.toArray(new Resource[0]);
 		this.config = config;
-		this.parser = Parser.builder().build();
+		this.parser = Parser.builder().extensions(List.of(TablesExtension.create())).build();
 	}
 
 	private static List<Resource> resolveResources(String markdownResources) {
@@ -195,6 +200,20 @@ public class MarkdownDocumentReader implements DocumentReader {
 		}
 
 		@Override
+		public void visit(Link link) {
+			int start = this.currentParagraphs.size();
+			super.visit(link);
+			appendDestinationIfDifferent(getAppendedText(start), link.getDestination());
+		}
+
+		@Override
+		public void visit(Image image) {
+			int start = this.currentParagraphs.size();
+			super.visit(image);
+			appendDestinationIfDifferent(getAppendedText(start), image.getDestination());
+		}
+
+		@Override
 		public void visit(BlockQuote blockQuote) {
 			if (!this.config.includeBlockquote) {
 				buildAndFlush();
@@ -268,6 +287,37 @@ public class MarkdownDocumentReader implements DocumentReader {
 			if (!this.currentParagraphs.isEmpty()) {
 				this.currentParagraphs.add(" ");
 			}
+		}
+
+		private void appendDestination(String destination) {
+			if (!StringUtils.hasText(destination)) {
+				return;
+			}
+			if (!this.currentParagraphs.isEmpty()) {
+				String last = this.currentParagraphs.get(this.currentParagraphs.size() - 1);
+				if (!last.isEmpty() && !Character.isWhitespace(last.charAt(last.length() - 1))) {
+					this.currentParagraphs.add(" ");
+				}
+			}
+			this.currentParagraphs.add("(" + destination + ")");
+		}
+
+		private void appendDestinationIfDifferent(String text, String destination) {
+			if (!StringUtils.hasText(destination)) {
+				return;
+			}
+			String trimmedText = text.trim();
+			String trimmedDestination = destination.trim();
+			if (!trimmedText.equals(trimmedDestination)) {
+				appendDestination(destination);
+			}
+		}
+
+		private String getAppendedText(int start) {
+			if (start >= this.currentParagraphs.size()) {
+				return "";
+			}
+			return String.join("", this.currentParagraphs.subList(start, this.currentParagraphs.size()));
 		}
 
 	}

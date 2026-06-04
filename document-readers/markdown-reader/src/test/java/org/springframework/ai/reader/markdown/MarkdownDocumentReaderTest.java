@@ -33,6 +33,7 @@ import static org.assertj.core.groups.Tuple.tuple;
  * @author Piotr Olaszewski
  * @author shown.Ji
  * @author Eric Bottard
+ * @author Songhee An
  */
 class MarkdownDocumentReaderTest {
 
@@ -281,6 +282,34 @@ class MarkdownDocumentReaderTest {
 		Document documentsFirst = documents.get(0);
 		assertThat(documentsFirst.getMetadata()).isEqualTo(Map.of("service", "some-service-name", "env", "prod"));
 		assertThat(documentsFirst.getText()).startsWith("Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
+	}
+
+	@Test
+	void testLinksAndImagesPreserved() {
+		MarkdownDocumentReader reader = new MarkdownDocumentReader("classpath:/links.md");
+		List<Document> documents = reader.get();
+
+		assertThat(documents).hasSize(1);
+
+		Document document = documents.get(0);
+		assertThat(document.getText()).contains("Example Java (docs/src/doc/docs/assets/img/example-java.png)")
+			.contains("Example (https://example.com/example-project)")
+			.contains("Alt text (https://example.com/image.png)")
+			.contains("Alt text for image (https://example.com/image2.png) (https://example.com/linked)")
+			.contains("https://example.com/self")
+			.doesNotContain("https://example.com/self (https://example.com/self)");
+	}
+
+	@Test
+	void testTableLinksAndImagesPreserved() {
+		MarkdownDocumentReader reader = new MarkdownDocumentReader("classpath:/table-links.md");
+		List<Document> documents = reader.get();
+
+		assertThat(documents).hasSize(1);
+
+		Document document = documents.get(0);
+		assertThat(document.getText()).contains("Table link (https://example.com/table-link)")
+			.contains("Table image (https://example.com/table-image.png)");
 	}
 
 }
