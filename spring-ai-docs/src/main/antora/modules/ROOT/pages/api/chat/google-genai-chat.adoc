@@ -119,7 +119,6 @@ The prefix `spring.ai.google.genai.chat` is the property prefix that lets you co
 | spring.ai.google.genai.chat.thinking-budget | Thinking budget for the thinking process. See <<thinking-config>>. | -
 | spring.ai.google.genai.chat.thinking-level | The level of thinking tokens the model should generate. Valid values: `LOW`, `HIGH`, `THINKING_LEVEL_UNSPECIFIED`. See <<thinking-config>>. | -
 | spring.ai.google.genai.chat.include-thoughts | Enable thought signatures for function calling. **Required** for Gemini 3 Pro to avoid validation errors during the tool-call loop. See <<thought-signatures>>. | false
-| spring.ai.google.genai.chat.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
 | spring.ai.google.genai.chat.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
 | spring.ai.google.genai.chat.safety-settings | List of safety settings to control safety filters, as defined by https://ai.google.dev/gemini-api/docs/safety-settings[Google GenAI Safety Settings]. Each safety setting can have a method, threshold, and category. | -
 | spring.ai.google.genai.chat.cached-content-name | The name of cached content to use for this request. When set along with `use-cached-content=true`, the cached content will be used as context. See <<cached-content>>. | -
@@ -181,19 +180,21 @@ String response = ChatClient.create(this.chatModel)
         .content();
 ----
 
-You can use `java.util.function` beans as tools as well:
+You can also register a `ToolCallback` bean and pass it directly:
 
 [source,java]
 ----
 @Bean
-@Description("Get the weather in location. Return temperature in 36°F or 36°C format.")
-public Function<Request, Response> weatherFunction() {
-    return new MockWeatherService();
+ToolCallback weatherFunction() {
+    return FunctionToolCallback.builder("weatherFunction", new MockWeatherService())
+        .description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+        .inputType(Request.class)
+        .build();
 }
 
 String response = ChatClient.create(this.chatModel)
         .prompt("What's the weather like in Boston?")
-        .toolNames("weatherFunction")
+        .tools(weatherFunction)
         .call()
         .content();
 ----
@@ -527,9 +528,11 @@ When using `ChatClient` with `ToolCallAdvisor` (the recommended approach), Sprin
 [source,java]
 ----
 @Bean
-@Description("Get the weather in a location")
-public Function<WeatherRequest, WeatherResponse> weatherFunction() {
-    return new WeatherService();
+ToolCallback weatherFunction() {
+    return FunctionToolCallback.builder("weatherFunction", new WeatherService())
+        .description("Get the weather in a location")
+        .inputType(WeatherRequest.class)
+        .build();
 }
 
 // Enable includeThoughts for Gemini 3 Pro with function calling
@@ -539,7 +542,7 @@ String response = ChatClient.create(this.chatModel)
             .model("gemini-3-pro-preview")
             .includeThoughts(true)
             .build())
-        .toolNames("weatherFunction")
+        .tools(weatherFunction)
         .call()
         .content();
 ----

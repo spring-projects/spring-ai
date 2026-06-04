@@ -16,8 +16,6 @@
 
 package org.springframework.ai.model.google.genai.autoconfigure.chat.tool;
 
-import java.util.function.Function;
-
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -38,7 +36,6 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Description;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -68,9 +65,11 @@ public class FunctionCallWithFunctionBeanIT {
 						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 
+			ToolCallback currentWeatherService = context.getBean("CurrentWeatherService", ToolCallback.class);
+
 			var options = GoogleGenAiChatOptions.builder()
 				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue())
-				.toolNames("CurrentWeatherService")
+				.toolCallbacks(currentWeatherService)
 				.build();
 
 			Prompt prompt = new Prompt("What's the weather like in San Francisco, Paris and in Tokyo?"
@@ -104,9 +103,11 @@ public class FunctionCallWithFunctionBeanIT {
 						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 
+			ToolCallback currentWeatherService = context.getBean("CurrentWeatherService", ToolCallback.class);
+
 			var options = GoogleGenAiChatOptions.builder()
 				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue())
-				.toolNames("CurrentWeatherService")
+				.toolCallbacks(currentWeatherService)
 				.build();
 
 			Prompt prompt = new Prompt("What's the weather like in San Francisco, Paris and in Tokyo?"
@@ -122,14 +123,8 @@ public class FunctionCallWithFunctionBeanIT {
 	static class FunctionConfiguration {
 
 		@Bean
-		@Description("Get the current weather for a location")
-		public Function<MockWeatherService.Request, MockWeatherService.Response> currentWeatherFunction() {
-			return new MockWeatherService();
-		}
-
-		@Bean
 		public ToolCallback CurrentWeatherService() {
-			return FunctionToolCallback.builder("CurrentWeatherService", currentWeatherFunction())
+			return FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
 				.description("Get the current weather for a location")
 				.inputType(MockWeatherService.Request.class)
 				.build();

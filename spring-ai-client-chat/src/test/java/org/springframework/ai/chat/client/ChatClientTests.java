@@ -680,8 +680,6 @@ public class ChatClientTests {
 
 		ToolCallingChatOptions promptOptions = (ToolCallingChatOptions) this.promptCaptor.getValue().getOptions();
 
-		assertThat(modelOptions.getToolNames()).isNull();
-
 		assertThat(promptOptions.getToolCallbacks()).extracting(cb -> cb.getToolDefinition().name())
 			.containsExactly("function1");
 	}

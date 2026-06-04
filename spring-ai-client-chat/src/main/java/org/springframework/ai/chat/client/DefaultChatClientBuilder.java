@@ -105,9 +105,8 @@ public class DefaultChatClientBuilder implements Builder {
 			.toolCallingManager(ToolCallingManager.builder().observationRegistry(observationRegistry).build()));
 
 		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, null, Map.of(), Map.of(), null, Map.of(),
-				Map.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(),
-				observationRegistry, chatClientObservationConvention, Map.of(), null, advisorObservationConvention,
-				toolCallAdvisorBuilder);
+				Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(), observationRegistry,
+				chatClientObservationConvention, Map.of(), null, advisorObservationConvention, toolCallAdvisorBuilder);
 	}
 
 	public ChatClient build() {
@@ -187,17 +186,6 @@ public class DefaultChatClientBuilder implements Builder {
 
 	public Builder defaultSystem(Consumer<PromptSystemSpec> systemSpecConsumer) {
 		this.defaultRequest.system(systemSpecConsumer);
-		return this;
-	}
-
-	/**
-	 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)}. To be removed
-	 * in 3.0.0.
-	 */
-	@Deprecated(since = "2.0.0", forRemoval = true)
-	@Override
-	public Builder defaultToolNames(String... toolNames) {
-		this.defaultRequest.toolNames(toolNames);
 		return this;
 	}
 

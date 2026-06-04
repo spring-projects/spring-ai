@@ -21,9 +21,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,12 +39,13 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Description;
+import org.springframework.core.ParameterizedTypeReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -74,16 +72,18 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+			ToolCallback turnLivingRoomLightOn = context.getBean("turnLivingRoomLightOn", ToolCallback.class);
 
 			var chatClient = ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
 						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 
-			// Test weatherFunction
 			UserMessage userMessage = new UserMessage("Turn the light on in the living room");
 
-			OpenAiChatOptions options = OpenAiChatOptions.builder().toolNames("turnLivingRoomLightOn").build();
+			ToolCallingChatOptions options = ToolCallingChatOptions.builder()
+				.toolCallbacks(turnLivingRoomLightOn)
+				.build();
 
 			Prompt prompt = new Prompt(List.of(userMessage), options);
 
@@ -99,15 +99,19 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+			ToolCallback turnLivingRoomLightOnSupplier = context.getBean("turnLivingRoomLightOnSupplier",
+					ToolCallback.class);
+
 			var chatClient = ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
 						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 
-			// Test weatherFunction
 			UserMessage userMessage = new UserMessage("Turn the light on in the living room");
 
-			OpenAiChatOptions options = OpenAiChatOptions.builder().toolNames("turnLivingRoomLightOnSupplier").build();
+			ToolCallingChatOptions options = ToolCallingChatOptions.builder()
+				.toolCallbacks(turnLivingRoomLightOnSupplier)
+				.build();
 
 			Prompt prompt = new Prompt(List.of(userMessage), options);
 
@@ -123,15 +127,16 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+			ToolCallback turnLight = context.getBean("turnLight", ToolCallback.class);
+
 			var chatClient = ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
 						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 
-			// Test weatherFunction
 			UserMessage userMessage = new UserMessage("Turn the light on in the kitchen and in the living room");
 
-			OpenAiChatOptions options = OpenAiChatOptions.builder().toolNames("turnLight").build();
+			ToolCallingChatOptions options = ToolCallingChatOptions.builder().toolCallbacks(turnLight).build();
 
 			Prompt prompt = new Prompt(List.of(userMessage), options);
 
@@ -148,15 +153,16 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+			ToolCallback turnLightConsumer = context.getBean("turnLightConsumer", ToolCallback.class);
+
 			var chatClient = ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
 						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 
-			// Test weatherFunction
 			UserMessage userMessage = new UserMessage("Turn the light on in the kitchen and in the living room");
 
-			OpenAiChatOptions options = OpenAiChatOptions.builder().toolNames("turnLightConsumer").build();
+			ToolCallingChatOptions options = ToolCallingChatOptions.builder().toolCallbacks(turnLightConsumer).build();
 
 			Prompt prompt = new Prompt(List.of(userMessage), options);
 
@@ -164,7 +170,6 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			assertThat(feedback).hasSize(2);
 			assertThat(feedback.get("kitchen")).isEqualTo(Boolean.valueOf(true));
 			assertThat(feedback.get("living room")).isEqualTo(Boolean.valueOf(true));
-
 		});
 	}
 
@@ -173,16 +178,16 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 		this.contextRunner.run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+			ToolCallback trainReservation = context.getBean("trainReservation", ToolCallback.class);
 
-			// Test weatherFunction
 			UserMessage userMessage = new UserMessage(
 					"Please schedule a train from San Francisco to Los Angeles on 2023-12-25");
 
 			ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder()
-				.toolNames("trainReservation")
+				.toolCallbacks(trainReservation)
 				.build();
 
-			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 			var chatClient = ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
 						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
@@ -199,24 +204,26 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 		this.contextRunner.run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
-
 			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+			ToolCallback weatherFunctionWithContext = context.getBean("weatherFunctionWithContext", ToolCallback.class);
+
 			ChatClient chatClient = ChatClient.builder(chatModel)
 				.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(toolCallingManager).build())
 				.build();
 
 			String content = chatClient.prompt(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.")
-				.toolNames("weatherFunctionWithContext")
+				.tools(weatherFunctionWithContext)
 				.toolContext(Map.of("sessionId", "123"))
 				.call()
 				.content();
 
-			// Test weatherFunction
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities. You can call the following functions 'weatherFunction'");
 
-			OpenAiChatOptions options = OpenAiChatOptions.builder().toolNames("weatherFunctionWithContext").build();
+			ToolCallingChatOptions options = ToolCallingChatOptions.builder()
+				.toolCallbacks(weatherFunctionWithContext)
+				.build();
 
 			Prompt prompt = new Prompt(List.of(userMessage), options);
 
@@ -238,8 +245,10 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 		this.contextRunner.run(context -> {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
-
 			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+			ToolCallback weatherFunctionWithClassBiFunction = context.getBean("weatherFunctionWithClassBiFunction",
+					ToolCallback.class);
+
 			ChatClient chatClient = ChatClient.builder(chatModel)
 				.defaultAdvisors(org.springframework.ai.chat.client.advisor.ToolCallAdvisor.builder()
 					.toolCallingManager(toolCallingManager)
@@ -248,17 +257,16 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			String content = chatClient.prompt(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.")
-				.toolNames("weatherFunctionWithClassBiFunction")
+				.tools(weatherFunctionWithClassBiFunction)
 				.toolContext(Map.of("sessionId", "123"))
 				.call()
 				.content();
 
-			// Test weatherFunction
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities. You can call the following functions 'weatherFunction'");
 
-			OpenAiChatOptions options = OpenAiChatOptions.builder()
-				.toolNames("weatherFunctionWithClassBiFunction")
+			ToolCallingChatOptions options = ToolCallingChatOptions.builder()
+				.toolCallbacks(weatherFunctionWithClassBiFunction)
 				.build();
 
 			Prompt prompt = new Prompt(List.of(userMessage), options);
@@ -282,16 +290,18 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+			ToolCallback weatherFunction = context.getBean("weatherFunction", ToolCallback.class);
+			ToolCallback weatherFunctionTwo = context.getBean("weatherFunctionTwo", ToolCallback.class);
+
 			var chatClient = ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
 						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 
-			// Test weatherFunction
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities. You can call the following functions 'weatherFunction'");
 
-			OpenAiChatOptions options = OpenAiChatOptions.builder().toolNames("weatherFunction").build();
+			ToolCallingChatOptions options = ToolCallingChatOptions.builder().toolCallbacks(weatherFunction).build();
 
 			Prompt prompt = new Prompt(List.of(userMessage), options);
 
@@ -299,8 +309,9 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
-			// Test weatherFunctionTwo
-			OpenAiChatOptions optionsTwo = OpenAiChatOptions.builder().toolNames("weatherFunctionTwo").build();
+			ToolCallingChatOptions optionsTwo = ToolCallingChatOptions.builder()
+				.toolCallbacks(weatherFunctionTwo)
+				.build();
 
 			Prompt promptTwo = new Prompt(List.of(userMessage), optionsTwo);
 
@@ -317,17 +328,18 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+			ToolCallback weatherFunction = context.getBean("weatherFunction", ToolCallback.class);
+
 			var chatClient = ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
 						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 
-			// Test weatherFunction
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.");
 
 			ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder()
-				.toolNames("weatherFunction")
+				.toolCallbacks(weatherFunction)
 				.build();
 
 			Prompt prompt = new Prompt(List.of(userMessage), functionOptions);
@@ -344,16 +356,18 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+			ToolCallback weatherFunction = context.getBean("weatherFunction", ToolCallback.class);
+			ToolCallback weatherFunctionTwo = context.getBean("weatherFunctionTwo", ToolCallback.class);
+
 			var chatClient = ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
 						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 
-			// Test weatherFunction
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities. You can call the following functions 'weatherFunction'");
 
-			OpenAiChatOptions options = OpenAiChatOptions.builder().toolNames("weatherFunction").build();
+			ToolCallingChatOptions options = ToolCallingChatOptions.builder().toolCallbacks(weatherFunction).build();
 
 			Prompt prompt = new Prompt(List.of(userMessage), options);
 
@@ -366,8 +380,9 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			assertThat(content).contains("30", "10", "15");
 
-			// Test weatherFunctionTwo
-			OpenAiChatOptions optionsTwo = OpenAiChatOptions.builder().toolNames("weatherFunctionTwo").build();
+			ToolCallingChatOptions optionsTwo = ToolCallingChatOptions.builder()
+				.toolCallbacks(weatherFunctionTwo)
+				.build();
 
 			Prompt promptTwo = new Prompt(List.of(userMessage), optionsTwo);
 
@@ -389,69 +404,84 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 	static class Config {
 
 		@Bean
-		@Description("Get the weather in location")
-		public MyBiFunction weatherFunctionWithClassBiFunction() {
-			return new MyBiFunction();
+		ToolCallback weatherFunctionWithClassBiFunction() {
+			return FunctionToolCallback.builder("weatherFunctionWithClassBiFunction", new MyBiFunction())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build();
 		}
 
 		@Bean
-		@Description("Get the weather in location")
-		public BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response> weatherFunctionWithContext() {
-			return (request, context) -> new MockWeatherService().apply(request);
+		ToolCallback weatherFunctionWithContext() {
+			return FunctionToolCallback
+				.builder("weatherFunctionWithContext",
+						(MockWeatherService.Request request, ToolContext tc) -> new MockWeatherService().apply(request))
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build();
 		}
 
 		@Bean
-		@Description("Get the weather in location")
-		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunction() {
-			return new MockWeatherService();
+		ToolCallback weatherFunction() {
+			return FunctionToolCallback.builder("weatherFunction", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build();
 		}
 
-		// Relies on the Request's JsonClassDescription annotation to provide the
-		// function description.
 		@Bean
-		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunctionTwo() {
+		ToolCallback weatherFunctionTwo() {
 			MockWeatherService weatherService = new MockWeatherService();
-			return (weatherService::apply);
+			return FunctionToolCallback.builder("weatherFunctionTwo", weatherService::apply)
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build();
 		}
 
 		@Bean
-		@Description("Turn light on or off in a room")
-		public Function<LightInfo, Void> turnLight() {
-			return (LightInfo lightInfo) -> {
+		ToolCallback turnLight() {
+			return FunctionToolCallback.builder("turnLight", (LightInfo lightInfo) -> {
 				feedback.put(lightInfo.roomName(), lightInfo.isOn());
 				return null;
-			};
+			}).description("Turn light on or off in a room").inputType(LightInfo.class).build();
 		}
 
 		@Bean
-		@Description("Turn light on or off in a room")
-		public Consumer<LightInfo> turnLightConsumer() {
-			return (LightInfo lightInfo) -> feedback.put(lightInfo.roomName(), lightInfo.isOn());
+		ToolCallback turnLightConsumer() {
+			return FunctionToolCallback
+				.builder("turnLightConsumer",
+						(LightInfo lightInfo) -> feedback.put(lightInfo.roomName(), lightInfo.isOn()))
+				.description("Turn light on or off in a room")
+				.inputType(LightInfo.class)
+				.build();
 		}
 
 		@Bean
-		@Description("Turns light on in the living room")
-		public Function<Void, String> turnLivingRoomLightOn() {
-			return (Void v) -> {
+		ToolCallback turnLivingRoomLightOn() {
+			return FunctionToolCallback.builder("turnLivingRoomLightOn", () -> {
 				feedback.put("turnLivingRoomLightOn", Boolean.TRUE);
 				return "Done";
-			};
+			}).description("Turns light on in the living room").build();
 		}
 
 		@Bean
-		@Description("Turns light on in the living room")
-		public Supplier<String> turnLivingRoomLightOnSupplier() {
-			return () -> {
+		ToolCallback turnLivingRoomLightOnSupplier() {
+			return FunctionToolCallback.builder("turnLivingRoomLightOnSupplier", () -> {
 				feedback.put("turnLivingRoomLightOnSupplier", Boolean.TRUE);
 				return "Done";
-			};
+			}).description("Turns light on in the living room").build();
 		}
 
 		@Bean
-		@Description("Schedule a train reservation")
-		public Function<TrainSearchRequest<TrainSearchSchedule>, TrainSearchResponse<TrainSearchScheduleResponse>> trainReservation() {
-			return (TrainSearchRequest<TrainSearchSchedule> request) -> new TrainSearchResponse<>(
-					new TrainSearchScheduleResponse(request.data().from(), request.data().to(), "", "123"));
+		ToolCallback trainReservation() {
+			return FunctionToolCallback
+				.builder("trainReservation",
+						(TrainSearchRequest<TrainSearchSchedule> request) -> new TrainSearchResponse<>(
+								new TrainSearchScheduleResponse(request.data().from(), request.data().to(), "", "123")))
+				.description("Schedule a train reservation")
+				.inputType(new ParameterizedTypeReference<TrainSearchRequest<TrainSearchSchedule>>() {
+				})
+				.build();
 		}
 
 	}

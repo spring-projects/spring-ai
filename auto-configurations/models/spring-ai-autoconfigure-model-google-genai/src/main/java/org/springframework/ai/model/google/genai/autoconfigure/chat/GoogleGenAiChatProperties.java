@@ -19,7 +19,6 @@ package org.springframework.ai.model.google.genai.autoconfigure.chat;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.jspecify.annotations.Nullable;
 
@@ -80,8 +79,6 @@ public class GoogleGenAiChatProperties {
 	private @Nullable Integer autoCacheThreshold;
 
 	private @Nullable Duration autoCacheTtl;
-
-	private @Nullable Set<String> toolNames;
 
 	private @Nullable Boolean googleSearchRetrieval;
 
@@ -245,14 +242,6 @@ public class GoogleGenAiChatProperties {
 		this.autoCacheTtl = autoCacheTtl;
 	}
 
-	public @Nullable Set<String> getToolNames() {
-		return this.toolNames;
-	}
-
-	public void setToolNames(@Nullable Set<String> toolNames) {
-		this.toolNames = toolNames;
-	}
-
 	public @Nullable Boolean getGoogleSearchRetrieval() {
 		return this.googleSearchRetrieval;
 	}
@@ -320,7 +309,6 @@ public class GoogleGenAiChatProperties {
 			.useCachedContent(this.useCachedContent)
 			.autoCacheThreshold(this.autoCacheThreshold)
 			.autoCacheTtl(this.autoCacheTtl)
-			.toolNames(this.toolNames)
 			.googleSearchRetrieval(this.googleSearchRetrieval)
 			.includeServerSideToolInvocations(this.includeServerSideToolInvocations)
 			.safetySettings(this.safetySettings)
@@ -531,16 +519,6 @@ public class GoogleGenAiChatProperties {
 
 		public void setAutoCacheTtl(@Nullable Duration autoCacheTtl) {
 			GoogleGenAiChatProperties.this.setAutoCacheTtl(autoCacheTtl);
-		}
-
-		@DeprecatedConfigurationProperty(replacement = "spring.ai.google.genai.chat.tool-names")
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		public @Nullable Set<String> getToolNames() {
-			return GoogleGenAiChatProperties.this.getToolNames();
-		}
-
-		public void setToolNames(@Nullable Set<String> toolNames) {
-			GoogleGenAiChatProperties.this.setToolNames(toolNames);
 		}
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.google.genai.chat.google-search-retrieval")

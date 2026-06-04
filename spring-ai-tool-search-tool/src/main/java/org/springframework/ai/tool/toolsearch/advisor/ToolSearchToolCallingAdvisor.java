@@ -254,7 +254,6 @@ public class ToolSearchToolCallingAdvisor extends ToolCallAdvisor {
 			.requireNonNull((ToolCallingChatOptions) chatClientRequest.prompt().getOptions());
 
 		Set<ToolCallback> selectedToolCallbacks = new HashSet<>(List.of(this.toolSearchToolCallback));
-		Set<String> selectedToolNames = new HashSet<>();
 
 		var cachedToolCallbacks = (Map<String, ToolCallback>) chatClientRequest.context()
 			.get(CACHED_TOOL_CALLBACKS_KEY);
@@ -264,15 +263,11 @@ public class ToolSearchToolCallingAdvisor extends ToolCallAdvisor {
 				if (cachedToolCallbacks.containsKey(toolName)) {
 					selectedToolCallbacks.add(cachedToolCallbacks.get(toolName));
 				}
-				else {
-					selectedToolNames.add(toolName);
-				}
 			});
 		}
 
 		ToolCallingChatOptions toolOptionsCopy = ((ToolCallingChatOptions.Builder<?>) toolOptions.mutate())
 			.toolCallbacks(new ArrayList<>(selectedToolCallbacks))
-			.toolNames(selectedToolNames)
 			.toolContext(TOOL_SEARCH_TOOL_SESSION_ID_KEY,
 					Objects.requireNonNull(chatClientRequest.context().get(TOOL_SEARCH_TOOL_SESSION_ID_KEY)))
 			.build();

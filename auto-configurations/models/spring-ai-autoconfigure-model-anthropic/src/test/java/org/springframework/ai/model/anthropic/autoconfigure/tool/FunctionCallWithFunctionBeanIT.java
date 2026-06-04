@@ -16,7 +16,6 @@
 
 package org.springframework.ai.model.anthropic.autoconfigure.tool;
 
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.anthropic.models.messages.Model;
@@ -28,8 +27,6 @@ import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration;
-import org.springframework.ai.model.anthropic.autoconfigure.tool.MockWeatherService.Request;
-import org.springframework.ai.model.anthropic.autoconfigure.tool.MockWeatherService.Response;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -37,7 +34,6 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Description;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -66,29 +62,25 @@ class FunctionCallWithFunctionBeanIT {
 			.run(context -> {
 
 				AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
-
-				ToolCallback weatherToolCallback = buildToolCallback("weatherFunction",
-						context.getBean("weatherFunction", Function.class));
+				ToolCallback weatherFunction = context.getBean("weatherFunction", ToolCallback.class);
+				ToolCallback weatherFunction3 = context.getBean("weatherFunction3", ToolCallback.class);
 
 				String content = ChatClient.create(chatModel)
 					.prompt()
 					.advisors(ToolCallAdvisor.builder().build())
 					.user("What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan?"
 							+ " Return the temperature in Celsius.")
-					.tools(weatherToolCallback)
+					.tools(weatherFunction)
 					.call()
 					.content();
 				assertThat(content).contains("30", "10", "15");
-
-				ToolCallback weatherToolCallback3 = buildToolCallback("weatherFunction3",
-						context.getBean("weatherFunction3", Function.class));
 
 				content = ChatClient.create(chatModel)
 					.prompt()
 					.advisors(ToolCallAdvisor.builder().build())
 					.user("What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan?"
 							+ " Return the temperature in Celsius.")
-					.tools(weatherToolCallback3)
+					.tools(weatherFunction3)
 					.call()
 					.content();
 				assertThat(content).contains("30", "10", "15");
@@ -101,31 +93,27 @@ class FunctionCallWithFunctionBeanIT {
 			.run(context -> {
 
 				AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
-
-				ToolCallback weatherToolCallback = buildToolCallback("weatherFunction",
-						context.getBean("weatherFunction", Function.class));
+				ToolCallback weatherFunction = context.getBean("weatherFunction", ToolCallback.class);
+				ToolCallback weatherFunction3 = context.getBean("weatherFunction3", ToolCallback.class);
 
 				Flux<String> response = ChatClient.create(chatModel)
 					.prompt()
 					.advisors(ToolCallAdvisor.builder().build())
 					.user("What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan?"
 							+ " Return the temperature in Celsius.")
-					.tools(weatherToolCallback)
+					.tools(weatherFunction)
 					.stream()
 					.content();
 
 				String content = response.collectList().block().stream().collect(Collectors.joining());
 				assertThat(content).contains("30", "10", "15");
 
-				ToolCallback weatherToolCallback3 = buildToolCallback("weatherFunction3",
-						context.getBean("weatherFunction3", Function.class));
-
 				response = ChatClient.create(chatModel)
 					.prompt()
 					.advisors(ToolCallAdvisor.builder().build())
 					.user("What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan?"
 							+ " Return the temperature in Celsius.")
-					.tools(weatherToolCallback3)
+					.tools(weatherFunction3)
 					.stream()
 					.content();
 
@@ -134,27 +122,24 @@ class FunctionCallWithFunctionBeanIT {
 			});
 	}
 
-	@SuppressWarnings("unchecked")
-	private static ToolCallback buildToolCallback(String name, Function<?, ?> fn) {
-		return FunctionToolCallback.builder(name, (Function<Request, Response>) fn)
-			.description(WEATHER_TOOL_DESCRIPTION)
-			.inputType(MockWeatherService.Request.class)
-			.build();
-	}
-
 	@Configuration
 	static class Config {
 
 		@Bean
-		@Description("Get the weather in location. Return temperature in 36°F or 36°C format.")
-		public Function<Request, Response> weatherFunction() {
-			return new MockWeatherService();
+		ToolCallback weatherFunction() {
+			return FunctionToolCallback.builder("weatherFunction", new MockWeatherService())
+				.description(WEATHER_TOOL_DESCRIPTION)
+				.inputType(MockWeatherService.Request.class)
+				.build();
 		}
 
 		@Bean
-		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunction3() {
+		ToolCallback weatherFunction3() {
 			MockWeatherService weatherService = new MockWeatherService();
-			return weatherService::apply;
+			return FunctionToolCallback.builder("weatherFunction3", weatherService::apply)
+				.description(WEATHER_TOOL_DESCRIPTION)
+				.inputType(MockWeatherService.Request.class)
+				.build();
 		}
 
 	}

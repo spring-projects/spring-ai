@@ -16,10 +16,8 @@
 
 package org.springframework.ai.openai.chat;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.micrometer.observation.ObservationRegistry;
@@ -36,21 +34,15 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
-import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
-import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
-import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
-import org.springframework.ai.tool.resolution.ToolCallbackResolver;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Description;
-import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.ParameterizedTypeReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -69,12 +61,17 @@ public class OpenAiPaymentTransactionIT {
 	@Autowired
 	ChatClient chatClient;
 
+	@Autowired
+	List<ToolCallback> toolCallbacks;
+
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "paymentStatus", "paymentStatuses" })
 	public void transactionPaymentStatuses(String functionName) {
+		ToolCallback toolCallback = findToolCallback(functionName);
+
 		List<TransactionStatusResponse> content = this.chatClient.prompt()
 			.advisors(new SimpleLoggerAdvisor())
-			.toolNames(functionName)
+			.tools(toolCallback)
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
 					""")
@@ -96,6 +93,7 @@ public class OpenAiPaymentTransactionIT {
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "paymentStatus", "paymentStatuses" })
 	public void streamingPaymentStatuses(String functionName) {
+		ToolCallback toolCallback = findToolCallback(functionName);
 
 		var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<List<TransactionStatusResponse>>() {
 
@@ -103,7 +101,7 @@ public class OpenAiPaymentTransactionIT {
 
 		Flux<String> flux = this.chatClient.prompt()
 			.advisors(new SimpleLoggerAdvisor())
-			.toolNames(functionName)
+			.tools(toolCallback)
 			.user(u -> u.text("""
 					What is the status of my payment transactions 001, 002 and 003?
 
@@ -124,6 +122,13 @@ public class OpenAiPaymentTransactionIT {
 
 		assertThat(structure.get(2).id()).isEqualTo("003");
 		assertThat(structure.get(2).status()).isEqualTo("rejected");
+	}
+
+	private ToolCallback findToolCallback(String name) {
+		return this.toolCallbacks.stream()
+			.filter(tc -> tc.getToolDefinition().name().equals(name))
+			.findFirst()
+			.orElseThrow(() -> new IllegalArgumentException("No ToolCallback found for name: " + name));
 	}
 
 	record TransactionStatusResponse(String id, String status) {
@@ -150,15 +155,22 @@ public class OpenAiPaymentTransactionIT {
 	public static class TestConfiguration {
 
 		@Bean
-		@Description("Get the status of a single payment transaction")
-		public Function<Transaction, Status> paymentStatus() {
-			return transaction -> DATASET.get(transaction);
+		ToolCallback paymentStatus() {
+			return FunctionToolCallback.builder("paymentStatus", (Transaction transaction) -> DATASET.get(transaction))
+				.description("Get the status of a single payment transaction")
+				.inputType(Transaction.class)
+				.build();
 		}
 
 		@Bean
-		@Description("Get the list statuses of a list of payment transactions")
-		public Function<Transactions, Statuses> paymentStatuses() {
-			return transactions -> new Statuses(transactions.transactions().stream().map(t -> DATASET.get(t)).toList());
+		ToolCallback paymentStatuses() {
+			return FunctionToolCallback
+				.builder("paymentStatuses",
+						(Transactions transactions) -> new Statuses(
+								transactions.transactions().stream().map(t -> DATASET.get(t)).toList()))
+				.description("Get the list statuses of a list of payment transactions")
+				.inputType(Transactions.class)
+				.build();
 		}
 
 		@Bean
@@ -170,35 +182,14 @@ public class OpenAiPaymentTransactionIT {
 		}
 
 		@Bean
-		public OpenAiChatModel openAiClient(ToolCallingManager toolCallingManager) {
+		public OpenAiChatModel openAiClient() {
 			return OpenAiChatModel.builder()
 				.options(OpenAiChatOptions.builder()
 					.apiKey(System.getenv("OPENAI_API_KEY"))
 					.model("gpt-4o-mini")
 					.temperature(0.1)
 					.build())
-				.toolCallingManager(toolCallingManager)
 				.build();
-		}
-
-		@Bean
-		@ConditionalOnMissingBean
-		ToolCallbackResolver toolCallbackResolver(GenericApplicationContext applicationContext,
-				List<ToolCallback> toolCallback, List<ToolCallbackProvider> tcbProviders) {
-
-			List<ToolCallback> allFunctionAndToolCallbacks = new ArrayList<>(toolCallback);
-			tcbProviders.stream()
-				.map(pr -> List.of(pr.getToolCallbacks()))
-				.forEach(allFunctionAndToolCallbacks::addAll);
-
-			var staticToolCallbackResolver = new StaticToolCallbackResolver(allFunctionAndToolCallbacks);
-
-			var springBeanToolCallbackResolver = SpringBeanToolCallbackResolver.builder()
-				.applicationContext(applicationContext)
-				.build();
-
-			return new DelegatingToolCallbackResolver(
-					List.of(staticToolCallbackResolver, springBeanToolCallbackResolver));
 		}
 
 		@Bean
@@ -209,12 +200,10 @@ public class OpenAiPaymentTransactionIT {
 
 		@Bean
 		@ConditionalOnMissingBean
-		ToolCallingManager toolCallingManager(ToolCallbackResolver toolCallbackResolver,
-				ToolExecutionExceptionProcessor toolExecutionExceptionProcessor,
+		ToolCallingManager toolCallingManager(ToolExecutionExceptionProcessor toolExecutionExceptionProcessor,
 				ObjectProvider<ObservationRegistry> observationRegistry) {
 			return ToolCallingManager.builder()
 				.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-				.toolCallbackResolver(toolCallbackResolver)
 				.toolExecutionExceptionProcessor(toolExecutionExceptionProcessor)
 				.build();
 		}

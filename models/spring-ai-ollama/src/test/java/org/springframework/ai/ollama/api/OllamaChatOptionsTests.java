@@ -16,15 +16,15 @@
 
 package org.springframework.ai.ollama.api;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.ollama.api.OllamaChatOptions.Builder;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.util.ResourceUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -161,42 +161,43 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 
 	@Test
 	void testFunctionAndToolOptions() {
+		ToolCallback callback1 = FunctionToolCallback.builder("function1", (String s) -> s)
+			.description("Function 1")
+			.inputType(String.class)
+			.build();
+		ToolCallback callback2 = FunctionToolCallback.builder("function2", (String s) -> s)
+			.description("Function 2")
+			.inputType(String.class)
+			.build();
+
 		var options = OllamaChatOptions.builder()
-			.toolNames("function1")
-			.toolNames("function2")
-			.toolNames("function3")
+			.toolCallbacks(callback1, callback2)
 			.toolContext(Map.of("key1", "value1", "key2", "value2"))
 			.build();
 
-		// Function-related fields are not included in the map due to @JsonIgnore
+		// Tool-related fields are not included in the map due to @JsonIgnore
 		var optionsMap = options.toMap();
-		assertThat(optionsMap).doesNotContainKey("functions");
+		assertThat(optionsMap).doesNotContainKey("toolCallbacks");
 		assertThat(optionsMap).doesNotContainKey("tool_context");
 
 		// But they are accessible through getters
-		assertThat(options.getToolNames()).containsExactlyInAnyOrder("function1", "function2", "function3");
+		assertThat(options.getToolCallbacks()).containsExactlyInAnyOrder(callback1, callback2);
 		assertThat(options.getToolContext())
 			.containsExactlyInAnyOrderEntriesOf(Map.of("key1", "value1", "key2", "value2"));
 	}
 
 	@Test
-	void testFunctionOptionsWithMutableSet() {
-		Set<String> functionSet = new HashSet<>();
-		functionSet.add("function1");
-		functionSet.add("function2");
-
-		var options = OllamaChatOptions.builder().toolNames(functionSet).toolNames("function3").build();
-
-		assertThat(options.getToolNames()).containsExactlyInAnyOrder("function1", "function2", "function3");
-	}
-
-	@Test
 	void testFromOptions() {
+		ToolCallback callback = FunctionToolCallback.builder("function1", (String s) -> s)
+			.description("Function 1")
+			.inputType(String.class)
+			.build();
+
 		var originalOptions = OllamaChatOptions.builder()
 			.model("llama2")
 			.temperature(0.7)
 			.topK(40)
-			.toolNames(Set.of("function1"))
+			.toolCallbacks(callback)
 			.build();
 
 		var copiedOptions = originalOptions.mutate().build();
@@ -205,42 +206,28 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 		assertThat(copiedOptions.getModel()).isEqualTo("llama2");
 		assertThat(copiedOptions.getTemperature()).isEqualTo(0.7);
 		assertThat(copiedOptions.getTopK()).isEqualTo(40);
-		assertThat(copiedOptions.getToolNames()).containsExactly("function1");
+		assertThat(copiedOptions.getToolCallbacks()).containsExactly(callback);
 	}
 
 	@Test
 	void testFunctionOptionsNotInMap() {
-		var options = OllamaChatOptions.builder().model("llama2").toolNames(Set.of("function1")).build();
+		ToolCallback callback = FunctionToolCallback.builder("function1", (String s) -> s)
+			.description("Function 1")
+			.inputType(String.class)
+			.build();
+
+		var options = OllamaChatOptions.builder().model("llama2").toolCallbacks(callback).build();
 
 		var optionsMap = options.toMap();
 
-		// Verify function-related fields are not included in the map due to @JsonIgnore
+		// Verify tool-related fields are not included in the map due to @JsonIgnore
 		assertThat(optionsMap).containsEntry("model", "llama2");
-		assertThat(optionsMap).doesNotContainKey("functions");
 		assertThat(optionsMap).doesNotContainKey("toolCallbacks");
 		assertThat(optionsMap).doesNotContainKey("proxyToolCalls");
 		assertThat(optionsMap).doesNotContainKey("toolContext");
 
 		// But verify they are still accessible through getters
-		assertThat(options.getToolNames()).containsExactly("function1");
-	}
-
-	@Test
-	void testDeprecatedMethods() {
-		var options = OllamaChatOptions.builder()
-			.model("llama2")
-			.temperature(0.7)
-			.topK(40)
-			.toolNames("function1")
-			.build();
-
-		var optionsMap = options.toMap();
-		assertThat(optionsMap).containsEntry("model", "llama2");
-		assertThat(optionsMap).containsEntry("temperature", 0.7);
-		assertThat(optionsMap).containsEntry("top_k", 40);
-
-		// Function is not in map but accessible via getter
-		assertThat(options.getToolNames()).containsExactly("function1");
+		assertThat(options.getToolCallbacks()).containsExactly(callback);
 	}
 
 	@Test
@@ -256,7 +243,7 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 		// Verify all getters return null
 		assertThat(options.getTemperature()).isNull();
 		assertThat(options.getTopK()).isNull();
-		assertThat(options.getToolNames()).isNull();
+		assertThat(options.getToolCallbacks()).isNull();
 		assertThat(options.getToolContext()).isNull();
 	}
 
@@ -382,20 +369,33 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 
 	@Test
 	void testCombineWithCollections() {
+		ToolCallback baseTool = FunctionToolCallback.builder("base-tool", (String s) -> s)
+			.description("Base tool")
+			.inputType(String.class)
+			.build();
+		ToolCallback combineTool1 = FunctionToolCallback.builder("combine-tool1", (String s) -> s)
+			.description("Combine tool 1")
+			.inputType(String.class)
+			.build();
+		ToolCallback combineTool2 = FunctionToolCallback.builder("combine-tool2", (String s) -> s)
+			.description("Combine tool 2")
+			.inputType(String.class)
+			.build();
+
 		var base = OllamaChatOptions.builder()
 			.stop(List.of("base-stop"))
-			.toolNames(Set.of("base-tool"))
+			.toolCallbacks(baseTool)
 			.toolContext(Map.of("base-key", "base-value"));
 
 		var combine = OllamaChatOptions.builder()
 			.stop(List.of("combine-stop1", "combine-stop2"))
-			.toolNames(Set.of("combine-tool1", "combine-tool2"))
+			.toolCallbacks(combineTool1, combineTool2)
 			.toolContext(Map.of("combine-key1", "combine-value1", "combine-key2", "combine-value2"));
 
 		var merged = base.combineWith(combine).build();
 
 		assertThat(merged.getStop()).containsExactly("base-stop", "combine-stop1", "combine-stop2");
-		assertThat(merged.getToolNames()).containsExactlyInAnyOrder("base-tool", "combine-tool1", "combine-tool2");
+		assertThat(merged.getToolCallbacks()).containsExactlyInAnyOrder(baseTool, combineTool1, combineTool2);
 		assertThat(merged.getToolContext()).containsEntry("base-key", "base-value");
 		assertThat(merged.getToolContext()).containsEntry("combine-key1", "combine-value1");
 		assertThat(merged.getToolContext()).containsEntry("combine-key2", "combine-value2");

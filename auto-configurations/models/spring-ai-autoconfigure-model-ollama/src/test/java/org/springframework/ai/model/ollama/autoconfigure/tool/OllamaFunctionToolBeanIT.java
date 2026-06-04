@@ -17,7 +17,6 @@
 package org.springframework.ai.model.ollama.autoconfigure.tool;
 
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.micrometer.observation.ObservationRegistry;
@@ -38,12 +37,12 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.support.ToolCallbacks;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Description;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -82,22 +81,18 @@ class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 		this.contextRunner.run(context -> {
 
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
-			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 
 			MyTools myTools = context.getBean(MyTools.class);
 
 			UserMessage userMessage = new UserMessage(
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
-			OllamaChatOptions options = mergeOptions(chatModel,
-					OllamaChatOptions.builder().toolCallbacks(ToolCallbacks.from(myTools)));
-
-			var chatClient = ChatClient
-				.builder(chatModel, ObservationRegistry.NOOP, null, null,
-						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
-				.build();
-
-			ChatResponse response = chatClient.prompt(new Prompt(List.of(userMessage), options)).call().chatResponse();
+			ChatResponse response = ChatClient.create(chatModel)
+				.prompt()
+				.messages(userMessage)
+				.tools(myTools)
+				.call()
+				.chatResponse();
 
 			var result = response.getResult();
 			assertThat(result).isNotNull();
@@ -111,17 +106,17 @@ class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 		this.contextRunner.run(context -> {
 
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
-			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 
 			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			OllamaChatOptions options = mergeOptions(chatModel,
-					OllamaChatOptions.builder().toolNames(WEATHER_INFO_TOOL_NAME));
-			var chatClient = ChatClient
-				.builder(chatModel, ObservationRegistry.NOOP, null, null,
-						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
-				.build();
-			ChatResponse response = chatClient.prompt(new Prompt(List.of(userMessage), options)).call().chatResponse();
+			ToolCallback weatherInfo = context.getBean(WEATHER_INFO_TOOL_NAME, ToolCallback.class);
+
+			ChatResponse response = ChatClient.create(chatModel)
+				.prompt()
+				.messages(userMessage)
+				.tools(weatherInfo)
+				.call()
+				.chatResponse();
 
 			var result = response.getResult();
 			assertThat(result).isNotNull();
@@ -138,8 +133,8 @@ class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 
 			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			OllamaChatOptions options = mergeOptions(chatModel,
-					OllamaChatOptions.builder().toolNames(WEATHER_INFO_TOOL_NAME));
+			ToolCallback weatherInfo = context.getBean(WEATHER_INFO_TOOL_NAME, ToolCallback.class);
+			OllamaChatOptions options = mergeOptions(chatModel, OllamaChatOptions.builder().toolCallbacks(weatherInfo));
 			var chatClient = ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
 						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
@@ -183,9 +178,11 @@ class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 	static class Config {
 
 		@Bean
-		@Description(WEATHER_INFO_TOOL_DESCRIPTION)
-		Function<MockWeatherService.Request, MockWeatherService.Response> weatherInfo() {
-			return new MockWeatherService();
+		ToolCallback weatherInfo() {
+			return FunctionToolCallback.builder(WEATHER_INFO_TOOL_NAME, new MockWeatherService())
+				.description(WEATHER_INFO_TOOL_DESCRIPTION)
+				.inputType(MockWeatherService.Request.class)
+				.build();
 		}
 
 		@Bean

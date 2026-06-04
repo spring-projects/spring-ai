@@ -149,7 +149,6 @@ The remaining `options` properties are based on the link:https://github.com/olla
 | spring.ai.ollama.chat.mirostat-eta      | Influences how quickly the algorithm responds to feedback from the generated text. A lower learning rate will result in slower adjustments, while a higher learning rate will make the algorithm more responsive. | 0.1
 | spring.ai.ollama.chat.penalize-newline  | -                                                             | true
 | spring.ai.ollama.chat.stop              | Sets the stop sequences to use. When this pattern is encountered the LLM will stop generating text and return. Multiple stop patterns may be set by specifying multiple separate stop parameters in a modelfile. | -
-| spring.ai.ollama.chat.tool-names         | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
 | spring.ai.ollama.chat.tool-callbacks     | Tool Callbacks to register with the ChatModel. | -
 |====
 

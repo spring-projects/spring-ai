@@ -18,7 +18,6 @@ package org.springframework.ai.model.deepseek.autoconfigure.tool;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -35,13 +34,14 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Description;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -73,7 +73,10 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
-			DeepSeekChatOptions options = DeepSeekChatOptions.builder().toolNames("weatherFunction").build();
+			ToolCallback weatherFunction = context.getBean("weatherFunction", ToolCallback.class);
+			ToolCallback weatherFunctionTwo = context.getBean("weatherFunctionTwo", ToolCallback.class);
+
+			DeepSeekChatOptions options = DeepSeekChatOptions.builder().toolCallbacks(weatherFunction).build();
 			Prompt prompt = new Prompt(List.of(userMessage), options);
 			ChatResponse response = chatModel.call(prompt);
 
@@ -86,7 +89,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 			// Test weatherFunctionTwo
-			options = DeepSeekChatOptions.builder().toolNames("weatherFunctionTwo").build();
+			options = DeepSeekChatOptions.builder().toolCallbacks(weatherFunctionTwo).build();
 			prompt = new Prompt(List.of(userMessage), options);
 			response = chatModel.call(prompt);
 
@@ -112,8 +115,10 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
+			ToolCallback weatherFunction = context.getBean("weatherFunction", ToolCallback.class);
+
 			ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder()
-				.toolNames("weatherFunction")
+				.toolCallbacks(weatherFunction)
 				.build();
 			Prompt prompt = new Prompt(List.of(userMessage), functionOptions);
 
@@ -138,7 +143,10 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
-			DeepSeekChatOptions options = DeepSeekChatOptions.builder().toolNames("weatherFunction").build();
+			ToolCallback weatherFunction = context.getBean("weatherFunction", ToolCallback.class);
+			ToolCallback weatherFunctionTwo = context.getBean("weatherFunctionTwo", ToolCallback.class);
+
+			DeepSeekChatOptions options = DeepSeekChatOptions.builder().toolCallbacks(weatherFunction).build();
 			Prompt prompt = new Prompt(List.of(userMessage), options);
 
 			AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
@@ -159,7 +167,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			assertThat(content).containsAnyOf("15.0", "15");
 
 			// Test weatherFunctionTwo
-			options = DeepSeekChatOptions.builder().toolNames("weatherFunctionTwo").build();
+			options = DeepSeekChatOptions.builder().toolCallbacks(weatherFunctionTwo).build();
 			prompt = new Prompt(List.of(userMessage), options);
 
 			aggregatedRef.set(null);
@@ -185,17 +193,20 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 	static class Config {
 
 		@Bean
-		@Description("Get the weather in location")
-		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunction() {
-			return new MockWeatherService();
+		public ToolCallback weatherFunction() {
+			return FunctionToolCallback.builder("weatherFunction", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build();
 		}
 
-		// Relies on the Request's JsonClassDescription annotation to provide the
-		// function description.
 		@Bean
-		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunctionTwo() {
+		public ToolCallback weatherFunctionTwo() {
 			MockWeatherService weatherService = new MockWeatherService();
-			return (weatherService::apply);
+			return FunctionToolCallback.builder("weatherFunctionTwo", weatherService::apply)
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build();
 		}
 
 	}

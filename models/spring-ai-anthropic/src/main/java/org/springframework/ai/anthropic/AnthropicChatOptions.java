@@ -24,7 +24,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import com.anthropic.core.JsonValue;
 import com.anthropic.models.messages.JsonOutputFormat;
@@ -171,11 +170,6 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	private final @Nullable List<ToolCallback> toolCallbacks;
 
 	/**
-	 * Collection of tool names to be resolved at runtime.
-	 */
-	private final @Nullable Set<String> toolNames;
-
-	/**
 	 * Context to be passed to tools during execution.
 	 */
 	private final @Nullable Map<String, Object> toolContext;
@@ -233,11 +227,11 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 			@Nullable List<String> stopSequences, @Nullable Double temperature, @Nullable Double topP,
 			@Nullable Integer topK, @Nullable ToolChoice toolChoice, @Nullable ThinkingConfigParam thinking,
 			@Nullable Boolean disableParallelToolUse, @Nullable List<ToolCallback> toolCallbacks,
-			@Nullable Set<String> toolNames, @Nullable Map<String, Object> toolContext,
-			@Nullable List<AnthropicCitationDocument> citationDocuments, @Nullable AnthropicCacheOptions cacheOptions,
-			@Nullable OutputConfig outputConfig, @Nullable Map<String, String> httpHeaders,
-			@Nullable AnthropicSkillContainer skillContainer, @Nullable String inferenceGeo,
-			@Nullable AnthropicWebSearchTool webSearchTool, @Nullable AnthropicServiceTier serviceTier) {
+			@Nullable Map<String, Object> toolContext, @Nullable List<AnthropicCitationDocument> citationDocuments,
+			@Nullable AnthropicCacheOptions cacheOptions, @Nullable OutputConfig outputConfig,
+			@Nullable Map<String, String> httpHeaders, @Nullable AnthropicSkillContainer skillContainer,
+			@Nullable String inferenceGeo, @Nullable AnthropicWebSearchTool webSearchTool,
+			@Nullable AnthropicServiceTier serviceTier) {
 		this.baseUrl = baseUrl;
 		this.apiKey = apiKey;
 		this.model = model != null ? model : DEFAULT_MODEL;
@@ -255,7 +249,6 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		this.thinking = thinking;
 		this.disableParallelToolUse = disableParallelToolUse;
 		this.toolCallbacks = (toolCallbacks != null ? List.copyOf(toolCallbacks) : null);
-		this.toolNames = (toolNames != null ? Set.copyOf(toolNames) : null);
 		this.toolContext = (toolContext != null ? Map.copyOf(toolContext) : null);
 		this.citationDocuments = (citationDocuments != null ? List.copyOf(citationDocuments) : null);
 		this.cacheOptions = cacheOptions != null ? cacheOptions : AnthropicCacheOptions.disabled();
@@ -349,11 +342,6 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	@Override
 	public @Nullable List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
-	}
-
-	@Override
-	public @Nullable Set<String> getToolNames() {
-		return this.toolNames;
 	}
 
 	@Override
@@ -508,7 +496,6 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 			.topP(this.topP)
 			// ToolCallingChatOptions
 			.toolCallbacks(this.getToolCallbacks())
-			.toolNames(this.getToolNames())
 			.toolContext(this.getToolContext())
 			// Anthropic Specific
 			.metadata(this.metadata)
@@ -541,7 +528,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 				&& Objects.equals(this.thinking, that.thinking)
 				&& Objects.equals(this.disableParallelToolUse, that.disableParallelToolUse)
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
-				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext)
+				&& Objects.equals(this.toolContext, that.toolContext)
 				&& Objects.equals(this.citationDocuments, that.citationDocuments)
 				&& Objects.equals(this.cacheOptions, that.cacheOptions)
 				&& Objects.equals(this.outputConfig, that.outputConfig)
@@ -556,8 +543,8 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	public int hashCode() {
 		return Objects.hash(this.getModel(), this.maxTokens, this.metadata, this.stopSequences, this.temperature,
 				this.topP, this.topK, this.toolChoice, this.thinking, this.disableParallelToolUse, this.toolCallbacks,
-				this.toolNames, this.toolContext, this.citationDocuments, this.cacheOptions, this.outputConfig,
-				this.httpHeaders, this.skillContainer, this.inferenceGeo, this.webSearchTool, this.serviceTier);
+				this.toolContext, this.citationDocuments, this.cacheOptions, this.outputConfig, this.httpHeaders,
+				this.skillContainer, this.inferenceGeo, this.webSearchTool, this.serviceTier);
 	}
 
 	/**
@@ -994,9 +981,8 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 			return new AnthropicChatOptions(this.baseUrl, this.apiKey, this.model, this.timeout, this.maxRetries,
 					this.proxy, this.customHeaders, this.maxTokens, this.metadata, this.stopSequences, this.temperature,
 					this.topP, this.topK, this.toolChoice, this.thinking, this.disableParallelToolUse,
-					this.toolCallbacks, this.toolNames, this.toolContext, this.citationDocuments, this.cacheOptions,
-					this.outputConfig, this.httpHeaders, this.skillContainer, this.inferenceGeo, this.webSearchTool,
-					this.serviceTier);
+					this.toolCallbacks, this.toolContext, this.citationDocuments, this.cacheOptions, this.outputConfig,
+					this.httpHeaders, this.skillContainer, this.inferenceGeo, this.webSearchTool, this.serviceTier);
 		}
 
 	}

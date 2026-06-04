@@ -26,19 +26,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.integration.tests.TestApplication;
 import org.springframework.ai.integration.tests.tool.domain.Author;
 import org.springframework.ai.integration.tests.tool.domain.Book;
 import org.springframework.ai.integration.tests.tool.domain.BookService;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Description;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 
@@ -55,8 +55,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class FunctionToolCallbackTests {
 
-	// @formatter:off
-
 	private static final Log logger = LogFactory.getLog(FunctionToolCallbackTests.class);
 
 	@Autowired
@@ -65,14 +63,28 @@ public class FunctionToolCallbackTests {
 	@Autowired
 	ToolCallingManager toolCallingManager;
 
+	@Autowired
+	@Qualifier(Tools.WELCOME)
+	ToolCallback welcome;
+
+	@Autowired
+	@Qualifier(Tools.WELCOME_USER)
+	ToolCallback welcomeUser;
+
+	@Autowired
+	@Qualifier(Tools.BOOKS_BY_AUTHOR)
+	ToolCallback booksByAuthor;
+
+	@Autowired
+	@Qualifier(Tools.AUTHORS_BY_BOOKS)
+	ToolCallback authorsByBooks;
+
 	@Test
 	void chatVoidInputFromBean() {
-		var content = ChatClient.builder(this.openAiChatModel)
-			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
-			.build()
+		var content = ChatClient.create(this.openAiChatModel)
 			.prompt()
 			.user("Welcome the users to the library")
-			.toolNames(Tools.WELCOME)
+			.tools(this.welcome)
 			.call()
 			.content();
 		assertThat(content).isNotEmpty();
@@ -80,16 +92,15 @@ public class FunctionToolCallbackTests {
 
 	@Test
 	void chatVoidInputFromCallback() {
-		var content = ChatClient.builder(this.openAiChatModel)
-			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
-			.build()
+		var content = ChatClient.create(this.openAiChatModel)
 			.prompt()
 			.user("Welcome the users to the library")
-			.tools(FunctionToolCallback.builder("sayWelcome",
-							(Consumer<Object>) input -> logger.info("CALLBACK - Welcoming users to the library"))
-					.description("Welcome users to the library")
-					.inputType(Void.class)
-					.build())
+			.tools(FunctionToolCallback
+				.builder("sayWelcome",
+						(Consumer<Object>) input -> logger.info("CALLBACK - Welcoming users to the library"))
+				.description("Welcome users to the library")
+				.inputType(Void.class)
+				.build())
 			.call()
 			.content();
 		assertThat(content).isNotEmpty();
@@ -97,12 +108,10 @@ public class FunctionToolCallbackTests {
 
 	@Test
 	void chatVoidOutputFromBean() {
-		var content = ChatClient.builder(this.openAiChatModel)
-			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
-			.build()
+		var content = ChatClient.create(this.openAiChatModel)
 			.prompt()
 			.user("Welcome %s to the library".formatted("James Bond"))
-			.toolNames(Tools.WELCOME_USER)
+			.tools(this.welcomeUser)
 			.call()
 			.content();
 		assertThat(content).isNotEmpty();
@@ -110,16 +119,16 @@ public class FunctionToolCallbackTests {
 
 	@Test
 	void chatVoidOutputFromCallback() {
-		var content = ChatClient.builder(this.openAiChatModel)
-			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
-			.build()
+		var content = ChatClient.create(this.openAiChatModel)
 			.prompt()
 			.user("Welcome %s to the library".formatted("James Bond"))
-			.tools(FunctionToolCallback.builder("welcomeUser",
-							(Consumer<Object>) user -> logger.info("CALLBACK - Welcoming " + ((User) user).name() + " to the library"))
-					.description("Welcome a specific user to the library")
-					.inputType(User.class)
-					.build())
+			.tools(FunctionToolCallback
+				.builder("welcomeUser",
+						(Consumer<Object>) user -> logger
+							.info("CALLBACK - Welcoming " + ((User) user).name() + " to the library"))
+				.description("Welcome a specific user to the library")
+				.inputType(FunctionToolCallbackTests.User.class)
+				.build())
 			.call()
 			.content();
 		assertThat(content).contains("Bond");
@@ -127,12 +136,10 @@ public class FunctionToolCallbackTests {
 
 	@Test
 	void chatSingleFromBean() {
-		var content = ChatClient.builder(this.openAiChatModel)
-			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
-			.build()
+		var content = ChatClient.create(this.openAiChatModel)
 			.prompt()
 			.user("What books written by %s are available in the library?".formatted("J.R.R. Tolkien"))
-			.toolNames(Tools.BOOKS_BY_AUTHOR)
+			.tools(this.booksByAuthor)
 			.call()
 			.content();
 		assertThat(content).isNotEmpty()
@@ -147,9 +154,7 @@ public class FunctionToolCallbackTests {
 			logger.info("CALLBACK - Getting books by author: " + author.name());
 			return new BookService().getBooksByAuthor(author);
 		};
-		var content = ChatClient.builder(this.openAiChatModel)
-			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
-			.build()
+		var content = ChatClient.create(this.openAiChatModel)
 			.prompt()
 			.user("What books written by %s are available in the library?".formatted("J.R.R. Tolkien"))
 			.tools(FunctionToolCallback.builder("availableBooksByAuthor", function)
@@ -166,12 +171,11 @@ public class FunctionToolCallbackTests {
 
 	@Test
 	void chatListFromBean() {
-		var content = ChatClient.builder(this.openAiChatModel)
-			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
-			.build()
+		var content = ChatClient.create(this.openAiChatModel)
 			.prompt()
-			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit", "The Lion, the Witch and the Wardrobe"))
-			.toolNames(Tools.AUTHORS_BY_BOOKS)
+			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit",
+					"The Lion, the Witch and the Wardrobe"))
+			.tools(this.authorsByBooks)
 			.call()
 			.content();
 		assertThat(content).isNotEmpty().contains("J.R.R. Tolkien").contains("C.S. Lewis");
@@ -183,11 +187,10 @@ public class FunctionToolCallbackTests {
 			logger.info("CALLBACK - Getting authors by books: " + books.books().stream().map(Book::title).toList());
 			return new BookService().getAuthorsByBook(books.books());
 		};
-		var content = ChatClient.builder(this.openAiChatModel)
-			.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build())
-			.build()
+		var content = ChatClient.create(this.openAiChatModel)
 			.prompt()
-			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit", "The Lion, the Witch and the Wardrobe"))
+			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit",
+					"The Lion, the Witch and the Wardrobe"))
 			.tools(FunctionToolCallback.builder("authorsByAvailableBooks", function)
 				.description("Get the list of authors who wrote the given books available in the library")
 				.inputType(Books.class)
@@ -213,34 +216,47 @@ public class FunctionToolCallbackTests {
 		private final BookService bookService = new BookService();
 
 		@Bean(WELCOME)
-		@Description("Welcome users to the library")
-		Consumer<Void> welcome() {
-			return input -> logger.info("Welcoming users to the library");
+		ToolCallback welcome() {
+			return FunctionToolCallback
+				.builder(WELCOME, (Consumer<Object>) input -> logger.info("Welcoming users to the library"))
+				.description("Welcome users to the library")
+				.inputType(Void.class)
+				.build();
 		}
 
 		@Bean(WELCOME_USER)
-		@Description("Welcome a specific user to the library")
-		Consumer<User> welcomeUser() {
-			return user -> logger.info("Welcoming " + user.name() + " to the library");
+		ToolCallback welcomeUser() {
+			return FunctionToolCallback
+				.builder(WELCOME_USER,
+						(Consumer<Object>) user -> logger
+							.info("Welcoming " + ((FunctionToolCallbackTests.User) user).name() + " to the library"))
+				.description("Welcome a specific user to the library")
+				.inputType(FunctionToolCallbackTests.User.class)
+				.build();
 		}
 
 		@Bean(BOOKS_BY_AUTHOR)
-		@Description("Get the list of books written by the given author available in the library")
-		Function<Author, List<Book>> booksByAuthor() {
-			return author -> {
+		ToolCallback booksByAuthor() {
+			return FunctionToolCallback.builder(BOOKS_BY_AUTHOR, (Author author) -> {
 				logger.info("Getting books by author: " + author.name());
 				return this.bookService.getBooksByAuthor(author);
-			};
+			})
+				.description("Get the list of books written by the given author available in the library")
+				.inputType(Author.class)
+				.build();
 		}
 
 		@Bean(AUTHORS_BY_BOOKS)
-		@Description("Get the list of authors who wrote the given books available in the library")
-		Function<Books, List<Author>> authorsByBooks() {
-			return books -> {
+		ToolCallback authorsByBooks() {
+			return FunctionToolCallback.builder(AUTHORS_BY_BOOKS, (Books books) -> {
 				List<Author> authors = this.bookService.getAuthorsByBook(books.books());
-				logger.info("Getting authors: " + authors + " by books: " + books.books().stream().map(Book::title).toList());
+				logger.info("Getting authors: " + authors + " by books: "
+						+ books.books().stream().map(Book::title).toList());
 				return authors;
-			};
+			})
+				.description("Get the list of authors who wrote the given books available in the library")
+				.inputType(Books.class)
+				.build();
 		}
 
 	}
@@ -250,7 +266,5 @@ public class FunctionToolCallbackTests {
 
 	public record Books(List<Book> books) {
 	}
-
-	// @formatter:on
 
 }

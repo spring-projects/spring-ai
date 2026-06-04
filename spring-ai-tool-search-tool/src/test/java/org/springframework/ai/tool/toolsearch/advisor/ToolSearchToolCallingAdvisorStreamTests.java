@@ -18,10 +18,8 @@ package org.springframework.ai.tool.toolsearch.advisor;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 
@@ -153,7 +151,6 @@ class ToolSearchToolCallingAdvisorStreamTests {
 		ToolCallingChatOptions opts = (ToolCallingChatOptions) captured[0].prompt().getOptions();
 		assertThat(opts.getToolCallbacks()).extracting(cb -> cb.getToolDefinition().name())
 			.containsExactly("toolSearchTool");
-		assertThat(opts.getToolNames()).containsExactlyInAnyOrder("weatherTool", "calculatorTool");
 	}
 
 	@Test
@@ -268,18 +265,11 @@ class ToolSearchToolCallingAdvisorStreamTests {
 
 		private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
-		private Set<String> toolNames = new HashSet<>();
-
 		private Map<String, Object> toolContext = new HashMap<>();
 
 		@Override
 		public List<ToolCallback> getToolCallbacks() {
 			return this.toolCallbacks;
-		}
-
-		@Override
-		public Set<String> getToolNames() {
-			return this.toolNames;
 		}
 
 		@Override
@@ -289,10 +279,7 @@ class ToolSearchToolCallingAdvisorStreamTests {
 
 		@Override
 		public ToolCallingChatOptions.Builder<?> mutate() {
-			return ToolCallingChatOptions.builder()
-				.toolCallbacks(this.toolCallbacks)
-				.toolNames(this.toolNames)
-				.toolContext(this.toolContext);
+			return ToolCallingChatOptions.builder().toolCallbacks(this.toolCallbacks).toolContext(this.toolContext);
 		}
 
 		@Override

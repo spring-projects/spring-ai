@@ -58,9 +58,11 @@ public class OpenAiFunctionCallback2IT {
 
 			// @formatter:off
 			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+			ToolCallback weatherFunctionInfo = context.getBean("weatherFunctionInfo", ToolCallback.class);
+
 			ChatClient chatClient = ChatClient.builder(chatModel)
 				.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(toolCallingManager).build())
-				.defaultToolNames("WeatherInfo")
+				.defaultTools(weatherFunctionInfo)
 				.defaultUser(u -> u.text("What's the weather like in {cities}? Please use the provided tools to get the weather for all 3 cities."))
 				.build();
 
@@ -81,13 +83,14 @@ public class OpenAiFunctionCallback2IT {
 			.run(context -> {
 
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+				ToolCallback weatherFunctionInfo = context.getBean("weatherFunctionInfo", ToolCallback.class);
 
 			// @formatter:off
 			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 			String content = ChatClient.builder(chatModel)
 				.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(toolCallingManager).build())
 				.build().prompt()
-				.toolNames("WeatherInfo")
+				.tools(weatherFunctionInfo)
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.")
 				.stream().content()
 				.collectList().block().stream().collect(Collectors.joining());

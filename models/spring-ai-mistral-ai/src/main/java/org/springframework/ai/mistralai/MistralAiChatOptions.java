@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.jspecify.annotations.Nullable;
 
@@ -151,12 +150,6 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	 */
 	private final @Nullable List<ToolCallback> toolCallbacks;
 
-	/**
-	 * Collection of tool names to be resolved at runtime and used for tool calling in the
-	 * chat completion requests.
-	 */
-	private final @Nullable Set<String> toolNames;
-
 	private final @Nullable Map<String, Object> toolContext;
 
 	protected MistralAiChatOptions(@Nullable String model, @Nullable Double temperature, @Nullable Double topP,
@@ -165,7 +158,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 			@Nullable ReasoningEffort reasoningEffort, @Nullable Double frequencyPenalty,
 			@Nullable Double presencePenalty, @Nullable Integer n, @Nullable List<FunctionTool> tools,
 			@Nullable ToolChoice toolChoice, @Nullable List<ToolCallback> toolCallbacks,
-			@Nullable Set<String> toolNames, @Nullable Map<String, Object> toolContext) {
+			@Nullable Map<String, Object> toolContext) {
 
 		this.model = model != null ? model : MistralAiApi.ChatModel.MISTRAL_SMALL.getValue();
 		this.temperature = temperature != null ? temperature : 0.7;
@@ -182,7 +175,6 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 		this.tools = tools != null ? List.copyOf(tools) : null;
 		this.toolChoice = toolChoice;
 		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
-		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : null;
 		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
 	}
 
@@ -263,11 +255,6 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	}
 
 	@Override
-	public @Nullable Set<String> getToolNames() {
-		return this.toolNames;
-	}
-
-	@Override
 	public @Nullable Integer getTopK() {
 		return null;
 	}
@@ -300,7 +287,6 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 			.topK(this.getTopK()) // always null but here for consistency
 			// ToolCallingChatOptions
 			.toolCallbacks(this.getToolCallbacks())
-			.toolNames(this.getToolNames())
 			.toolContext(this.getToolContext())
 			// Mistral AI specific
 			.safePrompt(this.safePrompt)
@@ -347,7 +333,6 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 				&& Objects.equals(this.tools, other.tools)
 				&& Objects.equals(this.toolChoice, other.toolChoice)
 				&& Objects.equals(this.toolCallbacks, other.toolCallbacks)
-				&& Objects.equals(this.toolNames, other.toolNames)
 				&& Objects.equals(this.toolContext, other.toolContext);
 		// @formatter:on
 	}
@@ -487,7 +472,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 			return new MistralAiChatOptions(this.model, this.temperature, this.topP, this.maxTokens, this.safePrompt,
 					this.randomSeed, this.responseFormat, this.stopSequences, this.reasoningEffort,
 					this.frequencyPenalty, this.presencePenalty, this.n, this.tools, this.toolChoice,
-					this.toolCallbacks, this.toolNames, this.toolContext);
+					this.toolCallbacks, this.toolContext);
 		}
 
 	}
