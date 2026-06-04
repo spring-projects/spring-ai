@@ -122,6 +122,8 @@ public final class OpenAiChatModel implements ChatModel {
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
+	private static final String REASONING_CONTENT = "reasoningContent";
+
 	private final Log logger = LogFactory.getLog(OpenAiChatModel.class);
 
 	private final OpenAIClient openAiClient;
@@ -216,7 +218,7 @@ public final class OpenAiChatModel implements ChatModel {
 									: "",
 							"index", choice.index(), "finishReason", choice.finishReason().value().toString(),
 							"refusal", choice.message().refusal().orElse(""), "annotations",
-							choice.message().annotations().orElse((List) List.of(Map.of())), "reasoningContent",
+							choice.message().annotations().orElse((List) List.of(Map.of())), REASONING_CONTENT,
 							getReasoningContent(choice));
 					return buildGeneration(choice, metadata, request);
 				}).toList();
@@ -316,7 +318,7 @@ public final class OpenAiChatModel implements ChatModel {
 							"finishReason", choice.finishReason().value(), //
 							"refusal", choice.message().refusal().orElse(""), //
 							"annotations", choice.message().annotations().orElseGet(List::of), //
-							"reasoningContent", getReasoningContent(choice) //
+							REASONING_CONTENT, getReasoningContent(choice) //
 					);
 
 					return buildGeneration(choice, metadata, request);
@@ -583,6 +585,15 @@ public final class OpenAiChatModel implements ChatModel {
 							.toList();
 
 						builder.toolCalls(toolCalls);
+					}
+
+					// Replay reasoning content only when present - plain OpenAI is
+					// unaffected
+					Object reasoningContent = assistantMessage.getMetadata().get(REASONING_CONTENT);
+					if (reasoningContent instanceof String reasoning && StringUtils.hasText(reasoning)) {
+						// "reasoning_content" is the wire field; REASONING_CONTENT is the
+						// metadata key
+						builder.putAdditionalProperty("reasoning_content", JsonValue.from(reasoning));
 					}
 
 					return List.of(ChatCompletionMessageParam.ofAssistant(builder.build()));

@@ -25,8 +25,10 @@ import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
 import com.openai.models.chat.completions.ChatCompletion;
+import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
 import com.openai.models.chat.completions.ChatCompletionMessage;
+import com.openai.models.chat.completions.ChatCompletionMessageParam;
 import com.openai.models.completions.CompletionUsage;
 import com.openai.services.blocking.ChatService;
 import com.openai.services.blocking.chat.ChatCompletionService;
@@ -35,6 +37,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -343,6 +347,60 @@ class OpenAiChatModelTests {
 
 		ChatResponseMetadata metadata = response.getMetadata();
 		assertThat((Object) metadata.get("created")).isEqualTo(1234567890L);
+	}
+
+	@Test
+	void reasoningContentReplayedWhenPresentInAssistantHistory() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("100")
+			.properties(Map.of("reasoningContent", "25 * 4 = 100."))
+			.build();
+		Prompt prompt = new Prompt(
+				List.of(new UserMessage("What's 25 * 4?"), assistantMessage, new UserMessage("Now divide that by 5")),
+				options);
+
+		ChatCompletionCreateParams request = chatModel.createRequest(prompt, false);
+
+		ChatCompletionAssistantMessageParam assistantParam = request.messages()
+			.stream()
+			.filter(ChatCompletionMessageParam::isAssistant)
+			.map(ChatCompletionMessageParam::asAssistant)
+			.findFirst()
+			.orElseThrow();
+		assertThat(assistantParam._additionalProperties()).containsEntry("reasoning_content",
+				JsonValue.from("25 * 4 = 100."));
+	}
+
+	@Test
+	void reasoningContentOmittedWhenAbsentFromAssistantHistory() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		AssistantMessage assistantMessage = AssistantMessage.builder().content("100").build();
+		Prompt prompt = new Prompt(
+				List.of(new UserMessage("What's 25 * 4?"), assistantMessage, new UserMessage("Now divide that by 5")),
+				options);
+
+		ChatCompletionCreateParams request = chatModel.createRequest(prompt, false);
+
+		ChatCompletionAssistantMessageParam assistantParam = request.messages()
+			.stream()
+			.filter(ChatCompletionMessageParam::isAssistant)
+			.map(ChatCompletionMessageParam::asAssistant)
+			.findFirst()
+			.orElseThrow();
+		assertThat(assistantParam._additionalProperties()).doesNotContainKey("reasoning_content");
 	}
 
 }
