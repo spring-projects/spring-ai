@@ -41,6 +41,11 @@
 			<artifactId>spring-ai-autoconfigure-vector-store-bedrock-knowledgebase</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-vector-store-observation</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
 			<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-bedrock-knowledgebase-store</artifactId>
