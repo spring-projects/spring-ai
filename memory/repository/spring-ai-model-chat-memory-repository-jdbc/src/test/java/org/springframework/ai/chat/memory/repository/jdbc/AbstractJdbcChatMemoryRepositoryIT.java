@@ -76,14 +76,14 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 		JdbcChatMemoryRepositoryDialect dialect = JdbcChatMemoryRepositoryDialect
 			.from(this.jdbcTemplate.getDataSource());
 		String selectSql = dialect.getSelectMessagesSql()
-			.replace("content, type", "conversation_id, content, type, timestamp");
+			.replace("content, type", "conversation_id, content, type, sequence_id");
 		var result = this.jdbcTemplate.queryForMap(selectSql, conversationId);
 
 		assertThat(result.size()).isEqualTo(4);
 		assertThat(result.get("conversation_id")).isEqualTo(conversationId);
 		assertThat(result.get("content")).isEqualTo(message.getText());
 		assertThat(result.get("type")).isEqualTo(messageType.name());
-		assertThat(result.get("timestamp")).isNotNull();
+		assertThat(result.get("sequence_id")).isNotNull();
 	}
 
 	@Test
@@ -101,7 +101,7 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 		JdbcChatMemoryRepositoryDialect dialect = JdbcChatMemoryRepositoryDialect
 			.from(this.jdbcTemplate.getDataSource());
 		String selectSql = dialect.getSelectMessagesSql()
-			.replace("content, type", "conversation_id, content, type, timestamp");
+			.replace("content, type", "conversation_id, content, type, sequence_id");
 		var results = this.jdbcTemplate.queryForList(selectSql, conversationId);
 
 		assertThat(results).hasSize(messages.size());
@@ -113,7 +113,7 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 			assertThat(result.get("conversation_id")).isEqualTo(conversationId);
 			assertThat(result.get("content")).isEqualTo(message.getText());
 			assertThat(result.get("type")).isEqualTo(message.getMessageType().name());
-			assertThat(result.get("timestamp")).isNotNull();
+			assertThat(result.get("sequence_id")).isNotNull();
 		}
 
 		var count = this.chatMemoryRepository.findByConversationId(conversationId).size();
@@ -189,10 +189,10 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 	void testMessageOrderWithLargeBatch() {
 		var conversationId = UUID.randomUUID().toString();
 
-		// Create a large batch of 50 messages to ensure timestamp ordering issues
-		// are detected. With the old millisecond-precision code, MySQL/MariaDB's
-		// second-precision TIMESTAMP columns would truncate all timestamps to the
-		// same value, causing random ordering. This test validates the fix.
+		// Create a large batch of 50 messages to ensure ordering is preserved.
+		// The sequence_id column stores each message's position in the conversation,
+		// so ordering is deterministic across all databases regardless of timestamp
+		// precision.
 		List<Message> messages = new java.util.ArrayList<>();
 		for (int i = 0; i < 50; i++) {
 			messages.add(new UserMessage("Message " + i));

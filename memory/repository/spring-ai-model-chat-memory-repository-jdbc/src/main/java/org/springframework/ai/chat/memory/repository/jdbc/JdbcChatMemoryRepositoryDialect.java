@@ -33,8 +33,7 @@ public interface JdbcChatMemoryRepositoryDialect {
 	Logger logger = LoggerFactory.getLogger(JdbcChatMemoryRepositoryDialect.class);
 
 	/**
-	 * Returns the SQL to fetch messages for a conversation, ordered by timestamp, with
-	 * limit.
+	 * Returns the SQL to fetch messages for a conversation, ordered by sequence id.
 	 */
 	String getSelectMessagesSql();
 

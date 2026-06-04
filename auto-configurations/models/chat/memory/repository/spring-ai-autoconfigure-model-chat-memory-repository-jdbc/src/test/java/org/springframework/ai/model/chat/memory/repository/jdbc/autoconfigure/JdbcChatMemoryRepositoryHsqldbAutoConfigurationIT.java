@@ -94,12 +94,12 @@ public class JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT {
 				// Create the table with a simplified schema
 				this.jdbcTemplate.execute("CREATE TABLE SPRING_AI_CHAT_MEMORY ("
 						+ "conversation_id VARCHAR(36) NOT NULL, " + "content LONGVARCHAR NOT NULL, "
-						+ "type VARCHAR(10) NOT NULL, " + "timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)");
+						+ "type VARCHAR(10) NOT NULL, " + "sequence_id BIGINT NOT NULL)");
 				System.out.println("Created table with simplified schema");
 
 				// Create index
 				this.jdbcTemplate.execute(
-						"CREATE INDEX SPRING_AI_CHAT_MEMORY_IDX ON SPRING_AI_CHAT_MEMORY(conversation_id, timestamp DESC)");
+						"CREATE INDEX SPRING_AI_CHAT_MEMORY_IDX ON SPRING_AI_CHAT_MEMORY(conversation_id, sequence_id)");
 				System.out.println("Created index");
 
 				// Verify table was created

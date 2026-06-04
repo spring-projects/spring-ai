@@ -81,6 +81,50 @@ spring.ai.chat.client.tool-calling.enabled=false
 
 This is a global alternative to using `AdvisorParams.toolCallAdvisorAutoRegister(false)` on every individual call.
 
+=== JDBC Chat Memory `sequence_id` Column
+
+The `JdbcChatMemoryRepository` schema replaces the `timestamp` column with a `sequence_id BIGINT` column. The column never held meaningful temporal data; it was used solely to preserve message order within a conversation. Relying on `TIMESTAMP` precision for ordering caused incorrect ordering on databases whose default `TIMESTAMP` precision is one second (notably MySQL and MariaDB). A plain integer sequence orders identically across every supported database.
+
+===== Impact
+
+- The `SPRING_AI_CHAT_MEMORY` table now defines `sequence_id BIGINT NOT NULL` instead of a `timestamp` column, and the index is renamed to `SPRING_AI_CHAT_MEMORY_CONVERSATION_ID_SEQUENCE_ID_IDX`.
+- This is a breaking schema change. Existing tables created by Spring AI 1.x are not compatible and must be migrated or recreated.
+
+===== Migration
+
+Chat memory holds recent conversation context rather than permanent history, so the simplest path is to drop and recreate the table using the updated schema script for your database (`classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-<platform>.sql`). Any in-flight conversations are lost, but new conversations use the corrected schema:
+
+[source,sql]
+----
+DROP TABLE SPRING_AI_CHAT_MEMORY;
+-- then let schema initialization recreate it, or run the 2.0 schema-<platform>.sql manually
+----
+
+To preserve existing conversations, perform an in-place migration that backfills `sequence_id` from the previous ordering. For PostgreSQL:
+
+[source,sql]
+----
+ALTER TABLE SPRING_AI_CHAT_MEMORY ADD COLUMN sequence_id BIGINT;
+
+WITH ordered AS (
+    SELECT ctid, ROW_NUMBER() OVER (PARTITION BY conversation_id ORDER BY "timestamp") - 1 AS seq
+    FROM SPRING_AI_CHAT_MEMORY
+)
+UPDATE SPRING_AI_CHAT_MEMORY t
+SET sequence_id = o.seq
+FROM ordered o
+WHERE t.ctid = o.ctid;
+
+ALTER TABLE SPRING_AI_CHAT_MEMORY ALTER COLUMN sequence_id SET NOT NULL;
+ALTER TABLE SPRING_AI_CHAT_MEMORY DROP COLUMN "timestamp";
+
+DROP INDEX IF EXISTS SPRING_AI_CHAT_MEMORY_CONVERSATION_ID_TIMESTAMP_IDX;
+CREATE INDEX SPRING_AI_CHAT_MEMORY_CONVERSATION_ID_SEQUENCE_ID_IDX
+ON SPRING_AI_CHAT_MEMORY(conversation_id, sequence_id);
+----
+
+Adapt the identifier quoting and the row-identity expression (`ctid` above) to your database. The `ROW_NUMBER() OVER (PARTITION BY conversation_id ORDER BY <old timestamp>)` pattern reproduces the original per-conversation order on every supported engine.
+
 === Options Immutability and Default Values
 
 ==== Strict Immutability for Options

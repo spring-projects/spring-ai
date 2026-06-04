@@ -26,12 +26,12 @@ public class SqliteChatMemoryRepositoryDialect implements JdbcChatMemoryReposito
 
 	@Override
 	public String getSelectMessagesSql() {
-		return "SELECT content, type FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY timestamp";
+		return "SELECT content, type FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY sequence_id";
 	}
 
 	@Override
 	public String getInsertMessageSql() {
-		return "INSERT INTO SPRING_AI_CHAT_MEMORY (conversation_id, content, type, timestamp) VALUES (?, ?, ?, ?)";
+		return "INSERT INTO SPRING_AI_CHAT_MEMORY (conversation_id, content, type, sequence_id) VALUES (?, ?, ?, ?)";
 	}
 
 	@Override
