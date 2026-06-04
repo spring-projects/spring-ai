@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.client.advisor.vectorstore;
+package org.springframework.ai.vectorstore.advisor;
 
 import java.time.Duration;
 import java.util.List;

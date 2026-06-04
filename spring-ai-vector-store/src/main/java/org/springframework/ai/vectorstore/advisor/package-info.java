@@ -18,6 +18,6 @@
  * Spring AI chat client advisors package.
  */
 @NullMarked
-package org.springframework.ai.chat.client.advisor.vectorstore;
+package org.springframework.ai.vectorstore.advisor;
 
 import org.jspecify.annotations.NullMarked;

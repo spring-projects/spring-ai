@@ -4,6 +4,15 @@
 [[upgrading-to-2-0-0-RC1]]
 == Upgrading to 2.0.0-RC1
 
+=== Advisors
+
+`QuestionAnswerAdvisor` and `VectorStoreChatMemoryAdvisor` have moved:
+
+* From `spring-ai-advisors-vector-store` module to the `spring-ai-vector-store` one
+* From `org.springframework.ai.chat.client.advisor.vectorstore` package to `org.springframework.ai.vectorstore.advisor` one
+
+So please remove any occurence of the `spring-ai-advisors-vector-store` dependency, and update the packages of those classes accordingly.
+
 === Tool Calling
 
 ==== Removed: `internalToolExecutionEnabled` from `ToolCallingChatOptions`

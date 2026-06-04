@@ -40,7 +40,6 @@
 		<module>spring-ai-tool-search-tool</module>
 		<module>spring-ai-vector-store</module>
 		<module>spring-ai-rag</module>
-		<module>advisors/spring-ai-advisors-vector-store</module>
 
 		<module>memory/repository/spring-ai-model-chat-memory-repository-cassandra</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-jdbc</module>
