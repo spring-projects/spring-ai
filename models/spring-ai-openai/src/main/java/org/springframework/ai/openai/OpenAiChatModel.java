@@ -144,36 +144,13 @@ public final class OpenAiChatModel implements ChatModel {
 		return new Builder();
 	}
 
-	private OpenAiChatModel(Builder builder) {
-		if (builder.options == null) {
-			this.options = OpenAiChatOptions.builder().build();
-		}
-		else {
-			this.options = builder.options;
-		}
-		this.openAiClient = Objects.requireNonNullElseGet(builder.openAiClient,
-				() -> OpenAiSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
-						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
-						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
-						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
-						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders(),
-						Objects.requireNonNullElse(builder.observationRegistry, ObservationRegistry.NOOP),
-						builder.meterRegistry, builder.dispatcherExecutor));
-
-		this.openAiClientAsync = Objects.requireNonNullElseGet(builder.openAiClientAsync,
-				() -> OpenAiSetup.setupAsyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
-						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
-						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
-						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
-						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders(),
-						Objects.requireNonNullElse(builder.observationRegistry, ObservationRegistry.NOOP),
-						builder.meterRegistry, builder.dispatcherExecutor));
-
-		this.observationRegistry = Objects.requireNonNullElse(builder.observationRegistry, ObservationRegistry.NOOP);
-		this.toolCallingManager = Objects.requireNonNullElse(builder.toolCallingManager,
-				ToolCallingManager.builder().observationRegistry(this.observationRegistry).build());
+	private OpenAiChatModel(OpenAIClient openAiClient, OpenAIClientAsync openAiClientAsync, OpenAiChatOptions options,
+			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager) {
+		this.openAiClient = openAiClient;
+		this.openAiClientAsync = openAiClientAsync;
+		this.options = options;
+		this.observationRegistry = observationRegistry;
+		this.toolCallingManager = toolCallingManager;
 	}
 
 	/**
@@ -314,16 +291,16 @@ public final class OpenAiChatModel implements ChatModel {
 			// Next, aggregate CCCs that deal with tool calls together
 			AtomicBoolean isInsideTool = new AtomicBoolean(false);
 			Flux<ChatCompletion> aggregatedChatCompletions = chunks.doOnNext(chunk -> {
-				if (this.hasToolCall(chunk)) {
+				if (ChunkMerger.hasToolCall(chunk)) {
 					isInsideTool.set(true);
 				}
 			}).bufferUntil(chunk -> {
-				if (isInsideTool.get() && this.toolCallsDone(chunk)) {
+				if (isInsideTool.get() && ChunkMerger.toolCallsDone(chunk)) {
 					isInsideTool.set(false);
 					return true;
 				}
 				return !isInsideTool.get();
-			}).map(OpenAiChatModel::mergeChunks).map(this::chunkToChatCompletion);
+			}).map(ChunkMerger::mergeChunks).map(ChunkMerger::chunkToChatCompletion);
 
 			Flux<ChatResponse> chatResponses = aggregatedChatCompletions.map(chatCompletion -> {
 				String id = chatCompletion.id();
@@ -357,76 +334,6 @@ public final class OpenAiChatModel implements ChatModel {
 			return new MessageAggregator().aggregate(observedResponses, observationContext::setResponse);
 
 		});
-	}
-
-	private static ChatCompletionChunk mergeChunks(List<ChatCompletionChunk> chunks) {
-		ChatCompletionChunk.Builder builder = chunks.get(0).toBuilder();
-		Map<Long, Choice> choices = new LinkedHashMap<>();
-		chunks.get(0).choices().forEach(choice -> choices.put(choice.index(), choice));
-
-		for (int i = 1; i < chunks.size(); i++) {
-			ChatCompletionChunk chunk = chunks.get(i);
-			chunk.usage().ifPresent(builder::usage);
-			chunk.serviceTier().ifPresent(builder::serviceTier);
-			chunk.choices()
-				.forEach(choice -> choices.compute(choice.index(),
-						(ix, c) -> c == null ? choice : mergeChoices(c, choice)));
-		}
-		return builder.choices(new ArrayList<>(choices.values())).build();
-	}
-
-	private static Choice mergeChoices(Choice c1, Choice c2) {
-		return Choice.builder()
-			.index(c1.index())
-			.finishReason(c1.finishReason().or(c2::finishReason))
-			.logprobs(c1.logprobs().or(c2::logprobs))
-			.delta(mergeDeltas(c1.delta(), c2.delta()))
-			.build();
-
-	}
-
-	private static Delta mergeDeltas(Delta left, Delta right) {
-		var tcs = Stream.of(left.toolCalls(), right.toolCalls()).flatMap(Optional::stream).reduce((tcs1, tcs2) -> {
-			Assert.isTrue(tcs2.size() <= 1, "no more than one tool call per message currently supported");
-			ToolCall toolCall = tcs2.get(0);
-			if (toolCall.id().isPresent()) {
-				// new toolCall, add it to list
-				List<ToolCall> result = new ArrayList<>(tcs1);
-				result.add(toolCall);
-				return result;
-			}
-			else {
-				// Continuation of previous toolCall
-				ToolCall lastFromTc1 = tcs1.get(tcs1.size() - 1);
-				Function lastFromTc1F = lastFromTc1.function().get();
-
-				var concatenatedArgs = Stream
-					.of(lastFromTc1F.arguments(), toolCall.function().flatMap(Function::arguments))
-					.flatMap(Optional::stream)
-					.reduce((args1, args2) -> args1 + args2)
-					.orElse("");
-
-				lastFromTc1.toBuilder().function(lastFromTc1F.toBuilder().arguments(concatenatedArgs).build());
-				List<ToolCall> result = new ArrayList<>(tcs1);
-				result.set(tcs1.size() - 1,
-						lastFromTc1.toBuilder()
-							.function(lastFromTc1F.toBuilder().arguments(concatenatedArgs).build())
-							.build());
-				return result;
-			}
-
-		}).orElse(List.of());
-
-		return left.toBuilder().toolCalls(tcs).build();
-	}
-
-	private boolean hasToolCall(ChatCompletionChunk chunk) {
-		return !chunk.choices().isEmpty() && chunk.choices().get(0).delta().toolCalls().isPresent();
-	}
-
-	private boolean toolCallsDone(ChatCompletionChunk chunk) {
-		return !chunk.choices().isEmpty()
-				&& FinishReason.TOOL_CALLS == chunk.choices().get(0).finishReason().orElse(null);
 	}
 
 	private Generation buildGeneration(ChatCompletion.Choice choice, Map<String, Object> metadata,
@@ -518,79 +425,6 @@ public final class OpenAiChatModel implements ChatModel {
 		catch (OpenAIInvalidDataException ex) {
 			return 0L;
 		}
-	}
-
-	/**
-	 * Extract the created timestamp from a ChatCompletionChunk result, returning 0 if the
-	 * field is absent.
-	 */
-	private long getCreated(ChatCompletionChunk chunk) {
-		try {
-			return chunk.created();
-		}
-		catch (OpenAIInvalidDataException ex) {
-			return 0L;
-		}
-	}
-
-	/**
-	 * Convert the ChatCompletionChunk into a ChatCompletion. The Usage is set to null.
-	 * @param chunk the ChatCompletionChunk to convert
-	 * @return the ChatCompletion
-	 */
-	private ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
-
-		List<ChatCompletion.Choice> choices = chunk.choices().stream().map(cccc -> {
-			ChatCompletion.Choice.Builder choiceBuilder = ChatCompletion.Choice.builder();
-
-			choiceBuilder.index(cccc.index());
-
-			choiceBuilder.finishReason(ChatCompletion.Choice.FinishReason.of(""));
-			cccc.finishReason()
-				.ifPresent(finishReason -> choiceBuilder
-					.finishReason(ChatCompletion.Choice.FinishReason.of(finishReason.value().name().toLowerCase())));
-
-			if (cccc.logprobs().isPresent()) {
-				var logprobs = cccc.logprobs().get();
-				choiceBuilder.logprobs(ChatCompletion.Choice.Logprobs.builder()
-					.content(logprobs.content())
-					.refusal(logprobs.refusal())
-					.build());
-			}
-			else {
-				// Provide empty logprobs when not present
-				choiceBuilder
-					.logprobs(ChatCompletion.Choice.Logprobs.builder().content(List.of()).refusal(List.of()).build());
-			}
-
-			ChatCompletionMessage.Builder msgBuilder = ChatCompletionMessage.builder()
-				.content(cccc.delta().content())
-				.refusal(cccc.delta().refusal());
-			cccc.delta().toolCalls().ifPresent(ccctcs -> {
-				msgBuilder.toolCalls(ccctcs.stream().map(tc -> {
-					ChatCompletionMessageFunctionToolCall.Builder toolCallBuilder = ChatCompletionMessageFunctionToolCall
-						.builder();
-					toolCallBuilder.id(tc.id().get());
-					toolCallBuilder.function(ChatCompletionMessageFunctionToolCall.Function.builder()
-						.name(tc.function().get().name().get())
-						.arguments(tc.function().get().arguments().get())
-						.build());
-					return ChatCompletionMessageToolCall.ofFunction(toolCallBuilder.build());
-				}).toList());
-			});
-			choiceBuilder.message(msgBuilder.build());
-			return choiceBuilder.build();
-		}).toList();
-
-		return ChatCompletion.builder()
-			.id(chunk.id())
-			.choices(choices)
-			.created(getCreated(chunk))
-			.model(chunk.model())
-			.usage(chunk.usage()
-				.orElse(CompletionUsage.builder().promptTokens(0).completionTokens(0).totalTokens(0).build()))
-			.putAllAdditionalProperties(chunk._additionalProperties())
-			.build();
 	}
 
 	private DefaultUsage getDefaultUsage(CompletionUsage usage) {
@@ -1091,6 +925,144 @@ public final class OpenAiChatModel implements ChatModel {
 		this.observationConvention = observationConvention;
 	}
 
+	private static final class ChunkMerger {
+
+		static boolean hasToolCall(ChatCompletionChunk chunk) {
+			return !chunk.choices().isEmpty() && chunk.choices().get(0).delta().toolCalls().isPresent();
+		}
+
+		static boolean toolCallsDone(ChatCompletionChunk chunk) {
+			return !chunk.choices().isEmpty()
+					&& FinishReason.TOOL_CALLS == chunk.choices().get(0).finishReason().orElse(null);
+		}
+
+		static ChatCompletionChunk mergeChunks(List<ChatCompletionChunk> chunks) {
+			ChatCompletionChunk.Builder builder = chunks.get(0).toBuilder();
+			Map<Long, Choice> choices = new LinkedHashMap<>();
+			chunks.get(0).choices().forEach(choice -> choices.put(choice.index(), choice));
+
+			for (int i = 1; i < chunks.size(); i++) {
+				ChatCompletionChunk chunk = chunks.get(i);
+				chunk.usage().ifPresent(builder::usage);
+				chunk.serviceTier().ifPresent(builder::serviceTier);
+				chunk.choices()
+					.forEach(choice -> choices.compute(choice.index(),
+							(ix, c) -> c == null ? choice : mergeChoices(c, choice)));
+			}
+			return builder.choices(new ArrayList<>(choices.values())).build();
+		}
+
+		private static Choice mergeChoices(Choice c1, Choice c2) {
+			return Choice.builder()
+				.index(c1.index())
+				.finishReason(c1.finishReason().or(c2::finishReason))
+				.logprobs(c1.logprobs().or(c2::logprobs))
+				.delta(mergeDeltas(c1.delta(), c2.delta()))
+				.build();
+		}
+
+		private static Delta mergeDeltas(Delta left, Delta right) {
+			var tcs = Stream.of(left.toolCalls(), right.toolCalls()).flatMap(Optional::stream).reduce((tcs1, tcs2) -> {
+				Assert.isTrue(tcs2.size() <= 1, "no more than one tool call per message currently supported");
+				ToolCall toolCall = tcs2.get(0);
+				if (toolCall.id().isPresent()) {
+					List<ToolCall> result = new ArrayList<>(tcs1);
+					result.add(toolCall);
+					return result;
+				}
+				else {
+					ToolCall lastFromTc1 = tcs1.get(tcs1.size() - 1);
+					Function lastFromTc1F = lastFromTc1.function().get();
+
+					var concatenatedArgs = Stream
+						.of(lastFromTc1F.arguments(), toolCall.function().flatMap(Function::arguments))
+						.flatMap(Optional::stream)
+						.reduce((args1, args2) -> args1 + args2)
+						.orElse("");
+
+					List<ToolCall> result = new ArrayList<>(tcs1);
+					result.set(tcs1.size() - 1,
+							lastFromTc1.toBuilder()
+								.function(lastFromTc1F.toBuilder().arguments(concatenatedArgs).build())
+								.build());
+					return result;
+				}
+			}).orElse(List.of());
+
+			return left.toBuilder().toolCalls(tcs).build();
+		}
+
+		/**
+		 * Convert a ChatCompletionChunk into a ChatCompletion.
+		 */
+		static ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
+			List<ChatCompletion.Choice> choices = chunk.choices().stream().map(cccc -> {
+				ChatCompletion.Choice.Builder choiceBuilder = ChatCompletion.Choice.builder();
+
+				choiceBuilder.index(cccc.index());
+
+				choiceBuilder.finishReason(ChatCompletion.Choice.FinishReason.of(""));
+				cccc.finishReason()
+					.ifPresent(finishReason -> choiceBuilder.finishReason(
+							ChatCompletion.Choice.FinishReason.of(finishReason.value().name().toLowerCase())));
+
+				if (cccc.logprobs().isPresent()) {
+					var logprobs = cccc.logprobs().get();
+					choiceBuilder.logprobs(ChatCompletion.Choice.Logprobs.builder()
+						.content(logprobs.content())
+						.refusal(logprobs.refusal())
+						.build());
+				}
+				else {
+					choiceBuilder.logprobs(
+							ChatCompletion.Choice.Logprobs.builder().content(List.of()).refusal(List.of()).build());
+				}
+
+				ChatCompletionMessage.Builder msgBuilder = ChatCompletionMessage.builder()
+					.content(cccc.delta().content())
+					.refusal(cccc.delta().refusal());
+				cccc.delta().toolCalls().ifPresent(ccctcs -> {
+					msgBuilder.toolCalls(ccctcs.stream().map(tc -> {
+						ChatCompletionMessageFunctionToolCall.Builder toolCallBuilder = ChatCompletionMessageFunctionToolCall
+							.builder();
+						toolCallBuilder.id(tc.id().get());
+						toolCallBuilder.function(ChatCompletionMessageFunctionToolCall.Function.builder()
+							.name(tc.function().get().name().get())
+							.arguments(tc.function().get().arguments().get())
+							.build());
+						return ChatCompletionMessageToolCall.ofFunction(toolCallBuilder.build());
+					}).toList());
+				});
+				choiceBuilder.message(msgBuilder.build());
+				return choiceBuilder.build();
+			}).toList();
+
+			return ChatCompletion.builder()
+				.id(chunk.id())
+				.choices(choices)
+				.created(getCreated(chunk))
+				.model(chunk.model())
+				.usage(chunk.usage()
+					.orElse(CompletionUsage.builder().promptTokens(0).completionTokens(0).totalTokens(0).build()))
+				.putAllAdditionalProperties(chunk._additionalProperties())
+				.build();
+		}
+
+		/**
+		 * Extract the created timestamp from a ChatCompletionChunk, returning 0 if
+		 * absent.
+		 */
+		private static long getCreated(ChatCompletionChunk chunk) {
+			try {
+				return chunk.created();
+			}
+			catch (OpenAIInvalidDataException ex) {
+				return 0L;
+			}
+		}
+
+	}
+
 	/**
 	 * Response format (text, json_object, json_schema) for OpenAiChatModel responses.
 	 *
@@ -1178,42 +1150,6 @@ public final class OpenAiChatModel implements ChatModel {
 			 */
 			JSON_SCHEMA
 
-		}
-
-	}
-
-	/**
-	 * Helper class to merge streaming tool calls that arrive in pieces across multiple
-	 * chunks. In OpenAI streaming, a tool call's ID, name, and arguments can arrive in
-	 * separate chunks.
-	 */
-	private static class ToolCallBuilder {
-
-		private String id = "";
-
-		private String type = "function";
-
-		private String name = "";
-
-		private StringBuilder arguments = new StringBuilder();
-
-		void merge(AssistantMessage.ToolCall toolCall) {
-			if (!toolCall.id().isEmpty()) {
-				this.id = toolCall.id();
-			}
-			if (!toolCall.type().isEmpty()) {
-				this.type = toolCall.type();
-			}
-			if (!toolCall.name().isEmpty()) {
-				this.name = toolCall.name();
-			}
-			if (!toolCall.arguments().isEmpty()) {
-				this.arguments.append(toolCall.arguments());
-			}
-		}
-
-		AssistantMessage.ToolCall build() {
-			return new AssistantMessage.ToolCall(this.id, this.type, this.name, this.arguments.toString());
 		}
 
 	}
@@ -1320,7 +1256,34 @@ public final class OpenAiChatModel implements ChatModel {
 		 * @return the configured chat model
 		 */
 		public OpenAiChatModel build() {
-			return new OpenAiChatModel(this);
+			OpenAiChatOptions resolvedOptions = this.options != null ? this.options
+					: OpenAiChatOptions.builder().build();
+			ObservationRegistry resolvedObservationRegistry = Objects.requireNonNullElse(this.observationRegistry,
+					ObservationRegistry.NOOP);
+
+			OpenAIClient resolvedClient = Objects.requireNonNullElseGet(this.openAiClient,
+					() -> OpenAiSetup.setupSyncClient(resolvedOptions.getBaseUrl(), resolvedOptions.getApiKey(),
+							resolvedOptions.getCredential(), resolvedOptions.getMicrosoftDeploymentName(),
+							resolvedOptions.getMicrosoftFoundryServiceVersion(), resolvedOptions.getOrganizationId(),
+							resolvedOptions.isMicrosoftFoundry(), resolvedOptions.isGitHubModels(),
+							resolvedOptions.getModel(), resolvedOptions.getTimeout(), resolvedOptions.getMaxRetries(),
+							resolvedOptions.getProxy(), resolvedOptions.getCustomHeaders(), resolvedObservationRegistry,
+							this.meterRegistry, this.dispatcherExecutor));
+
+			OpenAIClientAsync resolvedClientAsync = Objects.requireNonNullElseGet(this.openAiClientAsync,
+					() -> OpenAiSetup.setupAsyncClient(resolvedOptions.getBaseUrl(), resolvedOptions.getApiKey(),
+							resolvedOptions.getCredential(), resolvedOptions.getMicrosoftDeploymentName(),
+							resolvedOptions.getMicrosoftFoundryServiceVersion(), resolvedOptions.getOrganizationId(),
+							resolvedOptions.isMicrosoftFoundry(), resolvedOptions.isGitHubModels(),
+							resolvedOptions.getModel(), resolvedOptions.getTimeout(), resolvedOptions.getMaxRetries(),
+							resolvedOptions.getProxy(), resolvedOptions.getCustomHeaders(), resolvedObservationRegistry,
+							this.meterRegistry, this.dispatcherExecutor));
+
+			ToolCallingManager resolvedToolCallingManager = Objects.requireNonNullElse(this.toolCallingManager,
+					ToolCallingManager.builder().observationRegistry(resolvedObservationRegistry).build());
+
+			return new OpenAiChatModel(resolvedClient, resolvedClientAsync, resolvedOptions,
+					resolvedObservationRegistry, resolvedToolCallingManager);
 		}
 
 	}
