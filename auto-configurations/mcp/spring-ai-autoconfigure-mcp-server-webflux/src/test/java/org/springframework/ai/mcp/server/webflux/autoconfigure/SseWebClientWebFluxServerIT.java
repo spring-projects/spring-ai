@@ -36,7 +36,7 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.CompleteRequest;
 import io.modelcontextprotocol.spec.McpSchema.CompleteResult;
 import io.modelcontextprotocol.spec.McpSchema.CreateMessageResult;
-import io.modelcontextprotocol.spec.McpSchema.ElicitRequest;
+import io.modelcontextprotocol.spec.McpSchema.ElicitFormRequest;
 import io.modelcontextprotocol.spec.McpSchema.ElicitResult;
 import io.modelcontextprotocol.spec.McpSchema.GetPromptRequest;
 import io.modelcontextprotocol.spec.McpSchema.GetPromptResult;
@@ -327,7 +327,7 @@ public class SseWebClientWebFluxServerIT {
 					exchange.ping(); // call client ping
 
 					// call elicitation
-					var elicitationRequest = McpSchema.ElicitRequest
+					var elicitationRequest = ElicitFormRequest
 						.builder("Test message",
 								Map.of("type", "object", "properties", Map.of("message", Map.of("type", "string"))))
 						.build();
@@ -517,7 +517,7 @@ public class SseWebClientWebFluxServerIT {
 				mcpClientSpec.sampling(samplingHandler);
 
 				// Add elicitation handler
-				Function<ElicitRequest, ElicitResult> elicitationHandler = request -> {
+				Function<ElicitFormRequest, ElicitResult> elicitationHandler = request -> {
 					assertThat(request.message()).isNotEmpty();
 					assertThat(request.requestedSchema()).isNotNull();
 					return new ElicitResult(ElicitResult.Action.ACCEPT, Map.of("message", request.message()));
