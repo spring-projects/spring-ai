@@ -22,11 +22,18 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.mcp.annotation.McpPrompt;
+import org.springframework.ai.mcp.annotation.McpResource;
+import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.context.DefaultMetaProvider;
+import org.springframework.ai.mcp.annotation.context.MetaProvider;
 import org.springframework.aot.generate.GenerationContext;
+import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeHint;
 import org.springframework.aot.hint.TypeReference;
@@ -43,6 +50,7 @@ import static org.mockito.Mockito.when;
  * Unit Tests for {@link AbstractAnnotatedMethodBeanFactoryInitializationAotProcessor}.
  *
  * @author lance
+ * @author Nikita Kibitkin
  */
 class AbstractAnnotatedMethodBeanFactoryInitializationAotProcessorTests {
 
@@ -81,6 +89,38 @@ class AbstractAnnotatedMethodBeanFactoryInitializationAotProcessorTests {
 			.doesNotMatch(t -> t.getName().equals(PlainBean.class.getName()));
 	}
 
+	@Test
+	void processAheadOfTimeRegistersMetaProviderConstructors() {
+		DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+		beanFactory.registerBeanDefinition(McpAnnotatedBean.class.getName(),
+				new RootBeanDefinition(McpAnnotatedBean.class));
+
+		Set<Class<? extends Annotation>> annotations = Set.of(McpTool.class, McpPrompt.class, McpResource.class);
+		AbstractAnnotatedMethodBeanFactoryInitializationAotProcessor processor = new AbstractAnnotatedMethodBeanFactoryInitializationAotProcessor(
+				annotations);
+
+		BeanFactoryInitializationAotContribution aotContribution = processor.processAheadOfTime(beanFactory);
+		assertThat(aotContribution).isNotNull();
+
+		GenerationContext generationContext = mock(GenerationContext.class);
+		when(generationContext.getRuntimeHints()).thenReturn(new RuntimeHints());
+
+		BeanFactoryInitializationCode initializationCode = mock(BeanFactoryInitializationCode.class);
+		aotContribution.applyTo(generationContext, initializationCode);
+
+		List<TypeHint> typeHints = generationContext.getRuntimeHints().reflection().typeHints().toList();
+		assertHasDeclaredConstructorHint(typeHints, DefaultMetaProvider.class);
+		assertHasDeclaredConstructorHint(typeHints, PromptMetaProvider.class);
+		assertHasDeclaredConstructorHint(typeHints, ResourceMetaProvider.class);
+	}
+
+	private static void assertHasDeclaredConstructorHint(List<TypeHint> typeHints, Class<?> type) {
+		assertThat(typeHints).anySatisfy(typeHint -> {
+			assertThat(typeHint.getType()).isEqualTo(TypeReference.of(type));
+			assertThat(typeHint.getMemberCategories()).contains(MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
+		});
+	}
+
 	@Target(ElementType.METHOD)
 	@Retention(RetentionPolicy.RUNTIME)
 	@interface MyAnnotation {
@@ -94,6 +134,43 @@ class AbstractAnnotatedMethodBeanFactoryInitializationAotProcessorTests {
 
 		@MyAnnotation
 		public void doSomething() {
+		}
+
+	}
+
+	static class McpAnnotatedBean {
+
+		@McpTool(name = "default-tool")
+		public String defaultTool() {
+			return "default";
+		}
+
+		@McpPrompt(name = "custom-prompt", metaProvider = PromptMetaProvider.class)
+		public String customPrompt() {
+			return "prompt";
+		}
+
+		@McpResource(uri = "custom://resource", metaProvider = ResourceMetaProvider.class)
+		public String customResource() {
+			return "resource";
+		}
+
+	}
+
+	static class PromptMetaProvider implements MetaProvider {
+
+		@Override
+		public Map<String, Object> getMeta() {
+			return Map.of("type", "prompt");
+		}
+
+	}
+
+	static class ResourceMetaProvider implements MetaProvider {
+
+		@Override
+		public Map<String, Object> getMeta() {
+			return Map.of("type", "resource");
 		}
 
 	}
