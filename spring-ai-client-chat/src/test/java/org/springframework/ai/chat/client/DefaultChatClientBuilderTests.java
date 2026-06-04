@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -84,6 +86,21 @@ class DefaultChatClientBuilderTests {
 		var advisorBuilder = (ToolCallAdvisor.Builder<?>) ReflectionTestUtils.getField(defaultRequest,
 				"toolCallAdvisorBuilder");
 		assertThat(ReflectionTestUtils.getField(advisorBuilder, "toolCallingManager")).isSameAs(manager);
+	}
+
+	@Test
+	void whenToolCallbackPassedDirectlyToDefaultToolsThenReturn() {
+		ToolCallback toolCallback = FunctionToolCallback.builder("directDefaultTool", input -> "hello")
+			.description("description")
+			.inputType(String.class)
+			.build();
+
+		var builder = new DefaultChatClientBuilder(mock(ChatModel.class));
+		builder.defaultTools(toolCallback);
+
+		var defaultRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ReflectionTestUtils.getField(builder,
+				"defaultRequest");
+		assertThat(defaultRequest.getToolCallbacks()).containsExactly(toolCallback);
 	}
 
 	@Test

@@ -1788,6 +1788,21 @@ class DefaultChatClientTests {
 	}
 
 	@Test
+	void whenToolCallbackPassedDirectlyToToolsThenReturn() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		ToolCallback toolCallback = FunctionToolCallback.builder("directTool", input -> "hello")
+			.description("description")
+			.inputType(String.class)
+			.build();
+
+		spec = spec.tools(toolCallback);
+
+		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
+		assertThat(defaultSpec.getToolCallbacks()).containsExactly(toolCallback);
+	}
+
+	@Test
 	void whenFunctionNameIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();

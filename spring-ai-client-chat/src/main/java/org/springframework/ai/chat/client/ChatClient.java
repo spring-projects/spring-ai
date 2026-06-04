@@ -365,6 +365,14 @@ public interface ChatClient {
 
 		ChatClientRequestSpec tools(Consumer<ToolSpec> consumer);
 
+		default ChatClientRequestSpec tools(ToolCallback... toolCallbacks) {
+			return tools(t -> t.callbacks(toolCallbacks));
+		}
+
+		default ChatClientRequestSpec tools(ToolCallbackProvider... toolCallbackProviders) {
+			return tools(t -> t.callbacks(toolCallbackProviders));
+		}
+
 		ChatClientRequestSpec tools(Object... toolObjects);
 
 		/**
@@ -478,6 +486,14 @@ public interface ChatClient {
 		Builder defaultTemplateRenderer(TemplateRenderer templateRenderer);
 
 		Builder defaultTools(Consumer<ToolSpec> consumer);
+
+		default Builder defaultTools(ToolCallback... toolCallbacks) {
+			return defaultTools(t -> t.callbacks(toolCallbacks));
+		}
+
+		default Builder defaultTools(ToolCallbackProvider... toolCallbackProviders) {
+			return defaultTools(t -> t.callbacks(toolCallbackProviders));
+		}
 
 		Builder defaultTools(Object... toolObjects);
 
