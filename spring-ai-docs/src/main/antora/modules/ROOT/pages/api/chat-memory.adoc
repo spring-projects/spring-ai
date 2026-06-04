@@ -450,11 +450,11 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
     .build();
 ----
 
-If you'd rather create the `RedisChatMemoryRepository` manually, you can do so by providing a `JedisPooled` client:
+If you'd rather create the `RedisChatMemoryRepository` manually, you can do so by providing a `RedisClient` client:
 
 [source,java]
 ----
-JedisPooled jedisClient = new JedisPooled("localhost", 6379);
+RedisClient jedisClient = RedisClient.builder().hostAndPort("localhost", 6379).build();
 
 ChatMemoryRepository chatMemoryRepository = RedisChatMemoryRepository.builder()
     .jedisClient(jedisClient)

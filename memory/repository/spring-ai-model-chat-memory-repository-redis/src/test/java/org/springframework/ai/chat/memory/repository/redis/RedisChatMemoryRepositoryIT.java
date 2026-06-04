@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.RedisClient;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -58,19 +58,20 @@ class RedisChatMemoryRepositoryIT {
 
 	private ChatMemoryRepository chatMemoryRepository;
 
-	private JedisPooled jedisClient;
+	private RedisClient jedisClient;
 
 	@BeforeEach
 	void setUp() {
-		// Create JedisPooled directly with container properties for more reliable
+		// Create RedisClient directly with container properties for more reliable
 		// connection
-		this.jedisClient = new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort());
-		RedisChatMemoryRepository chatMemory = RedisChatMemoryRepository.builder()
+		this.jedisClient = RedisClient.builder()
+			.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
+			.build();
+
+		this.chatMemoryRepository = RedisChatMemoryRepository.builder()
 			.jedisClient(this.jedisClient)
 			.indexName("test-" + RedisChatMemoryConfig.DEFAULT_INDEX_NAME)
 			.build();
-
-		this.chatMemoryRepository = chatMemory;
 
 		// Clear any existing data
 		for (String conversationId : this.chatMemoryRepository.findConversationIds()) {
@@ -187,7 +188,9 @@ class RedisChatMemoryRepositoryIT {
 		@Bean
 		ChatMemoryRepository chatMemoryRepository() {
 			return RedisChatMemoryRepository.builder()
-				.jedisClient(new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort()))
+				.jedisClient(RedisClient.builder()
+					.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
+					.build())
 				.indexName("test-" + RedisChatMemoryConfig.DEFAULT_INDEX_NAME)
 				.build();
 		}
