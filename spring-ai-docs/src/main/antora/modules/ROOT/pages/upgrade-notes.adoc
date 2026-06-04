@@ -186,11 +186,18 @@ Update your code to call `.n(value)` instead.
 [source,java]
 ----
 // Before
-MiniMaxChatOptions.builder().N(1).build();
+OpenAiChatOptions.builder().N(1).build();
 
 // After
-MiniMaxChatOptions.builder().n(1).build();
+OpenAiChatOptions.builder().n(1).build();
 ----
+
+=== Minimax dedicated support superseded by Anthropic support
+
+Minimax dedicated support has been removed in favor of using Anthropic support as recommended by https://platform.minimax.io/docs/api-reference/text-anthropic-api[Minimax themselves].
+Please use the Spring AI Anthropic support instead, configuring it with the `\https://api.minimax.io/anthropic` base URL and MiniMax models.
+Embeddings are not support anymore.
+
 
 === JSON Utilities Refactoring
 

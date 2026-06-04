@@ -50,11 +50,6 @@ public enum AiProvider {
 	GOOGLE_GENAI_AI("google_genai"),
 
 	/**
-	 * AI system provided by Minimax.
-	 */
-	MINIMAX("minimax"),
-
-	/**
 	 * AI system provided by Mistral.
 	 */
 	MISTRAL_AI("mistral_ai"),

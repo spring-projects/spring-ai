@@ -286,12 +286,6 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-minimax</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-mistral-ai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -627,12 +621,6 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-autoconfigure-model-minimax</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-model-mistral-ai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -962,12 +950,6 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-elevenlabs</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-starter-model-minimax</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
