@@ -18,7 +18,6 @@ package org.springframework.ai.model.tool;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.jspecify.annotations.Nullable;
 
@@ -34,6 +33,7 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Christian Tzolov
  * @since 1.0.0
  */
 public interface ToolCallingChatOptions extends ChatOptions {
@@ -42,11 +42,6 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	 * ToolCallbacks to be registered with the ChatModel.
 	 */
 	@Nullable List<ToolCallback> getToolCallbacks();
-
-	/**
-	 * Names of the tools to register with the ChatModel.
-	 */
-	@Nullable Set<String> getToolNames();
 
 	/**
 	 * Get the configured tool context.
@@ -69,14 +64,6 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	 */
 	static ToolCallingChatOptions.Builder<?> builder() {
 		return new DefaultToolCallingChatOptions.Builder<>();
-	}
-
-	static @Nullable Set<String> mergeToolNames(@Nullable Set<String> runtimeToolNames,
-			@Nullable Set<String> defaultToolNames) {
-		if (CollectionUtils.isEmpty(runtimeToolNames)) {
-			return defaultToolNames != null ? Set.copyOf(defaultToolNames) : null;
-		}
-		return Set.copyOf(runtimeToolNames);
 	}
 
 	static @Nullable List<ToolCallback> mergeToolCallbacks(@Nullable List<ToolCallback> runtimeToolCallbacks,
@@ -127,16 +114,6 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		 * ToolCallbacks to be registered with the ChatModel.
 		 */
 		B toolCallbacks(ToolCallback... toolCallbacks);
-
-		/**
-		 * Names of the tools to register with the ChatModel.
-		 */
-		B toolNames(@Nullable Set<String> toolNames);
-
-		/**
-		 * Names of the tools to register with the ChatModel.
-		 */
-		B toolNames(String... toolNames);
 
 		/**
 		 * Add a {@link Map} of context values into tool context.

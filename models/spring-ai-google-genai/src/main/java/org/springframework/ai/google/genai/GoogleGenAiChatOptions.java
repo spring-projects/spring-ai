@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.jspecify.annotations.Nullable;
 
@@ -175,11 +174,6 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	 */
 	private final @Nullable List<ToolCallback> toolCallbacks;
 
-	/**
-     * Collection of tool names to be resolved at runtime and used for tool calling in the
-	 * chat completion requests.
-	 */
-	private final @Nullable Set<String> toolNames;
 
 	private final @Nullable Map<String, Object> toolContext;
 
@@ -209,12 +203,12 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	protected GoogleGenAiChatOptions(@Nullable String model, @Nullable Double frequencyPenalty,
 			@Nullable Integer maxOutputTokens, @Nullable Double presencePenalty, @Nullable List<String> stopSequences,
 			@Nullable Double temperature, @Nullable Integer topK, @Nullable Double topP,
-			@Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames,
-			@Nullable Map<String, Object> toolContext, @Nullable Integer candidateCount,
-			@Nullable String responseMimeType, @Nullable String responseSchema, @Nullable Integer thinkingBudget,
-			@Nullable Boolean includeThoughts, @Nullable GoogleGenAiThinkingLevel thinkingLevel,
-			@Nullable Boolean includeExtendedUsageMetadata, @Nullable String cachedContentName,
-			@Nullable Boolean useCachedContent, @Nullable Integer autoCacheThreshold, @Nullable Duration autoCacheTtl,
+			@Nullable List<ToolCallback> toolCallbacks, @Nullable Map<String, Object> toolContext,
+			@Nullable Integer candidateCount, @Nullable String responseMimeType, @Nullable String responseSchema,
+			@Nullable Integer thinkingBudget, @Nullable Boolean includeThoughts,
+			@Nullable GoogleGenAiThinkingLevel thinkingLevel, @Nullable Boolean includeExtendedUsageMetadata,
+			@Nullable String cachedContentName, @Nullable Boolean useCachedContent,
+			@Nullable Integer autoCacheThreshold, @Nullable Duration autoCacheTtl,
 			@Nullable Boolean googleSearchRetrieval, @Nullable Boolean includeServerSideToolInvocations,
 			@Nullable List<GoogleGenAiSafetySetting> safetySettings, @Nullable Map<String, String> labels,
 			@Nullable GoogleGenAiServiceTier serviceTier) {
@@ -227,7 +221,6 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		this.topK = topK;
 		this.topP = topP != null ? topP : 1.0;
 		this.toolCallbacks = (toolCallbacks != null ? List.copyOf(toolCallbacks) : null);
-		this.toolNames = (toolNames != null ? Set.copyOf(toolNames) : null);
 		this.toolContext = (toolContext != null ? Map.copyOf(toolContext) : null);
 		this.candidateCount = candidateCount;
 		this.responseMimeType = responseMimeType;
@@ -300,11 +293,6 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	@Override
 	public @Nullable List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
-	}
-
-	@Override
-	public @Nullable Set<String> getToolNames() {
-		return this.toolNames;
 	}
 
 	@Override
@@ -404,7 +392,6 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 				&& Objects.equals(this.responseMimeType, that.responseMimeType)
 				&& Objects.equals(this.responseSchema, that.responseSchema)
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
-				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.safetySettings, that.safetySettings)
 				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.labels, that.labels)
 				&& Objects.equals(this.serviceTier, that.serviceTier);
@@ -415,7 +402,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
 				this.frequencyPenalty, this.presencePenalty, this.thinkingBudget, this.includeThoughts,
 				this.thinkingLevel, this.maxOutputTokens, this.model, this.responseMimeType, this.responseSchema,
-				this.toolCallbacks, this.toolNames, this.googleSearchRetrieval, this.includeServerSideToolInvocations,
+				this.toolCallbacks, this.googleSearchRetrieval, this.includeServerSideToolInvocations,
 				this.safetySettings, this.toolContext, this.labels, this.serviceTier);
 	}
 
@@ -433,7 +420,6 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			.topP(this.topP)
 			// ToolCallingChatOptions
 			.toolCallbacks(this.getToolCallbacks())
-			.toolNames(this.getToolNames())
 			.toolContext(this.getToolContext())
 			// StructuredOutputChatOptions
 			.responseMimeType(this.responseMimeType)
@@ -684,12 +670,11 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		@Override
 		public GoogleGenAiChatOptions build() {
 			return new GoogleGenAiChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
-					this.stopSequences, this.temperature, this.topK, this.topP, this.toolCallbacks, this.toolNames,
-					this.toolContext, this.candidateCount, this.responseMimeType, this.responseSchema,
-					this.thinkingBudget, this.includeThoughts, this.thinkingLevel, this.includeExtendedUsageMetadata,
-					this.cachedContentName, this.useCachedContent, this.autoCacheThreshold, this.autoCacheTtl,
-					this.googleSearchRetrieval, this.includeServerSideToolInvocations, this.safetySettings, this.labels,
-					this.serviceTier);
+					this.stopSequences, this.temperature, this.topK, this.topP, this.toolCallbacks, this.toolContext,
+					this.candidateCount, this.responseMimeType, this.responseSchema, this.thinkingBudget,
+					this.includeThoughts, this.thinkingLevel, this.includeExtendedUsageMetadata, this.cachedContentName,
+					this.useCachedContent, this.autoCacheThreshold, this.autoCacheTtl, this.googleSearchRetrieval,
+					this.includeServerSideToolInvocations, this.safetySettings, this.labels, this.serviceTier);
 		}
 
 	}

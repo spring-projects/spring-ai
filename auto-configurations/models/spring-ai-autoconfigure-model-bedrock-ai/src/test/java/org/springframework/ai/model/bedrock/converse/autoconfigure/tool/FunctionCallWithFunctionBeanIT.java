@@ -17,7 +17,6 @@
 package org.springframework.ai.model.bedrock.converse.autoconfigure.tool;
 
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.micrometer.observation.ObservationRegistry;
@@ -36,11 +35,12 @@ import org.springframework.ai.model.bedrock.autoconfigure.RequiresAwsCredentials
 import org.springframework.ai.model.bedrock.converse.autoconfigure.BedrockConverseProxyChatAutoConfiguration;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Description;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -71,9 +71,12 @@ class FunctionCallWithFunctionBeanIT {
 				var userMessage = new UserMessage(
 						"What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan? Return the temperature in Celsius.");
 
+				ToolCallback weatherFunction = context.getBean("weatherFunction", ToolCallback.class);
+				ToolCallback weatherFunction3 = context.getBean("weatherFunction3", ToolCallback.class);
+
 				ChatResponse response = chatClient
 					.prompt(new Prompt(List.of(userMessage),
-							BedrockChatOptions.builder().toolNames("weatherFunction").build()))
+							BedrockChatOptions.builder().toolCallbacks(weatherFunction).build()))
 					.call()
 					.chatResponse();
 
@@ -81,7 +84,7 @@ class FunctionCallWithFunctionBeanIT {
 
 				response = chatClient
 					.prompt(new Prompt(List.of(userMessage),
-							BedrockChatOptions.builder().toolNames("weatherFunction3").build()))
+							BedrockChatOptions.builder().toolCallbacks(weatherFunction3).build()))
 					.call()
 					.chatResponse();
 
@@ -108,9 +111,11 @@ class FunctionCallWithFunctionBeanIT {
 				var userMessage = new UserMessage(
 						"What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan? Return the temperature in Celsius.");
 
+				ToolCallback weatherFunction = context.getBean("weatherFunction", ToolCallback.class);
+
 				Flux<ChatResponse> responses = chatClient
 					.prompt(new Prompt(List.of(userMessage),
-							BedrockChatOptions.builder().toolNames("weatherFunction").build()))
+							BedrockChatOptions.builder().toolCallbacks(weatherFunction).build()))
 					.stream()
 					.chatResponse();
 
@@ -129,17 +134,20 @@ class FunctionCallWithFunctionBeanIT {
 	static class Config {
 
 		@Bean
-		@Description("Get the weather in location. Return temperature in 36°F or 36°C format.")
-		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunction() {
-			return new MockWeatherService();
+		public ToolCallback weatherFunction() {
+			return FunctionToolCallback.builder("weatherFunction", new MockWeatherService())
+				.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+				.inputType(MockWeatherService.Request.class)
+				.build();
 		}
 
-		// Relies on the Request's JsonClassDescription annotation to provide the
-		// function description.
 		@Bean
-		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunction3() {
+		public ToolCallback weatherFunction3() {
 			MockWeatherService weatherService = new MockWeatherService();
-			return (weatherService::apply);
+			return FunctionToolCallback.builder("weatherFunction3", weatherService::apply)
+				.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+				.inputType(MockWeatherService.Request.class)
+				.build();
 		}
 
 	}

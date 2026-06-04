@@ -14,8 +14,7 @@ These changes are part of a broader effort to improve and extend the tool callin
 4. `FunctionCallingOptions` → `ToolCallingChatOptions`
 5. `ChatClient.builder().defaultFunctions()` → `ChatClient.builder().defaultTools()`
 6. `ChatClient.functions()` → `ChatClient.tools()`
-7. `FunctionCallingOptions.builder().functions()` → `ToolCallingChatOptions.builder().toolNames()`
-8. `FunctionCallingOptions.builder().functionCallbacks()` → `ToolCallingChatOptions.builder().toolCallbacks()`
+7. `FunctionCallingOptions.builder().functionCallbacks()` → `ToolCallingChatOptions.builder().toolCallbacks()`
 
 == Migration Examples
 
@@ -154,7 +153,7 @@ After:
 ----
 ToolCallingChatOptions.builder()
     .model(modelName)
-    .toolNames("weatherFunction")
+    .toolCallbacks(weatherFunctionCallback)
     .build()
 ----
 

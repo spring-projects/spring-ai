@@ -19,13 +19,11 @@ package org.springframework.ai.model.ollama.autoconfigure.tool;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -33,10 +31,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ollama.autoconfigure.BaseOllamaIT;
 import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration;
-import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.ollama.OllamaChatModel;
-import org.springframework.ai.ollama.api.OllamaChatOptions;
-import org.springframework.ai.ollama.api.OllamaChatOptions.Builder;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -95,18 +90,14 @@ class OllamaFunctionCallbackIT extends BaseOllamaIT {
 		this.contextRunner.run(context -> {
 
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
-			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+			ToolCallback weatherFunctionInfo = context.getBean("weatherFunctionInfo", ToolCallback.class);
 
 			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			Builder delta = OllamaChatOptions.builder().toolNames(TOOL_NAME);
-			OllamaChatOptions options = mergeOptions(chatModel, delta);
-
-			ChatResponse response = ChatClient
-				.builder(chatModel, ObservationRegistry.NOOP, null, null,
-						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
-				.build()
-				.prompt(new Prompt(List.of(userMessage), options))
+			ChatResponse response = ChatClient.create(chatModel)
+				.prompt()
+				.messages(userMessage)
+				.tools(weatherFunctionInfo)
 				.call()
 				.chatResponse();
 
@@ -121,18 +112,14 @@ class OllamaFunctionCallbackIT extends BaseOllamaIT {
 		this.contextRunner.run(context -> {
 
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
-			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+			ToolCallback weatherFunctionInfo = context.getBean("weatherFunctionInfo", ToolCallback.class);
 
 			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			Builder delta = OllamaChatOptions.builder().toolNames(TOOL_NAME);
-			OllamaChatOptions options = mergeOptions(chatModel, delta);
-
-			Flux<ChatResponse> response = ChatClient
-				.builder(chatModel, ObservationRegistry.NOOP, null, null,
-						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
-				.build()
-				.prompt(new Prompt(List.of(userMessage), options))
+			Flux<ChatResponse> response = ChatClient.create(chatModel)
+				.prompt()
+				.messages(userMessage)
+				.tools(weatherFunctionInfo)
 				.stream()
 				.chatResponse();
 

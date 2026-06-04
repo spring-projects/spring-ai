@@ -18,7 +18,6 @@ package org.springframework.ai.model.tool;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -65,29 +64,6 @@ class DefaultToolCallingChatOptionsTests {
 	}
 
 	@Test
-	void builderShouldStoreToolNames() {
-		Set<String> toolNames = Set.of("tool1", "tool2");
-
-		ToolCallingChatOptions options = ToolCallingChatOptions.builder().toolNames(toolNames).build();
-
-		assertThat(options.getToolNames()).hasSize(2).containsExactlyInAnyOrderElementsOf(toolNames);
-	}
-
-	@Test
-	void builderWithVarargsShouldStoreToolNames() {
-		ToolCallingChatOptions options = ToolCallingChatOptions.builder().toolNames("tool1", "tool2").build();
-
-		assertThat(options.getToolNames()).hasSize(2).containsExactlyInAnyOrder("tool1", "tool2");
-	}
-
-	@Test
-	void builderShouldRejectNullToolNamesVarargs() {
-		assertThatThrownBy(() -> ToolCallingChatOptions.builder().toolNames((String[]) null))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("toolNames cannot be null");
-	}
-
-	@Test
 	void builderShouldStoreToolContext() {
 		Map<String, Object> context = Map.of("key1", "value1", "key2", 42);
 
@@ -101,13 +77,11 @@ class DefaultToolCallingChatOptionsTests {
 		ToolCallback callback = mock(ToolCallback.class);
 		ToolCallingChatOptions options = ToolCallingChatOptions.builder()
 			.toolCallbacks(List.of(callback))
-			.toolNames(Set.of("tool1"))
 			.toolContext(Map.of("key", "value"))
 			.build();
 
 		assertThatThrownBy(() -> options.getToolCallbacks().add(mock(ToolCallback.class)))
 			.isInstanceOf(UnsupportedOperationException.class);
-		assertThatThrownBy(() -> options.getToolNames().add("tool2")).isInstanceOf(UnsupportedOperationException.class);
 		assertThatThrownBy(() -> options.getToolContext().put("key2", "value2"))
 			.isInstanceOf(UnsupportedOperationException.class);
 	}
@@ -119,7 +93,6 @@ class DefaultToolCallingChatOptionsTests {
 
 		ToolCallingChatOptions options = DefaultToolCallingChatOptions.builder()
 			.toolCallbacks(List.of(callback))
-			.toolNames(Set.of("tool1"))
 			.toolContext(context)
 			.model("gpt-4")
 			.temperature(0.7)
@@ -133,7 +106,6 @@ class DefaultToolCallingChatOptionsTests {
 
 		assertThat(options).satisfies(o -> {
 			assertThat(o.getToolCallbacks()).containsExactly(callback);
-			assertThat(o.getToolNames()).containsExactly("tool1");
 			assertThat(o.getToolContext()).isEqualTo(context);
 			assertThat(o.getModel()).isEqualTo("gpt-4");
 			assertThat(o.getTemperature()).isEqualTo(0.7);
@@ -162,7 +134,6 @@ class DefaultToolCallingChatOptionsTests {
 			.build();
 
 		assertThat(options.getToolCallbacks()).isNull();
-		assertThat(options.getToolNames()).isNull();
 		assertThat(options.getToolContext()).isNull();
 	}
 
@@ -170,12 +141,10 @@ class DefaultToolCallingChatOptionsTests {
 	void builderShouldHandleEmptyCollections() {
 		ToolCallingChatOptions options = DefaultToolCallingChatOptions.builder()
 			.toolCallbacks(List.of())
-			.toolNames(Set.of())
 			.toolContext(Map.of())
 			.build();
 
 		assertThat(options.getToolCallbacks()).isEmpty();
-		assertThat(options.getToolNames()).isEmpty();
 		assertThat(options.getToolContext()).isEmpty();
 	}
 

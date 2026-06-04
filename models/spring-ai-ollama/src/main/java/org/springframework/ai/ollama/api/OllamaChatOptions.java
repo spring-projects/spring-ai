@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
@@ -63,7 +62,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 			@Nullable Boolean penalizeNewline, @Nullable List<String> stop, @Nullable String model,
 			@Nullable Object format, @Nullable String keepAlive, @Nullable Boolean truncate,
 			@Nullable ThinkOption thinkOption, @Nullable List<ToolCallback> toolCallbacks,
-			@Nullable Set<String> toolNames, @Nullable Map<String, Object> toolContext) {
+			@Nullable Map<String, Object> toolContext) {
 		this.useNUMA = useNUMA;
 		this.numCtx = numCtx;
 		this.numBatch = numBatch;
@@ -100,7 +99,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.truncate = truncate;
 		this.thinkOption = thinkOption;
 		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
-		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : null;
 		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
 	}
 
@@ -365,16 +363,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 */
 	private final @Nullable List<ToolCallback> toolCallbacks;
 
-	/**
-	 * List of functions, identified by their names, to configure for function calling in
-	 * the chat completion requests.
-	 * Functions with those names must exist in the toolCallbacks registry.
-	 * The {@link #toolCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
-	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
-	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
-	 */
-	private final @Nullable Set<String> toolNames;
-
 	private final @Nullable Map<String, Object> toolContext;
 
 	public static Builder builder() {
@@ -594,11 +582,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	public @Nullable Set<String> getToolNames() {
-		return this.toolNames;
-	}
-
-	@Override
 	public @Nullable Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
@@ -675,7 +658,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 			.topP(this.topP)
 			// ToolCallingChatOptions
 			.toolCallbacks(this.getToolCallbacks())
-			.toolNames(this.getToolNames())
 			.toolContext(this.getToolContext())
 			// StructuredOutputChatOptions
 			.format(this.format)
@@ -738,8 +720,8 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 				&& Objects.equals(this.mirostat, that.mirostat) && Objects.equals(this.mirostatTau, that.mirostatTau)
 				&& Objects.equals(this.mirostatEta, that.mirostatEta)
 				&& Objects.equals(this.penalizeNewline, that.penalizeNewline) && Objects.equals(this.stop, that.stop)
-				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
-				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext);
+				&& Objects.equals(this.toolContext, that.toolContext)
+				&& Objects.equals(this.toolCallbacks, that.toolCallbacks);
 	}
 
 	@Override
@@ -749,8 +731,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 				this.vocabOnly, this.useMMap, this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict,
 				this.topK, this.topP, this.minP, this.tfsZ, this.typicalP, this.repeatLastN, this.temperature,
 				this.repeatPenalty, this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau,
-				this.mirostatEta, this.penalizeNewline, this.stop, this.toolCallbacks, this.toolNames,
-				this.toolContext);
+				this.mirostatEta, this.penalizeNewline, this.stop, this.toolCallbacks, this.toolContext);
 	}
 
 	// public Builder class exposed to users. Avoids having to deal with noisy generic
@@ -1146,7 +1127,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 					this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty, this.presencePenalty,
 					this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta, this.penalizeNewline,
 					this.stopSequences, this.model, this.format, this.keepAlive, this.truncate, this.thinkOption,
-					this.toolCallbacks, this.toolNames, this.toolContext);
+					this.toolCallbacks, this.toolContext);
 		}
 
 	}

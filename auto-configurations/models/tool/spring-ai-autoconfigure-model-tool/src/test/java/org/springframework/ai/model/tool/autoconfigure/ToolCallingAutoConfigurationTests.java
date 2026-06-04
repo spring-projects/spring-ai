@@ -17,7 +17,6 @@
 package org.springframework.ai.model.tool.autoconfigure;
 
 import java.util.List;
-import java.util.function.Function;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
@@ -50,7 +49,6 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Description;
 import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -407,9 +405,11 @@ class ToolCallingAutoConfigurationTests {
 		}
 
 		@Bean
-		@Description("Get weather forecast")
-		public Function<Request, Response> weatherFunction() {
-			return request -> new Response("Sunny");
+		public ToolCallback weatherFunction() {
+			return FunctionToolCallback.builder("weatherFunction", (Request request) -> new Response("Sunny"))
+				.description("Get weather forecast")
+				.inputType(Request.class)
+				.build();
 		}
 
 	}
@@ -530,9 +530,11 @@ class ToolCallingAutoConfigurationTests {
 		}
 
 		@Bean
-		@Description("Get the weather in location. Return temperature in 36°F or 36°C format.")
-		public Function<Request, Response> weatherFunction1() {
-			return request -> new Response("30");
+		public ToolCallback weatherFunction1() {
+			return FunctionToolCallback.builder("weatherFunction1", (Request request) -> new Response("30"))
+				.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+				.inputType(Request.class)
+				.build();
 		}
 
 		@Bean

@@ -22,8 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -59,6 +57,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Thomas Vitale
  * @author chabinhwang
+ * @author Christian Tzolov
  * @since 1.0.0
  */
 public final class DefaultToolCallingManager implements ToolCallingManager {
@@ -111,29 +110,6 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 		List<ToolCallback> toolCallbacks = new ArrayList<>(
 				!CollectionUtils.isEmpty(chatOptions.getToolCallbacks()) ? chatOptions.getToolCallbacks() : List.of());
-		Set<String> existingToolNames = toolCallbacks.stream()
-			.map(tool -> tool.getToolDefinition().name())
-			.collect(Collectors.toSet());
-
-		if (!CollectionUtils.isEmpty(chatOptions.getToolNames())) {
-			for (String toolName : chatOptions.getToolNames()) {
-				// Skip the tool if it is already present in the request toolCallbacks.
-				// That might happen if a tool is defined in the options
-				// both as a ToolCallback and as a tool name.
-				if (existingToolNames.contains(toolName)) {
-					continue;
-				}
-				ToolCallback toolCallback = this.toolCallbackResolver.resolve(toolName);
-				if (toolCallback == null) {
-					if (logger.isWarnEnabled()) {
-						logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING_START + toolName
-								+ POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING_END);
-					}
-					throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
-				}
-				toolCallbacks.add(toolCallback);
-			}
-		}
 
 		return toolCallbacks.stream().map(ToolCallback::getToolDefinition).toList();
 	}

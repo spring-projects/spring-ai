@@ -466,7 +466,6 @@ public class ToolSearchToolCallingAdvisorCallTests {
 		// The tool search tool callback should be present
 		assertThat(capturedOptions.getToolCallbacks()).hasSize(1);
 		assertThat(capturedOptions.getToolCallbacks().get(0).getToolDefinition().name()).isEqualTo("toolSearchTool");
-		assertThat(capturedOptions.getToolNames()).contains("weatherTool", "calculatorTool");
 	}
 
 	@Test
@@ -797,8 +796,6 @@ public class ToolSearchToolCallingAdvisorCallTests {
 
 		private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
-		private java.util.Set<String> toolNames = new java.util.HashSet<>();
-
 		private Map<String, Object> toolContext = new java.util.HashMap<>();
 
 		@Override
@@ -811,21 +808,13 @@ public class ToolSearchToolCallingAdvisorCallTests {
 		}
 
 		@Override
-		public java.util.Set<String> getToolNames() {
-			return this.toolNames;
-		}
-
-		@Override
 		public Map<String, Object> getToolContext() {
 			return this.toolContext;
 		}
 
 		@Override
 		public ToolCallingChatOptions.Builder<?> mutate() {
-			return ToolCallingChatOptions.builder()
-				.toolCallbacks(this.toolCallbacks)
-				.toolNames(this.toolNames)
-				.toolContext(this.toolContext);
+			return ToolCallingChatOptions.builder().toolCallbacks(this.toolCallbacks).toolContext(this.toolContext);
 		}
 
 		// ChatOptions methods - return null or defaults for unused options

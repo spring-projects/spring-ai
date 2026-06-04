@@ -719,12 +719,9 @@ public class DefaultChatClient implements ChatClient {
 				observation.parentObservation(parentObservation);
 				// Briefly make the parent observation current while starting this one, so
 				// Micrometer tracing derives the span's parent from the parent
-				// observation rather
-				// than from whatever scope happens to be open on the current thread (e.g.
-				// the
-				// servlet HTTP span). This keeps span parenting correct without relying
-				// on
-				// automatic context propagation.
+				// observation rather than from whatever scope happens to be open on the
+				// current thread (e.g. the servlet HTTP span). This keeps span parenting
+				// correct without relying on automatic context propagation.
 				try (Observation.Scope ignored = parentObservation != null ? parentObservation.openScope()
 						: Observation.Scope.NOOP) {
 					observation.start();
@@ -779,8 +776,6 @@ public class DefaultChatClient implements ChatClient {
 
 		private final List<Media> media = new ArrayList<>();
 
-		private final List<String> toolNames = new ArrayList<>();
-
 		private final List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 		private final List<ToolCallbackProvider> toolCallbackProviders = new ArrayList<>();
@@ -814,8 +809,8 @@ public class DefaultChatClient implements ChatClient {
 		/* copy constructor */
 		DefaultChatClientRequestSpec(DefaultChatClientRequestSpec ccr) {
 			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.userMetadata, ccr.systemText, ccr.systemParams,
-					ccr.systemMetadata, ccr.toolCallbacks, ccr.toolCallbackProviders, ccr.messages, ccr.toolNames,
-					ccr.media, ccr.optionsCustomizer, ccr.advisors, ccr.advisorParams, ccr.observationRegistry,
+					ccr.systemMetadata, ccr.toolCallbacks, ccr.toolCallbackProviders, ccr.messages, ccr.media,
+					ccr.optionsCustomizer, ccr.advisors, ccr.advisorParams, ccr.observationRegistry,
 					ccr.chatClientObservationConvention, ccr.toolContext, ccr.templateRenderer,
 					ccr.advisorObservationConvention, ccr.toolCallAdvisorBuilder);
 		}
@@ -823,9 +818,9 @@ public class DefaultChatClient implements ChatClient {
 		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
 				Map<String, Object> userParams, Map<String, Object> userMetadata, @Nullable String systemText,
 				Map<String, Object> systemParams, Map<String, Object> systemMetadata, List<ToolCallback> toolCallbacks,
-				List<ToolCallbackProvider> toolCallbackProviders, List<Message> messages, List<String> toolNames,
-				List<Media> media, ChatOptions.@Nullable Builder<?> customizer, List<Advisor> advisors,
-				Map<String, Object> advisorParams, ObservationRegistry observationRegistry,
+				List<ToolCallbackProvider> toolCallbackProviders, List<Message> messages, List<Media> media,
+				ChatOptions.@Nullable Builder<?> customizer, List<Advisor> advisors, Map<String, Object> advisorParams,
+				ObservationRegistry observationRegistry,
 				@Nullable ChatClientObservationConvention chatClientObservationConvention,
 				Map<String, Object> toolContext, @Nullable TemplateRenderer templateRenderer,
 				@Nullable AdvisorObservationConvention advisorObservationConvention,
@@ -839,7 +834,6 @@ public class DefaultChatClient implements ChatClient {
 			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 			Assert.notNull(toolCallbackProviders, "toolCallbackProviders cannot be null");
 			Assert.notNull(messages, "messages cannot be null");
-			Assert.notNull(toolNames, "toolNames cannot be null");
 			Assert.notNull(media, "media cannot be null");
 			Assert.notNull(advisors, "advisors cannot be null");
 			Assert.notNull(advisorParams, "advisorParams cannot be null");
@@ -859,7 +853,6 @@ public class DefaultChatClient implements ChatClient {
 			this.systemParams.putAll(systemParams);
 			this.systemMetadata.putAll(systemMetadata);
 
-			this.toolNames.addAll(toolNames);
 			this.toolCallbacks.addAll(toolCallbacks);
 			this.toolCallbackProviders.addAll(toolCallbackProviders);
 			this.messages.addAll(messages);
@@ -914,10 +907,6 @@ public class DefaultChatClient implements ChatClient {
 			return this.media;
 		}
 
-		public List<String> getToolNames() {
-			return this.toolNames;
-		}
-
 		public List<ToolCallback> getToolCallbacks() {
 			return this.toolCallbacks;
 		}
@@ -954,8 +943,7 @@ public class DefaultChatClient implements ChatClient {
 				.defaultTemplateRenderer(this.templateRenderer)
 				.defaultTools(this.toolCallbacks.toArray(new ToolCallback[0]))
 				.defaultTools((Object[]) this.toolCallbackProviders.toArray(new ToolCallbackProvider[0]))
-				.defaultToolContext(this.toolContext)
-				.defaultToolNames(StringUtils.toStringArray(this.toolNames));
+				.defaultToolContext(this.toolContext);
 
 			if (!CollectionUtils.isEmpty(this.advisors)) {
 				builder.defaultAdvisors(a -> a.advisors(this.advisors).params(this.advisorParams));
@@ -1029,14 +1017,6 @@ public class DefaultChatClient implements ChatClient {
 		public <B extends ChatOptions.Builder<?>> ChatClientRequestSpec options(B customizer) {
 			Assert.notNull(customizer, "customizer cannot be null");
 			this.optionsCustomizer = customizer;
-			return this;
-		}
-
-		@Override
-		public ChatClientRequestSpec toolNames(String... toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
-			this.toolNames.addAll(List.of(toolNames));
 			return this;
 		}
 
@@ -1248,7 +1228,7 @@ public class DefaultChatClient implements ChatClient {
 			}
 
 			boolean hasTools = !this.toolCallbacks.isEmpty() || !this.toolCallbackProviders.isEmpty()
-					|| !this.toolNames.isEmpty() || hasToolsInChatOptions(this.optionsCustomizer)
+					|| hasToolsInChatOptions(this.optionsCustomizer)
 					|| hasToolsInChatOptions(this.chatModel.getOptions());
 			if (!hasTools) {
 				return;
@@ -1276,8 +1256,7 @@ public class DefaultChatClient implements ChatClient {
 			else if (options instanceof ToolCallingChatOptions.Builder<?> builder) {
 				tco = (ToolCallingChatOptions) builder.build();
 			}
-			return tco != null && ((tco.getToolCallbacks() != null && !tco.getToolCallbacks().isEmpty())
-					|| (tco.getToolNames() != null && !tco.getToolNames().isEmpty()));
+			return tco != null && ((tco.getToolCallbacks() != null && !tco.getToolCallbacks().isEmpty()));
 		}
 
 		private void validateSingleToolAdvisor() {

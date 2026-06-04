@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.jspecify.annotations.Nullable;
 
@@ -59,8 +58,6 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 
 	private final @Nullable List<ToolCallback> toolCallbacks;
 
-	private final @Nullable Set<String> toolNames;
-
 	private final @Nullable Map<String, Object> toolContext;
 
 	private final @Nullable BedrockCacheOptions cacheOptions;
@@ -70,7 +67,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	protected BedrockChatOptions(@Nullable String model, @Nullable Double frequencyPenalty, @Nullable Integer maxTokens,
 			@Nullable Double presencePenalty, @Nullable Map<String, String> requestParameters,
 			@Nullable List<String> stopSequences, @Nullable Double temperature, @Nullable Integer topK,
-			@Nullable Double topP, @Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames,
+			@Nullable Double topP, @Nullable List<ToolCallback> toolCallbacks,
 			@Nullable Map<String, Object> toolContext, @Nullable BedrockCacheOptions cacheOptions,
 			@Nullable String outputSchema) {
 		this.model = model;
@@ -83,7 +80,6 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		this.topK = topK;
 		this.topP = topP;
 		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
-		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : null;
 		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
 		this.cacheOptions = cacheOptions;
 		this.outputSchema = outputSchema;
@@ -143,11 +139,6 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	}
 
 	@Override
-	public @Nullable Set<String> getToolNames() {
-		return this.toolNames;
-	}
-
-	@Override
 	public @Nullable Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
@@ -175,7 +166,6 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 			.topP(this.topP)
 			// ToolCallingChatOptions
 			.toolCallbacks(this.getToolCallbacks())
-			.toolNames(this.getToolNames())
 			.toolContext(this.getToolContext())
 			// Bedrock Specific
 			.requestParameters(this.requestParameters)
@@ -198,7 +188,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 				&& Objects.equals(this.stopSequences, that.stopSequences)
 				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topK, that.topK)
 				&& Objects.equals(this.topP, that.topP) && Objects.equals(this.toolCallbacks, that.toolCallbacks)
-				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext)
+				&& Objects.equals(this.toolContext, that.toolContext)
 				&& Objects.equals(this.cacheOptions, that.cacheOptions)
 				&& Objects.equals(this.outputSchema, that.outputSchema);
 	}
@@ -207,7 +197,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	public int hashCode() {
 		return Objects.hash(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 				this.requestParameters, this.stopSequences, this.temperature, this.topK, this.topP, this.toolCallbacks,
-				this.toolNames, this.toolContext, this.cacheOptions);
+				this.toolContext, this.cacheOptions, this.outputSchema);
 	}
 
 	// public Builder class exposed to users. Avoids having to deal with noisy generic
@@ -275,7 +265,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		public BedrockChatOptions build() {
 			return new BedrockChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 					this.requestParameters, this.stopSequences, this.temperature, this.topK, this.topP,
-					this.toolCallbacks, this.toolNames, this.toolContext, this.cacheOptions, this.outputSchema);
+					this.toolCallbacks, this.toolContext, this.cacheOptions, this.outputSchema);
 		}
 
 	}

@@ -18,11 +18,9 @@ package org.springframework.ai.model.tool;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.jspecify.annotations.Nullable;
 
@@ -37,34 +35,27 @@ import org.springframework.util.Assert;
  *
  * @author Thomas Vitale
  * @author Sebastien Deleuze
+ * @author Christian Tzolov
  * @since 1.0.0
  */
 public class DefaultToolCallingChatOptions extends DefaultChatOptions implements ToolCallingChatOptions {
 
 	private final @Nullable List<ToolCallback> toolCallbacks;
 
-	private final @Nullable Set<String> toolNames;
-
 	private final @Nullable Map<String, Object> toolContext;
 
-	protected DefaultToolCallingChatOptions(@Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames,
+	protected DefaultToolCallingChatOptions(@Nullable List<ToolCallback> toolCallbacks,
 			@Nullable Map<String, Object> toolContext, @Nullable String model, @Nullable Double frequencyPenalty,
 			@Nullable Integer maxTokens, @Nullable Double presencePenalty, @Nullable List<String> stopSequences,
 			@Nullable Double temperature, @Nullable Integer topK, @Nullable Double topP) {
 		super(model, frequencyPenalty, maxTokens, presencePenalty, stopSequences, temperature, topK, topP);
 		this.toolCallbacks = (toolCallbacks != null ? List.copyOf(toolCallbacks) : null);
-		this.toolNames = (toolNames != null ? Set.copyOf(toolNames) : null);
 		this.toolContext = (toolContext != null ? Map.copyOf(toolContext) : null);
 	}
 
 	@Override
 	public @Nullable List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
-	}
-
-	@Override
-	public @Nullable Set<String> getToolNames() {
-		return this.toolNames;
 	}
 
 	@Override
@@ -84,7 +75,6 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 			.topK(getTopK())
 			.topP(getTopP())
 			.toolCallbacks(getToolCallbacks())
-			.toolNames(getToolNames())
 			.toolContext(getToolContext());
 	}
 
@@ -100,13 +90,13 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 			return false;
 		}
 		DefaultToolCallingChatOptions that = (DefaultToolCallingChatOptions) o;
-		return Objects.equals(this.toolCallbacks, that.toolCallbacks) && Objects.equals(this.toolNames, that.toolNames)
+		return Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.toolContext, that.toolContext);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), this.toolCallbacks, this.toolNames, this.toolContext);
+		return Objects.hash(super.hashCode(), this.toolCallbacks, this.toolContext);
 	}
 
 	public static Builder<?> builder() {
@@ -121,15 +111,12 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 
 		protected @Nullable List<ToolCallback> toolCallbacks;
 
-		protected @Nullable Set<String> toolNames;
-
 		protected @Nullable Map<String, Object> toolContext;
 
 		@Override
 		public B clone() {
 			B copy = super.clone();
 			copy.toolCallbacks = this.toolCallbacks == null ? null : new ArrayList<>(this.toolCallbacks);
-			copy.toolNames = this.toolNames == null ? null : new HashSet<>(this.toolNames);
 			copy.toolContext = this.toolContext == null ? null : new HashMap<>(this.toolContext);
 			return copy;
 		}
@@ -152,27 +139,6 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 				this.toolCallbacks = new ArrayList<>();
 			}
 			this.toolCallbacks.addAll(List.of(toolCallbacks));
-			return self();
-		}
-
-		@Override
-		public B toolNames(@Nullable Set<String> toolNames) {
-			if (toolNames != null) {
-				this.toolNames = new HashSet<>(toolNames);
-			}
-			else {
-				this.toolNames = null;
-			}
-			return self();
-		}
-
-		@Override
-		public B toolNames(String... toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			if (this.toolNames == null) {
-				this.toolNames = new HashSet<>();
-			}
-			this.toolNames.addAll(Set.of(toolNames));
 			return self();
 		}
 
@@ -203,7 +169,7 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 
 		@Override
 		public ToolCallingChatOptions build() {
-			return new DefaultToolCallingChatOptions(this.toolCallbacks, this.toolNames, this.toolContext, this.model,
+			return new DefaultToolCallingChatOptions(this.toolCallbacks, this.toolContext, this.model,
 					this.frequencyPenalty, this.maxTokens, this.presencePenalty, this.stopSequences, this.temperature,
 					this.topK, this.topP);
 		}
@@ -220,16 +186,6 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 						List<ToolCallback> merged = new ArrayList<>(this.toolCallbacks);
 						merged.addAll(that.toolCallbacks);
 						this.toolCallbacks = merged;
-					}
-				}
-				if (that.toolNames != null) {
-					if (this.toolNames == null) {
-						this.toolNames = new HashSet<>(that.toolNames);
-					}
-					else {
-						Set<String> merged = new HashSet<>(this.toolNames);
-						merged.addAll(that.toolNames);
-						this.toolNames = merged;
 					}
 				}
 				if (that.toolContext != null) {

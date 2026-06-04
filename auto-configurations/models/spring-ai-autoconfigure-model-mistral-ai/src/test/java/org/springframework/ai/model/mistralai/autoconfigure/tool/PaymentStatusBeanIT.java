@@ -16,34 +16,27 @@
 
 package org.springframework.ai.model.mistralai.autoconfigure.tool;
 
-import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.MistralAiChatModel;
-import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.model.mistralai.autoconfigure.MistralAiChatAutoConfiguration;
-import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Description;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -70,19 +63,13 @@ class PaymentStatusBeanIT {
 			.run(context -> {
 
 				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
-				ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 
-				var chatClient = ChatClient
-					.builder(chatModel, ObservationRegistry.NOOP, null, null,
-							ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
-					.build();
+				ToolCallback retrievePaymentStatus = context.getBean("retrievePaymentStatus", ToolCallback.class);
+				ToolCallback retrievePaymentDate = context.getBean("retrievePaymentDate", ToolCallback.class);
 
-				ChatResponse response = chatClient
-					.prompt(new Prompt(List.of(new UserMessage("What's the status of my transaction with id T1001?")),
-							MistralAiChatOptions.builder()
-								.toolNames("retrievePaymentStatus")
-								.toolNames("retrievePaymentDate")
-								.build()))
+				ChatResponse response = ChatClient.create(chatModel)
+					.prompt("What's the status of my transaction with id T1001?")
+					.tools(retrievePaymentStatus, retrievePaymentDate)
 					.call()
 					.chatResponse();
 
@@ -99,15 +86,23 @@ class PaymentStatusBeanIT {
 	static class Config {
 
 		@Bean
-		@Description("Get payment status of a transaction")
-		public Function<Transaction, Status> retrievePaymentStatus() {
-			return transaction -> new Status(DATA.get(transaction.transactionId).status());
+		public ToolCallback retrievePaymentStatus() {
+			return FunctionToolCallback
+				.builder("retrievePaymentStatus",
+						(Transaction transaction) -> new Status(DATA.get(transaction.transactionId).status()))
+				.description("Get payment status of a transaction")
+				.inputType(Transaction.class)
+				.build();
 		}
 
 		@Bean
-		@Description("Get payment date of a transaction")
-		public Function<Transaction, Date> retrievePaymentDate() {
-			return transaction -> new Date(DATA.get(transaction.transactionId).date());
+		public ToolCallback retrievePaymentDate() {
+			return FunctionToolCallback
+				.builder("retrievePaymentDate",
+						(Transaction transaction) -> new Date(DATA.get(transaction.transactionId).date()))
+				.description("Get payment date of a transaction")
+				.inputType(Transaction.class)
+				.build();
 		}
 
 		public record Transaction(@JsonProperty(required = true, value = "transaction_id") String transactionId) {

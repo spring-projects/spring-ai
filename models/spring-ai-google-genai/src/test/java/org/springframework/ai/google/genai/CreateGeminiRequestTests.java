@@ -23,7 +23,6 @@ import java.util.List;
 import com.google.genai.Client;
 import com.google.genai.types.Content;
 import com.google.genai.types.Part;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -157,7 +156,6 @@ public class CreateGeminiRequestTests {
 		var client = GoogleGenAiChatModel.builder()
 			.genAiClient(this.genAiClient)
 			.options(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build())
-			.toolCallingManager(toolCallingManager)
 			.build();
 
 		var requestPrompt = client.buildRequestPrompt(new Prompt("Test message content",
@@ -187,89 +185,6 @@ public class CreateGeminiRequestTests {
 		assertThat(tool.functionDeclarations()).isPresent();
 		assertThat(tool.functionDeclarations().get()).hasSize(1);
 		assertThat(tool.functionDeclarations().get().get(0).name().orElse("")).isEqualTo(TOOL_FUNCTION_NAME);
-	}
-
-	@Disabled("TODO: is this use case still valid?")
-	@Test
-	public void optionsTools() {
-
-		final String TOOL_FUNCTION_NAME = "CurrentWeather";
-
-		var toolCallingManager = ToolCallingManager.builder().build();
-
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.toolCallingManager(toolCallingManager)
-			.options(GoogleGenAiChatOptions.builder()
-				.model("DEFAULT_MODEL")
-				.toolCallbacks(List.of(FunctionToolCallback.builder(TOOL_FUNCTION_NAME, new MockWeatherService())
-					.description("Get the weather in location")
-					.inputType(MockWeatherService.Request.class)
-					.build()))
-				.build())
-			.build();
-
-		var requestPrompt = client.buildRequestPrompt(new Prompt("Test message content"));
-
-		var request = client.createGeminiRequest(requestPrompt);
-
-		List<ToolDefinition> toolDefinitions = toolCallingManager
-			.resolveToolDefinitions((ToolCallingChatOptions) requestPrompt.getOptions());
-
-		assertThat(toolDefinitions).hasSize(1);
-		assertThat(toolDefinitions.get(0).name()).isSameAs(TOOL_FUNCTION_NAME);
-		assertThat(toolDefinitions.get(0).description()).isEqualTo("Get the weather in location");
-
-		assertThat(request.contents()).hasSize(1);
-		assertThat(request.config().systemInstruction()).isNotPresent();
-		assertThat(request.modelName()).isEqualTo("DEFAULT_MODEL");
-
-		assertThat(request.config().tools()).isPresent();
-		assertThat(request.config().tools().get()).hasSize(1);
-
-		// Explicitly enable the function
-
-		requestPrompt = client.buildRequestPrompt(new Prompt("Test message content",
-				GoogleGenAiChatOptions.builder().toolNames(TOOL_FUNCTION_NAME).build()));
-
-		request = client.createGeminiRequest(requestPrompt);
-
-		assertThat(request.config().tools()).isPresent();
-		assertThat(request.config().tools().get()).hasSize(1);
-		var tool = request.config().tools().get().get(0);
-		assertThat(tool.functionDeclarations()).isPresent();
-		assertThat(tool.functionDeclarations().get()).hasSize(1);
-
-		// When using .toolName() to filter, Spring AI may wrap the name with "Optional[]"
-		String actualName = tool.functionDeclarations().get().get(0).name().orElse("");
-		assertThat(actualName).as("Explicitly enabled function")
-			.satisfiesAnyOf(name -> assertThat(name).isEqualTo(TOOL_FUNCTION_NAME),
-					name -> assertThat(name).isEqualTo("Optional[" + TOOL_FUNCTION_NAME + "]"));
-
-		// Override the default options function with one from the prompt
-		requestPrompt = client.buildRequestPrompt(new Prompt("Test message content",
-				GoogleGenAiChatOptions.builder()
-					.toolCallbacks(List.of(FunctionToolCallback.builder(TOOL_FUNCTION_NAME, new MockWeatherService())
-						.description("Overridden function description")
-						.inputType(MockWeatherService.Request.class)
-						.build()))
-					.build()));
-		request = client.createGeminiRequest(requestPrompt);
-
-		assertThat(request.config().tools()).isPresent();
-		assertThat(request.config().tools().get()).hasSize(1);
-		tool = request.config().tools().get().get(0);
-		assertThat(tool.functionDeclarations()).isPresent();
-		assertThat(tool.functionDeclarations().get()).hasSize(1);
-		assertThat(tool.functionDeclarations().get().get(0).name().orElse("")).as("Explicitly enabled function")
-			.isEqualTo(TOOL_FUNCTION_NAME);
-
-		toolDefinitions = toolCallingManager
-			.resolveToolDefinitions((ToolCallingChatOptions) requestPrompt.getOptions());
-
-		assertThat(toolDefinitions).hasSize(1);
-		assertThat(toolDefinitions.get(0).name()).isSameAs(TOOL_FUNCTION_NAME);
-		assertThat(toolDefinitions.get(0).description()).isEqualTo("Overridden function description");
 	}
 
 	@Test

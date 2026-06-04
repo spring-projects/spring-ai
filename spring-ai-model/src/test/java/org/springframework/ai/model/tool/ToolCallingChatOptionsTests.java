@@ -18,7 +18,6 @@ package org.springframework.ai.model.tool;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -36,54 +35,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author Sebastien Deleuze
  */
 class ToolCallingChatOptionsTests {
-
-	@Test
-	void whenMergeRuntimeAndDefaultToolNames() {
-		Set<String> runtimeToolNames = Set.of("toolA");
-		Set<String> defaultToolNames = Set.of("toolB");
-		Set<String> mergedToolNames = ToolCallingChatOptions.mergeToolNames(runtimeToolNames, defaultToolNames);
-		assertThat(mergedToolNames).containsExactlyInAnyOrder("toolA");
-	}
-
-	@Test
-	void whenMergeRuntimeAndEmptyDefaultToolNames() {
-		Set<String> runtimeToolNames = Set.of("toolA");
-		Set<String> defaultToolNames = Set.of();
-		Set<String> mergedToolNames = ToolCallingChatOptions.mergeToolNames(runtimeToolNames, defaultToolNames);
-		assertThat(mergedToolNames).containsExactlyInAnyOrder("toolA");
-	}
-
-	@Test
-	void whenMergeEmptyRuntimeAndDefaultToolNames() {
-		Set<String> runtimeToolNames = Set.of();
-		Set<String> defaultToolNames = Set.of("toolB");
-		Set<String> mergedToolNames = ToolCallingChatOptions.mergeToolNames(runtimeToolNames, defaultToolNames);
-		assertThat(mergedToolNames).containsExactlyInAnyOrder("toolB");
-	}
-
-	@Test
-	void whenMergeNullRuntimeAndDefaultToolNames() {
-		Set<String> runtimeToolNames = null;
-		Set<String> defaultToolNames = Set.of("toolB");
-		Set<String> mergedToolNames = ToolCallingChatOptions.mergeToolNames(runtimeToolNames, defaultToolNames);
-		assertThat(mergedToolNames).containsExactlyInAnyOrder("toolB");
-	}
-
-	@Test
-	void whenMergeEmptyRuntimeAndEmptyDefaultToolNames() {
-		Set<String> runtimeToolNames = Set.of();
-		Set<String> defaultToolNames = Set.of();
-		Set<String> mergedToolNames = ToolCallingChatOptions.mergeToolNames(runtimeToolNames, defaultToolNames);
-		assertThat(mergedToolNames).containsExactlyInAnyOrder();
-	}
-
-	@Test
-	void whenMergeNullRuntimeAndNullDefaultToolNames() {
-		Set<String> runtimeToolNames = null;
-		Set<String> defaultToolNames = null;
-		Set<String> mergedToolNames = ToolCallingChatOptions.mergeToolNames(runtimeToolNames, defaultToolNames);
-		assertThat(mergedToolNames).isNull();
-	}
 
 	@Test
 	void whenMergeRuntimeAndDefaultToolCallbacks() {

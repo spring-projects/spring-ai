@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import com.openai.azure.AzureOpenAIServiceVersion;
 import com.openai.credential.Credential;
@@ -185,8 +184,6 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 	private final @Nullable List<ToolCallback> toolCallbacks;
 
-	private final @Nullable Set<String> toolNames;
-
 	private final @Nullable Map<String, Object> toolContext;
 
 	protected OpenAiChatOptions(@Nullable String baseUrl, @Nullable String apiKey, @Nullable Credential credential,
@@ -196,15 +193,14 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
 			@Nullable Double frequencyPenalty, @Nullable Integer maxTokens, @Nullable Double presencePenalty,
 			@Nullable List<String> stop, @Nullable Double temperature, @Nullable Double topP,
-			@Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames,
-			@Nullable Map<String, Object> toolContext, @Nullable Map<String, Integer> logitBias,
-			@Nullable Boolean logprobs, @Nullable Integer topLogprobs, @Nullable Integer maxCompletionTokens,
-			@Nullable Integer n, @Nullable List<String> outputModalities, @Nullable AudioParameters outputAudio,
-			OpenAiChatModel.@Nullable ResponseFormat responseFormat, @Nullable StreamOptions streamOptions,
-			@Nullable Integer seed, @Nullable Object toolChoice, @Nullable String user,
-			@Nullable Boolean parallelToolCalls, @Nullable Boolean store, @Nullable Map<String, String> metadata,
-			@Nullable String reasoningEffort, @Nullable String verbosity, @Nullable String serviceTier,
-			@Nullable Map<String, Object> extraBody) {
+			@Nullable List<ToolCallback> toolCallbacks, @Nullable Map<String, Object> toolContext,
+			@Nullable Map<String, Integer> logitBias, @Nullable Boolean logprobs, @Nullable Integer topLogprobs,
+			@Nullable Integer maxCompletionTokens, @Nullable Integer n, @Nullable List<String> outputModalities,
+			@Nullable AudioParameters outputAudio, OpenAiChatModel.@Nullable ResponseFormat responseFormat,
+			@Nullable StreamOptions streamOptions, @Nullable Integer seed, @Nullable Object toolChoice,
+			@Nullable String user, @Nullable Boolean parallelToolCalls, @Nullable Boolean store,
+			@Nullable Map<String, String> metadata, @Nullable String reasoningEffort, @Nullable String verbosity,
+			@Nullable String serviceTier, @Nullable Map<String, Object> extraBody) {
 		this.baseUrl = baseUrl;
 		this.apiKey = apiKey;
 		this.credential = credential;
@@ -227,7 +223,6 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.topP = topP;
 		// ToolCallingChatOptions
 		this.toolCallbacks = (toolCallbacks != null ? List.copyOf(toolCallbacks) : null);
-		this.toolNames = (toolNames != null ? Set.copyOf(toolNames) : null);
 		this.toolContext = (toolContext != null ? Map.copyOf(toolContext) : null);
 		// OpenAI SDK specific
 		this.logitBias = (logitBias != null ? Map.copyOf(logitBias) : null);
@@ -507,11 +502,6 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	@Override
-	public @Nullable Set<String> getToolNames() {
-		return this.toolNames;
-	}
-
-	@Override
 	public @Nullable Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
@@ -557,7 +547,6 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			.topP(this.topP)
 			// ToolCallingChatOptions
 			.toolCallbacks(this.getToolCallbacks())
-			.toolNames(this.getToolNames())
 			.toolContext(this.getToolContext())
 			// OpenAI SDK specific
 			.logitBias(this.logitBias)
@@ -611,7 +600,6 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 				&& Objects.equals(this.serviceTier, options.serviceTier)
 				&& Objects.equals(this.extraBody, options.extraBody)
 				&& Objects.equals(this.toolCallbacks, options.toolCallbacks)
-				&& Objects.equals(this.toolNames, options.toolNames)
 				&& Objects.equals(this.toolContext, options.toolContext);
 	}
 
@@ -622,7 +610,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 				this.presencePenalty, this.responseFormat, this.streamOptions, this.seed, this.stop, this.temperature,
 				this.topP, this.toolChoice, this.user, this.parallelToolCalls, this.store, this.metadata,
 				this.reasoningEffort, this.verbosity, this.serviceTier, this.extraBody, this.toolCallbacks,
-				this.toolNames, this.toolContext);
+				this.toolContext);
 	}
 
 	public record AudioParameters(@Nullable Voice voice, @Nullable AudioResponseFormat format) {
@@ -1163,9 +1151,9 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 					this.microsoftDeploymentName, this.microsoftFoundryServiceVersion, this.organizationId,
 					this.isMicrosoftFoundry, this.isGitHubModels, this.timeout, this.maxRetries, this.proxy,
 					this.customHeaders, this.frequencyPenalty, this.maxTokens, this.presencePenalty, this.stopSequences,
-					this.temperature, this.topP, this.toolCallbacks, this.toolNames, this.toolContext, this.logitBias,
-					this.logprobs, this.topLogprobs, this.maxCompletionTokens, this.n, this.outputModalities,
-					this.outputAudio, this.responseFormat, this.streamOptions, this.seed, this.toolChoice, this.user,
+					this.temperature, this.topP, this.toolCallbacks, this.toolContext, this.logitBias, this.logprobs,
+					this.topLogprobs, this.maxCompletionTokens, this.n, this.outputModalities, this.outputAudio,
+					this.responseFormat, this.streamOptions, this.seed, this.toolChoice, this.user,
 					this.parallelToolCalls, this.store, this.metadata, this.reasoningEffort, this.verbosity,
 					this.serviceTier, this.extraBody);
 		}

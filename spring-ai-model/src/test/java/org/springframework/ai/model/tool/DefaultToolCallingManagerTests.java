@@ -102,28 +102,12 @@ class DefaultToolCallingManagerTests {
 	@Test
 	void whenToolCallbackExistsThenResolve() {
 		ToolCallback toolCallback = new TestToolCallback("toolA");
-		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(List.of(toolCallback));
-		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
-			.toolCallbackResolver(toolCallbackResolver)
-			.build();
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
 		List<ToolDefinition> toolDefinitions = toolCallingManager
-			.resolveToolDefinitions(ToolCallingChatOptions.builder().toolNames("toolA").build());
+			.resolveToolDefinitions(ToolCallingChatOptions.builder().toolCallbacks(toolCallback).build());
 
 		assertThat(toolDefinitions).containsExactly(toolCallback.getToolDefinition());
-	}
-
-	@Test
-	void whenToolCallbackDoesNotExistThenThrow() {
-		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(List.of());
-		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
-			.toolCallbackResolver(toolCallbackResolver)
-			.build();
-
-		assertThatThrownBy(() -> toolCallingManager
-			.resolveToolDefinitions(ToolCallingChatOptions.builder().toolNames("toolB").build()))
-			.isInstanceOf(IllegalStateException.class)
-			.hasMessage("No ToolCallback found for tool name: toolB");
 	}
 
 	// EXECUTE TOOL CALLS
@@ -241,10 +225,7 @@ class DefaultToolCallingManagerTests {
 		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"),
-				ToolCallingChatOptions.builder()
-					.toolCallbacks(new TestToolCallback("toolA"))
-					.toolNames("toolA")
-					.build());
+				ToolCallingChatOptions.builder().toolCallbacks(new TestToolCallback("toolA")).build());
 		ChatResponse chatResponse = ChatResponse.builder()
 			.generations(List.of(new Generation(AssistantMessage.builder()
 				.content("")
@@ -373,7 +354,6 @@ class DefaultToolCallingManagerTests {
 		Prompt prompt = new Prompt(new UserMessage("Hello"),
 				ToolCallingChatOptions.builder()
 					.toolCallbacks(methodToolCallback, methodToolCallbackNeedToolContext)
-					.toolNames("toolA", "toolB")
 					.toolContext("key", "value")
 					.build());
 

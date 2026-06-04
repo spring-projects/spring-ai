@@ -67,10 +67,12 @@ public class DeepSeekFunctionCallbackIT {
 
 			DeepSeekChatModel chatModel = context.getBean(DeepSeekChatModel.class);
 
+			ToolCallback weatherInfo = context.getBean("weatherFunctionInfo", ToolCallback.class);
+
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
-			DeepSeekChatOptions options = DeepSeekChatOptions.builder().toolNames("WeatherInfo").build();
+			DeepSeekChatOptions options = DeepSeekChatOptions.builder().toolCallbacks(weatherInfo).build();
 
 			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 
@@ -95,10 +97,12 @@ public class DeepSeekFunctionCallbackIT {
 
 			DeepSeekChatModel chatModel = context.getBean(DeepSeekChatModel.class);
 
+			ToolCallback weatherInfo = context.getBean("weatherFunctionInfo", ToolCallback.class);
+
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
-			DeepSeekChatOptions options = DeepSeekChatOptions.builder().toolNames("WeatherInfo").build();
+			DeepSeekChatOptions options = DeepSeekChatOptions.builder().toolCallbacks(weatherInfo).build();
 
 			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 

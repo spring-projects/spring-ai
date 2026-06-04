@@ -500,7 +500,7 @@ chatClient.prompt()
     .call().content();
 ----
 
-The individual `toolCallbacks()` and `toolNames()` methods on `ChatClientRequestSpec`, and their `defaultToolCallbacks()` and `defaultToolNames()` counterparts on `ChatClient.Builder`, are deprecated in favour of `tools(Object...)` / `defaultTools(Object...)`.
+The individual `toolCallbacks()` methods on `ChatClientRequestSpec` and `defaultToolCallbacks()` on `ChatClient.Builder` are deprecated in favour of `tools(Object...)` / `defaultTools(Object...)`.
 
 ==== Changed: `MethodToolCallbackProvider` throws `IllegalArgumentException` instead of `IllegalStateException`
 
@@ -528,9 +528,9 @@ try {
 catch (IllegalArgumentException e) { ... }
 ----
 
-==== Deprecated: Spring Bean Tool Resolution (`SpringBeanToolCallbackResolver`)
+==== Removed: Spring Bean Tool Resolution (`SpringBeanToolCallbackResolver`)
 
-`SpringBeanToolCallbackResolver` and the pattern of declaring bare `Function` / `Supplier` / `Consumer` beans and referencing them by name via `toolNames()` are deprecated since 2.0.0 and will be removed in 3.0.0.
+`SpringBeanToolCallbackResolver` and the pattern of declaring bare `Function` / `Supplier` / `Consumer` beans and referencing them by name via `toolNames()` have been removed. The `toolNames()` method has been removed from all chat options classes and from `ChatClient`.
 
 ===== Migration
 

@@ -20,7 +20,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.anthropic.core.JsonValue;
 import com.anthropic.models.messages.JsonOutputFormat;
@@ -76,7 +75,6 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 			.maxRetries(5)
 			.toolChoice(ToolChoice.ofAuto(ToolChoiceAuto.builder().build()))
 			.disableParallelToolUse(true)
-			.toolNames("tool1", "tool2")
 			.toolContext(Map.of("key", "value"))
 			.build();
 
@@ -92,7 +90,6 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		assertThat(options.getMaxRetries()).isEqualTo(5);
 		assertThat(options.getToolChoice()).isNotNull();
 		assertThat(options.getDisableParallelToolUse()).isTrue();
-		assertThat(options.getToolNames()).containsExactlyInAnyOrder("tool1", "tool2");
 		assertThat(options.getToolContext()).containsEntry("key", "value");
 	}
 
@@ -139,7 +136,6 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		AnthropicCitationDocument baseDoc = AnthropicCitationDocument.builder().plainText("base-doc").build();
 		AnthropicChatOptions base = AnthropicChatOptions.builder()
 			.stopSequences(List.of("base-stop"))
-			.toolNames(Set.of("base-tool"))
 			.toolContext(Map.of("base-key", "base-value"))
 			.customHeaders(Map.of("base-header", "base-header-value"))
 			.httpHeaders(Map.of("base-http-header", "base-http-header-value"))
@@ -149,7 +145,6 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		AnthropicCitationDocument combineDoc = AnthropicCitationDocument.builder().plainText("combine-doc").build();
 		AnthropicChatOptions combine = AnthropicChatOptions.builder()
 			.stopSequences(List.of("combine-stop1", "combine-stop2"))
-			.toolNames(Set.of("combine-tool1", "combine-tool2"))
 			.toolContext(Map.of("combine-key1", "combine-value1", "combine-key2", "combine-value2"))
 			.customHeaders(Map.of("combine-header", "combine-header-value"))
 			.httpHeaders(Map.of("combine-http-header", "combine-http-header-value"))
@@ -160,8 +155,6 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 
 		// Combine stopSequences
 		assertThat(merged.getStopSequences()).containsExactly("base-stop", "combine-stop1", "combine-stop2");
-		// Combine toolNames
-		assertThat(merged.getToolNames()).containsExactlyInAnyOrder("base-tool", "combine-tool1", "combine-tool2");
 		// Combine toolContext
 		assertThat(merged.getToolContext()).containsEntry("base-key", "base-value");
 		assertThat(merged.getToolContext()).containsEntry("combine-key1", "combine-value1");
@@ -214,13 +207,6 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 				() -> AnthropicChatOptions.builder().toolCallbacks((org.springframework.ai.tool.ToolCallback[]) null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("toolCallbacks cannot be null");
-	}
-
-	@Test
-	void testToolNamesValidationRejectsNull() {
-		assertThatThrownBy(() -> AnthropicChatOptions.builder().toolNames((String[]) null))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("toolNames cannot be null");
 	}
 
 	@Test

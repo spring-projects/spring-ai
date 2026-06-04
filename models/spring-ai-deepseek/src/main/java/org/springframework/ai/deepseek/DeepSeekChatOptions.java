@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.jspecify.annotations.Nullable;
 
@@ -120,16 +119,6 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	 */
 	private final @Nullable List<ToolCallback> toolCallbacks;
 
-	/**
-	 * List of functions, identified by their names, to configure for function calling in
-	 * the chat completion requests.
-	 * Functions with those names must exist in the toolCallbacks registry.
-	 * The {@link #toolCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
-	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
-	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
-	 */
-	private final @Nullable Set<String> toolNames;
-
 	private final @Nullable Map<String, Object> toolContext;
 
 	protected DeepSeekChatOptions(@Nullable String model, @Nullable Double frequencyPenalty,
@@ -138,7 +127,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 			@Nullable Double temperature, @Nullable Double topP, @Nullable Boolean logprobs,
 			@Nullable Integer topLogprobs, @Nullable List<DeepSeekApi.FunctionTool> tools,
 			@Nullable Object toolChoice,
-			@Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames, @Nullable Map<String, Object> toolContext) {
+			@Nullable List<ToolCallback> toolCallbacks, @Nullable Map<String, Object> toolContext) {
 		this.model = model != null ? model : DeepSeekApi.DEFAULT_CHAT_MODEL.getValue();
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
@@ -152,7 +141,6 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		this.tools = tools != null ? List.copyOf(tools) : null;
 		this.toolChoice = toolChoice;
 		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
-		this.toolNames = toolNames != null ? Set.copyOf(toolNames) : null;
 		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
 	}
 
@@ -217,11 +205,6 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		return this.toolCallbacks;
 	}
 
-	@Override
-	public @Nullable Set<String> getToolNames() {
-		return this.toolNames;
-	}
-
 	public @Nullable Boolean getLogprobs() {
 		return this.logprobs;
 	}
@@ -255,7 +238,6 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 			.topK(this.getTopK()) // always null but here for consistency
 			// ToolCallingChatOptions
 			.toolCallbacks(this.getToolCallbacks())
-			.toolNames(this.getToolNames())
 			.toolContext(this.getToolContext())
 			// DeepSeek Specific
 			.responseFormat(this.responseFormat)
@@ -270,7 +252,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		return Objects.hash(this.model, this.frequencyPenalty, this.logprobs, this.topLogprobs,
 				this.maxTokens,  this.presencePenalty, this.responseFormat,
 				this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
-				this.toolCallbacks, this.toolNames, this.toolContext);
+				this.toolCallbacks, this.toolContext);
 	}
 
 
@@ -293,7 +275,6 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.topP, other.topP) && Objects.equals(this.tools, other.tools)
 				&& Objects.equals(this.toolChoice, other.toolChoice)
 				&& Objects.equals(this.toolCallbacks, other.toolCallbacks)
-				&& Objects.equals(this.toolNames, other.toolNames)
 				&& Objects.equals(this.toolContext, other.toolContext);
 	}
 
@@ -395,7 +376,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 			return new DeepSeekChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 					this.responseFormat, this.stopSequences, this.temperature, this.topP, this.logprobs,
 					this.topLogprobs, this.tools, this.toolChoice,
-					this.toolCallbacks, this.toolNames, this.toolContext);
+					this.toolCallbacks, this.toolContext);
 		}
 
 	}
