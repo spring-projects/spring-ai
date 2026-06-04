@@ -26,8 +26,11 @@ the [Redis Vector Store Documentation](https://docs.spring.io/spring-ai/referenc
 The standard similarity search returns the k-nearest neighbors:
 
 ```java
+// Create Redis client
+RedisClient jedisClient = RedisClient.builder().hostAndPort("localhost", 6379).build();
+
 // Create the vector store
-RedisVectorStore vectorStore = RedisVectorStore.builder(jedisPooled, embeddingModel)
+RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
     .indexName("my-index")
     .vectorAlgorithm(Algorithm.HNSW)
     .distanceMetric(DistanceMetric.COSINE)
@@ -75,7 +78,8 @@ Text search supports:
 Configure text search behavior at construction time:
 
 ```java
-RedisVectorStore vectorStore = RedisVectorStore.builder(jedisPooled, embeddingModel)
+RedisClient jedisClient = RedisClient.builder().hostAndPort("localhost", 6379).build();
+RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
     .textScorer(TextScorer.TFIDF)                    // Text scoring algorithm
     .inOrder(true)                                   // Match terms in order
     .stopwords(Set.of("is", "a", "the", "and"))      // Ignore common words
@@ -99,7 +103,8 @@ List<Document> rangeResults = vectorStore.searchByRange(
 You can also set a default range threshold at construction time:
 
 ```java
-RedisVectorStore vectorStore = RedisVectorStore.builder(jedisPooled, embeddingModel)
+RedisClient jedisClient = RedisClient.builder().hostAndPort("localhost", 6379).build();
+RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
     .defaultRangeThreshold(0.8)  // Set default threshold
     .build();
 
@@ -112,7 +117,8 @@ List<Document> results = vectorStore.searchByRange("query");
 The Redis Vector Store supports multiple configuration options:
 
 ```java
-RedisVectorStore vectorStore = RedisVectorStore.builder(jedisPooled, embeddingModel)
+RedisClient jedisClient = RedisClient.builder().hostAndPort("localhost", 6379).build();
+RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
     .indexName("custom-index")        // Redis index name
     .prefix("custom-prefix")          // Redis key prefix
     .contentFieldName("content")      // Field for document content

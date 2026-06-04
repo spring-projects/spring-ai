@@ -40,8 +40,8 @@ import com.google.gson.JsonSerializer;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.Pipeline;
+import redis.clients.jedis.RedisClient;
 import redis.clients.jedis.search.Query;
 import redis.clients.jedis.search.SearchResult;
 
@@ -67,6 +67,7 @@ import org.springframework.util.Assert;
  *
  * @author Brian Sam-Bodden
  * @author Soby Chacko
+ * @author Yanming Zhou
  */
 public final class DefaultSemanticCache implements SemanticCache {
 
@@ -223,7 +224,7 @@ public final class DefaultSemanticCache implements SemanticCache {
 		// Get access to Redis client and set TTL
 		if (this.vectorStore instanceof RedisVectorStore redisStore) {
 			String key = this.prefix + docId;
-			redisStore.getJedis().expire(key, ttl.getSeconds());
+			redisStore.getJedisClient().expire(key, ttl.getSeconds());
 		}
 	}
 
@@ -447,9 +448,9 @@ public final class DefaultSemanticCache implements SemanticCache {
 
 	@Override
 	public void clear() {
-		Optional<JedisPooled> nativeClient = this.vectorStore.getNativeClient();
+		Optional<RedisClient> nativeClient = this.vectorStore.getNativeClient();
 		if (nativeClient.isPresent()) {
-			JedisPooled jedis = nativeClient.get();
+			RedisClient redisClient = nativeClient.get();
 
 			// Delete documents in batches to avoid memory issues
 			boolean moreRecords = true;
@@ -458,10 +459,10 @@ public final class DefaultSemanticCache implements SemanticCache {
 				query.limit(0, DEFAULT_BATCH_SIZE); // Reasonable batch size
 				query.setNoContent();
 
-				SearchResult searchResult = jedis.ftSearch(this.indexName, query);
+				SearchResult searchResult = redisClient.ftSearch(this.indexName, query);
 
 				if (searchResult.getTotalResults() > 0) {
-					try (Pipeline pipeline = jedis.pipelined()) {
+					try (Pipeline pipeline = redisClient.pipelined()) {
 						for (redis.clients.jedis.search.Document doc : searchResult.getDocuments()) {
 							pipeline.jsonDel(doc.getId());
 						}
@@ -496,7 +497,7 @@ public final class DefaultSemanticCache implements SemanticCache {
 
 		private String prefix = DEFAULT_PREFIX;
 
-		private @Nullable JedisPooled jedisClient;
+		private @Nullable RedisClient jedisClient;
 
 		// Builder methods with validation
 		public Builder vectorStore(VectorStore vectorStore) {
@@ -530,7 +531,7 @@ public final class DefaultSemanticCache implements SemanticCache {
 			return this;
 		}
 
-		public Builder jedisClient(JedisPooled jedisClient) {
+		public Builder jedisClient(RedisClient jedisClient) {
 			this.jedisClient = jedisClient;
 			return this;
 		}
