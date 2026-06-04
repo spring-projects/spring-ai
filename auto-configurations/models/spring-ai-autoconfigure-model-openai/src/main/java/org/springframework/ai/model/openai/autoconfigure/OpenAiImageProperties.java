@@ -127,7 +127,7 @@ public class OpenAiImageProperties extends AbstractOpenAiProperties {
 	public OpenAiImageOptions toOptions() {
 		return OpenAiImageOptions.builder()
 			.model(this.model)
-			.N(this.n)
+			.n(this.n)
 			.width(this.width)
 			.height(this.height)
 			.responseFormat(this.responseFormat)

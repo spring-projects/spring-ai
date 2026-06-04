@@ -312,7 +312,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 			.toolContext(this.getToolContext())
 			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
 			// MiniMax Specific
-			.N(this.n)
+			.n(this.n)
 			.responseFormat(this.responseFormat)
 			.seed(this.seed)
 			.maskSensitiveInfo(this.maskSensitiveInfo)
@@ -348,7 +348,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 
 		protected @Nullable String toolChoice;
 
-		public B N(@Nullable Integer n) {
+		public B n(@Nullable Integer n) {
 			this.n = n;
 			return self();
 		}

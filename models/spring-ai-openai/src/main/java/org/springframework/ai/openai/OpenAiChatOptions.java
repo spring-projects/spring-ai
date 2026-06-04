@@ -934,11 +934,6 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			return self();
 		}
 
-		@Deprecated
-		public B N(@Nullable Integer n) {
-			return n(n);
-		}
-
 		public B outputModalities(@Nullable List<String> outputModalities) {
 			this.outputModalities = outputModalities;
 			return self();

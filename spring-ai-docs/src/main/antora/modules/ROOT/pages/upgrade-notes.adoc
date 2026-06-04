@@ -94,6 +94,27 @@ String model = properties.getModel();
 OpenAiEmbeddingOptions options = properties.toOptions();
 ----
 
+==== Renamed `N()` to `n()` in Options Builders
+
+The `N()` builder method in various `*Options` and configuration properties classes has been renamed to `n()` to align with Java naming conventions.
+
+===== Impact
+
+- Any Java code calling `.N(value)` on these builders will fail to compile.
+
+===== Migration
+
+Update your code to call `.n(value)` instead.
+
+[source,java]
+----
+// Before
+MiniMaxChatOptions.builder().N(1).build();
+
+// After
+MiniMaxChatOptions.builder().n(1).build();
+----
+
 === JSON Utilities Refactoring
 
 ==== New: `JsonHelper` and Updated `JacksonUtils`

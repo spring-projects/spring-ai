@@ -38,7 +38,7 @@ class OpenAiImageOptionsTests {
 	void genericImageOptionsAreMerged() {
 		ImageOptions source = ImageOptionsBuilder.builder()
 			.model("generic-model")
-			.N(2)
+			.n(2)
 			.width(1024)
 			.height(1024)
 			.responseFormat("b64_json")

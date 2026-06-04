@@ -181,7 +181,7 @@ public class MiniMaxChatProperties extends MiniMaxParentProperties {
 			.model(this.model)
 			.frequencyPenalty(this.frequencyPenalty)
 			.maxTokens(this.maxTokens)
-			.N(this.n)
+			.n(this.n)
 			.presencePenalty(this.presencePenalty)
 			.responseFormat(this.responseFormat)
 			.seed(this.seed)

@@ -74,7 +74,7 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 			.topLogprobs(5)
 			.maxTokens(100)
 			.maxCompletionTokens(50)
-			.N(2)
+			.n(2)
 			.presencePenalty(0.8)
 			.streamOptions(StreamOptions.builder().includeUsage(true).build())
 			.seed(12345)

@@ -395,7 +395,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 		private Builder() {
 		}
 
-		public Builder N(@Nullable Integer n) {
+		public Builder n(@Nullable Integer n) {
 			this.n = n;
 			return this;
 		}

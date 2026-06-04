@@ -148,7 +148,7 @@ public class StabilityAiImageProperties extends StabilityAiParentProperties {
 	public StabilityAiImageOptions toOptions() {
 		return StabilityAiImageOptions.builder()
 			.model(this.model)
-			.N(this.n)
+			.n(this.n)
 			.width(this.width)
 			.height(this.height)
 			.responseFormat(this.responseFormat)

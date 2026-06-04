@@ -126,7 +126,7 @@ public class StabilityAiImageModel implements ImageModel {
 		StabilityAiImageOptions.Builder builder = StabilityAiImageOptions.builder()
 			// Handle portable image options
 			.model(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), options.getModel()))
-			.N(ModelOptionsUtils.mergeOption(runtimeOptions.getN(), options.getN()))
+			.n(ModelOptionsUtils.mergeOption(runtimeOptions.getN(), options.getN()))
 			.responseFormat(
 					ModelOptionsUtils.mergeOption(runtimeOptions.getResponseFormat(), options.getResponseFormat()))
 			.width(ModelOptionsUtils.mergeOption(runtimeOptions.getWidth(), options.getWidth()))

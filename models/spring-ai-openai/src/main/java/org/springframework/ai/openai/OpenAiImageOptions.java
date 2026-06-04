@@ -337,7 +337,7 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 			return this;
 		}
 
-		public Builder N(@Nullable Integer n) {
+		public Builder n(@Nullable Integer n) {
 			this.n = n;
 			return this;
 		}
