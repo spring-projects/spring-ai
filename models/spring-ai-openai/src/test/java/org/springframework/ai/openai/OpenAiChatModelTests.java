@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
@@ -36,6 +37,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.PromptMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
@@ -191,6 +194,73 @@ class OpenAiChatModelTests {
 		assertThatThrownBy(() -> chatModel.createRequest(new Prompt("test", options), false))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Failed to parse toolChoice JSON");
+	}
+
+	@Test
+	void toolResponseMessageWithPopulatedResponses_mapsToOneParamPerResponse() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ToolResponseMessage toolMsg = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("call_1", "myTool", "result1"),
+					new ToolResponseMessage.ToolResponse("call_2", "myTool", "result2")))
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt(List.of(toolMsg), options), false);
+
+		List<String> toolCallIds = request.messages()
+			.stream()
+			.filter(msg -> msg.isTool())
+			.map(msg -> msg.asTool().toolCallId())
+			.collect(Collectors.toList());
+
+		assertThat(toolCallIds).containsExactly("call_1", "call_2");
+	}
+
+	@Test
+	void toolResponseMessageWithEmptyResponses_producesNoMessages() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ToolResponseMessage emptyToolMsg = ToolResponseMessage.builder().build();
+
+		ChatCompletionCreateParams request = chatModel
+			.createRequest(new Prompt(List.of(new UserMessage("hello"), emptyToolMsg), options), false);
+
+		assertThat(request.messages().stream().filter(msg -> msg.isTool()).toList()).isEmpty();
+	}
+
+	@Test
+	void toolResponseMessageWithNullId_skipsResponse() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ToolResponseMessage toolMsg = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("call_1", "myTool", "result1"),
+					new ToolResponseMessage.ToolResponse(null, "badTool", "result2")))
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt(List.of(toolMsg), options), false);
+
+		List<String> toolCallIds = request.messages()
+			.stream()
+			.filter(msg -> msg.isTool())
+			.map(msg -> msg.asTool().toolCallId())
+			.collect(Collectors.toList());
+
+		assertThat(toolCallIds).containsExactly("call_1");
 	}
 
 	@Test
