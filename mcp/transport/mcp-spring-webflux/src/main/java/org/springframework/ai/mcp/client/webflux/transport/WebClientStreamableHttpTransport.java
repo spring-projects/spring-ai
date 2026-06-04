@@ -40,6 +40,7 @@ import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpTransportException;
 import io.modelcontextprotocol.spec.McpTransportSession;
+import io.modelcontextprotocol.spec.McpTransportSessionClosedException;
 import io.modelcontextprotocol.spec.McpTransportSessionNotFoundException;
 import io.modelcontextprotocol.spec.McpTransportStream;
 import io.modelcontextprotocol.spec.ProtocolVersions;
@@ -185,14 +186,6 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 		return new DefaultMcpTransportSession(onClose);
 	}
 
-	private McpTransportSession<Disposable> createClosedSession(McpTransportSession<Disposable> existingSession) {
-		var existingSessionId = Optional.ofNullable(existingSession)
-			.filter(session -> !(session instanceof ClosedMcpTransportSession<Disposable>))
-			.flatMap(McpTransportSession::sessionId)
-			.orElse(null);
-		return new ClosedMcpTransportSession<>(existingSessionId);
-	}
-
 	@Override
 	public void setExceptionHandler(Consumer<Throwable> handler) {
 		logger.debug("Exception handler registered");
@@ -216,7 +209,8 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 	public Mono<Void> closeGracefully() {
 		return Mono.defer(() -> {
 			logger.debug("Graceful close triggered");
-			McpTransportSession<Disposable> currentSession = this.activeSession.getAndUpdate(this::createClosedSession);
+			McpTransportSession<Disposable> currentSession = this.activeSession
+				.getAndSet(ClosedMcpTransportSession.INSTANCE);
 			if (currentSession != null) {
 				return Mono.from(currentSession.closeGracefully());
 			}
@@ -226,6 +220,19 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 
 	private Mono<Disposable> reconnect(@Nullable McpTransportStream<Disposable> stream) {
 		return Mono.deferContextual(ctx -> {
+			var rh = this.handler.get();
+			if (rh == null) {
+				logger.warn("Transport has no request handler registered. Remember to call connect!");
+			}
+
+			final Function<Mono<McpSchema.JSONRPCMessage>, Mono<McpSchema.JSONRPCMessage>> requestHandler = rh != null
+					? rh : msg -> Mono.error(new IllegalStateException("No request handler"));
+
+			final McpTransportSession<Disposable> transportSession = this.activeSession.get();
+
+			if (ClosedMcpTransportSession.INSTANCE.equals(transportSession)) {
+				throw new McpTransportSessionClosedException();
+			}
 			if (stream != null) {
 				logger.debug("Reconnecting stream {} with lastId {}", stream.streamId(), stream.lastId());
 			}
@@ -237,7 +244,6 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 			// session here and listen for messages. If it doesn't, that's ok, the server
 			// is a simple, stateless one.
 			final AtomicReference<@Nullable Disposable> disposableRef = new AtomicReference<>();
-			final McpTransportSession<Disposable> transportSession = this.activeSession.get();
 
 			Disposable connection = this.webClient.get()
 				.uri(this.endpoint)
@@ -275,7 +281,7 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 							.flux();
 					}
 				})
-				.flatMap(jsonrpcMessage -> this.handler.get().apply(Mono.just(jsonrpcMessage)))
+				.flatMap(jsonrpcMessage -> requestHandler.apply(Mono.just(jsonrpcMessage)))
 				.onErrorComplete(t -> {
 					this.handleException(t);
 					return true;
@@ -305,6 +311,19 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 			return Mono.error(new RuntimeException("Failed to serialize message", e));
 		}
 		return Mono.create(sink -> {
+			var rh = this.handler.get();
+			if (rh == null) {
+				logger.warn("Transport has no request handler registered. Remember to call connect!");
+			}
+
+			final Function<Mono<McpSchema.JSONRPCMessage>, Mono<McpSchema.JSONRPCMessage>> requestHandler = rh != null
+					? rh : msg -> Mono.error(new IllegalStateException("No request handler"));
+
+			final McpTransportSession<Disposable> transportSession = this.activeSession.get();
+
+			if (ClosedMcpTransportSession.INSTANCE.equals(transportSession)) {
+				throw new McpTransportSessionClosedException();
+			}
 			logger.debug("Sending message {}", message);
 			// Here we attempt to initialize the client.
 			// In case the server supports SSE, we will establish a long-running session
@@ -312,7 +331,6 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 			// listen for messages.
 			// If it doesn't, nothing actually happens here, that's just the way it is...
 			final AtomicReference<@Nullable Disposable> disposableRef = new AtomicReference<>();
-			final McpTransportSession<Disposable> transportSession = this.activeSession.get();
 
 			Disposable connection = Flux.deferContextual(ctx -> this.webClient.post()
 				.uri(this.endpoint)
@@ -379,23 +397,23 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 						}
 						return this.extractError(response, sessionRepresentation);
 					}
-				}))
-				.flatMap(jsonRpcMessage -> this.handler.get().apply(Mono.just(jsonRpcMessage)))
-				.onErrorComplete(t -> {
+				})).flatMap(jsonRpcMessage -> requestHandler.apply(Mono.just(jsonRpcMessage))).onErrorComplete(t -> {
 					// handle the error first
-					this.handleException(t);
+					try {
+						this.handleException(t);
+					}
+					catch (Exception e) {
+						logger.error("Error handling exception {}", t.getMessage(), e);
+					}
 					// inform the caller of sendMessage
 					sink.error(t);
 					return true;
-				})
-				.doFinally(s -> {
+				}).doFinally(s -> {
 					@Nullable Disposable ref = disposableRef.getAndSet(null);
 					if (ref != null) {
 						transportSession.removeConnection(ref);
 					}
-				})
-				.contextWrite(sink.contextView())
-				.subscribe();
+				}).contextWrite(sink.contextView()).subscribe();
 			disposableRef.set(connection);
 			transportSession.addConnection(connection);
 		});

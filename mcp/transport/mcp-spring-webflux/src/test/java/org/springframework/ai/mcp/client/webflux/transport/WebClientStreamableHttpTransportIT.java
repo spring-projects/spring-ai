@@ -16,7 +16,10 @@
 
 package org.springframework.ai.mcp.client.webflux.transport;
 
+import java.util.function.Function;
+
 import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.spec.McpTransportSessionClosedException;
 import io.modelcontextprotocol.spec.ProtocolVersions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -66,13 +69,14 @@ class WebClientStreamableHttpTransportIT {
 				"test-id", initializeRequest);
 
 		StepVerifier.create(transport.sendMessage(testMessage))
-			.expectErrorMessage("MCP session has been closed")
+			.expectErrorMessage("Transport has already been closed.")
 			.verify();
 	}
 
 	@Test
 	void testCloseInitialized() {
 		var transport = WebClientStreamableHttpTransport.builder(builder).build();
+		transport.connect(Function.identity()).block();
 
 		var initializeRequest = new McpSchema.InitializeRequest(ProtocolVersions.MCP_2025_06_18,
 				McpSchema.ClientCapabilities.builder().roots(true).build(),
@@ -84,7 +88,8 @@ class WebClientStreamableHttpTransportIT {
 		StepVerifier.create(transport.closeGracefully()).verifyComplete();
 
 		StepVerifier.create(transport.sendMessage(testMessage))
-			.expectErrorMatches(err -> err.getMessage().matches("MCP session with ID [a-zA-Z0-9-]* has been closed"))
+			.expectErrorMatches(err -> err instanceof McpTransportSessionClosedException
+					&& err.getMessage().equals("Transport has already been closed."))
 			.verify();
 	}
 
