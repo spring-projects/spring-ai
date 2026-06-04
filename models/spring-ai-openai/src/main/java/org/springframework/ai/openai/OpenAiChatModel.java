@@ -19,13 +19,16 @@ package org.springframework.ai.openai;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
@@ -40,6 +43,11 @@ import com.openai.models.ResponseFormatText;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam;
 import com.openai.models.chat.completions.ChatCompletionChunk;
+import com.openai.models.chat.completions.ChatCompletionChunk.Choice;
+import com.openai.models.chat.completions.ChatCompletionChunk.Choice.Delta;
+import com.openai.models.chat.completions.ChatCompletionChunk.Choice.Delta.ToolCall;
+import com.openai.models.chat.completions.ChatCompletionChunk.Choice.Delta.ToolCall.Function;
+import com.openai.models.chat.completions.ChatCompletionChunk.Choice.FinishReason;
 import com.openai.models.chat.completions.ChatCompletionContentPart;
 import com.openai.models.chat.completions.ChatCompletionContentPartImage;
 import com.openai.models.chat.completions.ChatCompletionContentPartInputAudio;
@@ -79,6 +87,7 @@ import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
@@ -107,14 +116,11 @@ import org.springframework.util.StringUtils;
  * @author Soby Chacko
  * @author Ilayaperumal Gopinathan
  * @author Thomas Vitale
+ * @author Eric Bottard
  */
 public final class OpenAiChatModel implements ChatModel {
 
-	private static final String DEFAULT_MODEL_NAME = OpenAiChatOptions.DEFAULT_CHAT_MODEL;
-
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
-
-	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
 
 	private final Logger logger = LoggerFactory.getLogger(OpenAiChatModel.class);
 
@@ -166,7 +172,8 @@ public final class OpenAiChatModel implements ChatModel {
 						builder.meterRegistry, builder.dispatcherExecutor));
 
 		this.observationRegistry = Objects.requireNonNullElse(builder.observationRegistry, ObservationRegistry.NOOP);
-		this.toolCallingManager = Objects.requireNonNullElse(builder.toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER);
+		this.toolCallingManager = Objects.requireNonNullElse(builder.toolCallingManager,
+				ToolCallingManager.builder().observationRegistry(this.observationRegistry).build());
 	}
 
 	/**
@@ -255,33 +262,16 @@ public final class OpenAiChatModel implements ChatModel {
 	public Flux<ChatResponse> stream(Prompt prompt) {
 		Prompt requestPrompt = buildRequestPrompt(prompt);
 		verifyPromptChatOptions(requestPrompt);
-		return internalStream(requestPrompt, null);
-	}
-
-	/**
-	 * Safely extracts the assistant message from a chat response.
-	 * @param response the chat response
-	 * @return the assistant message, or null if not available
-	 */
-	public @Nullable AssistantMessage safeAssistantMessage(@Nullable ChatResponse response) {
-		if (response == null) {
-			return null;
-		}
-		Generation gen = response.getResult();
-		if (gen == null) {
-			return null;
-		}
-		return gen.getOutput();
+		return internalStream(requestPrompt);
 	}
 
 	/**
 	 * Internal method to handle streaming chat completion calls with tool execution
 	 * support.
 	 * @param prompt the prompt for the chat completion
-	 * @param previousChatResponse the previous chat response for accumulating usage
 	 * @return a Flux of chat responses
 	 */
-	private Flux<ChatResponse> internalStream(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
+	private Flux<ChatResponse> internalStream(Prompt prompt) {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionCreateParams request = createRequest(prompt, true);
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
@@ -306,193 +296,156 @@ public final class OpenAiChatModel implements ChatModel {
 				observation.start();
 			}
 
-			Flux<ChatResponse> chatResponses = Flux.<ChatResponse>create(sink -> {
-				this.openAiClientAsync.chat().completions().createStreaming(request).subscribe(chunk -> {
-					try {
-						ChatCompletion chatCompletion = chunkToChatCompletion(chunk);
-						String id = chatCompletion.id();
-						List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
-							roleMap.putIfAbsent(id, choice.message()._role().asString().isPresent()
-									? choice.message()._role().asStringOrThrow() : "");
-
-							Map<String, Object> metadata = Map.of("id", id, "role", roleMap.getOrDefault(id, ""),
-									"index", choice.index(), "finishReason", choice.finishReason().value(), "refusal",
-									choice.message().refusal().orElse(""), "annotations",
-									choice.message().annotations().orElse(List.of()), "chunkChoice",
-									chunk.choices().get((int) choice.index()), "reasoningContent",
-									getReasoningContent(choice));
-
-							return buildGeneration(choice, metadata, request);
-						}).toList();
-						Optional<CompletionUsage> usage = chatCompletion.usage();
-						CompletionUsage usageVal = usage.orElse(null);
-						Usage currentUsage = usageVal != null ? getDefaultUsage(usageVal) : new EmptyUsage();
-						Usage accumulated = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
-						sink.next(new ChatResponse(generations, from(chatCompletion, accumulated)));
-					}
-					catch (Exception e) {
-						logger.error("Error processing chat completion", e);
-						sink.error(e);
-					}
-				}).onCompleteFuture().whenComplete((unused, throwable) -> {
+			// Convert from AsyncStreamResponse<ChatCompletionChunk> to Flux<CCC>
+			Flux<ChatCompletionChunk> chunks = Flux.<ChatCompletionChunk>create(sink -> this.openAiClientAsync.chat()
+				.completions()
+				.createStreaming(request)
+				.subscribe(sink::next)
+				.onCompleteFuture()
+				.whenComplete((unused, throwable) -> {
 					if (throwable != null) {
 						sink.error(throwable);
 					}
 					else {
 						sink.complete();
 					}
-				});
-			}).buffer(2, 1).map(buffer -> {
-				ChatResponse first = buffer.get(0);
-				if (request.streamOptions().isPresent() && buffer.size() == 2) {
-					ChatResponse second = buffer.get(1);
-					if (second != null) {
-						Usage usage = second.getMetadata().getUsage();
-						if (!UsageCalculator.isEmpty(usage)) {
-							return new ChatResponse(first.getResults(), from(first.getMetadata(), usage));
-						}
-					}
+				}));
+
+			// Next, aggregate CCCs that deal with tool calls together
+			AtomicBoolean isInsideTool = new AtomicBoolean(false);
+			Flux<ChatCompletion> aggregatedChatCompletions = chunks.doOnNext(chunk -> {
+				if (this.hasToolCall(chunk)) {
+					isInsideTool.set(true);
 				}
-				return first;
+			}).bufferUntil(chunk -> {
+				if (isInsideTool.get() && this.toolCallsDone(chunk)) {
+					isInsideTool.set(false);
+					return true;
+				}
+				return !isInsideTool.get();
+			}).map(OpenAiChatModel::mergeChunks).map(this::chunkToChatCompletion);
+
+			Flux<ChatResponse> chatResponses = aggregatedChatCompletions.map(chatCompletion -> {
+				String id = chatCompletion.id();
+				List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
+					roleMap.putIfAbsent(id, choice.message()._role().asString().isPresent()
+							? choice.message()._role().asStringOrThrow() : "");
+
+					Map<String, Object> metadata = Map.of("id", id, //
+							"role", roleMap.getOrDefault(id, ""), //
+							"index", choice.index(), //
+							"finishReason", choice.finishReason().value(), //
+							"refusal", choice.message().refusal().orElse(""), //
+							"annotations", choice.message().annotations().orElseGet(List::of), //
+							"reasoningContent", getReasoningContent(choice) //
+					);
+
+					return buildGeneration(choice, metadata, request);
+				}).toList();
+				Optional<CompletionUsage> usage = chatCompletion.usage();
+				CompletionUsage usageVal = usage.orElse(null);
+				Usage currentUsage = usageVal != null ? getDefaultUsage(usageVal) : new EmptyUsage();
+				Usage accumulated = UsageCalculator.getCumulativeUsage(currentUsage, null);
+				return new ChatResponse(generations, from(chatCompletion, accumulated));
+
 			});
 
-			Flux<ChatResponse> flux = chatResponses
+			Flux<ChatResponse> observedResponses = chatResponses.doOnError(observation::error)
+				.doFinally(s -> observation.stop())
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
-			return flux.collectList().flatMapMany(list -> {
-				if (list.isEmpty()) {
-					return Flux.empty();
-				}
-				boolean hasToolCalls = list.stream()
-					.map(this::safeAssistantMessage)
-					.filter(Objects::nonNull)
-					.anyMatch(am -> !CollectionUtils.isEmpty(am.getToolCalls()));
-				if (!hasToolCalls) {
-					if (list.size() > 2) {
-						ChatResponse penultimateResponse = list.get(list.size() - 2); // Get
-																						// the
-																						// finish
-																						// reason
-						ChatResponse lastResponse = list.get(list.size() - 1); // Get the
-																				// usage
-						Usage usage = lastResponse.getMetadata().getUsage();
-						observationContext.setResponse(new ChatResponse(penultimateResponse.getResults(),
-								from(penultimateResponse.getMetadata(), usage)));
-					}
-					return Flux.fromIterable(list);
-				}
-				Map<String, ToolCallBuilder> builders = new HashMap<>();
-				StringBuilder text = new StringBuilder();
-				ChatResponseMetadata finalMetadata = null;
-				ChatGenerationMetadata finalGenMetadata = null;
-				Map<String, Object> props = new HashMap<>();
-				for (ChatResponse chatResponse : list) {
-					AssistantMessage am = safeAssistantMessage(chatResponse);
-					if (am == null) {
-						continue;
-					}
-					if (am.getText() != null) {
-						text.append(am.getText());
-					}
-					props.putAll(am.getMetadata());
-					if (!CollectionUtils.isEmpty(am.getToolCalls())) {
-						Object ccObj = am.getMetadata().get("chunkChoice");
-						if (ccObj instanceof ChatCompletionChunk.Choice chunkChoice
-								&& chunkChoice.delta().toolCalls().isPresent()) {
-							List<ChatCompletionChunk.Choice.Delta.ToolCall> deltaCalls = chunkChoice.delta()
-								.toolCalls()
-								.get();
-							for (int i = 0; i < am.getToolCalls().size() && i < deltaCalls.size(); i++) {
-								AssistantMessage.ToolCall tc = am.getToolCalls().get(i);
-								ChatCompletionChunk.Choice.Delta.ToolCall dtc = deltaCalls.get(i);
-								String key = chunkChoice.index() + "-" + dtc.index();
-								ToolCallBuilder toolCallBuilder = builders.computeIfAbsent(key,
-										k -> new ToolCallBuilder());
-								toolCallBuilder.merge(tc);
-							}
-						}
-						else {
-							for (AssistantMessage.ToolCall tc : am.getToolCalls()) {
-								ToolCallBuilder toolCallBuilder = builders.computeIfAbsent(tc.id(),
-										k -> new ToolCallBuilder());
-								toolCallBuilder.merge(tc);
-							}
-						}
-					}
-					Generation generation = chatResponse.getResult();
-					if (generation != null && generation.getMetadata() != ChatGenerationMetadata.NULL) {
-						finalGenMetadata = generation.getMetadata();
-					}
-					finalMetadata = chatResponse.getMetadata();
-				}
-				List<AssistantMessage.ToolCall> merged = builders.values()
-					.stream()
-					.map(ToolCallBuilder::build)
-					.filter(tc -> StringUtils.hasText(tc.name()))
-					.toList();
-				AssistantMessage.Builder assistantMessageBuilder = AssistantMessage.builder()
-					.content(text.toString())
-					.properties(props);
-				if (!merged.isEmpty()) {
-					assistantMessageBuilder.toolCalls(merged);
-				}
-				AssistantMessage assistantMessage = assistantMessageBuilder.build();
-				Generation finalGen = new Generation(assistantMessage,
-						finalGenMetadata != null ? finalGenMetadata : ChatGenerationMetadata.NULL);
-				ChatResponse aggregated = new ChatResponse(List.of(finalGen),
-						finalMetadata != null ? finalMetadata : ChatResponseMetadata.builder().build());
-				observationContext.setResponse(aggregated);
-				return Flux.just(aggregated);
-			}).doOnError(observation::error).doFinally(s -> observation.stop());
+			return new MessageAggregator().aggregate(observedResponses, observationContext::setResponse);
+
 		});
+	}
+
+	private static ChatCompletionChunk mergeChunks(List<ChatCompletionChunk> chunks) {
+		ChatCompletionChunk.Builder builder = chunks.get(0).toBuilder();
+		Map<Long, Choice> choices = new LinkedHashMap<>();
+		chunks.get(0).choices().forEach(choice -> choices.put(choice.index(), choice));
+
+		for (int i = 1; i < chunks.size(); i++) {
+			ChatCompletionChunk chunk = chunks.get(i);
+			chunk.usage().ifPresent(builder::usage);
+			chunk.serviceTier().ifPresent(builder::serviceTier);
+			chunk.choices()
+				.forEach(choice -> choices.compute(choice.index(),
+						(ix, c) -> c == null ? choice : mergeChoices(c, choice)));
+		}
+		return builder.choices(new ArrayList<>(choices.values())).build();
+	}
+
+	private static Choice mergeChoices(Choice c1, Choice c2) {
+		return Choice.builder()
+			.index(c1.index())
+			.finishReason(c1.finishReason().or(c2::finishReason))
+			.logprobs(c1.logprobs().or(c2::logprobs))
+			.delta(mergeDeltas(c1.delta(), c2.delta()))
+			.build();
+
+	}
+
+	private static Delta mergeDeltas(Delta left, Delta right) {
+		var tcs = Stream.of(left.toolCalls(), right.toolCalls()).flatMap(Optional::stream).reduce((tcs1, tcs2) -> {
+			Assert.isTrue(tcs2.size() <= 1, "no more than one tool call per message currently supported");
+			ToolCall toolCall = tcs2.get(0);
+			if (toolCall.id().isPresent()) {
+				// new toolCall, add it to list
+				List<ToolCall> result = new ArrayList<>(tcs1);
+				result.add(toolCall);
+				return result;
+			}
+			else {
+				// Continuation of previous toolCall
+				ToolCall lastFromTc1 = tcs1.get(tcs1.size() - 1);
+				Function lastFromTc1F = lastFromTc1.function().get();
+
+				var concatenatedArgs = Stream
+					.of(lastFromTc1F.arguments(), toolCall.function().flatMap(Function::arguments))
+					.flatMap(Optional::stream)
+					.reduce((args1, args2) -> args1 + args2)
+					.orElse("");
+
+				lastFromTc1.toBuilder().function(lastFromTc1F.toBuilder().arguments(concatenatedArgs).build());
+				List<ToolCall> result = new ArrayList<>(tcs1);
+				result.set(tcs1.size() - 1,
+						lastFromTc1.toBuilder()
+							.function(lastFromTc1F.toBuilder().arguments(concatenatedArgs).build())
+							.build());
+				return result;
+			}
+
+		}).orElse(List.of());
+
+		return left.toBuilder().toolCalls(tcs).build();
+	}
+
+	private boolean hasToolCall(ChatCompletionChunk chunk) {
+		return !chunk.choices().isEmpty() && chunk.choices().get(0).delta().toolCalls().isPresent();
+	}
+
+	private boolean toolCallsDone(ChatCompletionChunk chunk) {
+		return !chunk.choices().isEmpty()
+				&& FinishReason.TOOL_CALLS == chunk.choices().get(0).finishReason().orElse(null);
 	}
 
 	private Generation buildGeneration(ChatCompletion.Choice choice, Map<String, Object> metadata,
 			ChatCompletionCreateParams request) {
 		ChatCompletionMessage message = choice.message();
-		List<AssistantMessage.ToolCall> toolCalls = new ArrayList<>();
-
-		if (metadata.containsKey("chunkChoice")) {
-			Object chunkChoiceObj = metadata.get("chunkChoice");
-			if (chunkChoiceObj instanceof ChatCompletionChunk.Choice chunkChoice) {
-				if (chunkChoice.delta().toolCalls().isPresent()) {
-					toolCalls = chunkChoice.delta()
-						.toolCalls()
-						.get()
-						.stream()
-						.filter(tc -> tc.function().isPresent())
-						.map(tc -> {
-							var funcOpt = tc.function();
-							if (funcOpt.isEmpty()) {
-								return null;
-							}
-							var func = funcOpt.get();
-							String id = tc.id().orElse("");
-							String name = func.name().orElse("");
-							String arguments = func.arguments().orElse("");
-							return new AssistantMessage.ToolCall(id, "function", name, arguments);
-						})
-						.filter(Objects::nonNull)
-						.toList();
+		List<AssistantMessage.ToolCall> toolCalls = message.toolCalls()
+			.map(list -> list.stream().filter(tc -> tc.function().isPresent()).map(tc -> {
+				var opt = tc.function();
+				if (opt.isEmpty()) {
+					return null;
 				}
-			}
-		}
-		else {
-			toolCalls = message.toolCalls()
-				.map(list -> list.stream().filter(tc -> tc.function().isPresent()).map(tc -> {
-					var opt = tc.function();
-					if (opt.isEmpty()) {
-						return null;
-					}
-					var funcCall = opt.get();
-					var functionDef = funcCall.function();
-					String id = funcCall.id();
-					String name = functionDef.name();
-					String arguments = functionDef.arguments();
-					return new AssistantMessage.ToolCall(id, "function", name, arguments);
-				}).filter(Objects::nonNull).toList())
-				.orElse(List.of());
-		}
+				var funcCall = opt.get();
+				var functionDef = funcCall.function();
+				String id = funcCall.id();
+				String name = functionDef.name();
+				String arguments = functionDef.arguments();
+				return new AssistantMessage.ToolCall(id, "function", name, arguments);
+			}).filter(Objects::nonNull).toList())
+			.orElse(List.of());
 
 		var generationMetadataBuilder = ChatGenerationMetadata.builder()
 			.finishReason(choice.finishReason().value().name());
@@ -553,20 +506,6 @@ public final class OpenAiChatModel implements ChatModel {
 		return metadataBuilder.build();
 	}
 
-	private ChatResponseMetadata from(ChatResponseMetadata chatResponseMetadata, Usage usage) {
-		Assert.notNull(chatResponseMetadata, "OpenAI ChatResponseMetadata must not be null");
-		ChatResponseMetadata.Builder builder = ChatResponseMetadata.builder()
-			.id(chatResponseMetadata.getId())
-			.usage(usage)
-			.model(chatResponseMetadata.getModel())
-			.promptMetadata(chatResponseMetadata.getPromptMetadata())
-			.rateLimit(chatResponseMetadata.getRateLimit());
-
-		chatResponseMetadata.entrySet().forEach(e -> builder.keyValue(e.getKey(), e.getValue()));
-
-		return builder.build();
-	}
-
 	/**
 	 * Extract the created timestamp from a ChatCompletion result, returning 0 if the
 	 * field is absent. Some OpenAI-compatible providers (e.g. GitHub Copilot) do not
@@ -601,42 +540,47 @@ public final class OpenAiChatModel implements ChatModel {
 	 */
 	private ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
 
-		List<ChatCompletion.Choice> choices = (chunk._choices().isMissing()) ? List.of()
-				: chunk.choices().stream().map(chunkChoice -> {
-					ChatCompletion.Choice.FinishReason finishReason = ChatCompletion.Choice.FinishReason.of("");
-					if (chunkChoice.finishReason().isPresent()) {
-						finishReason = ChatCompletion.Choice.FinishReason
-							.of(chunkChoice.finishReason().get().value().name().toLowerCase());
-					}
+		List<ChatCompletion.Choice> choices = chunk.choices().stream().map(cccc -> {
+			ChatCompletion.Choice.Builder choiceBuilder = ChatCompletion.Choice.builder();
 
-					ChatCompletion.Choice.Builder choiceBuilder = ChatCompletion.Choice.builder()
-						.finishReason(finishReason)
-						.index(chunkChoice.index())
-						.message(ChatCompletionMessage.builder()
-							.content(chunkChoice.delta().content())
-							.refusal(chunkChoice.delta().refusal())
-							.putAllAdditionalProperties(chunkChoice.delta()._additionalProperties())
-							.build())
-						.putAllAdditionalProperties(chunkChoice._additionalProperties());
+			choiceBuilder.index(cccc.index());
 
-					// Handle optional logprobs
-					if (chunkChoice.logprobs().isPresent()) {
-						var logprobs = chunkChoice.logprobs().get();
-						choiceBuilder.logprobs(ChatCompletion.Choice.Logprobs.builder()
-							.content(logprobs.content())
-							.refusal(logprobs.refusal())
-							.build());
-					}
-					else {
-						// Provide empty logprobs when not present
-						choiceBuilder.logprobs(
-								ChatCompletion.Choice.Logprobs.builder().content(List.of()).refusal(List.of()).build());
-					}
+			choiceBuilder.finishReason(ChatCompletion.Choice.FinishReason.of(""));
+			cccc.finishReason()
+				.ifPresent(finishReason -> choiceBuilder
+					.finishReason(ChatCompletion.Choice.FinishReason.of(finishReason.value().name().toLowerCase())));
 
-					chunkChoice.delta();
+			if (cccc.logprobs().isPresent()) {
+				var logprobs = cccc.logprobs().get();
+				choiceBuilder.logprobs(ChatCompletion.Choice.Logprobs.builder()
+					.content(logprobs.content())
+					.refusal(logprobs.refusal())
+					.build());
+			}
+			else {
+				// Provide empty logprobs when not present
+				choiceBuilder
+					.logprobs(ChatCompletion.Choice.Logprobs.builder().content(List.of()).refusal(List.of()).build());
+			}
 
-					return choiceBuilder.build();
-				}).toList();
+			ChatCompletionMessage.Builder msgBuilder = ChatCompletionMessage.builder()
+				.content(cccc.delta().content())
+				.refusal(cccc.delta().refusal());
+			cccc.delta().toolCalls().ifPresent(ccctcs -> {
+				msgBuilder.toolCalls(ccctcs.stream().map(tc -> {
+					ChatCompletionMessageFunctionToolCall.Builder toolCallBuilder = ChatCompletionMessageFunctionToolCall
+						.builder();
+					toolCallBuilder.id(tc.id().get());
+					toolCallBuilder.function(ChatCompletionMessageFunctionToolCall.Function.builder()
+						.name(tc.function().get().name().get())
+						.arguments(tc.function().get().arguments().get())
+						.build());
+					return ChatCompletionMessageToolCall.ofFunction(toolCallBuilder.build());
+				}).toList());
+			});
+			choiceBuilder.message(msgBuilder.build());
+			return choiceBuilder.build();
+		}).toList();
 
 		return ChatCompletion.builder()
 			.id(chunk.id())

@@ -126,22 +126,6 @@ public abstract class AbstractToolCallAdvisorAutoRegistrationIT {
 		}
 
 		@Test
-		void disabledAutoRegisterFallsBackToModelBuiltIn() {
-			// With auto-register off the model's internal tool-calling handles execution.
-			// Functional result should be identical.
-			String response = ChatClient.create(getChatModel())
-				.prompt()
-				.advisors(a -> a.param(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey(), false))
-				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
-				.tools(createWeatherToolCallback())
-				.call()
-				.content();
-
-			logger.info("Response: {}", response);
-			assertThat(response).contains("30", "10", "15");
-		}
-
-		@Test
 		void defaultAdvisorsWithAutoRegistration() {
 			var chatClient = ChatClient.builder(getChatModel()).build();
 
@@ -288,20 +272,6 @@ public abstract class AbstractToolCallAdvisorAutoRegistrationIT {
 				.advisors(MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(500).build())
 					.build())
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "stream-auto-register-with-memory"))
-				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
-				.tools(createWeatherToolCallback())
-				.stream()
-				.content());
-
-			logger.info("Response: {}", content);
-			assertThat(content).contains("30", "10", "15");
-		}
-
-		@Test
-		void disabledAutoRegisterFallsBackToModelBuiltIn() {
-			String content = collect(ChatClient.create(getChatModel())
-				.prompt()
-				.advisors(a -> a.param(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey(), false))
 				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
 				.tools(createWeatherToolCallback())
 				.stream()
