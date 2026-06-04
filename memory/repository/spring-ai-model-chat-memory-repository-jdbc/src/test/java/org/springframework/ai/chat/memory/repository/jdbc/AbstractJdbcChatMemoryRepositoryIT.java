@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.memory.repository.jdbc;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -79,11 +80,12 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 			.replace("content, type", "conversation_id, content, type, sequence_id");
 		var result = this.jdbcTemplate.queryForMap(selectSql, conversationId);
 
-		assertThat(result.size()).isEqualTo(4);
+		assertThat(result.size()).isEqualTo(5);
 		assertThat(result.get("conversation_id")).isEqualTo(conversationId);
 		assertThat(result.get("content")).isEqualTo(message.getText());
 		assertThat(result.get("type")).isEqualTo(messageType.name());
 		assertThat(result.get("sequence_id")).isNotNull();
+		assertThat(result.get("timestamp")).isNotNull();
 	}
 
 	@Test
@@ -138,7 +140,12 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 		var results = this.chatMemoryRepository.findByConversationId(conversationId);
 
 		assertThat(results.size()).isEqualTo(messages.size());
-		assertThat(results).isEqualTo(messages);
+		// Read-back messages carry timestamp metadata, so compare content and type rather
+		// than full object equality.
+		assertThat(results).extracting(Message::getText)
+			.containsExactlyElementsOf(messages.stream().map(Message::getText).toList());
+		assertThat(results).extracting(Message::getMessageType)
+			.containsExactlyElementsOf(messages.stream().map(Message::getMessageType).toList());
 	}
 
 	@Test
@@ -207,6 +214,33 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 		for (int i = 0; i < 50; i++) {
 			assertThat(retrievedMessages.get(i).getText()).isEqualTo("Message " + i);
 		}
+	}
+
+	@Test
+	void messageTimestampIsExposedAsMetadataAndPreservedAcrossSaves() {
+		var conversationId = UUID.randomUUID().toString();
+
+		this.chatMemoryRepository.saveAll(conversationId, List.of(new UserMessage("first")));
+
+		List<Message> afterFirstSave = this.chatMemoryRepository.findByConversationId(conversationId);
+		assertThat(afterFirstSave).hasSize(1);
+		Object firstTimestamp = afterFirstSave.get(0).getMetadata().get(JdbcChatMemoryRepository.CONVERSATION_TS);
+		assertThat(firstTimestamp).isInstanceOf(Instant.class);
+
+		// Re-save the conversation with an extra message, as MessageWindowChatMemory
+		// does.
+		List<Message> nextMessages = new java.util.ArrayList<>(afterFirstSave);
+		nextMessages.add(new AssistantMessage("second"));
+		this.chatMemoryRepository.saveAll(conversationId, nextMessages);
+
+		List<Message> afterSecondSave = this.chatMemoryRepository.findByConversationId(conversationId);
+		assertThat(afterSecondSave).hasSize(2);
+		// The first message keeps its original creation timestamp across the re-save.
+		assertThat(afterSecondSave.get(0).getMetadata().get(JdbcChatMemoryRepository.CONVERSATION_TS))
+			.isEqualTo(firstTimestamp);
+		// The newly added message is assigned its own creation timestamp.
+		assertThat(afterSecondSave.get(1).getMetadata().get(JdbcChatMemoryRepository.CONVERSATION_TS))
+			.isInstanceOf(Instant.class);
 	}
 
 	/**

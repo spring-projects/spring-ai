@@ -23,12 +23,12 @@ public class HsqldbChatMemoryRepositoryDialect implements JdbcChatMemoryReposito
 
 	@Override
 	public String getSelectMessagesSql() {
-		return "SELECT content, type FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY sequence_id ASC";
+		return "SELECT content, type, timestamp FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY sequence_id ASC";
 	}
 
 	@Override
 	public String getInsertMessageSql() {
-		return "INSERT INTO SPRING_AI_CHAT_MEMORY (conversation_id, content, type, sequence_id) VALUES (?, ?, ?, ?)";
+		return "INSERT INTO SPRING_AI_CHAT_MEMORY (conversation_id, content, type, timestamp, sequence_id) VALUES (?, ?, ?, ?, ?)";
 	}
 
 	@Override

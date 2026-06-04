@@ -19,7 +19,10 @@ package org.springframework.ai.chat.memory.repository.jdbc;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import javax.sql.DataSource;
 
@@ -53,6 +56,15 @@ import org.springframework.util.Assert;
  * @since 1.0.0
  */
 public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
+
+	/**
+	 * Metadata key under which each message's creation timestamp (an {@link Instant}) is
+	 * exposed when messages are read back from the repository. Messages carrying this key
+	 * retain their original timestamp when the conversation is saved again.
+	 *
+	 * @since 2.0.0
+	 */
+	public static final String CONVERSATION_TS = JdbcChatMemoryRepository.class.getSimpleName() + "_message_timestamp";
 
 	private final JdbcTemplate jdbcTemplate;
 
@@ -120,10 +132,16 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 			ps.setString(1, this.conversationId);
 			ps.setString(2, message.getText());
 			ps.setString(3, message.getMessageType().name());
+			// Preserve the original creation time across the delete-and-reinsert
+			// performed by saveAll(): reuse the timestamp carried in the message
+			// metadata if present, otherwise stamp the current time for a new message.
+			Object messageTs = message.getMetadata().get(CONVERSATION_TS);
+			Instant timestamp = (messageTs instanceof Instant instant) ? instant : Instant.now();
+			ps.setTimestamp(4, Timestamp.from(timestamp));
 			// The sequence_id is the message's position within the conversation. Since
 			// saveAll() deletes and reinserts the whole conversation in a single batch,
 			// the batch index is a stable, database-portable ordering key.
-			ps.setLong(4, i);
+			ps.setLong(5, i);
 		}
 
 		@Override
@@ -138,15 +156,18 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		public Message mapRow(ResultSet rs, int i) throws SQLException {
 			var content = rs.getString(1);
 			var type = MessageType.valueOf(rs.getString(2));
+			Timestamp timestamp = rs.getTimestamp(3);
+			Map<String, Object> metadata = (timestamp != null) ? Map.of(CONVERSATION_TS, timestamp.toInstant())
+					: Map.of();
 
 			return switch (type) {
-				case USER -> new UserMessage(content);
-				case ASSISTANT -> new AssistantMessage(content);
-				case SYSTEM -> new SystemMessage(content);
+				case USER -> UserMessage.builder().text(content).metadata(metadata).build();
+				case ASSISTANT -> AssistantMessage.builder().content(content).properties(metadata).build();
+				case SYSTEM -> SystemMessage.builder().text(content).metadata(metadata).build();
 				// The content is always stored empty for ToolResponseMessages.
 				// If we want to capture the actual content, we need to extend
 				// AddBatchPreparedStatement to support it.
-				case TOOL -> ToolResponseMessage.builder().responses(List.of()).build();
+				case TOOL -> ToolResponseMessage.builder().responses(List.of()).metadata(metadata).build();
 			};
 		}
 
