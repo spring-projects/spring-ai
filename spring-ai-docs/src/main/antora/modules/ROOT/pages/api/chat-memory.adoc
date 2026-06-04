@@ -71,7 +71,7 @@ ChatMemoryRepository repository = new InMemoryChatMemoryRepository();
 
 `JdbcChatMemoryRepository` is a built-in implementation that uses JDBC to store messages in a relational database. It supports multiple databases out-of-the-box and is suitable for applications that require persistent storage of chat memory.
 
-Messages are retrieved in ascending order (oldest-to-newest), which is the expected format for LLM conversation history. Ordering is maintained by a `sequence_id` column that records each message's position within its conversation.
+Messages are retrieved in ascending order (oldest-to-newest), which is the expected format for LLM conversation history. Ordering is maintained by a `sequence_id` column that records each message's position within its conversation. Each message also stores a creation `timestamp`, exposed in the message metadata under the `JdbcChatMemoryRepository.CONVERSATION_TS` key as a `java.time.Instant`, so applications can display when a message was created.
 
 First, add the following dependency to your project:
 
@@ -125,6 +125,20 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
     .build();
 ----
 
+==== Reading Message Timestamps
+
+Each stored message records when it was created. The timestamp is available in the message metadata under the `JdbcChatMemoryRepository.CONVERSATION_TS` key as a `java.time.Instant`, which is useful for displaying message times in a UI:
+
+[source,java]
+----
+List<Message> messages = chatMemory.get(conversationId);
+for (Message message : messages) {
+    Instant createdAt = (Instant) message.getMetadata().get(JdbcChatMemoryRepository.CONVERSATION_TS);
+}
+----
+
+The timestamp is preserved when a conversation is saved again, so a message keeps its original creation time for the lifetime of the conversation.
+
 ==== Supported Databases and Dialect Abstraction
 
 Spring AI supports multiple relational databases via a dialect abstraction. The following databases are supported out-of-the-box:
@@ -151,7 +165,7 @@ The correct dialect can be auto-detected from the JDBC URL when using `JdbcChatM
 
 The auto-configuration will automatically create the `SPRING_AI_CHAT_MEMORY` table on startup, using a vendor-specific SQL script for your database. By default, schema initialization runs only for embedded databases (H2, HSQL, Derby, etc.).
 
-NOTE: As of 2.0.0, the ordering column is `sequence_id BIGINT` (previously a `timestamp` column). This is a breaking schema change. If you are upgrading an existing application, see xref:upgrade-notes.adoc[] for migration steps.
+NOTE: As of 2.0.0, the schema adds a `sequence_id` column that determines message ordering, alongside the existing `timestamp` column (now exposed via message metadata). Upgrading an existing application requires adding the new column; see xref:upgrade-notes.adoc[] for the migration steps.
 
 You can control schema initialization using the `spring.ai.chat.memory.repository.jdbc.initialize-schema` property:
 
