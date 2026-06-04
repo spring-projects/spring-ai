@@ -886,23 +886,7 @@ chatClient.prompt("What day is tomorrow?")
 
 Or you can provide your own `ToolCallAdvisor` (or any other advisor implementing `ToolAdvisor`) — in that case auto-registration is suppressed automatically because the chain already contains a `ToolAdvisor`.
 
-The preferred way is to pass the advisor directly inside the `ToolSpec` consumer, keeping tools and their advisor co-located:
-
-[source,java]
-----
-var customAdvisor = ToolCallAdvisor.builder()
-    .toolCallingManager(myToolCallingManager)
-    .build();
-
-chatClient.prompt("What day is tomorrow?")
-    .tools(t -> t
-        .instances(new DateTimeTools())
-        .advisor(customAdvisor))   // auto-registration suppressed
-    .call()
-    .content();
-----
-
-Alternatively, you can pass the advisor separately via `.advisors()`:
+You can pass a custom advisor via `.advisors()`:
 
 [source,java]
 ----

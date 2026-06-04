@@ -146,14 +146,14 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(t -> t.callbacks(MethodToolCallback.builder()
+				.tools(MethodToolCallback.builder()
 								.toolDefinition(ToolDefinitions.builder(toolMethod)
 									.description("Get the weather in location")
 									.build())
 								.toolMethod(toolMethod)
 								.toolObject(targetObject)
 								.build())
-							.context(Map.of("tool", "value")))
+				.toolContext(Map.of("tool", "value"))
 				.call()
 				.content();
 		// @formatter:on

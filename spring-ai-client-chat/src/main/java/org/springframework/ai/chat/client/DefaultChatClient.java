@@ -767,98 +767,6 @@ public class DefaultChatClient implements ChatClient {
 
 	}
 
-	public static class DefaultToolSpec implements ToolSpec {
-
-		private final Map<String, Object> context = new HashMap<>();
-
-		private final List<ToolCallback> toolCallbacks = new ArrayList<>();
-
-		private final List<ToolCallbackProvider> toolCallbackProviders = new ArrayList<>();
-
-		private @Nullable ToolAdvisor toolAdvisor;
-
-		public Map<String, Object> getContext() {
-			return this.context;
-		}
-
-		public List<ToolCallback> getToolCallbacks() {
-			return this.toolCallbacks;
-		}
-
-		public List<ToolCallbackProvider> getToolCallbackProviders() {
-			return this.toolCallbackProviders;
-		}
-
-		public @Nullable ToolAdvisor getAdvisor() {
-			return this.toolAdvisor;
-		}
-
-		@Override
-		public ToolSpec context(String key, Object value) {
-			Assert.hasText(key, "context key cannot be null or empty");
-			Assert.notNull(value, "context value cannot be null");
-			this.context.put(key, value);
-			return this;
-		}
-
-		@Override
-		public ToolSpec context(Map<String, Object> context) {
-			Assert.notNull(context, "context cannot be null");
-			Assert.noNullElements(context.keySet(), "context keys cannot contain null elements");
-			Assert.noNullElements(context.values(), "context values cannot contain null elements");
-			this.context.putAll(context);
-			return this;
-		}
-
-		@Override
-		public ToolSpec instances(Object... toolObjects) {
-			Assert.notNull(toolObjects, "toolObjects cannot be null");
-			Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
-			this.toolCallbacks.addAll(Arrays.asList(ToolCallbacks.from(toolObjects)));
-			return this;
-		}
-
-		@Override
-		public ToolSpec instances(List<Object> toolObjects) {
-			Assert.notNull(toolObjects, "toolObjects cannot be null");
-			Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
-			this.toolCallbacks.addAll(Arrays.asList(ToolCallbacks.from(toolObjects.toArray(new Object[0]))));
-			return this;
-		}
-
-		@Override
-		public ToolSpec callbacks(ToolCallback... toolCallbacks) {
-			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-			Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-			this.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
-			return this;
-		}
-
-		@Override
-		public ToolSpec callbacks(List<ToolCallback> toolCallbacks) {
-			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-			Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-			this.toolCallbacks.addAll(toolCallbacks);
-			return this;
-		}
-
-		@Override
-		public ToolSpec callbacks(ToolCallbackProvider... toolCallbackProvider) {
-			Assert.notNull(toolCallbackProvider, "toolCallbackProvider cannot be null");
-			Assert.noNullElements(toolCallbackProvider, "toolCallbackProvider cannot contain null elements");
-			this.toolCallbackProviders.addAll(Arrays.asList(toolCallbackProvider));
-			return this;
-		}
-
-		@Override
-		public ToolSpec advisor(ToolAdvisor toolAdvisor) {
-			Assert.notNull(toolAdvisor, "toolAdvisor cannot be null");
-			this.toolAdvisor = toolAdvisor;
-			return this;
-		}
-
-	}
-
 	public static class DefaultChatClientRequestSpec implements ChatClientRequestSpec {
 
 		private final ObservationRegistry observationRegistry;
@@ -1044,9 +952,9 @@ public class DefaultChatClient implements ChatClient {
 				.builder(this.chatModel, this.observationRegistry, this.chatClientObservationConvention,
 						this.advisorObservationConvention, this.toolCallAdvisorBuilder)
 				.defaultTemplateRenderer(this.templateRenderer)
-				.defaultTools(t -> t.callbacks(this.toolCallbacks)
-					.callbacks(this.toolCallbackProviders.toArray(new ToolCallbackProvider[0]))
-					.context(this.toolContext))
+				.defaultTools(this.toolCallbacks.toArray(new ToolCallback[0]))
+				.defaultTools((Object[]) this.toolCallbackProviders.toArray(new ToolCallbackProvider[0]))
+				.defaultToolContext(this.toolContext)
 				.defaultToolNames(StringUtils.toStringArray(this.toolNames));
 
 			if (!CollectionUtils.isEmpty(this.advisors)) {
@@ -1073,22 +981,6 @@ public class DefaultChatClient implements ChatClient {
 			builder.addMessages(this.messages);
 
 			return builder;
-		}
-
-		@Override
-		public ChatClientRequestSpec tools(Consumer<ToolSpec> consumer) {
-			Assert.notNull(consumer, "consumer cannot be null");
-			var toolSpec = new DefaultToolSpec();
-			consumer.accept(toolSpec);
-
-			this.toolContext.putAll(toolSpec.getContext());
-			this.toolCallbacks.addAll(toolSpec.getToolCallbacks());
-			this.toolCallbackProviders.addAll(toolSpec.getToolCallbackProviders());
-			if (toolSpec.getAdvisor() != null) {
-				this.advisors.add(toolSpec.getAdvisor());
-			}
-
-			return this;
 		}
 
 		@Override
@@ -1150,12 +1042,12 @@ public class DefaultChatClient implements ChatClient {
 
 		@Override
 		public ChatClientRequestSpec toolCallbacks(ToolCallback... toolCallbacks) {
-			return tools(t -> t.callbacks(toolCallbacks));
+			return tools(toolCallbacks);
 		}
 
 		@Override
 		public ChatClientRequestSpec toolCallbacks(List<ToolCallback> toolCallbacks) {
-			return tools(t -> t.callbacks(toolCallbacks));
+			return tools(toolCallbacks);
 		}
 
 		@Override
@@ -1207,12 +1099,17 @@ public class DefaultChatClient implements ChatClient {
 
 		@Override
 		public ChatClientRequestSpec toolCallbacks(ToolCallbackProvider... toolCallbackProviders) {
-			return tools(t -> t.callbacks(toolCallbackProviders));
+			return tools(toolCallbackProviders);
 		}
 
 		@Override
 		public ChatClientRequestSpec toolContext(Map<String, Object> toolContext) {
-			return tools(t -> t.context(toolContext));
+			Assert.notNull(toolContext, "context cannot be null");
+			Assert.noNullElements(toolContext.keySet(), "context keys cannot contain null elements");
+			Assert.noNullElements(toolContext.values(), "context values cannot contain null elements");
+			toolContext.keySet().forEach(key -> Assert.hasText(key, "context key cannot be null or empty"));
+			this.toolContext.putAll(toolContext);
+			return this;
 		}
 
 		@Override

@@ -75,7 +75,7 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 				.toList();
 
 			if (toolMethods.isEmpty()) {
-				throw new IllegalStateException("No @Tool annotated methods found in " + toolObject + ". "
+				throw new IllegalArgumentException("No @Tool annotated methods found in " + toolObject + ". "
 						+ "Did you mean to pass a ToolCallback or ToolCallbackProvider? If so, use"
 						+ " .tools(toolCallback) or .toolCallbacks(toolCallback) instead.");
 			}
@@ -128,7 +128,7 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 	private void validateToolCallbacks(ToolCallback[] toolCallbacks) {
 		List<String> duplicateToolNames = ToolUtils.getDuplicateToolNames(toolCallbacks);
 		if (!duplicateToolNames.isEmpty()) {
-			throw new IllegalStateException("Multiple tools with the same name (%s) found in sources: %s".formatted(
+			throw new IllegalArgumentException("Multiple tools with the same name (%s) found in sources: %s".formatted(
 					String.join(", ", duplicateToolNames),
 					this.toolObjects.stream().map(o -> o.getClass().getName()).collect(Collectors.joining(", "))));
 		}

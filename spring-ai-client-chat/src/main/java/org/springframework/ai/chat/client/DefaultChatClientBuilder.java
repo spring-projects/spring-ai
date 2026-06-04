@@ -29,7 +29,6 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.client.ChatClient.Builder;
 import org.springframework.ai.chat.client.ChatClient.PromptSystemSpec;
 import org.springframework.ai.chat.client.ChatClient.PromptUserSpec;
-import org.springframework.ai.chat.client.ChatClient.ToolSpec;
 import org.springframework.ai.chat.client.DefaultChatClient.DefaultChatClientRequestSpec;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
@@ -191,12 +190,6 @@ public class DefaultChatClientBuilder implements Builder {
 		return this;
 	}
 
-	@Override
-	public Builder defaultTools(Consumer<ToolSpec> consumer) {
-		this.defaultRequest.tools(consumer);
-		return this;
-	}
-
 	/**
 	 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)}. To be removed
 	 * in 3.0.0.
@@ -215,13 +208,13 @@ public class DefaultChatClientBuilder implements Builder {
 	}
 
 	/**
-	 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)}. To be removed
-	 * in 3.0.0.
+	 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Object...)}. To be
+	 * removed in 3.0.0.
 	 */
 	@Deprecated(since = "2.0.0", forRemoval = true)
 	@Override
 	public Builder defaultToolCallbacks(ToolCallback... toolCallbacks) {
-		this.defaultRequest.tools(t -> t.callbacks(toolCallbacks));
+		this.defaultRequest.tools(toolCallbacks);
 		return this;
 	}
 
@@ -232,7 +225,7 @@ public class DefaultChatClientBuilder implements Builder {
 	@Deprecated(since = "2.0.0", forRemoval = true)
 	@Override
 	public Builder defaultToolCallbacks(List<ToolCallback> toolCallbacks) {
-		this.defaultRequest.tools(t -> t.callbacks(toolCallbacks));
+		this.defaultRequest.tools(toolCallbacks);
 		return this;
 	}
 
@@ -243,18 +236,12 @@ public class DefaultChatClientBuilder implements Builder {
 	@Deprecated(since = "2.0.0", forRemoval = true)
 	@Override
 	public Builder defaultToolCallbacks(ToolCallbackProvider... toolCallbackProviders) {
-		this.defaultRequest.tools(t -> t.callbacks(toolCallbackProviders));
+		this.defaultRequest.tools(toolCallbackProviders);
 		return this;
 	}
 
-	/**
-	 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)}. To be removed
-	 * in 3.0.0.
-	 */
-	@Deprecated(since = "2.0.0", forRemoval = true)
-	@Override
 	public Builder defaultToolContext(Map<String, Object> toolContext) {
-		this.defaultRequest.tools(t -> t.context(toolContext));
+		this.defaultRequest.toolContext(toolContext);
 		return this;
 	}
 

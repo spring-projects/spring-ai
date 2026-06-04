@@ -975,7 +975,8 @@ ChatModel chatModel = ...
 
 String response = ChatClient.create(chatModel)
         .prompt("Tell me more about the customer with ID 42")
-        .tools(t -> t.instances(new CustomerTools()).context(Map.of("tenantId", "acme")))
+        .tools(new CustomerTools())
+        .toolContext(Map.of("tenantId", "acme"))
         .call()
         .content();
 

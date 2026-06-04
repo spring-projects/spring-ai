@@ -443,9 +443,9 @@ Spring Boot users should prefer one of the following instead:
 * Set `spring.ai.chat.client.tool-calling.advisor-order` to control the advisor's position in the chain.
 * Declare a `ToolCallAdvisor.Builder<?>` bean to fully replace the auto-configured builder (suppressed via `@ConditionalOnMissingBean`).
 
-==== Deprecated: Scattered Tool Methods on `ChatClient`
+==== Removed: `ToolSpec` Consumer API on `ChatClient`
 
-The individual `toolCallbacks()`, `toolContext()`, and `toolNames()` methods on `ChatClientRequestSpec`, and their `defaultToolCallbacks()`, `defaultToolContext()`, and `defaultToolNames()` counterparts on `ChatClient.Builder`, are deprecated in favour of the unified `tools(Consumer<ToolSpec>)` / `defaultTools(Consumer<ToolSpec>)` API.
+The `tools(Consumer<ToolSpec>)` / `defaultTools(Consumer<ToolSpec>)` API and the `ChatClient.ToolSpec` interface have been removed. The `tools(Object...)` / `defaultTools(Object...)` methods now directly accept `ToolCallback`, `ToolCallbackProvider`, `@Tool`-annotated POJO instances, and collections or arrays of any of these types. Context is set separately via the dedicated `toolContext()` / `defaultToolContext()` methods.
 
 ===== Migration
 
@@ -453,14 +453,42 @@ The individual `toolCallbacks()`, `toolContext()`, and `toolNames()` methods on 
 ----
 // Before
 chatClient.prompt()
-    .toolCallbacks(myCallback)
-    .toolContext(Map.of("tenantId", "acme"))
+    .tools(t -> t.callbacks(myCallback).context("tenantId", "acme"))
     .call().content();
 
 // After
 chatClient.prompt()
-    .tools(t -> t.callbacks(myCallback).context("tenantId", "acme"))
+    .tools(myCallback)
+    .toolContext(Map.of("tenantId", "acme"))
     .call().content();
+----
+
+The individual `toolCallbacks()` and `toolNames()` methods on `ChatClientRequestSpec`, and their `defaultToolCallbacks()` and `defaultToolNames()` counterparts on `ChatClient.Builder`, are deprecated in favour of `tools(Object...)` / `defaultTools(Object...)`.
+
+==== Changed: `MethodToolCallbackProvider` throws `IllegalArgumentException` instead of `IllegalStateException`
+
+`MethodToolCallbackProvider` now throws `IllegalArgumentException` (instead of `IllegalStateException`) in two cases:
+
+* When a tool object has no `@Tool`-annotated methods.
+* When multiple tool objects produce callbacks with duplicate names.
+
+===== Impact
+
+Code that catches `IllegalStateException` from `MethodToolCallbackProvider` (directly or via `ToolCallbacks.from()`) must be updated.
+
+[source,java]
+----
+// Before
+try {
+    ToolCallbacks.from(myObject);
+}
+catch (IllegalStateException e) { ... }
+
+// After
+try {
+    ToolCallbacks.from(myObject);
+}
+catch (IllegalArgumentException e) { ... }
 ----
 
 ==== Deprecated: Spring Bean Tool Resolution (`SpringBeanToolCallbackResolver`)
@@ -490,7 +518,7 @@ ToolCallback currentWeather() {
 }
 ----
 
-Then register the bean via the `ToolSpec` consumer:
+Then register the bean directly with `tools()`:
 
 [source,java]
 ----

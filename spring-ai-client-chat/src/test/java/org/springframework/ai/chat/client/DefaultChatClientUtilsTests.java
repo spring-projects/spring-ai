@@ -262,7 +262,7 @@ class DefaultChatClientUtilsTests {
 			.create(chatModel)
 			.prompt()
 			.options(chatOptions)
-			.tools(t -> t.context(toolContext));
+			.toolContext(toolContext);
 
 		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
 
@@ -327,7 +327,7 @@ class DefaultChatClientUtilsTests {
 			.create(chatModel)
 			.prompt()
 			.options(ToolCallingChatOptions.builder().toolContext(toolContext1))
-			.tools(t -> t.context(toolContext2));
+			.toolContext(toolContext2);
 
 		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
 
@@ -391,7 +391,7 @@ class DefaultChatClientUtilsTests {
 			.create(chatModel)
 			.prompt()
 			.options(chatOptions)
-			.tools(t -> t.context(toolContext1));
+			.toolContext(toolContext1);
 
 		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
 		assertThat(result.prompt().getOptions()).isInstanceOf(ToolCallingChatOptions.class);
@@ -467,7 +467,8 @@ class DefaultChatClientUtilsTests {
 			.user(u -> u.text(userText).params(userParams).media(media))
 			.messages(messages)
 			.toolNames(toolNames.toArray(new String[0]))
-			.tools(t -> t.callbacks(toolCallback).context(toolContext))
+			.toolCallbacks(toolCallback)
+			.toolContext(toolContext)
 			.options(chatOptions)
 			.advisors(a -> a.params(advisorParams));
 
