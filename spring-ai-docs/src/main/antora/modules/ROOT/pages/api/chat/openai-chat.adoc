@@ -772,31 +772,74 @@ This is useful when you need to:
 
 == Observability
 
-Spring AI emits Micrometer metrics and tracing spans at the chat model layer for every OpenAI call.
-Each span wraps the SDK invocation and carries request parameters, response metadata, and token usage.
-See the xref:observability/index.adoc[observability reference] for the full set.
+Spring AI emits Micrometer observations at two layers for every OpenAI call:
+
+* **Chat-model layer.** A `gen_ai.client.operation` observation wraps every call to `OpenAiChatModel.call(...)` or `.stream(...)`, carrying request parameters, response metadata, and token usage. See the xref:observability/index.adoc[observability reference] for the full set of tags and metrics.
+* **HTTP layer.** An `okhttp.requests` observation wraps every HTTP attempt to the OpenAI API, carrying HTTP method, URI, status code, and exception tags. Each request also propagates `traceparent` on the wire to any downstream services (AI gateways, OpenAI-compatible inference servers, proxies).
+
+In a Spring Boot application with `spring-boot-starter-actuator` and a tracing bridge (`micrometer-tracing-bridge-otel` or `micrometer-tracing-bridge-brave`), both layers are wired automatically — no opt-in required.
+For non-Boot applications, pass an `ObservationRegistry` to `OpenAiChatModel.builder()`:
+
+[source,java]
+----
+OpenAiChatModel chatModel = OpenAiChatModel.builder()
+    .options(...)
+    .observationRegistry(observationRegistry)
+    .build();
+----
+
+=== Connection-pool metrics (opt-in)
+
+Spring AI can additionally bind OkHttp connection-pool gauges (`okhttp.pool.connection.count` with `state=active|idle` and `client.kind=sync|async`) to the application's `MeterRegistry`.
+These are secondary telemetry — useful for capacity tuning but not required for tracing or per-request latency — so they're disabled by default.
+
+To enable them in a Spring Boot application:
+
+[source,properties]
+----
+spring.ai.openai.chat.connection-pool-metrics-enabled=true
+----
+
+For non-Boot applications, pass a `MeterRegistry` directly to the builder; the gauges bind whenever a registry is supplied:
+
+[source,java]
+----
+OpenAiChatModel chatModel = OpenAiChatModel.builder()
+    .options(...)
+    .observationRegistry(observationRegistry)
+    .meterRegistry(meterRegistry)
+    .build();
+----
+
+=== HTTP dispatcher executor (advanced)
+
+By default Spring AI manages the OkHttp dispatcher's executor — an unbounded pool of platform threads, replicating the SDK's stock behavior.
+For workloads with high HTTP concurrency, or to take advantage of Java 21+ virtual threads, you can supply your own `ExecutorService`:
+
+[source,java]
+----
+OpenAiChatModel chatModel = OpenAiChatModel.builder()
+    .options(...)
+    .dispatcherExecutor(Executors.newVirtualThreadPerTaskExecutor())
+    .build();
+----
+
+The same executor backs both the sync and async (streaming) clients.
+When you supply your own executor, you own its lifecycle — Spring AI will never call `shutdown()` on it.
+When omitted, the internal executor is created and cleaned up automatically.
 
 [IMPORTANT]
 ====
-**HTTP layer is not instrumented**
+**Streaming HTTP observations are not parented under the chat-model observation**
 
-Since `2.0.0-M5`, OpenAI chat goes through the official `openai-java` SDK.
-The SDK builds its own `OkHttpClient` and doesn't expose an interceptor hook on it, so Spring AI has no way to attach the Micrometer or OpenTelemetry interceptors that would instrument the HTTP request.
-You won't see:
+For synchronous calls, the `okhttp.requests` span is correctly nested under the `gen_ai.client.operation` span — the full trace tree forms as expected.
 
-* HTTP client metrics (per-endpoint latency, status codes, retries)
-* A span for the HTTP call between Spring AI and the OpenAI endpoint
-* Outbound `traceparent` propagation to the API or any intermediary (proxy, AI gateway, OpenAI-compatible inference server)
+For streaming calls, the `okhttp.requests` span fires and is recorded in the registry, the timer is recorded in `MeterRegistry`, and `traceparent` is still propagated on the outbound request — but the span is **not** nested under the chat-model span.
+This is because the OpenAI SDK's async streaming implementation hops onto `ForkJoinPool.commonPool()` before invoking Spring AI's HTTP client, dropping the calling thread's observation context at that boundary.
+Spring AI cannot recover the context from within its HTTP-client wrapper.
 
-Before `2.0.0-M5` the `RestClient`-based code picked up HTTP instrumentation from Spring's HTTP stack for free.
-The switch to the SDK removed that side effect.
-This is most painful when you're behind an AI gateway or hitting an OpenAI-compatible server like vLLM or Ollama.
-Traces stop at the SDK boundary.
-
-For users with strict HTTP observability requirements, the SDK supports plugging in a custom HTTP client.
-See the https://github.com/openai/openai-java#customized-okhttpclient[openai-java custom HTTP client docs] for the recommended approach.
-Wire your custom-built `OpenAIClient` and `OpenAIClientAsync` into Spring AI via `OpenAiChatModel.builder().openAiClient(...).openAiClientAsync(...)`.
-Built-in HTTP-level observability is being explored for a future release.
+If you need to correlate streaming HTTP spans with their parent chat-model span in your tracing UI, filter by span name `okhttp.requests` with host `api.openai.com` and join to the corresponding `gen_ai.client.operation` span by trace ID or timestamp range.
+Built-in parent linkage for streaming is being pursued upstream in the OpenAI Java SDK.
 ====
 
 == Using Extra Parameters with OpenAI-Compatible Servers [[openai-compatible-servers]]

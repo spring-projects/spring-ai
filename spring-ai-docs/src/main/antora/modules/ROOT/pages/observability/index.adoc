@@ -76,16 +76,15 @@ They measure the time spent in the advisor (including the time spent on the inne
 
 == Chat Model
 
-[IMPORTANT]
+[NOTE]
 ====
-**OpenAI: HTTP layer is not instrumented**
+Both the OpenAI and Anthropic chat models **do** emit HTTP-layer observations (chat-model layer + HTTP layer), with one limitation specific to streaming calls.
+The HTTP-layer observation carries HTTP method, URI, status code, and propagates `traceparent` on the wire to downstream services (AI gateways, proxies, OpenAI-compatible inference servers).
 
-The OpenAI chat model goes through the official `openai-java` SDK, which builds its own `OkHttpClient` and doesn't expose an interceptor hook on it, so Spring AI can't wire in the Micrometer or OpenTelemetry interceptors that would instrument the HTTP call.
-Only the model-level observations covered below are emitted for OpenAI, and traces won't connect end to end through proxies, AI gateways, or OpenAI-compatible inference servers like vLLM and Ollama.
-See the xref:api/chat/openai-chat.adoc#_observability[OpenAI chat docs] for details.
+For synchronous calls, the `okhttp.requests` span is correctly nested under the `gen_ai.client.operation` span.
+For streaming calls, the HTTP span is recorded but is **not** parented under the chat-model span — the SDK's async streaming path hops onto `ForkJoinPool.commonPool()` before invoking Spring AI's HTTP client, dropping the calling thread's observation context at that boundary.
 
-The Anthropic chat model **does** emit HTTP-layer observations (chat-model layer + HTTP layer), with one limitation specific to streaming calls.
-See the xref:api/chat/anthropic-chat.adoc#_observability[Anthropic chat docs] for details.
+See the xref:api/chat/openai-chat.adoc#_observability[OpenAI chat docs] and xref:api/chat/anthropic-chat.adoc#_observability[Anthropic chat docs] for details.
 ====
 
 The `gen_ai.client.operation` observations are recorded when calling the ChatModel `call` or `stream` methods. 
