@@ -110,6 +110,7 @@ public abstract class AbstractToolCallingAdvisorAutoRegistrationIT {
 			String response = ChatClient.create(getChatModel())
 				.prompt()
 				.advisors(MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(500).build())
+					.order(1000)
 					.build())
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "auto-register-with-memory"))
 				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
@@ -136,7 +137,8 @@ public abstract class AbstractToolCallingAdvisorAutoRegistrationIT {
 		@Test
 		void defaultAdvisorsWithMemoryAndAutoRegistration() {
 			var chatClient = ChatClient.builder(getChatModel())
-				.defaultAdvisors(MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().build()).build())
+				.defaultAdvisors(
+						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().build()).order(1000).build())
 				.build();
 
 			String response = chatClient.prompt()
@@ -262,6 +264,7 @@ public abstract class AbstractToolCallingAdvisorAutoRegistrationIT {
 			String content = collect(ChatClient.create(getChatModel())
 				.prompt()
 				.advisors(MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(500).build())
+					.order(1000)
 					.build())
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "stream-auto-register-with-memory"))
 				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
