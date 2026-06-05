@@ -24,9 +24,10 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.ai.tool.toolsearch.advisor.ToolSearchToolCallingAdvisor;
 
 public class ToolSearchTool {
+
+	public static final String TOOL_SEARCH_TOOL_SESSION_ID_KEY = "toolSearchToolSessionId";
 
 	private final ToolIndex toolIndex;
 
@@ -50,8 +51,7 @@ public class ToolSearchTool {
 		@ToolParam(description = "Optional filter to narrow search to a specific tool category.", required = false) String categoryFilter,
 		ToolContext toolContext) { // @formatter:on
 
-		String sessionId = Objects
-			.requireNonNull(toolContext.getContext().get(ToolSearchToolCallingAdvisor.TOOL_SEARCH_TOOL_SESSION_ID_KEY))
+		String sessionId = Objects.requireNonNull(toolContext.getContext().get(TOOL_SEARCH_TOOL_SESSION_ID_KEY))
 			.toString();
 
 		// Advisor-configured maxResults is the fallback when the LLM does not provide

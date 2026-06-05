@@ -1428,7 +1428,7 @@ The flow at runtime is:
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-tool-search-tool</artifactId>
+    <artifactId>spring-ai-tool-search-advisor</artifactId>
 </dependency>
 ----
 

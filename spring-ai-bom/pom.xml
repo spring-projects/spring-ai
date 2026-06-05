@@ -119,7 +119,15 @@
 				<version>${project.version}</version>
 			</dependency>
 
-			<!-- Spring AI Tool SearchTool Advisors -->
+			<!-- Spring AI Tool Search Advisor -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-tool-search-advisor</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI Tool SearchTool -->
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>

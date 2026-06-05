@@ -18,6 +18,6 @@
  * Tool Search Tool Advisor package for dynamic tool discovery and search capabilities.
  */
 @NullMarked
-package org.springframework.ai.tool.toolsearch.advisor;
+package org.springframework.ai.chat.client.advisor.toolsearch;
 
 import org.jspecify.annotations.NullMarked;

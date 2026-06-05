@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.tool.toolsearch.advisor;
+package org.springframework.ai.chat.client.advisor.toolsearch;
 
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
