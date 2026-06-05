@@ -28,7 +28,7 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -177,7 +177,7 @@ public class OpenAiPaymentTransactionIT {
 		public ChatClient chatClient(OpenAiChatModel chatModel, ToolCallingManager toolCallingManager) {
 			return ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
-						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+						ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 		}
 

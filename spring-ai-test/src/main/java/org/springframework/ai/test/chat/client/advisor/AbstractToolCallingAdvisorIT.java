@@ -26,7 +26,7 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
@@ -37,7 +37,7 @@ import org.springframework.ai.tool.metadata.ToolMetadata;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Abstract base class for {@link ToolCallAdvisor} integration tests. Provides reusable
+ * Abstract base class for {@link ToolCallingAdvisor} integration tests. Provides reusable
  * test scenarios for different ChatModel implementations.
  *
  * <p>
@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Christian Tzolov
  */
-public abstract class AbstractToolCallAdvisorIT {
+public abstract class AbstractToolCallingAdvisorIT {
 
 	/**
 	 * Returns the ChatModel instance to be used in tests.
@@ -85,7 +85,7 @@ public abstract class AbstractToolCallAdvisorIT {
 
 			String response = ChatClient.create(getChatModel())
 				.prompt()
-				.advisors(ToolCallAdvisor.builder().build())
+				.advisors(ToolCallingAdvisor.builder().build())
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?"))
 				.tools(createWeatherToolCallback())
 				.call()
@@ -99,7 +99,7 @@ public abstract class AbstractToolCallAdvisorIT {
 
 			var response = ChatClient.create(getChatModel())
 				.prompt()
-				.advisors(ToolCallAdvisor.builder().disableInternalConversationHistory().build(),
+				.advisors(ToolCallingAdvisor.builder().disableInternalConversationHistory().build(),
 						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(500).build())
 							.build())
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?"))
@@ -115,7 +115,7 @@ public abstract class AbstractToolCallAdvisorIT {
 		void callDefaultAdvisorConfiguration() {
 
 			var chatClient = ChatClient.builder(getChatModel())
-				.defaultAdvisors(ToolCallAdvisor.builder().build())
+				.defaultAdvisors(ToolCallingAdvisor.builder().build())
 				.build();
 
 			String response = chatClient.prompt()
@@ -131,7 +131,7 @@ public abstract class AbstractToolCallAdvisorIT {
 		void callDefaultAdvisorConfigurationWithExternalMemory() {
 
 			var chatClient = ChatClient.builder(getChatModel())
-				.defaultAdvisors(ToolCallAdvisor.builder().disableInternalConversationHistory().build(),
+				.defaultAdvisors(ToolCallingAdvisor.builder().disableInternalConversationHistory().build(),
 						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().build()).build())
 				.build();
 
@@ -149,7 +149,7 @@ public abstract class AbstractToolCallAdvisorIT {
 		void callWithReturnDirect() {
 			String response = ChatClient.create(getChatModel())
 				.prompt()
-				.advisors(ToolCallAdvisor.builder().build())
+				.advisors(ToolCallingAdvisor.builder().build())
 				.user("What's the weather like in Tokyo?")
 				.tools(createReturnDirectWeatherToolCallback())
 				.call()
@@ -170,7 +170,7 @@ public abstract class AbstractToolCallAdvisorIT {
 
 			Flux<String> response = ChatClient.create(getChatModel())
 				.prompt()
-				.advisors(ToolCallAdvisor.builder().build())
+				.advisors(ToolCallingAdvisor.builder().build())
 				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
 				.tools(createWeatherToolCallback())
 				.stream()
@@ -187,7 +187,7 @@ public abstract class AbstractToolCallAdvisorIT {
 
 			Flux<String> response = ChatClient.create(getChatModel())
 				.prompt()
-				.advisors(ToolCallAdvisor.builder().disableInternalConversationHistory().build(),
+				.advisors(ToolCallingAdvisor.builder().disableInternalConversationHistory().build(),
 						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(500).build())
 							.build())
 				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
@@ -206,7 +206,7 @@ public abstract class AbstractToolCallAdvisorIT {
 		void streamDefaultAdvisorConfiguration() {
 
 			var chatClient = ChatClient.builder(getChatModel())
-				.defaultAdvisors(ToolCallAdvisor.builder().build())
+				.defaultAdvisors(ToolCallingAdvisor.builder().build())
 				.build();
 
 			Flux<String> response = chatClient.prompt()
@@ -225,7 +225,7 @@ public abstract class AbstractToolCallAdvisorIT {
 		void streamDefaultAdvisorConfigurationWithExternalMemory() {
 
 			var chatClient = ChatClient.builder(getChatModel())
-				.defaultAdvisors(ToolCallAdvisor.builder().disableInternalConversationHistory().build(),
+				.defaultAdvisors(ToolCallingAdvisor.builder().disableInternalConversationHistory().build(),
 						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().build()).build())
 				.build();
 
@@ -246,7 +246,7 @@ public abstract class AbstractToolCallAdvisorIT {
 		void streamWithReturnDirect() {
 			Flux<String> response = ChatClient.create(getChatModel())
 				.prompt()
-				.advisors(ToolCallAdvisor.builder().build())
+				.advisors(ToolCallingAdvisor.builder().build())
 				.user("What's the weather like in Tokyo?")
 				.tools(createReturnDirectWeatherToolCallback())
 				.stream()

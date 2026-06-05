@@ -33,7 +33,7 @@ import org.springframework.ai.chat.client.ChatClientAttributes;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -46,13 +46,14 @@ import org.springframework.ai.tool.metadata.ToolMetadata;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Abstract integration-test base for {@link ToolCallAdvisor} auto-registration behaviour.
+ * Abstract integration-test base for {@link ToolCallingAdvisor} auto-registration
+ * behaviour.
  *
  * <p>
  * Covers functional correctness (do the right temperatures come back?) and structural
- * correctness (is {@code ToolCallAdvisor} actually in control of the loop?). The
+ * correctness (is {@code ToolCallingAdvisor} actually in control of the loop?). The
  * structural proof uses a {@link ChainIterationCountingAdvisor} positioned just after the
- * auto-registered {@code ToolCallAdvisor}. Because the advisor recurses via
+ * auto-registered {@code ToolCallingAdvisor}. Because the advisor recurses via
  * {@code chain.copy(this).nextCall()}, the counting advisor is invoked once per tool-call
  * iteration plus once for the final answer — a count &gt; 1 proves the advisor chain owns
  * the loop. When only the model's built-in path runs the count is always 1.
@@ -62,7 +63,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Christian Tzolov
  */
-public abstract class AbstractToolCallAdvisorAutoRegistrationIT {
+public abstract class AbstractToolCallingAdvisorAutoRegistrationIT {
 
 	protected abstract ChatModel getChatModel();
 
@@ -336,13 +337,13 @@ public abstract class AbstractToolCallAdvisorAutoRegistrationIT {
 	class AdvisorParamsApi {
 
 		@Test
-		void toolCallAdvisorAutoRegisterFalseViaFactory() {
+		void toolCallingAdvisorAutoRegisterFalseViaFactory() {
 			var counter = new ChainIterationCountingAdvisor();
 
 			ChatClient.create(getChatModel())
 				.prompt()
 				.advisors(counter)
-				.advisors(AdvisorParams.toolCallAdvisorAutoRegister(false))
+				.advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
 				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
 				.tools(createWeatherToolCallback())
 				.call()
@@ -359,7 +360,7 @@ public abstract class AbstractToolCallAdvisorAutoRegistrationIT {
 
 	/**
 	 * Counts how many times the advisor chain passes through this advisor. Positioned
-	 * just after {@link ToolCallAdvisor} (order = DEFAULT_ORDER + 100), it is invoked
+	 * just after {@link ToolCallingAdvisor} (order = DEFAULT_ORDER + 100), it is invoked
 	 * once per recursive tool-call iteration when the advisor manages the loop, and
 	 * exactly once when the model handles tool calls internally.
 	 */
@@ -372,7 +373,7 @@ public abstract class AbstractToolCallAdvisorAutoRegistrationIT {
 		private final int order;
 
 		public ChainIterationCountingAdvisor() {
-			this(ToolCallAdvisor.DEFAULT_ORDER + 100);
+			this(ToolCallingAdvisor.DEFAULT_ORDER + 100);
 		}
 
 		public ChainIterationCountingAdvisor(int order) {

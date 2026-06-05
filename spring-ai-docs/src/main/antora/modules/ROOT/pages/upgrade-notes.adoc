@@ -19,8 +19,8 @@ Code that sets `.internalToolExecutionEnabled(true)` (explicitly enabling the in
 
 Remove all calls to `.internalToolExecutionEnabled(...)`. The recommended approaches are:
 
-* **`ToolCallAdvisor` via `ChatClient`** (recommended) — auto-registered when tools are present; no flag needed.
-* **User-controlled loop via `ChatModel` directly** — simply invoke `ChatModel` without `ToolCallAdvisor`. Tool calls will not be executed automatically; check `chatResponse.hasToolCalls()` yourself and drive the loop with `ToolCallingManager`.
+* **`ToolCallingAdvisor` via `ChatClient`** (recommended) — auto-registered when tools are present; no flag needed.
+* **User-controlled loop via `ChatModel` directly** — simply invoke `ChatModel` without `ToolCallingAdvisor`. Tool calls will not be executed automatically; check `chatResponse.hasToolCalls()` yourself and drive the loop with `ToolCallingManager`.
 
 [source,java]
 ----
@@ -42,24 +42,24 @@ ChatOptions options = ToolCallingChatOptions.builder()
 
 ===== Migration
 
-If you implemented `ToolExecutionEligibilityPredicate` to customize when tool execution fires, migrate to `ToolExecutionEligibilityChecker` (see below) and supply it to `ToolCallAdvisor`.
+If you implemented `ToolExecutionEligibilityPredicate` to customize when tool execution fires, migrate to `ToolExecutionEligibilityChecker` (see below) and supply it to `ToolCallingAdvisor`.
 
-==== New: `ToolExecutionEligibilityChecker` in `ToolCallAdvisor`
+==== New: `ToolExecutionEligibilityChecker` in `ToolCallingAdvisor`
 
-`ToolExecutionEligibilityChecker` (`Function<ChatResponse, Boolean>`) can now be set on `ToolCallAdvisor.Builder` to customize when the tool-call loop iterates. The default is `chatResponse -> chatResponse != null && chatResponse.hasToolCalls()`.
+`ToolExecutionEligibilityChecker` (`Function<ChatResponse, Boolean>`) can now be set on `ToolCallingAdvisor.Builder` to customize when the tool-call loop iterates. The default is `chatResponse -> chatResponse != null && chatResponse.hasToolCalls()`.
 
 This is the extension point for provider-specific stop-reason logic (e.g. checking a finish reason in addition to tool-call presence):
 
 [source,java]
 ----
-ToolCallAdvisor advisor = ToolCallAdvisor.builder()
+ToolCallingAdvisor advisor = ToolCallingAdvisor.builder()
     .toolExecutionEligibilityChecker(response ->
         response != null && response.hasToolCalls()
             && !"stop".equals(response.getResult().getMetadata().getFinishReason()))
     .build();
 ----
 
-Spring Boot users can provide a `ToolExecutionEligibilityChecker` bean; it will be picked up automatically by the auto-configured `ToolCallAdvisor.Builder`:
+Spring Boot users can provide a `ToolExecutionEligibilityChecker` bean; it will be picked up automatically by the auto-configured `ToolCallingAdvisor.Builder`:
 
 [source,java]
 ----
@@ -71,7 +71,7 @@ ToolExecutionEligibilityChecker myChecker() {
 
 ==== New: `spring.ai.chat.client.tool-calling.enabled` Property
 
-A new `spring.ai.chat.client.tool-calling.enabled` property (default `true`) controls whether the `ToolCallAdvisor` is auto-registered by the auto-configured `ChatClient`.
+A new `spring.ai.chat.client.tool-calling.enabled` property (default `true`) controls whether the `ToolCallingAdvisor` is auto-registered by the auto-configured `ChatClient`.
 Set it to `false` to disable automatic tool execution for all calls — tools are still sent to the AI model as definitions, but tool call responses are not executed automatically.
 
 [source,properties]
@@ -79,7 +79,7 @@ Set it to `false` to disable automatic tool execution for all calls — tools ar
 spring.ai.chat.client.tool-calling.enabled=false
 ----
 
-This is a global alternative to using `AdvisorParams.toolCallAdvisorAutoRegister(false)` on every individual call.
+This is a global alternative to using `AdvisorParams.toolCallingAdvisorAutoRegister(false)` on every individual call.
 
 === JDBC Chat Memory `sequence_id` Column
 
@@ -416,24 +416,24 @@ import org.springframework.ai.google.genai.embedding.GoogleGenAiEmbeddingConnect
 
 === ChatClient Tool Calling
 
-==== New: Automatic `ToolCallAdvisor` Registration
+==== New: Automatic `ToolCallingAdvisor` Registration
 
-`ChatClient` now automatically registers a `ToolCallAdvisor` in the advisor chain whenever tools are configured on a call (via `.tools(...)`, `.toolCallbacks(...)`, or defaults set on the builder). Previously, callers had to add `ToolCallAdvisor` manually.
+`ChatClient` now automatically registers a `ToolCallingAdvisor` in the advisor chain whenever tools are configured on a call (via `.tools(...)`, `.toolCallbacks(...)`, or defaults set on the builder). Previously, callers had to add `ToolCallingAdvisor` manually.
 
 ===== Impact
 
-Existing code that already adds a `ToolCallAdvisor` explicitly will have the advisor present in the chain twice — once from the explicit add and once from auto-registration.
+Existing code that already adds a `ToolCallingAdvisor` explicitly will have the advisor present in the chain twice — once from the explicit add and once from auto-registration.
 
 ===== Migration
 
-Remove the explicit `ToolCallAdvisor` from the chain and let auto-registration handle it. If you need a custom configuration, either supply a pre-configured `ToolCallAdvisor.Builder` at `ChatClient` construction time (see the xref:api/chatclient.adoc#_customizing_the_default_toolcalladvisor[Customizing the Default ToolCallAdvisor] section), or disable auto-registration and register the advisor manually:
+Remove the explicit `ToolCallingAdvisor` from the chain and let auto-registration handle it. If you need a custom configuration, either supply a pre-configured `ToolCallingAdvisor.Builder` at `ChatClient` construction time (see the xref:api/chatclient.adoc#_customizing_the_default_toolcalladvisor[Customizing the Default ToolCallingAdvisor] section), or disable auto-registration and register the advisor manually:
 
 [source,java]
 ----
 // Before — manual registration
 chatClient.prompt("What's the weather?")
     .tools(weatherTool)
-    .advisors(ToolCallAdvisor.builder().build())
+    .advisors(ToolCallingAdvisor.builder().build())
     .call().content();
 
 // After — auto-registration handles it; no explicit advisor needed
@@ -445,40 +445,40 @@ chatClient.prompt("What's the weather?")
 chatClient.prompt("What's the weather?")
     .tools(weatherTool)
     .advisors(
-        AdvisorParams.toolCallAdvisorAutoRegister(false),
-        ToolCallAdvisor.builder().build()
+        AdvisorParams.toolCallingAdvisorAutoRegister(false),
+        ToolCallingAdvisor.builder().build()
     )
     .call().content();
 ----
 
 ==== New: `ToolAdvisor` Marker Interface
 
-A `ToolAdvisor` marker interface has been added. `ToolCallAdvisor` implements it. `DefaultChatClient` checks for this marker to decide whether to auto-register a `ToolCallAdvisor` — if any advisor in the chain already implements `ToolAdvisor`, auto-registration is skipped.
+A `ToolAdvisor` marker interface has been added. `ToolCallingAdvisor` implements it. `DefaultChatClient` checks for this marker to decide whether to auto-register a `ToolCallingAdvisor` — if any advisor in the chain already implements `ToolAdvisor`, auto-registration is skipped.
 
-Custom advisors that own the tool-call lifecycle should implement `ToolAdvisor` to prevent a duplicate `ToolCallAdvisor` from being added automatically.
+Custom advisors that own the tool-call lifecycle should implement `ToolAdvisor` to prevent a duplicate `ToolCallingAdvisor` from being added automatically.
 
 ==== New: `MemoryAdvisor` Marker Interface
 
-A `MemoryAdvisor` marker interface has been added. `BaseChatMemoryAdvisor` now extends it. `DefaultChatClient` uses this marker to detect downstream memory advisors and disable the `ToolCallAdvisor`'s internal conversation history when one is present.
+A `MemoryAdvisor` marker interface has been added. `BaseChatMemoryAdvisor` now extends it. `DefaultChatClient` uses this marker to detect downstream memory advisors and disable the `ToolCallingAdvisor`'s internal conversation history when one is present.
 
 Custom memory advisors that do not extend `BaseChatMemoryAdvisor` but should integrate with the tool-call auto-registration logic should implement `MemoryAdvisor`.
 
-==== New: `ChatClient.builder()` Overload for Custom `ToolCallAdvisor` Configuration
+==== New: `ChatClient.builder()` Overload for Custom `ToolCallingAdvisor` Configuration
 
-A new 5-argument `ChatClient.builder()` static method and a matching `DefaultChatClientBuilder` constructor accept a `ToolCallAdvisor.Builder<?>` to configure the advisor used during auto-registration:
+A new 5-argument `ChatClient.builder()` static method and a matching `DefaultChatClientBuilder` constructor accept a `ToolCallingAdvisor.Builder<?>` to configure the advisor used during auto-registration:
 
 [source,java]
 ----
 ChatClient chatClient = ChatClient
     .builder(chatModel, observationRegistry, null, null,
-            ToolCallAdvisor.builder().toolCallingManager(myToolCallingManager))
+            ToolCallingAdvisor.builder().toolCallingManager(myToolCallingManager))
     .build();
 ----
 
 Spring Boot users should prefer one of the following instead:
 
 * Set `spring.ai.chat.client.tool-calling.advisor-order` to control the advisor's position in the chain.
-* Declare a `ToolCallAdvisor.Builder<?>` bean to fully replace the auto-configured builder (suppressed via `@ConditionalOnMissingBean`).
+* Declare a `ToolCallingAdvisor.Builder<?>` bean to fully replace the auto-configured builder (suppressed via `@ConditionalOnMissingBean`).
 
 ==== Removed: `ToolSpec` Consumer API on `ChatClient`
 
@@ -1449,7 +1449,7 @@ Conversation history is no longer automatically added to `ToolContext`. The `TOO
 
 ==== Migration
 
-If your application needs conversation history management, use `ToolCallAdvisor`:
+If your application needs conversation history management, use `ToolCallingAdvisor`:
 
 .Managing Conversation History with ToolCallAdvisor
 [source,java]
@@ -1493,7 +1493,7 @@ ChatResponse response = chatClient.prompt()
 1. User asks: "What's the weather in SF and LA?"
 2. LLM requests tool calls: `getWeather(SF)` and `getWeather(LA)`
 3. Tools execute with only their parameters (no conversation history)
-4. ToolCallAdvisor collects tool results and conversation history
+4. ToolCallingAdvisor collects tool results and conversation history
 5. LLM receives conversation context from advisor and synthesizes: "The weather in SF is 72°F and in LA is 85°F"
 
 The LLM sees the full conversation through the advisor chain, not through ToolContext.

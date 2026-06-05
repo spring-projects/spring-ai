@@ -30,7 +30,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.client.advisor.api.ToolAdvisor;
@@ -56,12 +56,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Verifies that {@link ToolCallAdvisor} is auto-registered (or not) by
+ * Verifies that {@link ToolCallingAdvisor} is auto-registered (or not) by
  * {@link DefaultChatClient} and that the correct tool-call execution path is taken.
  *
  * <p>
  * The key structural signal is a {@link ChainIterationCountingAdvisor} placed just after
- * the {@link ToolCallAdvisor} in the chain (order = {@code DEFAULT_ORDER + 100}). When
+ * the {@link ToolCallingAdvisor} in the chain (order = {@code DEFAULT_ORDER + 100}). When
  * {@code ToolCallAdvisor} drives the loop, every iteration calls
  * {@code chain.copy(this).nextCall()}, which invokes the counting advisor once per
  * iteration. The built-in model path calls through the chain only once.
@@ -70,7 +70,7 @@ import static org.mockito.Mockito.when;
  * @author Sebastien Deleuze
  */
 @ExtendWith(MockitoExtension.class)
-class ToolCallAdvisorAutoRegistrationTests {
+class ToolCallingAdvisorAutoRegistrationTests {
 
 	@Mock
 	ChatModel chatModel;
@@ -222,7 +222,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 			// one
 			ChatClient.create(chatModel)
 				.prompt()
-				.advisors(ToolCallAdvisor.builder().build(), counter)
+				.advisors(ToolCallingAdvisor.builder().build(), counter)
 				.user("weather?")
 				.tools(weatherTool)
 				.call()
@@ -245,7 +245,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 
 			ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
-						ToolCallAdvisor.builder().toolCallingManager(customManager))
+						ToolCallingAdvisor.builder().toolCallingManager(customManager))
 				.build()
 				.prompt()
 				.user("weather?")
@@ -262,7 +262,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 		void throwsWhenMultipleToolAdvisorsRegistered() {
 			assertThatThrownBy(() -> ChatClient.create(chatModel)
 				.prompt()
-				.advisors(ToolCallAdvisor.builder().build(), ToolCallAdvisor.builder().build())
+				.advisors(ToolCallingAdvisor.builder().build(), ToolCallingAdvisor.builder().build())
 				.user("weather?")
 				.tools(weatherTool)
 				.call()
@@ -343,11 +343,11 @@ class ToolCallAdvisorAutoRegistrationTests {
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Advisor positioned just after {@link ToolCallAdvisor} (order = DEFAULT_ORDER + 100)
-	 * that counts invocations. When {@code ToolCallAdvisor} drives the recursive loop,
-	 * {@code chain.copy(this)} restarts the chain after it, so this counter increments
-	 * once per iteration. When the model handles tool calls internally the chain runs
-	 * only once.
+	 * Advisor positioned just after {@link ToolCallingAdvisor} (order = DEFAULT_ORDER +
+	 * 100) that counts invocations. When {@code ToolCallAdvisor} drives the recursive
+	 * loop, {@code chain.copy(this)} restarts the chain after it, so this counter
+	 * increments once per iteration. When the model handles tool calls internally the
+	 * chain runs only once.
 	 */
 	static class ChainIterationCountingAdvisor implements BaseAdvisor {
 
@@ -358,7 +358,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 		private final int order;
 
 		ChainIterationCountingAdvisor() {
-			this(ToolCallAdvisor.DEFAULT_ORDER + 100);
+			this(ToolCallingAdvisor.DEFAULT_ORDER + 100);
 		}
 
 		ChainIterationCountingAdvisor(int order) {
@@ -394,7 +394,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 
 	/**
 	 * A custom {@link ToolAdvisor} that performs no work. Its presence in the chain is
-	 * sufficient to prevent auto-registration of {@link ToolCallAdvisor}.
+	 * sufficient to prevent auto-registration of {@link ToolCallingAdvisor}.
 	 */
 	static class NoOpToolCallHandlingAdvisor implements ToolAdvisor, BaseAdvisor {
 
@@ -410,7 +410,7 @@ class ToolCallAdvisorAutoRegistrationTests {
 
 		@Override
 		public int getOrder() {
-			return ToolCallAdvisor.DEFAULT_ORDER;
+			return ToolCallingAdvisor.DEFAULT_ORDER;
 		}
 
 	}

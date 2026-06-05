@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -61,7 +61,7 @@ public class OpenAiFunctionCallback2IT {
 			ToolCallback weatherFunctionInfo = context.getBean("weatherFunctionInfo", ToolCallback.class);
 
 			ChatClient chatClient = ChatClient.builder(chatModel)
-				.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(toolCallingManager).build())
+				.defaultAdvisors(ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager).build())
 				.defaultTools(weatherFunctionInfo)
 				.defaultUser(u -> u.text("What's the weather like in {cities}? Please use the provided tools to get the weather for all 3 cities."))
 				.build();
@@ -88,7 +88,7 @@ public class OpenAiFunctionCallback2IT {
 			// @formatter:off
 			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 			String content = ChatClient.builder(chatModel)
-				.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(toolCallingManager).build())
+				.defaultAdvisors(ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager).build())
 				.build().prompt()
 				.tools(weatherFunctionInfo)
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.")

@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -73,7 +73,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @since 2.0.0
  */
-public class ToolSearchToolCallingAdvisor extends ToolCallAdvisor {
+public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
 
@@ -363,13 +363,13 @@ public class ToolSearchToolCallingAdvisor extends ToolCallAdvisor {
 	/**
 	 * Builder for creating instances of ToolSearchToolCallingAdvisor.
 	 * <p>
-	 * This builder extends {@link ToolCallAdvisor.Builder} and adds configuration options
-	 * specific to tool search functionality.
+	 * This builder extends {@link ToolCallingAdvisor.Builder} and adds configuration
+	 * options specific to tool search functionality.
 	 *
 	 * @param <T> the builder type, used for self-referential generics to support method
 	 * chaining in subclasses
 	 */
-	public static class Builder<T extends Builder<T>> extends ToolCallAdvisor.Builder<T> {
+	public static class Builder<T extends Builder<T>> extends ToolCallingAdvisor.Builder<T> {
 
 		@Nullable private ToolIndex toolIndex;
 
@@ -485,6 +485,23 @@ public class ToolSearchToolCallingAdvisor extends ToolCallAdvisor {
 					isStreamToolCallResponses(), getToolExecutionEligibilityChecker(), this.toolIndex,
 					Objects.requireNonNull(this.systemMessageSuffix), this.referenceToolNameAccumulation,
 					this.maxResults, this.isConversationHistoryEnabled(), this.sessionIdKeyName, this.evictionStrategy);
+		}
+
+		@Override
+		protected ToolCallingAdvisor.Builder<?> newCopy() {
+			return new Builder<>();
+		}
+
+		@Override
+		public ToolCallingAdvisor.Builder<?> copy() {
+			Builder<?> copy = (Builder<?>) super.copy();
+			copy.toolIndex = this.toolIndex;
+			copy.systemMessageSuffix = this.systemMessageSuffix;
+			copy.referenceToolNameAccumulation = this.referenceToolNameAccumulation;
+			copy.maxResults = this.maxResults;
+			copy.sessionIdKeyName = this.sessionIdKeyName;
+			copy.evictionStrategy = this.evictionStrategy;
+			return copy;
 		}
 
 	}

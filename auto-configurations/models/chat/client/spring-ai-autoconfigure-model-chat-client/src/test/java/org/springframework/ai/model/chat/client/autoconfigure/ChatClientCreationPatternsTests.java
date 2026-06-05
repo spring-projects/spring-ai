@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientBuilderCustomizer;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.model.ChatModel;
@@ -242,9 +242,9 @@ class ChatClientCreationPatternsTests {
 				ChatClientBuilderConfigurer configurer, ObjectProvider<ObservationRegistry> observationRegistry,
 				ObjectProvider<ChatClientObservationConvention> chatClientObservationConvention,
 				ObjectProvider<AdvisorObservationConvention> advisorObservationConvention,
-				ObjectProvider<ToolCallAdvisor.Builder<?>> toolCallAdvisorBuilder) {
+				ObjectProvider<ToolCallingAdvisor.Builder<?>> toolCallingAdvisorBuilder) {
 			return buildChatClient(chatModel, configurer, observationRegistry, chatClientObservationConvention,
-					advisorObservationConvention, toolCallAdvisorBuilder);
+					advisorObservationConvention, toolCallingAdvisorBuilder);
 		}
 
 		@Bean
@@ -252,20 +252,20 @@ class ChatClientCreationPatternsTests {
 				ChatClientBuilderConfigurer configurer, ObjectProvider<ObservationRegistry> observationRegistry,
 				ObjectProvider<ChatClientObservationConvention> chatClientObservationConvention,
 				ObjectProvider<AdvisorObservationConvention> advisorObservationConvention,
-				ObjectProvider<ToolCallAdvisor.Builder<?>> toolCallAdvisorBuilder) {
+				ObjectProvider<ToolCallingAdvisor.Builder<?>> toolCallingAdvisorBuilder) {
 			return buildChatClient(chatModel, configurer, observationRegistry, chatClientObservationConvention,
-					advisorObservationConvention, toolCallAdvisorBuilder);
+					advisorObservationConvention, toolCallingAdvisorBuilder);
 		}
 
 		private ChatClient buildChatClient(ChatModel chatModel, ChatClientBuilderConfigurer configurer,
 				ObjectProvider<ObservationRegistry> observationRegistry,
 				ObjectProvider<ChatClientObservationConvention> chatClientObservationConvention,
 				ObjectProvider<AdvisorObservationConvention> advisorObservationConvention,
-				ObjectProvider<ToolCallAdvisor.Builder<?>> toolCallAdvisorBuilder) {
+				ObjectProvider<ToolCallingAdvisor.Builder<?>> toolCallingAdvisorBuilder) {
 			ChatClient.Builder builder = ChatClient.builder(chatModel,
 					observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
 					chatClientObservationConvention.getIfUnique(), advisorObservationConvention.getIfUnique(),
-					toolCallAdvisorBuilder.getIfAvailable());
+					toolCallingAdvisorBuilder.getIfAvailable());
 			return configurer.configure(builder).build();
 		}
 

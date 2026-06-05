@@ -104,7 +104,7 @@ public class Application {
 
 == How It Works
 
-The `ToolSearchToolCallingAdvisor` extends Spring AI's `ToolCallAdvisor` to implement dynamic tool discovery:
+The `ToolSearchToolCallingAdvisor` extends Spring AI's `ToolCallingAdvisor` to implement dynamic tool discovery:
 
 image::https://raw.githubusercontent.com/spring-io/spring-io-static/refs/heads/main/blog/tzolov/20251208/spring-ai-tool-search-tool-calling-flow.png[Tool Search Tool Flow,600]
 

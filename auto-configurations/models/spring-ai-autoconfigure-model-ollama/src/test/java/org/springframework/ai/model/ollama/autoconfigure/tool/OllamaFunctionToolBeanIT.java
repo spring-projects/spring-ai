@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -137,7 +137,7 @@ class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 			OllamaChatOptions options = mergeOptions(chatModel, OllamaChatOptions.builder().toolCallbacks(weatherInfo));
 			var chatClient = ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
-						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+						ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 			Flux<ChatResponse> response = chatClient.prompt(new Prompt(List.of(userMessage), options))
 				.stream()

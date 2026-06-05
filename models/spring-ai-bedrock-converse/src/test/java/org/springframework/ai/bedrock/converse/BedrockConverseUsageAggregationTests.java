@@ -37,7 +37,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -277,7 +277,7 @@ public class BedrockConverseUsageAggregationTests {
 
 		var chatClient = ChatClient
 			.builder(this.chatModel, ObservationRegistry.NOOP, null, null,
-					ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+					ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
 			.build();
 
 		ChatResponse result = chatClient

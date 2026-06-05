@@ -27,25 +27,25 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
-import org.springframework.ai.test.chat.client.advisor.AbstractToolCallAdvisorIT;
+import org.springframework.ai.test.chat.client.advisor.AbstractToolCallingAdvisorIT;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration tests for {@link ToolCallAdvisor} functionality.
+ * Integration tests for {@link ToolCallingAdvisor} functionality.
  *
  * @author Christian Tzolov
  * @author Sebastien Deleuze
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
-class GoogleGenAiToolCallAdvisorIT extends AbstractToolCallAdvisorIT {
+class GoogleGenAiToolCallingAdvisorIT extends AbstractToolCallingAdvisorIT {
 
 	@Test
 	@Disabled

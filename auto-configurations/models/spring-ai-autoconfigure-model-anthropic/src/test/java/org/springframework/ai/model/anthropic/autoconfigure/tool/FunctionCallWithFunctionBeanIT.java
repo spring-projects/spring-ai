@@ -25,7 +25,7 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.tool.ToolCallback;
@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration test for tool calling via Spring bean-registered function callbacks using
- * user-controlled tool execution with {@link ToolCallAdvisor}.
+ * user-controlled tool execution with {@link ToolCallingAdvisor}.
  *
  * @author Soby Chacko
  * @author Sebastien Deleuze
@@ -67,7 +67,7 @@ class FunctionCallWithFunctionBeanIT {
 
 				String content = ChatClient.create(chatModel)
 					.prompt()
-					.advisors(ToolCallAdvisor.builder().build())
+					.advisors(ToolCallingAdvisor.builder().build())
 					.user("What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan?"
 							+ " Return the temperature in Celsius.")
 					.tools(weatherFunction)
@@ -77,7 +77,7 @@ class FunctionCallWithFunctionBeanIT {
 
 				content = ChatClient.create(chatModel)
 					.prompt()
-					.advisors(ToolCallAdvisor.builder().build())
+					.advisors(ToolCallingAdvisor.builder().build())
 					.user("What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan?"
 							+ " Return the temperature in Celsius.")
 					.tools(weatherFunction3)
@@ -98,7 +98,7 @@ class FunctionCallWithFunctionBeanIT {
 
 				Flux<String> response = ChatClient.create(chatModel)
 					.prompt()
-					.advisors(ToolCallAdvisor.builder().build())
+					.advisors(ToolCallingAdvisor.builder().build())
 					.user("What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan?"
 							+ " Return the temperature in Celsius.")
 					.tools(weatherFunction)
@@ -110,7 +110,7 @@ class FunctionCallWithFunctionBeanIT {
 
 				response = ChatClient.create(chatModel)
 					.prompt()
-					.advisors(ToolCallAdvisor.builder().build())
+					.advisors(ToolCallingAdvisor.builder().build())
 					.user("What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan?"
 							+ " Return the temperature in Celsius.")
 					.tools(weatherFunction3)

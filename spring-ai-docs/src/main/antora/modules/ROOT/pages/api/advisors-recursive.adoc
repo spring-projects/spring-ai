@@ -27,9 +27,9 @@ This approach ensures that:
 
 Spring AI provides two built-in recursive advisors that demonstrate this pattern:
 
-=== ToolCallAdvisor
+=== ToolCallingAdvisor
 
-The `ToolCallAdvisor` implements the tool calling loop as part of the advisor chain, rather than relying on the model's internal tool execution. This enables other advisors in the chain to intercept and observe the tool calling process.
+The `ToolCallingAdvisor` implements the tool calling loop as part of the advisor chain, rather than relying on the model's internal tool execution. This enables other advisors in the chain to intercept and observe the tool calling process.
 
 Key features:
 
@@ -43,19 +43,19 @@ Example usage:
 
 [source,java]
 ----
-var toolCallAdvisor = ToolCallAdvisor.builder()
+var toolCallingAdvisor = ToolCallingAdvisor.builder()
     .toolCallingManager(toolCallingManager)
     .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 300)
     .build();
 
 var chatClient = ChatClient.builder(chatModel)
-    .defaultAdvisors(toolCallAdvisor)
+    .defaultAdvisors(toolCallingAdvisor)
     .build();
 ----
 
 ==== Conversation History Management
 
-The `ToolCallAdvisor` includes a `conversationHistoryEnabled` configuration option that controls how conversation history is managed during tool calling iterations.
+The `ToolCallingAdvisor` includes a `conversationHistoryEnabled` configuration option that controls how conversation history is managed during tool calling iterations.
 
 
 By default (`conversationHistoryEnabled=true`), the advisor maintains the full conversation history internally during tool call iterations. This means each subsequent LLM call in the tool calling loop includes all previous messages (user message, assistant responses, tool responses).
@@ -70,18 +70,18 @@ Example with conversation history disabled:
 
 [source,java]
 ----
-var toolCallAdvisor = ToolCallAdvisor.builder()
+var toolCallingAdvisor = ToolCallingAdvisor.builder()
     .toolCallingManager(toolCallingManager)
     .disableInternalConversationHistory()  // Disable internal history - let ChatMemory handle it
     .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 300)
     .build();
 
 var chatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory)
-    .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 200)  // Positioned before ToolCallAdvisor
+    .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 200)  // Positioned before ToolCallingAdvisor
     .build();
 
 var chatClient = ChatClient.builder(chatModel)
-    .defaultAdvisors(chatMemoryAdvisor, toolCallAdvisor)
+    .defaultAdvisors(chatMemoryAdvisor, toolCallingAdvisor)
     .build();
 ----
 
@@ -92,7 +92,7 @@ Set `streamToolCallResponses(true)` on the builder to stream each iteration's ch
 
 [source,java]
 ----
-var toolCallAdvisor = ToolCallAdvisor.builder()
+var toolCallingAdvisor = ToolCallingAdvisor.builder()
     .toolCallingManager(toolCallingManager)
     .streamToolCallResponses(true)
     .build();
@@ -115,7 +115,7 @@ The "return direct" feature allows tools to bypass the LLM and return their resu
 * You want to reduce latency by avoiding an additional LLM call
 * The tool result should be returned as-is without interpretation
 
-When a tool execution has `returnDirect=true`, the `ToolCallAdvisor` will:
+When a tool execution has `returnDirect=true`, the `ToolCallingAdvisor` will:
 
 1. Execute the tool call as normal
 2. Detect the `returnDirect` flag in the `ToolExecutionResult`

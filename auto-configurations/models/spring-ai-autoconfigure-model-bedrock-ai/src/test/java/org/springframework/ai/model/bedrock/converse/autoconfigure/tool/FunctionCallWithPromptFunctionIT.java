@@ -56,7 +56,7 @@ public class FunctionCallWithPromptFunctionIT {
 
 				var chatClient = org.springframework.ai.chat.client.ChatClient
 					.builder(chatModel, ObservationRegistry.NOOP, null, null,
-							org.springframework.ai.chat.client.advisor.ToolCallAdvisor.builder()
+							org.springframework.ai.chat.client.advisor.ToolCallingAdvisor.builder()
 								.toolCallingManager(toolCallingManager))
 					.build();
 

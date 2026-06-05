@@ -38,7 +38,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -448,7 +448,7 @@ public class OpenAiChatModelIT {
 
 		ChatResponse chatResponse = ChatClient.create(this.chatModel)
 			.prompt()
-			.advisors(ToolCallAdvisor.builder().build())
+			.advisors(ToolCallingAdvisor.builder().build())
 			.user("What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.")
 			.tools(weatherToolCallback)
 			.call()
@@ -471,7 +471,7 @@ public class OpenAiChatModelIT {
 
 		ChatResponse lastResponse = ChatClient.create(this.chatModel)
 			.prompt()
-			.advisors(ToolCallAdvisor.builder().build())
+			.advisors(ToolCallingAdvisor.builder().build())
 			.options(OpenAiChatOptions.builder()
 				.streamOptions(StreamOptions.builder().includeUsage(true).build())
 				.reasoningEffort(ReasoningEffort.MINIMAL.toString()))

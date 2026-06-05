@@ -161,7 +161,7 @@ Tool execution must be handled externally using one of the two supported approac
 
 === Tool Calling via ChatClient (Recommended)
 
-The recommended approach is to use `ChatClient` with the `ToolCallAdvisor`, which is automatically registered and manages the tool-call loop transparently for both synchronous and streaming scenarios.
+The recommended approach is to use `ChatClient` with the `ToolCallingAdvisor`, which is automatically registered and manages the tool-call loop transparently for both synchronous and streaming scenarios.
 
 [source,java]
 ----
@@ -519,7 +519,7 @@ ChatResponse response = chatModel.call(
 
 === Automatic Handling via ChatClient (Recommended)
 
-When using `ChatClient` with `ToolCallAdvisor` (the recommended approach), Spring AI automatically handles thought signatures:
+When using `ChatClient` with `ToolCallingAdvisor` (the recommended approach), Spring AI automatically handles thought signatures:
 
 1. **Extracts** thought signatures from model responses
 2. **Attaches** them to the correct `functionCall` parts when sending back function responses

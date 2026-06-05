@@ -26,7 +26,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.bedrock.converse.BedrockChatOptions;
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -65,7 +65,7 @@ class FunctionCallWithFunctionBeanIT {
 
 				var chatClient = ChatClient
 					.builder(chatModel, ObservationRegistry.NOOP, null, null,
-							ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+							ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
 					.build();
 
 				var userMessage = new UserMessage(
@@ -105,7 +105,7 @@ class FunctionCallWithFunctionBeanIT {
 
 				var chatClient = ChatClient
 					.builder(chatModel, ObservationRegistry.NOOP, null, null,
-							ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+							ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
 					.build();
 
 				var userMessage = new UserMessage(

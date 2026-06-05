@@ -52,7 +52,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Verifies that, when the {@link ToolCallAdvisor} streaming loop runs, the tracing
+ * Verifies that, when the {@link ToolCallingAdvisor} streaming loop runs, the tracing
  * <em>spans</em> reflect the observation hierarchy instead of collapsing onto whatever
  * span happens to be current on the calling thread.
  * <p>
@@ -72,7 +72,7 @@ import static org.mockito.Mockito.when;
  *
  * @author Dariusz Jedrzejczyk
  */
-class ToolCallAdvisorSpanHierarchyTests {
+class ToolCallingAdvisorSpanHierarchyTests {
 
 	private static final String ADVISOR_NAME_TAG = "spring.ai.advisor.name";
 
@@ -92,7 +92,9 @@ class ToolCallAdvisorSpanHierarchyTests {
 		when(toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
 			.thenReturn(ToolExecutionResult.builder().conversationHistory(conversationHistory).build());
 
-		ToolCallAdvisor toolCallAdvisor = ToolCallAdvisor.builder().toolCallingManager(toolCallingManager).build();
+		ToolCallingAdvisor toolCallingAdvisor = ToolCallingAdvisor.builder()
+			.toolCallingManager(toolCallingManager)
+			.build();
 
 		// Terminal advisor standing in for the model: first call returns a tool call,
 		// second call (after tool execution) returns the final answer. Emits
@@ -118,7 +120,7 @@ class ToolCallAdvisorSpanHierarchyTests {
 		};
 
 		StreamAdvisorChain chain = DefaultAroundAdvisorChain.builder(registry)
-			.pushAll(List.<Advisor>of(toolCallAdvisor, modelAdvisor))
+			.pushAll(List.<Advisor>of(toolCallingAdvisor, modelAdvisor))
 			.build();
 
 		ChatClientRequest request = ChatClientRequest.builder()
@@ -144,14 +146,14 @@ class ToolCallAdvisorSpanHierarchyTests {
 		List<SimpleSpan> spans = new ArrayList<>(tracer.getSpans());
 
 		SimpleSpan outerSpan = spanNamed(spans, "outer");
-		SimpleSpan toolCallAdvisorSpan = singleSpanForAdvisor(spans, toolCallAdvisor.getName());
+		SimpleSpan toolCallingAdvisorSpan = singleSpanForAdvisor(spans, toolCallingAdvisor.getName());
 		List<SimpleSpan> modelSpans = spansForAdvisor(spans, MODEL_ADVISOR_NAME);
 
 		// Sanity: the loop produced two model-call spans (the tool-requesting call and
 		// the
 		// follow-up call), and the ToolCallAdvisor span sits under the outer span.
 		assertThat(modelSpans).hasSize(2);
-		assertThat(toolCallAdvisorSpan.context().parentId())
+		assertThat(toolCallingAdvisorSpan.context().parentId())
 			.as("the ToolCallAdvisor span must be a child of the outer (HTTP-like) span")
 			.isEqualTo(outerSpan.context().spanId());
 
@@ -164,8 +166,8 @@ class ToolCallAdvisorSpanHierarchyTests {
 		// still open).
 		assertThat(modelSpans).allSatisfy(span -> assertThat(span.context().parentId())
 			.as("model-call span %s must nest under the ToolCallAdvisor span (%s), not escape to the outer span (%s)",
-					span.context().spanId(), toolCallAdvisorSpan.context().spanId(), outerSpan.context().spanId())
-			.isEqualTo(toolCallAdvisorSpan.context().spanId()));
+					span.context().spanId(), toolCallingAdvisorSpan.context().spanId(), outerSpan.context().spanId())
+			.isEqualTo(toolCallingAdvisorSpan.context().spanId()));
 	}
 
 	private static ChatResponse responseWithToolCall() {

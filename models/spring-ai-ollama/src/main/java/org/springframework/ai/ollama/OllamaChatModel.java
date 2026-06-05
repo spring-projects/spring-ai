@@ -515,7 +515,7 @@ public class OllamaChatModel implements ChatModel {
 		 * @param toolCallingManager the tool calling manager
 		 * @return this builder
 		 * @deprecated since 2.0.0 for removal in 3.0.0 — internal tool execution in
-		 * {@link OllamaChatModel} is superseded by {@code ToolCallAdvisor} used via
+		 * {@link OllamaChatModel} is superseded by {@code ToolCallingAdvisor} used via
 		 * {@code ChatClient}.
 		 */
 		@Deprecated(since = "2.0.0", forRemoval = true)

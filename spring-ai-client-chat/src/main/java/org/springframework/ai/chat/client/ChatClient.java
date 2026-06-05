@@ -27,7 +27,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
@@ -91,12 +91,12 @@ public interface ChatClient {
 	/**
 	 * Creates a {@link Builder} for constructing a {@link ChatClient}.
 	 * <p>
-	 * When {@code toolCallAdvisorBuilder} is {@code null}, a default
-	 * {@link org.springframework.ai.chat.client.advisor.ToolCallAdvisor} is created with
-	 * a {@link org.springframework.ai.model.tool.ToolCallingManager} backed by the
+	 * When {@code toolCallingAdvisorBuilder} is {@code null}, a default
+	 * {@link org.springframework.ai.chat.client.advisor.ToolCallingAdvisor} is created
+	 * with a {@link org.springframework.ai.model.tool.ToolCallingManager} backed by the
 	 * supplied {@code observationRegistry}.
 	 * <p>
-	 * When {@code toolCallAdvisorBuilder} is non-null it is used as-is. The caller is
+	 * When {@code toolCallingAdvisorBuilder} is non-null it is used as-is. The caller is
 	 * then responsible for configuring the builder's
 	 * {@link org.springframework.ai.model.tool.ToolCallingManager}, including any
 	 * {@link io.micrometer.observation.ObservationRegistry}, since the supplied
@@ -104,25 +104,25 @@ public interface ChatClient {
 	 * @param chatModel the chat model to use
 	 * @param observationRegistry the observation registry for client-level observations;
 	 * also used to configure the default {@code ToolCallingManager} when
-	 * {@code toolCallAdvisorBuilder} is {@code null}
+	 * {@code toolCallingAdvisorBuilder} is {@code null}
 	 * @param chatClientObservationConvention optional custom observation convention for
 	 * the chat client
 	 * @param advisorObservationConvention optional custom observation convention for
 	 * advisors
-	 * @param toolCallAdvisorBuilder optional builder for the
-	 * {@link org.springframework.ai.chat.client.advisor.ToolCallAdvisor}; when
+	 * @param toolCallingAdvisorBuilder optional builder for the
+	 * {@link org.springframework.ai.chat.client.advisor.ToolCallingAdvisor}; when
 	 * {@code null} a default is created
 	 * @return a new {@link Builder}
 	 */
 	static Builder builder(ChatModel chatModel, ObservationRegistry observationRegistry,
 			@Nullable ChatClientObservationConvention chatClientObservationConvention,
 			@Nullable AdvisorObservationConvention advisorObservationConvention,
-			ToolCallAdvisor.@Nullable Builder<?> toolCallAdvisorBuilder) {
+			ToolCallingAdvisor.@Nullable Builder<?> toolCallingAdvisorBuilder) {
 		Assert.notNull(chatModel, "chatModel cannot be null");
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
 
 		return new DefaultChatClientBuilder(chatModel, observationRegistry, chatClientObservationConvention,
-				advisorObservationConvention, toolCallAdvisorBuilder);
+				advisorObservationConvention, toolCallingAdvisorBuilder);
 	}
 
 	ChatClientRequestSpec prompt();

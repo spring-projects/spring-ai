@@ -45,7 +45,7 @@ import org.springframework.ai.anthropic.AnthropicWebSearchTool;
 import org.springframework.ai.anthropic.Citation;
 import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -364,7 +364,7 @@ class AnthropicChatModelIT {
 
 		ChatResponse lastResponse = ChatClient.create(this.chatModel)
 			.prompt()
-			.advisors(ToolCallAdvisor.builder().build())
+			.advisors(ToolCallingAdvisor.builder().build())
 			.options(AnthropicChatOptions.builder().model(Model.CLAUDE_HAIKU_4_5.asString()))
 			.user("What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.")
 			.tools(weatherToolCallback)

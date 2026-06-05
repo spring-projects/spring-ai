@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.MessageAggregator;
@@ -76,7 +76,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			var chatClient = ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
-						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+						ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 
 			UserMessage userMessage = new UserMessage("Turn the light on in the living room");
@@ -104,7 +104,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			var chatClient = ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
-						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+						ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 
 			UserMessage userMessage = new UserMessage("Turn the light on in the living room");
@@ -131,7 +131,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			var chatClient = ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
-						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+						ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 
 			UserMessage userMessage = new UserMessage("Turn the light on in the kitchen and in the living room");
@@ -157,7 +157,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			var chatClient = ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
-						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+						ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 
 			UserMessage userMessage = new UserMessage("Turn the light on in the kitchen and in the living room");
@@ -190,7 +190,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			var chatClient = ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
-						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+						ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 
 			Prompt prompt = new Prompt(List.of(userMessage), functionOptions);
@@ -208,7 +208,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			ToolCallback weatherFunctionWithContext = context.getBean("weatherFunctionWithContext", ToolCallback.class);
 
 			ChatClient chatClient = ChatClient.builder(chatModel)
-				.defaultAdvisors(ToolCallAdvisor.builder().toolCallingManager(toolCallingManager).build())
+				.defaultAdvisors(ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager).build())
 				.build();
 
 			String content = chatClient.prompt(
@@ -250,9 +250,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 					ToolCallback.class);
 
 			ChatClient chatClient = ChatClient.builder(chatModel)
-				.defaultAdvisors(org.springframework.ai.chat.client.advisor.ToolCallAdvisor.builder()
-					.toolCallingManager(toolCallingManager)
-					.build())
+				.defaultAdvisors(ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager).build())
 				.build();
 
 			String content = chatClient.prompt(
@@ -295,7 +293,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			var chatClient = ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
-						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+						ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 
 			UserMessage userMessage = new UserMessage(
@@ -332,7 +330,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			var chatClient = ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
-						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+						ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 
 			UserMessage userMessage = new UserMessage(
@@ -361,7 +359,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			var chatClient = ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
-						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+						ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 
 			UserMessage userMessage = new UserMessage(

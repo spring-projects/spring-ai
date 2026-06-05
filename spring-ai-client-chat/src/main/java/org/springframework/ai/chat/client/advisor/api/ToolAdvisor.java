@@ -28,7 +28,7 @@ package org.springframework.ai.chat.client.advisor.api;
  *
  * @author Christian Tzolov
  * @since 2.0.0
- * @see org.springframework.ai.chat.client.advisor.ToolCallAdvisor
+ * @see org.springframework.ai.chat.client.advisor.ToolCallingAdvisor
  */
 public interface ToolAdvisor extends Advisor {
 
