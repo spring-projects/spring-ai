@@ -64,17 +64,11 @@ public class RedisChatMemoryAutoConfiguration {
 			builder.timeToLive(properties.getTimeToLive());
 		}
 
-		if (properties.getInitializeSchema() != null) {
-			builder.initializeSchema(properties.getInitializeSchema());
-		}
+		builder.initializeSchema(properties.isInitializeSchema());
 
-		if (properties.getMaxConversationIds() != null) {
-			builder.maxConversationIds(properties.getMaxConversationIds());
-		}
+		builder.maxConversationIds(properties.getMaxConversationIds());
 
-		if (properties.getMaxMessagesPerConversation() != null) {
-			builder.maxMessagesPerConversation(properties.getMaxMessagesPerConversation());
-		}
+		builder.maxMessagesPerConversation(properties.getMaxMessagesPerConversation());
 
 		if (properties.getMetadataFields() != null && !properties.getMetadataFields().isEmpty()) {
 			builder.metadataFields(properties.getMetadataFields());
