@@ -87,13 +87,13 @@ The `JdbcChatMemoryRepository` schema adds a `sequence_id BIGINT` column that de
 
 The `timestamp` column is retained. It now stores the message creation time and is exposed in the message metadata under the `JdbcChatMemoryRepository.CONVERSATION_TS` key (a `java.time.Instant`), so applications can display when a message was created. The timestamp is preserved across saves: re-saving a conversation keeps each existing message's original creation time.
 
-===== Impact
+==== Impact
 
 - The `SPRING_AI_CHAT_MEMORY` table gains a `sequence_id` column (`BIGINT`, or `NUMBER(19)` on Oracle and `INTEGER` on SQLite) and a `SPRING_AI_CHAT_MEMORY_CONVERSATION_ID_SEQUENCE_ID_IDX` index. The `timestamp` column and its index are unchanged.
 - Existing tables created by Spring AI 1.x require the new column before they will work, since messages are now ordered by `sequence_id`.
 - Messages read from the repository now carry their creation timestamp in metadata. Because the metadata differs, a retrieved message is no longer equal (`Message.equals`) to an otherwise-identical message constructed in code. Code that compares messages by value, or relies on message identity in sets or maps, should account for this.
 
-===== Migration
+==== Migration
 
 The change is additive: add the new column and backfill it from the existing per-conversation order. No data is lost and the `timestamp` column is untouched. For PostgreSQL:
 
