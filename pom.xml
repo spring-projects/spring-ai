@@ -551,8 +551,8 @@
 								<distributionManagement>remove</distributionManagement>
 								<dependencyManagement>remove</dependencyManagement>
 								<repositories>remove</repositories>
-								<scm>keep</scm>
-								<url>keep</url>
+								<scm>resolve</scm>
+								<url>resolve</url>
 								<organization>resolve</organization>
 							</pomElements>
 						</configuration>
