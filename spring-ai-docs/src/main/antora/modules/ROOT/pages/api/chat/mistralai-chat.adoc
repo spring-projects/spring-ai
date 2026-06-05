@@ -223,19 +223,14 @@ Flux<String> stream = ChatClient.create(chatModel)
 === User-Controlled Tool Execution
 
 Use this pattern when you need direct access to the `ChatModel` API and want full control over the tool-call loop.
-Set `internalToolExecutionEnabled(false)` on the options and drive the loop yourself using `DefaultToolCallingManager`.
+Invoke `ChatModel` directly without `ToolCallingAdvisor`; check for tool calls yourself and drive the loop using `ToolCallingManager`.
 
 [source,java]
 ----
-ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
 
-MistralAiChatOptions options = MistralAiChatOptions.builder()
-    .internalToolExecutionEnabled(false)
-    .toolCallbacks(List.of(
-        FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
-            .description("Get the weather in location")
-            .inputType(WeatherService.Request.class)
-            .build()))
+ChatOptions options = ToolCallingChatOptions.builder()
+    .toolCallbacks(ToolCallbacks.from(new WeatherService()))
     .build();
 
 Prompt prompt = new Prompt("What's the weather in Paris, Tokyo, and New York?", options);

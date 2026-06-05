@@ -201,19 +201,15 @@ String response = ChatClient.create(this.chatModel)
 
 === User-Controlled Tool Execution
 
-For advanced use cases where you need full control over the tool-call loop, use `DefaultToolCallingManager` directly and set `internalToolExecutionEnabled(false)` on the prompt options so the model returns tool calls without executing them:
+Use this pattern when you need direct access to the `ChatModel` API and want full control over the tool-call loop.
+Invoke `ChatModel` directly without `ToolCallingAdvisor`; check for tool calls yourself and drive the loop using `ToolCallingManager`.
 
 [source,java]
 ----
-ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
 
-GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-        .internalToolExecutionEnabled(false)
-        .toolCallbacks(List.of(
-            FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
-                .description("Get the weather in a given location")
-                .inputType(WeatherRequest.class)
-                .build()))
+ChatOptions options = ToolCallingChatOptions.builder()
+        .toolCallbacks(ToolCallbacks.from(new WeatherService()))
         .build();
 
 Prompt prompt = new Prompt("What's the weather like in Boston?", options);
