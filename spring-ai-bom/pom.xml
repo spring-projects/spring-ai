@@ -65,6 +65,12 @@
 		</license>
 	</licenses>
 
+	<scm>
+		<url>https://github.com/spring-projects/spring-ai</url>
+		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
+		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
+	</scm>
+
 	<properties>
 		<flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
 		<maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
