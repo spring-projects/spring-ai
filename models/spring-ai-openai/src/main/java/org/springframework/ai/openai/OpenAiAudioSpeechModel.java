@@ -55,10 +55,6 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
 	private static final Log logger = LogFactory.getLog(OpenAiAudioSpeechModel.class);
 
-	private static final Double DEFAULT_SPEED = 1.0;
-
-	private static final String DEFAULT_MODEL_NAME = OpenAiAudioSpeechOptions.DEFAULT_SPEECH_MODEL;
-
 	private final OpenAIClient openAiClient;
 
 	private final OpenAiAudioSpeechOptions options;

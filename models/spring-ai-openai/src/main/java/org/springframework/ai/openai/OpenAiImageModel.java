@@ -53,8 +53,6 @@ import org.springframework.util.Assert;
  */
 public class OpenAiImageModel implements ImageModel {
 
-	private static final String DEFAULT_MODEL_NAME = OpenAiImageOptions.DEFAULT_IMAGE_MODEL;
-
 	private static final ImageModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultImageModelObservationConvention();
 
 	private final Log logger = LogFactory.getLog(OpenAiImageModel.class);

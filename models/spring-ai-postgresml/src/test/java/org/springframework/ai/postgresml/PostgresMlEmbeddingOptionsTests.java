@@ -36,7 +36,7 @@ public class PostgresMlEmbeddingOptionsTests {
 	public void options() {
 		PostgresMlEmbeddingOptions options = PostgresMlEmbeddingOptions.builder().build();
 
-		assertThat(options.getTransformer()).isEqualTo(PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL);
+		assertThat(options.getTransformer()).isEqualTo(PostgresMlEmbeddingOptions.DEFAULT_TRANSFORMER_MODEL);
 		assertThat(options.getVectorType()).isEqualTo(PostgresMlEmbeddingModel.VectorType.PG_ARRAY);
 		assertThat(options.getKwargs()).isNull();
 		assertThat(options.getMetadataMode()).isEqualTo(org.springframework.ai.document.MetadataMode.EMBED);
@@ -66,7 +66,7 @@ public class PostgresMlEmbeddingOptionsTests {
 		PostgresMlEmbeddingOptions options = embeddingModel.mergeOptions(EmbeddingOptions.builder().build());
 
 		// Default options
-		assertThat(options.getTransformer()).isEqualTo(PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL);
+		assertThat(options.getTransformer()).isEqualTo(PostgresMlEmbeddingOptions.DEFAULT_TRANSFORMER_MODEL);
 		assertThat(options.getVectorType()).isEqualTo(PostgresMlEmbeddingModel.VectorType.PG_ARRAY);
 		assertThat(options.getKwargs()).isNull();
 		assertThat(options.getMetadataMode()).isEqualTo(org.springframework.ai.document.MetadataMode.EMBED);
@@ -144,7 +144,7 @@ public class PostgresMlEmbeddingOptionsTests {
 		PostgresMlEmbeddingOptions options = embeddingModel.mergeOptions(null);
 
 		// Should return default options when input is null
-		assertThat(options.getTransformer()).isEqualTo(PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL);
+		assertThat(options.getTransformer()).isEqualTo(PostgresMlEmbeddingOptions.DEFAULT_TRANSFORMER_MODEL);
 		assertThat(options.getVectorType()).isEqualTo(PostgresMlEmbeddingModel.VectorType.PG_ARRAY);
 		assertThat(options.getKwargs()).isNull();
 		assertThat(options.getMetadataMode()).isEqualTo(org.springframework.ai.document.MetadataMode.EMBED);

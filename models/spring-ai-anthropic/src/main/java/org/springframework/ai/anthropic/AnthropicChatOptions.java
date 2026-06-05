@@ -96,7 +96,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	/**
 	 * The model name to use for requests.
 	 */
-	private final @Nullable String model;
+	private final String model;
 
 	/**
 	 * Request timeout for the Anthropic client. Defaults to 60 seconds if not specified.
@@ -121,7 +121,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	/**
 	 * Maximum number of tokens to generate in the response.
 	 */
-	private final @Nullable Integer maxTokens;
+	private final Integer maxTokens;
 
 	/**
 	 * Request metadata containing user ID for abuse detection.
@@ -278,7 +278,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	}
 
 	@Override
-	public @Nullable String getModel() {
+	public String getModel() {
 		return this.model;
 	}
 
@@ -299,7 +299,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	}
 
 	@Override
-	public @Nullable Integer getMaxTokens() {
+	public Integer getMaxTokens() {
 		return this.maxTokens;
 	}
 

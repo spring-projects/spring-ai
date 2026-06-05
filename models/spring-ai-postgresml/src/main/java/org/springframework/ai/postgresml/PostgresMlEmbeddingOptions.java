@@ -34,6 +34,8 @@ import org.springframework.ai.postgresml.PostgresMlEmbeddingModel.VectorType;
  */
 public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 
+	public static final String DEFAULT_TRANSFORMER_MODEL = "distilbert-base-uncased";
+
 	/**
 	 * The Huggingface transformer model to use for the embedding.
 	 */
@@ -57,7 +59,7 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 
 	protected PostgresMlEmbeddingOptions(@Nullable String transformer, @Nullable VectorType vectorType,
 			@Nullable Map<String, Object> kwargs, @Nullable MetadataMode metadataMode) {
-		this.transformer = transformer != null ? transformer : PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL;
+		this.transformer = transformer != null ? transformer : DEFAULT_TRANSFORMER_MODEL;
 		this.vectorType = vectorType != null ? vectorType : VectorType.PG_ARRAY;
 		this.kwargs = kwargs != null ? Map.copyOf(kwargs) : null;
 		this.metadataMode = metadataMode != null ? metadataMode : MetadataMode.EMBED;

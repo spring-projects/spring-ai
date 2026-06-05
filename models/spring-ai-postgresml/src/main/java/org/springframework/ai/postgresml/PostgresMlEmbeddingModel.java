@@ -55,8 +55,6 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
 
-	public static final String DEFAULT_TRANSFORMER_MODEL = "distilbert-base-uncased";
-
 	private final PostgresMlEmbeddingOptions options;
 
 	private final JdbcTemplate jdbcTemplate;

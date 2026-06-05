@@ -147,10 +147,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 	private static final Log logger = LogFactory.getLog(AnthropicChatModel.class);
 
-	private static final String DEFAULT_MODEL = AnthropicChatOptions.DEFAULT_MODEL;
-
-	private static final Integer DEFAULT_MAX_TOKENS = AnthropicChatOptions.DEFAULT_MAX_TOKENS;
-
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
 	private static final String BETA_SKILLS = "skills-2025-10-02";
@@ -597,11 +593,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				? anthropicOptions : AnthropicChatOptions.builder().build();
 
 		// Set required fields
-		String model = requestOptions.getModel() != null ? requestOptions.getModel() : DEFAULT_MODEL;
-		builder.model(model);
-
-		long maxTokens = requestOptions.getMaxTokens() != null ? requestOptions.getMaxTokens() : DEFAULT_MAX_TOKENS;
-		builder.maxTokens(maxTokens);
+		builder.model(requestOptions.getModel()).maxTokens(requestOptions.getMaxTokens());
 
 		// Create cache resolver
 		CacheEligibilityResolver cacheResolver = CacheEligibilityResolver.from(requestOptions.getCacheOptions());
