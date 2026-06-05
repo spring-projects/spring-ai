@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.tool.toolsearch.advisor;
+package org.springframework.ai.chat.client.advisor.toolsearch;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -76,8 +76,6 @@ import org.springframework.util.StringUtils;
 public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
-
-	public static final String TOOL_SEARCH_TOOL_SESSION_ID_KEY = "toolSearchToolSessionId";
 
 	private static final String CACHED_TOOL_CALLBACKS_KEY = ToolSearchToolCallingAdvisor.class.getName()
 			+ ".cachedToolCallbacks";
@@ -234,7 +232,7 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 		}
 
 		chatClientRequest.context().put(CACHED_TOOL_CALLBACKS_KEY, cachedResolvedToolCallbacks);
-		chatClientRequest.context().put(TOOL_SEARCH_TOOL_SESSION_ID_KEY, sessionId);
+		chatClientRequest.context().put(ToolSearchTool.TOOL_SEARCH_TOOL_SESSION_ID_KEY, sessionId);
 
 		return chatClientRequest.mutate()
 			.prompt(chatClientRequest.prompt()
@@ -268,8 +266,9 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 
 		ToolCallingChatOptions toolOptionsCopy = ((ToolCallingChatOptions.Builder<?>) toolOptions.mutate())
 			.toolCallbacks(new ArrayList<>(selectedToolCallbacks))
-			.toolContext(TOOL_SEARCH_TOOL_SESSION_ID_KEY,
-					Objects.requireNonNull(chatClientRequest.context().get(TOOL_SEARCH_TOOL_SESSION_ID_KEY)))
+			.toolContext(ToolSearchTool.TOOL_SEARCH_TOOL_SESSION_ID_KEY,
+					Objects.requireNonNull(
+							chatClientRequest.context().get(ToolSearchTool.TOOL_SEARCH_TOOL_SESSION_ID_KEY)))
 			.build();
 
 		return chatClientRequest.mutate()

@@ -37,7 +37,7 @@ Maven::
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-tool-search-tool</artifactId>
+    <artifactId>spring-ai-tool-search-advisor</artifactId>
 </dependency>
 ----
 
@@ -46,7 +46,7 @@ Gradle::
 [source,gradle]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-tool-search-tool'
+    implementation 'org.springframework.ai:spring-ai-tool-search-advisor'
 }
 ----
 ======

@@ -41,6 +41,7 @@
 		<module>spring-ai-vector-store</module>
 		<module>spring-ai-rag</module>
 
+		<module>advisors/spring-ai-tool-search-advisor</module>
 		<module>advisors/spring-ai-vector-store-advisor</module>
 
 		<module>memory/repository/spring-ai-model-chat-memory-repository-cassandra</module>
