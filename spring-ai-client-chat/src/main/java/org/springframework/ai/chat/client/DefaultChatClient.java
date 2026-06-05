@@ -32,8 +32,6 @@ import java.util.function.Consumer;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
@@ -92,8 +90,6 @@ import org.springframework.util.StringUtils;
  * @since 1.0.0
  */
 public class DefaultChatClient implements ChatClient {
-
-	private static final Log logger = LogFactory.getLog(DefaultChatClient.class);
 
 	private static final ChatClientObservationConvention DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION = new DefaultChatClientObservationConvention();
 
@@ -1195,7 +1191,6 @@ public class DefaultChatClient implements ChatClient {
 		private BaseAdvisorChain buildAdvisorChain() {
 			autoRegisterToolCallingAdvisor();
 			validateSingleToolAdvisor();
-			warnOnMemoryAdvisorOrderMismatch();
 
 			// At the stack bottom add the model call advisors.
 			// They play the role of the last advisors in the advisor chain.
@@ -1268,28 +1263,6 @@ public class DefaultChatClient implements ChatClient {
 				throw new IllegalStateException("At most one ToolAdvisor is allowed in the advisor chain, but found "
 						+ toolAdvisors.size() + ": [" + names + "]");
 			}
-		}
-
-		/**
-		 * Warns when a {@link MemoryAdvisor} is ordered before (lower order than) a
-		 * {@link ToolAdvisor}. In that configuration the memory advisor is not part of
-		 * the recursive tool-call chain, so tool messages will not be stored between
-		 * iterations and streaming memory updates will not be sequenced correctly.
-		 */
-		private void warnOnMemoryAdvisorOrderMismatch() {
-			this.advisors.stream()
-				.filter(a -> a instanceof ToolAdvisor)
-				.forEach(tca -> this.advisors.stream()
-					.filter(a -> a instanceof MemoryAdvisor && a.getOrder() <= tca.getOrder())
-					.forEach(mem -> {
-						if (logger.isWarnEnabled()) {
-							logger.warn("ChatMemoryAdvisor '" + mem.getName() + "' (order=" + mem.getOrder()
-									+ ") is ordered at or before ToolCallingAdvisor '" + tca.getName() + "' (order="
-									+ tca.getOrder() + "). "
-									+ "Memory will not be updated between tool-call iterations. "
-									+ "Set the memory advisor order above " + tca.getOrder() + " to fix this.");
-						}
-					}));
 		}
 
 	}

@@ -60,11 +60,10 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 	private static final ChatClientMessageAggregator CHAT_CLIENT_MESSAGE_AGGREGATOR = new ChatClientMessageAggregator();
 
 	/**
-	 * Default advisor order. Placed early in the chain so that all downstream advisors
-	 * (e.g. {@link org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor})
-	 * participate in every tool-call iteration.
-	 *
-	 * @see org.springframework.ai.chat.client.advisor.api.Advisor#DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER
+	 * Default advisor order. Higher than
+	 * {@link org.springframework.ai.chat.client.advisor.api.Advisor#DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER}
+	 * (+200) so that memory advisors at their default order are placed outside this
+	 * advisor and do not participate in each tool-call iteration.
 	 */
 	public static final int DEFAULT_ORDER = Ordered.HIGHEST_PRECEDENCE + 300;
 

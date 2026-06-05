@@ -27,6 +27,26 @@ Update your dependency and import statements accordingly:
 </dependency>
 ----
 
+==== Changed: `Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER` default value
+
+`Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER` changed from `Ordered.HIGHEST_PRECEDENCE + 1000` to `Ordered.HIGHEST_PRECEDENCE + 200`, placing memory advisors at their default order _outside_ the `ToolCallingAdvisor` (`HIGHEST_PRECEDENCE + 300`).
+
+The `ToolCallingAdvisor` now manages conversation history internally across tool-call iterations by default. The memory advisor only stores the final user/assistant exchange, never writing tool-call messages to the `ChatMemoryRepository`. This is the correct default because most repository implementations do not support those message types.
+
+If you need memory _inside_ the loop (e.g. with `InMemoryChatMemoryRepository`), explicitly set the advisor order above `ToolCallingAdvisor.DEFAULT_ORDER` and call `.disableInternalConversationHistory()`:
+
+[source,java]
+----
+var toolCallingAdvisor = ToolCallingAdvisor.builder()
+    .disableInternalConversationHistory()
+    .build();
+var chatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory)
+    .advisorOrder(Ordered.HIGHEST_PRECEDENCE + 400)
+    .build();
+----
+
+TIP: The https://github.com/spring-ai-community/spring-ai-session[spring-ai-session] community project provides a session-aware memory implementation that fully supports tool-call messages and can be safely used inside the tool-call loop with any backend. It is planned to replace `ChatMemory` in Spring AI 2.1. See the https://spring-ai-community.github.io/spring-ai-session/latest-snapshot/[spring-ai-session documentation] for details.
+
 === Tool Calling
 
 ==== Removed: `internalToolExecutionEnabled` from `ToolCallingChatOptions`
