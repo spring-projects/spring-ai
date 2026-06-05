@@ -24,7 +24,7 @@
 		<version>2.0.0-SNAPSHOT</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
-	<artifactId>spring-ai-advisors-vector-store</artifactId>
+	<artifactId>spring-ai-vector-store-advisor</artifactId>
 	<packaging>jar</packaging>
 	<name>Spring AI Advisors</name>
 	<description>Chat client advisors for Spring AI</description>
