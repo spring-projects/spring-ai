@@ -52,10 +52,10 @@
 		<module>spring-ai-spring-boot-docker-compose</module>
 		<module>spring-ai-spring-boot-testcontainers</module>
 
-		<module>document-readers/jsoup-reader</module>
-		<module>document-readers/markdown-reader</module>
-		<module>document-readers/pdf-reader</module>
-		<module>document-readers/tika-reader</module>
+		<module>document-readers/spring-ai-jsoup-document-reader</module>
+		<module>document-readers/spring-ai-markdown-document-reader</module>
+		<module>document-readers/spring-ai-pdf-document-reader</module>
+		<module>document-readers/spring-ai-tika-document-reader</module>
 
 		<module>vector-stores/spring-ai-azure-store</module>
 		<module>vector-stores/spring-ai-cassandra-store</module>
