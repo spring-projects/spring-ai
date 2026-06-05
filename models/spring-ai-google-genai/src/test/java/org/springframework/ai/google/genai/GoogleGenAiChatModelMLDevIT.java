@@ -23,6 +23,8 @@ import com.google.genai.Client;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -93,61 +95,51 @@ class GoogleGenAiChatModelMLDevIT {
 	@Test
 	@SuppressWarnings("unchecked")
 	void functionCallingWithGoogleSearchAndServerSideToolInvocations() {
-		var promptOptions = GoogleGenAiChatOptions.builder()
-			.model(ChatModel.GEMINI_2_5_FLASH)
-			.googleSearchRetrieval(false)
-			.includeServerSideToolInvocations(false)
-			.toolCallbacks(List.of(FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
-				.description("Get the current weather in a given location")
-				.inputType(MockWeatherService.Request.class)
-				.build()))
+		var weatherToolCallback = FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
+			.description("Get the current weather in a given location")
+			.inputType(MockWeatherService.Request.class)
 			.build();
 
-		Prompt prompt = new Prompt(
-				new UserMessage("What's the weather like in San Francisco? Return the temperature in Celsius"),
-				promptOptions);
+		String response = ChatClient.builder(this.chatModel)
+			.defaultAdvisors(ToolCallingAdvisor.builder().build())
+			.build()
+			.prompt()
+			.options(GoogleGenAiChatOptions.builder()
+				.model(ChatModel.GEMINI_2_5_FLASH)
+				.googleSearchRetrieval(false)
+				.includeServerSideToolInvocations(false))
+			.user("What's the weather like in San Francisco? Return the temperature in Celsius")
+			.tools(weatherToolCallback)
+			.call()
+			.content();
 
-		ChatResponse response = this.chatModel.call(prompt);
 		// Function call should have been executed — weather data should be in response
-		assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("30");
-
-		// Check that server-side tool invocations were captured somewhere in the
-		// conversation. The final response may or may not contain them depending on
-		// whether the model's last turn included Google Search parts.
-		// The primary validation is that the call succeeded without errors,
-		// proving mixed parts (functionCall + toolCall/toolResponse) are handled
-		// correctly.
-		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+		assertThat(response).containsIgnoringCase("30");
 	}
 
 	@Test
 	@SuppressWarnings("unchecked")
 	void functionCallingWithGoogleSearchAndServerSideToolInvocationsGemini3x() {
-		var promptOptions = GoogleGenAiChatOptions.builder()
-			.model(ChatModel.GEMINI_3_5_FLASH)
-			.googleSearchRetrieval(true)
-			.includeServerSideToolInvocations(true)
-			.toolCallbacks(List.of(FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
-				.description("Get the current weather in a given location")
-				.inputType(MockWeatherService.Request.class)
-				.build()))
+		var weatherToolCallback = FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
+			.description("Get the current weather in a given location")
+			.inputType(MockWeatherService.Request.class)
 			.build();
 
-		Prompt prompt = new Prompt(new UserMessage(
-				"What's the weather like in San Francisco? Return the temperature in Celsius. Also, search online for the latest news about San Francisco."),
-				promptOptions);
+		String response = ChatClient.builder(this.chatModel)
+			.defaultAdvisors(ToolCallingAdvisor.builder().build())
+			.build()
+			.prompt()
+			.options(GoogleGenAiChatOptions.builder()
+				.model(ChatModel.GEMINI_3_5_FLASH)
+				.googleSearchRetrieval(true)
+				.includeServerSideToolInvocations(true))
+			.user("What's the weather like in San Francisco? Return the temperature in Celsius. Also, search online for the latest news about San Francisco.")
+			.tools(weatherToolCallback)
+			.call()
+			.content();
 
-		ChatResponse response = this.chatModel.call(prompt);
 		// Function call should have been executed — weather data should be in response
-		assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("30");
-
-		// Check that server-side tool invocations were captured somewhere in the
-		// conversation. The final response may or may not contain them depending on
-		// whether the model's last turn included Google Search parts.
-		// The primary validation is that the call succeeded without errors,
-		// proving mixed parts (functionCall + toolCall/toolResponse) are handled
-		// correctly.
-		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+		assertThat(response).containsIgnoringCase("30");
 	}
 
 	@SpringBootConfiguration
