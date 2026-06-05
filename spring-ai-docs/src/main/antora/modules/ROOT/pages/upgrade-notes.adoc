@@ -4,6 +4,12 @@
 [[upgrading-to-2-0-0-RC1]]
 == Upgrading to 2.0.0-RC1
 
+=== Advisors
+
+==== `spring-ai-advisors-vector-store` renamed to `spring-ai-vector-store-advisor`
+
+The `spring-ai-advisors-vector-store` module has been renamed to `spring-ai-vector-store-advisor` to better align with the naming conventions of other Spring AI modules.
+
 === Tool Calling
 
 ==== Removed: `internalToolExecutionEnabled` from `ToolCallingChatOptions`
