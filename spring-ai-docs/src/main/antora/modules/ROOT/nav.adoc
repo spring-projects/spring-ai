@@ -26,6 +26,7 @@
 **** xref:api/chat/nvidia-chat.adoc[NVIDIA]
 **** xref:api/chat/ollama-chat.adoc[Ollama]
 **** xref:api/chat/perplexity-chat.adoc[Perplexity AI]
+**** xref:api/chat/oci-genai-chat.adoc[OCI Generative AI]
 **** xref:api/chat/openai-chat.adoc[OpenAI]
 
 *** xref:api/embeddings.adoc[Embedding Models]
@@ -35,6 +36,7 @@
 **** xref:api/embeddings/azure-openai-embeddings.adoc[Azure OpenAI]
 **** xref:api/embeddings/google-genai-embeddings-text.adoc[Google GenAI Text Embedding]
 **** xref:api/embeddings/mistralai-embeddings.adoc[Mistral AI]
+**** xref:api/embeddings/oci-genai-embeddings.adoc[OCI GenAI]
 **** xref:api/embeddings/ollama-embeddings.adoc[Ollama]
 **** xref:api/embeddings/onnx.adoc[(ONNX) Transformers]
 **** xref:api/embeddings/openai-embeddings.adoc[OpenAI]
@@ -86,6 +88,7 @@
 
 ** xref:api/vectordbs.adoc[]
 *** xref:api/vectordbs/azure.adoc[]
+*** xref:api/vectordbs/azure-cosmos-db.adoc[]
 *** xref:api/vectordbs/bedrock-knowledge-base.adoc[]
 *** xref:api/vectordbs/apache-cassandra.adoc[]
 *** xref:api/vectordbs/chroma.adoc[]
