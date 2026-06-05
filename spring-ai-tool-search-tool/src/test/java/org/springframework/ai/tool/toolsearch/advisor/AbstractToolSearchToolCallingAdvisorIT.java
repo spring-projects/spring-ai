@@ -55,9 +55,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Abstract base class for {@link ToolSearchToolCallingAdvisor} integration tests. Mirrors
- * the structure of {@code AbstractToolCallAdvisorIT} but exercises the full tool-search
- * flow: the LLM first calls {@code toolSearchTool} to discover tools, then invokes the
- * resolved tool.
+ * the structure of {@code AbstractToolCallingAdvisorIT} but exercises the full
+ * tool-search flow: the LLM first calls {@code toolSearchTool} to discover tools, then
+ * invokes the resolved tool.
  *
  * <p>
  * Each test is parameterized and runs against three {@link ToolIndex} implementations:

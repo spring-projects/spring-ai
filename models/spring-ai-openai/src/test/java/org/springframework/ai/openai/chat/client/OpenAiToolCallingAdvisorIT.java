@@ -18,23 +18,23 @@ package org.springframework.ai.openai.chat.client;
 
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.test.chat.client.advisor.AbstractToolCallAdvisorIT;
+import org.springframework.ai.test.chat.client.advisor.AbstractToolCallingAdvisorIT;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
- * Integration tests for {@link ToolCallAdvisor} functionality with OpenAI SDK.
+ * Integration tests for {@link ToolCallingAdvisor} functionality with OpenAI SDK.
  *
  * @author Christian Tzolov
  */
-@SpringBootTest(classes = OpenAiToolCallAdvisorIT.TestConfiguration.class)
+@SpringBootTest(classes = OpenAiToolCallingAdvisorIT.TestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 @ActiveProfiles("logging-test")
-class OpenAiToolCallAdvisorIT extends AbstractToolCallAdvisorIT {
+class OpenAiToolCallingAdvisorIT extends AbstractToolCallingAdvisorIT {
 
 	@Override
 	protected ChatModel getChatModel() {

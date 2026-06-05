@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientAttributes;
 import org.springframework.ai.chat.client.DefaultChatClient;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
@@ -36,7 +36,7 @@ import static org.mockito.Mockito.mock;
 
 /**
  * Unit tests for {@link ChatClientAutoConfiguration} {@link ToolCallingManager} and
- * {@link ToolCallAdvisor.Builder} wiring.
+ * {@link ToolCallingAdvisor.Builder} wiring.
  *
  * @author Christian Tzolov
  */
@@ -54,70 +54,71 @@ class ChatClientAutoConfigurationTests {
 	}
 
 	@Test
-	void toolCallAdvisorBuilderBeanIsAutoConfigured() {
+	void toolCallingAdvisorBuilderBeanIsAutoConfigured() {
 		var manager = mock(ToolCallingManager.class);
 
 		this.contextRunner.withBean(ToolCallingManager.class, () -> manager).run(context -> {
 			assertThat(context).hasNotFailed();
-			assertThat(context.getBean(ToolCallAdvisor.Builder.class)).isNotNull();
+			assertThat(context.getBean(ToolCallingAdvisor.Builder.class)).isNotNull();
 		});
 	}
 
 	@Test
-	void toolCallAdvisorBuilderUsesInjectedToolCallingManager() {
+	void toolCallingAdvisorBuilderUsesInjectedToolCallingManager() {
 		var manager = mock(ToolCallingManager.class);
 
 		this.contextRunner.withBean(ToolCallingManager.class, () -> manager).run(context -> {
-			var advisorBuilder = context.getBean(ToolCallAdvisor.Builder.class);
+			var advisorBuilder = context.getBean(ToolCallingAdvisor.Builder.class);
 			assertThat(ReflectionTestUtils.getField(advisorBuilder, "toolCallingManager")).isSameAs(manager);
 		});
 	}
 
 	@Test
-	void toolCallAdvisorBuilderUsesAutoConfiguredToolCallingManager() {
+	void toolCallingAdvisorBuilderUsesAutoConfiguredToolCallingManager() {
 		this.contextRunner.withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class)).run(context -> {
 			var toolCallingManager = context.getBean(ToolCallingManager.class);
-			var advisorBuilder = context.getBean(ToolCallAdvisor.Builder.class);
+			var advisorBuilder = context.getBean(ToolCallingAdvisor.Builder.class);
 			assertThat(ReflectionTestUtils.getField(advisorBuilder, "toolCallingManager")).isSameAs(toolCallingManager);
 		});
 	}
 
 	@Test
-	void toolCallAdvisorBuilderIsWiredIntoChatClientBuilder() {
+	void toolCallingAdvisorBuilderIsWiredIntoChatClientBuilder() {
 		var manager = mock(ToolCallingManager.class);
 
 		this.contextRunner.withBean(ToolCallingManager.class, () -> manager).run(context -> {
-			var advisorBuilder = context.getBean(ToolCallAdvisor.Builder.class);
+			var advisorBuilder = context.getBean(ToolCallingAdvisor.Builder.class);
 
 			ChatClient.Builder chatClientBuilder = context.getBean(ChatClient.Builder.class);
 			var defaultRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ReflectionTestUtils
 				.getField(chatClientBuilder, "defaultRequest");
-			assertThat(ReflectionTestUtils.getField(defaultRequest, "toolCallAdvisorBuilder")).isSameAs(advisorBuilder);
+			assertThat(ReflectionTestUtils.getField(defaultRequest, "toolCallingAdvisorBuilder"))
+				.isSameAs(advisorBuilder);
 		});
 	}
 
 	@Test
-	void advisorOrderPropertyIsAppliedToToolCallAdvisorBuilder() {
+	void advisorOrderPropertyIsAppliedToToolCallingAdvisorBuilder() {
 		var manager = mock(ToolCallingManager.class);
 
 		this.contextRunner.withBean(ToolCallingManager.class, () -> manager)
 			.withPropertyValues("spring.ai.chat.client.tool-calling.advisor-order=500")
 			.run(context -> {
 				assertThat(context).hasNotFailed();
-				var advisorBuilder = context.getBean(ToolCallAdvisor.Builder.class);
+				var advisorBuilder = context.getBean(ToolCallingAdvisor.Builder.class);
 				assertThat(advisorBuilder.getAdvisorOrder()).isEqualTo(500);
 			});
 	}
 
 	@Test
-	void streamToolCallResponsesPropertyIsAppliedToToolCallAdvisorBuilder() {
+	void streamToolCallResponsesPropertyIsAppliedToToolCallingAdvisorBuilder() {
 		var manager = mock(ToolCallingManager.class);
 
 		this.contextRunner.withBean(ToolCallingManager.class, () -> manager)
 			.withPropertyValues("spring.ai.chat.client.tool-calling.stream-tool-call-responses=true")
 			.run(context -> {
 				assertThat(context).hasNotFailed();
-				var advisorBuilder = context.getBean(ToolCallAdvisor.Builder.class);
+				var advisorBuilder = context.getBean(ToolCallingAdvisor.Builder.class);
 				assertThat(ReflectionTestUtils.getField(advisorBuilder, "streamToolCallResponses")).isEqualTo(true);
 			});
 	}
@@ -130,7 +131,7 @@ class ChatClientAutoConfigurationTests {
 		this.contextRunner.withBean(ToolCallingManager.class, () -> manager)
 			.withBean(ToolExecutionEligibilityChecker.class, () -> customChecker)
 			.run(context -> {
-				var advisorBuilder = context.getBean(ToolCallAdvisor.Builder.class);
+				var advisorBuilder = context.getBean(ToolCallingAdvisor.Builder.class);
 				assertThat(ReflectionTestUtils.getField(advisorBuilder, "toolExecutionEligibilityChecker"))
 					.isSameAs(customChecker);
 			});
@@ -141,7 +142,7 @@ class ChatClientAutoConfigurationTests {
 		var manager = mock(ToolCallingManager.class);
 
 		this.contextRunner.withBean(ToolCallingManager.class, () -> manager).run(context -> {
-			var advisorBuilder = context.getBean(ToolCallAdvisor.Builder.class);
+			var advisorBuilder = context.getBean(ToolCallingAdvisor.Builder.class);
 			assertThat(ReflectionTestUtils.getField(advisorBuilder, "toolExecutionEligibilityChecker")).isNotNull();
 		});
 	}
@@ -165,15 +166,15 @@ class ChatClientAutoConfigurationTests {
 	}
 
 	@Test
-	void customToolCallAdvisorBuilderBeanSuppressesAutoConfiguration() {
+	void customToolCallingAdvisorBuilderBeanSuppressesAutoConfiguration() {
 		var manager = mock(ToolCallingManager.class);
-		var customAdvisorBuilder = ToolCallAdvisor.builder().toolCallingManager(manager);
+		var customAdvisorBuilder = ToolCallingAdvisor.builder().toolCallingManager(manager);
 
 		this.contextRunner.withBean(ToolCallingManager.class, () -> manager)
-			.withBean(ToolCallAdvisor.Builder.class, () -> customAdvisorBuilder)
+			.withBean(ToolCallingAdvisor.Builder.class, () -> customAdvisorBuilder)
 			.run(context -> {
 				assertThat(context).hasNotFailed();
-				assertThat(context.getBean(ToolCallAdvisor.Builder.class)).isSameAs(customAdvisorBuilder);
+				assertThat(context.getBean(ToolCallingAdvisor.Builder.class)).isSameAs(customAdvisorBuilder);
 			});
 	}
 
@@ -182,7 +183,8 @@ class ChatClientAutoConfigurationTests {
 		var defaultManager = mock(ToolCallingManager.class);
 		var customManager = mock(ToolCallingManager.class);
 
-		// toolCallAdvisorBuilder is a singleton; two ambiguous ToolCallingManager beans
+		// toolCallingAdvisorBuilder is a singleton; two ambiguous ToolCallingManager
+		// beans
 		// cause the context itself to fail at startup.
 		this.contextRunner.withBean("customToolCallingManager", ToolCallingManager.class, () -> customManager)
 			.withBean("defaultToolCallingManager", ToolCallingManager.class, () -> defaultManager)

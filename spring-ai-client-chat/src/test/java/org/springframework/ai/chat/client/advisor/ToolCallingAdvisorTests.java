@@ -61,12 +61,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for {@link ToolCallAdvisor}.
+ * Unit tests for {@link ToolCallingAdvisor}.
  *
  * @author Christian Tzolov
  */
 @ExtendWith(MockitoExtension.class)
-public class ToolCallAdvisorTests {
+public class ToolCallingAdvisorTests {
 
 	@Mock
 	private ToolCallingManager toolCallingManager;
@@ -79,18 +79,18 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void whenToolCallingManagerIsNullThenThrow() {
-		assertThatThrownBy(() -> ToolCallAdvisor.builder().toolCallingManager(null).build())
+		assertThatThrownBy(() -> ToolCallingAdvisor.builder().toolCallingManager(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("toolCallingManager must not be null");
 	}
 
 	@Test
 	void whenAdvisorOrderIsOutOfRangeThenThrow() {
-		assertThatThrownBy(() -> ToolCallAdvisor.builder().advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE).build())
+		assertThatThrownBy(() -> ToolCallingAdvisor.builder().advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("advisorOrder must be between HIGHEST_PRECEDENCE and LOWEST_PRECEDENCE");
 
-		assertThatThrownBy(() -> ToolCallAdvisor.builder().advisorOrder(BaseAdvisor.LOWEST_PRECEDENCE).build())
+		assertThatThrownBy(() -> ToolCallingAdvisor.builder().advisorOrder(BaseAdvisor.LOWEST_PRECEDENCE).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("advisorOrder must be between HIGHEST_PRECEDENCE and LOWEST_PRECEDENCE");
 	}
@@ -100,7 +100,7 @@ public class ToolCallAdvisorTests {
 		ToolCallingManager customManager = mock(ToolCallingManager.class);
 		int customOrder = BaseAdvisor.HIGHEST_PRECEDENCE + 500;
 
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder()
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder()
 			.toolCallingManager(customManager)
 			.advisorOrder(customOrder)
 			.build();
@@ -112,7 +112,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void testDefaultValues() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder().build();
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().build();
 
 		assertThat(advisor).isNotNull();
 		assertThat(advisor.getOrder()).isEqualTo(BaseAdvisor.HIGHEST_PRECEDENCE + 300);
@@ -121,7 +121,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void whenToolExecutionEligibilityCheckerIsNullThenThrow() {
-		assertThatThrownBy(() -> ToolCallAdvisor.builder()
+		assertThatThrownBy(() -> ToolCallingAdvisor.builder()
 			.toolExecutionEligibilityChecker((ToolExecutionEligibilityChecker) null)
 			.build()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("toolExecutionEligibilityChecker must not be null");
@@ -129,7 +129,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void customCheckerSuppressesToolExecutionInCallPath() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder()
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder()
 			.toolCallingManager(this.toolCallingManager)
 			.toolExecutionEligibilityChecker(chatResponse -> false)
 			.build();
@@ -153,7 +153,7 @@ public class ToolCallAdvisorTests {
 		// Checker says "tool call" on the first invocation, "done" on the second —
 		// regardless of what hasToolCalls() returns on the response.
 		int[] checkCount = { 0 };
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder()
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder()
 			.toolCallingManager(this.toolCallingManager)
 			.toolExecutionEligibilityChecker(chatResponse -> ++checkCount[0] == 1)
 			.build();
@@ -189,7 +189,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void customCheckerSuppressesToolExecutionInStreamPath() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder()
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder()
 			.toolCallingManager(this.toolCallingManager)
 			.toolExecutionEligibilityChecker(chatResponse -> false)
 			.streamToolCallResponses(true)
@@ -212,7 +212,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void whenChatClientRequestIsNullThenThrow() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder().build();
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().build();
 
 		assertThatThrownBy(() -> advisor.adviseCall(null, this.callAdvisorChain))
 			.isInstanceOf(IllegalArgumentException.class)
@@ -221,7 +221,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void whenCallAdvisorChainIsNullThenThrow() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder().build();
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().build();
 		ChatClientRequest request = createMockRequest();
 
 		assertThatThrownBy(() -> advisor.adviseCall(request, null)).isInstanceOf(IllegalArgumentException.class)
@@ -230,7 +230,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void whenOptionsAreNullThenThrow() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder().build();
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().build();
 
 		Prompt prompt = new Prompt(List.of(new UserMessage("test")));
 		ChatClientRequest request = ChatClientRequest.builder().prompt(prompt).build();
@@ -242,7 +242,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void whenOptionsAreNotToolCallingChatOptionsThenThrow() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder().build();
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().build();
 
 		ChatOptions nonToolOptions = mock(ChatOptions.class);
 		Prompt prompt = new Prompt(List.of(new UserMessage("test")), nonToolOptions);
@@ -255,7 +255,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void testAdviseCallWithoutToolCalls() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
 
 		ChatClientRequest request = createMockRequest();
 		ChatClientResponse response = createMockResponse(false);
@@ -276,7 +276,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void testAdviseCallWithNullChatResponse() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
 
 		ChatClientRequest request = createMockRequest();
 		ChatClientResponse responseWithNullChatResponse = ChatClientResponse.builder().build();
@@ -297,7 +297,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void testAdviseCallWithSingleToolCallIteration() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
 
 		ChatClientRequest request = createMockRequest();
 		ChatClientResponse responseWithToolCall = createMockResponse(true);
@@ -334,7 +334,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void testAdviseCallWithMultipleToolCallIterations() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
 
 		ChatClientRequest request = createMockRequest();
 		ChatClientResponse firstToolCallResponse = createMockResponse(true);
@@ -380,7 +380,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void testAdviseCallWithReturnDirectToolExecution() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
 
 		ChatClientRequest request = createMockRequest();
 		ChatClientResponse responseWithToolCall = createMockResponse(true);
@@ -423,7 +423,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void testAdviseStreamWithoutToolCalls() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
 
 		ChatClientRequest request = createMockRequest();
 		ChatClientResponse response = createMockResponse(false);
@@ -445,7 +445,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void testAdviseStreamWithSingleToolCallIteration() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
 
 		ChatClientRequest request = createMockRequest();
 		ChatClientResponse responseWithToolCall = createMockResponse(true);
@@ -483,7 +483,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void testAdviseStreamWithReturnDirectToolExecution() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
 
 		ChatClientRequest request = createMockRequest();
 		ChatClientResponse responseWithToolCall = createMockResponse(true);
@@ -529,7 +529,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void whenStreamAdvisorChainIsNullThenThrow() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder().build();
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().build();
 		ChatClientRequest request = createMockRequest();
 
 		assertThatThrownBy(() -> advisor.adviseStream(request, null)).isInstanceOf(IllegalArgumentException.class)
@@ -538,7 +538,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void whenStreamChatClientRequestIsNullThenThrow() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder().build();
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().build();
 
 		assertThatThrownBy(() -> advisor.adviseStream(null, this.streamAdvisorChain))
 			.isInstanceOf(IllegalArgumentException.class)
@@ -547,7 +547,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void whenStreamOptionsAreNotToolCallingChatOptionsThenThrow() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder().build();
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().build();
 
 		ChatOptions nonToolOptions = mock(ChatOptions.class);
 		Prompt prompt = new Prompt(List.of(new UserMessage("test")), nonToolOptions);
@@ -566,14 +566,14 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void testGetName() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder().build();
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().build();
 		assertThat(advisor.getName()).isEqualTo("Tool Calling Advisor");
 	}
 
 	@Test
 	void testGetOrder() {
 		int customOrder = BaseAdvisor.HIGHEST_PRECEDENCE + 400;
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder().advisorOrder(customOrder).build();
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().advisorOrder(customOrder).build();
 
 		assertThat(advisor.getOrder()).isEqualTo(customOrder);
 	}
@@ -583,7 +583,7 @@ public class ToolCallAdvisorTests {
 		ToolCallingManager customManager = mock(ToolCallingManager.class);
 		int customOrder = BaseAdvisor.HIGHEST_PRECEDENCE + 500;
 
-		ToolCallAdvisor.Builder<?> builder = ToolCallAdvisor.builder()
+		ToolCallingAdvisor.Builder<?> builder = ToolCallingAdvisor.builder()
 			.toolCallingManager(customManager)
 			.advisorOrder(customOrder);
 
@@ -593,7 +593,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void testConversationHistoryEnabledDefaultValue() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
 
 		// By default, conversationHistoryEnabled should be true
 		// Verify via the tool call iteration behavior - with history enabled, the full
@@ -628,7 +628,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void testConversationHistoryEnabledSetToFalse() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder()
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder()
 			.toolCallingManager(this.toolCallingManager)
 			.conversationHistoryEnabled(false)
 			.build();
@@ -666,7 +666,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void testStreamToolCallResponsesDefaultValue() {
-		ToolCallAdvisor.Builder<?> builder = ToolCallAdvisor.builder();
+		ToolCallingAdvisor.Builder<?> builder = ToolCallingAdvisor.builder();
 
 		// By default, streamToolCallResponses should be false
 		assertThat(builder.isStreamToolCallResponses()).isFalse();
@@ -674,7 +674,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void testStreamToolCallResponsesBuilderMethod() {
-		ToolCallAdvisor.Builder<?> builder = ToolCallAdvisor.builder().streamToolCallResponses(false);
+		ToolCallingAdvisor.Builder<?> builder = ToolCallingAdvisor.builder().streamToolCallResponses(false);
 
 		assertThat(builder.isStreamToolCallResponses()).isFalse();
 	}
@@ -682,7 +682,7 @@ public class ToolCallAdvisorTests {
 	@Test
 	void testAdviseStreamWithToolCallResponsesEnabled() {
 		// Create advisor with tool call streaming explicitly enabled
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder()
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder()
 			.toolCallingManager(this.toolCallingManager)
 			.streamToolCallResponses(true)
 			.build();
@@ -723,7 +723,7 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void testDisableInternalConversationHistoryBuilderMethod() {
-		ToolCallAdvisor advisor = ToolCallAdvisor.builder()
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder()
 			.toolCallingManager(this.toolCallingManager)
 			.disableInternalConversationHistory()
 			.build();
@@ -986,7 +986,7 @@ public class ToolCallAdvisorTests {
 	/**
 	 * Test subclass of ToolCallAdvisor to verify extensibility and hook methods.
 	 */
-	private static class TestableToolCallAdvisor extends ToolCallAdvisor {
+	private static class TestableToolCallAdvisor extends ToolCallingAdvisor {
 
 		private final int[] hookCallCounts;
 
@@ -1026,7 +1026,7 @@ public class ToolCallAdvisorTests {
 			return new TestableBuilder();
 		}
 
-		static class TestableBuilder extends ToolCallAdvisor.Builder<TestableBuilder> {
+		static class TestableBuilder extends ToolCallingAdvisor.Builder<TestableBuilder> {
 
 			@Override
 			protected TestableBuilder self() {

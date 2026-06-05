@@ -25,14 +25,14 @@ import software.amazon.awssdk.regions.Region;
 import org.springframework.ai.bedrock.converse.BedrockChatOptions;
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.bedrock.converse.RequiresAwsCredentials;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.test.chat.client.advisor.AbstractToolCallAdvisorIT;
+import org.springframework.ai.test.chat.client.advisor.AbstractToolCallingAdvisorIT;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 
 /**
- * Integration tests for {@link ToolCallAdvisor} functionality with Bedrock SDK.
+ * Integration tests for {@link ToolCallingAdvisor} functionality with Bedrock SDK.
  *
  * @author Christian Tzolov
  * @author Sebastien Deleuze
@@ -40,7 +40,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 @RequiresAwsCredentials
 @Disabled
-class BedrockNovaToolCallAdvisorIT extends AbstractToolCallAdvisorIT {
+class BedrockNovaToolCallingAdvisorIT extends AbstractToolCallingAdvisorIT {
 
 	@Override
 	protected ChatModel getChatModel() {

@@ -34,7 +34,7 @@ import org.mockito.ArgumentCaptor;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
@@ -219,19 +219,19 @@ class DefaultChatClientTests {
 	}
 
 	@Test
-	void toolCallAdvisorBuilderPreservedAfterMutate() {
+	void toolCallingAdvisorBuilderPreservedAfterMutate() {
 		var manager = mock(ToolCallingManager.class);
-		var advisorBuilder = ToolCallAdvisor.builder().toolCallingManager(manager);
+		var advisorBuilder = ToolCallingAdvisor.builder().toolCallingManager(manager);
 		ChatClient original = ChatClient.builder(mockChatModel(), ObservationRegistry.NOOP, null, null, advisorBuilder)
 			.build();
 
 		// copy constructor path: each prompt() call copies the spec
 		var originalSpec = (DefaultChatClient.DefaultChatClientRequestSpec) original.prompt();
-		assertThat(ReflectionTestUtils.getField(originalSpec, "toolCallAdvisorBuilder")).isSameAs(advisorBuilder);
+		assertThat(ReflectionTestUtils.getField(originalSpec, "toolCallingAdvisorBuilder")).isSameAs(advisorBuilder);
 
 		// mutate() path: builder cloned, then prompt() copies again
 		var mutatedSpec = (DefaultChatClient.DefaultChatClientRequestSpec) original.mutate().build().prompt();
-		assertThat(ReflectionTestUtils.getField(mutatedSpec, "toolCallAdvisorBuilder")).isSameAs(advisorBuilder);
+		assertThat(ReflectionTestUtils.getField(mutatedSpec, "toolCallingAdvisorBuilder")).isSameAs(advisorBuilder);
 	}
 
 	@Test
@@ -1601,7 +1601,7 @@ class DefaultChatClientTests {
 		DefaultChatClient.DefaultChatClientRequestSpec spec = new DefaultChatClient.DefaultChatClientRequestSpec(
 				chatModel, null, Map.of(), Map.of(), null, Map.of(), Map.of(), List.of(), List.of(), List.of(),
 				List.of(), null, List.of(), Map.of(), ObservationRegistry.NOOP, null, Map.of(), null, null,
-				ToolCallAdvisor.builder());
+				ToolCallingAdvisor.builder());
 		assertThat(spec).isNotNull();
 	}
 
@@ -1609,7 +1609,7 @@ class DefaultChatClientTests {
 	void whenChatModelIsNullThenThrow() {
 		assertThatThrownBy(() -> new DefaultChatClient.DefaultChatClientRequestSpec(null, null, Map.of(), Map.of(),
 				null, Map.of(), Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(),
-				ObservationRegistry.NOOP, null, Map.of(), null, null, ToolCallAdvisor.builder()))
+				ObservationRegistry.NOOP, null, Map.of(), null, null, ToolCallingAdvisor.builder()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("chatModel cannot be null");
 	}
@@ -1618,28 +1618,28 @@ class DefaultChatClientTests {
 	void whenObservationRegistryIsNullThenThrow() {
 		assertThatThrownBy(() -> new DefaultChatClient.DefaultChatClientRequestSpec(mockChatModel(), null, Map.of(),
 				Map.of(), null, Map.of(), Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(),
-				Map.of(), null, null, Map.of(), null, null, ToolCallAdvisor.builder()))
+				Map.of(), null, null, Map.of(), null, null, ToolCallingAdvisor.builder()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("observationRegistry cannot be null");
 	}
 
 	@Test
-	void whenToolCallAdvisorBuilderIsNullThenThrow() {
+	void whenToolCallingAdvisorBuilderIsNullThenThrow() {
 		assertThatThrownBy(() -> new DefaultChatClient.DefaultChatClientRequestSpec(mockChatModel(), null, Map.of(),
 				Map.of(), null, Map.of(), Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(),
 				Map.of(), ObservationRegistry.NOOP, null, Map.of(), null, null, null))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("toolCallAdvisorBuilder cannot be null");
+			.hasMessage("toolCallingAdvisorBuilder cannot be null");
 	}
 
 	@Test
-	void whenNullToolCallAdvisorBuilderThenObservationRegistryWiredIntoToolCallingManager() {
+	void whenNullToolCallingAdvisorBuilderThenObservationRegistryWiredIntoToolCallingManager() {
 		var registry = TestObservationRegistry.create();
 		var spec = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.builder(mockChatModel(), registry, null, null, null)
 			.build()
 			.prompt();
-		var advisorBuilder = ReflectionTestUtils.getField(spec, "toolCallAdvisorBuilder");
+		var advisorBuilder = ReflectionTestUtils.getField(spec, "toolCallingAdvisorBuilder");
 		var manager = ReflectionTestUtils.getField(advisorBuilder, "toolCallingManager");
 		assertThat(ReflectionTestUtils.getField(manager, "observationRegistry")).isSameAs(registry);
 	}

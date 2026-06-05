@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
@@ -63,7 +63,7 @@ public class FunctionCallWithFunctionWrapperIT {
 
 			var chatClient = ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
-						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+						ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 
 			Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunction = new MockWeatherService();
@@ -106,7 +106,7 @@ public class FunctionCallWithFunctionWrapperIT {
 
 			var chatClient = ChatClient
 				.builder(chatModel, ObservationRegistry.NOOP, null, null,
-						ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+						ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
 				.build();
 
 			Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunction = new MockWeatherService();

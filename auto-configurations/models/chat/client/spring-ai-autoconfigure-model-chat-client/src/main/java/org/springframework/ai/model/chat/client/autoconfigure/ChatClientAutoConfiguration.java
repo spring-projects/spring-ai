@@ -25,7 +25,7 @@ import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientBuilderCustomizer;
 import org.springframework.ai.chat.client.ChatClientCustomizer;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientCompletionObservationHandler;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
@@ -97,10 +97,10 @@ public class ChatClientAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(ToolCallingManager.class)
-	ToolCallAdvisor.Builder<?> toolCallAdvisorBuilder(ChatClientBuilderProperties properties,
+	ToolCallingAdvisor.Builder<?> toolCallingAdvisorBuilder(ChatClientBuilderProperties properties,
 			ToolCallingManager toolCallingManager,
 			ObjectProvider<ToolExecutionEligibilityChecker> toolExecutionEligibilityChecker) {
-		var builder = ToolCallAdvisor.builder()
+		var builder = ToolCallingAdvisor.builder()
 			.toolCallingManager(toolCallingManager)
 			.advisorOrder(properties.getToolCalling().getAdvisorOrder())
 			.streamToolCallResponses(properties.getToolCalling().isStreamToolCallResponses());
@@ -118,13 +118,13 @@ public class ChatClientAutoConfiguration {
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatClientObservationConvention> chatClientObservationConvention,
 			ObjectProvider<AdvisorObservationConvention> advisorObservationConvention,
-			ObjectProvider<ToolCallAdvisor.Builder<?>> toolCallAdvisorBuilder) {
+			ObjectProvider<ToolCallingAdvisor.Builder<?>> toolCallingAdvisorBuilder) {
 		ChatClient.Builder builder = ChatClient.builder(chatModel,
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
 				chatClientObservationConvention.getIfUnique(), advisorObservationConvention.getIfUnique(),
-				toolCallAdvisorBuilder.getIfAvailable());
+				toolCallingAdvisorBuilder.getIfAvailable());
 		if (!properties.getToolCalling().isEnabled()) {
-			builder.defaultAdvisors(AdvisorParams.toolCallAdvisorAutoRegister(false));
+			builder.defaultAdvisors(AdvisorParams.toolCallingAdvisorAutoRegister(false));
 		}
 		return chatClientBuilderConfigurer.configure(builder);
 	}

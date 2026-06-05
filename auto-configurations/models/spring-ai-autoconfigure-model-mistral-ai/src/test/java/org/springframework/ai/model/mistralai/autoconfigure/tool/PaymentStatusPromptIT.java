@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -70,7 +70,7 @@ public class PaymentStatusPromptIT {
 
 				var chatClient = ChatClient
 					.builder(chatModel, ObservationRegistry.NOOP, null, null,
-							ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+							ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
 					.build();
 
 				UserMessage userMessage = new UserMessage("What's the status of my transaction with id T1001?");

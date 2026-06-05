@@ -32,7 +32,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -479,7 +479,7 @@ class GoogleGenAiChatModelIT {
 
 		ChatClient chatClient = ChatClient
 			.builder(chatModelWithTools, ObservationRegistry.NOOP, null, null,
-					ToolCallAdvisor.builder().toolCallingManager(toolCallingManager))
+					ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
 			.build();
 
 		// Create a prompt that will trigger the tool call with a specific request that

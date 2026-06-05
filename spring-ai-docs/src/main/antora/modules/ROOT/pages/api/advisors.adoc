@@ -377,11 +377,11 @@ Based on the article: https://arxiv.org/pdf/2309.06275[Re-Reading Improves Reaso
 
 
 ===== Tool Calling Advisor
-* `ToolCallAdvisor`
+* `ToolCallingAdvisor`
 +
-Handles the tool calling loop as part of the advisor chain. When tools are registered on a `ChatClient` call, this advisor is automatically added to the chain. It executes tool calls requested by the model and sends the results back, iterating until no more tool calls are needed. Implements `ToolAdvisor`, which is a marker interface that prevents a second `ToolCallAdvisor` from being auto-registered.
+Handles the tool calling loop as part of the advisor chain. When tools are registered on a `ChatClient` call, this advisor is automatically added to the chain. It executes tool calls requested by the model and sends the results back, iterating until no more tool calls are needed. Implements `ToolAdvisor`, which is a marker interface that prevents a second `ToolCallingAdvisor` from being auto-registered.
 +
-For full documentation, see xref:api/advisors-recursive.adoc#_toolcalladvisor[Recursive Advisors - ToolCallAdvisor] and xref:api/chatclient.adoc#_tool_calling[ChatClient - Tool Calling].
+For full documentation, see xref:api/advisors-recursive.adoc#_toolcalladvisor[Recursive Advisors - ToolCallingAdvisor] and xref:api/chatclient.adoc#_tool_calling[ChatClient - Tool Calling].
 
 ===== Content Safety Advisor
 * `SafeGuardAdvisor`
