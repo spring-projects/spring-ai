@@ -44,11 +44,11 @@
 		<module>advisors/spring-ai-tool-search-advisor</module>
 		<module>advisors/spring-ai-vector-store-advisor</module>
 
-		<module>memory/repository/spring-ai-model-chat-memory-repository-cassandra</module>
-		<module>memory/repository/spring-ai-model-chat-memory-repository-jdbc</module>
-		<module>memory/repository/spring-ai-model-chat-memory-repository-mongodb</module>
-		<module>memory/repository/spring-ai-model-chat-memory-repository-neo4j</module>
-		<module>memory/repository/spring-ai-model-chat-memory-repository-redis</module>
+		<module>memory-repositories/spring-ai-model-chat-memory-repository-cassandra</module>
+		<module>memory-repositories/spring-ai-model-chat-memory-repository-jdbc</module>
+		<module>memory-repositories/spring-ai-model-chat-memory-repository-mongodb</module>
+		<module>memory-repositories/spring-ai-model-chat-memory-repository-neo4j</module>
+		<module>memory-repositories/spring-ai-model-chat-memory-repository-redis</module>
 
 		<module>spring-ai-retry</module>
 		<module>spring-ai-spring-boot-docker-compose</module>
