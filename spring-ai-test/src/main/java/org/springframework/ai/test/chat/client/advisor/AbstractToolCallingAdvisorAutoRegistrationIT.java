@@ -164,7 +164,7 @@ public abstract class AbstractToolCallingAdvisorAutoRegistrationIT {
 	}
 
 	// -------------------------------------------------------------------------
-	// Call path: structural (prove ToolCallAdvisor is in control)
+	// Call path: structural (prove ToolCallingAdvisor is in control)
 	// -------------------------------------------------------------------------
 
 	@Nested
@@ -182,9 +182,9 @@ public abstract class AbstractToolCallingAdvisorAutoRegistrationIT {
 				.call()
 				.content();
 
-			// chain.copy(this) restarts after ToolCallAdvisor on every iteration
+			// chain.copy(this) restarts after ToolCallingAdvisor on every iteration
 			assertThat(counter.getCallCount())
-				.as("ToolCallAdvisor should loop: at least one tool iteration + final answer")
+				.as("ToolCallingAdvisor should loop: at least one tool iteration + final answer")
 				.isGreaterThanOrEqualTo(2);
 		}
 
@@ -195,14 +195,15 @@ public abstract class AbstractToolCallingAdvisorAutoRegistrationIT {
 			ChatClient.create(getChatModel())
 				.prompt()
 				.advisors(counter)
-				.advisors(a -> a.param(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey(), false))
+				.advisors(a -> a.param(ChatClientAttributes.TOOL_CALLING_ADVISOR_AUTO_REGISTER.getKey(), false))
 				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
 				.tools(createWeatherToolCallback())
 				.call()
 				.content();
 
 			// Model handles tools internally; chain traversed exactly once
-			assertThat(counter.getCallCount()).as("Without ToolCallAdvisor the chain should be traversed exactly once")
+			assertThat(counter.getCallCount())
+				.as("Without ToolCallingAdvisor the chain should be traversed exactly once")
 				.isEqualTo(1);
 		}
 
@@ -219,7 +220,7 @@ public abstract class AbstractToolCallingAdvisorAutoRegistrationIT {
 				.content();
 
 			// On the second iteration the request must contain tool-response messages
-			// proving they are visible to every advisor after ToolCallAdvisor.
+			// proving they are visible to every advisor after ToolCallingAdvisor.
 			List<ChatClientRequest> requests = counter.getCapturedRequests();
 			assertThat(requests).hasSizeGreaterThanOrEqualTo(2);
 
@@ -305,7 +306,7 @@ public abstract class AbstractToolCallingAdvisorAutoRegistrationIT {
 				.content());
 
 			assertThat(counter.getCallCount())
-				.as("ToolCallAdvisor should loop on stream: at least one tool iteration + final answer")
+				.as("ToolCallingAdvisor should loop on stream: at least one tool iteration + final answer")
 				.isGreaterThanOrEqualTo(2);
 		}
 
@@ -316,14 +317,14 @@ public abstract class AbstractToolCallingAdvisorAutoRegistrationIT {
 			collect(ChatClient.create(getChatModel())
 				.prompt()
 				.advisors(counter)
-				.advisors(a -> a.param(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey(), false))
+				.advisors(a -> a.param(ChatClientAttributes.TOOL_CALLING_ADVISOR_AUTO_REGISTER.getKey(), false))
 				.user("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")
 				.tools(createWeatherToolCallback())
 				.stream()
 				.content());
 
 			assertThat(counter.getCallCount())
-				.as("Without ToolCallAdvisor the stream chain should be traversed exactly once")
+				.as("Without ToolCallingAdvisor the stream chain should be traversed exactly once")
 				.isEqualTo(1);
 		}
 

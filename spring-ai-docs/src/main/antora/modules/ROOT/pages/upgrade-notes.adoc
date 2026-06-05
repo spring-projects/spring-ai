@@ -426,7 +426,7 @@ Existing code that already adds a `ToolCallingAdvisor` explicitly will have the 
 
 ===== Migration
 
-Remove the explicit `ToolCallingAdvisor` from the chain and let auto-registration handle it. If you need a custom configuration, either supply a pre-configured `ToolCallingAdvisor.Builder` at `ChatClient` construction time (see the xref:api/chatclient.adoc#_customizing_the_default_toolcalladvisor[Customizing the Default ToolCallingAdvisor] section), or disable auto-registration and register the advisor manually:
+Remove the explicit `ToolCallingAdvisor` from the chain and let auto-registration handle it. If you need a custom configuration, either supply a pre-configured `ToolCallingAdvisor.Builder` at `ChatClient` construction time (see the xref:api/chatclient.adoc#_customizing_the_default_toolcallingadvisor[Customizing the Default ToolCallingAdvisor] section), or disable auto-registration and register the advisor manually:
 
 [source,java]
 ----

@@ -32,7 +32,13 @@ public enum ChatClientAttributes {
 
 	STRUCTURED_OUTPUT_NATIVE("spring.ai.chat.client.structured.output.native"),
 
-	TOOL_CALL_ADVISOR_AUTO_REGISTER("spring.ai.chat.client.tool.call.advisor.auto-register");
+	/**
+	 * Deprecated in favor of {@link #TOOL_CALLING_ADVISOR_AUTO_REGISTER}.
+	 */
+	@Deprecated(since = "2.0.0", forRemoval = true)
+	TOOL_CALL_ADVISOR_AUTO_REGISTER("spring.ai.chat.client.tool.calling.advisor.auto-register"),
+
+	TOOL_CALLING_ADVISOR_AUTO_REGISTER("spring.ai.chat.client.tool.calling.advisor.auto-register");
 
 	//@formatter:on
 

@@ -1024,7 +1024,7 @@ ToolCallingManager toolCallingManager() {
 }
 ----
 
-Spring AI supports three approaches to tool execution lifecycle management. The recommended approach is <<_framework_controlled_tool_execution,Framework-Controlled Tool Execution>> via `ChatClient`, which handles the tool calling loop automatically. For cases that require customizing the tool calling loop, <<_advisor_controlled_tool_execution_with_toolcalladvisor,Advisor-Controlled Tool Execution>> is available. When you need full manual control, a <<_user_controlled_tool_execution,User-Controlled Tool Execution>> mode is also available.
+Spring AI supports three approaches to tool execution lifecycle management. The recommended approach is <<_framework_controlled_tool_execution,Framework-Controlled Tool Execution>> via `ChatClient`, which handles the tool calling loop automatically. For cases that require customizing the tool calling loop, <<_advisor_controlled_tool_execution_with_toolcallingadvisor,Advisor-Controlled Tool Execution>> is available. When you need full manual control, a <<_user_controlled_tool_execution,User-Controlled Tool Execution>> mode is also available.
 
 === Framework-Controlled Tool Execution
 
@@ -1132,7 +1132,7 @@ var chatClient = ChatClient.builder(chatModel)
 
 The `ToolCallingAdvisor` supports the "return direct" feature, allowing tools to bypass the LLM and return results directly to the client. When a tool execution has `returnDirect=true`, the advisor breaks out of the tool calling loop and returns the tool result directly.
 
-For more details about `ToolCallingAdvisor`, see xref:api/advisors-recursive.adoc#_toolcalladvisor[Recursive Advisors - ToolCallingAdvisor].
+For more details about `ToolCallingAdvisor`, see xref:api/advisors-recursive.adoc#_toolcallingadvisor[Recursive Advisors - ToolCallingAdvisor].
 
 === User-Controlled Tool Execution
 
@@ -1312,7 +1312,7 @@ ToolCallbackResolver toolCallbackResolver(List<ToolCallback> toolCallbacks) {
 }
 ----
 
-The `ToolCallbackResolver` is used internally by the `ToolCallingManager` to resolve tools dynamically at runtime, supporting both xref:_advisor_controlled_tool_execution_with_toolcalladvisor[] and xref:_user_controlled_tool_execution[].
+The `ToolCallbackResolver` is used internally by the `ToolCallingManager` to resolve tools dynamically at runtime, supporting both xref:_advisor_controlled_tool_execution_with_toolcallingadvisor[] and xref:_user_controlled_tool_execution[].
 
 [[tool-argument-augmentation]]
 == Tool Argument Augmentation

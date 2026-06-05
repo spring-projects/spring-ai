@@ -772,7 +772,7 @@ public class ToolCallingAdvisorTests {
 		int[] hookCallCounts = { 0, 0, 0 }; // initializeLoop, beforeCall, afterCall
 
 		// Create extended advisor to verify hooks are called
-		TestableToolCallAdvisor advisor = new TestableToolCallAdvisor(this.toolCallingManager,
+		TestableToolCallingAdvisor advisor = new TestableToolCallingAdvisor(this.toolCallingManager,
 				BaseAdvisor.HIGHEST_PRECEDENCE + 300, hookCallCounts);
 
 		ChatClientRequest request = createMockRequest();
@@ -796,7 +796,7 @@ public class ToolCallingAdvisorTests {
 	void testExtendedAdvisorHooksCalledMultipleTimesWithToolCalls() {
 		int[] hookCallCounts = { 0, 0, 0 }; // initializeLoop, beforeCall, afterCall
 
-		TestableToolCallAdvisor advisor = new TestableToolCallAdvisor(this.toolCallingManager,
+		TestableToolCallingAdvisor advisor = new TestableToolCallingAdvisor(this.toolCallingManager,
 				BaseAdvisor.HIGHEST_PRECEDENCE + 300, hookCallCounts);
 
 		ChatClientRequest request = createMockRequest();
@@ -838,7 +838,7 @@ public class ToolCallingAdvisorTests {
 		ToolCallingManager customManager = mock(ToolCallingManager.class);
 		int customOrder = BaseAdvisor.HIGHEST_PRECEDENCE + 450;
 
-		TestableToolCallAdvisor advisor = TestableToolCallAdvisor.testBuilder()
+		TestableToolCallingAdvisor advisor = TestableToolCallingAdvisor.testBuilder()
 			.toolCallingManager(customManager)
 			.advisorOrder(customOrder)
 			.build();
@@ -984,13 +984,13 @@ public class ToolCallingAdvisorTests {
 	}
 
 	/**
-	 * Test subclass of ToolCallAdvisor to verify extensibility and hook methods.
+	 * Test subclass of ToolCallingAdvisor to verify extensibility and hook methods.
 	 */
-	private static class TestableToolCallAdvisor extends ToolCallingAdvisor {
+	private static class TestableToolCallingAdvisor extends ToolCallingAdvisor {
 
 		private final int[] hookCallCounts;
 
-		TestableToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder, int[] hookCallCounts) {
+		TestableToolCallingAdvisor(ToolCallingManager toolCallingManager, int advisorOrder, int[] hookCallCounts) {
 			super(toolCallingManager, DEFAULT_TOOL_EXECUTION_ELIGIBILITY_CHECKER, advisorOrder, true, true);
 			this.hookCallCounts = hookCallCounts;
 		}
@@ -1034,8 +1034,8 @@ public class ToolCallingAdvisorTests {
 			}
 
 			@Override
-			public TestableToolCallAdvisor build() {
-				return new TestableToolCallAdvisor(getToolCallingManager(), getAdvisorOrder(), null);
+			public TestableToolCallingAdvisor build() {
+				return new TestableToolCallingAdvisor(getToolCallingManager(), getAdvisorOrder(), null);
 			}
 
 		}

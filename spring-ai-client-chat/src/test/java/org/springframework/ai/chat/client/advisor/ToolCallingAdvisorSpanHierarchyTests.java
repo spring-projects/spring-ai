@@ -63,7 +63,7 @@ import static org.mockito.Mockito.when;
  * intervention Micrometer's {@code TracingObservationHandler#getParentSpan} prefers the
  * still-open outer span over the explicit {@code parentObservation}, and the first
  * model-call span "escapes" to the outer span instead of nesting under the
- * {@code ToolCallAdvisor} span.
+ * {@code ToolCallingAdvisor} span.
  * <p>
  * This asserts span relationships ({@code parentId}/{@code spanId}) rather than logs. It
  * passes with the parent-scope handling in {@link DefaultAroundAdvisorChain#nextStream}
@@ -79,7 +79,7 @@ class ToolCallingAdvisorSpanHierarchyTests {
 	private static final String MODEL_ADVISOR_NAME = "Model Stream Advisor";
 
 	@Test
-	void modelCallSpansNestUnderToolCallAdvisorEvenWhenAnOuterScopeIsOpen() {
+	void modelCallSpansNestUnderToolCallingAdvisorEvenWhenAnOuterScopeIsOpen() {
 		SimpleTracer tracer = new SimpleTracer();
 		ObservationRegistry registry = ObservationRegistry.create();
 		registry.observationConfig().observationHandler(new DefaultTracingObservationHandler(tracer));
@@ -151,21 +151,21 @@ class ToolCallingAdvisorSpanHierarchyTests {
 
 		// Sanity: the loop produced two model-call spans (the tool-requesting call and
 		// the
-		// follow-up call), and the ToolCallAdvisor span sits under the outer span.
+		// follow-up call), and the ToolCallingAdvisor span sits under the outer span.
 		assertThat(modelSpans).hasSize(2);
 		assertThat(toolCallingAdvisorSpan.context().parentId())
-			.as("the ToolCallAdvisor span must be a child of the outer (HTTP-like) span")
+			.as("the ToolCallingAdvisor span must be a child of the outer (HTTP-like) span")
 			.isEqualTo(outerSpan.context().spanId());
 
 		// The actual regression: every model-call span must nest under the
-		// ToolCallAdvisor
+		// ToolCallingAdvisor
 		// span. Without the parent-scope handling, the first iteration's span escapes to
 		// the
 		// outer span (because it is started on the calling thread while the outer scope
 		// is
 		// still open).
 		assertThat(modelSpans).allSatisfy(span -> assertThat(span.context().parentId())
-			.as("model-call span %s must nest under the ToolCallAdvisor span (%s), not escape to the outer span (%s)",
+			.as("model-call span %s must nest under the ToolCallingAdvisor span (%s), not escape to the outer span (%s)",
 					span.context().spanId(), toolCallingAdvisorSpan.context().spanId(), outerSpan.context().spanId())
 			.isEqualTo(toolCallingAdvisorSpan.context().spanId()));
 	}

@@ -160,8 +160,8 @@ class ChatClientAutoConfigurationTests {
 				@SuppressWarnings("unchecked")
 				var advisorParams = (java.util.Map<String, Object>) ReflectionTestUtils.getField(defaultRequest,
 						"advisorParams");
-				assertThat(advisorParams).containsEntry(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey(),
-						false);
+				assertThat(advisorParams)
+					.containsEntry(ChatClientAttributes.TOOL_CALLING_ADVISOR_AUTO_REGISTER.getKey(), false);
 			});
 	}
 

@@ -1222,7 +1222,7 @@ public class DefaultChatClient implements ChatClient {
 		private void autoRegisterToolCallingAdvisor() {
 
 			boolean autoRegisterDisabled = Boolean.FALSE
-				.equals(this.advisorParams.get(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey()));
+				.equals(this.advisorParams.get(ChatClientAttributes.TOOL_CALLING_ADVISOR_AUTO_REGISTER.getKey()));
 			if (autoRegisterDisabled) {
 				return;
 			}

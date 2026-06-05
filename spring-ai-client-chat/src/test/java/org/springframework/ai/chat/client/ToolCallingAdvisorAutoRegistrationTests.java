@@ -62,7 +62,7 @@ import static org.mockito.Mockito.when;
  * <p>
  * The key structural signal is a {@link ChainIterationCountingAdvisor} placed just after
  * the {@link ToolCallingAdvisor} in the chain (order = {@code DEFAULT_ORDER + 100}). When
- * {@code ToolCallAdvisor} drives the loop, every iteration calls
+ * {@code ToolCallingAdvisor} drives the loop, every iteration calls
  * {@code chain.copy(this).nextCall()}, which invokes the counting advisor once per
  * iteration. The built-in model path calls through the chain only once.
  *
@@ -144,7 +144,7 @@ class ToolCallingAdvisorAutoRegistrationTests {
 				.content();
 
 			assertThat(content).isNotBlank();
-			// ToolCallAdvisor looped: initial call + retry after tool execution
+			// ToolCallingAdvisor looped: initial call + retry after tool execution
 			assertThat(counter.getCallCount()).isGreaterThanOrEqualTo(2);
 			verify(chatModel, times(2)).call(any(Prompt.class));
 		}
@@ -157,13 +157,51 @@ class ToolCallingAdvisorAutoRegistrationTests {
 			ChatClient.create(chatModel)
 				.prompt()
 				.advisors(counter)
+				.advisors(a -> a.param(ChatClientAttributes.TOOL_CALLING_ADVISOR_AUTO_REGISTER.getKey(), false))
+				.user("weather?")
+				.tools(weatherTool)
+				.call()
+				.content();
+
+			// No ToolCallingAdvisor loop — chain traversed exactly once
+			assertThat(counter.getCallCount()).isEqualTo(1);
+			verify(chatModel, times(1)).call(any(Prompt.class));
+		}
+
+		@Test
+		@SuppressWarnings("removal")
+		void doesNotAutoRegisterWhenDisabledViaDeprecatedEnumConstant() {
+			stubSingleCallCycle();
+
+			var counter = new ChainIterationCountingAdvisor();
+			ChatClient.create(chatModel)
+				.prompt()
+				.advisors(counter)
 				.advisors(a -> a.param(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey(), false))
 				.user("weather?")
 				.tools(weatherTool)
 				.call()
 				.content();
 
-			// No ToolCallAdvisor loop — chain traversed exactly once
+			assertThat(counter.getCallCount()).isEqualTo(1);
+			verify(chatModel, times(1)).call(any(Prompt.class));
+		}
+
+		@Test
+		@SuppressWarnings("removal")
+		void doesNotAutoRegisterWhenDisabledViaDeprecatedAdvisorParamsMethod() {
+			stubSingleCallCycle();
+
+			var counter = new ChainIterationCountingAdvisor();
+			ChatClient.create(chatModel)
+				.prompt()
+				.advisors(counter)
+				.advisors(AdvisorParams.toolCallAdvisorAutoRegister(false))
+				.user("weather?")
+				.tools(weatherTool)
+				.call()
+				.content();
+
 			assertThat(counter.getCallCount()).isEqualTo(1);
 			verify(chatModel, times(1)).call(any(Prompt.class));
 		}
@@ -218,7 +256,8 @@ class ToolCallingAdvisorAutoRegistrationTests {
 			stubTwoCallCycle();
 
 			var counter = new ChainIterationCountingAdvisor();
-			// Explicit ToolCallAdvisor present — auto-registration must not add a second
+			// Explicit ToolCallingAdvisor present — auto-registration must not add a
+			// second
 			// one
 			ChatClient.create(chatModel)
 				.prompt()
@@ -325,7 +364,7 @@ class ToolCallingAdvisorAutoRegistrationTests {
 			ChatClient.create(chatModel)
 				.prompt()
 				.advisors(counter)
-				.advisors(a -> a.param(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey(), false))
+				.advisors(a -> a.param(ChatClientAttributes.TOOL_CALLING_ADVISOR_AUTO_REGISTER.getKey(), false))
 				.user("weather?")
 				.tools(weatherTool)
 				.stream()
@@ -344,7 +383,7 @@ class ToolCallingAdvisorAutoRegistrationTests {
 
 	/**
 	 * Advisor positioned just after {@link ToolCallingAdvisor} (order = DEFAULT_ORDER +
-	 * 100) that counts invocations. When {@code ToolCallAdvisor} drives the recursive
+	 * 100) that counts invocations. When {@code ToolCallingAdvisor} drives the recursive
 	 * loop, {@code chain.copy(this)} restarts the chain after it, so this counter
 	 * increments once per iteration. When the model handles tool calls internally the
 	 * chain runs only once.

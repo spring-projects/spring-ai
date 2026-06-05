@@ -51,7 +51,7 @@ public final class AdvisorParams {
 	 * }</pre>
 	 */
 	public static Consumer<ChatClient.AdvisorSpec> toolCallingAdvisorAutoRegister(boolean enabled) {
-		return a -> a.param(ChatClientAttributes.TOOL_CALL_ADVISOR_AUTO_REGISTER.getKey(), enabled);
+		return a -> a.param(ChatClientAttributes.TOOL_CALLING_ADVISOR_AUTO_REGISTER.getKey(), enabled);
 	}
 
 	/**
