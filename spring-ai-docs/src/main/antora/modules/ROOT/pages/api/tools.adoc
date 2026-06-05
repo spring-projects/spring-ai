@@ -1109,18 +1109,32 @@ The `ToolCallingAdvisor.Builder` supports the following configuration options:
 
 By default (`conversationHistoryEnabled=true`), the `ToolCallingAdvisor` maintains the full conversation history internally during tool call iterations. Each subsequent LLM call includes all previous messages.
 
-Use the `.disableInternalConversationHistory()` method to disable internal conversation history management. When disabled, only the last tool response message is passed to the next iteration. This is useful when integrating with a Chat Memory advisor that already manages conversation history:
+The default ordering keeps memory advisors _outside_ the tool-call loop: `DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER` is `HIGHEST_PRECEDENCE + 200`, which is lower than `ToolCallingAdvisor.DEFAULT_ORDER` (`HIGHEST_PRECEDENCE + 300`). The memory advisor loads history once before the loop and persists only the final user/assistant exchange afterward. This works with all `ChatMemoryRepository` implementations because tool-call messages are never written to the repository.
+
+[source,java]
+----
+// Default: memory advisor outside the tool-call loop; ToolCallingAdvisor manages intermediate history
+var chatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
+
+var chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(chatMemoryAdvisor)
+    .build();
+----
+
+Use `.disableInternalConversationHistory()` only when placing the memory advisor _inside_ the loop (order above `ToolCallingAdvisor.DEFAULT_ORDER`). The memory advisor then handles history on every iteration. This requires a `ChatMemoryRepository` that supports tool-call messages (such as `InMemoryChatMemoryRepository`).
+
+TIP: The https://github.com/spring-ai-community/spring-ai-session[spring-ai-session] community project provides a session-aware memory implementation that fully supports tool-call messages and can be safely used inside the tool-call loop with any backend. See the https://spring-ai-community.github.io/spring-ai-session/latest-snapshot/[spring-ai-session documentation].
 
 [source,java]
 ----
 var toolCallingAdvisor = ToolCallingAdvisor.builder()
     .toolCallingManager(toolCallingManager)
-    .disableInternalConversationHistory()  // Let ChatMemory handle history
+    .disableInternalConversationHistory()  // Memory advisor inside the loop handles history
     .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 300)
     .build();
 
 var chatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory)
-    .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 200)  // Before ToolCallingAdvisor
+    .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 400)  // Inside (after) ToolCallingAdvisor
     .build();
 
 var chatClient = ChatClient.builder(chatModel)
