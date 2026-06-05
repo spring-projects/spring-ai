@@ -30,7 +30,7 @@ The `ChatMemory` abstraction allows you to implement various types of memory to 
 
 === Message Window Chat Memory
 
-`MessageWindowChatMemory` maintains a window of messages up to a specified maximum size. When the number of messages exceeds the maximum, older messages are removed while preserving system messages. The default window size is 20 messages.
+`MessageWindowChatMemory` maintains a sliding window of messages up to a specified maximum size. When the number of messages exceeds the maximum, older messages are evicted while always preserving `SystemMessage` instances. The default window size is 20 messages.
 
 [source,java]
 ----
@@ -40,6 +40,14 @@ MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
 ----
 
 This is the default message type used by Spring AI to auto-configure a `ChatMemory` bean.
+
+==== Turn-boundary eviction
+
+When eviction is needed, `MessageWindowChatMemory` always removes whole turns rather than cutting mid-turn. A _turn_ starts at a `UserMessage` and includes all subsequent assistant replies, tool calls, and tool responses up to the next `UserMessage`. If the raw eviction point lands on a non-user message (for example, an assistant reply in the middle of a tool-calling exchange), the cut is advanced forward to the next `UserMessage` so that the kept window always begins at a complete turn.
+
+This means `maxMessages` is an _upper bound_ on the number of messages stored — the actual count may be somewhat lower when snapping is needed to find the next turn boundary.
+
+NOTE: If `maxMessages` is smaller than a single complete turn (for example, a multi-step tool-calling exchange that exceeds the window size), all non-system messages may be evicted until a new `UserMessage` is added. Size `maxMessages` generously enough to hold at least one representative turn for your use case.
 
 == Memory Storage
 

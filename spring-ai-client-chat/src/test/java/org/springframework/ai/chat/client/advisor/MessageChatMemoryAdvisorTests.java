@@ -230,8 +230,11 @@ public class MessageChatMemoryAdvisorTests {
 
 		assertThat(processedRequest.prompt().getInstructions()).containsExactly(userMessage, firstAssistantMessage,
 				firstToolResponse, secondAssistantMessage, secondToolResponse);
-		assertThat(chatMemory.get("test-conversation")).containsExactly(firstToolResponse, secondAssistantMessage,
-				secondToolResponse);
+		// Turn-boundary snapping: the initial add of [U, A, TR, A] with maxMessages=3
+		// places the raw cut at position 1 (firstAssistantMessage). Snapping advances
+		// through A, TR, A without finding a USER boundary, so all four messages are
+		// evicted.
+		assertThat(chatMemory.get("test-conversation")).containsExactly(secondToolResponse);
 	}
 
 	@Test
