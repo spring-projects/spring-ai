@@ -131,14 +131,14 @@ The `ChatOptions` class is defined as follows:
 public interface ChatOptions extends ModelOptions {
 
 	String getModel();
-	Float getFrequencyPenalty();
+	Double getFrequencyPenalty();
 	Integer getMaxTokens();
-	Float getPresencePenalty();
+	Double getPresencePenalty();
 	List<String> getStopSequences();
-	Float getTemperature();
+	Double getTemperature();
 	Integer getTopK();
-	Float getTopP();
-	ChatOptions copy();
+	Double getTopP();
+	ChatOptions.Builder<?> mutate();
 
 }
 ----
