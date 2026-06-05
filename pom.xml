@@ -30,98 +30,59 @@
 	<description>Building AI applications with Spring Boot</description>
 
 	<modules>
-		<module>spring-ai-docs</module>
 		<module>spring-ai-bom</module>
-		<module>spring-ai-commons</module>
-		<module>spring-ai-template-st</module>
 		<module>spring-ai-client-chat</module>
+		<module>spring-ai-commons</module>
+		<module>spring-ai-docs</module>
+		<module>spring-ai-integration-tests</module>
 		<module>spring-ai-model</module>
+		<module>spring-ai-rag</module>
+		<module>spring-ai-retry</module>
+		<module>spring-ai-spring-boot-docker-compose</module>
+		<module>spring-ai-spring-boot-testcontainers</module>
+		<module>spring-ai-template-st</module>
 		<module>spring-ai-test</module>
 		<module>spring-ai-tool-search-tool</module>
 		<module>spring-ai-vector-store</module>
-		<module>spring-ai-rag</module>
 
 		<module>advisors/spring-ai-tool-search-advisor</module>
 		<module>advisors/spring-ai-vector-store-advisor</module>
 
-		<module>memory-repositories/spring-ai-model-chat-memory-repository-cassandra</module>
-		<module>memory-repositories/spring-ai-model-chat-memory-repository-jdbc</module>
-		<module>memory-repositories/spring-ai-model-chat-memory-repository-mongodb</module>
-		<module>memory-repositories/spring-ai-model-chat-memory-repository-neo4j</module>
-		<module>memory-repositories/spring-ai-model-chat-memory-repository-redis</module>
-
-		<module>spring-ai-retry</module>
-		<module>spring-ai-spring-boot-docker-compose</module>
-		<module>spring-ai-spring-boot-testcontainers</module>
-
-		<module>document-readers/spring-ai-jsoup-document-reader</module>
-		<module>document-readers/spring-ai-markdown-document-reader</module>
-		<module>document-readers/spring-ai-pdf-document-reader</module>
-		<module>document-readers/spring-ai-tika-document-reader</module>
-
-		<module>vector-stores/spring-ai-azure-store</module>
-		<module>vector-stores/spring-ai-cassandra-store</module>
-		<module>vector-stores/spring-ai-chroma-store</module>
-		<module>vector-stores/spring-ai-coherence-store</module>
-		<module>vector-stores/spring-ai-couchbase-store</module>
-		<module>vector-stores/spring-ai-elasticsearch-store</module>
-		<module>vector-stores/spring-ai-gemfire-store</module>
-		<module>vector-stores/spring-ai-mariadb-store</module>
-		<module>vector-stores/spring-ai-milvus-store</module>
-		<module>vector-stores/spring-ai-mongodb-atlas-store</module>
-		<module>vector-stores/spring-ai-neo4j-store</module>
-		<module>vector-stores/spring-ai-opensearch-store</module>
-		<module>vector-stores/spring-ai-oracle-store</module>
-		<module>vector-stores/spring-ai-pgvector-store</module>
-		<module>vector-stores/spring-ai-pinecone-store</module>
-		<module>vector-stores/spring-ai-qdrant-store</module>
-		<module>vector-stores/spring-ai-redis-store</module>
-		<module>vector-stores/spring-ai-redis-semantic-cache</module>
-		<module>vector-stores/spring-ai-typesense-store</module>
-		<module>vector-stores/spring-ai-weaviate-store</module>
-		<module>vector-stores/spring-ai-bedrock-knowledgebase-store</module>
-		<module>vector-stores/spring-ai-s3-vector-store</module>
-
 		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
-
-		<module>auto-configurations/models/tool/spring-ai-autoconfigure-model-tool</module>
-
-		<module>auto-configurations/models/chat/client/spring-ai-autoconfigure-model-chat-client</module>
-
-		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory</module>
-		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-cassandra</module>
-		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-jdbc</module>
-		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-mongodb</module>
-		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-neo4j</module>
-		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-redis</module>
-
-		<module>auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation</module>
-
-		<module>auto-configurations/models/embedding/observation/spring-ai-autoconfigure-model-embedding-observation</module>
-		<module>auto-configurations/models/image/observation/spring-ai-autoconfigure-model-image-observation</module>
-
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-anthropic</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-bedrock-ai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-elevenlabs</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-mistral-ai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-ollama</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-postgresml-embedding</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-stability-ai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-transformers</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-vertex-ai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-google-genai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-deepseek</module>
 
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux</module>
-
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc</module>
+
+		<module>auto-configurations/models/chat/client/spring-ai-autoconfigure-model-chat-client</module>
+		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-cassandra</module>
+		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-jdbc</module>
+		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-mongodb</module>
+		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-neo4j</module>
+		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory</module>
+		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-redis</module>
+		<module>auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation</module>
+		<module>auto-configurations/models/embedding/observation/spring-ai-autoconfigure-model-embedding-observation</module>
+		<module>auto-configurations/models/image/observation/spring-ai-autoconfigure-model-image-observation</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-anthropic</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-bedrock-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-deepseek</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-elevenlabs</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-google-genai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-mistral-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-ollama</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-postgresml-embedding</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-stability-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-transformers</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-vertex-ai</module>
+		<module>auto-configurations/models/tool/spring-ai-autoconfigure-model-tool</module>
 
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-bedrock-knowledgebase</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-cassandra</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-chroma</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-couchbase</module>
@@ -131,21 +92,79 @@
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-milvus</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mongodb-atlas</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-neo4j</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-opensearch</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-observation</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-opensearch</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-oracle</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pgvector</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pinecone</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-qdrant</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-redis</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-redis-semantic-cache</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-s3</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-typesense</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-weaviate</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pgvector</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-bedrock-knowledgebase</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-s3</module>
+
+		<module>document-readers/spring-ai-jsoup-document-reader</module>
+		<module>document-readers/spring-ai-markdown-document-reader</module>
+		<module>document-readers/spring-ai-pdf-document-reader</module>
+		<module>document-readers/spring-ai-tika-document-reader</module>
+
+		<module>mcp/common</module>
+		<module>mcp/mcp-annotations</module>
+		<module>mcp/transport/mcp-spring-webflux</module>
+		<module>mcp/transport/mcp-spring-webmvc</module>
+
+		<module>memory-repositories/spring-ai-model-chat-memory-repository-cassandra</module>
+		<module>memory-repositories/spring-ai-model-chat-memory-repository-jdbc</module>
+		<module>memory-repositories/spring-ai-model-chat-memory-repository-mongodb</module>
+		<module>memory-repositories/spring-ai-model-chat-memory-repository-neo4j</module>
+		<module>memory-repositories/spring-ai-model-chat-memory-repository-redis</module>
+
+		<module>models/spring-ai-anthropic</module>
+		<module>models/spring-ai-bedrock</module>
+		<module>models/spring-ai-bedrock-converse</module>
+		<module>models/spring-ai-deepseek</module>
+		<module>models/spring-ai-elevenlabs</module>
+		<module>models/spring-ai-google-genai</module>
+		<module>models/spring-ai-google-genai-embedding</module>
+		<module>models/spring-ai-mistral-ai</module>
+		<module>models/spring-ai-ollama</module>
+		<module>models/spring-ai-openai</module>
+		<module>models/spring-ai-postgresml</module>
+		<module>models/spring-ai-stability-ai</module>
+		<module>models/spring-ai-transformers</module>
+		<module>models/spring-ai-vertex-ai-embedding</module>
+
+		<module>starters/spring-ai-starter-mcp-client</module>
+		<module>starters/spring-ai-starter-mcp-client-webflux</module>
+		<module>starters/spring-ai-starter-mcp-server</module>
+		<module>starters/spring-ai-starter-mcp-server-webflux</module>
+		<module>starters/spring-ai-starter-mcp-server-webmvc</module>
+
+		<module>starters/spring-ai-starter-model-anthropic</module>
+		<module>starters/spring-ai-starter-model-bedrock</module>
+		<module>starters/spring-ai-starter-model-bedrock-converse</module>
+		<module>starters/spring-ai-starter-model-chat-memory</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-cassandra</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-jdbc</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-mongodb</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-neo4j</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-redis</module>
+		<module>starters/spring-ai-starter-model-deepseek</module>
+		<module>starters/spring-ai-starter-model-elevenlabs</module>
+		<module>starters/spring-ai-starter-model-google-genai</module>
+		<module>starters/spring-ai-starter-model-google-genai-embedding</module>
+		<module>starters/spring-ai-starter-model-mistral-ai</module>
+		<module>starters/spring-ai-starter-model-ollama</module>
+		<module>starters/spring-ai-starter-model-openai</module>
+		<module>starters/spring-ai-starter-model-postgresml-embedding</module>
+		<module>starters/spring-ai-starter-model-stability-ai</module>
+		<module>starters/spring-ai-starter-model-transformers</module>
+		<module>starters/spring-ai-starter-model-vertex-ai-embedding</module>
 
 		<module>starters/spring-ai-starter-vector-store-aws-opensearch</module>
 		<module>starters/spring-ai-starter-vector-store-azure</module>
+		<module>starters/spring-ai-starter-vector-store-bedrock-knowledgebase</module>
 		<module>starters/spring-ai-starter-vector-store-cassandra</module>
 		<module>starters/spring-ai-starter-vector-store-chroma</module>
 		<module>starters/spring-ai-starter-vector-store-couchbase</module>
@@ -161,60 +180,32 @@
 		<module>starters/spring-ai-starter-vector-store-pinecone</module>
 		<module>starters/spring-ai-starter-vector-store-qdrant</module>
 		<module>starters/spring-ai-starter-vector-store-redis</module>
+		<module>starters/spring-ai-starter-vector-store-s3</module>
 		<module>starters/spring-ai-starter-vector-store-typesense</module>
 		<module>starters/spring-ai-starter-vector-store-weaviate</module>
-		<module>starters/spring-ai-starter-vector-store-bedrock-knowledgebase</module>
-		<module>starters/spring-ai-starter-vector-store-s3</module>
 
-		<module>models/spring-ai-anthropic</module>
-		<module>models/spring-ai-bedrock</module>
-		<module>models/spring-ai-bedrock-converse</module>
-		<module>models/spring-ai-elevenlabs</module>
-		<module>models/spring-ai-mistral-ai</module>
-		<module>models/spring-ai-ollama</module>
-		<module>models/spring-ai-openai</module>
-		<module>models/spring-ai-postgresml</module>
-		<module>models/spring-ai-stability-ai</module>
-		<module>models/spring-ai-transformers</module>
-		<module>models/spring-ai-vertex-ai-embedding</module>
-		<module>models/spring-ai-google-genai</module>
-		<module>models/spring-ai-google-genai-embedding</module>
-		<module>models/spring-ai-deepseek</module>
-
-		<module>starters/spring-ai-starter-model-anthropic</module>
-		<module>starters/spring-ai-starter-model-bedrock</module>
-		<module>starters/spring-ai-starter-model-bedrock-converse</module>
-		<module>starters/spring-ai-starter-model-google-genai</module>
-		<module>starters/spring-ai-starter-model-google-genai-embedding</module>
-		<module>starters/spring-ai-starter-model-elevenlabs</module>
-		<module>starters/spring-ai-starter-model-mistral-ai</module>
-		<module>starters/spring-ai-starter-model-ollama</module>
-		<module>starters/spring-ai-starter-model-openai</module>
-		<module>starters/spring-ai-starter-model-postgresml-embedding</module>
-		<module>starters/spring-ai-starter-model-stability-ai</module>
-		<module>starters/spring-ai-starter-model-transformers</module>
-		<module>starters/spring-ai-starter-model-vertex-ai-embedding</module>
-		<module>starters/spring-ai-starter-model-deepseek</module>
-
-		<module>starters/spring-ai-starter-model-chat-memory</module>
-		<module>starters/spring-ai-starter-model-chat-memory-repository-cassandra</module>
-		<module>starters/spring-ai-starter-model-chat-memory-repository-jdbc</module>
-		<module>starters/spring-ai-starter-model-chat-memory-repository-mongodb</module>
-		<module>starters/spring-ai-starter-model-chat-memory-repository-neo4j</module>
-		<module>starters/spring-ai-starter-model-chat-memory-repository-redis</module>
-
-		<module>starters/spring-ai-starter-mcp-client</module>
-		<module>starters/spring-ai-starter-mcp-server</module>
-		<module>starters/spring-ai-starter-mcp-client-webflux</module>
-		<module>starters/spring-ai-starter-mcp-server-webflux</module>
-		<module>starters/spring-ai-starter-mcp-server-webmvc</module>
-
-		<module>spring-ai-integration-tests</module>
-
-		<module>mcp/common</module>
-		<module>mcp/mcp-annotations</module>
-		<module>mcp/transport/mcp-spring-webflux</module>
-		<module>mcp/transport/mcp-spring-webmvc</module>
+		<module>vector-stores/spring-ai-azure-store</module>
+		<module>vector-stores/spring-ai-bedrock-knowledgebase-store</module>
+		<module>vector-stores/spring-ai-cassandra-store</module>
+		<module>vector-stores/spring-ai-chroma-store</module>
+		<module>vector-stores/spring-ai-coherence-store</module>
+		<module>vector-stores/spring-ai-couchbase-store</module>
+		<module>vector-stores/spring-ai-elasticsearch-store</module>
+		<module>vector-stores/spring-ai-gemfire-store</module>
+		<module>vector-stores/spring-ai-mariadb-store</module>
+		<module>vector-stores/spring-ai-milvus-store</module>
+		<module>vector-stores/spring-ai-mongodb-atlas-store</module>
+		<module>vector-stores/spring-ai-neo4j-store</module>
+		<module>vector-stores/spring-ai-opensearch-store</module>
+		<module>vector-stores/spring-ai-oracle-store</module>
+		<module>vector-stores/spring-ai-pgvector-store</module>
+		<module>vector-stores/spring-ai-pinecone-store</module>
+		<module>vector-stores/spring-ai-qdrant-store</module>
+		<module>vector-stores/spring-ai-redis-semantic-cache</module>
+		<module>vector-stores/spring-ai-redis-store</module>
+		<module>vector-stores/spring-ai-s3-vector-store</module>
+		<module>vector-stores/spring-ai-typesense-store</module>
+		<module>vector-stores/spring-ai-weaviate-store</module>
 	</modules>
 
 	<organization>
