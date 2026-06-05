@@ -27,7 +27,7 @@ import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
 @Deprecated(since = "2.0.0", forRemoval = true)
 public class ToolCallAdvisor extends ToolCallingAdvisor {
 
-	public ToolCallAdvisor(ToolCallingManager toolCallingManager,
+	protected ToolCallAdvisor(ToolCallingManager toolCallingManager,
 			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, int advisorOrder,
 			boolean conversationHistoryEnabled, boolean streamToolCallResponses) {
 		super(toolCallingManager, toolExecutionEligibilityChecker, advisorOrder, conversationHistoryEnabled,

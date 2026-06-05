@@ -53,6 +53,7 @@ import org.springframework.util.Assert;
  * chain.
  *
  * @author Christian Tzolov
+ * @since 2.0.0
  */
 public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvisor {
 
