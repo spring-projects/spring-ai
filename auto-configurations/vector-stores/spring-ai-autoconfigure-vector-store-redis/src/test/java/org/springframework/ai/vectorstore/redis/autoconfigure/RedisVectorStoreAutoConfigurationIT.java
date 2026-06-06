@@ -139,6 +139,50 @@ class RedisVectorStoreAutoConfigurationIT {
 		});
 	}
 
+	@Test
+	public void addAndSearchWithMetadataFiltering() {
+		List<Document> docs = List.of(
+				new Document("Artificial intelligence is progressing rapidly.",
+						Map.of("country", "USA", "year", 2024, "description", "Artificial intelligence")),
+				new Document("Machine learning makes it possible for computers to learn from data.",
+						Map.of("country", "UK", "year", 2025, "description", "Machine learning")),
+				new Document("Deep learning can model complex patterns in data",
+						Map.of("country", "CN", "year", 2026, "description", "Deep learning")));
+
+		this.contextRunner
+			.withPropertyValues("spring.ai.vectorstore.redis.metadata-fields[0].name=country",
+					"spring.ai.vectorstore.redis.metadata-fields[0].type=TAG",
+					"spring.ai.vectorstore.redis.metadata-fields[1].name=year",
+					"spring.ai.vectorstore.redis.metadata-fields[1].type=NUMERIC",
+					"spring.ai.vectorstore.redis.metadata-fields[2].name=description",
+					"spring.ai.vectorstore.redis.metadata-fields[2].type=TEXT")
+			.run(context -> {
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				vectorStore.add(docs);
+
+				// Filter by TAG
+				List<Document> results = vectorStore.similaritySearch(
+						SearchRequest.builder().query("AI").topK(5).filterExpression("country == 'USA'").build());
+				assertThat(results).hasSize(1);
+
+				// Filter by NUMERIC
+				results = vectorStore.similaritySearch(
+						SearchRequest.builder().query("learning").topK(5).filterExpression("year >= 2025").build());
+				assertThat(results).hasSize(2);
+
+				// Filter by TEXT
+				results = vectorStore.similaritySearch(SearchRequest.builder()
+					.query("learning")
+					.topK(5)
+					.filterExpression("description == 'learning'")
+					.build());
+				assertThat(results).hasSize(2);
+
+				vectorStore.delete(docs.stream().map(Document::getId).toList());
+			});
+	}
+
 	@Configuration(proxyBeanMethods = false)
 	static class Config {
 

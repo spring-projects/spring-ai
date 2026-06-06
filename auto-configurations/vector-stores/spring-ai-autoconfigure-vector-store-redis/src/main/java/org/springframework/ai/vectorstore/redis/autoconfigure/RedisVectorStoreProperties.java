@@ -16,6 +16,10 @@
 
 package org.springframework.ai.vectorstore.redis.autoconfigure;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -66,6 +70,11 @@ public class RedisVectorStoreProperties extends CommonVectorStoreProperties {
 	private HnswProperties hnsw = new HnswProperties();
 
 	/**
+	 * Metadata field definitions for indexing.
+	 */
+	private List<Map<String, String>> metadataFields = new ArrayList<>();
+
+	/**
 	 * Returns the index name.
 	 * @return the index name
 	 */
@@ -111,6 +120,22 @@ public class RedisVectorStoreProperties extends CommonVectorStoreProperties {
 	 */
 	public final void setHnsw(final HnswProperties hnswProperties) {
 		this.hnsw = hnswProperties;
+	}
+
+	/**
+	 * Returns the metadata fields.
+	 * @return the metadata fields
+	 */
+	public final List<Map<String, String>> getMetadataFields() {
+		return this.metadataFields;
+	}
+
+	/**
+	 * Sets the metadata fields.
+	 * @param metadataFields the metadata fields
+	 */
+	public final void setMetadataFields(final List<Map<String, String>> metadataFields) {
+		this.metadataFields = metadataFields;
 	}
 
 	/**
