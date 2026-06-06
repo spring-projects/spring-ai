@@ -513,8 +513,9 @@ public final class SpringAiOpenAiHttpClient implements HttpClient {
 
 		public SpringAiOpenAiHttpClient build() {
 			OkHttpClient.Builder okBuilder = new OkHttpClient.Builder()
-				// SDK's RetryingHttpClient owns retries; disable here to avoid doubling.
-				.retryOnConnectionFailure(false)
+				// Recover from stale pooled connections (OkHttp's default); distinct from
+				// the SDK's status-code/backoff retries, so no duplication. See gh-6318.
+				.retryOnConnectionFailure(true)
 				.pingInterval(Duration.ofMinutes(1))
 				.connectTimeout(this.timeout.connect())
 				.readTimeout(this.timeout.read())
