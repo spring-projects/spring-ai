@@ -184,7 +184,7 @@ You can define any number of arguments for the method (including no argument) wi
 
 NOTE: Some types are not supported. See xref:_method_tool_limitations[] for more details.
 
-Spring AI will generate the JSON schema for the input parameters of the `@Tool`-annotated method automatically. The schema is used by the model to understand how to call the tool and prepare the tool request. The `@ToolParam` annotation can be used to provide additional information about the input parameters, such as a description or whether the parameter is required or optional. By default, all input parameters are considered required.
+Spring AI will generate the JSON schema for the input parameters of the `@Tool`-annotated method automatically. The schema is used by the model to understand how to call the tool and prepare the tool request. The `@ToolParam` annotation can be used to provide additional information about the input parameters, such as an explicit name, a description, or whether the parameter is required or optional. By default, all input parameters are considered required.
 
 [source,java]
 ----
@@ -206,8 +206,12 @@ class DateTimeTools {
 
 The `@ToolParam` annotation allows you to provide key information about a tool parameter:
 
+- `name`: The explicit name for the parameter. When not provided, Spring AI uses the Java method parameter name.
 - `description`: The description for the parameter, which can be used by the model to understand better how to use it. For example, what format the parameter should be in, what values are allowed, and so on.
 - `required`: Whether the parameter is required or optional. By default, all parameters are considered required. 
+
+Using `@ToolParam(name = "...")` is recommended for libraries or builds that do not retain Java parameter metadata.
+The name override applies only to method parameters. For fields or record components, use Jackson or OpenAPI annotations such as `@JsonProperty` or `@Schema` to customize schema property names.
 
 If a parameter is annotated as `@Nullable`, it will be considered optional unless explicitly marked as required using the `@ToolParam` annotation.
 
@@ -773,7 +777,28 @@ NOTE: See xref:_tool_definition[] for more details on the `ToolDefinition` and h
 
 The `JsonSchemaGenerator` class is used under the hood to generate the JSON schema for the input parameters of a method or a function, using any of the strategies described in xref:_methods_as_tools[] and xref:_functions_as_tools[]. The JSON schema generation logic supports a series of annotations that you can use on the input parameters for methods and functions to customize the resulting schema.
 
-This section describes two main options you can customize when generating the JSON schema for the input parameters of a tool: description and required status.
+This section describes three main options you can customize when generating the JSON schema for the input parameters of a tool: name, description, and required status.
+
+==== Name
+
+By default, Spring AI uses the Java method parameter name as the JSON schema property name and as the input key used when invoking the tool.
+If your build does not retain Java parameter metadata, reflective names such as `arg0` and `arg1` may be used instead.
+You can provide an explicit method parameter name with `@ToolParam(name = "...")`.
+
+[source,java]
+----
+class CustomerTools {
+
+    @Tool(description = "Look up a customer")
+    String getCustomer(@ToolParam(name = "customer_id", description = "Customer identifier") String customerId) {
+        return customerId;
+    }
+
+}
+----
+
+The `name` attribute applies only to method parameters.
+For fields or record components, use Jackson or OpenAPI annotations such as `@JsonProperty` or `@Schema` to customize schema property names.
 
 ==== Description
 

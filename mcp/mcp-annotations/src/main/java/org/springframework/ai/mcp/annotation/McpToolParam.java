@@ -31,6 +31,11 @@ import java.lang.annotation.Target;
 public @interface McpToolParam {
 
 	/**
+	 * The name of the tool argument.
+	 */
+	String name() default "";
+
+	/**
 	 * Whether the tool argument is required.
 	 */
 	boolean required() default true;

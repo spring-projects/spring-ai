@@ -53,7 +53,7 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("simple-tool", Map.of("input", "test message"));
+		CallToolRequest request = new CallToolRequest("simple-tool", Map.of("message", "test message"));
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -554,10 +554,21 @@ public class SyncMcpToolMethodCallbackTests {
 		assertThat(((TextContent) result.content().get(0)).text()).isEqualTo("Date: 2026-04-22");
 	}
 
+	@Test
+	public void testToolWithDuplicateEffectiveParameterNamesThrowsException() throws Exception {
+		TestToolProvider provider = new TestToolProvider();
+		Method method = TestToolProvider.class.getMethod("duplicateEffectiveNames", String.class, String.class);
+
+		assertThatThrownBy(() -> new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Duplicate tool parameter name 'input'")
+			.hasMessageContaining("duplicateEffectiveNames");
+	}
+
 	private static class TestToolProvider {
 
 		@McpTool(name = "simple-tool", description = "A simple tool")
-		public String simpleTool(String input) {
+		public String simpleTool(@McpToolParam(name = "message") String input) {
 			return "Processed: " + input;
 		}
 
@@ -656,6 +667,11 @@ public class SyncMcpToolMethodCallbackTests {
 		@McpTool(name = "local-date-tool", description = "Tool with date input")
 		public String dateTool(@McpToolParam LocalDate date) {
 			return "Date: " + date.toString();
+		}
+
+		@McpTool(name = "duplicate-effective-names-tool", description = "Tool with duplicate parameter names")
+		public String duplicateEffectiveNames(@McpToolParam(name = "input") String first, String input) {
+			return first + input;
 		}
 
 	}

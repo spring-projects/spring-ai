@@ -19,6 +19,7 @@ package org.springframework.ai.tool.method;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -35,6 +36,7 @@ import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.metadata.ToolMetadata;
+import org.springframework.ai.tool.support.ToolMethodParameterUtils;
 import org.springframework.ai.util.JsonHelper;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.Assert;
@@ -79,6 +81,7 @@ public final class MethodToolCallback implements ToolCallback {
 		this.toolObject = toolObject;
 		this.toolCallResultConverter = toolCallResultConverter != null ? toolCallResultConverter
 				: DEFAULT_RESULT_CONVERTER;
+		validateUniqueParameterNames(toolMethod);
 	}
 
 	@Override
@@ -143,16 +146,23 @@ public final class MethodToolCallback implements ToolCallback {
 		}
 	}
 
-	// Based on the implementation in MethodToolCallback.
 	@SuppressWarnings("null")
 	private Object[] buildMethodArguments(Map<String, Object> toolInputArguments, @Nullable ToolContext toolContext) {
 		return Stream.of(this.toolMethod.getParameters()).map(parameter -> {
 			if (parameter.getType().isAssignableFrom(ToolContext.class)) {
 				return toolContext;
 			}
-			Object rawArgument = toolInputArguments.get(parameter.getName());
+			Object rawArgument = toolInputArguments.get(ToolMethodParameterUtils.getParameterName(parameter));
 			return buildTypedArgument(rawArgument, parameter.getParameterizedType());
 		}).toArray();
+	}
+
+	private static void validateUniqueParameterNames(Method method) {
+		ToolMethodParameterUtils.validateUniqueParameterNames(method, MethodToolCallback::isToolContextParameter);
+	}
+
+	private static boolean isToolContextParameter(Parameter parameter) {
+		return parameter.getType().isAssignableFrom(ToolContext.class);
 	}
 
 	private @Nullable Object buildTypedArgument(@Nullable Object value, Type type) {

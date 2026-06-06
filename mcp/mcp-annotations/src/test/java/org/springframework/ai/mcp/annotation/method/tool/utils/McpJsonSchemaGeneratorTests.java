@@ -17,11 +17,13 @@
 package org.springframework.ai.mcp.annotation.method.tool.utils;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 
+import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.ai.util.JsonHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -131,6 +133,41 @@ class McpJsonSchemaGeneratorTests {
 	}
 
 	@Test
+	void generateSchemaForMethodWithExplicitMcpToolParamName() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("explicitToolParamNameMethod", String.class, int.class);
+
+		String schema = McpJsonSchemaGenerator.generateForMethodInput(method);
+		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
+
+		assertThat(schemaNode.at("/properties/customer_id/type").asText()).isEqualTo("string");
+		assertThat(schemaNode.at("/properties/max_results/type").asText()).isEqualTo("integer");
+		assertThat(schemaNode.at("/properties/customerId").isMissingNode()).isTrue();
+		assertThat(textValues(schemaNode.at("/required"))).containsExactly("customer_id", "max_results");
+	}
+
+	@Test
+	void generateSchemaForMethodWithBlankMcpToolParamNameFallsBackToParameterName() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("blankToolParamNameMethod", String.class);
+
+		String schema = McpJsonSchemaGenerator.generateForMethodInput(method);
+		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
+
+		assertThat(schemaNode.at("/properties/username/type").asText()).isEqualTo("string");
+		assertThat(textValues(schemaNode.at("/required"))).containsExactly("username");
+	}
+
+	@Test
+	void generateSchemaForMethodWithDuplicateEffectiveMcpToolParamNamesThrowsException() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("duplicateEffectiveToolParamNamesMethod", String.class,
+				String.class);
+
+		assertThatThrownBy(() -> McpJsonSchemaGenerator.generateForMethodInput(method))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Duplicate tool parameter name 'name'")
+			.hasMessageContaining("duplicateEffectiveToolParamNamesMethod");
+	}
+
+	@Test
 	void generateFromClassProducesValidObjectSchema() {
 		String schema = McpJsonSchemaGenerator.generateFromClass(SearchRequest.class);
 		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
@@ -148,6 +185,12 @@ class McpJsonSchemaGeneratorTests {
 		assertThat(schemaNode.has("properties")).isTrue();
 	}
 
+	private static List<String> textValues(JsonNode arrayNode) {
+		List<String> values = new ArrayList<>();
+		arrayNode.forEach(node -> values.add(node.asText()));
+		return values;
+	}
+
 	static class TestMethods {
 
 		public void searchBooksMethod(SearchRequest request) {
@@ -160,6 +203,16 @@ class McpJsonSchemaGeneratorTests {
 		}
 
 		public void peerReferenceMethod(PeerA.SearchRequest a, PeerB.SearchRequest b) {
+		}
+
+		public void explicitToolParamNameMethod(@McpToolParam(name = "customer_id") String customerId,
+				@McpToolParam(name = "max_results") int maxResults) {
+		}
+
+		public void blankToolParamNameMethod(@McpToolParam(name = " ") String username) {
+		}
+
+		public void duplicateEffectiveToolParamNamesMethod(@McpToolParam(name = "name") String first, String name) {
 		}
 
 	}

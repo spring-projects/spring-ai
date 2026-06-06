@@ -18,12 +18,15 @@ public class CalculatorTools {
 
     @McpTool(name = "add", description = "Add two numbers together")
     public int add(
-            @McpToolParam(description = "First number", required = true) int a,
-            @McpToolParam(description = "Second number", required = true) int b) {
+            @McpToolParam(name = "a", description = "First number", required = true) int a,
+            @McpToolParam(name = "b", description = "Second number", required = true) int b) {
         return a + b;
     }
 }
 ----
+
+The `@McpToolParam` annotation supports `name`, `description`, and `required`.
+Use `name` when compiled Java parameter names may be unavailable, such as in libraries or builds that do not retain parameter metadata.
 
 ==== Annotation Attributes
 
@@ -74,8 +77,8 @@ The `@McpTool` annotation supports the following attributes:
              idempotentHint = true
          ))
 public AreaResult calculateRectangleArea(
-        @McpToolParam(description = "Width", required = true) double width,
-        @McpToolParam(description = "Height", required = true) double height) {
+        @McpToolParam(name = "width", description = "Width", required = true) double width,
+        @McpToolParam(name = "height", description = "Height", required = true) double height) {
 
     return new AreaResult(width * height, "square units");
 }

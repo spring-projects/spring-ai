@@ -34,6 +34,11 @@ import java.lang.annotation.Target;
 public @interface ToolParam {
 
 	/**
+	 * The name of the tool argument.
+	 */
+	String name() default "";
+
+	/**
 	 * Whether the tool argument is required.
 	 */
 	boolean required() default true;
