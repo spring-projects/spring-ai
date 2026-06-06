@@ -18,19 +18,20 @@ package org.springframework.ai.model.ollama.autoconfigure;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.ollama.api.ThinkOption;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Nicolas Krier
  * @since 0.8.0
  */
-public class OllamaChatAutoConfigurationTests {
+class OllamaChatAutoConfigurationTests {
 
 	@Test
-	public void propertiesTest() {
-
+	void propertiesTest() {
 		new ApplicationContextRunner().withPropertyValues(
 		// @formatter:off
 				"spring.ai.ollama.base-url=TEST_BASE_URL",
@@ -42,6 +43,8 @@ public class OllamaChatAutoConfigurationTests {
 
 			.withConfiguration(BaseOllamaIT.ollamaAutoConfig(OllamaChatAutoConfiguration.class))
 			.run(context -> {
+				assertThat(context).hasNotFailed();
+
 				var chatProperties = context.getBean(OllamaChatProperties.class);
 				var connectionProperties = context.getBean(OllamaConnectionProperties.class);
 
@@ -49,11 +52,49 @@ public class OllamaChatAutoConfigurationTests {
 
 				assertThat(chatProperties.getModel()).isEqualTo("MODEL_XYZ");
 
+				assertThat(chatProperties.toOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(chatProperties.toOptions().getTemperature()).isEqualTo(0.55);
 				assertThat(chatProperties.toOptions().getTopP()).isEqualTo(0.56);
-
 				assertThat(chatProperties.toOptions().getTopK()).isEqualTo(123);
 			});
+	}
+
+	@Test
+	void thinkBooleanPropertiesTest() {
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.ollama.chat.model=qwen3:4b-thinking",
+						"spring.ai.ollama.chat.think-option=enabled"
+						// @formatter:on
+		).withConfiguration(BaseOllamaIT.ollamaAutoConfig(OllamaChatAutoConfiguration.class)).run(context -> {
+			assertThat(context).hasNotFailed();
+
+			var chatProperties = context.getBean(OllamaChatProperties.class);
+
+			assertThat(chatProperties.getModel()).isEqualTo("qwen3:4b-thinking");
+
+			assertThat(chatProperties.toOptions().getModel()).isEqualTo("qwen3:4b-thinking");
+			assertThat(chatProperties.toOptions().getThinkOption()).isEqualTo(ThinkOption.ThinkBoolean.ENABLED);
+		});
+	}
+
+	@Test
+	void thinkLevelPropertiesTest() {
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.ollama.chat.model=gpt-oss:latest",
+						"spring.ai.ollama.chat.think-option=low"
+						// @formatter:on
+		).withConfiguration(BaseOllamaIT.ollamaAutoConfig(OllamaChatAutoConfiguration.class)).run(context -> {
+			assertThat(context).hasNotFailed();
+
+			var chatProperties = context.getBean(OllamaChatProperties.class);
+
+			assertThat(chatProperties.getModel()).isEqualTo("gpt-oss:latest");
+
+			assertThat(chatProperties.toOptions().getModel()).isEqualTo("gpt-oss:latest");
+			assertThat(chatProperties.toOptions().getThinkOption()).isEqualTo(ThinkOption.ThinkLevel.LOW);
+		});
 	}
 
 }
