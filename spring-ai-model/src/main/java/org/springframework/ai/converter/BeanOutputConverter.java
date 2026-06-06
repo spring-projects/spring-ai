@@ -24,6 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -51,6 +52,8 @@ import org.springframework.core.ParameterizedTypeReference;
 public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
 	private final Log logger = LogFactory.getLog(BeanOutputConverter.class);
+
+	private static final MapTypeReference MAP_TYPE_REFERENCE = new MapTypeReference();
 
 	/**
 	 * The target class type reference to which the output will be converted.
@@ -185,13 +188,12 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param text The LLM output in string format.
 	 * @return The parsed output in the desired target type.
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public T convert(String text) {
 		// Clean the text using the configured text cleaner
 		text = this.textCleaner.clean(text);
 
-		return (T) this.jsonMapper.readValue(text, this.jsonMapper.constructType(this.type));
+		return this.jsonMapper.readValue(text, this.jsonMapper.constructType(this.type));
 	}
 
 	/**
@@ -234,12 +236,16 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
 	public Map<String, Object> getJsonSchemaMap() {
 		try {
-			return this.jsonMapper.readValue(this.jsonSchema, Map.class);
+			return this.jsonMapper.readValue(this.jsonSchema, MAP_TYPE_REFERENCE);
 		}
 		catch (JacksonException ex) {
 			logger.error("Could not parse the JSON Schema to a Map object", ex);
 			throw new IllegalStateException(ex);
 		}
+	}
+
+	private static final class MapTypeReference extends TypeReference<Map<String, Object>> {
+
 	}
 
 }

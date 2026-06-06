@@ -26,8 +26,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -45,7 +43,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Soby Chacko
  * @author Konstantin Pavlov
  */
-@ExtendWith(MockitoExtension.class)
 class BeanOutputConverterTest {
 
 	@Test
@@ -61,19 +58,15 @@ class BeanOutputConverterTest {
 
 		private String someString;
 
-		@SuppressWarnings("unused")
 		TestClass() {
-		}
-
-		TestClass(String someString) {
-			this.someString = someString;
 		}
 
 		String getSomeString() {
 			return this.someString;
 		}
 
-		public void setSomeString(String someString) {
+		@SuppressWarnings("unused")
+		void setSomeString(String someString) {
 			this.someString = someString;
 		}
 
@@ -83,19 +76,15 @@ class BeanOutputConverterTest {
 
 		private LocalDate someString;
 
-		@SuppressWarnings("unused")
 		TestClassWithDateProperty() {
-		}
-
-		TestClassWithDateProperty(LocalDate someString) {
-			this.someString = someString;
 		}
 
 		LocalDate getSomeString() {
 			return this.someString;
 		}
 
-		public void setSomeString(LocalDate someString) {
+		@SuppressWarnings("unused")
+		void setSomeString(LocalDate someString) {
 			this.someString = someString;
 		}
 
@@ -462,7 +451,7 @@ class BeanOutputConverterTest {
 		// @checkstyle:on RegexpSinglelineJavaCheck
 
 		@Test
-		void formatClassTypeWithToolParamAnnotations() throws Exception {
+		void formatClassTypeWithToolParamAnnotations() {
 			var converter = new BeanOutputConverter<>(TestClassWithToolParam.class);
 			String schema = converter.getJsonSchema();
 			JsonNode schemaNode = JsonMapper.shared().readTree(schema);
@@ -470,14 +459,14 @@ class BeanOutputConverterTest {
 			assertThat(schemaNode.get("required").toString()).contains("requiredField");
 			assertThat(schemaNode.get("required").toString()).doesNotContain("optionalField");
 
-			assertThat(schemaNode.get("properties").get("requiredField").get("description").asText())
+			assertThat(schemaNode.get("properties").get("requiredField").get("description").asString())
 				.isEqualTo("A required field");
-			assertThat(schemaNode.get("properties").get("optionalField").get("description").asText())
+			assertThat(schemaNode.get("properties").get("optionalField").get("description").asString())
 				.isEqualTo("An optional field");
 		}
 
 		@Test
-		void formatClassTypeWithNullableAnnotation() throws Exception {
+		void formatClassTypeWithNullableAnnotation() {
 			var converter = new BeanOutputConverter<>(TestClassWithNullable.class);
 			String schema = converter.getJsonSchema();
 			JsonNode schemaNode = JsonMapper.shared().readTree(schema);
