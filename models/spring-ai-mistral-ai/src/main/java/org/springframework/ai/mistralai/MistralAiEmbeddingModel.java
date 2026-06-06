@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mistralai;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -60,16 +61,14 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	private static final Log logger = LogFactory.getLog(MistralAiEmbeddingModel.class);
 
+	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
+
 	/**
 	 * Known embedding dimensions for Mistral AI models. Maps model names to their
 	 * respective embedding vector dimensions. This allows the dimensions() method to
 	 * return the correct value without making an API call.
 	 */
-	private static final Map<String, Integer> KNOWN_EMBEDDING_DIMENSIONS = Map.of(
-			MistralAiApi.EmbeddingModel.EMBED.getValue(), 1024, MistralAiApi.EmbeddingModel.CODESTRAL_EMBED.getValue(),
-			1536);
-
-	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
+	private final Map<String, Integer> knownEmbeddingDimensions = createKnownEmbeddingDimensions();
 
 	private final MistralAiEmbeddingOptions options;
 
@@ -88,6 +87,14 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 	 * Conventions to use for generating observations.
 	 */
 	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
+
+	private static Map<String, Integer> createKnownEmbeddingDimensions() {
+		Map<String, Integer> knownEmbeddingDimensions = new HashMap<>();
+		knownEmbeddingDimensions.put(MistralAiApi.EmbeddingModel.EMBED.getValue(), 1024);
+		knownEmbeddingDimensions.put(MistralAiApi.EmbeddingModel.CODESTRAL_EMBED.getValue(), 1536);
+
+		return knownEmbeddingDimensions;
+	}
 
 	public MistralAiEmbeddingModel(MistralAiApi mistralAiApi, MetadataMode metadataMode,
 			MistralAiEmbeddingOptions options, RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
@@ -195,7 +202,7 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public int dimensions() {
-		return KNOWN_EMBEDDING_DIMENSIONS.getOrDefault(this.options.getModel(), super.dimensions());
+		return this.knownEmbeddingDimensions.computeIfAbsent(this.options.getModel(), model -> super.dimensions());
 	}
 
 	/**
