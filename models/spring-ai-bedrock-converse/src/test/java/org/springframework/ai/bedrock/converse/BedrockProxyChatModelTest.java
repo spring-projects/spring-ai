@@ -31,6 +31,7 @@ import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest;
+import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfiguration;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
 
 import org.springframework.ai.bedrock.converse.api.BedrockCacheOptions;
@@ -327,6 +328,50 @@ class BedrockProxyChatModelTest {
 		assertThat(system).hasSize(2);
 		assertThat(system.get(0).cachePoint()).isNull();
 		assertThat(system.get(1).cachePoint()).isNull();
+	}
+
+	// -------------------------------------------------------------------------
+	// Inference configuration null-field omission
+	// -------------------------------------------------------------------------
+
+	@Test
+	void shouldOmitNullValuesFromInferenceConfigBySdkFields() {
+		// Build reference config with only maxTokens explicitly set
+		InferenceConfiguration expected = InferenceConfiguration.builder().maxTokens(400).build();
+
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.model("eu.anthropic.claude-opus-4-7")
+			.maxTokens(400)
+			.build();
+
+		Prompt prompt = new Prompt(List.of(new UserMessage("Hello")), options);
+		ConverseRequest request = newModel().createRequest(prompt);
+
+		// equalsBySdkFields considers which fields were explicitly set, not just
+		// their values. If the old code called .temperature(null), the config
+		// objects would NOT be equal — this test catches the regression.
+		assertThat(request.inferenceConfig().equalsBySdkFields(expected)).isTrue();
+	}
+
+	@Test
+	void shouldIncludeExplicitlySetTemperatureAndTopP() {
+		InferenceConfiguration expected = InferenceConfiguration.builder()
+			.temperature(0.7f)
+			.topP(0.9f)
+			.maxTokens(1000)
+			.build();
+
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.model("us.anthropic.claude-3-5-sonnet-20241022-v2:0")
+			.temperature(0.7)
+			.topP(0.9)
+			.maxTokens(1000)
+			.build();
+
+		Prompt prompt = new Prompt(List.of(new UserMessage("Hello")), options);
+		ConverseRequest request = newModel().createRequest(prompt);
+
+		assertThat(request.inferenceConfig().equalsBySdkFields(expected)).isTrue();
 	}
 
 }
