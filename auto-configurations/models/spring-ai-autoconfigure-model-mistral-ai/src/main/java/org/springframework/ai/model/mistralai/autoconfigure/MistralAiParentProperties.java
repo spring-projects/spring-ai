@@ -18,13 +18,17 @@ package org.springframework.ai.model.mistralai.autoconfigure;
 
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
+
 /**
  * Parent properties for Mistral AI.
  *
  * @author Ricken Bazolo
+ * @author Nicolas Krier
  * @since 0.8.1
  */
-public class MistralAiParentProperties {
+public abstract class MistralAiParentProperties {
 
 	private @Nullable String apiKey;
 
@@ -44,6 +48,20 @@ public class MistralAiParentProperties {
 
 	public void setBaseUrl(@Nullable String baseUrl) {
 		this.baseUrl = baseUrl;
+	}
+
+	public String getApiKeyOrDefaultFrom(MistralAiCommonProperties commonProperties) {
+		var resolvedApiKey = StringUtils.hasText(this.apiKey) ? this.apiKey : commonProperties.getApiKey();
+		Assert.state(StringUtils.hasText(resolvedApiKey), "Mistral AI API key must be set!");
+
+		return resolvedApiKey;
+	}
+
+	public String getBaseUrlOrDefaultFrom(MistralAiCommonProperties commonProperties) {
+		var resolvedBaseUrl = StringUtils.hasText(this.baseUrl) ? this.baseUrl : commonProperties.getBaseUrl();
+		Assert.state(StringUtils.hasText(resolvedBaseUrl), "Mistral AI base URL must be set!");
+
+		return resolvedBaseUrl;
 	}
 
 }
