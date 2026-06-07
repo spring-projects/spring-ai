@@ -842,6 +842,8 @@ If you need to correlate streaming HTTP spans with their parent chat-model span 
 Built-in parent linkage for streaming is being pursued upstream in the OpenAI Java SDK.
 ====
 
+include::partial$openai/openai-http-client-customization.adoc[]
+
 == Using Extra Parameters with OpenAI-Compatible Servers [[openai-compatible-servers]]
 
 OpenAI-compatible inference servers like vLLM, Ollama, and others often support additional parameters beyond those defined in OpenAI's standard API.

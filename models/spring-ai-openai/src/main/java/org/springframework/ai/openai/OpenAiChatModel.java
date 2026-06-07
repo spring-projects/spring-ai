@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -97,6 +96,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.observation.conventions.AiProvider;
+import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -1199,7 +1199,7 @@ public final class OpenAiChatModel implements ChatModel {
 
 		private @Nullable MeterRegistry meterRegistry;
 
-		private @Nullable ExecutorService dispatcherExecutor;
+		private List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers = new ArrayList<>();
 
 		private Builder() {
 		}
@@ -1264,18 +1264,27 @@ public final class OpenAiChatModel implements ChatModel {
 		}
 
 		/**
-		 * Sets the executor used by the underlying OkHttp dispatcher for both the sync
-		 * and async clients. The caller owns the executor's lifecycle — Spring AI will
-		 * not shut it down. Typical use: pass
-		 * {@code Executors.newVirtualThreadPerTaskExecutor()} on Java 21+ to back HTTP
-		 * dispatch with virtual threads. When omitted, an internal platform-thread
-		 * executor is created and managed by the HTTP client.
-		 * @param dispatcherExecutor the dispatcher executor; null restores the default
-		 * @return this builder
-		 * @since 2.0.0
+		 * Registers an {@link OpenAiHttpClientBuilderCustomizer} that mutates the
+		 * underlying OkHttp client builder before the OpenAI clients are constructed. Use
+		 * this to attach OkHttp interceptors (e.g. OAuth2 bearer-token injection), swap
+		 * the dispatcher executor, or tweak any other OkHttp setting. Customizers are
+		 * applied in the order they are registered, after Spring AI's own defaults, so
+		 * user code wins.
 		 */
-		public Builder dispatcherExecutor(java.util.concurrent.ExecutorService dispatcherExecutor) {
-			this.dispatcherExecutor = dispatcherExecutor;
+		public Builder httpClientBuilderCustomizer(OpenAiHttpClientBuilderCustomizer customizer) {
+			Assert.notNull(customizer, "customizer cannot be null");
+			this.httpClientCustomizers.add(customizer);
+			return this;
+		}
+
+		/**
+		 * Sets the full list of {@link OpenAiHttpClientBuilderCustomizer customizers} to
+		 * apply, replacing any customizers registered earlier on this builder. The order
+		 * of the list is preserved when invoking the customizers.
+		 */
+		public Builder httpClientBuilderCustomizers(List<OpenAiHttpClientBuilderCustomizer> customizers) {
+			Assert.notNull(customizers, "customizers cannot be null");
+			this.httpClientCustomizers = new ArrayList<>(customizers);
 			return this;
 		}
 
@@ -1296,7 +1305,7 @@ public final class OpenAiChatModel implements ChatModel {
 							resolvedOptions.isMicrosoftFoundry(), resolvedOptions.isGitHubModels(),
 							resolvedOptions.getModel(), resolvedOptions.getTimeout(), resolvedOptions.getMaxRetries(),
 							resolvedOptions.getProxy(), resolvedOptions.getCustomHeaders(), resolvedObservationRegistry,
-							this.meterRegistry, this.dispatcherExecutor));
+							this.meterRegistry, this.httpClientCustomizers));
 
 			OpenAIClientAsync resolvedClientAsync = Objects.requireNonNullElseGet(this.openAiClientAsync,
 					() -> OpenAiSetup.setupAsyncClient(resolvedOptions.getBaseUrl(), resolvedOptions.getApiKey(),
@@ -1305,7 +1314,7 @@ public final class OpenAiChatModel implements ChatModel {
 							resolvedOptions.isMicrosoftFoundry(), resolvedOptions.isGitHubModels(),
 							resolvedOptions.getModel(), resolvedOptions.getTimeout(), resolvedOptions.getMaxRetries(),
 							resolvedOptions.getProxy(), resolvedOptions.getCustomHeaders(), resolvedObservationRegistry,
-							this.meterRegistry, this.dispatcherExecutor));
+							this.meterRegistry, this.httpClientCustomizers));
 
 			ToolCallingManager resolvedToolCallingManager = Objects.requireNonNullElse(this.toolCallingManager,
 					ToolCallingManager.builder().observationRegistry(resolvedObservationRegistry).build());

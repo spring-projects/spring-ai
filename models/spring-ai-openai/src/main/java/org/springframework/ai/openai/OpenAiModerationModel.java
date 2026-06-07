@@ -36,6 +36,7 @@ import org.springframework.ai.moderation.ModerationOptions;
 import org.springframework.ai.moderation.ModerationPrompt;
 import org.springframework.ai.moderation.ModerationResponse;
 import org.springframework.ai.moderation.ModerationResult;
+import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.util.Assert;
 
 /**
@@ -47,6 +48,7 @@ import org.springframework.util.Assert;
  * @author Ahmed Yousri
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
+ * @author Thomas Vitale
  */
 public final class OpenAiModerationModel implements ModerationModel {
 
@@ -73,7 +75,7 @@ public final class OpenAiModerationModel implements ModerationModel {
 						this.options.getOrganizationId(), this.options.isMicrosoftFoundry(),
 						this.options.isGitHubModels(), this.options.getModel(), this.options.getTimeout(),
 						this.options.getMaxRetries(), this.options.getProxy(), this.options.getCustomHeaders(),
-						ObservationRegistry.NOOP, null, null));
+						ObservationRegistry.NOOP, null, builder.httpClientCustomizers));
 	}
 
 	public static Builder builder() {
@@ -179,6 +181,8 @@ public final class OpenAiModerationModel implements ModerationModel {
 
 		private @Nullable OpenAiModerationOptions options;
 
+		private List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers = new ArrayList<>();
+
 		private Builder() {
 		}
 
@@ -194,6 +198,31 @@ public final class OpenAiModerationModel implements ModerationModel {
 
 		public Builder options(OpenAiModerationOptions options) {
 			this.options = options;
+			return this;
+		}
+
+		/**
+		 * Registers an {@link OpenAiHttpClientBuilderCustomizer} that mutates the
+		 * underlying OkHttp client builder before the OpenAI clients are constructed. Use
+		 * this to attach OkHttp interceptors (e.g. OAuth2 bearer-token injection), swap
+		 * the dispatcher executor, or tweak any other OkHttp setting. Customizers are
+		 * applied in the order they are registered, after Spring AI's own defaults, so
+		 * user code wins.
+		 */
+		public Builder httpClientBuilderCustomizer(OpenAiHttpClientBuilderCustomizer customizer) {
+			Assert.notNull(customizer, "customizer cannot be null");
+			this.httpClientCustomizers.add(customizer);
+			return this;
+		}
+
+		/**
+		 * Sets the full list of {@link OpenAiHttpClientBuilderCustomizer customizers} to
+		 * apply, replacing any customizers registered earlier on this builder. The order
+		 * of the list is preserved when invoking the customizers.
+		 */
+		public Builder httpClientBuilderCustomizers(List<OpenAiHttpClientBuilderCustomizer> customizers) {
+			Assert.notNull(customizers, "customizers cannot be null");
+			this.httpClientCustomizers = new ArrayList<>(customizers);
 			return this;
 		}
 

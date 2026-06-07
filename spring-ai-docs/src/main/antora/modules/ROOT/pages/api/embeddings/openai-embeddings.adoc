@@ -258,4 +258,4 @@ EmbeddingResponse embeddingResponse = this.embeddingModel
 The `OpenAiEmbeddingOptions` provides the configuration information for the embedding requests.
 The api and options class offers a `builder()` for easy options creation.
 
-
+include::partial$openai/openai-http-client-customization.adoc[]

@@ -192,5 +192,7 @@ ModerationPrompt moderationPrompt = new ModerationPrompt("Text to be moderated",
 ModerationResponse response = this.openAiModerationModel.call(this.moderationPrompt);
 ----
 
+include::partial$openai/openai-http-client-customization.adoc[]
+
 == Example Code
 The `OpenAiModerationModelIT` test provides some general examples of how to use the library. You can refer to this test for more detailed usage examples.
