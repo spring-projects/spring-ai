@@ -562,7 +562,7 @@ public final class OpenAiChatModel implements ChatModel {
 					ChatCompletionAssistantMessageParam.Builder builder = ChatCompletionAssistantMessageParam.builder()
 						.role(JsonValue.from(MessageType.ASSISTANT.getValue()));
 
-					if (assistantMessage.getText() != null) {
+					if (StringUtils.hasText(assistantMessage.getText())) {
 						builder.content(ChatCompletionAssistantMessageParam.builder()
 							.content(assistantMessage.getText())
 							.build()

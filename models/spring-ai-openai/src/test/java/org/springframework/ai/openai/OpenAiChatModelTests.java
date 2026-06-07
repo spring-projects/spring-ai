@@ -25,8 +25,10 @@ import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
 import com.openai.models.chat.completions.ChatCompletion;
+import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
 import com.openai.models.chat.completions.ChatCompletionMessage;
+import com.openai.models.chat.completions.ChatCompletionMessageParam;
 import com.openai.models.completions.CompletionUsage;
 import com.openai.services.blocking.ChatService;
 import com.openai.services.blocking.chat.ChatCompletionService;
@@ -35,6 +37,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -343,6 +346,38 @@ class OpenAiChatModelTests {
 
 		ChatResponseMetadata metadata = response.getMetadata();
 		assertThat((Object) metadata.get("created")).isEqualTo(1234567890L);
+	}
+
+	@Test
+	void assistantToolCallMessageOmitsContentWhenBlank() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		AssistantMessage assistantWithToolCall = AssistantMessage.builder()
+			.content("")
+			.toolCalls(List.of(new AssistantMessage.ToolCall("call-1", "function", "myTool", "{}")))
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(
+				new org.springframework.ai.chat.prompt.Prompt(List.of(assistantWithToolCall), options), false);
+
+		assertThat(request.messages()).isNotEmpty();
+		for (ChatCompletionMessageParam msg : request.messages()) {
+			if (msg.isAssistant()) {
+				ChatCompletionAssistantMessageParam assistant = msg.asAssistant();
+				assertThat(assistant.content())
+					.as("assistant message with only tool_calls must not have blank text content")
+					.satisfies(content -> {
+						if (content.isPresent() && content.get().isText()) {
+							assertThat(content.get().asText()).isNotBlank();
+						}
+					});
+			}
+		}
 	}
 
 }
