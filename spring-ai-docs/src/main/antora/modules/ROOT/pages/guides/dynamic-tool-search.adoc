@@ -27,7 +27,40 @@ The blog post covers the complete implementation details, performance benchmarks
 
 === Dependencies
 
-Add the Tool Search Tool dependency to your project:
+Use the Spring Boot starter for the simplest setup (includes Lucene and auto-configuration):
+
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-tool-search-advisor</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,gradle]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-tool-search-advisor'
+}
+----
+======
+
+With the starter, enable the advisor in `application.properties` — no Java configuration needed:
+
+[source,properties]
+----
+spring.ai.chat.client.tool-search-advisor.enabled=true
+----
+
+See xref:api/tools.adoc#tool-search-tool[Tool Search Tool auto-configuration] for the full list of configuration properties and ToolIndex selection options.
+
+Alternatively, add only the library for manual `@Bean` configuration:
 
 [tabs]
 ======

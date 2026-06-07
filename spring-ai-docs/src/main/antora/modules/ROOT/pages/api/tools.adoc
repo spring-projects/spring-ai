@@ -1438,6 +1438,32 @@ The flow at runtime is:
 
 === Installation
 
+Use the Spring Boot starter for the simplest setup (includes Lucene and auto-configuration):
+
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-tool-search-advisor</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,gradle]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-tool-search-advisor'
+}
+----
+======
+
+Or use the library directly for manual configuration:
+
 [source,xml]
 ----
 <dependency>
@@ -1558,7 +1584,7 @@ The following options are available on `ToolSearchToolCallingAdvisor.Builder`:
 
 | `sessionIdKeyName(String)`
 | Context key used to look up the conversation/session ID. Change this when your app stores the conversation ID under a custom key.
-| `"conversationId"`
+| `"chat_memory_conversation_id"` (`ChatMemory.CONVERSATION_ID`)
 
 | `evictionStrategy(ToolIndexEvictionStrategy)`
 | Determines when session tool indexes are freed. See xref:_index_eviction[Index Eviction] below.
@@ -1666,3 +1692,108 @@ Eviction is evaluated lazily on each request — no background thread is require
 * Small tool library (fewer than 10 tools).
 * All tools are frequently used in every session.
 * Tool definitions are very compact.
+
+=== Spring Boot Auto-configuration
+
+The `spring-ai-starter-tool-search-advisor` starter provides zero-boilerplate setup.
+Enable it with a single property:
+
+[source,properties]
+----
+spring.ai.chat.client.tool-search-advisor.enabled=true
+----
+
+When enabled, the auto-configuration registers a `ToolSearchToolCallingAdvisor.Builder` bean that transparently replaces the default `ToolCallingAdvisor` — no code changes needed.
+It also auto-registers a `ToolIndex` bean unless the application declares one explicitly.
+
+==== ToolIndex Auto-selection
+
+Set `spring.ai.chat.client.tool-search-advisor.tool-index-type` to select the implementation:
+
+[cols="1,2,2", options="header"]
+|===
+| Value | Implementation | Requirements
+
+| `regex` (**default**)
+| `RegexToolIndex`
+| No additional dependencies
+
+| `lucene`
+| `LuceneToolIndex`
+| `org.apache.lucene:lucene-core` on the classpath (included in the starter)
+
+| `vector`
+| `VectorToolIndex`
+| A `VectorStore` bean in the application context
+|===
+
+A custom `ToolIndex` bean declared by the application always takes precedence.
+
+==== Configuration Properties Reference
+
+[cols="2,3,1", options="header"]
+|===
+| Property | Description | Default
+
+| `spring.ai.chat.client.tool-search-advisor.enabled`
+| Enable the advisor. Replaces the default `ToolCallingAdvisor` when `true`.
+| `false`
+
+| `spring.ai.chat.client.tool-search-advisor.tool-index-type`
+| `ToolIndex` implementation to use: `regex`, `lucene`, or `vector`.
+| `regex`
+
+| `spring.ai.chat.client.tool-search-advisor.max-results`
+| Maximum tool references returned per search call. `null` uses the built-in default.
+| `null`
+
+| `spring.ai.chat.client.tool-search-advisor.system-message-suffix`
+| Custom prompt suffix appended to the system message. `null` uses the built-in template.
+| `null`
+
+| `spring.ai.chat.client.tool-search-advisor.reference-tool-name-accumulation`
+| Accumulate tool names discovered across all search calls in a single turn.
+| `true`
+
+| `spring.ai.chat.client.tool-search-advisor.session-id-key-name`
+| Advisor context key that carries the conversation/session ID.
+| `"chat_memory_conversation_id"`
+
+| `spring.ai.chat.client.tool-search-advisor.advisor-order`
+| Position of this advisor in the advisor chain.
+| `HIGHEST_PRECEDENCE + 300`
+
+| `spring.ai.chat.client.tool-search-advisor.stream-tool-call-responses`
+| Stream intermediate tool-call responses during `stream()` invocations.
+| `false`
+
+| `spring.ai.chat.client.tool-search-advisor.eviction.lru-max-sessions`
+| Maximum active sessions retained by the LRU eviction strategy.
+| `1000`
+
+| `spring.ai.chat.client.tool-search-advisor.eviction.ttl`
+| Time-to-live for idle sessions. When set, a composite LRU+TTL strategy is used. Accepts a `java.time.Duration` string (e.g. `30m`, `1h`).
+| `null`
+
+| `spring.ai.chat.client.tool-search-advisor.lucene.min-score-threshold`
+| Minimum Lucene score for a hit to be included. Applies when `tool-index-type=lucene`.
+| `0.25`
+|===
+
+Example — Lucene with custom threshold:
+
+[source,properties]
+----
+spring.ai.chat.client.tool-search-advisor.enabled=true
+spring.ai.chat.client.tool-search-advisor.tool-index-type=lucene
+spring.ai.chat.client.tool-search-advisor.lucene.min-score-threshold=0.4
+spring.ai.chat.client.tool-search-advisor.eviction.ttl=30m
+----
+
+Example — vector search (requires a `VectorStore` bean, e.g. from `spring-ai-starter-vector-store-pgvector`):
+
+[source,properties]
+----
+spring.ai.chat.client.tool-search-advisor.enabled=true
+spring.ai.chat.client.tool-search-advisor.tool-index-type=vector
+----

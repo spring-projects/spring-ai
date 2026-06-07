@@ -48,6 +48,8 @@
 		<module>advisors/spring-ai-tool-search-advisor</module>
 		<module>advisors/spring-ai-vector-store-advisor</module>
 
+		<module>auto-configurations/advisors/spring-ai-autoconfigure-tool-search-advisor</module>
+
 		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
 
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common</module>
@@ -140,6 +142,8 @@
 		<module>starters/spring-ai-starter-mcp-server</module>
 		<module>starters/spring-ai-starter-mcp-server-webflux</module>
 		<module>starters/spring-ai-starter-mcp-server-webmvc</module>
+
+		<module>starters/spring-ai-starter-tool-search-advisor</module>
 
 		<module>starters/spring-ai-starter-model-anthropic</module>
 		<module>starters/spring-ai-starter-model-bedrock</module>
