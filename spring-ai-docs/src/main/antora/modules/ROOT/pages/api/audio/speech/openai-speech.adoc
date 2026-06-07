@@ -201,6 +201,8 @@ Flux<TextToSpeechResponse> responseStream = openAiAudioSpeechModel.stream(speech
 Flux<byte[]> audioByteStream = openAiAudioSpeechModel.stream("Hello, world!");
 ----
 
+include::partial$openai/openai-http-client-customization.adoc[]
+
 == Migration Guide
 
 If you're upgrading from the deprecated `SpeechModel` and `SpeechPrompt` classes, this guide provides detailed instructions for migrating to the new shared interfaces.

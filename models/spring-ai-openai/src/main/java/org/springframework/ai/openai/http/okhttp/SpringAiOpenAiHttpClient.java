@@ -21,7 +21,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Proxy;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
@@ -59,6 +61,7 @@ import okhttp3.Callback;
 import okhttp3.ConnectionPool;
 import okhttp3.Dispatcher;
 import okhttp3.HttpUrl;
+import okhttp3.Interceptor;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -84,6 +87,7 @@ import org.jspecify.annotations.Nullable;
  *
  * @author Soby Chacko
  * @author Ilayaperumal Gopinathan
+ * @author Thomas Vitale
  * @since 2.0.0
  */
 public final class SpringAiOpenAiHttpClient implements HttpClient {
@@ -423,6 +427,8 @@ public final class SpringAiOpenAiHttpClient implements HttpClient {
 
 		private Iterable<Tag> meterTags = Collections.emptyList();
 
+		private final List<Interceptor> interceptors = new ArrayList<>();
+
 		private Builder() {
 		}
 
@@ -511,6 +517,17 @@ public final class SpringAiOpenAiHttpClient implements HttpClient {
 			return this;
 		}
 
+		/**
+		 * Registers an OkHttp {@link Interceptor} to run at the end of the chain.
+		 * Interceptors appear in the chain in the order they are added here. Use this to
+		 * attach cross-cutting concerns such as OAuth2 bearer-token injection, custom
+		 * logging, or tenant-propagation headers.
+		 */
+		public Builder interceptor(Interceptor interceptor) {
+			this.interceptors.add(Objects.requireNonNull(interceptor, "interceptor"));
+			return this;
+		}
+
 		public SpringAiOpenAiHttpClient build() {
 			OkHttpClient.Builder okBuilder = new OkHttpClient.Builder()
 				// SDK's RetryingHttpClient owns retries; disable here to avoid doubling.
@@ -526,6 +543,10 @@ public final class SpringAiOpenAiHttpClient implements HttpClient {
 				.builder(this.observationRegistry, OBSERVATION_NAME)
 				.build();
 			okBuilder.addInterceptor(observationInterceptor);
+
+			for (Interceptor interceptor : this.interceptors) {
+				okBuilder.addInterceptor(interceptor);
+			}
 
 			if (this.proxyAuthenticator != null) {
 				final ProxyAuthenticator pa = this.proxyAuthenticator;
@@ -576,15 +597,6 @@ public final class SpringAiOpenAiHttpClient implements HttpClient {
 			}
 
 			return new SpringAiOpenAiHttpClient(okClient, ownsDispatcherExecutor);
-		}
-
-		public SpringAiOpenAiHttpClient buildWithInterceptor(okhttp3.Interceptor interceptor) {
-			SpringAiOpenAiHttpClient baseClient = build();
-			OkHttpClient modifiedOkClient = baseClient.getOkHttpClient()
-				.newBuilder()
-				.addInterceptor(interceptor)
-				.build();
-			return new SpringAiOpenAiHttpClient(modifiedOkClient, baseClient.ownsDispatcherExecutor);
 		}
 
 		// Replicates OkHttp's default dispatcher so wrapping for context propagation

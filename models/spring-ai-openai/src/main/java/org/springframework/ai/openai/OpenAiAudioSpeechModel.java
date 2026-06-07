@@ -18,6 +18,7 @@ package org.springframework.ai.openai;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -36,6 +37,7 @@ import org.springframework.ai.audio.tts.TextToSpeechModel;
 import org.springframework.ai.audio.tts.TextToSpeechOptions;
 import org.springframework.ai.audio.tts.TextToSpeechPrompt;
 import org.springframework.ai.audio.tts.TextToSpeechResponse;
+import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.openai.metadata.OpenAiAudioSpeechResponseMetadata;
 import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.util.Assert;
@@ -59,20 +61,16 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
 	private final OpenAiAudioSpeechOptions options;
 
-	/**
-	 * Private constructor that takes individual configuration parameters.
-	 * @param openAiClient The OpenAI client instance.
-	 * @param options The default options for speech generation.
-	 */
-	private OpenAiAudioSpeechModel(@Nullable OpenAIClient openAiClient, @Nullable OpenAiAudioSpeechOptions options) {
-		this.options = Objects.requireNonNullElseGet(options, () -> OpenAiAudioSpeechOptions.builder().build());
-		this.openAiClient = Objects.requireNonNullElseGet(openAiClient,
+	private OpenAiAudioSpeechModel(Builder builder) {
+		this.options = Objects.requireNonNullElseGet(builder.options, () -> OpenAiAudioSpeechOptions.builder().build());
+		this.openAiClient = Objects.requireNonNullElseGet(builder.openAiClient,
 				() -> OpenAiSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
 						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
 						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
 						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders(), ObservationRegistry.NOOP, null, null));
+						this.options.getCustomHeaders(), ObservationRegistry.NOOP, null,
+						builder.httpClientCustomizers));
 	}
 
 	/**
@@ -206,6 +204,8 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
 		private @Nullable OpenAiAudioSpeechOptions options;
 
+		private List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers = new ArrayList<>();
+
 		/**
 		 * Default constructor with default options.
 		 */
@@ -245,11 +245,36 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 		}
 
 		/**
+		 * Registers an {@link OpenAiHttpClientBuilderCustomizer} that mutates the
+		 * underlying OkHttp client builder before the OpenAI clients are constructed. Use
+		 * this to attach OkHttp interceptors (e.g. OAuth2 bearer-token injection), swap
+		 * the dispatcher executor, or tweak any other OkHttp setting. Customizers are
+		 * applied in the order they are registered, after Spring AI's own defaults, so
+		 * user code wins.
+		 */
+		public Builder httpClientBuilderCustomizer(OpenAiHttpClientBuilderCustomizer customizer) {
+			Assert.notNull(customizer, "customizer cannot be null");
+			this.httpClientCustomizers.add(customizer);
+			return this;
+		}
+
+		/**
+		 * Sets the full list of {@link OpenAiHttpClientBuilderCustomizer customizers} to
+		 * apply, replacing any customizers registered earlier on this builder. The order
+		 * of the list is preserved when invoking the customizers.
+		 */
+		public Builder httpClientBuilderCustomizers(List<OpenAiHttpClientBuilderCustomizer> customizers) {
+			Assert.notNull(customizers, "customizers cannot be null");
+			this.httpClientCustomizers = new ArrayList<>(customizers);
+			return this;
+		}
+
+		/**
 		 * Builds the OpenAiAudioSpeechModel instance.
 		 * @return A new OpenAiAudioSpeechModel instance
 		 */
 		public OpenAiAudioSpeechModel build() {
-			return new OpenAiAudioSpeechModel(this.openAiClient, this.options);
+			return new OpenAiAudioSpeechModel(this);
 		}
 
 	}

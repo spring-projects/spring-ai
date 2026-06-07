@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import java.util.List;
+
 import com.openai.client.OpenAIClient;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
@@ -23,6 +25,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
+import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -52,12 +55,16 @@ public class OpenAiAudioSpeechAutoConfiguration {
 	@ConditionalOnMissingBean
 	public OpenAiAudioSpeechModel openAiSdkAudioSpeechModel(OpenAiCommonProperties commonProperties,
 			OpenAiAudioSpeechProperties speechProperties, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<MeterRegistry> meterRegistry) {
+			ObjectProvider<MeterRegistry> meterRegistry,
+			ObjectProvider<OpenAiHttpClientBuilderCustomizer> httpClientBuilderCustomizers) {
 
 		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
 				speechProperties);
 
-		OpenAIClient openAIClient = this.openAiClient(resolvedProperties, observationRegistry, meterRegistry);
+		List<OpenAiHttpClientBuilderCustomizer> customizers = httpClientBuilderCustomizers.orderedStream().toList();
+
+		OpenAIClient openAIClient = this.openAiClient(resolvedProperties, observationRegistry, meterRegistry,
+				customizers);
 
 		return OpenAiAudioSpeechModel.builder()
 			.openAiClient(openAIClient)
@@ -66,7 +73,8 @@ public class OpenAiAudioSpeechAutoConfiguration {
 	}
 
 	private OpenAIClient openAiClient(OpenAiCommonProperties commonProperties,
-			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry) {
+			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
+			List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
 
 		MeterRegistry meterRegistryToUse = commonProperties.isConnectionPoolMetricsEnabled()
 				? meterRegistry.getIfAvailable() : null;
@@ -77,7 +85,7 @@ public class OpenAiAudioSpeechAutoConfiguration {
 				commonProperties.isMicrosoftFoundry(), commonProperties.isGitHubModels(), commonProperties.getModel(),
 				commonProperties.getTimeout(), commonProperties.getMaxRetries(), commonProperties.getProxy(),
 				commonProperties.getCustomHeaders(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				meterRegistryToUse, null);
+				meterRegistryToUse, httpClientCustomizers);
 	}
 
 }

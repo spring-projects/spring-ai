@@ -19,6 +19,7 @@ package org.springframework.ai.openai.setup;
 import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import com.openai.azure.credential.AzureApiKeyCredential;
@@ -75,7 +76,7 @@ public class OpenAiSetupTests {
 	void setupSyncClient_returnsClient_whenValidApiKeyProvided() {
 		OpenAIClient client = OpenAiSetup.setupSyncClient(null, "valid-api-key", null, null, null, null, false, false,
 				null, Duration.ofSeconds(30), 2, null, null, io.micrometer.observation.ObservationRegistry.NOOP, null,
-				null);
+				List.of());
 
 		assertNotNull(client);
 	}
@@ -86,7 +87,7 @@ public class OpenAiSetupTests {
 
 		OpenAIClient client = OpenAiSetup.setupSyncClient(null, "valid-api-key", null, null, null, null, false, false,
 				null, Duration.ofSeconds(30), 2, null, customHeaders,
-				io.micrometer.observation.ObservationRegistry.NOOP, null, null);
+				io.micrometer.observation.ObservationRegistry.NOOP, null, List.of());
 
 		assertNotNull(client);
 	}
@@ -122,7 +123,7 @@ public class OpenAiSetupTests {
 
 		OpenAIClient client = OpenAiSetup.setupSyncClient(endpoint, apiKey, null, deploymentName, null, null, true,
 				false, null, Duration.ofSeconds(30), 2, null, null, io.micrometer.observation.ObservationRegistry.NOOP,
-				null, null);
+				null, List.of());
 
 		assertNotNull(client);
 	}
@@ -131,7 +132,7 @@ public class OpenAiSetupTests {
 	void setupSyncClient_usesApiKeyHeader_notBearerToken_forMicrosoftFoundry() throws Exception {
 		OpenAIClient client = OpenAiSetup.setupSyncClient("https://my-resource.openai.azure.com/", "my-foundry-key",
 				null, null, null, null, true, false, null, Duration.ofSeconds(30), 2, null, null,
-				io.micrometer.observation.ObservationRegistry.NOOP, null, null);
+				io.micrometer.observation.ObservationRegistry.NOOP, null, List.of());
 
 		Field field = client.getClass().getDeclaredField("clientOptions");
 		field.setAccessible(true);

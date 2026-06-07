@@ -19,8 +19,8 @@ package org.springframework.ai.openai.setup;
 import java.net.Proxy;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 import com.openai.azure.AzureOpenAIServiceVersion;
@@ -33,10 +33,12 @@ import com.openai.core.ClientOptions;
 import com.openai.credential.Credential;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
+import okhttp3.OkHttpClient;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.openai.http.okhttp.SpringAiOpenAiHttpClient;
 
 /**
@@ -46,6 +48,7 @@ import org.springframework.ai.openai.http.okhttp.SpringAiOpenAiHttpClient;
  * coded by the same author (Julien Dubois, from Microsoft).
  *
  * @author Julien Dubois
+ * @author Thomas Vitale
  */
 public final class OpenAiSetup {
 
@@ -94,7 +97,7 @@ public final class OpenAiSetup {
 			@Nullable AzureOpenAIServiceVersion azureOpenAiServiceVersion, @Nullable String organizationId,
 			boolean isAzure, boolean isGitHubModels, @Nullable String modelName, Duration timeout, int maxRetries,
 			@Nullable Proxy proxy, @Nullable Map<String, String> customHeaders, ObservationRegistry observationRegistry,
-			@Nullable MeterRegistry meterRegistry, @Nullable ExecutorService dispatcherExecutor) {
+			@Nullable MeterRegistry meterRegistry, List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
 
 		baseUrl = detectBaseUrlFromEnv(baseUrl);
 		var modelProvider = detectModelProvider(isAzure, isGitHubModels, baseUrl, azureDeploymentName,
@@ -107,12 +110,12 @@ public final class OpenAiSetup {
 			// requests.
 			return new OpenAIClientImpl(buildNoAuthClientOptions(baseUrl, modelProvider, modelName, azureDeploymentName,
 					azureOpenAiServiceVersion, organizationId, timeout, maxRetries, proxy, customHeaders,
-					observationRegistry, meterRegistry, dispatcherExecutor));
+					observationRegistry, meterRegistry, httpClientCustomizers));
 		}
 
 		ClientOptions opts = buildClientOptions(baseUrl, modelProvider, modelName, azureDeploymentName,
 				azureOpenAiServiceVersion, organizationId, timeout, maxRetries, proxy, customHeaders, calculatedApiKey,
-				credential, observationRegistry, meterRegistry, dispatcherExecutor);
+				credential, observationRegistry, meterRegistry, httpClientCustomizers);
 		return new OpenAIClientImpl(opts);
 	}
 
@@ -121,7 +124,7 @@ public final class OpenAiSetup {
 			@Nullable AzureOpenAIServiceVersion azureOpenAiServiceVersion, @Nullable String organizationId,
 			boolean isAzure, boolean isGitHubModels, @Nullable String modelName, Duration timeout, int maxRetries,
 			@Nullable Proxy proxy, @Nullable Map<String, String> customHeaders, ObservationRegistry observationRegistry,
-			@Nullable MeterRegistry meterRegistry, @Nullable ExecutorService dispatcherExecutor) {
+			@Nullable MeterRegistry meterRegistry, List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
 
 		baseUrl = detectBaseUrlFromEnv(baseUrl);
 		var modelProvider = detectModelProvider(isAzure, isGitHubModels, baseUrl, azureDeploymentName,
@@ -134,12 +137,12 @@ public final class OpenAiSetup {
 			// sending requests.
 			return new OpenAIClientAsyncImpl(buildNoAuthClientOptions(baseUrl, modelProvider, modelName,
 					azureDeploymentName, azureOpenAiServiceVersion, organizationId, timeout, maxRetries, proxy,
-					customHeaders, observationRegistry, meterRegistry, dispatcherExecutor));
+					customHeaders, observationRegistry, meterRegistry, httpClientCustomizers));
 		}
 
 		ClientOptions opts = buildClientOptions(baseUrl, modelProvider, modelName, azureDeploymentName,
 				azureOpenAiServiceVersion, organizationId, timeout, maxRetries, proxy, customHeaders, calculatedApiKey,
-				credential, observationRegistry, meterRegistry, dispatcherExecutor);
+				credential, observationRegistry, meterRegistry, httpClientCustomizers);
 		return new OpenAIClientAsyncImpl(opts);
 	}
 
@@ -148,14 +151,17 @@ public final class OpenAiSetup {
 			@Nullable AzureOpenAIServiceVersion azureOpenAiServiceVersion, @Nullable String organizationId,
 			Duration timeout, int maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
 			@Nullable String calculatedApiKey, @Nullable Credential credential, ObservationRegistry observationRegistry,
-			@Nullable MeterRegistry meterRegistry, @Nullable ExecutorService dispatcherExecutor) {
+			@Nullable MeterRegistry meterRegistry, List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
 
 		SpringAiOpenAiHttpClient.Builder httpBuilder = SpringAiOpenAiHttpClient.builder()
 			.observationRegistry(observationRegistry)
 			.meterRegistry(meterRegistry)
 			.timeout(timeout)
-			.proxy(proxy)
-			.dispatcherExecutorService(dispatcherExecutor);
+			.proxy(proxy);
+
+		for (OpenAiHttpClientBuilderCustomizer customizer : httpClientCustomizers) {
+			customizer.customize(httpBuilder);
+		}
 
 		ClientOptions.Builder clientOptions = ClientOptions.builder()
 			.httpClient(httpBuilder.build())
@@ -204,22 +210,24 @@ public final class OpenAiSetup {
 			@Nullable AzureOpenAIServiceVersion azureOpenAiServiceVersion, @Nullable String organizationId,
 			Duration timeout, int maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
 			ObservationRegistry observationRegistry, @Nullable MeterRegistry meterRegistry,
-			@Nullable ExecutorService dispatcherExecutor) {
+			List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
 
 		SpringAiOpenAiHttpClient.Builder httpBuilder = SpringAiOpenAiHttpClient.builder()
 			.observationRegistry(observationRegistry)
 			.meterRegistry(meterRegistry)
 			.timeout(timeout)
-			.proxy(proxy)
-			.dispatcherExecutorService(dispatcherExecutor);
+			.proxy(proxy);
 
-		SpringAiOpenAiHttpClient httpClient = httpBuilder.buildWithInterceptor(chain -> {
-			okhttp3.Request request = chain.request().newBuilder().removeHeader("Authorization").build();
-			return chain.proceed(request);
-		});
+		// No API Key defined, so remove the mandatory "Authorization" header.
+		httpBuilder
+			.interceptor(chain -> chain.proceed(chain.request().newBuilder().removeHeader("Authorization").build()));
+
+		for (OpenAiHttpClientBuilderCustomizer customizer : httpClientCustomizers) {
+			customizer.customize(httpBuilder);
+		}
 
 		ClientOptions.Builder clientOptions = ClientOptions.builder()
-			.httpClient(httpClient)
+			.httpClient(httpBuilder.build())
 			.apiKey(NO_AUTH_PLACEHOLDER_KEY)
 			.baseUrl(calculateBaseUrl(baseUrl, modelProvider, modelName, azureDeploymentName))
 			.organization(organizationId)
