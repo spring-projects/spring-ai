@@ -30,6 +30,33 @@ Update your dependency and import statements accordingly:
 </dependency>
 ----
 
+==== New: `ToolSearchToolCallingAdvisor` Auto-Configuration and Starter
+
+A Spring Boot auto-configuration (`spring-ai-autoconfigure-tool-search-advisor`) and matching starter (`spring-ai-starter-tool-search-advisor`) are now available.
+When enabled, `ToolSearchToolCallingAdvisor` replaces the default `ToolCallingAdvisor` in the auto-configured `ChatClient`, limiting the tool definitions sent to the LLM per call to only the most relevant ones (via keyword or semantic search).
+
+Opt in by adding the starter and setting the property:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-tool-search-advisor</artifactId>
+</dependency>
+----
+
+[source,properties]
+----
+spring.ai.chat.client.tool-search-advisor.enabled=true
+
+# Choose the index type: regex (default), lucene, or vector
+spring.ai.chat.client.tool-search-advisor.tool-index-type=regex
+----
+
+The `regex` index requires no additional dependencies.
+The `lucene` index requires `org.apache.lucene:lucene-core` on the classpath.
+The `vector` index requires a `VectorStore` bean (`spring-ai-vector-store` on the classpath).
+
 ==== Changed: `Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER` default value
 
 `Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER` changed from `Ordered.HIGHEST_PRECEDENCE + 1000` to `Ordered.HIGHEST_PRECEDENCE + 200`, placing memory advisors at their default order _outside_ the `ToolCallingAdvisor` (`HIGHEST_PRECEDENCE + 300`).
@@ -871,7 +898,7 @@ String response = chatClient.prompt("Tell me a joke")
     .call().content();
 ----
 
-NOTE: This restriction applies to `ChatClient` only. When calling `ChatModel.call(Prompt)` directly, the prompt may carry a fully built `ChatOptions` instance — `ChatModel.buildRequestPrompt()` converts it internally via `.mutate()` and merges it with the model defaults.
+NOTE: This restriction applies to `ChatClient` only. When calling `ChatModel.call(Prompt)` directly, the prompt must carry a fully built `ChatOptions` instance of the concrete type expected by the model (_e.g._ `AnthropicChatOptions` for `AnthropicChatModel`). The `ChatModel` does **not** merge options: if `Prompt.getOptions()` is non-null it is used as-is; if it is `null`, the model's own default options are used instead. No partial merging occurs at the `ChatModel` level.
 
 === OpenAI Java SDK Transition
 
@@ -1447,20 +1474,21 @@ Conversation history is no longer automatically added to `ToolContext`. The `TOO
 
 If your application needs conversation history management, use `ToolCallingAdvisor`:
 
-.Managing Conversation History with ToolCallAdvisor
+.Managing Conversation History with ToolCallingAdvisor
 [source,java]
 ----
 ChatClient chatClient = ChatClient.builder()
     .defaultAdvisors(
-        new ToolCallAdvisor()
+        ToolCallingAdvisor.builder()
             .conversationHistoryEnabled(true)  // Full history (default)
+            .build()
     )
     .build();
 ----
 
-**How ToolCallAdvisor Works:**
+**How ToolCallingAdvisor Works:**
 
-The `ToolCallAdvisor` manages conversation history at the advisor level:
+The `ToolCallingAdvisor` manages conversation history at the advisor level:
 
 * **conversationHistoryEnabled=true** (default): Full conversation history is maintained and sent to the LLM between tool call iterations, allowing the LLM to synthesize results with full context
 * **conversationHistoryEnabled=false**: Only the most recent tool response is sent to the LLM (useful when ChatMemory advisor manages history separately)
@@ -1476,10 +1504,7 @@ The `ToolCallAdvisor` manages conversation history at the advisor level:
 ----
 ChatResponse response = chatClient.prompt()
     .user("What's the weather in SF?")
-    .options(ChatOptionsBuilder.builder()
-        .toolContext("userId", "user123")
-        .toolContext("apiKey", "secret")
-        .build())
+    .toolContext(Map.of("userId", "user123", "apiKey", "secret"))
     .call()
     .chatResponse();
 ----
