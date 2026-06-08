@@ -26,16 +26,15 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.integration.tests.TestApplication;
 import org.springframework.ai.integration.tests.tool.domain.Author;
 import org.springframework.ai.integration.tests.tool.domain.Book;
 import org.springframework.ai.integration.tests.tool.domain.BookService;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,7 +60,7 @@ public class ToolCallingManagerTests {
 
 	@Test
 	void explicitToolCallingExecutionWithNewOptions() {
-		ChatOptions chatOptions = ToolCallingChatOptions.builder()
+		OpenAiChatOptions chatOptions = OpenAiChatOptions.builder()
 			.toolCallbacks(ToolCallbacks.from(this.tools))
 			.build();
 		Prompt prompt = new Prompt(
@@ -72,7 +71,7 @@ public class ToolCallingManagerTests {
 
 	@Test
 	void explicitToolCallingExecutionWithNewOptionsStream() {
-		ChatOptions chatOptions = ToolCallingChatOptions.builder()
+		OpenAiChatOptions chatOptions = OpenAiChatOptions.builder()
 			.toolCallbacks(ToolCallbacks.from(this.tools))
 			.build();
 		Prompt prompt = new Prompt(new UserMessage("What books written by %s, %s, and %s are available in the library?"
@@ -80,7 +79,7 @@ public class ToolCallingManagerTests {
 		runExplicitToolCallingExecutionWithOptionsStream(chatOptions, prompt);
 	}
 
-	private void runExplicitToolCallingExecutionWithOptions(ChatOptions chatOptions, Prompt prompt) {
+	private void runExplicitToolCallingExecutionWithOptions(OpenAiChatOptions chatOptions, Prompt prompt) {
 		ChatResponse chatResponse = this.openAiChatModel.call(prompt);
 
 		assertThat(chatResponse).isNotNull();
@@ -103,7 +102,7 @@ public class ToolCallingManagerTests {
 			.contains("The Silmarillion");
 	}
 
-	private void runExplicitToolCallingExecutionWithOptionsStream(ChatOptions chatOptions, Prompt prompt) {
+	private void runExplicitToolCallingExecutionWithOptionsStream(OpenAiChatOptions chatOptions, Prompt prompt) {
 		String joinedTextResponse = this.openAiChatModel.stream(prompt).flatMap(response -> {
 			if (response.hasToolCalls()) {
 				ToolExecutionResult toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
