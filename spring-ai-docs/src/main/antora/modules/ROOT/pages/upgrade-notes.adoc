@@ -1,123 +1,10 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
-[[upgrading-to-2-0-0-GA]]
+[[upgrading-to-2-0-0]]
 == Upgrading to 2.0.0
 
-=== Tool Calling
-
-==== Removed: `streamToolCallResponses` from Advisor Builders and Auto-Configuration
-
-The `streamToolCallResponses` option has been removed from `ToolCallingAdvisor.Builder`, `ToolCallAdvisor.Builder`, and `ToolSearchToolCallingAdvisor.Builder`, as well as from their corresponding Spring Boot auto-configuration properties:
-
-* `spring.ai.chat.client.tool-calling.stream-tool-call-responses`
-* `spring.ai.chat.client.tool-search-advisor.stream-tool-call-responses`
-
-===== Why
-
-When `streamToolCallResponses=true`, intermediate tool-call request chunks were streamed downstream but the paired `ToolResponseMessage` (sent back to the LLM) was not.
-Any downstream memory advisor that recorded those chunks would receive a tool-call request without the corresponding tool response, producing a corrupted conversation history.
-The design flaw cannot be fixed without introducing a breaking change to `ChatClientResponse`, so the option has been removed entirely.
-
-===== Impact
-
-* Any code that calls `.streamToolCallResponses(true)` or `.streamToolCallResponses(false)` on an advisor builder will fail to compile.
-* Any `application.properties` or `application.yml` entry for the removed properties is silently ignored.
-
-===== Migration
-
-Remove all calls to `.streamToolCallResponses(...)` from your builder chains:
-
-[source,java]
-----
-// Before
-var advisor = ToolCallingAdvisor.builder()
-    .streamToolCallResponses(true)   // <-- remove this line
-    .build();
-
-// After
-var advisor = ToolCallingAdvisor.builder().build();
-----
-
-To gain visibility into each iteration of the tool-calling loop — the use case that `streamToolCallResponses=true` was intended to address — opt out of the auto-registered advisor and drive the loop manually using `AdvisorParams.toolCallingAdvisorAutoRegister(false)`:
-
-[source,java]
-----
-ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
-ToolCallback[] tools = ToolCallbacks.from(new WeatherTools());
-ChatOptions chatOptions = ToolCallingChatOptions.builder()
-    .toolCallbacks(tools)
-    .build();
-
-String question = "What is the weather in Amsterdam and Paris?";
-Prompt prompt = new Prompt(List.of(new UserMessage(question)), chatOptions);
-
-ChatClientResponse response = chatClient.prompt()
-    .user(question)
-    .options(chatOptions)
-    .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
-    .call()
-    .chatClientResponse();
-
-while (response.chatResponse() != null && response.chatResponse().hasToolCalls()) {
-    // inspect or forward the tool-call chunk here before executing
-    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, response.chatResponse());
-    prompt = new Prompt(result.conversationHistory(), chatOptions);
-    response = chatClient.prompt()
-        .messages(result.conversationHistory())
-        .options(chatOptions)
-        .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
-        .call()
-        .chatClientResponse();
-}
-// forward or process the final answer here
-----
-
-For a complete example including the streaming path, see xref:api/tools.adoc#_user_controlled_tool_execution[User-Controlled Tool Execution — With ChatClient].
-
-[[upgrading-to-2-0-0-RC2]]
-== Upgrading to 2.0.0-RC2
-
-=== Tool Calling
-
-==== Changed: `ToolCallingAdvisor` Always Auto-Registered
-
-`ChatClient` now always auto-registers a `ToolCallingAdvisor` in the advisor chain (unless explicitly disabled), so tool calls requested by the model are handled automatically regardless of whether tools were configured statically or injected by another advisor at runtime.
-
-Previously (as of 2.0.0-M7), auto-registration only happened when tools were explicitly configured on the call. Starting with 2.0.0-RC2, the advisor is registered unconditionally, ensuring that tools injected at runtime by other advisors are also handled correctly.
-
-===== Impact
-
-No action is required in the common case. If you relied on the absence of `ToolCallingAdvisor` when no tools were configured, add an explicit opt-out:
-
-[source,java]
-----
-chatClient.prompt("...")
-    .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
-    .call().content();
-----
-
-Or disable it globally via `spring.ai.chat.client.tool-calling.enabled=false`.
-
-==== `ChatModel` Options Replacing Instead of Merging
-
-`ChatModel` options handling change merged by mistake in `2.0.0-M6` has been reverted to replacing instead of merging.
-Out-of-the box options merging is supported at the `ChatClient` level, but not at the `ChatModel` level where that's still possible but needs to be handled manually.
-
-The logic supported at the `ChatModel` level in 2.0 is:
-
-* If `prompt.options` is set, use them.
-* If `prompt.options` is null, use the ones from the model.
-
-The `buildRequestPrompt` method is no longer part of the public API.
-It was previously promoted by mistake and has been restored to its private or package-private visibility.
-
-==== Fixed Binding Failure for `spring.ai.ollama.chat.think`
-
-`spring.ai.ollama.chat.think-option` property has been renamed to `spring.ai.ollama.chat.think`.
-
-[[upgrading-to-2-0-0-RC1]]
-== Upgrading to 2.0.0-RC1
+This section covers all breaking changes and migration steps when upgrading from Spring AI 1.1.x to 2.0.0.
 
 === Advisors
 
@@ -141,6 +28,33 @@ Update your dependency and import statements accordingly:
     <artifactId>spring-ai-tool-search-advisor</artifactId>
 </dependency>
 ----
+
+==== New: `ToolSearchToolCallingAdvisor` Auto-Configuration and Starter
+
+A Spring Boot auto-configuration (`spring-ai-autoconfigure-tool-search-advisor`) and matching starter (`spring-ai-starter-tool-search-advisor`) are now available.
+When enabled, `ToolSearchToolCallingAdvisor` replaces the default `ToolCallingAdvisor` in the auto-configured `ChatClient`, limiting the tool definitions sent to the LLM per call to only the most relevant ones (via keyword or semantic search).
+
+Opt in by adding the starter and setting the property:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-tool-search-advisor</artifactId>
+</dependency>
+----
+
+[source,properties]
+----
+spring.ai.chat.client.tool-search-advisor.enabled=true
+
+# Choose the index type: regex (default), lucene, or vector
+spring.ai.chat.client.tool-search-advisor.tool-index-type=regex
+----
+
+The `regex` index requires no additional dependencies.
+The `lucene` index requires `org.apache.lucene:lucene-core` on the classpath.
+The `vector` index requires a `VectorStore` bean (`spring-ai-vector-store` on the classpath).
 
 ==== Changed: `Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER` default value
 
@@ -239,6 +153,87 @@ spring.ai.chat.client.tool-calling.enabled=false
 
 This is a global alternative to using `AdvisorParams.toolCallingAdvisorAutoRegister(false)` on every individual call.
 
+==== Removed: `streamToolCallResponses` from Advisor Builders and Auto-Configuration
+
+The `streamToolCallResponses` option has been removed from `ToolCallingAdvisor.Builder`, `ToolCallAdvisor.Builder`, and `ToolSearchToolCallingAdvisor.Builder`, as well as from their corresponding Spring Boot auto-configuration properties:
+
+* `spring.ai.chat.client.tool-calling.stream-tool-call-responses`
+* `spring.ai.chat.client.tool-search-advisor.stream-tool-call-responses`
+
+===== Why
+
+When `streamToolCallResponses=true`, intermediate tool-call request chunks were streamed downstream but the paired `ToolResponseMessage` (sent back to the LLM) was not.
+Any downstream memory advisor that recorded those chunks would receive a tool-call request without the corresponding tool response, producing a corrupted conversation history.
+The design flaw cannot be fixed without introducing a breaking change to `ChatClientResponse`, so the option has been removed entirely.
+
+===== Impact
+
+* Any code that calls `.streamToolCallResponses(true)` or `.streamToolCallResponses(false)` on an advisor builder will fail to compile.
+* Any `application.properties` or `application.yml` entry for the removed properties is silently ignored.
+
+===== Migration
+
+Remove all calls to `.streamToolCallResponses(...)` from your builder chains:
+
+[source,java]
+----
+// Before
+var advisor = ToolCallingAdvisor.builder()
+    .streamToolCallResponses(true)   // <-- remove this line
+    .build();
+
+// After
+var advisor = ToolCallingAdvisor.builder().build();
+----
+
+To gain visibility into each iteration of the tool-calling loop — the use case that `streamToolCallResponses=true` was intended to address — opt out of the auto-registered advisor and drive the loop manually using `AdvisorParams.toolCallingAdvisorAutoRegister(false)`:
+
+[source,java]
+----
+ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+ToolCallback[] tools = ToolCallbacks.from(new WeatherTools());
+ChatOptions chatOptions = ToolCallingChatOptions.builder()
+    .toolCallbacks(tools)
+    .build();
+
+String question = "What is the weather in Amsterdam and Paris?";
+Prompt prompt = new Prompt(List.of(new UserMessage(question)), chatOptions);
+
+ChatClientResponse response = chatClient.prompt()
+    .user(question)
+    .options(chatOptions)
+    .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+    .call()
+    .chatClientResponse();
+
+while (response.chatResponse() != null && response.chatResponse().hasToolCalls()) {
+    // inspect or forward the tool-call chunk here before executing
+    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, response.chatResponse());
+    prompt = new Prompt(result.conversationHistory(), chatOptions);
+    response = chatClient.prompt()
+        .messages(result.conversationHistory())
+        .options(chatOptions)
+        .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+        .call()
+        .chatClientResponse();
+}
+// forward or process the final answer here
+----
+
+For a complete example including the streaming path, see xref:api/tools.adoc#_user_controlled_tool_execution[User-Controlled Tool Execution — With ChatClient].
+
+
+
+
+
+
+
+
+
+
+
+
+
 === JDBC Chat Memory `sequence_id` Column
 
 The `JdbcChatMemoryRepository` schema adds a `sequence_id BIGINT` column that determines message ordering within a conversation. Previously, ordering relied on the `timestamp` column, but `TIMESTAMP` precision differs across databases — on MySQL and MariaDB the default precision is one second, so messages saved within the same second were returned in a non-deterministic order. A dedicated integer sequence orders identically across every supported database.
@@ -330,7 +325,7 @@ ChatOptions options = chatModel.getOptions();
 
 ==== Configuration Properties Flattening
 
-Building on the changes introduced in 2.0.0-M6 for Chat models, the configuration properties for all other models (Embedding, Image, Audio, Moderation, OCR, etc.) no longer use the `.options` prefix. 
+Building on the chat configuration changes described above, the configuration properties for all other models (Embedding, Image, Audio, Moderation, OCR, etc.) no longer use the `.options` prefix.
 For example, the former `spring.ai.openai.embedding.options.model` is now `spring.ai.openai.embedding.model`.
 Deprecated configuration properties are provided for the `.options` variants to ensure a smoother migration experience.
 
@@ -387,11 +382,28 @@ OpenAiChatOptions.builder().N(1).build();
 OpenAiChatOptions.builder().n(1).build();
 ----
 
+=== Ollama
+
+==== Renamed: `spring.ai.ollama.chat.think-option` to `spring.ai.ollama.chat.think`
+
+The `spring.ai.ollama.chat.think-option` configuration property has been renamed to `spring.ai.ollama.chat.think`.
+
+Update your `application.properties` or `application.yml` accordingly:
+
+[source,properties]
+----
+# Before
+spring.ai.ollama.chat.think-option=true
+
+# After
+spring.ai.ollama.chat.think=true
+----
+
 === Minimax dedicated support superseded by Anthropic support
 
 Minimax dedicated support has been removed in favor of using Anthropic support as recommended by https://platform.minimax.io/docs/api-reference/text-anthropic-api[Minimax themselves].
 Please use the Spring AI Anthropic support instead, configuring it with the `\https://api.minimax.io/anthropic` base URL and MiniMax models.
-Embeddings are not support anymore.
+Embeddings are no longer supported.
 
 
 === JSON Utilities Refactoring
@@ -569,14 +581,11 @@ import org.springframework.ai.google.genai.GoogleGenAiEmbeddingConnectionDetails
 import org.springframework.ai.google.genai.embedding.GoogleGenAiEmbeddingConnectionDetails;
 ----
 
-[[upgrading-to-2-0-0-M7]]
-== Upgrading to 2.0.0-M7
-
 === ChatClient Tool Calling
 
-==== New: Automatic `ToolCallingAdvisor` Registration
+==== Automatic `ToolCallingAdvisor` Registration
 
-`ChatClient` now automatically registers a `ToolCallingAdvisor` in the advisor chain whenever tools are configured on a call (via `.tools(...)`, `.toolCallbacks(...)`, or defaults set on the builder). Previously, callers had to add `ToolCallingAdvisor` manually.
+`ChatClient` now always auto-registers a `ToolCallingAdvisor` in the advisor chain (unless explicitly disabled), so tool calls requested by the model are handled automatically regardless of whether tools were configured statically or injected by another advisor at runtime.
 
 ===== Impact
 
@@ -781,9 +790,9 @@ The Azure Cosmos DB vector store (`spring-ai-azure-cosmos-db-store`) and chat me
 Azure Cosmos DB support is now available as an external module maintained by the Azure Cosmos DB team.
 See https://azurecosmosdb.github.io/spring-ai/docs/index.html for documentation and dependency coordinates.
 
-=== MCP SDK 2.0.0-M3
+=== MCP SDK Breaking Changes: Required Fields
 
-Spring AI now depends on MCP SDK 2.0.0-M3, which makes previously optional fields mandatory and enforces them at construction time via `Assert.notNull()` in compact record constructors.
+The MCP SDK enforces previously optional fields as mandatory at construction time via `Assert.notNull()` in compact record constructors.
 
 ==== Breaking: `CreateMessageResult` — `model` now required
 
@@ -830,16 +839,6 @@ The following no-arg constructors and `builder()` methods are deprecated in favo
 |`CallToolRequest.builder()` |`CallToolRequest.builder(name)`
 |===
 
-[[upgrading-to-2-0-0-M6]]
-== Upgrading to 2.0.0-M6
-
-=== Options and Properties
-
-The configuration properties do not use `.options` anymore, so for example the former `spring.ai.openai.chat.options.model` is now `spring.ai.openai.chat.model`.
-Deprecated configuration properties are provided for the `.options` ones in order to provide a smoother migration experience.
-
-The setters have been removed from the options classes, builder should now be used instead.
-
 === Observability
 
 ==== Tool Calling
@@ -855,10 +854,7 @@ The observations produced for tool calling operations have changed as follows:
 
 ==== `spring-ai-hanadb-store` module removal
 
-The `spring-ai-hanadb-store` module has been **removed** from Spring AI as of version `2.0.0-M6`.
-
-[[upgrading-to-2-0-0-M6-chat-memory]]
-== Upgrading to 2.0.0-M6
+The `spring-ai-hanadb-store` module has been **removed** from Spring AI.
 
 === Chat Memory Advisors: Conversation ID Is Now Required
 
@@ -973,25 +969,55 @@ ChatClient chatClient = ChatClient.builder(chatModel)
     .build();
 ----
 
-[[upgrading-to-2-0-0-M5]]
-== Upgrading to 2.0.0-M5
+=== ChatClient Options Now Require a Builder
+
+When using `ChatClient`, the `.options()` / `.defaultOptions()` methods now accept a `ChatOptions.Builder` (or any provider-specific builder subtype) rather than a fully built `ChatOptions` instance.
+This change is enforced at compile time by the method's generic type constraint `<B extends ChatOptions.Builder<?>>`.
+
+The options builder is merged with the model's default options before the first advisor is called, so only the fields you explicitly set override the defaults.
+
+[source,java]
+----
+// Before — passing a built ChatOptions instance (no longer compiles with ChatClient)
+ChatOptions opts = AnthropicChatOptions.builder()
+    .maxTokens(100)
+    .temperature(0.7)
+    .build();
+String response = chatClient.prompt("Tell me a joke")
+    .options(opts)
+    .call().content();
+
+// After — pass the builder directly
+String response = chatClient.prompt("Tell me a joke")
+    .options(AnthropicChatOptions.builder()
+        .maxTokens(100)
+        .temperature(0.7))
+    .call().content();
+----
+
+NOTE: This restriction applies to `ChatClient` only. When calling `ChatModel.call(Prompt)` directly, the prompt must carry a fully built `ChatOptions` instance of the concrete type expected by the model (_e.g._ `AnthropicChatOptions` for `AnthropicChatModel`). The `ChatModel` does **not** merge options: if `Prompt.getOptions()` is non-null it is used as-is; if it is `null`, the model's own default options are used instead. No partial merging occurs at the `ChatModel` level.
+
+==== `buildRequestPrompt` Removed from Public API
+
+The `buildRequestPrompt` method is no longer part of the public API.
+It was previously exposed by mistake and has been restored to its private or package-private visibility.
 
 === OpenAI Java SDK Transition
 
-Starting from version `2.0.0-M5`, Spring AI uses the official `openai-java` SDK under the hood for all OpenAI models (Chat, Embeddings, Image, Audio Speech, Audio Transcription, and Moderation) in the `spring-ai-openai` module.
+Spring AI now uses the official `openai-java` SDK under the hood for all OpenAI models (Chat, Embeddings, Image, Audio Speech, Audio Transcription, and Moderation) in the `spring-ai-openai` module.
 
 The transition should be seamless, and **no major breaking changes are expected** for existing users of the `spring-ai-openai` module.
 All properties (with the `spring.ai.openai.*` prefix), builders, and options remain fully intact. The existing `extraBody` configuration parameter transparently maps to the underlying `additionalBodyProperties` in the `openai-java` SDK.
 
 ==== `spring-ai-azure-openai` module removal
 
-The `spring-ai-azure-openai` module (and its associated Spring Boot starter `spring-ai-starter-model-azure-openai` and auto-configuration `spring-ai-autoconfigure-model-azure-openai`) have been **removed** from Spring AI as of version `2.0.0-M5`.
+The `spring-ai-azure-openai` module (and its associated Spring Boot starter `spring-ai-starter-model-azure-openai` and auto-configuration `spring-ai-autoconfigure-model-azure-openai`) have been **removed** from Spring AI.
 
 Existing users should use the `spring-ai-openai` module (and related starter and auto-configuration) instead and adapt class names (by removing the `Azure` prefix for example) and configuration properties accordingly.
 
 ==== `spring-ai-openai-sdk` module removal
 
-The `spring-ai-openai-sdk` module (and its associated Spring Boot starter `spring-ai-starter-model-openai-sdk` and auto-configuration `spring-ai-autoconfigure-model-openai-sdk`) have been **removed** from Spring AI as of version `2.0.0-M5`.
+The `spring-ai-openai-sdk` module (and its associated Spring Boot starter `spring-ai-starter-model-openai-sdk` and auto-configuration `spring-ai-autoconfigure-model-openai-sdk`) have been **removed** from Spring AI.
 
 Existing users should use the `spring-ai-openai` module (and related starter and auto-configuration) instead and adapt class names accordingly (by removing the `Sdk` suffix for example) and configuration properties accordingly.
 
@@ -999,62 +1025,9 @@ Existing users should use the `spring-ai-openai` module (and related starter and
 
 The related modules can now be found at https://github.com/oracle/spring-cloud-oracle/tree/main/spring-ai-oracle.
 
-=== ChatOptions Handling
-Users can interact with ChatModels in two ways:
-
- * either directly by calling xref:api/chatmodel.adoc[ ChatModel.call(Prompt) / ChatModel.stream(Prompt)`],
- * or by using the xref:api/chatclient.adoc[ChatClient] API.
-
-Starting with Spring AI 2.0.0.M5, when using the `ChatModel` approach, options set in the prompt need to be of the concrete type used by the concrete model (_e.g._ `AnthropicChatOptions` when using `AnthropicChatModel`) and need to be either "full" (_i.e._ all relevant fields set) or `null` (in which case the default options set in the model will be used).
-
-The ability to "merge" options has been moved to `ChatClient` (using a `ChatOptions.Builder` or more specific type) and happens prior to the first advisor being called.
-
-Code that previously used a "half constructed" instance of `ChatOptions` now needs to an instance of `Builder` built in a similar way:
-[source,java]
-----
-// Old
-ChatClient client = ...;
-ChatOptions opts = AnthropicChatOptions.builder()
-    .maxTokens(100)
-    .temperature(0.7)
-    .disableParallelToolUse(true)
-    .build();
-String response = client.prompt("Tell me a joke")
-    .options(opts)
-    .call().content();
-
-// New
-ChatClient client = ...;
-var customizer =  AnthropicChatOptions.builder()
-    .maxTokens(100)
-    .temperature(0.7)
-    .disableParallelToolUse(true);
-String response = client.prompt("Tell me a joke")
-    .options(customizer)
-    .call().content();
-----
-
-
-[TIP]
---
-To easily merge a "delta" of options represented by a `ChatOptions.Builder` with the model's default options at the `ChatModel.call()` level, simply use the following construct:
-[source, java]
-----
-ChatModel model = ...;
-var customizer =  AnthropicChatOptions.builder()
-    .maxTokens(100)
-    .temperature(0.7)
-    .disableParallelToolUse(true);
-Prompt prompt = Prompt.builder().message("Tell me a joke")
-    .options(model.getDefaultOptions().mutate().combineWith(customize).build())
-    .build();
-var response = model.call(prompt);
-----
---
-
 === MCP Java SDK Upgraded to 2.0.0
 
-Spring AI 2.0.0-M5 upgrades the MCP Java SDK from `1.1.x` to `2.0.0`. This release introduces several breaking changes at the SDK level that may affect applications that interact with MCP types directly.
+Spring AI 2.0.0 upgrades the MCP Java SDK from `1.1.x` to `2.0.0`. This release introduces several breaking changes at the SDK level that may affect applications that interact with MCP types directly.
 
 ==== Server-Side Tool Input Validation Enabled by Default
 
@@ -1131,7 +1104,7 @@ HttpClientSseClientTransport.builder(baseUrl)
     .build();
 ----
 
-NOTE: If you already migrated to the `McpClientCustomizer<B>` API introduced in 2.0.0-M3, no further action is required.
+NOTE: If you already migrated to the `McpClientCustomizer<B>` API, no further action is required.
 
 ==== Sealed MCP Schema Interfaces Removed
 
@@ -1175,36 +1148,7 @@ Anthropic, Bedrock Converse, OpenAI, and Google GenAI populate them: Anthropic a
 
 Code that cast to native types or read provider-specific metadata keys for these numbers can switch to the interface methods. See xref:api/usage-handling.adoc#_prompt_cache_usage_metrics[Prompt Cache Usage Metrics] for examples.
 
-=== Anthropic Module Updates
-
-`spring-ai-anthropic` picks up four new chat options and an SDK bump. The full reference for each is in xref:api/chat/anthropic-chat.adoc[Anthropic Chat]; the highlights:
-
-[cols="1,3", options="header"]
-|===
-| Option | What it adds
-
-| Thinking display
-| `Display.SUMMARIZED` and `Display.OMITTED` on the `thinkingEnabled` / `thinkingAdaptive` builders, so Claude can use a thinking budget without surfacing the full reasoning. (https://github.com/spring-projects/spring-ai/issues/5642[GH-5642])
-
-| Service tier
-| `AnthropicServiceTier.AUTO` / `STANDARD_ONLY` for Anthropic's priority capacity tier. Property `spring.ai.anthropic.chat.options.service-tier`.
-
-| Built-in web search
-| `AnthropicWebSearchTool` lets Claude search the web during a request. Properties under `spring.ai.anthropic.chat.options.web-search-tool.*`.
-
-| Inference geo
-| `inferenceGeo("us")` or `inferenceGeo("eu")` for data-residency routing. Property `spring.ai.anthropic.chat.options.inference-geo`.
-|===
-
-`com.anthropic:anthropic-java` is bumped from `2.16.1` (the version M3 shipped with) to `2.24.0`, binary-compatible at every surface `spring-ai-anthropic` uses.
-
-NOTE: If you are upgrading from `1.1.x` (or `1.0.x`), the bigger change for the Anthropic module landed in M3. See xref:api/chat/anthropic-migration.adoc[Migrating the Anthropic Module to the Official Java SDK] for the `RestClient` → SDK transition.
-
-
-[[upgrading-to-2-0-0-M3]]
-== Upgrading to 2.0.0-M3
-
-=== Anthropic Module Migrated to Official Java SDK
+=== Anthropic Module
 
 `spring-ai-anthropic` is now built on `com.anthropic:anthropic-java` instead of the hand-rolled `RestClient` / `WebClient` implementation.
 
@@ -1265,6 +1209,29 @@ AnthropicChatOptions.builder()
 ----
 
 xref:api/chat/anthropic-migration.adoc[Migrating the Anthropic Module to the Official Java SDK] covers the rest: direct SDK access, streaming behavior, prompt caching, citations, and removed types.
+
+==== New Chat Options
+
+`spring-ai-anthropic` also gains four new chat options. The full reference for each is in xref:api/chat/anthropic-chat.adoc[Anthropic Chat]; the highlights:
+
+[cols="1,3", options="header"]
+|===
+| Option | What it adds
+
+| Thinking display
+| `Display.SUMMARIZED` and `Display.OMITTED` on the `thinkingEnabled` / `thinkingAdaptive` builders, so Claude can use a thinking budget without surfacing the full reasoning.
+
+| Service tier
+| `AnthropicServiceTier.AUTO` / `STANDARD_ONLY` for Anthropic's priority capacity tier. Property `spring.ai.anthropic.chat.service-tier`.
+
+| Built-in web search
+| `AnthropicWebSearchTool` lets Claude search the web during a request. Properties under `spring.ai.anthropic.chat.web-search-tool.*`.
+
+| Inference geo
+| `inferenceGeo("us")` or `inferenceGeo("eu")` for data-residency routing. Property `spring.ai.anthropic.chat.inference-geo`.
+|===
+
+NOTE: If you are upgrading from `1.1.x` (or `1.0.x`), see xref:api/chat/anthropic-migration.adoc[Migrating the Anthropic Module to the Official Java SDK] for the full `RestClient` → SDK transition guide.
 
 === MCP Annotations Migrated into Spring AI
 
@@ -1609,20 +1576,21 @@ Conversation history is no longer automatically added to `ToolContext`. The `TOO
 
 If your application needs conversation history management, use `ToolCallingAdvisor`:
 
-.Managing Conversation History with ToolCallAdvisor
+.Managing Conversation History with ToolCallingAdvisor
 [source,java]
 ----
 ChatClient chatClient = ChatClient.builder()
     .defaultAdvisors(
-        new ToolCallAdvisor()
+        ToolCallingAdvisor.builder()
             .conversationHistoryEnabled(true)  // Full history (default)
+            .build()
     )
     .build();
 ----
 
-**How ToolCallAdvisor Works:**
+**How ToolCallingAdvisor Works:**
 
-The `ToolCallAdvisor` manages conversation history at the advisor level:
+The `ToolCallingAdvisor` manages conversation history at the advisor level:
 
 * **conversationHistoryEnabled=true** (default): Full conversation history is maintained and sent to the LLM between tool call iterations, allowing the LLM to synthesize results with full context
 * **conversationHistoryEnabled=false**: Only the most recent tool response is sent to the LLM (useful when ChatMemory advisor manages history separately)
@@ -1638,10 +1606,7 @@ The `ToolCallAdvisor` manages conversation history at the advisor level:
 ----
 ChatResponse response = chatClient.prompt()
     .user("What's the weather in SF?")
-    .options(ChatOptionsBuilder.builder()
-        .toolContext("userId", "user123")
-        .toolContext("apiKey", "secret")
-        .build())
+    .toolContext(Map.of("userId", "user123", "apiKey", "secret"))
     .call()
     .chatResponse();
 ----
@@ -1722,40 +1687,11 @@ Implement `doSingleValue(Object value, StringBuilder context)` in your custom co
 
 NOTE: The framework normalizes values (e.g. ISO date strings converted to `Date`) before invoking `doSingleValue`, so your implementation receives already-normalized values. The static helper `normalizeDateString(Object)` is available if you need the same normalization when building expressions outside of the standard flow.
 
-
-[[run-all-m3-migrations]]
-=== Running All M3 Migrations at Once
-
-The umbrella recipe `MigrateToSpringAI200M3` applies all three automated M3 migrations in a single pass:
-
-[cols="1,2", options="header"]
-|===
-| Recipe | What it does
-| `M3MigrateMcpAnnotations` | Removes `org.springaicommunity:mcp-annotations` dependency and rewrites imports to `org.springframework.ai.mcp.annotation.*`
-| `M3MigrateMcpSpringTransports` | Updates Maven `<groupId>` and Java imports for the moved Spring transport modules
-| `M3MigrateMcpClientCustomizer` | Replaces `McpAsyncClientCustomizer` / `McpSyncClientCustomizer` with `McpClientCustomizer<B>`
-|===
-
-If any of your `pom.xml` files declare `io.modelcontextprotocol.sdk:mcp-spring-webflux` or `mcp-spring-webmvc` without an explicit `<version>`, run the Perl pre-patch first (see <<_automated_migration_with_openrewrite_2>>), then execute the umbrella recipe:
-
-[source,shell]
-----
-mvn org.openrewrite.maven:rewrite-maven-plugin:6.32.0:run \
-  -Drewrite.configLocation=https://raw.githubusercontent.com/spring-projects/spring-ai/refs/heads/main/src/rewrite/migrate-to-2-0-0-M3.yaml \
-  -Drewrite.activeRecipes=org.springframework.ai.migration.MigrateToSpringAI200M3 \
-  -Dmaven.compiler.failOnError=false
-----
-
-[[upgrading-to-2-0-0-M2]]
-== Upgrading to 2.0.0-M2
-
-=== Breaking Changes
-
-==== MongoDB Chat Memory Message Ordering Fixed
+=== MongoDB Chat Memory Message Ordering Fixed
 
 The `MongoChatMemoryRepository` has been fixed to return messages in the order they were sent (oldest-to-newest), matching all other chat memory repository implementations. Previously, it incorrectly returned messages in reverse order (newest-to-oldest), which broke conversation flow for LLMs.
 
-===== Impact
+==== Impact
 
 If your application was using `MongoChatMemoryRepository` and working around the incorrect ordering (e.g., by reversing messages after retrieval), you will need to remove that workaround.
 
@@ -1780,16 +1716,11 @@ All chat memory repositories now consistently return messages in the order they 
 
 * Docker Compose and Testcontainers support for MongoDB Atlas is now provided natively by the Spring Boot MongoDB module. The migration should be transparent and not require any code change. Regarding dependencies, you don't need to import `org.springframework.ai:spring-ai-spring-boot-testcontainers` anymore. A dependency on `org.springframework.boot:spring-boot-testcontainers` is sufficient.
 
-[[upgrading-to-2-0-0-M1]]
-== Upgrading to 2.0.0-M1
-
-=== Breaking Changes
-
-==== Default Temperature Configuration Removed
+=== Default Temperature Configuration Removed
 
 Spring AI no longer provides default temperature values for chat model autoconfiguration properties. Previously, Spring AI set a default temperature of `0.7` for most chat models. This default has been removed to allow each AI provider's native default temperature to be used.
 
-===== Impact
+==== Impact
 
 If your application did not explicitly configure a temperature value and relied on Spring AI's default of `0.7`, you may notice different behavior after upgrading. The actual default will now be determined by each AI provider's API, which may vary:
 
@@ -1797,7 +1728,7 @@ If your application did not explicitly configure a temperature value and relied 
 * Some providers default to `0.7`
 * Some providers have model-specific defaults
 
-===== Migration
+==== Migration
 
 If you want to maintain the previous behavior, explicitly set the temperature in your configuration:
 
@@ -1807,10 +1738,10 @@ If you want to maintain the previous behavior, explicitly set the temperature in
 spring.ai.openai.chat.temperature=0.7
 
 # Example for Anthropic
-spring.ai.anthropic.chat.options.temperature=0.7
+spring.ai.anthropic.chat.temperature=0.7
 
 # Example for Azure OpenAI
-spring.ai.azure.openai.chat.options.temperature=0.7
+spring.ai.azure.openai.chat.temperature=0.7
 ----
 
 Or programmatically when building requests:
