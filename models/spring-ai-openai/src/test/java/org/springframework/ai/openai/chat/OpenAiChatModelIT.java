@@ -673,6 +673,44 @@ public class OpenAiChatModelIT {
 	}
 
 	@Test
+	void toolChoiceRequiredForcesToolCall() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("gpt-4o-mini")
+			.toolChoice("required")
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		Prompt prompt = new Prompt(List.of(new UserMessage("What's the weather like in Paris?")), options);
+		ChatResponse response = this.chatModel.call(prompt);
+
+		// toolChoice "required" must force the model to call a tool rather than reply
+		// in plain text
+		assertThat(response.getResult().getOutput().getToolCalls()).isNotEmpty();
+	}
+
+	@Test
+	void toolChoiceNonePreventsToolCall() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("gpt-4o-mini")
+			.toolChoice("none")
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		Prompt prompt = new Prompt(List.of(new UserMessage("What's the weather like in Paris?")), options);
+		ChatResponse response = this.chatModel.call(prompt);
+
+		// toolChoice "none" must prevent tool calls even when tools are registered
+		assertThat(response.getResult().getOutput().getToolCalls()).isEmpty();
+		assertThat(response.getResult().getOutput().getText()).isNotBlank();
+	}
+
+	@Test
 	void testOpenAiRejectsUnknownParameter() {
 		OpenAiChatOptions options = OpenAiChatOptions.builder()
 			.extraBody(Map.of("extra_body", Map.of("num_ctx", 4096, "num_predict", 10, "top_k", 40)))
