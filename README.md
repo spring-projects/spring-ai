@@ -1,26 +1,32 @@
 # Spring AI [![build status](https://github.com/spring-projects/spring-ai/actions/workflows/continuous-integration.yml/badge.svg)](https://github.com/spring-projects/spring-ai/actions/workflows/continuous-integration.yml) [![build status](https://github.com/spring-projects/spring-ai-integration-tests/actions/workflows/spring-ai-integration-tests.yml/badge.svg)](https://github.com/spring-projects/spring-ai-integration-tests/actions/workflows/spring-ai-integration-tests.yml) [![Maven Central](https://img.shields.io/maven-central/v/org.springframework.ai/spring-ai-model?label=Maven%20Central&versionPrefix=2.0)](https://central.sonatype.com/artifact/org.springframework.ai/spring-ai-model)
 
-### Spring Boot Version Compatibility
-
-> **Spring AI 2.x.x** ([main](https://github.com/spring-projects/spring-ai/tree/main) branch) - Spring Boot `4.x`
->
-> **Spring AI 1.1.x** ([1.1.x](https://github.com/spring-projects/spring-ai/tree/1.1.x) branch) - Spring Boot `3.5.x`
-
-
 The Spring AI project provides a Spring-friendly API and abstractions for developing AI applications.
 
 Its goal is to apply to the AI domain Spring ecosystem design principles such as portability and modular design and promote using POJOs as the building blocks of an application to the AI domain.
 
 ![spring-ai-integration-diagram-3](https://docs.spring.io/spring-ai/reference/_images/spring-ai-integration-diagram-3.svg)
 
-> At its core, Spring AI addresses the fundamental challenge of AI integration: Connecting your enterprise __Data__ and __APIs__ with the __AI Models__.
+At its core, Spring AI addresses the fundamental challenge of AI integration: connecting your enterprise __Data__ and __APIs__ with the __AI Models__.
 
-The project draws inspiration from notable Python projects, such as [LangChain](https://docs.langchain.com/docs/) and [LlamaIndex](https://gpt-index.readthedocs.io/en/latest/getting_started/concepts.html), but Spring AI is not a direct port of those projects. The project was founded with the belief that the next wave of Generative AI applications will not be only for Python developers but will be ubiquitous across many programming languages.
+## Getting Started
 
-You can check out the blog post [Why Spring AI](https://spring.io/blog/2024/11/19/why-spring-ai) for additional motivations.
+The [reference documentation](https://docs.spring.io/spring-ai/reference/) includes a [Getting Started](https://docs.spring.io/spring-ai/reference/getting-started.html) guide.
+
+Spring Boot Version Compatibility:
+* **Spring AI 2.x.x** ([main](https://github.com/spring-projects/spring-ai/tree/main) branch) - Spring Boot `4.x`
+* **Spring AI 1.1.x** ([1.1.x](https://github.com/spring-projects/spring-ai/tree/1.1.x) branch) - Spring Boot `3.5.x`
+
+## Project Resources
+
+* [Reference documentation](https://docs.spring.io/spring-ai/reference/)
+* [Javadoc](https://docs.spring.io/spring-ai/docs/current/api/)
+* [Awesome Spring AI](https://github.com/spring-ai-community/awesome-spring-ai) - A curated list of awesome resources, tools, tutorials, and projects for building generative AI applications using Spring AI
+* [Spring AI Examples](https://github.com/spring-projects/spring-ai-examples) contains example projects that explain specific features in more detail.
+* [Spring AI Community](https://github.com/spring-ai-community) - A community-driven organization for building Spring-based integrations with AI models, agents, vector databases, and more.
+
+## Features
 
 This is a high level feature overview.
-You can find more details in the [Reference Documentation](https://docs.spring.io/spring-ai/reference/)
 
 * Support for all major [AI Model providers](https://docs.spring.io/spring-ai/reference/api/index.html) such as Anthropic, OpenAI, Microsoft, Amazon, Google, and Ollama. Supported model types include:
   - [Chat Completion](https://docs.spring.io/spring-ai/reference/api/chatmodel.html)
@@ -42,31 +48,13 @@ You can find more details in the [Reference Documentation](https://docs.spring.i
 * Support for [Chat Conversation Memory](https://docs.spring.io/spring-ai/reference/api/chatclient.html#_chat_memory) and [Retrieval Augmented Generation (RAG)](https://docs.spring.io/spring-ai/reference/api/chatclient.html#_retrieval_augmented_generation).
 * Spring Boot Auto Configuration and Starters for all AI Models and Vector Stores - use the [start.spring.io](https://start.spring.io/) to select the Model or Vector-store of choice. 
 
-## Getting Started
-
-Please refer to the [Getting Started Guide](https://docs.spring.io/spring-ai/reference/getting-started.html) for instruction on adding your dependencies.
-
-## Project Resources
-
-* [Documentation](https://docs.spring.io/spring-ai/reference/)
-* [Issues](https://github.com/spring-projects/spring-ai/issues)
-<!-- * [Discussions](https://github.com/spring-projects/spring-ai/discussions) - Go here if you have a question, suggestion, or feedback! -->
-* [Awesome Spring AI](https://github.com/spring-ai-community/awesome-spring-ai) - A curated list of awesome resources, tools, tutorials, and projects for building generative AI applications using Spring AI
-* [Spring AI Examples](https://github.com/spring-projects/spring-ai-examples) contains example projects that explain specific features in more detail.
-* [Spring AI Community](https://github.com/spring-ai-community) - A community-driven organization for building Spring-based integrations with AI models, agents, vector databases, and more.
-
 ## Breaking changes
 
 Refer to the [upgrade notes](https://docs.spring.io/spring-ai/reference/upgrade-notes.html) to see how to upgrade.
 
-## Cloning the repo
+## Contributing
 
-This repository contains [large model files](https://github.com/spring-projects/spring-ai/tree/main/models/spring-ai-transformers/src/main/resources/onnx/all-MiniLM-L6-v2).
-To clone it you have to either:
-
-- Ignore the large files (won't affect the spring-ai behaviour) :  `GIT_LFS_SKIP_SMUDGE=1 git clone git@github.com:spring-projects/spring-ai.git`.
-- Or install the [Git Large File Storage](https://git-lfs.com/) before cloning the repo.
-
+Your contributions are always welcome! Please read the [contribution guidelines](CONTRIBUTING.adoc) first.
 
 ## Building
 
@@ -76,47 +64,42 @@ The recommended JDK is specified in the `.sdkmanrc` file, which can be installed
  - `sdk env install` to install the related JDK locally
  - `sdk env` to use the related JDK
 
-**NOTE:** Building Spring AI requires components that depend on your specific CPU architecture (PyTorch for example). MacOS can seamlessly run x86 Java applications on ARM processors using Rosetta, but this will fail when building this project because it tries to download architecture-specific native dependencies. (Note: this is only an issue for building the project, not for consuming the libraries). If you are unsure if you have the correct JDK distribution for your CPU, run the command `java -XshowSettings:properties -version 2>&1 | grep os.arch` from a fresh terminal to validate that it matches your machine.
+**NOTE:** Make sure to use a JDK with the same architecture than your processor, not an emulated one (for exampel with Rosetta on Mac) as Spring AI requires components that depend on your specific CPU architecture (PyTorch for example). If you are unsure if you have the correct JDK distribution for your CPU, run the command `java -XshowSettings:properties -version 2>&1 | grep os.arch` to validate that it matches your machine.
 
 To build with running unit tests:
 ```shell
 ./mvnw clean package
 ```
+### Maven build-cache extension
 
-To build including integration tests:
+The Maven build-cache extension is enabled by default to speedup builds.
+
+To build the project while disabling the build cache: 
 ```shell
-./mvnw clean verify -Pintegration-tests
+./mvnw -Dmaven.build.cache.enabled=false clean package
 ```
 
-Note that you should set API key environment variables for OpenAI or other model providers before running.  If the API key isn't set for a specific model provider, the integration test is skipped.
-
-To run a specific integration test allowing for up to two attempts to succeed (this is useful when a hosted service is not reliable or times out):
+If you suspect the build cache is currupted, you can remove it with:
 ```shell
-./mvnw -pl vector-stores/spring-ai-pgvector-store -am -Pintegration-tests -Dfailsafe.failIfNoSpecifiedTests=false -Dfailsafe.rerunFailingTestsCount=2 -Dit.test=PgVectorStoreIT verify
+rm -rf ~/.m2/build-cache/
 ```
 
 ### Integration Tests
 There are many integration tests, so it often isn't realistic to run them all at once.
+Note that you should set API key environment variables for model providers before running. If the API key isn't set for a specific model provider, the integration test is skipped.
 
-A quick pass through the most important pathways that runs integration tests for
-
-* OpenAI models 
-* OpenAI autoconfiguration
-* PGVector
-* Chroma
-
-can be done with the profile `-Pci-fast-integration-tests` and is used in the main CI build of this project.
-
-A full integration test is done twice a day in the [Spring AI Integration Test Repository](https://github.com/spring-projects/spring-ai-integration-tests)
-
-One way to run integration tests on part of the code is to first do a quick compile and install of the project:
+To run the integration test for a specific module:
 ```shell
-./mvnw clean install -DskipTests -Dmaven.javadoc.skip=true
+./mvnw -am -pl spring-ai-spring-boot-testcontainers -Pintegration-tests verify
 ```
-Then run the integration test for a specific module using the `-pl` option:
+
+To run a specific integration test allowing for up to two attempts to succeed (this is useful when a hosted service is not reliable or times out):
 ```shell
-./mvnw verify -Pintegration-tests -pl spring-ai-spring-boot-testcontainers
+./mvnw -am -pl vector-stores/spring-ai-pgvector-store -Pintegration-tests -Dfailsafe.failIfNoSpecifiedTests=false -Dfailsafe.rerunFailingTestsCount=2 -Dit.test=PgVectorStoreIT verify
 ```
+
+A quick pass through the most important pathways that runs integration tests can be done with the profile `-Pci-fast-integration-tests` and is used in the main CI build of this project.
+Full integration tests are done regularly in the [Spring AI Integration Test Repository](https://github.com/spring-projects/spring-ai-integration-tests)
 
 ### Documentation
 
@@ -129,6 +112,10 @@ The docs are then in the directory `spring-ai-docs/target/antora/site/index.html
 
 ### Formatting the Source Code
 
+Spring AI source code checkstyle tries to follow the checkstyle guidelines used by the core Spring Framework project with some exceptions.
+
+The wiki pages [Code Style](https://github.com/spring-projects/spring-framework/wiki/Code-Style) and [IntelliJ IDEA Editor Settings](https://github.com/spring-projects/spring-framework/wiki/IntelliJ-IDEA-Editor-Settings) define the source file coding standards we use along with some IDEA editor settings we customize.
+
 The code is formatted using the [java-format plugin](https://github.com/spring-io/spring-javaformat) as part of the build. Correct
 formatting is enforced by CI.
 
@@ -136,6 +123,7 @@ To format the code specifically:
 ```shell
 ./mvnw process-sources
 ```
+Note that will not format the import order.
 
 ### Javadocs
 
@@ -143,20 +131,3 @@ To check javadocs using the [javadoc:javadoc](https://maven.apache.org/plugins/m
 ```shell
 ./mvnw javadoc:javadoc
 ```
-
-#### Source Code Style
-
-Spring AI source code checkstyle tries to follow the checkstyle guidelines used by the core Spring Framework project with some exceptions.
-The wiki pages
-[Code Style](https://github.com/spring-projects/spring-framework/wiki/Code-Style) and
-[IntelliJ IDEA Editor Settings](https://github.com/spring-projects/spring-framework/wiki/IntelliJ-IDEA-Editor-Settings)
-define the source file coding standards we use along with some IDEA editor settings we customize.
-
-Run checkstyle manually:
-```shell
-./mvnw process-sources -P checkstyle-check
-```
-
-## Contributing
-
-Your contributions are always welcome! Please read the [contribution guidelines](CONTRIBUTING.adoc) first.
