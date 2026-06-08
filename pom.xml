@@ -48,6 +48,8 @@
 		<module>advisors/spring-ai-tool-search-advisor</module>
 		<module>advisors/spring-ai-vector-store-advisor</module>
 
+		<module>auto-configurations/advisors/spring-ai-autoconfigure-tool-search-advisor</module>
+
 		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
 
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common</module>
@@ -161,6 +163,8 @@
 		<module>starters/spring-ai-starter-model-stability-ai</module>
 		<module>starters/spring-ai-starter-model-transformers</module>
 		<module>starters/spring-ai-starter-model-vertex-ai-embedding</module>
+
+		<module>starters/spring-ai-starter-tool-search-advisor</module>
 
 		<module>starters/spring-ai-starter-vector-store-aws-opensearch</module>
 		<module>starters/spring-ai-starter-vector-store-azure</module>
@@ -366,18 +370,26 @@
 								</requireMavenVersion>
 
 								<bannedDependencies>
-									<!-- Spring AI should NOT depend on boot. There are only 4 exceptions to this: -->
-									<!-- 1. test code can currently depend on boot (includes element below)-->
-									<!-- 2. auto-configurations module CAN depend on boot, but should use optional=true on all deps. This enforcer rule sadly can't see those dependencies, so no particular config here -->
-									<!-- 3. starters obviously depend on boot. There is a special profile below in this pom that relaxes the following rule, see further below. -->
-									<!-- 4. docker-compose and testcontainers projects depend on boot and have an override in their respective poms. -->
+									<!-- Spring AI should NOT depend on boot. There are only 4
+									exceptions to this: -->
+									<!-- 1. test code can currently depend on boot (includes element
+									below)-->
+									<!-- 2. auto-configurations module CAN depend on boot, but
+									should use optional=true on all deps. This enforcer rule sadly
+									can't see those dependencies, so no particular config here -->
+									<!-- 3. starters obviously depend on boot. There is a special
+									profile below in this pom that relaxes the following rule, see
+									further below. -->
+									<!-- 4. docker-compose and testcontainers projects depend on
+									boot and have an override in their respective poms. -->
 									<excludes>
 										<exclude>org.springframework.boot</exclude>
 									</excludes>
 									<includes>
 										<include>org.springframework.boot:*:*:jar:test</include>
 									</includes>
-									<message>Spring AI code should NOT depend on Spring boot. The only exception to this is autoconfigure and starter modules.</message>
+									<message>Spring AI code should NOT depend on Spring boot. The
+										only exception to this is autoconfigure and starter modules.</message>
 								</bannedDependencies>
 							</rules>
 						</configuration>
@@ -479,7 +491,9 @@
 								<!-- The following arg won't be necessary with JDK25+ -->
 								<arg>-XDaddTypeAnnotationsToSymbol=true</arg>
 								<arg>--should-stop=ifError=FLOW</arg>
-								<arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:ERROR -XepOpt:NullAway:OnlyNullMarked -XepOpt:NullAway:JSpecifyMode=true</arg>
+								<arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:ERROR
+									-XepOpt:NullAway:OnlyNullMarked
+									-XepOpt:NullAway:JSpecifyMode=true</arg>
 							</compilerArgs>
 						</configuration>
 					</execution>
@@ -575,21 +589,21 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>${maven-javadoc-plugin.version}</version>
-			<configuration>
-				<overview>
-					${maven.multiModuleProjectDirectory}/spring-ai-docs/src/main/javadoc/overview.html</overview>
-				<detectJavaApiLink>false</detectJavaApiLink>
-				<doclint>none</doclint>
-			</configuration>
-			<executions>
-				<execution>
-					<id>package-javadocs</id>
-					<phase>package</phase>
-					<goals>
-						<goal>jar</goal>
-					</goals>
-				</execution>
-			</executions>
+				<configuration>
+					<overview>
+						${maven.multiModuleProjectDirectory}/spring-ai-docs/src/main/javadoc/overview.html</overview>
+					<detectJavaApiLink>false</detectJavaApiLink>
+					<doclint>none</doclint>
+				</configuration>
+				<executions>
+					<execution>
+						<id>package-javadocs</id>
+						<phase>package</phase>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 
 		</plugins>
@@ -687,9 +701,11 @@
 								<inherited>true</inherited>
 								<configuration>
 									<skip>${disable.checks}</skip>
-									<configLocation>${maven.multiModuleProjectDirectory}/src/checkstyle/checkstyle.xml
+									<configLocation>
+										${maven.multiModuleProjectDirectory}/src/checkstyle/checkstyle.xml
 									</configLocation>
-									<headerLocation>${maven.multiModuleProjectDirectory}/src/checkstyle/checkstyle-header.txt
+									<headerLocation>
+										${maven.multiModuleProjectDirectory}/src/checkstyle/checkstyle-header.txt
 									</headerLocation>
 									<includeTestSourceDirectory>true
 									</includeTestSourceDirectory>
@@ -712,11 +728,14 @@
 		</profile>
 		<profile>
 			<id>starter-banned-dependency-relaxation</id>
-			<!-- This profile relaxes the enforcer rule that prohibits code to depend on boot, for starters/ only. -->
+			<!-- This profile relaxes the enforcer rule that prohibits code to depend on boot, for
+			starters/ only. -->
 			<activation>
 				<file>
-					<!-- Trick: since profiles can't be activated via properties in children projects, -->
-					<!-- this profile leverages the fact that starters are the only project type that -->
+					<!-- Trick: since profiles can't be activated via properties in children
+					projects, -->
+					<!-- this profile leverages the fact that starters are the only project type
+					that -->
 					<!-- do not contain source files. -->
 					<missing>src/main</missing>
 				</file>
@@ -747,7 +766,8 @@
 		</profile>
 		<profile>
 			<id>auto-configuration-all-optional</id>
-			<!-- This profile tightens the enforcer rule bannedDependencies to make sure all non-test -->
+			<!-- This profile tightens the enforcer rule bannedDependencies to make sure all
+			non-test -->
 			<!-- deps are optional for auto-configuration modules. -->
 			<activation>
 				<file>
@@ -767,18 +787,24 @@
 									<rules>
 										<bannedDependencies>
 											<excludes>
-												<!-- Since this rule doesn't "see" optional deps, we pretend that autoconfs should depend on NOTHING, -->
+												<!-- Since this rule doesn't "see" optional deps, we
+												pretend that autoconfs should depend on NOTHING, -->
 												<!-- except tests (and the weird netty hiccup) -->
 												<exclude>*:*</exclude>
 											</excludes>
 											<includes>
 												<include>*:*:*:*:test:*</include>
-												<include>org.springframework.ai:spring-ai-autoconfigure-*</include>
-												<!-- for some reason, which likely has to do with classifiers, without this include, the rule fails -->
-												<!-- with a false positive on spring-ai-autoconfigure-mcp-server-webflux. Did not find a better way to fix. -->
+												<include>
+													org.springframework.ai:spring-ai-autoconfigure-*</include>
+												<!-- for some reason, which likely has to do with
+												classifiers, without this include, the rule fails -->
+												<!-- with a false positive on
+												spring-ai-autoconfigure-mcp-server-webflux. Did not
+												find a better way to fix. -->
 												<include>io.netty:netty-*</include>
 											</includes>
-											<message>auto-configuration modules should have all their dependencies declared as optional</message>
+											<message>auto-configuration modules should have all
+												their dependencies declared as optional</message>
 										</bannedDependencies>
 									</rules>
 								</configuration>
@@ -840,7 +866,8 @@
 								<exclude>org.springframework.ai.bedrock.converse/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.elevenlabs/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.mistralai/**/*IT.java</exclude>
-								<exclude>org.springframework.ai.ollama/**/*IT.java</exclude>								<!-- <exclude>org.springframework.ai.openai/**/*IT.java</exclude> -->
+								<exclude>org.springframework.ai.ollama/**/*IT.java</exclude>								<!--
+								<exclude>org.springframework.ai.openai/**/*IT.java</exclude> -->
 								<exclude>org.springframework.ai.openaisdk/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.postgresml/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.stabilityai/**/*IT.java</exclude>
@@ -852,7 +879,8 @@
 								<exclude>org.springframework.ai.vectorstore.azure/**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Cassandra**IT.java</exclude>
 								<exclude>org.springframework.ai.chroma/**IT.java</exclude>
-								<!-- <exclude>org.springframework.ai.vectorstore/**/**Chroma**IT.java</exclude> -->
+								<!--
+								<exclude>org.springframework.ai.vectorstore/**/**Chroma**IT.java</exclude> -->
 								<exclude>org.springframework.ai.vectorstore**/Coherence**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Elasticsearch**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/GemFire**IT.java</exclude>
@@ -862,7 +890,8 @@
 								<exclude>org.springframework.ai.vectorstore**/Neo4j**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/OpenSearch**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Oracle**IT.java</exclude>
-								<!-- <exclude>org.springframework.ai.vectorstore**/PgVector**IT.java</exclude> -->
+								<!--
+								<exclude>org.springframework.ai.vectorstore**/PgVector**IT.java</exclude> -->
 								<exclude>org.springframework.ai.vectorstore**/Pinecone**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore.qdrant/**/**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Qdrant**IT.java</exclude>
@@ -872,41 +901,49 @@
 
 								<!-- Auto-configurations-->
 
-								 <!-- <exclude>org.springframework.ai.autoconfigure/**/**IT.java</exclude> -->
+								<!--
+								<exclude>org.springframework.ai.autoconfigure/**/**IT.java</exclude> -->
 
-								 <exclude>org.springframework.ai.autoconfigure.anthropic/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.azure/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.bedrock/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.huggingface/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.autoconfigure.anthropic/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.autoconfigure.azure/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.autoconfigure.bedrock/**/**IT.java</exclude>
+								<exclude>
+									org.springframework.ai.autoconfigure.huggingface/**/**IT.java</exclude>
 
-								 <exclude>org.springframework.ai.autoconfigure.chat/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.elevenlabs/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.embedding/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.image/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.autoconfigure.chat/**/**IT.java</exclude>
+								<exclude>
+									org.springframework.ai.autoconfigure.elevenlabs/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.autoconfigure.embedding/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.autoconfigure.image/**/**IT.java</exclude>
 
 
-								 <exclude>org.springframework.ai.autoconfigure.mistralai/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.ollama/**/**IT.java</exclude>
-								 <!-- <exclude>org.springframework.ai.autoconfigure.openai/**/**IT.java</exclude> -->
-								 <exclude>org.springframework.ai.autoconfigure.postgresml/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.autoconfigure.mistralai/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.autoconfigure.ollama/**/**IT.java</exclude>
+								<!--
+								<exclude>org.springframework.ai.autoconfigure.openai/**/**IT.java</exclude> -->
+								<exclude>
+									org.springframework.ai.autoconfigure.postgresml/**/**IT.java</exclude>
 
-								 <exclude>org.springframework.ai.autoconfigure.retry/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.autoconfigure.retry/**/**IT.java</exclude>
 
-								 <exclude>org.springframework.ai.autoconfigure.stabilityai/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.transformers/**/**IT.java</exclude>
+								<exclude>
+									org.springframework.ai.autoconfigure.stabilityai/**/**IT.java</exclude>
+								<exclude>
+									org.springframework.ai.autoconfigure.transformers/**/**IT.java</exclude>
 
-								 <exclude>org.springframework.ai.autoconfigure.vectorstore/**/**IT.java</exclude>
+								<exclude>
+									org.springframework.ai.autoconfigure.vectorstore/**/**IT.java</exclude>
 
-								 <exclude>org.springframework.ai.autoconfigure.vertexai/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.autoconfigure.vertexai/**/**IT.java</exclude>
 
-								 <!-- Test Containers -->
-								 <exclude>org.springframework.ai.testcontainers/**/**IT.java</exclude>
+								<!-- Test Containers -->
+								<exclude>org.springframework.ai.testcontainers/**/**IT.java</exclude>
 
-								 <!-- Test Docker Compose -->
-								 <exclude>org.springframework.ai.docker.compose/**/**IT.java</exclude>
+								<!-- Test Docker Compose -->
+								<exclude>org.springframework.ai.docker.compose/**/**IT.java</exclude>
 
-								 <!-- AI Evaluation -->
-								 <exclude>org.springframework.ai.integration.tests/**/**IT.java</exclude>
+								<!-- AI Evaluation -->
+								<exclude>org.springframework.ai.integration.tests/**/**IT.java</exclude>
 							</excludes>
 
 							<!-- <includes>
@@ -980,42 +1017,42 @@
 			</distributionManagement>
 		</profile>
 		<profile>
-		<id>sonatype</id>
-		<properties>
-			<maven.test.skip>true</maven.test.skip>
-		</properties>
-		<build>
-			<plugins>
-				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-gpg-plugin</artifactId>
-					<version>${maven-gpg-plugin.version}</version>
-					<executions>
-						<execution>
-							<id>sign-artifacts</id>
-							<phase>verify</phase>
-							<goals>
-								<goal>sign</goal>
-							</goals>
-						</execution>
-					</executions>
-					<configuration>
-						<!-- Passphrase consumed from MAVEN_GPG_PASSPHRASE environment variable. -->
-					</configuration>
-				</plugin>
-				<plugin>
-					<groupId>org.sonatype.central</groupId>
-					<artifactId>central-publishing-maven-plugin</artifactId>
-					<extensions>true</extensions>
-					<configuration>
-						<publishingServerId>central</publishingServerId>
-						<autoPublish>true</autoPublish>
-						<excludeArtifacts>spring-ai-integration-tests</excludeArtifacts>
-					</configuration>
-				</plugin>
-			</plugins>
-		</build>
-	</profile>
+			<id>sonatype</id>
+			<properties>
+				<maven.test.skip>true</maven.test.skip>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<version>${maven-gpg-plugin.version}</version>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<!-- Passphrase consumed from MAVEN_GPG_PASSPHRASE environment variable. -->
+						</configuration>
+					</plugin>
+					<plugin>
+						<groupId>org.sonatype.central</groupId>
+						<artifactId>central-publishing-maven-plugin</artifactId>
+						<extensions>true</extensions>
+						<configuration>
+							<publishingServerId>central</publishingServerId>
+							<autoPublish>true</autoPublish>
+							<excludeArtifacts>spring-ai-integration-tests</excludeArtifacts>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
 
 
 	</profiles>

@@ -22,8 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,6 +38,7 @@ import org.springframework.ai.tool.toolsearch.ToolSearchResponse.SearchMetadata;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
+import org.springframework.util.Assert;
 
 /**
  * Vector-based tool searcher for semantic search of tool descriptions.
@@ -67,9 +68,17 @@ public class VectorToolIndex implements Closeable, ToolIndex {
 
 	private final VectorStore vectorStore;
 
-	private final AtomicInteger counter = new AtomicInteger(0);
-
 	private final ConcurrentHashMap<String, List<String>> sessionToolIds = new ConcurrentHashMap<>();
+
+	/**
+	 * Creates a new VectorToolIndex with the given vector store.
+	 * @param vectorStore the vector store to use for storing and searching tool
+	 * embeddings
+	 */
+	public VectorToolIndex(VectorStore vectorStore) {
+		Assert.notNull(vectorStore, "VectorStore must not be null");
+		this.vectorStore = vectorStore;
+	}
 
 	@Override
 	public void clearIndex(String sessionId) {
@@ -88,24 +97,9 @@ public class VectorToolIndex implements Closeable, ToolIndex {
 		}
 	}
 
-	/**
-	 * Creates a new VectorToolIndex with the given vector store.
-	 * @param vectorStore the vector store to use for storing and searching tool
-	 * embeddings
-	 */
-	public VectorToolIndex(VectorStore vectorStore) {
-		this.vectorStore = vectorStore;
-	}
-
 	@Override
 	public void indexTool(String sessionId, ToolReference toolReference) {
-		String id = String.valueOf(this.counter.getAndIncrement());
-		this.add(sessionId, id, toolReference.toolName(), toolReference.summary());
-		this.sessionToolIds.compute(sessionId, (k, existing) -> {
-			List<String> list = existing != null ? new ArrayList<>(existing) : new ArrayList<>();
-			list.add(id);
-			return list;
-		});
+		this.indexTools(sessionId, List.of(toolReference));
 	}
 
 	@Override
@@ -114,7 +108,7 @@ public class VectorToolIndex implements Closeable, ToolIndex {
 			return;
 		}
 
-		List<String> ids = toolReferences.stream().map(ref -> String.valueOf(this.counter.getAndIncrement())).toList();
+		List<String> ids = toolReferences.stream().map(ref -> UUID.randomUUID().toString()).toList();
 
 		List<Document> documents = new ArrayList<>(toolReferences.size());
 		for (int i = 0; i < toolReferences.size(); i++) {
@@ -137,6 +131,10 @@ public class VectorToolIndex implements Closeable, ToolIndex {
 
 	@Override
 	public ToolSearchResponse search(ToolSearchRequest toolSearchRequest) {
+		if (toolSearchRequest.categoryFilter() != null && logger.isWarnEnabled()) {
+			logger.warn("VectorToolIndex does not support categoryFilter — '" + toolSearchRequest.categoryFilter()
+					+ "' will be ignored and results will not be narrowed by category.");
+		}
 		int maxResults = toolSearchRequest.maxResults() != null ? toolSearchRequest.maxResults() : DEFAULT_MAX_RESULTS;
 
 		List<Document> docs = this.doSearch(toolSearchRequest.query(), toolSearchRequest.sessionId(), maxResults,
@@ -145,7 +143,7 @@ public class VectorToolIndex implements Closeable, ToolIndex {
 		List<ToolReference> toolReferences = docs.stream()
 			.map(doc -> ToolReference.builder()
 				.toolName((String) Objects.requireNonNull(doc.getMetadata().get(METADATA_TOOL_NAME)))
-				.relevanceScore(Objects.requireNonNull(doc.getScore()))
+				.relevanceScore(Objects.requireNonNullElse(doc.getScore(), 0.0))
 				.summary((String) Objects.requireNonNull(doc.getMetadata().get(METADATA_TOOL_DESCRIPTION)))
 				.build())
 			.toList();
@@ -161,39 +159,6 @@ public class VectorToolIndex implements Closeable, ToolIndex {
 	}
 
 	/**
-	 * Adds a single tool to the vector index.
-	 * @param sessionId the session ID associated with the tool
-	 * @param id unique identifier for the tool
-	 * @param toolName name of the tool
-	 * @param toolDescription description of the tool (used for embedding)
-	 */
-	public void add(String sessionId, String id, String toolName, String toolDescription) {
-		Document document = new Document(id, toolDescription, Map.of(METADATA_SESSION_ID, sessionId, METADATA_ID, id,
-				METADATA_TOOL_NAME, toolName, METADATA_TOOL_DESCRIPTION, toolDescription));
-		this.vectorStore.add(List.of(document));
-	}
-
-	/**
-	 * Searches for tools matching the query string using semantic similarity.
-	 * @param queryString the search query
-	 * @return list of matching documents sorted by similarity
-	 */
-	public List<Document> doSearch(String queryString) {
-		return doSearch(queryString, DEFAULT_MAX_RESULTS, DEFAULT_SIMILARITY_THRESHOLD);
-	}
-
-	/**
-	 * Searches for tools matching the query string with custom parameters.
-	 * @param queryString the search query
-	 * @param maxResults maximum number of results to return
-	 * @param similarityThreshold minimum similarity threshold (0.0 to 1.0)
-	 * @return list of matching documents sorted by similarity
-	 */
-	public List<Document> doSearch(String queryString, int maxResults, double similarityThreshold) {
-		return doSearch(queryString, null, maxResults, similarityThreshold);
-	}
-
-	/**
 	 * Searches the vector store with full control over parameters.
 	 * @param queryString the search query
 	 * @param sessionId if non-null, restricts results to this session's indexed tools
@@ -201,7 +166,7 @@ public class VectorToolIndex implements Closeable, ToolIndex {
 	 * @param similarityThreshold minimum similarity score (0.0–1.0)
 	 * @return matching documents sorted by descending similarity score
 	 */
-	public List<Document> doSearch(String queryString, @Nullable String sessionId, int maxResults,
+	private List<Document> doSearch(String queryString, @Nullable String sessionId, int maxResults,
 			double similarityThreshold) {
 		var b = new FilterExpressionBuilder();
 		SearchRequest searchRequest = SearchRequest.builder()
@@ -214,52 +179,9 @@ public class VectorToolIndex implements Closeable, ToolIndex {
 		return this.vectorStore.similaritySearch(searchRequest);
 	}
 
-	/**
-	 * Deletes a tool from the index by its ID.
-	 * @param id the tool ID to delete
-	 */
-	public void delete(String id) {
-		this.vectorStore.delete(List.of(id));
-	}
-
-	/**
-	 * Deletes multiple tools from the index.
-	 * @param ids list of tool IDs to delete
-	 */
-	public void deleteAll(List<String> ids) {
-		this.vectorStore.delete(ids);
-	}
-
 	@Override
 	public void close() throws IOException {
 		// Vector store lifecycle is managed externally; no cleanup needed here.
-	}
-
-	/**
-	 * Gets the tool name from a search result document.
-	 * @param document the search result document
-	 * @return the tool name
-	 */
-	public static String getToolName(Document document) {
-		return (String) Objects.requireNonNull(document.getMetadata().get(METADATA_TOOL_NAME));
-	}
-
-	/**
-	 * Gets the tool ID from a search result document.
-	 * @param document the search result document
-	 * @return the tool ID
-	 */
-	public static String getToolId(Document document) {
-		return (String) Objects.requireNonNull(document.getMetadata().get(METADATA_ID));
-	}
-
-	/**
-	 * Gets the tool description (content) from a search result document.
-	 * @param document the search result document
-	 * @return the tool description
-	 */
-	public static String getToolDescription(Document document) {
-		return (String) Objects.requireNonNull(document.getMetadata().get(METADATA_TOOL_DESCRIPTION));
 	}
 
 }
