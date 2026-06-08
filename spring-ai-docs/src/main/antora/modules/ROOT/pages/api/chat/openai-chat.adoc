@@ -879,7 +879,7 @@ For a hosted OpenAI-compatible endpoint such as https://runapi.ai[RunAPI], set t
 [source,properties]
 ----
 spring.ai.openai.api-key=${RUNAPI_API_KEY}
-spring.ai.openai.base-url=https://api.runapi.ai/v1
+spring.ai.openai.base-url=https://runapi.ai/v1
 spring.ai.openai.chat.model=gpt-5.5
 ----
 
