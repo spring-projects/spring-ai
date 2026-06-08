@@ -28,7 +28,7 @@ Spring Boot Version Compatibility:
 
 This is a high level feature overview.
 
-* Support for all major [AI Model providers](https://docs.spring.io/spring-ai/reference/api/index.html) such as Anthropic, OpenAI, Microsoft, Amazon, Google, and Ollama. Supported model types include:
+* Support for all major [AI Model providers](https://docs.spring.io/spring-ai/reference/api/index.html) such as Anthropic, OpenAI, Amazon Bedrock, Google, Ollama, Mistral AI, DeepSeek, and more. Supported model types include:
   - [Chat Completion](https://docs.spring.io/spring-ai/reference/api/chatmodel.html)
   - [Embedding](https://docs.spring.io/spring-ai/reference/api/embeddings.html)
   - [Text to Image](https://docs.spring.io/spring-ai/reference/api/imageclient.html)
