@@ -1,8 +1,11 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
-[[upgrading-to-2-0-0-RC1]]
-== Upgrading to 2.0.0-RC1
+[[upgrading-to-2-0-0]]
+== Upgrading to 2.0.0
+
+This section covers all breaking changes and migration steps when upgrading from Spring AI 1.x to 2.0.0.
+The changes are organized thematically — each subsection is self-contained and can be read independently.
 
 === Advisors
 
@@ -215,7 +218,7 @@ ChatOptions options = chatModel.getOptions();
 
 ==== Configuration Properties Flattening
 
-Building on the changes introduced in 2.0.0-M6 for Chat models, the configuration properties for all other models (Embedding, Image, Audio, Moderation, OCR, etc.) no longer use the `.options` prefix. 
+Building on the chat configuration changes described above, the configuration properties for all other models (Embedding, Image, Audio, Moderation, OCR, etc.) no longer use the `.options` prefix.
 For example, the former `spring.ai.openai.embedding.options.model` is now `spring.ai.openai.embedding.model`.
 Deprecated configuration properties are provided for the `.options` variants to ensure a smoother migration experience.
 
@@ -276,7 +279,7 @@ OpenAiChatOptions.builder().n(1).build();
 
 Minimax dedicated support has been removed in favor of using Anthropic support as recommended by https://platform.minimax.io/docs/api-reference/text-anthropic-api[Minimax themselves].
 Please use the Spring AI Anthropic support instead, configuring it with the `\https://api.minimax.io/anthropic` base URL and MiniMax models.
-Embeddings are not support anymore.
+Embeddings are no longer supported.
 
 
 === JSON Utilities Refactoring
@@ -453,9 +456,6 @@ import org.springframework.ai.google.genai.GoogleGenAiEmbeddingConnectionDetails
 // After
 import org.springframework.ai.google.genai.embedding.GoogleGenAiEmbeddingConnectionDetails;
 ----
-
-[[upgrading-to-2-0-0-M7]]
-== Upgrading to 2.0.0-M7
 
 === ChatClient Tool Calling
 
@@ -666,9 +666,9 @@ The Azure Cosmos DB vector store (`spring-ai-azure-cosmos-db-store`) and chat me
 Azure Cosmos DB support is now available as an external module maintained by the Azure Cosmos DB team.
 See https://azurecosmosdb.github.io/spring-ai/docs/index.html for documentation and dependency coordinates.
 
-=== MCP SDK 2.0.0-M3
+=== MCP SDK Breaking Changes: Required Fields
 
-Spring AI now depends on MCP SDK 2.0.0-M3, which makes previously optional fields mandatory and enforces them at construction time via `Assert.notNull()` in compact record constructors.
+The MCP SDK enforces previously optional fields as mandatory at construction time via `Assert.notNull()` in compact record constructors.
 
 ==== Breaking: `CreateMessageResult` — `model` now required
 
@@ -715,16 +715,6 @@ The following no-arg constructors and `builder()` methods are deprecated in favo
 |`CallToolRequest.builder()` |`CallToolRequest.builder(name)`
 |===
 
-[[upgrading-to-2-0-0-M6]]
-== Upgrading to 2.0.0-M6
-
-=== Options and Properties
-
-The configuration properties do not use `.options` anymore, so for example the former `spring.ai.openai.chat.options.model` is now `spring.ai.openai.chat.model`.
-Deprecated configuration properties are provided for the `.options` ones in order to provide a smoother migration experience.
-
-The setters have been removed from the options classes, builder should now be used instead.
-
 === Observability
 
 ==== Tool Calling
@@ -740,10 +730,7 @@ The observations produced for tool calling operations have changed as follows:
 
 ==== `spring-ai-hanadb-store` module removal
 
-The `spring-ai-hanadb-store` module has been **removed** from Spring AI as of version `2.0.0-M6`.
-
-[[upgrading-to-2-0-0-M6-chat-memory]]
-== Upgrading to 2.0.0-M6
+The `spring-ai-hanadb-store` module has been **removed** from Spring AI.
 
 === Chat Memory Advisors: Conversation ID Is Now Required
 
@@ -858,25 +845,50 @@ ChatClient chatClient = ChatClient.builder(chatModel)
     .build();
 ----
 
-[[upgrading-to-2-0-0-M5]]
-== Upgrading to 2.0.0-M5
+=== ChatClient Options Now Require a Builder
+
+When using `ChatClient`, the `.options()` / `.defaultOptions()` methods now accept a `ChatOptions.Builder` (or any provider-specific builder subtype) rather than a fully built `ChatOptions` instance.
+This change is enforced at compile time by the method's generic type constraint `<B extends ChatOptions.Builder<?>>`.
+
+The options builder is merged with the model's default options before the first advisor is called, so only the fields you explicitly set override the defaults.
+
+[source,java]
+----
+// Before — passing a built ChatOptions instance (no longer compiles with ChatClient)
+ChatOptions opts = AnthropicChatOptions.builder()
+    .maxTokens(100)
+    .temperature(0.7)
+    .build();
+String response = chatClient.prompt("Tell me a joke")
+    .options(opts)
+    .call().content();
+
+// After — pass the builder directly
+String response = chatClient.prompt("Tell me a joke")
+    .options(AnthropicChatOptions.builder()
+        .maxTokens(100)
+        .temperature(0.7))
+    .call().content();
+----
+
+NOTE: This restriction applies to `ChatClient` only. When calling `ChatModel.call(Prompt)` directly, the prompt may carry a fully built `ChatOptions` instance — `ChatModel.buildRequestPrompt()` converts it internally via `.mutate()` and merges it with the model defaults.
 
 === OpenAI Java SDK Transition
 
-Starting from version `2.0.0-M5`, Spring AI uses the official `openai-java` SDK under the hood for all OpenAI models (Chat, Embeddings, Image, Audio Speech, Audio Transcription, and Moderation) in the `spring-ai-openai` module.
+Spring AI now uses the official `openai-java` SDK under the hood for all OpenAI models (Chat, Embeddings, Image, Audio Speech, Audio Transcription, and Moderation) in the `spring-ai-openai` module.
 
 The transition should be seamless, and **no major breaking changes are expected** for existing users of the `spring-ai-openai` module.
 All properties (with the `spring.ai.openai.*` prefix), builders, and options remain fully intact. The existing `extraBody` configuration parameter transparently maps to the underlying `additionalBodyProperties` in the `openai-java` SDK.
 
 ==== `spring-ai-azure-openai` module removal
 
-The `spring-ai-azure-openai` module (and its associated Spring Boot starter `spring-ai-starter-model-azure-openai` and auto-configuration `spring-ai-autoconfigure-model-azure-openai`) have been **removed** from Spring AI as of version `2.0.0-M5`.
+The `spring-ai-azure-openai` module (and its associated Spring Boot starter `spring-ai-starter-model-azure-openai` and auto-configuration `spring-ai-autoconfigure-model-azure-openai`) have been **removed** from Spring AI.
 
 Existing users should use the `spring-ai-openai` module (and related starter and auto-configuration) instead and adapt class names (by removing the `Azure` prefix for example) and configuration properties accordingly.
 
 ==== `spring-ai-openai-sdk` module removal
 
-The `spring-ai-openai-sdk` module (and its associated Spring Boot starter `spring-ai-starter-model-openai-sdk` and auto-configuration `spring-ai-autoconfigure-model-openai-sdk`) have been **removed** from Spring AI as of version `2.0.0-M5`.
+The `spring-ai-openai-sdk` module (and its associated Spring Boot starter `spring-ai-starter-model-openai-sdk` and auto-configuration `spring-ai-autoconfigure-model-openai-sdk`) have been **removed** from Spring AI.
 
 Existing users should use the `spring-ai-openai` module (and related starter and auto-configuration) instead and adapt class names accordingly (by removing the `Sdk` suffix for example) and configuration properties accordingly.
 
@@ -884,62 +896,9 @@ Existing users should use the `spring-ai-openai` module (and related starter and
 
 The related modules can now be found at https://github.com/oracle/spring-cloud-oracle/tree/main/spring-ai-oracle.
 
-=== ChatOptions Handling
-Users can interact with ChatModels in two ways:
-
- * either directly by calling xref:api/chatmodel.adoc[ ChatModel.call(Prompt) / ChatModel.stream(Prompt)`],
- * or by using the xref:api/chatclient.adoc[ChatClient] API.
-
-Starting with Spring AI 2.0.0.M5, when using the `ChatModel` approach, options set in the prompt need to be of the concrete type used by the concrete model (_e.g._ `AnthropicChatOptions` when using `AnthropicChatModel`) and need to be either "full" (_i.e._ all relevant fields set) or `null` (in which case the default options set in the model will be used).
-
-The ability to "merge" options has been moved to `ChatClient` (using a `ChatOptions.Builder` or more specific type) and happens prior to the first advisor being called.
-
-Code that previously used a "half constructed" instance of `ChatOptions` now needs to an instance of `Builder` built in a similar way:
-[source,java]
-----
-// Old
-ChatClient client = ...;
-ChatOptions opts = AnthropicChatOptions.builder()
-    .maxTokens(100)
-    .temperature(0.7)
-    .disableParallelToolUse(true)
-    .build();
-String response = client.prompt("Tell me a joke")
-    .options(opts)
-    .call().content();
-
-// New
-ChatClient client = ...;
-var customizer =  AnthropicChatOptions.builder()
-    .maxTokens(100)
-    .temperature(0.7)
-    .disableParallelToolUse(true);
-String response = client.prompt("Tell me a joke")
-    .options(customizer)
-    .call().content();
-----
-
-
-[TIP]
---
-To easily merge a "delta" of options represented by a `ChatOptions.Builder` with the model's default options at the `ChatModel.call()` level, simply use the following construct:
-[source, java]
-----
-ChatModel model = ...;
-var customizer =  AnthropicChatOptions.builder()
-    .maxTokens(100)
-    .temperature(0.7)
-    .disableParallelToolUse(true);
-Prompt prompt = Prompt.builder().message("Tell me a joke")
-    .options(model.getDefaultOptions().mutate().combineWith(customize).build())
-    .build();
-var response = model.call(prompt);
-----
---
-
 === MCP Java SDK Upgraded to 2.0.0
 
-Spring AI 2.0.0-M5 upgrades the MCP Java SDK from `1.1.x` to `2.0.0`. This release introduces several breaking changes at the SDK level that may affect applications that interact with MCP types directly.
+Spring AI 2.0.0 upgrades the MCP Java SDK from `1.1.x` to `2.0.0`. This release introduces several breaking changes at the SDK level that may affect applications that interact with MCP types directly.
 
 ==== Server-Side Tool Input Validation Enabled by Default
 
@@ -1016,7 +975,7 @@ HttpClientSseClientTransport.builder(baseUrl)
     .build();
 ----
 
-NOTE: If you already migrated to the `McpClientCustomizer<B>` API introduced in 2.0.0-M3, no further action is required.
+NOTE: If you already migrated to the `McpClientCustomizer<B>` API, no further action is required.
 
 ==== Sealed MCP Schema Interfaces Removed
 
@@ -1060,36 +1019,7 @@ Anthropic, Bedrock Converse, OpenAI, and Google GenAI populate them: Anthropic a
 
 Code that cast to native types or read provider-specific metadata keys for these numbers can switch to the interface methods. See xref:api/usage-handling.adoc#_prompt_cache_usage_metrics[Prompt Cache Usage Metrics] for examples.
 
-=== Anthropic Module Updates
-
-`spring-ai-anthropic` picks up four new chat options and an SDK bump. The full reference for each is in xref:api/chat/anthropic-chat.adoc[Anthropic Chat]; the highlights:
-
-[cols="1,3", options="header"]
-|===
-| Option | What it adds
-
-| Thinking display
-| `Display.SUMMARIZED` and `Display.OMITTED` on the `thinkingEnabled` / `thinkingAdaptive` builders, so Claude can use a thinking budget without surfacing the full reasoning. (https://github.com/spring-projects/spring-ai/issues/5642[GH-5642])
-
-| Service tier
-| `AnthropicServiceTier.AUTO` / `STANDARD_ONLY` for Anthropic's priority capacity tier. Property `spring.ai.anthropic.chat.options.service-tier`.
-
-| Built-in web search
-| `AnthropicWebSearchTool` lets Claude search the web during a request. Properties under `spring.ai.anthropic.chat.options.web-search-tool.*`.
-
-| Inference geo
-| `inferenceGeo("us")` or `inferenceGeo("eu")` for data-residency routing. Property `spring.ai.anthropic.chat.options.inference-geo`.
-|===
-
-`com.anthropic:anthropic-java` is bumped from `2.16.1` (the version M3 shipped with) to `2.24.0`, binary-compatible at every surface `spring-ai-anthropic` uses.
-
-NOTE: If you are upgrading from `1.1.x` (or `1.0.x`), the bigger change for the Anthropic module landed in M3. See xref:api/chat/anthropic-migration.adoc[Migrating the Anthropic Module to the Official Java SDK] for the `RestClient` → SDK transition.
-
-
-[[upgrading-to-2-0-0-M3]]
-== Upgrading to 2.0.0-M3
-
-=== Anthropic Module Migrated to Official Java SDK
+=== Anthropic Module
 
 `spring-ai-anthropic` is now built on `com.anthropic:anthropic-java` instead of the hand-rolled `RestClient` / `WebClient` implementation.
 
@@ -1150,6 +1080,29 @@ AnthropicChatOptions.builder()
 ----
 
 xref:api/chat/anthropic-migration.adoc[Migrating the Anthropic Module to the Official Java SDK] covers the rest: direct SDK access, streaming behavior, prompt caching, citations, and removed types.
+
+==== New Chat Options
+
+`spring-ai-anthropic` also gains four new chat options. The full reference for each is in xref:api/chat/anthropic-chat.adoc[Anthropic Chat]; the highlights:
+
+[cols="1,3", options="header"]
+|===
+| Option | What it adds
+
+| Thinking display
+| `Display.SUMMARIZED` and `Display.OMITTED` on the `thinkingEnabled` / `thinkingAdaptive` builders, so Claude can use a thinking budget without surfacing the full reasoning.
+
+| Service tier
+| `AnthropicServiceTier.AUTO` / `STANDARD_ONLY` for Anthropic's priority capacity tier. Property `spring.ai.anthropic.chat.service-tier`.
+
+| Built-in web search
+| `AnthropicWebSearchTool` lets Claude search the web during a request. Properties under `spring.ai.anthropic.chat.web-search-tool.*`.
+
+| Inference geo
+| `inferenceGeo("us")` or `inferenceGeo("eu")` for data-residency routing. Property `spring.ai.anthropic.chat.inference-geo`.
+|===
+
+NOTE: If you are upgrading from `1.1.x` (or `1.0.x`), see xref:api/chat/anthropic-migration.adoc[Migrating the Anthropic Module to the Official Java SDK] for the full `RestClient` → SDK transition guide.
 
 === MCP Annotations Migrated into Spring AI
 
@@ -1631,12 +1584,7 @@ mvn org.openrewrite.maven:rewrite-maven-plugin:6.32.0:run \
   -Dmaven.compiler.failOnError=false
 ----
 
-[[upgrading-to-2-0-0-M2]]
-== Upgrading to 2.0.0-M2
-
-=== Breaking Changes
-
-==== MongoDB Chat Memory Message Ordering Fixed
+=== MongoDB Chat Memory Message Ordering Fixed
 
 The `MongoChatMemoryRepository` has been fixed to return messages in the order they were sent (oldest-to-newest), matching all other chat memory repository implementations. Previously, it incorrectly returned messages in reverse order (newest-to-oldest), which broke conversation flow for LLMs.
 
@@ -1665,16 +1613,11 @@ All chat memory repositories now consistently return messages in the order they 
 
 * Docker Compose and Testcontainers support for MongoDB Atlas is now provided natively by the Spring Boot MongoDB module. The migration should be transparent and not require any code change. Regarding dependencies, you don't need to import `org.springframework.ai:spring-ai-spring-boot-testcontainers` anymore. A dependency on `org.springframework.boot:spring-boot-testcontainers` is sufficient.
 
-[[upgrading-to-2-0-0-M1]]
-== Upgrading to 2.0.0-M1
-
-=== Breaking Changes
-
-==== Default Temperature Configuration Removed
+=== Default Temperature Configuration Removed
 
 Spring AI no longer provides default temperature values for chat model autoconfiguration properties. Previously, Spring AI set a default temperature of `0.7` for most chat models. This default has been removed to allow each AI provider's native default temperature to be used.
 
-===== Impact
+==== Impact
 
 If your application did not explicitly configure a temperature value and relied on Spring AI's default of `0.7`, you may notice different behavior after upgrading. The actual default will now be determined by each AI provider's API, which may vary:
 
@@ -1682,7 +1625,7 @@ If your application did not explicitly configure a temperature value and relied 
 * Some providers default to `0.7`
 * Some providers have model-specific defaults
 
-===== Migration
+==== Migration
 
 If you want to maintain the previous behavior, explicitly set the temperature in your configuration:
 
@@ -1692,10 +1635,10 @@ If you want to maintain the previous behavior, explicitly set the temperature in
 spring.ai.openai.chat.temperature=0.7
 
 # Example for Anthropic
-spring.ai.anthropic.chat.options.temperature=0.7
+spring.ai.anthropic.chat.temperature=0.7
 
 # Example for Azure OpenAI
-spring.ai.azure.openai.chat.options.temperature=0.7
+spring.ai.azure.openai.chat.temperature=0.7
 ----
 
 Or programmatically when building requests:
