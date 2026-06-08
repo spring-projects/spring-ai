@@ -83,7 +83,7 @@ class OllamaChatRequestTests {
 
 		assertThat(request.model()).isEqualTo(OllamaModel.QWEN_2_5_3B.id());
 		assertThat(request.options()).containsEntry("temperature", 0.8);
-		assertThat(request.options()).containsEntry("top_k", 99);
+		assertThat(request.options()).doesNotContainKey("top_k");
 		assertThat(request.options()).containsEntry("num_gpu", 2);
 		assertThat(request.options()).containsEntry("top_p", 0.5);
 	}
