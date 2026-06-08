@@ -74,12 +74,12 @@ To build with running unit tests:
 
 The Maven build-cache extension is enabled by default to speedup builds.
 
-To build the project while disabling the build cache: 
+If you suspect the build cache is in an invalid state (build broken for no identified reason), try to run the build while disabling the build cache, for example with: 
 ```shell
 ./mvnw -Dmaven.build.cache.enabled=false clean package
 ```
 
-If you suspect the build cache is currupted, you can remove it with:
+If the build passes without the cache, please [fill an issue](https://github.com/spring-projects/spring-ai/issues) describing with as much details as possible how that happened, and remove the local cache as a workaround:
 ```shell
 rm -rf ~/.m2/build-cache/
 ```
