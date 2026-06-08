@@ -99,7 +99,7 @@ To run a specific integration test allowing for up to two attempts to succeed (t
 ```
 
 A quick pass through the most important pathways that runs integration tests can be done with the profile `-Pci-fast-integration-tests` and is used in the main CI build of this project.
-Full integration tests are done regularly in the [Spring AI Integration Test Repository](https://github.com/spring-projects/spring-ai-integration-tests)
+Full integration tests are done regularly in the [Spring AI Integration Tests](https://github.com/spring-projects/spring-ai-integration-tests) repository.
 
 ### Documentation
 
