@@ -32,12 +32,15 @@ import com.openai.services.blocking.ChatService;
 import com.openai.services.blocking.chat.ChatCompletionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.util.JsonHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -122,6 +125,7 @@ class OpenAiChatModelTests {
 		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
 		assertThat(request.toolChoice()).isPresent();
 		assertThat(request.toolChoice().get().isAuto()).isTrue();
+		assertThat(request.toolChoice().get().auto().get().asString()).isEqualTo("auto");
 	}
 
 	@Test
@@ -133,9 +137,10 @@ class OpenAiChatModelTests {
 			.options(options)
 			.build();
 
-		assertThatThrownBy(() -> chatModel.createRequest(new Prompt("test", options), false))
-			.isInstanceOf(UnsupportedOperationException.class)
-			.hasMessageContaining("SDK version does not support typed 'none' toolChoice");
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+		assertThat(request.toolChoice()).isPresent();
+		assertThat(request.toolChoice().get().isAuto()).isTrue();
+		assertThat(request.toolChoice().get().auto().get().asString()).isEqualTo("none");
 	}
 
 	@Test
@@ -147,9 +152,10 @@ class OpenAiChatModelTests {
 			.options(options)
 			.build();
 
-		assertThatThrownBy(() -> chatModel.createRequest(new Prompt("test", options), false))
-			.isInstanceOf(UnsupportedOperationException.class)
-			.hasMessageContaining("SDK version does not support typed 'required' toolChoice");
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+		assertThat(request.toolChoice()).isPresent();
+		assertThat(request.toolChoice().get().isAuto()).isTrue();
+		assertThat(request.toolChoice().get().auto().get().asString()).isEqualTo("required");
 	}
 
 	@Test
@@ -173,6 +179,23 @@ class OpenAiChatModelTests {
 		assertThat(request.toolChoice()).isPresent();
 		assertThat(request.toolChoice().get().isNamedToolChoice()).isTrue();
 		assertThat(request.toolChoice().get().asNamedToolChoice().function().name()).isEqualTo("my_function");
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "auto", "required", "none" })
+	void toolChoiceJson(String mode) {
+		String json = new JsonHelper().toJson(Map.of("type", mode));
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").toolChoice(json).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+		assertThat(request.toolChoice()).isPresent();
+		assertThat(request.toolChoice().get().isAuto()).isTrue();
+		assertThat(request.toolChoice().get().auto().get().asString()).isEqualTo(mode);
 	}
 
 	@Test
