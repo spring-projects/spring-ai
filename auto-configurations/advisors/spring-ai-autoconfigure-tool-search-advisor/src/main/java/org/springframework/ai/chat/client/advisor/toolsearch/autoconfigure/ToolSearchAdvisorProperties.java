@@ -22,7 +22,9 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.tool.toolsearch.ToolIndex;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.util.Assert;
 
 /**
  * Configuration properties for {@link ToolSearchAdvisorAutoConfiguration}.
@@ -57,7 +59,7 @@ public class ToolSearchAdvisorProperties {
 	 * </ul>
 	 * When not set, {@code regex} is used as the default.
 	 */
-	@Nullable private String toolIndexType;
+	private String toolIndexType = "regex";
 
 	/**
 	 * Maximum number of tool references returned per tool-search call. When {@code null},
@@ -112,11 +114,12 @@ public class ToolSearchAdvisorProperties {
 		this.enabled = enabled;
 	}
 
-	public @Nullable String getToolIndexType() {
+	public String getToolIndexType() {
 		return this.toolIndexType;
 	}
 
-	public void setToolIndexType(@Nullable String toolIndexType) {
+	public void setToolIndexType(String toolIndexType) {
+		Assert.hasText(toolIndexType, "toolIndexType must not be empty");
 		this.toolIndexType = toolIndexType;
 	}
 

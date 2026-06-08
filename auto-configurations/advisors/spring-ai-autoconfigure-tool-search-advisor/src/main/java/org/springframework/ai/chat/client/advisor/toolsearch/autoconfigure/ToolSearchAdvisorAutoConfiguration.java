@@ -16,6 +16,11 @@
 
 package org.springframework.ai.chat.client.advisor.toolsearch.autoconfigure;
 
+import java.util.Set;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.toolsearch.ToolSearchToolCallingAdvisor;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -29,6 +34,7 @@ import org.springframework.ai.tool.toolsearch.index.lucene.LuceneToolIndex;
 import org.springframework.ai.tool.toolsearch.index.regex.RegexToolIndex;
 import org.springframework.ai.tool.toolsearch.index.vectorstore.VectorToolIndex;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -72,7 +78,27 @@ import org.springframework.util.StringUtils;
 @ConditionalOnClass(ToolSearchToolCallingAdvisor.class)
 @EnableConfigurationProperties(ToolSearchAdvisorProperties.class)
 @ConditionalOnProperty(prefix = ToolSearchAdvisorProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
-public class ToolSearchAdvisorAutoConfiguration {
+public class ToolSearchAdvisorAutoConfiguration implements InitializingBean {
+
+	private static final Log logger = LogFactory.getLog(ToolSearchAdvisorAutoConfiguration.class);
+
+	private static final Set<String> KNOWN_TOOL_INDEX_TYPES = Set.of("regex", "lucene", "vector");
+
+	private final ToolSearchAdvisorProperties properties;
+
+	public ToolSearchAdvisorAutoConfiguration(ToolSearchAdvisorProperties properties) {
+		this.properties = properties;
+	}
+
+	@Override
+	public void afterPropertiesSet() {
+		String type = this.properties.getToolIndexType();
+		if (type != null && !KNOWN_TOOL_INDEX_TYPES.contains(type.toLowerCase())) {
+			logger.warn("Unknown 'spring.ai.chat.client.tool-search-advisor.tool-index-type' value: '" + type
+					+ "'. Known built-in values are: " + KNOWN_TOOL_INDEX_TYPES
+					+ ". If this is intentional, ensure a matching ToolIndex bean is declared in the application context.");
+		}
+	}
 
 	/**
 	 * Registers a {@link ToolSearchToolCallingAdvisor.Builder} typed as
@@ -119,20 +145,26 @@ public class ToolSearchAdvisorAutoConfiguration {
 	/**
 	 * Registers a {@link VectorToolIndex}.
 	 * <p>
-	 * Activated only when {@code tool-index-type=vector} is set explicitly. Also requires
-	 * {@code VectorToolIndex} on the classpath and a {@link VectorStore} bean in the
-	 * context.
+	 * Activated only when {@code tool-index-type=vector} is set explicitly. Fails fast
+	 * with a descriptive error if no {@link VectorStore} bean is present in the context.
 	 */
 	@Configuration(proxyBeanMethods = false)
 	@ConditionalOnClass(VectorToolIndex.class)
-	@ConditionalOnBean(VectorStore.class)
 	@ConditionalOnMissingBean(ToolIndex.class)
 	@ConditionalOnProperty(prefix = ToolSearchAdvisorProperties.CONFIG_PREFIX, name = "tool-index-type",
 			havingValue = "vector", matchIfMissing = false)
 	static class VectorToolIndexConfiguration {
 
 		@Bean
-		VectorToolIndex vectorToolIndex(VectorStore vectorStore) {
+		VectorToolIndex vectorToolIndex(ObjectProvider<VectorStore> vectorStoreProvider) {
+			VectorStore vectorStore = vectorStoreProvider.getIfAvailable();
+			if (vectorStore == null) {
+				throw new IllegalStateException(
+						"'spring.ai.chat.client.tool-search-advisor.tool-index-type=vector' requires a VectorStore "
+								+ "bean in the application context, but none was found. Add a VectorStore "
+								+ "implementation (e.g. spring-ai-starter-vector-store-pgvector) to your "
+								+ "dependencies.");
+			}
 			return new VectorToolIndex(vectorStore);
 		}
 

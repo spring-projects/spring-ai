@@ -17,6 +17,7 @@
 package org.springframework.ai.chat.client.advisor.toolsearch.autoconfigure;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.toolsearch.ToolSearchToolCallingAdvisor;
@@ -31,6 +32,8 @@ import org.springframework.ai.tool.toolsearch.index.vectorstore.VectorToolIndex;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,6 +44,7 @@ import static org.mockito.Mockito.mock;
  *
  * @author Christian Tzolov
  */
+@ExtendWith(OutputCaptureExtension.class)
 class ToolSearchAdvisorAutoConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
@@ -93,11 +97,27 @@ class ToolSearchAdvisorAutoConfigurationTests {
 	}
 
 	@Test
-	void vectorToolIndexIsNotRegisteredWithoutVectorStoreBean() {
+	void vectorToolIndexFailsWithClearMessageWhenNoVectorStoreBeanPresent() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.chat.client.tool-search-advisor.enabled=true",
 					"spring.ai.chat.client.tool-search-advisor.tool-index-type=vector")
-			.run(context -> assertThat(context).doesNotHaveBean(ToolIndex.class));
+			.run(context -> assertThat(context).hasFailed()
+				.getFailure()
+				.rootCause()
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("tool-index-type=vector")
+				.hasMessageContaining("VectorStore"));
+	}
+
+	@Test
+	void unknownToolIndexTypeLogsWarning(CapturedOutput output) {
+		this.contextRunner
+			.withPropertyValues("spring.ai.chat.client.tool-search-advisor.enabled=true",
+					"spring.ai.chat.client.tool-search-advisor.tool-index-type=custom-index")
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(output).contains("custom-index").contains("tool-index-type");
+			});
 	}
 
 	@Test
