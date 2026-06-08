@@ -904,10 +904,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			return;
 		}
 		if (isGemini3ProModel(modelName)) {
-			if (level == GoogleGenAiThinkingLevel.MINIMAL || level == GoogleGenAiThinkingLevel.MEDIUM) {
+			if (level == GoogleGenAiThinkingLevel.MINIMAL) {
 				throw new IllegalArgumentException(
 						String.format("ThinkingLevel.%s is not supported for Gemini 3 Pro models. "
-								+ "Supported levels: LOW, HIGH. Model: %s", level, modelName));
+								+ "Supported levels: LOW, MEDIUM, HIGH. Model: %s", level, modelName));
 			}
 		}
 	}
