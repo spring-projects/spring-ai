@@ -16,9 +16,9 @@
 
 package org.springframework.ai.retry.error;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.http.HttpStatus;
@@ -37,7 +37,7 @@ import org.springframework.util.StringUtils;
  */
 public final class ApiErrorMessageImprover {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ApiErrorMessageImprover.class);
+	private static final Log LOGGER = LogFactory.getLog(ApiErrorMessageImprover.class);
 
 	private ApiErrorMessageImprover() {
 	}
@@ -65,7 +65,9 @@ public final class ApiErrorMessageImprover {
 			}
 		}
 		catch (Exception ex) {
-			LOGGER.debug("Failed to parse API error response as JSON: {}", ex.getMessage());
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("Failed to parse API error response as JSON: " + ex.getMessage());
+			}
 		}
 
 		return createFallbackMessage(rawError, statusCode);
