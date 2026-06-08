@@ -37,7 +37,7 @@ This is a high level feature overview.
   - [Moderation](https://docs.spring.io/spring-ai/reference/api/index.html#api/moderation)
 * Portable API support across AI providers for both synchronous and streaming options. Access to [model-specific features](https://docs.spring.io/spring-ai/reference/api/chatmodel.html#_chat_options) is also available.
 * [Structured Outputs](https://docs.spring.io/spring-ai/reference/api/structured-output-converter.html) - Mapping of AI Model output to POJOs.
-* Support for all major [Vector Database providers](https://docs.spring.io/spring-ai/reference/api/vectordbs.html) such as *Apache Cassandra, Azure Vector Search, Chroma, Elasticsearch, Milvus, MongoDB Atlas, MariaDB, Neo4j, Oracle, PostgreSQL/PGVector, Pinecone, Qdrant, Redis, and Weaviate*.
+* Support for all major [Vector Database providers](https://docs.spring.io/spring-ai/reference/api/vectordbs.html) such as *Amazon Bedrock Knowledge Base, Amazon S3, Apache Cassandra, Azure Vector Search, Chroma, Couchbase, Elasticsearch, GemFire, MariaDB, Milvus, MongoDB Atlas, Neo4j, OpenSearch, Oracle, PostgreSQL/PGVector, Pinecone, Qdrant, Redis, Typesense, and Weaviate*.
 * Portable API across Vector Store providers, including a novel SQL-like [metadata filter API](https://docs.spring.io/spring-ai/reference/api/vectordbs.html#metadata-filters).
 * [Tools/Function Calling](https://docs.spring.io/spring-ai/reference/api/tools.html) - permits the model to request the execution of client-side tools and functions, thereby accessing necessary real-time information as required.
 * [Observability](https://docs.spring.io/spring-ai/reference/observability/index.html) - Provides insights into AI-related operations.
@@ -64,7 +64,7 @@ The recommended JDK is specified in the `.sdkmanrc` file, which can be installed
  - `sdk env install` to install the related JDK locally
  - `sdk env` to use the related JDK
 
-**NOTE:** Make sure to use a JDK with the same architecture than your processor, not an emulated one (for exampel with Rosetta on Mac) as Spring AI requires components that depend on your specific CPU architecture (PyTorch for example). If you are unsure if you have the correct JDK distribution for your CPU, run the command `java -XshowSettings:properties -version 2>&1 | grep os.arch` to validate that it matches your machine.
+**NOTE:** Make sure to use a JDK with the same architecture than your processor, not an emulated one (for example with Rosetta on Mac) as Spring AI requires components that depend on your specific CPU architecture (PyTorch for example). If you are unsure if you have the correct JDK distribution for your CPU, run the command `java -XshowSettings:properties -version 2>&1 | grep os.arch` to validate that it matches your machine.
 
 To build with running unit tests:
 ```shell
