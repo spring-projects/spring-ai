@@ -1451,6 +1451,20 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	/**
+	 * Look at the options of the provided prompt. If none are provided, return a new
+	 * prompt using this model {@link ChatModel#getOptions() options}. Otherwise, use the
+	 * prompt as is.
+	 */
+	/* package */ Prompt buildRequestPrompt(Prompt prompt) {
+		if (prompt.getOptions() == null) {
+			return prompt.mutate().chatOptions(this.getOptions()).build();
+		}
+		else {
+			return prompt;
+		}
+	}
+
+	/**
 	 * Holds state accumulated during streaming for building complete responses. This
 	 * includes message metadata (ID, model, input tokens) and tool call accumulation
 	 * state for streaming tool calling support.

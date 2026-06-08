@@ -948,6 +948,21 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		return new Builder();
 	}
 
+	/**
+	 * Look at the options of the provided prompt. If none are provided, return a new
+	 * prompt using this model
+	 * {@link org.springframework.ai.chat.model.ChatModel#getOptions() options}.
+	 * Otherwise, use the prompt as is.
+	 */
+	/* package */ Prompt buildRequestPrompt(Prompt prompt) {
+		if (prompt.getOptions() == null) {
+			return prompt.mutate().chatOptions(this.getOptions()).build();
+		}
+		else {
+			return prompt;
+		}
+	}
+
 	public static final class Builder {
 
 		@Nullable private Client genAiClient;
