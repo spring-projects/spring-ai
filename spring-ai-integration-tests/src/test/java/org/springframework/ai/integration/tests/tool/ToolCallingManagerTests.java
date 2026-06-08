@@ -21,8 +21,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -65,7 +63,6 @@ public class ToolCallingManagerTests {
 	void explicitToolCallingExecutionWithNewOptions() {
 		ChatOptions chatOptions = ToolCallingChatOptions.builder()
 			.toolCallbacks(ToolCallbacks.from(this.tools))
-			.internalToolExecutionEnabled(false)
 			.build();
 		Prompt prompt = new Prompt(
 				new UserMessage("What books written by %s are available in the library?".formatted("J.R.R. Tolkien")),
@@ -77,7 +74,6 @@ public class ToolCallingManagerTests {
 	void explicitToolCallingExecutionWithNewOptionsStream() {
 		ChatOptions chatOptions = ToolCallingChatOptions.builder()
 			.toolCallbacks(ToolCallbacks.from(this.tools))
-			.internalToolExecutionEnabled(false)
 			.build();
 		Prompt prompt = new Prompt(new UserMessage("What books written by %s, %s, and %s are available in the library?"
 			.formatted("J.R.R. Tolkien", "Philip Pullman", "C.S. Lewis")), chatOptions);
@@ -138,13 +134,10 @@ public class ToolCallingManagerTests {
 
 	static class Tools {
 
-		private static final Logger logger = LoggerFactory.getLogger(Tools.class);
-
 		private final BookService bookService = new BookService();
 
 		@Tool(description = "Get the list of books written by the given author available in the library")
 		List<Book> booksByAuthor(String author) {
-			logger.info("Getting books by author: {}", author);
 			return this.bookService.getBooksByAuthor(new Author(author));
 		}
 

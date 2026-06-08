@@ -25,8 +25,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.EmitFailureHandler;
@@ -46,7 +46,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ResponseStream;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
-import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
@@ -70,7 +70,7 @@ import org.springframework.util.ObjectUtils;
  */
 public abstract class AbstractBedrockApi<I, O, SO> {
 
-	private static final Logger logger = LoggerFactory.getLogger(AbstractBedrockApi.class);
+	private static final Log logger = LogFactory.getLog(AbstractBedrockApi.class);
 
 	/**
 	 * Default emit failure handler.
@@ -92,7 +92,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * @param region The AWS region to use.
 	 */
 	public AbstractBedrockApi(String modelId, String region) {
-		this(modelId, ProfileCredentialsProvider.builder().build(), region, ModelOptionsUtils.JSON_MAPPER, Duration.ofMinutes(5));
+		this(modelId, ProfileCredentialsProvider.builder().build(), region, JacksonUtils.getDefaultJsonMapper(), Duration.ofMinutes(5));
 	}
 	/**
 	 * Create a new AbstractBedrockApi instance using default credentials provider and object mapper.
@@ -102,7 +102,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * @param timeout The timeout to use.
 	 */
 	public AbstractBedrockApi(String modelId, String region, Duration timeout) {
-		this(modelId, ProfileCredentialsProvider.builder().build(), region, ModelOptionsUtils.JSON_MAPPER, timeout);
+		this(modelId, ProfileCredentialsProvider.builder().build(), region, JacksonUtils.getDefaultJsonMapper(), timeout);
 	}
 
 	/**
@@ -285,7 +285,9 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 				.builder()
 				.onChunk(chunk -> {
 					try {
-						logger.debug("Received chunk: {}", chunk.bytes().asString(StandardCharsets.UTF_8));
+						if (logger.isDebugEnabled()) {
+							logger.debug("Received chunk: " + chunk.bytes().asString(StandardCharsets.UTF_8));
+						}
 						SO response = this.jsonMapper.readValue(chunk.bytes().asByteArray(), clazz);
 						eventSink.emitNext(response, DEFAULT_EMIT_FAILURE_HANDLER);
 					}
@@ -295,7 +297,9 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 					}
 				})
 				.onDefault(event -> {
-					logger.error("Unknown or unhandled event: {}", event.toString());
+					if (logger.isErrorEnabled()) {
+						logger.error("Unknown or unhandled event: " + event.toString());
+					}
 					eventSink.emitError(new Throwable("Unknown or unhandled event: " + event.toString()), DEFAULT_EMIT_FAILURE_HANDLER);
 				})
 				.build();
@@ -308,7 +312,9 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 							logger.info("Completed streaming response.");
 						})
 				.onError(error -> {
-					logger.error("\n\nError streaming response: {}", error.getMessage());
+					if (logger.isErrorEnabled()) {
+						logger.error("\n\nError streaming response: " + error.getMessage());
+					}
 					eventSink.emitError(error, DEFAULT_EMIT_FAILURE_HANDLER);
 				})
 				.onEventStream(stream -> stream.subscribe(

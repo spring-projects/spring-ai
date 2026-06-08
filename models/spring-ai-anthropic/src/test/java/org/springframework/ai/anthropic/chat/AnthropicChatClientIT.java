@@ -28,8 +28,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropic.AnthropicChatOptions;
@@ -37,7 +35,6 @@ import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -66,8 +63,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 class AnthropicChatClientIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatClientIT.class);
-
 	@Autowired
 	ChatModel chatModel;
 
@@ -86,8 +81,6 @@ class AnthropicChatClientIT {
 				.call()
 				.chatResponse();
 		// @formatter:on
-
-		logger.info("" + response);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
@@ -101,8 +94,6 @@ class AnthropicChatClientIT {
 				.call()
 				.entity(new ParameterizedTypeReference<>() { });
 		// @formatter:on
-
-		logger.info(collection.toString());
 		assertThat(collection).hasSize(5);
 	}
 
@@ -115,8 +106,6 @@ class AnthropicChatClientIT {
 				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms).hasSize(2);
 	}
 
@@ -132,8 +121,6 @@ class AnthropicChatClientIT {
 				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms).hasSize(2);
 	}
 
@@ -148,8 +135,6 @@ class AnthropicChatClientIT {
 				.call()
 				.entity(toStringListConverter);
 		// @formatter:on
-
-		logger.info("ice cream flavors" + flavors);
 		assertThat(flavors).hasSize(5);
 		assertThat(flavors).containsAnyOf("Vanilla", "vanilla");
 	}
@@ -176,8 +161,6 @@ class AnthropicChatClientIT {
 				.call()
 				.entity(ActorsFilms.class);
 		// @formatter:on
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isNotBlank();
 	}
 
@@ -189,8 +172,6 @@ class AnthropicChatClientIT {
 				.call()
 				.entity(ActorsFilms.class);
 		// @formatter:on
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -217,8 +198,6 @@ class AnthropicChatClientIT {
 		// @formatter:on
 
 		ActorsFilms actorsFilms = outputConverter.convert(generationTextFromStream);
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -228,14 +207,12 @@ class AnthropicChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco (California, USA), Tokyo (Japan), and Paris (France)? Use Celsius.")
-				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
 					.build())
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
 		assertThat(response).contains("30", "10", "15");
 	}
 
@@ -244,14 +221,12 @@ class AnthropicChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Use Celsius.")
-				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeatherInLocation", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeatherInLocation", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
 					.build())
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
 		assertThat(response).contains("30", "10", "15");
 	}
 
@@ -259,7 +234,7 @@ class AnthropicChatClientIT {
 	void defaultFunctionCallTest() {
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultToolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.defaultTools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -269,8 +244,6 @@ class AnthropicChatClientIT {
 			.call()
 			.content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
 		assertThat(response).contains("30", "10", "15");
 	}
 
@@ -279,7 +252,7 @@ class AnthropicChatClientIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Use Celsius.")
-				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -288,7 +261,6 @@ class AnthropicChatClientIT {
 		// @formatter:on
 
 		String content = response.collectList().block().stream().collect(Collectors.joining());
-		logger.info("Response: {}", content);
 		assertThat(content).contains("30", "10", "15");
 	}
 
@@ -303,8 +275,6 @@ class AnthropicChatClientIT {
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info(response);
 		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
@@ -320,8 +290,6 @@ class AnthropicChatClientIT {
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info(response);
 		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
@@ -338,7 +306,6 @@ class AnthropicChatClientIT {
 		// @formatter:on
 
 		String content = response.collectList().block().stream().collect(Collectors.joining());
-		logger.info("Response: {}", content);
 		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
@@ -351,7 +318,6 @@ class AnthropicChatClientIT {
 			.options(ToolCallingChatOptions.builder().model(modelName))
 			.tools(new MyTools())
 			.user("Get current weather in Amsterdam and Paris")
-			.advisors(ToolCallAdvisor.builder().suppressToolCallStreaming().build())
 			.stream()
 			.chatResponse();
 
@@ -359,10 +325,7 @@ class AnthropicChatClientIT {
 
 		assertThat(chatResponses).isNotEmpty();
 
-		chatResponses.forEach(chatResponse -> {
-			logger.info("ChatResponse Results: {}", chatResponse.getResults());
-			assertThat(chatResponse.hasToolCalls()).isFalse();
-		});
+		chatResponses.forEach(chatResponse -> assertThat(chatResponse.hasToolCalls()).isFalse());
 	}
 
 	public static class MyTools {

@@ -66,48 +66,90 @@ By default, Spring AI autoconfigures a single `ChatClient.Builder` bean.
 However, you may need to work with multiple chat models in your application.
 Here's how to handle this scenario:
 
-In all cases, you need to disable the `ChatClient.Builder` autoconfiguration by setting the property `spring.ai.chat.client.enabled=false`.
-
-This allows you to create multiple `ChatClient` instances manually.
-
 ==== Multiple ChatClients with a Single Model Type
 
 This section covers a common use case where you need to create multiple ChatClient instances that all use the same underlying model type but with different configurations.
+You can use the auto-configured `ChatClient.Builder` as it is prototype-scoped, meaning a new instance is created for each injection point:
 
 [source,java]
 ----
-// Create ChatClient instances programmatically
-ChatModel myChatModel = ... // already autoconfigured by Spring Boot
-ChatClient chatClient = ChatClient.create(myChatModel);
+@Configuration
+class ChatClientConfig {
 
-// Or use the builder for more control
-ChatClient.Builder builder = ChatClient.builder(myChatModel);
-ChatClient customChatClient = builder
-    .defaultSystemPrompt("You are a helpful assistant.")
-    .build();
+    @Bean
+    ChatClient defaultChatClient(ChatClient.Builder builder) {
+        return builder.build();
+    }
+
+    @Bean
+    ChatClient customChatClient(ChatClient.Builder builder) {
+        return builder.defaultSystem("You are a helpful assistant.").build();
+    }
+}
 ----
 
 ==== ChatClients for Different Model Types
 
-When working with multiple AI models, you can define separate `ChatClient` beans for each model:
+When working with multiple AI models, you might be tempted to define separate `ChatClient` beans by using `ChatClient.create(chatModel)` or `ChatClient.builder(chatModel)`.
+However, doing so bypasses the auto-configured `ChatClient.Builder`, which means observability and `ChatClientBuilderCustomizer` beans are ignored.
+
+To retain observability and customizers, you should inject `ChatClientBuilderConfigurer` to create custom builders.
+The `ChatClientBuilderConfigurer` applies all registered `ChatClientBuilderCustomizer` beans and wires up observability, mirroring what the auto-configuration does internally.
+
+When multiple `ChatModel` beans are present in the application context, Spring cannot resolve the `ChatModel` dependency of the auto-configured `ChatClient.Builder` bean without ambiguity.
+To resolve this, you can mark one of your `ChatClient` beans as `@Primary`. You may also need to mark one of your `ChatModel` beans as `@Primary` if you are defining them manually, or alternatively, define your own `ChatClient.Builder` bean to override the auto-configured one.
 
 [source,java]
 ----
-import org.springframework.ai.chat.ChatClient;
+import io.micrometer.observation.ObservationRegistry;
+import org.springframework.ai.anthropic.AnthropicChatModel;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
+import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.model.chat.client.autoconfigure.ChatClientBuilderConfigurer;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 @Configuration
 public class ChatClientConfig {
-    
+
     @Bean
-    public ChatClient openAiChatClient(OpenAiChatModel chatModel) {
-        return ChatClient.create(chatModel);
+    @Primary
+    public ChatClient openAiChatClient(OpenAiChatModel chatModel, ChatClientBuilderConfigurer configurer,
+            ObjectProvider<ObservationRegistry> observationRegistry,
+            ObjectProvider<ChatClientObservationConvention> chatClientObservationConvention,
+            ObjectProvider<AdvisorObservationConvention> advisorObservationConvention,
+            ObjectProvider<ToolCallingAdvisor.Builder<?>> toolCallingAdvisorBuilder) {
+        return buildChatClient(chatModel, configurer, observationRegistry,
+                chatClientObservationConvention, advisorObservationConvention, toolCallingAdvisorBuilder);
     }
-    
+
     @Bean
-    public ChatClient anthropicChatClient(AnthropicChatModel chatModel) {
-        return ChatClient.create(chatModel);
+    public ChatClient anthropicChatClient(AnthropicChatModel chatModel, ChatClientBuilderConfigurer configurer,
+            ObjectProvider<ObservationRegistry> observationRegistry,
+            ObjectProvider<ChatClientObservationConvention> chatClientObservationConvention,
+            ObjectProvider<AdvisorObservationConvention> advisorObservationConvention,
+            ObjectProvider<ToolCallingAdvisor.Builder<?>> toolCallingAdvisorBuilder) {
+        return buildChatClient(chatModel, configurer, observationRegistry,
+                chatClientObservationConvention, advisorObservationConvention, toolCallingAdvisorBuilder);
+    }
+
+    private ChatClient buildChatClient(ChatModel chatModel, ChatClientBuilderConfigurer configurer,
+            ObjectProvider<ObservationRegistry> observationRegistry,
+            ObjectProvider<ChatClientObservationConvention> chatClientObservationConvention,
+            ObjectProvider<AdvisorObservationConvention> advisorObservationConvention,
+            ObjectProvider<ToolCallingAdvisor.Builder<?>> toolCallingAdvisorBuilder) {
+        ChatClient.Builder builder = ChatClient.builder(chatModel,
+                observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+                chatClientObservationConvention.getIfUnique(),
+                advisorObservationConvention.getIfUnique(),
+                toolCallingAdvisorBuilder.getIfAvailable());
+        return configurer.configure(builder).build();
     }
 }
 ----
@@ -273,10 +315,28 @@ List<ActorFilms> actorFilms = chatClient.prompt()
     .entity(new ParameterizedTypeReference<List<ActorFilms>>() {});
 ----
 
-==== Native Structured Output
+==== EntityParamSpec
 
-As more AI models support structured output natively, you can take advantage of this feature by using the `AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT` advisor parameter when calling the `ChatClient`.
-You can use the `defaultAdvisors()` method on the `ChatClient.Builder` to set this parameter globally for all calls or set it per call as shown below:
+All three `entity()` overloads accept an optional `Consumer<EntityParamSpec>` that enables two independent behaviours:
+
+===== Provider-Native Structured Output
+
+By default, the JSON schema is appended to the user message as text instructions.
+When `useProviderStructuredOutput()` is set, the schema is instead passed directly to the AI provider API as a structured constraint (equivalent to setting `AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT`).
+This requires the underlying model to support `StructuredOutputChatOptions`.
+
+[source,java]
+----
+ActorFilms actorFilms = chatClient.prompt()
+    .user("Generate the filmography for a random actor.")
+    .call()
+    .entity(ActorFilms.class, spec -> spec.useProviderStructuredOutput());
+----
+
+NOTE: Some AI models such as OpenAI don't support arrays of objects natively.
+In such cases, you can use the Spring AI default structured output conversion.
+
+You can still set this globally for all calls via the advisor parameter:
 
 [source,java]
 ----
@@ -287,8 +347,33 @@ ActorFilms actorFilms = chatClient.prompt()
     .entity(ActorFilms.class);
 ----
 
-NOTE: Some AI models such as OpenAI don't support arrays of objects natively.
-In such cases, you can use the Spring AI default structured output conversion.
+===== Schema Validation with Retry
+
+`schemaValidation()` validates the model's JSON response against the entity schema before returning it.
+If validation fails, the error message is appended to the user prompt and the model is retried, up to `maxRepeatAttempts` times (default: 3).
+This uses xref:api/advisors-recursive.adoc#structured-output-validation-advisor[StructuredOutputValidationAdvisor] internally.
+
+[source,java]
+----
+ActorFilms actorFilms = chatClient.prompt()
+    .user("Generate the filmography for a random actor.")
+    .call()
+    .entity(ActorFilms.class, spec -> spec.schemaValidation());
+----
+
+Both options can be combined:
+
+[source,java]
+----
+ActorFilms actorFilms = chatClient.prompt()
+    .user("Generate the filmography for a random actor.")
+    .call()
+    .entity(ActorFilms.class, spec -> spec
+        .useProviderStructuredOutput()
+        .validateSchema());
+----
+
+NOTE: Streaming is not supported when `validateSchema()` is active.
 
 === Streaming Responses
 
@@ -376,6 +461,9 @@ After specifying the `call()` method on `ChatClient`, there are a few different 
 ** `entity(ParameterizedTypeReference<T> type)`: used to return a `Collection` of entity types.
 ** `entity(Class<T> type)`:  used to return a specific entity type.
 ** `entity(StructuredOutputConverter<T> structuredOutputConverter)`: used to specify an instance of a `StructuredOutputConverter` to convert a `String` to an entity type.
+** `entity(ParameterizedTypeReference<T> type, Consumer<EntityParamSpec> spec)`: like above, with optional xref:api/chatclient.adoc#_entityparamspec[EntityParamSpec] configuration.
+** `entity(Class<T> type, Consumer<EntityParamSpec> spec)`: like above, with optional xref:api/chatclient.adoc#_entityparamspec[EntityParamSpec] configuration.
+** `entity(StructuredOutputConverter<T> converter, Consumer<EntityParamSpec> spec)`: like above, with optional xref:api/chatclient.adoc#_entityparamspec[EntityParamSpec] configuration.
 * `responseEntity()` to return both the `ChatResponse` and a Java type. This is useful when you need access to both the complete AI model response (with metadata and generations) and the structured output entity in a single call.
 ** `responseEntity(Class<T> type)`: used to return a `ResponseEntity` containing both the complete `ChatResponse` object and a specific entity type.
 ** `responseEntity(ParameterizedTypeReference<T> type)`: used to return a `ResponseEntity` containing both the complete `ChatResponse` object and a `Collection` of entity types.
@@ -754,53 +842,51 @@ TIP: Be cautious about logging sensitive information in production environments.
 
 === Tool Calling
 
-When tools are registered on a `ChatClient` call (via `.tools(...)` or defaults set on the builder), the `ChatClient` automatically registers a `ToolCallAdvisor` in the advisor chain to handle the tool execution lifecycle.
-This means you do not need to add a `ToolCallAdvisor` manually for the common case.
+When tools are registered on a `ChatClient` call (via `.tools(...)` or defaults set on the builder), the `ChatClient` automatically registers a `ToolCallingAdvisor` in the advisor chain to handle the tool execution lifecycle.
+This means you do not need to add a `ToolCallingAdvisor` manually for the common case.
 
 [source,java]
 ----
 String response = ChatClient.builder(chatModel)
     .build()
     .prompt("What day is tomorrow?")
-    .tools(new DateTimeTools())   // ToolCallAdvisor is auto-registered here
+    .tools(new DateTimeTools())   // ToolCallingAdvisor is auto-registered here
     .call()
     .content();
 ----
 
-The `ToolCallAdvisor` is registered at `Ordered.HIGHEST_PRECEDENCE + 300` by default.
+The `ToolCallingAdvisor` is registered at `Ordered.HIGHEST_PRECEDENCE + 300` by default.
 
 ==== Disabling Auto-Registration
 
-You can disable the auto-registration per call using `AdvisorParams.toolCallAdvisorAutoRegister(false)`:
+===== Globally (all calls)
+
+Set `spring.ai.chat.client.tool-calling.enabled=false` to disable auto-registration for every call made from the auto-configured `ChatClient`:
+
+[source,properties]
+----
+spring.ai.chat.client.tool-calling.enabled=false
+----
+
+When this property is set, tools are still sent to the AI model as definitions, but tool calls in the response are not executed automatically.
+Use xref:api/tools.adoc#_user_controlled_tool_execution[user-controlled tool execution] to drive the loop yourself.
+
+===== Per call
+
+You can disable auto-registration for a single call using `AdvisorParams.toolCallingAdvisorAutoRegister(false)`:
 
 [source,java]
 ----
 chatClient.prompt("What day is tomorrow?")
     .tools(new DateTimeTools())
-    .advisors(AdvisorParams.toolCallAdvisorAutoRegister(false))
+    .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
     .call()
     .content();
 ----
 
-Or you can provide your own `ToolCallAdvisor` (or any other advisor implementing `ToolAdvisor`) — in that case auto-registration is suppressed automatically because the chain already contains a `ToolAdvisor`.
+Or you can provide your own `ToolCallingAdvisor` (or any other advisor implementing `ToolAdvisor`) — in that case auto-registration is suppressed automatically because the chain already contains a `ToolAdvisor`.
 
-The preferred way is to pass the advisor directly inside the `ToolSpec` consumer, keeping tools and their advisor co-located:
-
-[source,java]
-----
-var customAdvisor = ToolCallAdvisor.builder()
-    .toolCallingManager(myToolCallingManager)
-    .build();
-
-chatClient.prompt("What day is tomorrow?")
-    .tools(t -> t
-        .instances(new DateTimeTools())
-        .advisor(customAdvisor))   // auto-registration suppressed
-    .call()
-    .content();
-----
-
-Alternatively, you can pass the advisor separately via `.advisors()`:
+You can pass a custom advisor via `.advisors()`:
 
 [source,java]
 ----
@@ -811,12 +897,22 @@ chatClient.prompt("What day is tomorrow?")
     .content();
 ----
 
-==== Customizing the Default ToolCallAdvisor
+==== Customizing the Default ToolCallingAdvisor
+
+The `spring.ai.chat.client.tool-calling.*` properties control the auto-configured `ToolCallingAdvisor`:
+
+[cols="3,1,3", options="header"]
+|===
+| Property | Default | Description
+| `spring.ai.chat.client.tool-calling.enabled` | `true` | Set to `false` to disable `ToolCallingAdvisor` auto-registration for all calls. Tools are still sent to the model, but tool calls are not executed automatically.
+| `spring.ai.chat.client.tool-calling.advisor-order` | `Ordered.HIGHEST_PRECEDENCE + 300` | Position of the auto-registered `ToolCallingAdvisor` in the advisor chain.
+| `spring.ai.chat.client.tool-calling.stream-tool-call-responses` | `false` | When `true`, intermediate tool-call chunks are streamed in real time during `.stream()` calls.
+|===
 
 ===== Spring Boot: advisor order property
 
 The simplest way to tune the auto-registered advisor is through the `spring.ai.chat.client.tool-calling.advisor-order` property.
-It controls where in the advisor chain the `ToolCallAdvisor` is inserted:
+It controls where in the advisor chain the `ToolCallingAdvisor` is inserted:
 
 [source,properties]
 ----
@@ -824,18 +920,28 @@ spring.ai.chat.client.tool-calling.advisor-order=0
 ----
 
 The value must be lower than the order of any advisor that should run _inside_ the tool-call loop (i.e., repeated on every iteration), and higher than any advisor that should run _outside_ it (i.e., executed only once per user request).
-The default is `ToolCallAdvisor.DEFAULT_ORDER`.
+The default is `ToolCallingAdvisor.DEFAULT_ORDER`.
 
-===== Spring Boot: custom `ToolCallAdvisor.Builder` bean
+===== Spring Boot: streaming intermediate tool-call responses
 
-For deeper customisation — for example to supply a custom `ToolCallingManager` — declare a `ToolCallAdvisor.Builder<?>` bean.
+By default, only the final answer is emitted during a `.stream()` call — intermediate tool-call chunks are suppressed until the last LLM iteration completes.
+Set `spring.ai.chat.client.tool-calling.stream-tool-call-responses=true` to stream each iteration's chunks in real time as they arrive:
+
+[source,properties]
+----
+spring.ai.chat.client.tool-calling.stream-tool-call-responses=true
+----
+
+===== Spring Boot: custom `ToolCallingAdvisor.Builder` bean
+
+For deeper customization — for example to supply a custom `ToolCallingManager` — declare a `ToolCallingAdvisor.Builder<?>` bean.
 Spring Boot's `@ConditionalOnMissingBean` on the auto-configured bean means your bean takes precedence:
 
 [source,java]
 ----
 @Bean
-ToolCallAdvisor.Builder<?> toolCallAdvisorBuilder(ToolCallingManager myToolCallingManager) {
-    return ToolCallAdvisor.builder()
+ToolCallingAdvisor.Builder<?> toolCallingAdvisorBuilder(ToolCallingManager myToolCallingManager) {
+    return ToolCallingAdvisor.builder()
         .toolCallingManager(myToolCallingManager)
         .advisorOrder(Ordered.LOWEST_PRECEDENCE);
 }
@@ -845,7 +951,7 @@ The `ChatClient.Builder` bean is then automatically wired with this custom build
 
 ===== Without Spring Boot
 
-When not using Spring Boot auto-configuration, pass a pre-configured `ToolCallAdvisor.Builder` directly to `ChatClient.builder()`:
+When not using Spring Boot auto-configuration, pass a pre-configured `ToolCallingAdvisor.Builder` directly to `ChatClient.builder()`:
 
 [source,java]
 ----
@@ -855,7 +961,7 @@ ToolCallingManager customManager = ToolCallingManager.builder()
 
 ChatClient chatClient = ChatClient
     .builder(chatModel, observationRegistry, null, null,
-            ToolCallAdvisor.builder().toolCallingManager(customManager))
+            ToolCallingAdvisor.builder().toolCallingManager(customManager))
     .build();
 
 // Every prompt that registers tools will use customManager in the auto-registered advisor
@@ -867,9 +973,9 @@ chatClient.prompt("What day is tomorrow?")
 
 ==== ToolAdvisor Marker Interface
 
-`ToolAdvisor` is a marker interface that signals to the `ChatClient` that the advisor chain already handles tool execution. Implementing this interface on a custom advisor prevents the auto-registration of a second `ToolCallAdvisor`.
+`ToolAdvisor` is a marker interface that signals to the `ChatClient` that the advisor chain already handles tool execution. Implementing this interface on a custom advisor prevents the auto-registration of a second `ToolCallingAdvisor`.
 
-For more details see xref:api/tools.adoc#_advisor_controlled_tool_execution_with_toolcalladvisor[Advisor-Controlled Tool Execution].
+For more details see xref:api/tools.adoc#_advisor_controlled_tool_execution_with_toolcallingadvisor[Advisor-Controlled Tool Execution].
 
 == Chat Memory
 

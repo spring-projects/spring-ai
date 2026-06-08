@@ -17,15 +17,15 @@
 package org.springframework.ai.model.ollama.autoconfigure.tool;
 
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -33,15 +33,16 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ollama.autoconfigure.BaseOllamaIT;
 import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.support.ToolCallbacks;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Description;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -51,8 +52,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  */
 class OllamaFunctionToolBeanIT extends BaseOllamaIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(OllamaFunctionToolBeanIT.class);
 
 	private static final String MODEL_NAME = OllamaModel.QWEN_2_5_3B.getName();
 
@@ -64,10 +63,10 @@ class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
 	// @formatter:off
-				"spring.ai.ollama.baseUrl=" + getBaseUrl(),
+				"spring.ai.ollama.base-url=" + getBaseUrl(),
 				"spring.ai.ollama.chat.model=" + MODEL_NAME,
 				"spring.ai.ollama.chat.temperature=0.5",
-				"spring.ai.ollama.chat.topK=10")
+				"spring.ai.ollama.chat.top-k=10")
 				// @formatter:on
 		.withConfiguration(ollamaAutoConfig(OllamaChatAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
@@ -88,11 +87,12 @@ class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 			UserMessage userMessage = new UserMessage(
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
-			OllamaChatOptions options = mergeOptions(chatModel,
-					OllamaChatOptions.builder().toolCallbacks(ToolCallbacks.from(myTools)));
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), options));
-
-			logger.info("Response: {}", response);
+			ChatResponse response = ChatClient.create(chatModel)
+				.prompt()
+				.messages(userMessage)
+				.tools(myTools)
+				.call()
+				.chatResponse();
 
 			var result = response.getResult();
 			assertThat(result).isNotNull();
@@ -109,11 +109,14 @@ class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 
 			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			OllamaChatOptions options = mergeOptions(chatModel,
-					OllamaChatOptions.builder().toolNames(WEATHER_INFO_TOOL_NAME));
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), options));
+			ToolCallback weatherInfo = context.getBean(WEATHER_INFO_TOOL_NAME, ToolCallback.class);
 
-			logger.info("Response: {}", response);
+			ChatResponse response = ChatClient.create(chatModel)
+				.prompt()
+				.messages(userMessage)
+				.tools(weatherInfo)
+				.call()
+				.chatResponse();
 
 			var result = response.getResult();
 			assertThat(result).isNotNull();
@@ -126,12 +129,19 @@ class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 		this.contextRunner.run(context -> {
 
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 
 			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			OllamaChatOptions options = mergeOptions(chatModel,
-					OllamaChatOptions.builder().toolNames(WEATHER_INFO_TOOL_NAME));
-			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage), options));
+			ToolCallback weatherInfo = context.getBean(WEATHER_INFO_TOOL_NAME, ToolCallback.class);
+			OllamaChatOptions options = mergeOptions(chatModel, OllamaChatOptions.builder().toolCallbacks(weatherInfo));
+			var chatClient = ChatClient
+				.builder(chatModel, ObservationRegistry.NOOP, null, null,
+						ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
+				.build();
+			Flux<ChatResponse> response = chatClient.prompt(new Prompt(List.of(userMessage), options))
+				.stream()
+				.chatResponse();
 
 			String content = response.collectList()
 				.blockOptional()
@@ -142,8 +152,6 @@ class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 				.map(Generation::getOutput)
 				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
-
-			logger.info("Response: {}", content);
 
 			assertThat(content).contains("30", "10", "15");
 		});
@@ -170,9 +178,11 @@ class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 	static class Config {
 
 		@Bean
-		@Description(WEATHER_INFO_TOOL_DESCRIPTION)
-		Function<MockWeatherService.Request, MockWeatherService.Response> weatherInfo() {
-			return new MockWeatherService();
+		ToolCallback weatherInfo() {
+			return FunctionToolCallback.builder(WEATHER_INFO_TOOL_NAME, new MockWeatherService())
+				.description(WEATHER_INFO_TOOL_DESCRIPTION)
+				.inputType(MockWeatherService.Request.class)
+				.build();
 		}
 
 		@Bean

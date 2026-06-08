@@ -43,9 +43,9 @@ import com.azure.search.documents.models.IndexingResult;
 import com.azure.search.documents.models.SearchOptions;
 import com.azure.search.documents.models.VectorSearchOptions;
 import com.azure.search.documents.models.VectorizedQuery;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -84,7 +84,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 	public static final String DEFAULT_INDEX_NAME = "spring_ai_azure_vector_store";
 
-	private static final Logger logger = LoggerFactory.getLogger(AzureVectorStore.class);
+	private static final Log logger = LogFactory.getLog(AzureVectorStore.class);
 
 	private static final String SPRING_AI_VECTOR_CONFIG = "spring-ai-vector-config";
 
@@ -315,7 +315,9 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 		SearchIndex index = this.searchIndexClient.createOrUpdateIndex(searchIndex);
 
-		logger.info("Created search index: {}", index.getName());
+		if (logger.isInfoEnabled()) {
+			logger.info("Created search index: " + index.getName());
+		}
 	}
 
 	@Override
@@ -347,7 +349,9 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			return (parsed == null) ? new HashMap<>() : new HashMap<>(parsed);
 		}
 		catch (Exception ex) {
-			logger.warn("Failed to parse metadata JSON. Using empty metadata. json={}", metadataJson, ex);
+			if (logger.isWarnEnabled()) {
+				logger.warn("Failed to parse metadata JSON. Using empty metadata. json=" + metadataJson, ex);
+			}
 			return new HashMap<>();
 		}
 	}

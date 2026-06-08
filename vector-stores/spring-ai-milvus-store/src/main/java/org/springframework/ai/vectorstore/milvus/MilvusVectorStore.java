@@ -54,8 +54,8 @@ import io.milvus.param.index.DescribeIndexParam;
 import io.milvus.param.index.DropIndexParam;
 import io.milvus.response.QueryResultsWrapper.RowRecord;
 import io.milvus.response.SearchResultsWrapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -167,7 +167,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	// Metadata, automatically assigned by Milvus.
 	public static final String SIMILARITY_FIELD_NAME = "score";
 
-	private static final Logger logger = LoggerFactory.getLogger(MilvusVectorStore.class);
+	private static final Log logger = LogFactory.getLog(MilvusVectorStore.class);
 
 	private static final Map<MetricType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			MetricType.COSINE, VectorStoreSimilarityMetric.COSINE, MetricType.L2, VectorStoreSimilarityMetric.EUCLIDEAN,
@@ -300,8 +300,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			.build());
 
 		long deleteCount = status.getData().getDeleteCnt();
-		if (deleteCount != idList.size()) {
-			logger.warn("Deleted only {} entries from requested {} ", deleteCount, idList.size());
+		if (logger.isWarnEnabled() && deleteCount != idList.size()) {
+			logger.warn("Deleted only " + deleteCount + " entries from requested " + idList.size());
 		}
 	}
 
@@ -323,10 +323,14 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			}
 
 			long deleteCount = status.getData().getDeleteCnt();
-			logger.debug("Deleted {} documents matching filter expression", deleteCount);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Deleted " + deleteCount + " documents matching filter expression");
+			}
 		}
 		catch (Exception e) {
-			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
+			if (logger.isErrorEnabled()) {
+				logger.error("Failed to delete documents by filter: " + e.getMessage(), e);
+			}
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}
@@ -360,7 +364,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			.withMetricType(this.metricType)
 			.withOutFields(outFieldNames)
 			.withTopK(request.getTopK())
-			.withVectors(List.of(EmbeddingUtils.toList(embedding)))
+			.withFloatVectors(List.of(EmbeddingUtils.toList(embedding)))
 			.withVectorFieldName(this.embeddingFieldName);
 
 		if (StringUtils.hasText(nativeFilterExpressions)) {
@@ -553,9 +557,12 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			}
 		}
 		catch (Exception e) {
-			logger.warn(
-					"Failed to obtain the embedding dimensions from the embedding model and fall backs to default:{}",
-					this.embeddingDimension, e);
+			if (logger.isWarnEnabled()) {
+				logger.warn(
+						"Failed to obtain the embedding dimensions from the embedding model and fall backs to default: "
+								+ this.embeddingDimension,
+						e);
+			}
 		}
 		return OPENAI_EMBEDDING_DIMENSION_SIZE;
 	}

@@ -92,14 +92,15 @@ public class JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT {
 				System.out.println("Dropped existing table if it existed");
 
 				// Create the table with a simplified schema
-				this.jdbcTemplate.execute("CREATE TABLE SPRING_AI_CHAT_MEMORY ("
-						+ "conversation_id VARCHAR(36) NOT NULL, " + "content LONGVARCHAR NOT NULL, "
-						+ "type VARCHAR(10) NOT NULL, " + "timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)");
+				this.jdbcTemplate
+					.execute("CREATE TABLE SPRING_AI_CHAT_MEMORY (" + "conversation_id VARCHAR(36) NOT NULL, "
+							+ "content LONGVARCHAR NOT NULL, " + "type VARCHAR(10) NOT NULL, "
+							+ "timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, sequence_id BIGINT NOT NULL)");
 				System.out.println("Created table with simplified schema");
 
 				// Create index
 				this.jdbcTemplate.execute(
-						"CREATE INDEX SPRING_AI_CHAT_MEMORY_IDX ON SPRING_AI_CHAT_MEMORY(conversation_id, timestamp DESC)");
+						"CREATE INDEX SPRING_AI_CHAT_MEMORY_IDX ON SPRING_AI_CHAT_MEMORY(conversation_id, sequence_id)");
 				System.out.println("Created index");
 
 				// Verify table was created
@@ -165,12 +166,15 @@ public class JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT {
 
 		chatMemory.add(conversationId, userMessage);
 		assertThat(chatMemory.get(conversationId)).hasSize(1);
-		assertThat(chatMemory.get(conversationId)).isEqualTo(List.of(userMessage));
+		// Read-back messages carry timestamp metadata, so compare content rather than
+		// full object equality.
+		assertThat(chatMemory.get(conversationId)).extracting(Message::getText).containsExactly(userMessage.getText());
 
 		var assistantMessage = new AssistantMessage("Message from the assistant");
 		chatMemory.add(conversationId, List.of(assistantMessage));
 		assertThat(chatMemory.get(conversationId)).hasSize(2);
-		assertThat(chatMemory.get(conversationId)).isEqualTo(List.of(userMessage, assistantMessage));
+		assertThat(chatMemory.get(conversationId)).extracting(Message::getText)
+			.containsExactly(userMessage.getText(), assistantMessage.getText());
 
 		chatMemory.clear(conversationId);
 		assertThat(chatMemory.get(conversationId)).isEmpty();
@@ -179,7 +183,8 @@ public class JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT {
 				new AssistantMessage("Message from the assistant 1"));
 		chatMemory.add(conversationId, multipleMessages);
 		assertThat(chatMemory.get(conversationId)).hasSize(multipleMessages.size());
-		assertThat(chatMemory.get(conversationId)).isEqualTo(multipleMessages);
+		assertThat(chatMemory.get(conversationId)).extracting(Message::getText)
+			.containsExactlyElementsOf(multipleMessages.stream().map(Message::getText).toList());
 	}
 
 	@SpringBootConfiguration

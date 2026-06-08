@@ -17,11 +17,9 @@
 package org.springframework.ai.anthropic;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.anthropic.core.JsonValue;
 import com.anthropic.models.messages.JsonOutputFormat;
@@ -77,9 +75,7 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 			.maxRetries(5)
 			.toolChoice(ToolChoice.ofAuto(ToolChoiceAuto.builder().build()))
 			.disableParallelToolUse(true)
-			.toolNames("tool1", "tool2")
 			.toolContext(Map.of("key", "value"))
-			.internalToolExecutionEnabled(true)
 			.build();
 
 		assertThat(options.getModel()).isEqualTo("test-model");
@@ -94,9 +90,7 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		assertThat(options.getMaxRetries()).isEqualTo(5);
 		assertThat(options.getToolChoice()).isNotNull();
 		assertThat(options.getDisableParallelToolUse()).isTrue();
-		assertThat(options.getToolNames()).containsExactlyInAnyOrder("tool1", "tool2");
 		assertThat(options.getToolContext()).containsEntry("key", "value");
-		assertThat(options.getInternalToolExecutionEnabled()).isTrue();
 	}
 
 	@Test
@@ -104,41 +98,6 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		AnthropicChatOptions options = AnthropicChatOptions.builder().model(Model.CLAUDE_SONNET_4_20250514).build();
 
 		assertThat(options.getModel()).isEqualTo("claude-sonnet-4-20250514");
-	}
-
-	@Test
-	void testCopyCreatesIndependentInstance() {
-		Metadata metadata = Metadata.builder().userId("userId_123").build();
-		List<String> mutableStops = new ArrayList<>(List.of("stop1", "stop2"));
-		Map<String, Object> mutableContext = new HashMap<>(Map.of("key1", "value1"));
-
-		AnthropicChatOptions original = AnthropicChatOptions.builder()
-			.model("test-model")
-			.maxTokens(100)
-			.stopSequences(mutableStops)
-			.temperature(0.7)
-			.topP(0.8)
-			.topK(50)
-			.metadata(metadata)
-			.toolContext(mutableContext)
-			.disableParallelToolUse(true)
-			.build();
-
-		AnthropicChatOptions copied = original.copy();
-
-		// Verify copied is equal but not same instance
-		assertThat(copied).isNotSameAs(original);
-		assertThat(copied).isEqualTo(original);
-
-		// Verify collections are deep copied
-		assertThat(copied.getStopSequences()).isNotSameAs(original.getStopSequences());
-		assertThat(copied.getToolContext()).isNotSameAs(original.getToolContext());
-
-		// Modify original collections and verify copy is unchanged
-		mutableStops.add("stop3");
-		mutableContext.put("key2", "value2");
-		assertThat(copied.getStopSequences()).hasSize(2);
-		assertThat(copied.getToolContext()).hasSize(1);
 	}
 
 	@Test
@@ -165,7 +124,7 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		assertThat(merged.getTopK()).isEqualTo(40);
 
 		// Base values preserved when override is null
-		assertThat(merged.getMaxTokens()).isEqualTo(100);
+		assertThat(merged.getMaxTokens()).isEqualTo(AnthropicChatOptions.DEFAULT_MAX_TOKENS);
 		assertThat(merged.getTemperature()).isEqualTo(0.5);
 		assertThat(merged.getTopP()).isEqualTo(0.8);
 		assertThat(merged.getBaseUrl()).isEqualTo("https://base.api.com");
@@ -174,25 +133,40 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 
 	@Test
 	void testCombineWithCollections() {
+		AnthropicCitationDocument baseDoc = AnthropicCitationDocument.builder().plainText("base-doc").build();
 		AnthropicChatOptions base = AnthropicChatOptions.builder()
 			.stopSequences(List.of("base-stop"))
-			.toolNames(Set.of("base-tool"))
 			.toolContext(Map.of("base-key", "base-value"))
+			.customHeaders(Map.of("base-header", "base-header-value"))
+			.httpHeaders(Map.of("base-http-header", "base-http-header-value"))
+			.citationDocuments(List.of(baseDoc))
 			.build();
 
-		AnthropicChatOptions override = AnthropicChatOptions.builder()
-			.stopSequences(List.of("override-stop1", "override-stop2"))
-			.toolNames(Set.of("override-tool"))
-			// toolContext is empty, should not override
+		AnthropicCitationDocument combineDoc = AnthropicCitationDocument.builder().plainText("combine-doc").build();
+		AnthropicChatOptions combine = AnthropicChatOptions.builder()
+			.stopSequences(List.of("combine-stop1", "combine-stop2"))
+			.toolContext(Map.of("combine-key1", "combine-value1", "combine-key2", "combine-value2"))
+			.customHeaders(Map.of("combine-header", "combine-header-value"))
+			.httpHeaders(Map.of("combine-http-header", "combine-http-header-value"))
+			.citationDocuments(List.of(combineDoc))
 			.build();
 
-		AnthropicChatOptions merged = base.mutate().combineWith(override.mutate()).build();
+		AnthropicChatOptions merged = base.mutate().combineWith(combine.mutate()).build();
 
-		// Non-empty collections from override take precedence
-		assertThat(merged.getStopSequences()).containsExactly("override-stop1", "override-stop2");
-		assertThat(merged.getToolNames()).containsExactly("override-tool");
-		// Empty collections don't override
+		// Combine stopSequences
+		assertThat(merged.getStopSequences()).containsExactly("base-stop", "combine-stop1", "combine-stop2");
+		// Combine toolContext
 		assertThat(merged.getToolContext()).containsEntry("base-key", "base-value");
+		assertThat(merged.getToolContext()).containsEntry("combine-key1", "combine-value1");
+		assertThat(merged.getToolContext()).containsEntry("combine-key2", "combine-value2");
+		// Combine customHeaders
+		assertThat(merged.getCustomHeaders()).containsEntry("base-header", "base-header-value");
+		assertThat(merged.getCustomHeaders()).containsEntry("combine-header", "combine-header-value");
+		// Combine httpHeaders
+		assertThat(merged.getHttpHeaders()).containsEntry("base-http-header", "base-http-header-value");
+		assertThat(merged.getHttpHeaders()).containsEntry("combine-http-header", "combine-http-header-value");
+		// Combine citationDocuments
+		assertThat(merged.getCitationDocuments()).containsExactly(baseDoc, combineDoc);
 	}
 
 	@Test
@@ -233,13 +207,6 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 				() -> AnthropicChatOptions.builder().toolCallbacks((org.springframework.ai.tool.ToolCallback[]) null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("toolCallbacks cannot be null");
-	}
-
-	@Test
-	void testToolNamesValidationRejectsNull() {
-		assertThatThrownBy(() -> AnthropicChatOptions.builder().toolNames((String[]) null))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("toolNames cannot be null");
 	}
 
 	@Test
@@ -337,7 +304,7 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 
 		AnthropicChatOptions merged = base.mutate().combineWith(override.mutate()).build();
 
-		assertThat(merged.getModel()).isEqualTo("base-model");
+		assertThat(merged.getModel()).isEqualTo(AnthropicChatOptions.DEFAULT_MODEL);
 		assertThat(merged.getOutputConfig()).isNotNull();
 		assertThat(merged.getOutputConfig().effort()).isPresent();
 		assertThat(merged.getOutputConfig().effort().get()).isEqualTo(OutputConfig.Effort.MEDIUM);
@@ -364,9 +331,9 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 	}
 
 	@Test
-	void testHttpHeadersDefaultEmpty() {
+	void testHttpHeadersDefaultNull() {
 		AnthropicChatOptions options = AnthropicChatOptions.builder().build();
-		assertThat(options.getHttpHeaders()).isNotNull().isEmpty();
+		assertThat(options.getHttpHeaders()).isNull();
 	}
 
 	@Test
@@ -379,9 +346,9 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 
 		assertThat(copied.getHttpHeaders()).containsEntry("X-Custom", "value");
 
-		// Verify deep copy — modifying original doesn't affect copy
-		original.getHttpHeaders().put("X-New", "new-value");
-		assertThat(copied.getHttpHeaders()).doesNotContainKey("X-New");
+		// Verify collections are immutable
+		assertThatThrownBy(() -> original.getHttpHeaders().put("X-New", "new-value"))
+			.isInstanceOf(UnsupportedOperationException.class);
 	}
 
 	@Test
@@ -394,9 +361,9 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 
 		AnthropicChatOptions merged = base.mutate().combineWith(override.mutate()).build();
 
-		// Override's non-empty headers replace base
+		// Override's non-empty headers are merged with base
 		assertThat(merged.getHttpHeaders()).containsEntry("X-Override", "override-value");
-		assertThat(merged.getHttpHeaders()).doesNotContainKey("X-Base");
+		assertThat(merged.getHttpHeaders()).containsEntry("X-Base", "base-value");
 	}
 
 	@Test
@@ -467,7 +434,7 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 	void testCitationConsistencyValidationSkipsEmpty() {
 		// Should not throw — no documents
 		AnthropicChatOptions options = AnthropicChatOptions.builder().build();
-		assertThat(options.getCitationDocuments()).isEmpty();
+		assertThat(options.getCitationDocuments()).isNull();
 	}
 
 	@Test
@@ -526,7 +493,7 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 
 		AnthropicChatOptions merged = base.mutate().combineWith(override.mutate()).build();
 
-		assertThat(merged.getModel()).isEqualTo("base-model");
+		assertThat(merged.getModel()).isEqualTo(AnthropicChatOptions.DEFAULT_MODEL);
 		assertThat(merged.getSkillContainer()).isNotNull();
 		assertThat(merged.getSkillContainer().getSkills()).hasSize(1);
 		assertThat(merged.getSkillContainer().getSkills().get(0).getSkillId()).isEqualTo("docx");
@@ -736,7 +703,7 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 
 		AnthropicChatOptions merged = base.mutate().combineWith(override.mutate()).build();
 
-		assertThat(merged.getModel()).isEqualTo("base-model");
+		assertThat(merged.getModel()).isEqualTo(AnthropicChatOptions.DEFAULT_MODEL);
 		ThinkingConfigAdaptive adaptive = merged.getThinking().adaptive().get();
 		assertThat(adaptive.display()).isPresent();
 		assertThat(adaptive.display().get()).isEqualTo(ThinkingConfigAdaptive.Display.OMITTED);

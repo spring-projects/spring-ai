@@ -21,8 +21,6 @@ import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -50,8 +48,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class RedisSemanticCacheAutoConfigurationIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(RedisSemanticCacheAutoConfigurationIT.class);
-
 	@Container
 	static RedisStackContainer redisContainer = new RedisStackContainer(
 			RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG))
@@ -59,8 +55,6 @@ class RedisSemanticCacheAutoConfigurationIT {
 
 	@BeforeAll
 	static void setup() {
-		logger.debug("Redis container running on host: {} and port: {}", redisContainer.getHost(),
-				redisContainer.getFirstMappedPort());
 	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()

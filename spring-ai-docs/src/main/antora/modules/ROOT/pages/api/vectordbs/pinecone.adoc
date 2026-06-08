@@ -73,7 +73,7 @@ A simple configuration can either be provided via Spring Boot's _application.pro
 
 [source,properties]
 ----
-spring.ai.vectorstore.pinecone.apiKey=<your api key>
+spring.ai.vectorstore.pinecone.api-key=<your api key>
 spring.ai.vectorstore.pinecone.index-name=<your index name>
 
 # API key if needed, e.g. OpenAI

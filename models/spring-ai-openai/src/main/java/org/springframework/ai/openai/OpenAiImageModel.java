@@ -22,9 +22,9 @@ import java.util.Objects;
 import com.openai.client.OpenAIClient;
 import com.openai.models.images.ImageGenerateParams;
 import io.micrometer.observation.ObservationRegistry;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageGeneration;
@@ -53,11 +53,9 @@ import org.springframework.util.Assert;
  */
 public class OpenAiImageModel implements ImageModel {
 
-	private static final String DEFAULT_MODEL_NAME = OpenAiImageOptions.DEFAULT_IMAGE_MODEL;
-
 	private static final ImageModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultImageModelObservationConvention();
 
-	private final Logger logger = LoggerFactory.getLogger(OpenAiImageModel.class);
+	private final Log logger = LogFactory.getLog(OpenAiImageModel.class);
 
 	private final OpenAIClient openAiClient;
 
@@ -136,7 +134,7 @@ public class OpenAiImageModel implements ImageModel {
 			@Nullable ObservationRegistry observationRegistry) {
 
 		if (options == null) {
-			this.options = OpenAiImageOptions.builder().model(DEFAULT_MODEL_NAME).build();
+			this.options = OpenAiImageOptions.builder().build();
 		}
 		else {
 			this.options = options;
@@ -147,7 +145,8 @@ public class OpenAiImageModel implements ImageModel {
 						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
 						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders()));
+						this.options.getCustomHeaders(),
+						observationRegistry != null ? observationRegistry : ObservationRegistry.NOOP, null, null));
 		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
 	}
 
@@ -169,8 +168,8 @@ public class OpenAiImageModel implements ImageModel {
 		ImageGenerateParams imageGenerateParams = options.toOpenAiImageGenerateParams(imagePrompt);
 
 		if (logger.isTraceEnabled()) {
-			logger.trace("OpenAiImageOptions call {} with the following options : {} ", options.getModel(),
-					imageGenerateParams);
+			logger.trace("OpenAiImageOptions call " + options.getModel() + " with the following options : "
+					+ imageGenerateParams);
 		}
 
 		var observationContext = ImageModelObservationContext.builder()

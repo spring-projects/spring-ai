@@ -20,8 +20,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
@@ -49,8 +47,6 @@ public class OpenAiChatModelResponseFormatIT {
 	private static final JsonMapper jsonMapper = JsonMapper.builder()
 		.enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
 		.build();
-
-	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Autowired
 	private OpenAiChatModel chatModel;
@@ -80,8 +76,6 @@ public class OpenAiChatModelResponseFormatIT {
 		assertThat(response).isNotNull();
 
 		String content = response.getResult().getOutput().getText();
-
-		logger.info("Response content: {}", content);
 
 		assertThat(isValidJson(content)).isTrue();
 	}
@@ -127,8 +121,6 @@ public class OpenAiChatModelResponseFormatIT {
 
 		String content = response.getResult().getOutput().getText();
 
-		logger.info("Response content: {}", content);
-
 		assertThat(isValidJson(content)).isTrue();
 	}
 
@@ -169,8 +161,6 @@ public class OpenAiChatModelResponseFormatIT {
 		assertThat(response).isNotNull();
 
 		String content = response.getResult().getOutput().getText();
-
-		logger.info("Response content: {}", content);
 
 		assertThat(isValidJson(content)).isTrue();
 	}
@@ -251,8 +241,6 @@ public class OpenAiChatModelResponseFormatIT {
 
 		String content = response.getResult().getOutput().getText();
 
-		logger.info("Response content: {}", content);
-
 		assertThat(isValidJson(content)).isTrue();
 
 		// Check if the order is correct as specified in the schema. Steps should come
@@ -262,7 +250,6 @@ public class OpenAiChatModelResponseFormatIT {
 		MathReasoning mathReasoning = outputConverter.convert(content);
 
 		assertThat(mathReasoning).isNotNull();
-		logger.info(mathReasoning.toString());
 	}
 
 }

@@ -28,8 +28,8 @@ import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.util.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
@@ -47,7 +47,7 @@ import org.springframework.util.ClassUtils;
  */
 public class SyncMcpToolProvider extends AbstractMcpToolProvider {
 
-	private static final Logger logger = LoggerFactory.getLogger(SyncMcpToolProvider.class);
+	private static final Log logger = LogFactory.getLog(SyncMcpToolProvider.class);
 
 	/**
 	 * Create a new SyncMcpToolProvider.
@@ -148,7 +148,9 @@ public class SyncMcpToolProvider extends AbstractMcpToolProvider {
 			.toList();
 
 		if (toolSpecs.isEmpty()) {
-			logger.warn("No tool methods found in the provided tool objects: {}", this.toolObjects);
+			if (logger.isWarnEnabled()) {
+				logger.warn("No tool methods found in the provided tool objects: " + this.toolObjects);
+			}
 		}
 
 		return toolSpecs;

@@ -50,7 +50,7 @@ class MistralAiRuntimeHintsTests {
 		assertThat(registeredTypes.contains(TypeReference.of(MistralAiApi.ChatCompletion.class))).isTrue();
 		assertThat(registeredTypes.contains(TypeReference.of(MistralAiApi.ChatCompletionChunk.class))).isTrue();
 		assertThat(registeredTypes.contains(TypeReference.of(MistralAiApi.LogProbs.class))).isTrue();
-		assertThat(registeredTypes.contains(TypeReference.of(MistralAiApi.ChatCompletionFinishReason.class))).isTrue();
+		assertThat(registeredTypes.contains(TypeReference.of(MistralAiApi.FinishReason.class))).isTrue();
 	}
 
 	@Test
@@ -130,8 +130,7 @@ class MistralAiRuntimeHintsTests {
 
 		for (String className : criticalClasses) {
 			assertThat(registeredTypes.stream()
-				.anyMatch(tr -> tr.getName().contains(className.replace("$", "."))
-						|| tr.getName().contains(className.replace("$", "$"))))
+				.anyMatch(tr -> tr.getName().contains(className.replace("$", ".")) || tr.getName().contains(className)))
 				.as("Critical class %s should be registered", className)
 				.isTrue();
 		}

@@ -16,8 +16,6 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -41,8 +39,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiAudioTranscriptionAutoConfigurationIT {
 
-	private static final Log logger = LogFactory.getLog(OpenAiAudioTranscriptionAutoConfigurationIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
 			"spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"),
 			"spring.ai.model.audio.transcription=openai");
@@ -56,7 +52,6 @@ public class OpenAiAudioTranscriptionAutoConfigurationIT {
 					.call(new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac")));
 				assertThat(response.getResults()).hasSize(1);
 				assertThat(response.getResult().getOutput()).isNotBlank();
-				logger.info("Transcription: " + response.getResult().getOutput());
 			});
 	}
 

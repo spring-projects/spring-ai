@@ -26,8 +26,8 @@ import io.modelcontextprotocol.server.McpStatelessServerFeatures.AsyncPromptSpec
 import io.modelcontextprotocol.spec.McpSchema.GetPromptRequest;
 import io.modelcontextprotocol.spec.McpSchema.GetPromptResult;
 import io.modelcontextprotocol.util.Assert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.annotation.McpPrompt;
@@ -46,7 +46,7 @@ import org.springframework.ai.mcp.annotation.method.prompt.AsyncStatelessMcpProm
  */
 public class AsyncStatelessMcpPromptProvider {
 
-	private static final Logger logger = LoggerFactory.getLogger(AsyncStatelessMcpPromptProvider.class);
+	private static final Log logger = LogFactory.getLog(AsyncStatelessMcpPromptProvider.class);
 
 	private final List<Object> promptObjects;
 
@@ -90,7 +90,9 @@ public class AsyncStatelessMcpPromptProvider {
 			.toList();
 
 		if (promptSpecs.isEmpty()) {
-			logger.warn("No prompt methods found in the provided prompt objects: {}", this.promptObjects);
+			if (logger.isWarnEnabled()) {
+				logger.warn("No prompt methods found in the provided prompt objects: " + this.promptObjects);
+			}
 		}
 
 		return promptSpecs;

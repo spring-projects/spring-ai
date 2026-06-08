@@ -25,8 +25,6 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -53,12 +51,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 @SpringBootTest(classes = BedrockNovaChatClientIT.Config.class)
 @RequiresAwsCredentials
 public class BedrockNovaChatClientIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(BedrockNovaChatClientIT.class);
 
 	@Autowired
 	ChatModel chatModel;
@@ -73,8 +70,6 @@ public class BedrockNovaChatClientIT {
 				.media(Media.Format.DOC_PDF, new ClassPathResource("/spring-ai-reference-overview.pdf")))
 			.call()
 			.content();
-
-		logger.info(response);
 		assertThat(response).containsAnyOf("Spring AI", "portable API");
 	}
 
@@ -87,8 +82,6 @@ public class BedrockNovaChatClientIT {
 				.media(Media.Format.IMAGE_PNG, new ClassPathResource("/test.png")))
 			.call()
 			.content();
-
-		logger.info(response);
 		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand", "fruit", "fruits");
 	}
 
@@ -107,8 +100,6 @@ public class BedrockNovaChatClientIT {
 				.media(Media.Format.VIDEO_MP4, new ClassPathResource("/test.video.mp4")))
 			.call()
 			.content();
-
-		logger.info(response);
 
 		// Convert response to lowercase for case-insensitive matching
 		String lowerResponse = response.toLowerCase();
@@ -148,7 +139,7 @@ public class BedrockNovaChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", (WeatherRequest request) -> {
+				.tools(FunctionToolCallback.builder("getCurrentWeather", (WeatherRequest request) -> {
 						if (request.location().contains("Paris")) {
 							return new WeatherResponse(15, request.unit());
 						}
@@ -166,9 +157,6 @@ public class BedrockNovaChatClientIT {
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
-
 		assertThat(response).contains("30", "10", "15");
 	}
 
@@ -219,7 +207,7 @@ public class BedrockNovaChatClientIT {
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
 
 		WeatherService.Response response = chatClient.prompt()
-			.toolCallbacks(FunctionToolCallback.builder("weather", new WeatherService())
+			.tools(FunctionToolCallback.builder("weather", new WeatherService())
 				.description("Get the current weather")
 				.inputType(Void.class)
 				.build())
@@ -237,7 +225,7 @@ public class BedrockNovaChatClientIT {
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
 
 		Flux<ChatResponse> responses = chatClient.prompt()
-			.toolCallbacks(FunctionToolCallback.builder("weather", new WeatherService())
+			.tools(FunctionToolCallback.builder("weather", new WeatherService())
 				.description("Get the current weather")
 				.inputType(Void.class)
 				.build())
@@ -267,7 +255,7 @@ public class BedrockNovaChatClientIT {
 				.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
 				.region(Region.US_EAST_1)
 				.timeout(Duration.ofSeconds(120))
-				.defaultOptions(BedrockChatOptions.builder().model(modelId).build())
+				.options(BedrockChatOptions.builder().model(modelId).build())
 				.build();
 		}
 

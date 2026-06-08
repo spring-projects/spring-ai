@@ -30,15 +30,6 @@
 	<description>ONNX Transformers model support</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<scm>
-		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
-	</scm>
-
-	<properties>
-	</properties>
-
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
@@ -82,7 +73,6 @@
 			<groupId>ai.djl.huggingface</groupId>
 			<artifactId>tokenizers</artifactId>
 		</dependency>
-
 
 		<!-- TESTING -->
 		<dependency>

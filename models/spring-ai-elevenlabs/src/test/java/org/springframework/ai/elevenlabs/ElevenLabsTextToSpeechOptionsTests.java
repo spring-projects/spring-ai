@@ -32,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * named {@code ELEVEN_LABS_API_KEY}.
  *
  * @author Alexandros Pappas
+ * @author Sebastien Deleuze
  */
 public class ElevenLabsTextToSpeechOptionsTests {
 
@@ -81,42 +82,25 @@ public class ElevenLabsTextToSpeechOptionsTests {
 	}
 
 	@Test
-	public void testCopy() {
-		ElevenLabsTextToSpeechOptions original = ElevenLabsTextToSpeechOptions.builder()
+	public void testBuilder() {
+		ElevenLabsTextToSpeechOptions options = ElevenLabsTextToSpeechOptions.builder()
 			.modelId("test-model")
 			.voice("test-voice")
+			.voiceId("test-voice-id")
+			.outputFormat("mp3_44100_128")
 			.format("mp3_44100_128")
 			.voiceSettings(new ElevenLabsApi.SpeechRequest.VoiceSettings(0.5, 0.8, null, null, null))
+			.languageCode("en")
+			.pronunciationDictionaryLocators(
+					List.of(new ElevenLabsApi.SpeechRequest.PronunciationDictionaryLocator("dict1", "v1")))
+			.seed(12345)
+			.previousText("previous")
+			.nextText("next")
+			.previousRequestIds(List.of("req1", "req2"))
+			.nextRequestIds(List.of("req3", "req4"))
+			.applyTextNormalization(ElevenLabsApi.SpeechRequest.TextNormalizationMode.ON)
+			.applyLanguageTextNormalization(true)
 			.build();
-
-		ElevenLabsTextToSpeechOptions copied = original.copy();
-
-		assertThat(copied).isNotSameAs(original).isEqualTo(original);
-
-		copied = ElevenLabsTextToSpeechOptions.builder().modelId("new-model").build();
-		assertThat(original.getModelId()).isEqualTo("test-model");
-		assertThat(copied.getModelId()).isEqualTo("new-model");
-	}
-
-	@Test
-	public void testSetters() {
-		ElevenLabsTextToSpeechOptions options = new ElevenLabsTextToSpeechOptions();
-		options.setModelId("test-model");
-		options.setVoice("test-voice");
-		options.setVoiceId("test-voice-id");
-		options.setOutputFormat("mp3_44100_128");
-		options.setFormat("mp3_44100_128");
-		options.setVoiceSettings(new ElevenLabsApi.SpeechRequest.VoiceSettings(0.5, 0.8, null, null, null));
-		options.setLanguageCode("en");
-		options.setPronunciationDictionaryLocators(
-				List.of(new ElevenLabsApi.SpeechRequest.PronunciationDictionaryLocator("dict1", "v1")));
-		options.setSeed(12345);
-		options.setPreviousText("previous");
-		options.setNextText("next");
-		options.setPreviousRequestIds(List.of("req1", "req2"));
-		options.setNextRequestIds(List.of("req3", "req4"));
-		options.setApplyTextNormalization(ElevenLabsApi.SpeechRequest.TextNormalizationMode.ON);
-		options.setApplyLanguageTextNormalization(true);
 
 		assertThat(options.getModelId()).isEqualTo("test-model");
 		assertThat(options.getVoice()).isEqualTo("test-voice-id");
@@ -141,7 +125,7 @@ public class ElevenLabsTextToSpeechOptionsTests {
 
 	@Test
 	public void testDefaultValues() {
-		ElevenLabsTextToSpeechOptions options = new ElevenLabsTextToSpeechOptions();
+		ElevenLabsTextToSpeechOptions options = ElevenLabsTextToSpeechOptions.builder().build();
 		assertThat(options.getModelId()).isNull();
 		assertThat(options.getVoice()).isNull();
 		assertThat(options.getVoiceId()).isNull();
@@ -217,16 +201,15 @@ public class ElevenLabsTextToSpeechOptionsTests {
 		assertThat(options7.getVoiceSettings()).isNull();
 
 		// 8. Setting speed via setSpeed method
-		ElevenLabsTextToSpeechOptions options8 = ElevenLabsTextToSpeechOptions.builder().build();
-		options8.setSpeed(3.0);
+		ElevenLabsTextToSpeechOptions options8 = ElevenLabsTextToSpeechOptions.builder().speed(3.0).build();
 		assertThat(options8.getSpeed()).isEqualTo(3.0);
 		assertThat(options8.getVoiceSettings()).isNotNull();
 		assertThat(options8.getVoiceSettings().speed()).isEqualTo(3.0);
 
 		// 9. Setting speed to null via setSpeed method
-		options8.setSpeed(null);
-		assertThat(options8.getSpeed()).isNull();
-		assertThat(options8.getVoiceSettings().speed()).isNull();
+		ElevenLabsTextToSpeechOptions options9 = ElevenLabsTextToSpeechOptions.builder().speed(null).build();
+		assertThat(options9.getSpeed()).isNull();
+		assertThat(options9.getVoiceSettings()).isNull();
 	}
 
 }

@@ -20,8 +20,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.integration.tests.TestApplication;
@@ -112,7 +110,7 @@ public class MethodToolCallbackTests {
 			.prompt()
 			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit",
 					"The Lion, the Witch and the Wardrobe"))
-			.toolCallbacks(ToolCallbacks.from(this.tools))
+			.tools(ToolCallbacks.from(this.tools))
 			.call()
 			.content();
 		assertThat(content).isNotEmpty().contains("J.R.R. Tolkien").contains("C.S. Lewis");
@@ -132,8 +130,6 @@ public class MethodToolCallbackTests {
 
 	static class Tools {
 
-		private static final Logger logger = LoggerFactory.getLogger(Tools.class);
-
 		private final BookService bookService;
 
 		Tools(BookService bookService) {
@@ -142,23 +138,19 @@ public class MethodToolCallbackTests {
 
 		@Tool(description = "Welcome users to the library")
 		void welcome() {
-			logger.info("Welcoming users to the library");
 		}
 
 		@Tool(description = "Welcome a specific user to the library")
 		void welcomeUser(String user) {
-			logger.info("Welcoming {} to the library", user);
 		}
 
 		@Tool(description = "Get the list of books written by the given author available in the library")
 		List<Book> booksByAuthor(String author) {
-			logger.info("Getting books by author: {}", author);
 			return this.bookService.getBooksByAuthor(new Author(author));
 		}
 
 		@Tool(description = "Get the list of authors who wrote the given books available in the library")
 		List<Author> authorsByBooks(List<String> books) {
-			logger.info("Getting authors by books: {}", String.join(", ", books));
 			return this.bookService.getAuthorsByBook(books.stream().map(b -> new Book(b, "")).toList());
 		}
 

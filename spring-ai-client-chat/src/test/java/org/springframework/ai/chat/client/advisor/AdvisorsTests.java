@@ -50,6 +50,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 @ExtendWith(MockitoExtension.class)
 public class AdvisorsTests {
@@ -70,7 +71,7 @@ public class AdvisorsTests {
 
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Hello John")))));
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 
 		var chatClient = ChatClient.builder(this.chatModel)
 			.defaultSystem("Default system text.")
@@ -109,7 +110,7 @@ public class AdvisorsTests {
 		given(this.chatModel.stream(this.promptCaptor.capture()))
 			.willReturn(Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage("Hello")))),
 					new ChatResponse(List.of(new Generation(new AssistantMessage(" John"))))));
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 
 		var chatClient = ChatClient.builder(this.chatModel)
 			.defaultSystem("Default system text.")

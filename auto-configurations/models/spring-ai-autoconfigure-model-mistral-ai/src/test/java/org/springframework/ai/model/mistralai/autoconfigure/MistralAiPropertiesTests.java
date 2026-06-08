@@ -51,7 +51,8 @@ public class MistralAiPropertiesTests {
 				assertThat(embeddingProperties.getApiKey()).isNull();
 				assertThat(embeddingProperties.getBaseUrl()).isEqualTo(MistralAiCommonProperties.DEFAULT_BASE_URL);
 
-				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.toOptions().getModel()).isEqualTo("MODEL_XYZ");
 			});
 	}
 
@@ -122,7 +123,8 @@ public class MistralAiPropertiesTests {
 				assertThat(embeddingProperties.getApiKey()).isEqualTo("456");
 				assertThat(embeddingProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
 
-				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.toOptions().getModel()).isEqualTo("MODEL_XYZ");
 			});
 	}
 
@@ -132,7 +134,7 @@ public class MistralAiPropertiesTests {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.mistralai.api-key=API_KEY", "spring.ai.mistralai.base-url=TEST_BASE_URL",
 					"spring.ai.mistralai.embedding.options.model=MODEL_XYZ",
-					"spring.ai.mistralai.embedding.options.encodingFormat=MyEncodingFormat")
+					"spring.ai.mistralai.embedding.options.encoding-format=MyEncodingFormat")
 			.withConfiguration(AutoConfigurations.of(MistralAiEmbeddingAutoConfiguration.class,
 					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class))
 			.run(context -> {
@@ -142,8 +144,10 @@ public class MistralAiPropertiesTests {
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
 
-				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(embeddingProperties.getOptions().getEncodingFormat()).isEqualTo("MyEncodingFormat");
+				assertThat(embeddingProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.toOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.getEncodingFormat()).isEqualTo("MyEncodingFormat");
+				assertThat(embeddingProperties.toOptions().getEncodingFormat()).isEqualTo("MyEncodingFormat");
 			});
 	}
 
@@ -160,7 +164,8 @@ public class MistralAiPropertiesTests {
 				var moderationProperties = context.getBean(MistralAiModerationProperties.class);
 				assertThat(moderationProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 				assertThat(moderationProperties.getApiKey()).isEqualTo("abc123");
-				assertThat(moderationProperties.getOptions().getModel()).isEqualTo("MODERATION_MODEL");
+				assertThat(moderationProperties.getModel()).isEqualTo("MODERATION_MODEL");
+				assertThat(moderationProperties.toOptions().getModel()).isEqualTo("MODERATION_MODEL");
 			});
 	}
 

@@ -16,15 +16,9 @@
 
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<scm>
-		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
-	</scm>
-
 	<dependencies>
 
-        <dependency>
+		<dependency>
 			<groupId>io.modelcontextprotocol.sdk</groupId>
 			<artifactId>mcp-core</artifactId>
 			<version>${mcp.sdk.version}</version>
@@ -45,7 +39,7 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>mcp-spring-webflux</artifactId>
-			<version>${project.version}</version>
+			<version>${project.parent.version}</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -56,8 +50,7 @@
 			<scope>test</scope>
 		</dependency>
 
-
-		<!-- The Spring Context is required due to the reactor-netty connector being dependant on
+		<!-- The Spring Context is required due to the reactor-netty connector being dependent on
 		the Spring Lifecycle, as discussed here:
 		https://github.com/spring-projects/spring-framework/issues/31180 -->
 		<dependency>

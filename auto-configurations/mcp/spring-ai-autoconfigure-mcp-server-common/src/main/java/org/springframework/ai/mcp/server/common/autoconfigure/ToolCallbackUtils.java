@@ -21,8 +21,8 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.mcp.AsyncMcpToolCallback;
 import org.springframework.ai.mcp.SyncMcpToolCallback;
@@ -36,7 +36,7 @@ import org.springframework.beans.factory.ObjectProvider;
  */
 final class ToolCallbackUtils {
 
-	private static final Logger log = LoggerFactory.getLogger(ToolCallbackUtils.class);
+	private static final Log log = LogFactory.getLog(ToolCallbackUtils.class);
 
 	private ToolCallbackUtils() {
 	}
@@ -63,10 +63,10 @@ final class ToolCallbackUtils {
 		var toolCallbacks = Stream.concat(allToolCallbacks, toolCallbacksFromProviders).toList();
 
 		// After consuming all the streams, log if we have excluded MCP tools
-		if (hasExcludedToolProvider.get()) {
+		if (log.isWarnEnabled() && hasExcludedToolProvider.get()) {
 			log.warn(
-					"Found MCP Clients. The MCP Client tools will not be exposed by the MCP Server. If you would like to expose the tools, set {}.expose-mcp-client-tools=true.",
-					McpServerProperties.CONFIG_PREFIX);
+					"Found MCP Clients. The MCP Client tools will not be exposed by the MCP Server. If you would like to expose the tools, set "
+							+ McpServerProperties.CONFIG_PREFIX + ".expose-mcp-client-tools=true.");
 		}
 		return toolCallbacks;
 	}

@@ -59,10 +59,31 @@ public class StructuredOutputValidationAdvisorTests {
 	private StreamAdvisorChain streamAdvisorChain;
 
 	@Test
-	void whenOutputTypeIsNullThenThrow() {
+	void whenNeitherOutputTypeNorSchemaIsSetThenThrow() {
 		assertThatThrownBy(() -> StructuredOutputValidationAdvisor.builder().build())
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("outputType must be set");
+			.hasMessageContaining("Either outputType or outputJsonSchema must be set");
+	}
+
+	@Test
+	void whenBothOutputTypeAndSchemaAreSetThenThrow() {
+		assertThatThrownBy(() -> StructuredOutputValidationAdvisor.builder().outputType(new TypeReference<Person>() {
+		}).outputJsonSchema("{\"type\":\"object\"}").build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Only outputType or outputJsonSchema can be set, not both");
+	}
+
+	@Test
+	void whenOutputJsonSchemaIsSetThenBuildSucceeds() {
+		String schema = """
+				{"type":"object","properties":{"name":{"type":"string"},"age":{"type":"integer"}},"required":["name","age"]}
+				""";
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputJsonSchema(schema)
+			.build();
+
+		assertThat(advisor).isNotNull();
+		assertThat(advisor.getName()).isEqualTo("Structured Output Validation Advisor");
+		assertThat(advisor.getOrder()).isEqualTo(Ordered.LOWEST_PRECEDENCE - 2000);
 	}
 
 	@Test

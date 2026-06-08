@@ -24,8 +24,8 @@ import io.micrometer.observation.Observation.Context;
 import io.micrometer.observation.ObservationHandler;
 import io.micrometer.tracing.Tracer;
 import io.micrometer.tracing.handler.TracingObservationHandler.TracingContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.util.Assert;
 
@@ -38,7 +38,7 @@ import org.springframework.util.Assert;
 @SuppressWarnings({ "rawtypes", "null" })
 public class ErrorLoggingObservationHandler implements ObservationHandler {
 
-	private static final Logger logger = LoggerFactory.getLogger(ErrorLoggingObservationHandler.class);
+	private static final Log logger = LogFactory.getLog(ErrorLoggingObservationHandler.class);
 
 	private final Tracer tracer;
 

@@ -50,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * @author Christian Tzolov
  * @author Alexandros Pappas
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 @ExtendWith(MockitoExtension.class)
@@ -77,7 +78,7 @@ class OllamaChatModelTests {
 		Exception exception = assertThrows(IllegalArgumentException.class,
 				() -> OllamaChatModel.builder()
 					.ollamaApi(this.ollamaApi)
-					.defaultOptions(OllamaChatOptions.builder().model(OllamaModel.LLAMA2).build())
+					.options(OllamaChatOptions.builder().model(OllamaModel.LLAMA2).build())
 					.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 					.modelManagementOptions(null)
 					.build());
@@ -186,7 +187,7 @@ class OllamaChatModelTests {
 
 		ChatModel chatModel = OllamaChatModel.builder()
 			.ollamaApi(this.ollamaApi)
-			.defaultOptions(options)
+			.options(options)
 			.toolCallingManager(toolManager)
 			.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 			.observationRegistry(ObservationRegistry.NOOP)
@@ -240,7 +241,7 @@ class OllamaChatModelTests {
 		OllamaModel model = OllamaModel.valueOf(modelName);
 		OllamaChatOptions options = OllamaChatOptions.builder().model(model).build();
 
-		ChatModel chatModel = OllamaChatModel.builder().ollamaApi(this.ollamaApi).defaultOptions(options).build();
+		ChatModel chatModel = OllamaChatModel.builder().ollamaApi(this.ollamaApi).options(options).build();
 
 		assertThat(chatModel).isNotNull();
 		assertThat(chatModel).isInstanceOf(OllamaChatModel.class);
@@ -309,9 +310,9 @@ class OllamaChatModelTests {
 		// Test that the builder creates immutable instances
 		OllamaChatOptions options = OllamaChatOptions.builder().model(OllamaModel.MISTRAL).temperature(0.5).build();
 
-		ChatModel chatModel1 = OllamaChatModel.builder().ollamaApi(this.ollamaApi).defaultOptions(options).build();
+		ChatModel chatModel1 = OllamaChatModel.builder().ollamaApi(this.ollamaApi).options(options).build();
 
-		ChatModel chatModel2 = OllamaChatModel.builder().ollamaApi(this.ollamaApi).defaultOptions(options).build();
+		ChatModel chatModel2 = OllamaChatModel.builder().ollamaApi(this.ollamaApi).options(options).build();
 
 		// Should create different instances
 		assertThat(chatModel1).isNotSameAs(chatModel2);

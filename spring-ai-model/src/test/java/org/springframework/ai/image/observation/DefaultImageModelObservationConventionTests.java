@@ -86,7 +86,7 @@ class DefaultImageModelObservationConventionTests {
 	void shouldHaveHighCardinalityKeyValuesWhenDefined() {
 		var imageOptions = ImageOptionsBuilder.builder()
 			.model("mistral")
-			.N(1)
+			.n(1)
 			.height(1080)
 			.width(1920)
 			.style("sketch")

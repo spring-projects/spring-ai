@@ -20,8 +20,8 @@ import java.util.List;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.tracing.Tracer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
@@ -60,7 +60,7 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties(ChatObservationProperties.class)
 public class ChatObservationAutoConfiguration {
 
-	private static final Logger logger = LoggerFactory.getLogger(ChatObservationAutoConfiguration.class);
+	private static final Log logger = LogFactory.getLog(ChatObservationAutoConfiguration.class);
 
 	private static void logPromptContentWarning() {
 		logger.warn(

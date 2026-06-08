@@ -20,8 +20,6 @@ import com.openai.models.images.ImageModel;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageOptionsBuilder;
@@ -44,8 +42,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(classes = OpenAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiImageModelIT {
-
-	private final Logger logger = LoggerFactory.getLogger(OpenAiImageModelIT.class);
 
 	@Autowired
 	private OpenAiImageModel imageModel;

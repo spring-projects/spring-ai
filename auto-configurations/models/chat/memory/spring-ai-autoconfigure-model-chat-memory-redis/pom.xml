@@ -15,18 +15,12 @@
 
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<scm>
-		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
-	</scm>
-
 	<dependencies>
 		<!-- production dependencies -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-model-chat-memory-repository-redis</artifactId>
-			<version>${project.version}</version>
+			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
 
@@ -34,7 +28,6 @@
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-model-chat-memory</artifactId>
 			<version>${project.parent.version}</version>
-			<optional>true</optional>
 		</dependency>
 
 		<!-- Boot dependencies -->
@@ -54,10 +47,6 @@
 			<optional>true</optional>
 		</dependency>
 
-
-
-
-
 		<dependency>
 			<groupId>redis.clients</groupId>
 			<artifactId>jedis</artifactId>
@@ -73,7 +62,7 @@
 		<!-- Test dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
+			<artifactId>spring-boot-starter-data-redis-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 
@@ -92,7 +81,6 @@
 		<dependency>
 			<groupId>com.redis</groupId>
 			<artifactId>testcontainers-redis</artifactId>
-			<version>2.2.0</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

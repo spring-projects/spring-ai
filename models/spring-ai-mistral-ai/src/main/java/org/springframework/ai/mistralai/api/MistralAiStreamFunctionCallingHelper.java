@@ -26,19 +26,20 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionChunk.ChunkChoice;
-import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionFinishReason;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ChatCompletionFunction;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ToolCall;
+import org.springframework.ai.mistralai.api.MistralAiApi.FinishReason;
 import org.springframework.ai.mistralai.api.MistralAiApi.LogProbs;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
  * Helper class to support Streaming function calling.
- *
+ * <p>
  * It can merge the streamed ChatCompletionChunk in case of function calling message.
+ * </p>
  *
  * @author Christian Tzolov
  * @since 0.8.1
@@ -101,8 +102,7 @@ public class MistralAiStreamFunctionCallingHelper {
 			return current;
 		}
 
-		ChatCompletionFinishReason finishReason = (current.finishReason() != null ? current.finishReason()
-				: previous.finishReason());
+		FinishReason finishReason = (current.finishReason() != null ? current.finishReason() : previous.finishReason());
 		Integer index = (current.index() != null ? current.index() : previous.index());
 
 		ChatCompletionMessage message = merge(previous.delta(), current.delta());
@@ -112,7 +112,7 @@ public class MistralAiStreamFunctionCallingHelper {
 	}
 
 	private ChatCompletionMessage merge(ChatCompletionMessage previous, ChatCompletionMessage current) {
-		String content = (current.content() != null ? current.content()
+		var content = (current.content() != null ? current.content()
 				: (previous.content() != null) ? previous.content() : "");
 		Role role = (current.role() != null ? current.role() : previous.role());
 		role = (role != null ? role : Role.ASSISTANT); // default to ASSISTANT (if null
@@ -203,8 +203,7 @@ public class MistralAiStreamFunctionCallingHelper {
 		}
 
 		var choice = choices.get(0);
-		return choice.finishReason() == ChatCompletionFinishReason.TOOL_CALLS;
+		return choice.finishReason() == FinishReason.TOOL_CALLS;
 	}
 
 }
-// ---

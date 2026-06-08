@@ -20,8 +20,8 @@ import java.util.StringJoiner;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.util.CollectionUtils;
 
@@ -34,7 +34,7 @@ import org.springframework.util.CollectionUtils;
  */
 public class ImageModelPromptContentObservationHandler implements ObservationHandler<ImageModelObservationContext> {
 
-	private static final Logger logger = LoggerFactory.getLogger(ImageModelPromptContentObservationHandler.class);
+	private static final Log logger = LogFactory.getLog(ImageModelPromptContentObservationHandler.class);
 
 	@Override
 	public void onStop(ImageModelObservationContext context) {
@@ -44,7 +44,9 @@ public class ImageModelPromptContentObservationHandler implements ObservationHan
 				.getInstructions()
 				.forEach(message -> promptMessagesJoiner.add("\"" + message.getText() + "\""));
 
-			logger.info("Image Model Prompt Content:\n{}", promptMessagesJoiner);
+			if (logger.isInfoEnabled()) {
+				logger.info("Image Model Prompt Content:\n" + promptMessagesJoiner);
+			}
 		}
 	}
 

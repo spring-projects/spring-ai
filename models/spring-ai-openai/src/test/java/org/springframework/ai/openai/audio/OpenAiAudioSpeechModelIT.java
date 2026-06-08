@@ -39,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Ahmed Yousri
  * @author Jonghoon Park
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class OpenAiAudioSpeechModelIT {
@@ -67,14 +68,14 @@ class OpenAiAudioSpeechModelIT {
 			.speed(1.5)
 			.build();
 
-		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().defaultOptions(options).build();
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().options(options).build();
 
 		// Verify that the custom options were set on the model
-		OpenAiAudioSpeechOptions defaultOptions = (OpenAiAudioSpeechOptions) model.getDefaultOptions();
-		assertThat(defaultOptions.getModel()).isEqualTo("tts-1-hd");
-		assertThat(defaultOptions.getVoice()).isEqualTo("nova");
-		assertThat(defaultOptions.getResponseFormat()).isEqualTo("opus");
-		assertThat(defaultOptions.getSpeed()).isEqualTo(1.5);
+		OpenAiAudioSpeechOptions modelOptions = (OpenAiAudioSpeechOptions) model.getOptions();
+		assertThat(modelOptions.getModel()).isEqualTo("tts-1-hd");
+		assertThat(modelOptions.getVoice()).isEqualTo("nova");
+		assertThat(modelOptions.getResponseFormat()).isEqualTo("opus");
+		assertThat(modelOptions.getSpeed()).isEqualTo(1.5);
 
 		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Testing custom options");
 
@@ -92,7 +93,7 @@ class OpenAiAudioSpeechModelIT {
 			.voice(OpenAiAudioSpeechOptions.Voice.BALLAD)
 			.build();
 
-		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().defaultOptions(options).build();
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().options(options).build();
 		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Testing new voice");
 
 		TextToSpeechResponse response = model.call(prompt);
@@ -109,7 +110,7 @@ class OpenAiAudioSpeechModelIT {
 			.responseFormat(OpenAiAudioSpeechOptions.AudioResponseFormat.WAV)
 			.build();
 
-		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().defaultOptions(options).build();
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().options(options).build();
 		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Testing WAV format");
 
 		TextToSpeechResponse response = model.call(prompt);
@@ -150,7 +151,7 @@ class OpenAiAudioSpeechModelIT {
 			.voice(voice)
 			.build();
 
-		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().defaultOptions(options).build();
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().options(options).build();
 		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Today is a wonderful day to build something people love!");
 
 		TextToSpeechResponse response = model.call(prompt);
@@ -188,7 +189,7 @@ class OpenAiAudioSpeechModelIT {
 			.speed(1.0)
 			.build();
 
-		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().defaultOptions(options).build();
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().options(options).build();
 		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Today is a wonderful day to build something people love!");
 
 		TextToSpeechResponse response = model.call(prompt);
@@ -207,7 +208,7 @@ class OpenAiAudioSpeechModelIT {
 			.speed(1.0)
 			.build();
 
-		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().defaultOptions(options).build();
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().options(options).build();
 		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Testing high definition audio model");
 
 		TextToSpeechResponse response = model.call(prompt);

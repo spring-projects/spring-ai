@@ -25,8 +25,10 @@ package org.springframework.ai.chat.client;
  * @author Josh Long
  * @author Arjen Poutsma
  * @since 1.0.0 M1
+ * @deprecated in favor of {@link ChatClientBuilderCustomizer}
  */
 @FunctionalInterface
+@Deprecated(since = "2.0.0", forRemoval = true)
 public interface ChatClientCustomizer {
 
 	/**

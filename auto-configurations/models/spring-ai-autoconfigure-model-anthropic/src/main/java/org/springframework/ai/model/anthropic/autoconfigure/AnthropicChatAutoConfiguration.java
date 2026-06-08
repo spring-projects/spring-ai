@@ -17,6 +17,7 @@
 package org.springframework.ai.model.anthropic.autoconfigure;
 
 import com.anthropic.client.AnthropicClient;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
@@ -24,9 +25,7 @@ import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -53,9 +52,8 @@ public class AnthropicChatAutoConfiguration {
 	@ConditionalOnMissingBean
 	public AnthropicChatModel anthropicChatModel(AnthropicConnectionProperties connectionProperties,
 			AnthropicChatProperties chatProperties, ToolCallingManager toolCallingManager,
-			ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<ChatModelObservationConvention> observationConvention,
-			ObjectProvider<ToolExecutionEligibilityPredicate> anthropicToolExecutionEligibilityPredicate) {
+			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
+			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
 		AnthropicChatOptions.Builder builder = chatProperties.toOptions().mutate();
 		if (connectionProperties.getApiKey() != null) {
@@ -82,8 +80,7 @@ public class AnthropicChatAutoConfiguration {
 			.options(options)
 			.toolCallingManager(toolCallingManager)
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.toolExecutionEligibilityPredicate(anthropicToolExecutionEligibilityPredicate
-				.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
+			.meterRegistry(chatProperties.isConnectionPoolMetricsEnabled() ? meterRegistry.getIfAvailable() : null)
 			.build();
 
 		observationConvention.ifAvailable(chatModel::setObservationConvention);

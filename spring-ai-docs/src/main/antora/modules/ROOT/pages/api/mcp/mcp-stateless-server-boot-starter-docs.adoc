@@ -198,8 +198,8 @@ public List<McpStatelessServerFeatures.SyncPromptSpecification> myPrompts() {
     var promptSpecification = new McpStatelessServerFeatures.SyncPromptSpecification(prompt, (context, getPromptRequest) -> {
         String nameArgument = (String) getPromptRequest.arguments().get("name");
         if (nameArgument == null) { nameArgument = "friend"; }
-        var userMessage = new PromptMessage(Role.USER, new TextContent("Hello " + nameArgument + "! How can I assist you today?"));
-        return new GetPromptResult("A personalized greeting message", List.of(userMessage));
+        var userMessage = new PromptMessage(Role.USER, TextContent.builder("Hello " + nameArgument + "! How can I assist you today?").build());
+        return GetPromptResult.builder(List.of(userMessage)).description("A personalized greeting message").build();
     });
 
     return List.of(promptSpecification);

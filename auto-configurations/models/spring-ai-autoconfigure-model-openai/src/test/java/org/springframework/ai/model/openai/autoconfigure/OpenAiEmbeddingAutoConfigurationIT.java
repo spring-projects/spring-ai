@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class OpenAiEmbeddingAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"));
+		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"));
 
 	@Test
 	void embedding() {
@@ -95,7 +95,7 @@ public class OpenAiEmbeddingAutoConfigurationIT {
 				"spring.ai.openai.base-url=http://TEST.BASE.URL",
 
 				"spring.ai.openai.embedding.options.model=MODEL_XYZ",
-				"spring.ai.openai.embedding.options.encodingFormat=float",
+				"spring.ai.openai.embedding.options.encoding-format=float",
 				"spring.ai.openai.embedding.options.user=userXYZ"
 				)
 			// @formatter:on
@@ -107,9 +107,9 @@ public class OpenAiEmbeddingAutoConfigurationIT {
 				assertThat(commonProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
 				assertThat(commonProperties.getApiKey()).isEqualTo("API_KEY");
 
-				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(embeddingProperties.getOptions().getUser()).isEqualTo("userXYZ");
-				assertThat(embeddingProperties.getOptions().getEncodingFormat())
+				assertThat(embeddingProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.getUser()).isEqualTo("userXYZ");
+				assertThat(embeddingProperties.getEncodingFormat())
 					.isEqualTo(OpenAiEmbeddingOptions.EncodingFormat.FLOAT);
 			});
 	}

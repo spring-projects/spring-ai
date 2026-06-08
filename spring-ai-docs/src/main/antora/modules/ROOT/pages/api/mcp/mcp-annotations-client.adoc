@@ -53,10 +53,7 @@ public class SamplingHandler {
         // Process the request and generate a response
         String response = generateLLMResponse(request);
         
-        return CreateMessageResult.builder()
-            .role(Role.ASSISTANT)
-            .content(new TextContent(response))
-            .model("gpt-4")
+        return CreateMessageResult.builder(Role.ASSISTANT, response, "gpt-4")
             .build();
     }
 }
@@ -73,11 +70,8 @@ public class AsyncSamplingHandler {
     public Mono<CreateMessageResult> handleAsyncSampling(CreateMessageRequest request) {
         return Mono.fromCallable(() -> {
             String response = generateLLMResponse(request);
-            
-            return CreateMessageResult.builder()
-                .role(Role.ASSISTANT)
-                .content(new TextContent(response))
-                .model("gpt-4")
+
+            return CreateMessageResult.builder(Role.ASSISTANT, response, "gpt-4")
                 .build();
         }).subscribeOn(Schedulers.boundedElastic());
     }

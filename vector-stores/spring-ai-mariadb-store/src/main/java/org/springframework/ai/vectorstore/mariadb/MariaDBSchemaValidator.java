@@ -22,10 +22,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import org.mariadb.jdbc.Driver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -37,7 +37,7 @@ import org.springframework.util.Assert;
  */
 public class MariaDBSchemaValidator {
 
-	private static final Logger logger = LoggerFactory.getLogger(MariaDBSchemaValidator.class);
+	private static final Log logger = LogFactory.getLog(MariaDBSchemaValidator.class);
 
 	private final JdbcTemplate jdbcTemplate;
 
@@ -74,17 +74,21 @@ public class MariaDBSchemaValidator {
 					schemaName, tableName);
 		}
 		catch (DataAccessException e) {
-			logger.error("Error while validating database vector support {}", e.getMessage());
-			logger.error("""
-					Failed to validate that database supports VECTOR.
-					Run the following SQL commands:
-					   SELECT @@version;
-					And ensure that version is >= 11.7.1""");
+			if (logger.isErrorEnabled()) {
+				logger.error("Error while validating database vector support " + e.getMessage());
+				logger.error("""
+						Failed to validate that database supports VECTOR.
+						Run the following SQL commands:
+						   SELECT @@version;
+						And ensure that version is >= 11.7.1""");
+			}
 			throw new IllegalStateException(e);
 		}
 
 		try {
-			logger.info("Validating MariaDBStore schema for table: {} in schema: {}", tableName, schemaName);
+			if (logger.isInfoEnabled()) {
+				logger.info("Validating MariaDBStore schema for table: " + tableName + " in schema: " + schemaName);
+			}
 
 			List<String> expectedColumns = new ArrayList<>();
 			expectedColumns.add(idFieldName);
@@ -125,23 +129,25 @@ public class MariaDBSchemaValidator {
 
 		}
 		catch (DataAccessException | IllegalStateException e) {
-			logger.error("Error while validating table schema{}", e.getMessage());
-			logger.error("Failed to operate with the specified table in the database. To resolve this issue,"
-					+ " please ensure the following steps are completed:\n"
-					+ "1. Verify that the table exists with the appropriate structure. If it does not"
-					+ " exist, create it using a SQL command similar to the following:\n"
-					+ String.format("""
-							  CREATE TABLE IF NOT EXISTS %s (
-									%s UUID NOT NULL DEFAULT uuid() PRIMARY KEY,
-									%s TEXT,
-									%s JSON,
-									%s VECTOR(%d) NOT NULL,
-									VECTOR INDEX (%s)
-							) ENGINE=InnoDB""", schemaName == null ? tableName : schemaName + "." + tableName,
-							idFieldName, contentFieldName, metadataFieldName, embeddingFieldName, embeddingDimensions,
-							embeddingFieldName)
-					+ "\n" + "Please adjust these commands based on your specific configuration and the"
-					+ " capabilities of your vector database system.");
+			if (logger.isErrorEnabled()) {
+				logger.error("Error while validating table schema " + e.getMessage());
+				logger.error("Failed to operate with the specified table in the database. To resolve this issue,"
+						+ " please ensure the following steps are completed:\n"
+						+ "1. Verify that the table exists with the appropriate structure. If it does not"
+						+ " exist, create it using a SQL command similar to the following:\n"
+						+ String.format("""
+								  CREATE TABLE IF NOT EXISTS %s (
+										%s UUID NOT NULL DEFAULT uuid() PRIMARY KEY,
+										%s TEXT,
+										%s JSON,
+										%s VECTOR(%d) NOT NULL,
+										VECTOR INDEX (%s)
+								) ENGINE=InnoDB""", schemaName == null ? tableName : schemaName + "." + tableName,
+								idFieldName, contentFieldName, metadataFieldName, embeddingFieldName,
+								embeddingDimensions, embeddingFieldName)
+						+ "\n" + "Please adjust these commands based on your specific configuration and the"
+						+ " capabilities of your vector database system.");
+			}
 			throw new IllegalStateException(e);
 		}
 	}

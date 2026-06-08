@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import com.anthropic.models.messages.Model;
@@ -33,8 +34,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
@@ -44,13 +43,16 @@ import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.anthropic.AnthropicWebSearchResult;
 import org.springframework.ai.anthropic.AnthropicWebSearchTool;
 import org.springframework.ai.anthropic.Citation;
+import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -58,6 +60,10 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -79,8 +85,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 class AnthropicChatModelIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatModelIT.class);
-
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
 
@@ -92,6 +96,17 @@ class AnthropicChatModelIT {
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
+	}
+
+	private static void validateRateLimitMetadata(ChatResponse response) {
+		assertThat(response.getMetadata().getRateLimit()).isInstanceOf(AnthropicRateLimit.class);
+		AnthropicRateLimit rateLimit = (AnthropicRateLimit) response.getMetadata().getRateLimit();
+		assertThat(rateLimit.getRequestsLimit()).isPositive();
+		assertThat(rateLimit.getRequestsRemaining()).isNotNegative();
+		assertThat(rateLimit.getRequestsReset()).isNotNull();
+		assertThat(rateLimit.getTokensLimit()).isPositive();
+		assertThat(rateLimit.getTokensRemaining()).isNotNegative();
+		assertThat(rateLimit.getTokensReset()).isNotNull();
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -113,7 +128,6 @@ class AnthropicChatModelIT {
 		Generation generation = response.getResults().get(0);
 		assertThat(generation.getOutput().getText()).contains("Blackbeard");
 		assertThat(generation.getMetadata().getFinishReason()).isEqualTo("end_turn");
-		logger.info(response.toString());
 	}
 
 	@Test
@@ -196,7 +210,6 @@ class AnthropicChatModelIT {
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = beanOutputConverter.convert(generation.getOutput().getText());
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -211,9 +224,8 @@ class AnthropicChatModelIT {
 				.call()
 				.chatResponse();
 		// @formatter:on
-
-		logger.info(response.toString());
 		validateChatResponseMetadata(response, model);
+		validateRateLimitMetadata(response);
 	}
 
 	@Test
@@ -232,7 +244,6 @@ class AnthropicChatModelIT {
 			.reduce("", String::concat);
 
 		assertThat(fullResponse).isNotEmpty();
-		logger.info("Streaming response: {}", fullResponse);
 	}
 
 	@Test
@@ -253,9 +264,6 @@ class AnthropicChatModelIT {
 		assertThat(lastResponseWithUsage).isNotNull();
 
 		var usage = lastResponseWithUsage.getMetadata().getUsage();
-		logger.info("Streaming usage - Input: {}, Output: {}, Total: {}", usage.getPromptTokens(),
-				usage.getCompletionTokens(), usage.getTotalTokens());
-
 		// Verify both input and output tokens are captured
 		assertThat(usage.getPromptTokens()).as("Input tokens should be captured from message_start").isPositive();
 		assertThat(usage.getCompletionTokens()).as("Output tokens should be captured from message_delta").isPositive();
@@ -267,13 +275,29 @@ class AnthropicChatModelIT {
 	}
 
 	@Test
+	void streamingRateLimitMetadata() {
+		Prompt prompt = new Prompt("Tell me a very short joke.");
+
+		List<ChatResponse> responses = this.chatModel.stream(prompt).collectList().block();
+
+		assertThat(responses).isNotEmpty();
+
+		// Rate-limit headers arrive once at stream start and are attached to the
+		// message_delta chunk.
+		ChatResponse responseWithRateLimit = responses.stream()
+			.filter(response -> response.getMetadata().getRateLimit() instanceof AnthropicRateLimit)
+			.reduce((first, second) -> second)
+			.orElse(null);
+
+		assertThat(responseWithRateLimit).as("A streamed chunk should carry rate-limit metadata").isNotNull();
+		validateRateLimitMetadata(responseWithRateLimit);
+	}
+
+	@Test
 	void functionCallTest() {
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = AnthropicChatOptions.builder()
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_HAIKU_4_5.asString())
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
@@ -282,27 +306,27 @@ class AnthropicChatModelIT {
 				.build())
 			.build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+		Prompt prompt = new Prompt(
+				List.of(new UserMessage(
+						"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.")),
+				options);
 
-		logger.info("Response: {}", response);
+		ChatResponse response = this.chatModel.call(prompt);
 
-		Generation generation = response.getResult();
-		assertThat(generation).isNotNull();
-		assertThat(generation.getOutput()).isNotNull();
-		assertThat(generation.getOutput().getText()).contains("30", "10", "15");
-		assertThat(response.getMetadata()).isNotNull();
-		assertThat(response.getMetadata().getUsage()).isNotNull();
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			response = this.chatModel.call(prompt);
+		}
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isGreaterThan(100);
 	}
 
 	@Test
 	void streamFunctionCallTest() {
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = AnthropicChatOptions.builder()
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_HAIKU_4_5.asString())
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
@@ -311,48 +335,48 @@ class AnthropicChatModelIT {
 				.build())
 			.build();
 
-		Flux<ChatResponse> responseFlux = this.chatModel.stream(new Prompt(messages, promptOptions));
+		Prompt prompt = new Prompt(
+				List.of(new UserMessage(
+						"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.")),
+				options);
 
-		String content = responseFlux.collectList()
-			.block()
-			.stream()
-			.filter(cr -> cr.getResult() != null)
-			.map(cr -> cr.getResult().getOutput().getText())
-			.filter(text -> text != null)
-			.collect(java.util.stream.Collectors.joining());
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
 
-		logger.info("Streaming Response: {}", content);
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
+
+		String content = aggregatedRef.get().getResult().getOutput().getText();
 		assertThat(content).contains("30", "10", "15");
 	}
 
 	@Test
 	void streamFunctionCallUsageTest() {
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
-
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_HAIKU_4_5.asString())
-			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
-				.description(
-						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
-				.inputType(MockWeatherService.Request.class)
-				.build())
+		ToolCallback weatherToolCallback = FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+			.description(
+					"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+			.inputType(MockWeatherService.Request.class)
 			.build();
 
-		Flux<ChatResponse> responseFlux = this.chatModel.stream(new Prompt(messages, promptOptions));
-
-		ChatResponse lastResponse = responseFlux.collectList()
+		ChatResponse lastResponse = ChatClient.create(this.chatModel)
+			.prompt()
+			.advisors(ToolCallingAdvisor.builder().build())
+			.options(AnthropicChatOptions.builder().model(Model.CLAUDE_HAIKU_4_5.asString()))
+			.user("What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.")
+			.tools(weatherToolCallback)
+			.stream()
+			.chatResponse()
+			.collectList()
 			.block()
 			.stream()
 			.filter(cr -> cr.getMetadata() != null && cr.getMetadata().getUsage() != null
 					&& cr.getMetadata().getUsage().getTotalTokens() > 0)
 			.reduce((first, second) -> second)
 			.orElse(null);
-
-		logger.info("Streaming Response with usage: {}", lastResponse);
-
 		assertThat(lastResponse).isNotNull();
 		Usage usage = lastResponse.getMetadata().getUsage();
 		assertThat(usage).isNotNull();
@@ -387,7 +411,6 @@ class AnthropicChatModelIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = beanOutputConverter.convert(generationTextFromStream);
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -403,8 +426,6 @@ class AnthropicChatModelIT {
 				.chatResponse()
 				.blockLast();
 		// @formatter:on
-
-		logger.info(response.toString());
 		validateChatResponseMetadata(response, model);
 	}
 
@@ -417,7 +438,6 @@ class AnthropicChatModelIT {
 
 		var promptOptions = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_HAIKU_4_5.asString())
-			.internalToolExecutionEnabled(false)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -426,8 +446,6 @@ class AnthropicChatModelIT {
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
-
-		logger.info("Response: {}", response);
 		for (Generation generation : response.getResults()) {
 			AssistantMessage message = generation.getOutput();
 			if (!message.getToolCalls().isEmpty()) {
@@ -450,7 +468,6 @@ class AnthropicChatModelIT {
 		var promptOptions = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_20250514.asString())
 			.toolChoice(ToolChoice.ofAny(ToolChoiceAny.builder().build()))
-			.internalToolExecutionEnabled(false)
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -459,8 +476,6 @@ class AnthropicChatModelIT {
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
-
-		logger.info("Response: {}", response);
 		assertThat(response.getResults()).isNotNull();
 		// When tool choice is "any", the model MUST use at least one tool
 		boolean hasToolCalls = response.getResults()
@@ -479,7 +494,6 @@ class AnthropicChatModelIT {
 		var promptOptions = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_20250514.asString())
 			.toolChoice(ToolChoice.ofTool(ToolChoiceTool.builder().name("getFunResponse").build()))
-			.internalToolExecutionEnabled(false)
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -495,8 +509,6 @@ class AnthropicChatModelIT {
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
-
-		logger.info("Response: {}", response);
 		assertThat(response.getResults()).isNotNull();
 		// When tool choice is a specific tool, the model MUST use that specific tool
 		List<AssistantMessage.ToolCall> allToolCalls = response.getResults()
@@ -525,8 +537,6 @@ class AnthropicChatModelIT {
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
-
-		logger.info("Response: {}", response);
 		assertThat(response.getResults()).isNotNull();
 		// When tool choice is "none", the model MUST NOT use any tools
 		List<AssistantMessage.ToolCall> allToolCalls = response.getResults()
@@ -546,8 +556,6 @@ class AnthropicChatModelIT {
 			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
-
-		logger.info("Response: {}", response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
 				"fruit");
 	}
@@ -562,8 +570,6 @@ class AnthropicChatModelIT {
 			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
-
-		logger.info("Response: {}", response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Spring AI", "portable API");
 	}
 
@@ -625,8 +631,6 @@ class AnthropicChatModelIT {
 			.map(AssistantMessage::getText)
 			.filter(text -> text != null && !text.isBlank())
 			.collect(Collectors.joining());
-
-		logger.info("Thinking streaming response: {}", content);
 		assertThat(content).isNotBlank();
 
 		// Verify signature was captured in the stream
@@ -839,9 +843,8 @@ class AnthropicChatModelIT {
 
 		assertThat(response).isNotNull();
 		String text = response.getResult().getOutput().getText();
-		assertThat(text).isNotEmpty();
-		logger.info("Structured output response: {}", text);
-		// The response should contain JSON with the expected fields
+		assertThat(text).isNotEmpty(); // The response should contain JSON with the
+										// expected fields
 		assertThat(text).contains("name");
 		assertThat(text).contains("capital");
 	}
@@ -871,7 +874,6 @@ class AnthropicChatModelIT {
 		assertThat(response).isNotNull();
 		String text = response.getResult().getOutput().getText();
 		assertThat(text).isNotEmpty();
-		logger.info("Structured output with effort response: {}", text);
 		assertThat(text).contains("answer");
 	}
 
@@ -886,8 +888,6 @@ class AnthropicChatModelIT {
 			.call(new Prompt("What is the latest released version of Spring AI?", options));
 
 		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
-		logger.info("Web search response: {}", response.getResult().getOutput().getText());
-
 		// Verify web search results are surfaced in metadata
 		List<AnthropicWebSearchResult> results = (List<AnthropicWebSearchResult>) response.getMetadata()
 			.get("web-search-results");
@@ -896,12 +896,8 @@ class AnthropicChatModelIT {
 		assertThat(results.get(0).title()).isNotEmpty();
 
 		// Verify web search citations if present
-		List<Citation> citations = (List<Citation>) response.getMetadata().get("citations");
+		List<Citation> citations = response.getMetadata().get("citations");
 		if (citations != null && !citations.isEmpty()) {
-			logger.info("Web search citations received: {}", citations.size());
-			citations.stream()
-				.filter(c -> c.getType() == Citation.LocationType.WEB_SEARCH_RESULT_LOCATION)
-				.forEach(c -> logger.info("Web search citation: url={}, title={}", c.getUrl(), c.getDocumentTitle()));
 			assertThat(citations).anyMatch(c -> c.getType() == Citation.LocationType.WEB_SEARCH_RESULT_LOCATION
 					&& c.getUrl() != null && !c.getUrl().isEmpty());
 		}

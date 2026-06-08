@@ -26,7 +26,6 @@ import com.anthropic.models.messages.ThinkingConfigParam;
 import com.anthropic.models.messages.ToolChoice;
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.ai.anthropic.AnthropicCacheOptions;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.AnthropicServiceTier;
 import org.springframework.ai.anthropic.AnthropicWebSearchTool;
@@ -47,7 +46,7 @@ public class AnthropicChatProperties {
 
 	private @Nullable String model;
 
-	private @Nullable Integer maxTokens = AnthropicChatOptions.DEFAULT_MAX_TOKENS;
+	private @Nullable Integer maxTokens;
 
 	private @Nullable Metadata metadata;
 
@@ -65,8 +64,6 @@ public class AnthropicChatProperties {
 
 	private @Nullable Boolean disableParallelToolUse;
 
-	private @Nullable Boolean internalToolExecutionEnabled;
-
 	private @Nullable OutputConfig outputConfig;
 
 	private @Nullable AnthropicWebSearchTool webSearchTool;
@@ -75,14 +72,15 @@ public class AnthropicChatProperties {
 
 	private @Nullable String inferenceGeo;
 
-	private @Nullable AnthropicCacheOptions cacheOptions;
+	private @Nullable AnthropicCacheProperties cacheOptions;
 
 	private Map<String, String> httpHeaders = new HashMap<>();
+
+	private boolean connectionPoolMetricsEnabled = false;
 
 	private Options options = new Options();
 
 	public AnthropicChatProperties() {
-		this.model = AnthropicChatOptions.DEFAULT_MODEL;
 	}
 
 	public @Nullable String getModel() {
@@ -165,14 +163,6 @@ public class AnthropicChatProperties {
 		this.disableParallelToolUse = disableParallelToolUse;
 	}
 
-	public @Nullable Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
 	public @Nullable OutputConfig getOutputConfig() {
 		return this.outputConfig;
 	}
@@ -205,11 +195,11 @@ public class AnthropicChatProperties {
 		this.inferenceGeo = inferenceGeo;
 	}
 
-	public @Nullable AnthropicCacheOptions getCacheOptions() {
+	public @Nullable AnthropicCacheProperties getCacheOptions() {
 		return this.cacheOptions;
 	}
 
-	public void setCacheOptions(@Nullable AnthropicCacheOptions cacheOptions) {
+	public void setCacheOptions(@Nullable AnthropicCacheProperties cacheOptions) {
 		this.cacheOptions = cacheOptions;
 	}
 
@@ -221,58 +211,33 @@ public class AnthropicChatProperties {
 		this.httpHeaders = httpHeaders;
 	}
 
+	public boolean isConnectionPoolMetricsEnabled() {
+		return this.connectionPoolMetricsEnabled;
+	}
+
+	public void setConnectionPoolMetricsEnabled(boolean connectionPoolMetricsEnabled) {
+		this.connectionPoolMetricsEnabled = connectionPoolMetricsEnabled;
+	}
+
 	public AnthropicChatOptions toOptions() {
-		AnthropicChatOptions.Builder builder = AnthropicChatOptions.builder();
-		builder.model(this.getModel());
-		if (this.maxTokens != null) {
-			builder.maxTokens(this.maxTokens);
-		}
-		if (this.metadata != null) {
-			builder.metadata(this.metadata);
-		}
-		if (this.stopSequences != null) {
-			builder.stopSequences(this.stopSequences);
-		}
-		if (this.temperature != null) {
-			builder.temperature(this.temperature);
-		}
-		if (this.topP != null) {
-			builder.topP(this.topP);
-		}
-		if (this.topK != null) {
-			builder.topK(this.topK);
-		}
-		if (this.toolChoice != null) {
-			builder.toolChoice(this.toolChoice);
-		}
-		if (this.thinking != null) {
-			builder.thinking(this.thinking);
-		}
-		if (this.disableParallelToolUse != null) {
-			builder.disableParallelToolUse(this.disableParallelToolUse);
-		}
-		if (this.internalToolExecutionEnabled != null) {
-			builder.internalToolExecutionEnabled(this.internalToolExecutionEnabled);
-		}
-		if (this.outputConfig != null) {
-			builder.outputConfig(this.outputConfig);
-		}
-		if (this.webSearchTool != null) {
-			builder.webSearchTool(this.webSearchTool);
-		}
-		if (this.serviceTier != null) {
-			builder.serviceTier(this.serviceTier);
-		}
-		if (this.inferenceGeo != null) {
-			builder.inferenceGeo(this.inferenceGeo);
-		}
-		if (this.cacheOptions != null) {
-			builder.cacheOptions(this.cacheOptions);
-		}
-		if (this.httpHeaders != null && !this.httpHeaders.isEmpty()) {
-			builder.httpHeaders(this.httpHeaders);
-		}
-		return builder.build();
+		return AnthropicChatOptions.builder()
+			.model(this.getModel())
+			.maxTokens(this.maxTokens)
+			.metadata(this.metadata)
+			.stopSequences(this.stopSequences)
+			.temperature(this.temperature)
+			.topP(this.topP)
+			.topK(this.topK)
+			.toolChoice(this.toolChoice)
+			.thinking(this.thinking)
+			.disableParallelToolUse(this.disableParallelToolUse)
+			.outputConfig(this.outputConfig)
+			.webSearchTool(this.webSearchTool)
+			.serviceTier(this.serviceTier)
+			.inferenceGeo(this.inferenceGeo)
+			.cacheOptions(this.cacheOptions != null ? this.cacheOptions.toOptions() : null)
+			.httpHeaders(this.httpHeaders)
+			.build();
 	}
 
 	@DeprecatedConfigurationProperty(replacement = "spring.ai.anthropic.chat")
@@ -387,16 +352,6 @@ public class AnthropicChatProperties {
 			AnthropicChatProperties.this.setDisableParallelToolUse(disableParallelToolUse);
 		}
 
-		@DeprecatedConfigurationProperty(replacement = "spring.ai.anthropic.chat.internal-tool-execution-enabled")
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		public @Nullable Boolean getInternalToolExecutionEnabled() {
-			return AnthropicChatProperties.this.getInternalToolExecutionEnabled();
-		}
-
-		public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			AnthropicChatProperties.this.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
-		}
-
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.anthropic.chat.output-config")
 		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable OutputConfig getOutputConfig() {
@@ -439,11 +394,11 @@ public class AnthropicChatProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.anthropic.chat.cache-options")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public @Nullable AnthropicCacheOptions getCacheOptions() {
+		public @Nullable AnthropicCacheProperties getCacheOptions() {
 			return AnthropicChatProperties.this.getCacheOptions();
 		}
 
-		public void setCacheOptions(@Nullable AnthropicCacheOptions cacheOptions) {
+		public void setCacheOptions(@Nullable AnthropicCacheProperties cacheOptions) {
 			AnthropicChatProperties.this.setCacheOptions(cacheOptions);
 		}
 

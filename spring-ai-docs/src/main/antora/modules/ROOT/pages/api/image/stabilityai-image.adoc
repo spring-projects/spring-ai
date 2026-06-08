@@ -108,7 +108,7 @@ The prefix `spring.ai.stabilityai.image` is the property prefix that lets you co
 | spring.ai.stabilityai.image.model                 | The engine/model to use in Stability AI. The model is passed in the URL as a path parameter.          | `stable-diffusion-v1-6`
 | spring.ai.stabilityai.image.width                 | Width of the image to generate, in pixels, in an increment divisible by 64. Engine-specific dimension validation applies. | 512
 | spring.ai.stabilityai.image.height               | Height of the image to generate, in pixels, in an increment divisible by 64. Engine-specific dimension validation applies.| 512
-| spring.ai.stabilityai.image.responseFormat        | The format in which the generated images are returned. Must be "application/json" or "image/png".                         | -
+| spring.ai.stabilityai.image.response-format        | The format in which the generated images are returned. Must be "application/json" or "image/png".                         | -
 | spring.ai.stabilityai.image.cfg_scale             | The strictness level of the diffusion process adherence to the prompt text. Range: 0 to 35.                               | 7
 | spring.ai.stabilityai.image.clip_guidance_preset  | Pass in a style preset to guide the image model towards a particular style. This list of style presets is subject to change. | `NONE`
 | spring.ai.stabilityai.image.sampler               | Which sampler to use for the diffusion process. If this value is omitted, an appropriate sampler will be automatically selected. | -
@@ -133,7 +133,7 @@ ImageResponse response = stabilityaiImageModel.call(
         new ImagePrompt("A light cream colored mini golden doodle",
         StabilityAiImageOptions.builder()
                 .stylePreset("cinematic")
-                .N(4)
+                .n(4)
                 .height(1024)
                 .width(1024).build())
 

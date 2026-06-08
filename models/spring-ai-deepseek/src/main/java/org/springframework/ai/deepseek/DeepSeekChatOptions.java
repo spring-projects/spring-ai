@@ -17,12 +17,9 @@
 package org.springframework.ai.deepseek;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.jspecify.annotations.Nullable;
 
@@ -39,66 +36,68 @@ import org.springframework.ai.tool.ToolCallback;
  * chat completion</a>
  *
  * @author Geng Rong
+ * @author Sebastien Deleuze
  */
 public class DeepSeekChatOptions implements ToolCallingChatOptions {
 
 	// @formatter:off
 	/**
-	 * ID of the model to use. You can use either use deepseek-reasoner or deepseek-chat.
+	 * ID of the model to use.
+	 * You can use the DeepSeek v4 model names (deepseek-v4-flash, deepseek-v4-pro) or the legacy model
+	 * names (deepseek-chat, deepseek-reasoner).
 	 */
-	@SuppressWarnings("NullAway.Init")
-	private String model;
+	private final String model;
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
 	 * frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
 	 */
-	private @Nullable Double frequencyPenalty;
+	private final @Nullable Double frequencyPenalty;
 	/**
 	 * The maximum number of tokens that can be generated in the chat completion.
 	 * The total length of input tokens and generated tokens is limited by the model's context length.
 	 */
-	private @Nullable Integer maxTokens;
+	private final @Nullable Integer maxTokens;
 	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
 	 * appear in the text so far, increasing the model's likelihood to talk about new topics.
 	 */
-	private @Nullable Double presencePenalty;
+	private final @Nullable Double presencePenalty;
 	/**
 	 * An object specifying the format that the model must output. Setting to { "type":
 	 * "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 	 */
-	private @Nullable ResponseFormat responseFormat;
+	private final @Nullable ResponseFormat responseFormat;
 	/**
 	 * A string or a list containing up to 4 strings, upon encountering these words, the API will cease generating more tokens.
 	 */
-	private @Nullable List<String> stop;
+	private final @Nullable List<String> stop;
 	/**
 	 * What sampling temperature to use, between 0 and 2.
 	 * Higher values like 0.8 will make the output more random,
 	 * while lower values like 0.2 will make it more focused and deterministic.
 	 * We generally recommend altering this or top_p but not both.
 	 */
-	private @Nullable Double temperature;
+	private final Double temperature;
 	/**
 	 * An alternative to sampling with temperature, called nucleus sampling,
 	 * where the model considers the results of the tokens with top_p probability mass.
 	 * So 0.1 means only the tokens comprising the top 10% probability mass are considered.
 	 * We generally recommend altering this or temperature but not both.
 	 */
-	private @Nullable Double topP;
+	private final @Nullable Double topP;
 	/**
 	 * Whether to return log probabilities of the output tokens or not.
 	 * If true, returns the log probabilities of each output token returned in the content of message.
 	 */
-	private @Nullable Boolean logprobs;
+	private final @Nullable Boolean logprobs;
 	/**
 	 * An integer between 0 and 20 specifying the number of most likely tokens to return at each token position,
 	 * each with an associated log probability. logprobs must be set to true if this parameter is used.
 	 */
-	private @Nullable Integer topLogprobs;
+	private final @Nullable Integer topLogprobs;
 
 
-	private @Nullable List<DeepSeekApi.FunctionTool> tools;
+	private final @Nullable List<DeepSeekApi.FunctionTool> tools;
 
 	/**
 	 * Controls which (if any) function is called by the model. none means the model will
@@ -110,12 +109,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	 * {@link DeepSeekApi.ChatCompletionRequest.ToolChoiceBuilder} to create a tool choice
 	 * object.
 	 */
-	private @Nullable Object toolChoice;
-
-	/**
-	 * Whether to enable the tool execution lifecycle internally in ChatModel.
-	 */
-	private @Nullable Boolean internalToolExecutionEnabled;
+	private final @Nullable Object toolChoice;
 
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
@@ -123,47 +117,31 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	 * For Default Options the toolCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
 	 * from the registry to be used by the ChatModel chat completion requests.
 	 */
-	private List<ToolCallback> toolCallbacks = new ArrayList<>();
+	private final @Nullable List<ToolCallback> toolCallbacks;
 
-	/**
-	 * List of functions, identified by their names, to configure for function calling in
-	 * the chat completion requests.
-	 * Functions with those names must exist in the toolCallbacks registry.
-	 * The {@link #toolCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
-	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
-	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
-	 */
-	private Set<String> toolNames = new HashSet<>();
+	private final @Nullable Map<String, Object> toolContext;
 
-	private Map<String, Object> toolContext = new HashMap<>();
-
-	// TODO: left here for ModelOptionUtils.merge*() for now
-	public DeepSeekChatOptions() {
-	}
-
-	protected DeepSeekChatOptions(String model, @Nullable Double frequencyPenalty,
+	protected DeepSeekChatOptions(@Nullable String model, @Nullable Double frequencyPenalty,
 			@Nullable Integer maxTokens, @Nullable Double presencePenalty,
 			@Nullable ResponseFormat responseFormat, @Nullable List<String> stop,
 			@Nullable Double temperature, @Nullable Double topP, @Nullable Boolean logprobs,
 			@Nullable Integer topLogprobs, @Nullable List<DeepSeekApi.FunctionTool> tools,
-			@Nullable Object toolChoice, @Nullable Boolean internalToolExecutionEnabled,
-			@Nullable List<ToolCallback> toolCallbacks, @Nullable Set<String> toolNames, @Nullable Map<String, Object> toolContext) {
-		this.model = model;
+			@Nullable Object toolChoice,
+			@Nullable List<ToolCallback> toolCallbacks, @Nullable Map<String, Object> toolContext) {
+		this.model = model != null ? model : DeepSeekApi.DEFAULT_CHAT_MODEL.getValue();
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
 		this.presencePenalty = presencePenalty;
 		this.responseFormat = responseFormat;
-		this.stop = stop;
-		this.temperature = temperature;
+		this.stop = (stop != null ? List.copyOf(stop) : null);
+		this.temperature = temperature != null ? temperature : 0.7;
 		this.topP = topP;
 		this.logprobs = logprobs;
 		this.topLogprobs = topLogprobs;
-		this.tools = tools;
+		this.tools = tools != null ? List.copyOf(tools) : null;
 		this.toolChoice = toolChoice;
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-		this.toolCallbacks = toolCallbacks == null ? new ArrayList<>() : new ArrayList<>(toolCallbacks);
-		this.toolNames = toolNames == null ? new HashSet<>() : new HashSet<>(toolNames);
-		this.toolContext = toolContext ==  null ? new HashMap<>() : new HashMap<>(toolContext);
+		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
+		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
 	}
 
 	public static Builder builder() {
@@ -204,7 +182,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public @Nullable Double getTemperature() {
+	public Double getTemperature() {
 		return this.temperature;
 	}
 
@@ -223,18 +201,8 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 
 
 	@Override
-	public List<ToolCallback> getToolCallbacks() {
+	public @Nullable List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
-	}
-
-	@Override
-	public Set<String> getToolNames() {
-		return this.toolNames;
-	}
-
-	@Override
-	public @Nullable Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
 	}
 
 	public @Nullable Boolean getLogprobs() {
@@ -252,13 +220,8 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 
 
 	@Override
-	public Map<String, Object> getToolContext() {
+	public @Nullable Map<String, Object> getToolContext() {
 		return this.toolContext;
-	}
-
-	@Override
-	public DeepSeekChatOptions copy() {
-		return mutate().build();
 	}
 
 	@Override
@@ -275,9 +238,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 			.topK(this.getTopK()) // always null but here for consistency
 			// ToolCallingChatOptions
 			.toolCallbacks(this.getToolCallbacks())
-			.toolNames(this.getToolNames())
 			.toolContext(this.getToolContext())
-			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
 			// DeepSeek Specific
 			.responseFormat(this.responseFormat)
 			.logprobs(this.logprobs)
@@ -291,12 +252,12 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		return Objects.hash(this.model, this.frequencyPenalty, this.logprobs, this.topLogprobs,
 				this.maxTokens,  this.presencePenalty, this.responseFormat,
 				this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
-				this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled, this.toolContext);
+				this.toolCallbacks, this.toolContext);
 	}
 
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -314,13 +275,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.topP, other.topP) && Objects.equals(this.tools, other.tools)
 				&& Objects.equals(this.toolChoice, other.toolChoice)
 				&& Objects.equals(this.toolCallbacks, other.toolCallbacks)
-				&& Objects.equals(this.toolNames, other.toolNames)
-				&& Objects.equals(this.toolContext, other.toolContext)
-				&& Objects.equals(this.internalToolExecutionEnabled, other.internalToolExecutionEnabled);
-	}
-
-	public static DeepSeekChatOptions fromOptions(DeepSeekChatOptions fromOptions) {
-		return fromOptions.mutate().build();
+				&& Objects.equals(this.toolContext, other.toolContext);
 	}
 
 	// public Builder class exposed to users. Avoids having to deal with noisy generic parameters.
@@ -334,7 +289,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		@Override
 		public B clone() {
 			B copy = super.clone();
-			copy.tools = this.tools == null ? null : new ArrayList<>(this.tools);
+			copy.tools = this.tools;
 			return copy;
 		}
 
@@ -400,7 +355,14 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 					this.topLogprobs = that.topLogprobs;
 				}
 				if (that.tools != null) {
-					this.tools = that.tools;
+					if (this.tools == null) {
+						this.tools = new ArrayList<>(that.tools);
+					}
+					else {
+						List<DeepSeekApi.FunctionTool> merged = new ArrayList<>(this.tools);
+						merged.addAll(that.tools);
+						this.tools = merged;
+					}
 				}
 				if (that.toolChoice != null) {
 					this.toolChoice = that.toolChoice;
@@ -410,14 +372,11 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		}
 
 		@Override
-		@SuppressWarnings("NullAway")
 		public DeepSeekChatOptions build() {
-			// TODO Un-comment assertion when tool definitions merging will use the builder/customizer
-			// Assert.state(this.model != null, "model must not be null");
 			return new DeepSeekChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 					this.responseFormat, this.stopSequences, this.temperature, this.topP, this.logprobs,
-					this.topLogprobs, this.tools, this.toolChoice, this.internalToolExecutionEnabled,
-					this.toolCallbacks, this.toolNames, this.toolContext);
+					this.topLogprobs, this.tools, this.toolChoice,
+					this.toolCallbacks, this.toolContext);
 		}
 
 	}

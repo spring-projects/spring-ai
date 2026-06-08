@@ -18,6 +18,7 @@ package org.springframework.ai.openai;
 
 import java.net.Proxy;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -65,8 +66,9 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 			@Nullable Boolean isMicrosoftFoundry, @Nullable Boolean isGitHubModels, @Nullable Duration timeout,
 			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
 			@Nullable String user, @Nullable EncodingFormat encodingFormat, @Nullable Integer dimensions) {
-		super(baseUrl, apiKey, credential, model, microsoftDeploymentName, microsoftFoundryServiceVersion,
-				organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries, proxy, customHeaders);
+		super(baseUrl, apiKey, credential, model != null ? model : DEFAULT_EMBEDDING_MODEL, microsoftDeploymentName,
+				microsoftFoundryServiceVersion, organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries,
+				proxy, customHeaders);
 		this.user = user;
 		this.encodingFormat = encodingFormat;
 		this.dimensions = dimensions;
@@ -87,13 +89,6 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 	@Override
 	public @Nullable Integer getDimensions() {
 		return this.dimensions;
-	}
-
-	@Override
-	public String toString() {
-		return "OpenAiEmbeddingOptions{" + "user='" + this.user + '\'' + ", model='" + this.getModel() + '\''
-				+ ", deploymentName='" + this.getDeploymentName() + '\'' + ", encodingFormat='" + this.encodingFormat
-				+ '\'' + ", dimensions=" + this.dimensions + '}';
 	}
 
 	public EmbeddingCreateParams toOpenAiCreateParams(List<String> instructions) {
@@ -204,15 +199,20 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 				}
 				this.isMicrosoftFoundry = castFrom.isMicrosoftFoundry();
 				this.isGitHubModels = castFrom.isGitHubModels();
-				if (castFrom.getTimeout() != null) {
-					this.timeout = castFrom.getTimeout();
-				}
+				this.timeout = castFrom.getTimeout();
 				this.maxRetries = castFrom.getMaxRetries();
 				if (castFrom.getProxy() != null) {
 					this.proxy = castFrom.getProxy();
 				}
 				if (castFrom.getCustomHeaders() != null) {
-					this.customHeaders = castFrom.getCustomHeaders();
+					if (this.customHeaders == null) {
+						this.customHeaders = new HashMap<>(castFrom.getCustomHeaders());
+					}
+					else {
+						Map<String, String> merged = new HashMap<>(this.customHeaders);
+						merged.putAll(castFrom.getCustomHeaders());
+						this.customHeaders = merged;
+					}
 				}
 			}
 			if (from instanceof OpenAiEmbeddingOptions castFrom) {
@@ -241,17 +241,17 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 			return this;
 		}
 
-		public Builder user(String user) {
+		public Builder user(@Nullable String user) {
 			this.user = user;
 			return this;
 		}
 
-		public Builder encodingFormat(EncodingFormat encodingFormat) {
+		public Builder encodingFormat(@Nullable EncodingFormat encodingFormat) {
 			this.encodingFormat = encodingFormat;
 			return this;
 		}
 
-		public Builder dimensions(Integer dimensions) {
+		public Builder dimensions(@Nullable Integer dimensions) {
 			this.dimensions = dimensions;
 			return this;
 		}

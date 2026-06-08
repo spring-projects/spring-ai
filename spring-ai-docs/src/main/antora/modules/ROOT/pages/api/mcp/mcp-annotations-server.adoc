@@ -267,12 +267,12 @@ public class ResourceProvider {
 public ReadResourceResult getUserProfile(String username) {
     String profileData = loadUserProfile(username);
     
-    return new ReadResourceResult(List.of(
+    return ReadResourceResult.builder(List.of(
         new TextResourceContents(
             "user-profile://" + username,
-            "application/json", 
+            "application/json",
             profileData)
-    ));
+    )).build();
 }
 ----
 
@@ -296,9 +296,9 @@ public ReadResourceResult getData(
     
     String data = fetchData(id);
     
-    return new ReadResourceResult(List.of(
+    return ReadResourceResult.builder(List.of(
         new TextResourceContents("data://" + id, "text/plain", data)
-    ));
+    )).build();
 }
 ----
 
@@ -346,10 +346,9 @@ public class PromptProvider {
         
         String message = "Hello, " + name + "! How can I help you today?";
         
-        return new GetPromptResult(
-            "Greeting",
-            List.of(new PromptMessage(Role.ASSISTANT, new TextContent(message)))
-        );
+        return GetPromptResult.builder(List.of(new PromptMessage(Role.ASSISTANT, TextContent.builder(message).build())))
+            .description("Greeting")
+            .build();
     }
 }
 ----
@@ -379,10 +378,9 @@ public GetPromptResult personalizedMessage(
         // Add interest-specific content
     }
     
-    return new GetPromptResult(
-        "Personalized Message",
-        List.of(new PromptMessage(Role.ASSISTANT, new TextContent(message.toString())))
-    );
+    return GetPromptResult.builder(List.of(new PromptMessage(Role.ASSISTANT, TextContent.builder(message.toString()).build())))
+        .description("Personalized Message")
+        .build();
 }
 ----
 
@@ -773,9 +771,9 @@ public class AsyncTools {
     public Mono<ReadResourceResult> asyncResource(String id) {
         return Mono.fromCallable(() -> {
             String data = loadData(id);
-            return new ReadResourceResult(List.of(
+            return ReadResourceResult.builder(List.of(
                 new TextResourceContents("async-data://" + id, "text/plain", data)
-            ));
+            )).build();
         }).delayElements(Duration.ofMillis(100));
     }
 }

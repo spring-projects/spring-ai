@@ -16,32 +16,63 @@
 
 package org.springframework.ai.model.mistralai.autoconfigure;
 
-import org.springframework.ai.mistralai.api.MistralAiModerationApi;
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.mistralai.moderation.MistralAiModerationOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 /**
  * @author Ricken Bazolo
+ * @author Sebastien Deleuze
  */
 @ConfigurationProperties(MistralAiModerationProperties.CONFIG_PREFIX)
 public class MistralAiModerationProperties extends MistralAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.mistralai.moderation";
 
-	private static final String DEFAULT_MODERATION_MODEL = MistralAiModerationApi.Model.MISTRAL_MODERATION.getValue();
-
-	@NestedConfigurationProperty
-	private final MistralAiModerationOptions options = MistralAiModerationOptions.builder()
-		.model(DEFAULT_MODERATION_MODEL)
-		.build();
-
 	public MistralAiModerationProperties() {
 		super.setBaseUrl(MistralAiCommonProperties.DEFAULT_BASE_URL);
 	}
 
-	public MistralAiModerationOptions getOptions() {
+	private @Nullable String model;
+
+	public @Nullable String getModel() {
+		return this.model;
+	}
+
+	public void setModel(@Nullable String model) {
+		this.model = model;
+	}
+
+	public MistralAiModerationOptions toOptions() {
+		return MistralAiModerationOptions.builder().model(this.model).build();
+	}
+
+	private Options options = new Options();
+
+	@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.moderation")
+	@Deprecated(since = "2.0.0", forRemoval = true)
+	public Options getOptions() {
 		return this.options;
+	}
+
+	public void setOptions(Options options) {
+		this.options = options;
+	}
+
+	public class Options {
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.moderation.model")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable String getModel() {
+			return MistralAiModerationProperties.this.getModel();
+		}
+
+		public void setModel(@Nullable String model) {
+			MistralAiModerationProperties.this.setModel(model);
+		}
+
 	}
 
 }

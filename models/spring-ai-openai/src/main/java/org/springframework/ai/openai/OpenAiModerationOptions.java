@@ -18,6 +18,7 @@ package org.springframework.ai.openai;
 
 import java.net.Proxy;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -54,12 +55,8 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 		return new Builder();
 	}
 
-	public OpenAiModerationOptions copy() {
-		return builder().from(this).build();
-	}
-
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -83,14 +80,6 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 		return Objects.hash(getModel(), getBaseUrl(), getApiKey(), getCredential(), getMicrosoftDeploymentName(),
 				getMicrosoftFoundryServiceVersion(), getOrganizationId(), isMicrosoftFoundry(), isGitHubModels(),
 				getTimeout(), getMaxRetries(), getProxy(), getCustomHeaders());
-	}
-
-	@Override
-	public String toString() {
-		return "OpenAiModerationOptions{" + "model='" + getModel() + '\'' + ", baseUrl='" + getBaseUrl() + '\''
-				+ ", organizationId='" + getOrganizationId() + '\'' + ", microsoftDeploymentName='"
-				+ getMicrosoftDeploymentName() + '\'' + ", timeout=" + getTimeout() + ", maxRetries=" + getMaxRetries()
-				+ '}';
 	}
 
 	public static final class Builder extends AbstractBuilder<OpenAiModerationOptions, Builder> {
@@ -154,7 +143,14 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 					this.proxy = castFrom.getProxy();
 				}
 				if (castFrom.getCustomHeaders() != null) {
-					this.customHeaders = castFrom.getCustomHeaders();
+					if (this.customHeaders == null) {
+						this.customHeaders = new HashMap<>(castFrom.getCustomHeaders());
+					}
+					else {
+						Map<String, String> merged = new HashMap<>(this.customHeaders);
+						merged.putAll(castFrom.getCustomHeaders());
+						this.customHeaders = merged;
+					}
 				}
 			}
 			if (options instanceof OpenAiModerationOptions castFrom) {

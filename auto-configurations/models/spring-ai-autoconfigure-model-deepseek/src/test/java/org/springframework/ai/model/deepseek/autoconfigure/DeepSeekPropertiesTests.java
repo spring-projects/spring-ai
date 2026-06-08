@@ -103,15 +103,15 @@ public class DeepSeekPropertiesTests {
 				"spring.ai.deepseek.base-url=TEST_BASE_URL",
 
 				"spring.ai.deepseek.chat.model=MODEL_XYZ",
-				"spring.ai.deepseek.chat.frequencyPenalty=-1.5",
-				"spring.ai.deepseek.chat.logitBias.myTokenId=-5",
-				"spring.ai.deepseek.chat.maxTokens=123",
-				"spring.ai.deepseek.chat.presencePenalty=0",
-				"spring.ai.deepseek.chat.responseFormat.type=json_object",
+				"spring.ai.deepseek.chat.frequency-penalty=-1.5",
+				"spring.ai.deepseek.chat.logit-bias.myTokenId=-5",
+				"spring.ai.deepseek.chat.max-tokens=123",
+				"spring.ai.deepseek.chat.presence-penalty=0",
+				"spring.ai.deepseek.chat.response-format.type=json_object",
 				"spring.ai.deepseek.chat.seed=66",
 				"spring.ai.deepseek.chat.stop=boza,koza",
 				"spring.ai.deepseek.chat.temperature=0.55",
-				"spring.ai.deepseek.chat.topP=0.56",
+				"spring.ai.deepseek.chat.top-p=0.56",
 				"spring.ai.deepseek.chat.user=userXYZ"
 				)
 			// @formatter:on

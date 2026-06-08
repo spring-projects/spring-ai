@@ -44,7 +44,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JacksonUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -53,6 +53,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Christian Tzolov
  * @author Filip Hrisafov
+ * @author Sebastien Deleuze
  */
 @ExtendWith(MockitoExtension.class)
 public class ChatClientNativeStructuredResponseTests {
@@ -87,7 +88,7 @@ public class ChatClientNativeStructuredResponseTests {
 
 	@Test
 	public void fallBackResponseEntityTest() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
@@ -125,7 +126,7 @@ public class ChatClientNativeStructuredResponseTests {
 	@Test
 	public void fallBackEntityTest() {
 
-		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
@@ -159,7 +160,7 @@ public class ChatClientNativeStructuredResponseTests {
 
 	@Test
 	public void nativeResponseEntityTest() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
@@ -205,7 +206,7 @@ public class ChatClientNativeStructuredResponseTests {
 
 	@Test
 	public void nativeEntityTest() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
@@ -248,7 +249,7 @@ public class ChatClientNativeStructuredResponseTests {
 	@Test
 	public void dynamicDisableNativeResponseEntityTest() {
 
-		when(this.chatModel.getDefaultOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
@@ -291,7 +292,7 @@ public class ChatClientNativeStructuredResponseTests {
 
 	@Test
 	public void dynamicDisableNativeEntityTest() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
@@ -331,7 +332,7 @@ public class ChatClientNativeStructuredResponseTests {
 
 	@Test
 	public void nativeWithCustomStructuredOutputConverterResponseEntityTest() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
@@ -379,7 +380,7 @@ public class ChatClientNativeStructuredResponseTests {
 
 	@Test
 	public void nativeWithCustomStructuredOutputConverterEntityTest() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
@@ -426,7 +427,7 @@ public class ChatClientNativeStructuredResponseTests {
 
 	@Test
 	public void nativeWithCustomStructuredOutputConverterWithoutJsonSchemaResponseEntityTest() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
@@ -473,7 +474,7 @@ public class ChatClientNativeStructuredResponseTests {
 
 	@Test
 	public void nativeWithCustomStructuredOutputConverterWithoutJsonSchemaEntityTest() {
-		when(this.chatModel.getDefaultOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
+		when(this.chatModel.getOptions()).thenReturn(StructuredOutputChatOptions.builder().build());
 
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
@@ -569,7 +570,7 @@ public class ChatClientNativeStructuredResponseTests {
 
 		@Override
 		public JsonNode convert(String source) {
-			return JsonParser.getJsonMapper().readTree(source);
+			return JacksonUtils.getDefaultJsonMapper().readTree(source);
 		}
 
 	}

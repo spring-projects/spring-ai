@@ -33,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Unit tests for OpenAiAudioSpeechModel.
  *
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 @ExtendWith(MockitoExtension.class)
 class OpenAiAudioSpeechModelTests {
@@ -44,7 +45,7 @@ class OpenAiAudioSpeechModelTests {
 	void testModelCreation() {
 		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(this.mockClient).build();
 		assertThat(model).isNotNull();
-		assertThat(model.getDefaultOptions()).isNotNull();
+		assertThat(model.getOptions()).isNotNull();
 	}
 
 	@Test
@@ -52,8 +53,8 @@ class OpenAiAudioSpeechModelTests {
 		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(this.mockClient).build();
 
 		assertThat(model).isNotNull();
-		assertThat(model.getDefaultOptions()).isNotNull();
-		assertThat(model.getDefaultOptions()).isInstanceOf(OpenAiAudioSpeechOptions.class);
+		assertThat(model.getOptions()).isNotNull();
+		assertThat(model.getOptions()).isInstanceOf(OpenAiAudioSpeechOptions.class);
 	}
 
 	@Test
@@ -61,7 +62,7 @@ class OpenAiAudioSpeechModelTests {
 		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(this.mockClient).build();
 
 		assertThat(model).isNotNull();
-		assertThat(model.getDefaultOptions()).isNotNull();
+		assertThat(model.getOptions()).isNotNull();
 	}
 
 	@Test
@@ -73,11 +74,11 @@ class OpenAiAudioSpeechModelTests {
 
 		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder()
 			.openAiClient(this.mockClient)
-			.defaultOptions(options)
+			.options(options)
 			.build();
 
 		assertThat(model).isNotNull();
-		assertThat(model.getDefaultOptions()).isEqualTo(options);
+		assertThat(model.getOptions()).isEqualTo(options);
 	}
 
 	@Test
@@ -90,17 +91,17 @@ class OpenAiAudioSpeechModelTests {
 
 		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder()
 			.openAiClient(this.mockClient)
-			.defaultOptions(options)
+			.options(options)
 			.build();
 
 		assertThat(model).isNotNull();
-		assertThat(model.getDefaultOptions()).isEqualTo(options);
+		assertThat(model.getOptions()).isEqualTo(options);
 	}
 
 	@Test
-	void testDefaultOptions() {
+	void testOptions() {
 		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(this.mockClient).build();
-		OpenAiAudioSpeechOptions options = (OpenAiAudioSpeechOptions) model.getDefaultOptions();
+		OpenAiAudioSpeechOptions options = (OpenAiAudioSpeechOptions) model.getOptions();
 
 		assertThat(options.getModel()).isEqualTo("gpt-4o-mini-tts");
 		assertThat(options.getVoice()).isEqualTo("alloy");
@@ -109,9 +110,9 @@ class OpenAiAudioSpeechModelTests {
 	}
 
 	@Test
-	void testDefaultOptionsValues() {
+	void testOptionsValues() {
 		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(this.mockClient).build();
-		TextToSpeechOptions options = model.getDefaultOptions();
+		TextToSpeechOptions options = model.getOptions();
 
 		assertThat(options).isInstanceOf(OpenAiAudioSpeechOptions.class);
 
@@ -205,11 +206,11 @@ class OpenAiAudioSpeechModelTests {
 		// Create model with target defaults
 		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder()
 			.openAiClient(this.mockClient)
-			.defaultOptions(target)
+			.options(target)
 			.build();
 
 		// Verify that default options are set
-		OpenAiAudioSpeechOptions defaults = (OpenAiAudioSpeechOptions) model.getDefaultOptions();
+		OpenAiAudioSpeechOptions defaults = (OpenAiAudioSpeechOptions) model.getOptions();
 		assertThat(defaults.getModel()).isEqualTo("tts-1");
 		assertThat(defaults.getVoice()).isEqualTo("alloy");
 		assertThat(defaults.getSpeed()).isEqualTo(1.0);
@@ -226,11 +227,11 @@ class OpenAiAudioSpeechModelTests {
 
 		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder()
 			.openAiClient(this.mockClient)
-			.defaultOptions(options)
+			.options(options)
 			.build();
 
 		assertThat(model).isNotNull();
-		assertThat(model.getDefaultOptions()).isEqualTo(options);
+		assertThat(model.getOptions()).isEqualTo(options);
 	}
 
 	@Test
@@ -238,10 +239,10 @@ class OpenAiAudioSpeechModelTests {
 		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(this.mockClient).build();
 
 		assertThat(model).isNotNull();
-		assertThat(model.getDefaultOptions()).isNotNull();
-		assertThat(model.getDefaultOptions()).isInstanceOf(OpenAiAudioSpeechOptions.class);
+		assertThat(model.getOptions()).isNotNull();
+		assertThat(model.getOptions()).isInstanceOf(OpenAiAudioSpeechOptions.class);
 
-		OpenAiAudioSpeechOptions defaults = (OpenAiAudioSpeechOptions) model.getDefaultOptions();
+		OpenAiAudioSpeechOptions defaults = (OpenAiAudioSpeechOptions) model.getOptions();
 		assertThat(defaults.getModel()).isEqualTo("gpt-4o-mini-tts");
 		assertThat(defaults.getVoice()).isEqualTo("alloy");
 		assertThat(defaults.getResponseFormat()).isEqualTo("mp3");
@@ -257,7 +258,7 @@ class OpenAiAudioSpeechModelTests {
 
 		OpenAiAudioSpeechModel originalModel = OpenAiAudioSpeechModel.builder()
 			.openAiClient(this.mockClient)
-			.defaultOptions(originalOptions)
+			.options(originalOptions)
 			.build();
 
 		// Create a modified copy using mutate
@@ -266,15 +267,15 @@ class OpenAiAudioSpeechModelTests {
 			.voice(OpenAiAudioSpeechOptions.Voice.NOVA)
 			.build();
 
-		OpenAiAudioSpeechModel modifiedModel = originalModel.mutate().defaultOptions(newOptions).build();
+		OpenAiAudioSpeechModel modifiedModel = originalModel.mutate().options(newOptions).build();
 
 		// Verify original model is unchanged
-		OpenAiAudioSpeechOptions originalDefaults = (OpenAiAudioSpeechOptions) originalModel.getDefaultOptions();
+		OpenAiAudioSpeechOptions originalDefaults = (OpenAiAudioSpeechOptions) originalModel.getOptions();
 		assertThat(originalDefaults.getModel()).isEqualTo("tts-1");
 		assertThat(originalDefaults.getVoice()).isEqualTo("alloy");
 
 		// Verify modified model has new options
-		OpenAiAudioSpeechOptions modifiedDefaults = (OpenAiAudioSpeechOptions) modifiedModel.getDefaultOptions();
+		OpenAiAudioSpeechOptions modifiedDefaults = (OpenAiAudioSpeechOptions) modifiedModel.getOptions();
 		assertThat(modifiedDefaults.getModel()).isEqualTo("tts-1-hd");
 		assertThat(modifiedDefaults.getVoice()).isEqualTo("nova");
 	}
@@ -284,7 +285,7 @@ class OpenAiAudioSpeechModelTests {
 		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(this.mockClient).build();
 
 		assertThat(model).isNotNull();
-		OpenAiAudioSpeechOptions defaults = (OpenAiAudioSpeechOptions) model.getDefaultOptions();
+		OpenAiAudioSpeechOptions defaults = (OpenAiAudioSpeechOptions) model.getOptions();
 		assertThat(defaults.getModel()).isEqualTo("gpt-4o-mini-tts");
 	}
 

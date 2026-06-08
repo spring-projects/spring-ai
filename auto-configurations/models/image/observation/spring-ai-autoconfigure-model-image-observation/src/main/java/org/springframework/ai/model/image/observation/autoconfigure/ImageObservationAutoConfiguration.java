@@ -17,8 +17,8 @@
 package org.springframework.ai.model.image.observation.autoconfigure;
 
 import io.micrometer.tracing.Tracer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.image.observation.ImageModelObservationContext;
@@ -46,7 +46,7 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties(ImageObservationProperties.class)
 public class ImageObservationAutoConfiguration {
 
-	private static final Logger logger = LoggerFactory.getLogger(ImageObservationAutoConfiguration.class);
+	private static final Log logger = LogFactory.getLog(ImageObservationAutoConfiguration.class);
 
 	private static void logPromptContentWarning() {
 		logger.warn(

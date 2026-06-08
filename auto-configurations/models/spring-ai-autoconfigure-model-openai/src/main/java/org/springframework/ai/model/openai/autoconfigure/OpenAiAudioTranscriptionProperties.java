@@ -39,9 +39,9 @@ public class OpenAiAudioTranscriptionProperties extends AbstractOpenAiProperties
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.audio.transcription";
 
-	private @Nullable String model = OpenAiAudioTranscriptionOptions.DEFAULT_TRANSCRIPTION_MODEL;
+	private @Nullable String model;
 
-	private AudioResponseFormat responseFormat = OpenAiAudioTranscriptionOptions.DEFAULT_RESPONSE_FORMAT;
+	private @Nullable AudioResponseFormat responseFormat;
 
 	private @Nullable String prompt;
 
@@ -59,11 +59,11 @@ public class OpenAiAudioTranscriptionProperties extends AbstractOpenAiProperties
 		this.model = model;
 	}
 
-	public AudioResponseFormat getResponseFormat() {
+	public @Nullable AudioResponseFormat getResponseFormat() {
 		return this.responseFormat;
 	}
 
-	public void setResponseFormat(AudioResponseFormat responseFormat) {
+	public void setResponseFormat(@Nullable AudioResponseFormat responseFormat) {
 		this.responseFormat = responseFormat;
 	}
 
@@ -100,24 +100,14 @@ public class OpenAiAudioTranscriptionProperties extends AbstractOpenAiProperties
 	}
 
 	public OpenAiAudioTranscriptionOptions toOptions() {
-		OpenAiAudioTranscriptionOptions.Builder builder = OpenAiAudioTranscriptionOptions.builder();
-		builder.model(this.getModel());
-		if (this.responseFormat != null) {
-			builder.responseFormat(this.responseFormat);
-		}
-		if (this.prompt != null) {
-			builder.prompt(this.prompt);
-		}
-		if (this.language != null) {
-			builder.language(this.language);
-		}
-		if (this.temperature != null) {
-			builder.temperature(this.temperature);
-		}
-		if (this.timestampGranularities != null) {
-			builder.timestampGranularities(this.timestampGranularities);
-		}
-		return builder.build();
+		return OpenAiAudioTranscriptionOptions.builder()
+			.model(this.model)
+			.responseFormat(this.responseFormat)
+			.prompt(this.prompt)
+			.language(this.language)
+			.temperature(this.temperature)
+			.timestampGranularities(this.timestampGranularities)
+			.build();
 	}
 
 	private Options options = new Options();
@@ -146,11 +136,11 @@ public class OpenAiAudioTranscriptionProperties extends AbstractOpenAiProperties
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.audio.transcription.response-format")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public AudioResponseFormat getResponseFormat() {
+		public @Nullable AudioResponseFormat getResponseFormat() {
 			return OpenAiAudioTranscriptionProperties.this.getResponseFormat();
 		}
 
-		public void setResponseFormat(AudioResponseFormat responseFormat) {
+		public void setResponseFormat(@Nullable AudioResponseFormat responseFormat) {
 			OpenAiAudioTranscriptionProperties.this.setResponseFormat(responseFormat);
 		}
 

@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration tests for OpenAiAudioSpeechAutoConfiguration.
  *
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class OpenAiAudioSpeechAutoConfigurationIT {
@@ -45,7 +46,7 @@ class OpenAiAudioSpeechAutoConfigurationIT {
 			assertThat(context).hasSingleBean(OpenAiAudioSpeechModel.class);
 			OpenAiAudioSpeechModel model = context.getBean(OpenAiAudioSpeechModel.class);
 			assertThat(model).isNotNull();
-			assertThat(model.getDefaultOptions()).isNotNull();
+			assertThat(model.getOptions()).isNotNull();
 		});
 	}
 
@@ -61,7 +62,7 @@ class OpenAiAudioSpeechAutoConfigurationIT {
 	void defaultPropertiesApplied() {
 		this.contextRunner.run(context -> {
 			OpenAiAudioSpeechModel model = context.getBean(OpenAiAudioSpeechModel.class);
-			OpenAiAudioSpeechOptions options = (OpenAiAudioSpeechOptions) model.getDefaultOptions();
+			OpenAiAudioSpeechOptions options = (OpenAiAudioSpeechOptions) model.getOptions();
 			assertThat(options.getModel()).isEqualTo("gpt-4o-mini-tts");
 			assertThat(options.getVoice()).isEqualTo("alloy");
 			assertThat(options.getResponseFormat()).isEqualTo("mp3");
@@ -78,7 +79,7 @@ class OpenAiAudioSpeechAutoConfigurationIT {
 					"spring.ai.openai.audio.speech.options.speed=1.5")
 			.run(context -> {
 				OpenAiAudioSpeechModel model = context.getBean(OpenAiAudioSpeechModel.class);
-				OpenAiAudioSpeechOptions options = (OpenAiAudioSpeechOptions) model.getDefaultOptions();
+				OpenAiAudioSpeechOptions options = (OpenAiAudioSpeechOptions) model.getOptions();
 				assertThat(options.getModel()).isEqualTo("tts-1-hd");
 				assertThat(options.getVoice()).isEqualTo("nova");
 				assertThat(options.getResponseFormat()).isEqualTo("opus");

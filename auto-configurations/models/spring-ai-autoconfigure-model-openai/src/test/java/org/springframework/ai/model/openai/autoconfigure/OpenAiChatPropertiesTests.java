@@ -71,20 +71,20 @@ public class OpenAiChatPropertiesTests {
 				"spring.ai.openai.base-url=http://TEST.BASE.URL",
 
 				"spring.ai.openai.chat.model=MODEL_XYZ",
-				"spring.ai.openai.chat.frequencyPenalty=-1.5",
-				"spring.ai.openai.chat.logitBias.myTokenId=-5",
-				"spring.ai.openai.chat.maxTokens=123",
+				"spring.ai.openai.chat.frequency-penalty=-1.5",
+				"spring.ai.openai.chat.logit-bias.myTokenId=-5",
+				"spring.ai.openai.chat.max-tokens=123",
 				"spring.ai.openai.chat.n=10",
-				"spring.ai.openai.chat.presencePenalty=0",
+				"spring.ai.openai.chat.presence-penalty=0",
 				"spring.ai.openai.chat.seed=66",
 				"spring.ai.openai.chat.stop=boza,koza",
 				"spring.ai.openai.chat.temperature=0.55",
-				"spring.ai.openai.chat.topP=0.56",
+				"spring.ai.openai.chat.top-p=0.56",
 				"spring.ai.openai.chat.user=userXYZ",
-				"spring.ai.openai.chat.toolChoice={\"type\":\"function\",\"function\":{\"name\":\"toolChoiceFunctionName\"}}",
-				"spring.ai.openai.chat.streamOptions.includeUsage=true",
-				"spring.ai.openai.chat.streamOptions.includeObfuscation=true",
-				"spring.ai.openai.chat.streamOptions.additionalProperties.foo=bar"
+				"spring.ai.openai.chat.tool-choice={\"type\":\"function\",\"function\":{\"name\":\"toolChoiceFunctionName\"}}",
+				"spring.ai.openai.chat.stream-options.include-usage=true",
+				"spring.ai.openai.chat.stream-options.include-obfuscation=true",
+				"spring.ai.openai.chat.stream-options.additional-properties.foo=bar"
 
 			)
 			// @formatter:on

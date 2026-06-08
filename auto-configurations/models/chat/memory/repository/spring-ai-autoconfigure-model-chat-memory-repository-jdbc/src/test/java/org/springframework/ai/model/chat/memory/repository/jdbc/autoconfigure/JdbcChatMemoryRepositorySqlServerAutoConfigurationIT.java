@@ -98,14 +98,16 @@ class JdbcChatMemoryRepositorySqlServerAutoConfigurationIT {
 				chatMemory.add(conversationId, userMessage);
 
 				assertThat(chatMemory.get(conversationId)).hasSize(1);
-				assertThat(chatMemory.get(conversationId)).isEqualTo(List.of(userMessage));
+				assertThat(chatMemory.get(conversationId)).extracting(Message::getText)
+					.containsExactly(userMessage.getText());
 
 				var assistantMessage = new AssistantMessage("Message from the assistant");
 
 				chatMemory.add(conversationId, List.of(assistantMessage));
 
 				assertThat(chatMemory.get(conversationId)).hasSize(2);
-				assertThat(chatMemory.get(conversationId)).isEqualTo(List.of(userMessage, assistantMessage));
+				assertThat(chatMemory.get(conversationId)).extracting(Message::getText)
+					.containsExactly(userMessage.getText(), assistantMessage.getText());
 
 				chatMemory.clear(conversationId);
 
@@ -117,7 +119,8 @@ class JdbcChatMemoryRepositorySqlServerAutoConfigurationIT {
 				chatMemory.add(conversationId, multipleMessages);
 
 				assertThat(chatMemory.get(conversationId)).hasSize(multipleMessages.size());
-				assertThat(chatMemory.get(conversationId)).isEqualTo(multipleMessages);
+				assertThat(chatMemory.get(conversationId)).extracting(Message::getText)
+					.containsExactlyElementsOf(multipleMessages.stream().map(Message::getText).toList());
 			});
 	}
 

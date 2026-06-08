@@ -22,9 +22,9 @@ import java.util.regex.Pattern;
 
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.reactivestreams.Publisher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -33,7 +33,7 @@ import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 
 public final class McpPredicates {
 
-	private static final Logger logger = LoggerFactory.getLogger(McpPredicates.class);
+	private static final Log logger = LogFactory.getLog(McpPredicates.class);
 
 	private static final Pattern URI_VARIABLE_PATTERN = Pattern.compile("\\{([^/]+?)\\}");
 
@@ -57,9 +57,10 @@ public final class McpPredicates {
 			if (isReactiveReturnType.test(method)) {
 				return true;
 			}
-			logger.warn(
-					"ASYNC Providers don't support imperative (non-reactive) return types. Skipping method {} with non-reactive return type {}",
-					method, method.getReturnType());
+			if (logger.isWarnEnabled()) {
+				logger.warn("ASYNC Providers don't support imperative (non-reactive) return types. Skipping method "
+						+ method + " with non-reactive return type " + method.getReturnType());
+			}
 			return false;
 		};
 	}
@@ -69,9 +70,10 @@ public final class McpPredicates {
 			if (isNotReactiveReturnType.test(method)) {
 				return true;
 			}
-			logger.warn(
-					"SYNC Providers don't support reactive return types. Skipping method {} with reactive return type {}",
-					method, method.getReturnType());
+			if (logger.isWarnEnabled()) {
+				logger.warn("SYNC Providers don't support reactive return types. Skipping method " + method
+						+ " with reactive return type " + method.getReturnType());
+			}
 			return false;
 		};
 	}
@@ -96,9 +98,10 @@ public final class McpPredicates {
 			if (!hasBidirectionalParameters(method)) {
 				return true;
 			}
-			logger.warn(
-					"Stateless servers doesn't support bidirectional parameters. Skipping method {} with bidirectional parameters",
-					method);
+			if (logger.isWarnEnabled()) {
+				logger.warn("Stateless servers doesn't support bidirectional parameters. Skipping method " + method
+						+ " with bidirectional parameters");
+			}
 			return false;
 		};
 	}

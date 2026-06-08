@@ -32,8 +32,11 @@ public final class OpenAiAutoConfigurationUtil {
 		resolved.setBaseUrl(StringUtils.hasText(modelProperties.getBaseUrl()) ? modelProperties.getBaseUrl()
 				: commonProperties.getBaseUrl());
 
-		resolved.setApiKey(StringUtils.hasText(modelProperties.getApiKey()) ? modelProperties.getApiKey()
-				: commonProperties.getApiKey());
+		// An explicit empty string ("") is a deliberate no-auth signal (NoopApiKey
+		// behaviour) and must be preserved. Only fall back to commonProperties when the
+		// model-level key is null (i.e. not configured at all).
+		resolved.setApiKey(
+				modelProperties.getApiKey() != null ? modelProperties.getApiKey() : commonProperties.getApiKey());
 
 		String organizationId = StringUtils.hasText(modelProperties.getOrganizationId())
 				? modelProperties.getOrganizationId() : commonProperties.getOrganizationId();

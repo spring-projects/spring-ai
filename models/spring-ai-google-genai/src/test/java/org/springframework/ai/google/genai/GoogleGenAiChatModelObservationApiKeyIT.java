@@ -44,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Soby Chacko
  * @author Dan Dobrin
+ * @author Sebastien Deleuze
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
@@ -174,7 +175,7 @@ public class GoogleGenAiChatModelObservationApiKeyIT {
 			return GoogleGenAiChatModel.builder()
 				.genAiClient(genAiClient)
 				.observationRegistry(observationRegistry)
-				.defaultOptions(GoogleGenAiChatOptions.builder()
+				.options(GoogleGenAiChatOptions.builder()
 					.model(GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW)
 					.build())
 				.build();

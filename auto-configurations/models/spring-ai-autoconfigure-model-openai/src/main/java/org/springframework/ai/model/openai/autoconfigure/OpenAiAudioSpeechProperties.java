@@ -35,17 +35,15 @@ public class OpenAiAudioSpeechProperties extends AbstractOpenAiProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.audio.speech";
 
-	public static final String DEFAULT_SPEECH_MODEL = OpenAiAudioSpeechOptions.DEFAULT_SPEECH_MODEL;
-
-	private @Nullable String model = DEFAULT_SPEECH_MODEL;
+	private @Nullable String model;
 
 	private @Nullable String input;
 
-	private String voice = OpenAiAudioSpeechOptions.DEFAULT_VOICE;
+	private @Nullable String voice;
 
-	private String responseFormat = OpenAiAudioSpeechOptions.DEFAULT_RESPONSE_FORMAT;
+	private @Nullable String responseFormat;
 
-	private Double speed = OpenAiAudioSpeechOptions.DEFAULT_SPEED;
+	private @Nullable Double speed;
 
 	public @Nullable String getModel() {
 		return this.model;
@@ -63,46 +61,38 @@ public class OpenAiAudioSpeechProperties extends AbstractOpenAiProperties {
 		this.input = input;
 	}
 
-	public String getVoice() {
+	public @Nullable String getVoice() {
 		return this.voice;
 	}
 
-	public void setVoice(String voice) {
+	public void setVoice(@Nullable String voice) {
 		this.voice = voice;
 	}
 
-	public String getResponseFormat() {
+	public @Nullable String getResponseFormat() {
 		return this.responseFormat;
 	}
 
-	public void setResponseFormat(String responseFormat) {
+	public void setResponseFormat(@Nullable String responseFormat) {
 		this.responseFormat = responseFormat;
 	}
 
-	public Double getSpeed() {
+	public @Nullable Double getSpeed() {
 		return this.speed;
 	}
 
-	public void setSpeed(Double speed) {
+	public void setSpeed(@Nullable Double speed) {
 		this.speed = speed;
 	}
 
 	public OpenAiAudioSpeechOptions toOptions() {
-		OpenAiAudioSpeechOptions.Builder builder = OpenAiAudioSpeechOptions.builder();
-		builder.model(this.getModel());
-		if (this.input != null) {
-			builder.input(this.input);
-		}
-		if (this.voice != null) {
-			builder.voice(this.voice);
-		}
-		if (this.responseFormat != null) {
-			builder.responseFormat(this.responseFormat);
-		}
-		if (this.speed != null) {
-			builder.speed(this.speed);
-		}
-		return builder.build();
+		return OpenAiAudioSpeechOptions.builder()
+			.model(this.getModel())
+			.input(this.input)
+			.voice(this.voice)
+			.responseFormat(this.responseFormat)
+			.speed(this.speed)
+			.build();
 	}
 
 	private Options options = new Options();
@@ -141,31 +131,31 @@ public class OpenAiAudioSpeechProperties extends AbstractOpenAiProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.audio.speech.voice")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public String getVoice() {
+		public @Nullable String getVoice() {
 			return OpenAiAudioSpeechProperties.this.getVoice();
 		}
 
-		public void setVoice(String voice) {
+		public void setVoice(@Nullable String voice) {
 			OpenAiAudioSpeechProperties.this.setVoice(voice);
 		}
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.audio.speech.response-format")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public String getResponseFormat() {
+		public @Nullable String getResponseFormat() {
 			return OpenAiAudioSpeechProperties.this.getResponseFormat();
 		}
 
-		public void setResponseFormat(String responseFormat) {
+		public void setResponseFormat(@Nullable String responseFormat) {
 			OpenAiAudioSpeechProperties.this.setResponseFormat(responseFormat);
 		}
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.audio.speech.speed")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public Double getSpeed() {
+		public @Nullable Double getSpeed() {
 			return OpenAiAudioSpeechProperties.this.getSpeed();
 		}
 
-		public void setSpeed(Double speed) {
+		public void setSpeed(@Nullable Double speed) {
 			OpenAiAudioSpeechProperties.this.setSpeed(speed);
 		}
 

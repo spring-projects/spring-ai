@@ -35,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Yokior
+ * @author Sebastien Deleuze
  */
 @SpringBootTest(classes = OllamaEmbeddingOptionsTestsIT.TestConfiguration.class)
 public class OllamaEmbeddingOptionsTestsIT extends BaseOllamaIT {
@@ -63,28 +64,13 @@ public class OllamaEmbeddingOptionsTestsIT extends BaseOllamaIT {
 		// Test setting dimensions parameter using setter method
 		Integer expectedDimensions = 768;
 
-		OllamaEmbeddingOptions options = new OllamaEmbeddingOptions();
-		options.setDimensions(expectedDimensions);
-		options.setModel(MODEL);
-
-		assertThat(options.getDimensions()).isEqualTo(expectedDimensions);
-		assertThat(options.getModel()).isEqualTo(MODEL);
-	}
-
-	@Test
-	void testDimensionsOptionInFromOptions() {
-		// Test if fromOptions method correctly copies dimensions parameter
-		Integer expectedDimensions = 512;
-
-		OllamaEmbeddingOptions originalOptions = OllamaEmbeddingOptions.builder()
+		OllamaEmbeddingOptions options = OllamaEmbeddingOptions.builder()
 			.model(MODEL)
 			.dimensions(expectedDimensions)
 			.build();
 
-		OllamaEmbeddingOptions copiedOptions = OllamaEmbeddingOptions.fromOptions(originalOptions);
-
-		assertThat(copiedOptions.getDimensions()).isEqualTo(expectedDimensions);
-		assertThat(copiedOptions.getModel()).isEqualTo(MODEL);
+		assertThat(options.getDimensions()).isEqualTo(expectedDimensions);
+		assertThat(options.getModel()).isEqualTo(MODEL);
 	}
 
 	@Test
@@ -223,7 +209,7 @@ public class OllamaEmbeddingOptionsTestsIT extends BaseOllamaIT {
 		public OllamaEmbeddingModel ollamaEmbedding(OllamaApi ollamaApi) {
 			return OllamaEmbeddingModel.builder()
 				.ollamaApi(ollamaApi)
-				.defaultOptions(OllamaEmbeddingOptions.builder().model(MODEL).build())
+				.options(OllamaEmbeddingOptions.builder().model(MODEL).build())
 				.build();
 		}
 

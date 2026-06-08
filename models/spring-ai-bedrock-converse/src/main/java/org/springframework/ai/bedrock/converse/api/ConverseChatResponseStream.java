@@ -23,9 +23,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
@@ -57,7 +57,7 @@ import org.springframework.util.Assert;
  */
 public class ConverseChatResponseStream implements ConverseStreamResponseHandler.Visitor {
 
-	private static final Logger logger = LoggerFactory.getLogger(ConverseChatResponseStream.class);
+	private static final Log logger = LogFactory.getLog(ConverseChatResponseStream.class);
 
 	public static final Sinks.EmitFailureHandler DEFAULT_EMIT_FAILURE_HANDLER = Sinks.EmitFailureHandler
 		.busyLooping(Duration.ofSeconds(10));

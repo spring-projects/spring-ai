@@ -75,9 +75,9 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 
 | spring.ai.bedrock.aws.region     | AWS region to use  | us-east-1
 | spring.ai.bedrock.aws.timeout    | AWS max duration for entire API call | 5m
-| spring.ai.bedrock.aws.connectionTimeout | Max duration to wait while establishing connection | 5s
-| spring.ai.bedrock.aws.connectionAcquisitionTimeout | Max duration to wait for new connection from the pool | 30s
-| spring.ai.bedrock.aws.asyncReadTimeout | Max duration spent reading asynchronous responses | 30s
+| spring.ai.bedrock.aws.connection-timeout | Max duration to wait while establishing connection | 5s
+| spring.ai.bedrock.aws.connection-acquisition-timeout | Max duration to wait for new connection from the pool | 30s
+| spring.ai.bedrock.aws.async-read-timeout | Max duration spent reading asynchronous responses | 30s
 | spring.ai.bedrock.aws.access-key | AWS access key  | -
 | spring.ai.bedrock.aws.secret-key | AWS secret key  | -
 | spring.ai.bedrock.aws.session-token | AWS session token for temporary credentials | -
@@ -287,6 +287,42 @@ String response = chatClient.prompt()
     .call()
     .content();
 ----
+
+==== Multi-Block System Message Caching
+
+When using advisors (e.g., RAG context injection), your system prompt may consist of multiple `SystemMessage` instances: a static prefix (your base instructions) and a dynamic suffix (advisor-injected context that changes each request).
+
+By default, when `SYSTEM_ONLY` or `SYSTEM_AND_TOOLS` caching is enabled, each `SystemMessage` is emitted as a separate `SystemContentBlock` and the cache point is placed *after the last block*.
+If any part of that content changes between requests, the entire system cache is invalidated — resulting in a 1.25x cache write cost on every request instead of the much cheaper cache read.
+
+The `multiBlockSystemCaching` option solves this by placing the cache point *after the second-to-last* system block (i.e., at the boundary between the static prefix and the dynamic suffix), so the static portion remains cached even as the last block changes freely.
+
+[source,java]
+----
+BedrockCacheOptions cacheOptions = BedrockCacheOptions.builder()
+    .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
+    .multiBlockSystemCaching(true)
+    .build();
+
+BedrockChatOptions chatOptions = BedrockChatOptions.builder()
+    .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
+    .cacheOptions(cacheOptions)
+    .build();
+
+// Static system prompt (will be cached)
+SystemMessage staticPrompt = new SystemMessage("You are an expert assistant...");
+// Dynamic RAG context (injected by advisor, changes each request)
+SystemMessage dynamicContext = new SystemMessage("Relevant context: " + ragResults);
+
+Prompt prompt = new Prompt(List.of(staticPrompt, dynamicContext, new UserMessage("...")), chatOptions);
+----
+
+This produces a Bedrock `system` array of the form `[text(static), cachePoint, text(dynamic)]` so only the static prefix participates in the cache key.
+
+NOTE: If only a single `SystemMessage` is present, the cache point is placed after that single block (same as the default behavior).
+The `multiBlockSystemCaching` option only changes placement when there are two or more system messages.
+
+IMPORTANT: Message ordering matters. The cache point is always placed after the second-to-last system block, so static content must come before dynamic content in the message list. If you register your base instructions as the first `SystemMessage` and let advisors append dynamic context after, this ordering is naturally satisfied.
 
 ==== Using ChatClient Fluent API
 
@@ -754,17 +790,27 @@ AWS Bedrock pricing for prompt caching (approximate, varies by model):
 
 == Tool Calling
 
-The Bedrock Converse API supports tool calling capabilities, allowing models to use tools during conversations.
-Here's an example of how to define and use @Tool based tools:
+`BedrockProxyChatModel` does not execute tool calls internally.
+Tool execution must be handled externally using one of two supported approaches:
+
+* **ChatClient with ToolCallingAdvisor** — the recommended approach for most use cases.
+  `ToolCallingAdvisor` is automatically registered and manages the tool-call loop transparently.
+* **User-controlled tool execution** — use `DefaultToolCallingManager` directly when you need full control over the loop (for example, when combining tool calling with prompt caching).
+
+=== Tool Calling via ChatClient (Recommended)
+
+The simplest way to use tools is with the `ChatClient` high-level API.
+`ToolCallingAdvisor` handles the tool-call loop automatically for both synchronous and streaming calls.
+
+Here's an example using `@Tool`-annotated methods:
 
 [source,java]
 ----
-
 public class WeatherService {
 
     @Tool(description = "Get the weather in location")
-    public String weatherByLocation(@ToolParam(description= "City or state name") String location) {
-        ...
+    public String weatherByLocation(@ToolParam(description = "City or state name") String location) {
+        // ...
     }
 }
 
@@ -775,22 +821,83 @@ String response = ChatClient.create(this.chatModel)
         .content();
 ----
 
-You can use the java.util.function beans as tools as well:
+You can also register a `ToolCallback` bean and pass it directly:
 
 [source,java]
 ----
 @Bean
-@Description("Get the weather in location. Return temperature in 36°F or 36°C format.")
-public Function<Request, Response> weatherFunction() {
-    return new MockWeatherService();
+ToolCallback weatherFunction() {
+    return FunctionToolCallback.builder("weatherFunction", new MockWeatherService())
+        .description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+        .inputType(Request.class)
+        .build();
 }
 
 String response = ChatClient.create(this.chatModel)
         .prompt("What's the weather like in Boston?")
-        .toolNames("weatherFunction")
-        .inputType(Request.class)
+        .tools(weatherFunction)
         .call()
         .content();
+----
+
+=== User-Controlled Tool Execution
+
+For scenarios where you need explicit control over the tool-call loop — for example, when combining tool calling with prompt caching — you can drive the loop manually using `DefaultToolCallingManager`.
+
+==== Synchronous
+
+[source,java]
+----
+ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+var options = BedrockChatOptions.builder()
+        .toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
+            .description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+            .inputType(WeatherService.Request.class)
+            .build()))
+        .build();
+
+var prompt = new Prompt("What's the weather like in San Francisco, Tokyo and Paris?", options);
+
+ChatResponse response = chatModel.call(prompt);
+
+while (response.hasToolCalls()) {
+    ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+    prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+    response = chatModel.call(prompt);
+}
+
+System.out.println(response.getResult().getOutput().getText());
+----
+
+==== Streaming
+
+Because tool calls span multiple stream chunks, each streaming call must be aggregated first using `MessageAggregator` before checking for tool calls.
+
+[source,java]
+----
+ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+var options = BedrockChatOptions.builder()
+        .toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
+            .description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+            .inputType(WeatherService.Request.class)
+            .build()))
+        .build();
+
+var prompt = new Prompt("What's the weather like in San Francisco, Tokyo and Paris?", options);
+
+AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+new MessageAggregator().aggregate(chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+
+while (aggregatedRef.get().hasToolCalls()) {
+    ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+    prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+    aggregatedRef.set(null);
+    new MessageAggregator().aggregate(chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+}
+
+System.out.println(aggregatedRef.get().getResult().getOutput().getText());
 ----
 
 Find more in xref:api/tools.adoc[Tools] documentation.

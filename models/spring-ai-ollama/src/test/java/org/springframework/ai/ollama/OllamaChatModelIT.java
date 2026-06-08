@@ -50,7 +50,6 @@ import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -64,6 +63,7 @@ import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.ai.util.ResourceUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -76,6 +76,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 class OllamaChatModelIT extends BaseOllamaIT {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final String MODEL = OllamaModel.QWEN_2_5_3B.getName();
 
@@ -337,7 +339,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 					.get(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey());
 
 				if (Boolean.TRUE.equals(nativeFlag) && schemaString != null) {
-					var actualSchemaMap = ModelOptionsUtils.jsonToMap(schemaString);
+					var actualSchemaMap = jsonHelper.fromJsonToMap(schemaString);
 					if (expectedOutputSchemaMap.equals(actualSchemaMap)) {
 						nativeStructuredOutputUsed.set(true);
 					}
@@ -404,7 +406,6 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		ChatOptions chatOptions = ToolCallingChatOptions.builder()
 			.toolCallbacks(ToolCallbacks.from(new MathTools()))
-			.internalToolExecutionEnabled(false)
 			.build();
 		Prompt prompt = new Prompt(
 				List.of(new SystemMessage("You are a helpful assistant."), new UserMessage("What is 6 * 8?")),
@@ -474,7 +475,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		OllamaChatModel ollamaChat(OllamaApi ollamaApi) {
 			return OllamaChatModel.builder()
 				.ollamaApi(ollamaApi)
-				.defaultOptions(OllamaChatOptions.builder().model(MODEL).temperature(0.0).build())
+				.options(OllamaChatOptions.builder().model(MODEL).temperature(0.0).build())
 				.modelManagementOptions(ModelManagementOptions.builder()
 					.pullModelStrategy(PullModelStrategy.WHEN_MISSING)
 					.additionalModels(List.of(ADDITIONAL_MODEL))

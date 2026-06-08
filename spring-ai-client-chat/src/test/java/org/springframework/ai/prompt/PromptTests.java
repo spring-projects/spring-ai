@@ -105,7 +105,7 @@ class PromptTests {
 
 		Prompt copiedPrompt = prompt.copy();
 		assertThat(prompt).isNotSameAs(copiedPrompt);
-		assertThat(prompt.getOptions()).isNotSameAs(copiedPrompt.getOptions());
+		assertThat(prompt.getOptions()).isSameAs(copiedPrompt.getOptions());
 		assertThat(prompt.getInstructions()).isNotSameAs(copiedPrompt.getInstructions());
 	}
 
@@ -122,7 +122,7 @@ class PromptTests {
 
 		Prompt copiedPrompt = prompt.mutate().build();
 		assertThat(prompt).isNotSameAs(copiedPrompt);
-		assertThat(prompt.getOptions()).isNotSameAs(copiedPrompt.getOptions());
+		assertThat(prompt.getOptions()).isSameAs(copiedPrompt.getOptions());
 		assertThat(prompt.getInstructions()).isNotSameAs(copiedPrompt.getInstructions());
 	}
 

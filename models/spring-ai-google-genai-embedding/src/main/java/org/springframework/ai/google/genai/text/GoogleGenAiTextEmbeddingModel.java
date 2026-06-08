@@ -43,7 +43,7 @@ import org.springframework.ai.embedding.observation.DefaultEmbeddingModelObserva
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
-import org.springframework.ai.google.genai.GoogleGenAiEmbeddingConnectionDetails;
+import org.springframework.ai.google.genai.embedding.GoogleGenAiEmbeddingConnectionDetails;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
@@ -59,6 +59,7 @@ import org.springframework.util.StringUtils;
  * @author Rodrigo Malara
  * @author Soby Chacko
  * @author Dan Dobrin
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
@@ -70,7 +71,7 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 		.collect(Collectors.toMap(GoogleGenAiTextEmbeddingModelName::getName,
 				GoogleGenAiTextEmbeddingModelName::getDimensions));
 
-	public final GoogleGenAiTextEmbeddingOptions defaultOptions;
+	public final GoogleGenAiTextEmbeddingOptions options;
 
 	private final GoogleGenAiEmbeddingConnectionDetails connectionDetails;
 
@@ -108,7 +109,7 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 		Assert.notNull(defaultEmbeddingOptions, "GoogleGenAiTextEmbeddingOptions must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
-		this.defaultOptions = defaultEmbeddingOptions.initializeDefaults();
+		this.options = defaultEmbeddingOptions;
 		this.connectionDetails = connectionDetails;
 		this.genAiClient = connectionDetails.getGenAiClient();
 		this.retryTemplate = retryTemplate;
@@ -231,26 +232,24 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 
 	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
 		@Nullable EmbeddingOptions requestOptions = embeddingRequest.getOptions();
-		GoogleGenAiTextEmbeddingOptions mergedOptions = this.defaultOptions;
+		GoogleGenAiTextEmbeddingOptions mergedOptions = this.options;
 
 		if (requestOptions != null) {
 			GoogleGenAiTextEmbeddingOptions.Builder builder = GoogleGenAiTextEmbeddingOptions.builder()
-				.model(ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.defaultOptions.getModel()))
-				.dimensions(ModelOptionsUtils.mergeOption(requestOptions.getDimensions(),
-						this.defaultOptions.getDimensions()));
+				.model(ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.options.getModel()))
+				.dimensions(
+						ModelOptionsUtils.mergeOption(requestOptions.getDimensions(), this.options.getDimensions()));
 
 			if (requestOptions instanceof GoogleGenAiTextEmbeddingOptions googleOptions) {
-				builder
-					.taskType(ModelOptionsUtils.mergeOption(googleOptions.getTaskType(),
-							this.defaultOptions.getTaskType()))
-					.title(ModelOptionsUtils.mergeOption(googleOptions.getTitle(), this.defaultOptions.getTitle()))
+				builder.taskType(ModelOptionsUtils.mergeOption(googleOptions.getTaskType(), this.options.getTaskType()))
+					.title(ModelOptionsUtils.mergeOption(googleOptions.getTitle(), this.options.getTitle()))
 					.autoTruncate(ModelOptionsUtils.mergeOption(googleOptions.getAutoTruncate(),
-							this.defaultOptions.getAutoTruncate()));
+							this.options.getAutoTruncate()));
 			}
 			else {
-				builder.taskType(this.defaultOptions.getTaskType())
-					.title(this.defaultOptions.getTitle())
-					.autoTruncate(this.defaultOptions.getAutoTruncate());
+				builder.taskType(this.options.getTaskType())
+					.title(this.options.getTitle())
+					.autoTruncate(this.options.getAutoTruncate());
 			}
 			mergedOptions = builder.build();
 		}
@@ -277,7 +276,7 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public int dimensions() {
-		return KNOWN_EMBEDDING_DIMENSIONS.computeIfAbsent(this.defaultOptions.getModel(), model -> super.dimensions());
+		return KNOWN_EMBEDDING_DIMENSIONS.computeIfAbsent(this.options.getModel(), model -> super.dimensions());
 	}
 
 	/**

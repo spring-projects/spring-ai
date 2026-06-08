@@ -18,9 +18,11 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
+import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.jspecify.annotations.Nullable;
@@ -138,7 +140,19 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 			var observation = AdvisorObservationDocumentation.AI_ADVISOR.observation(this.observationConvention,
 					DEFAULT_OBSERVATION_CONVENTION, () -> observationContext, this.observationRegistry);
 
-			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
+			Observation parentObservation = contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
+			observation.parentObservation(parentObservation);
+			// Briefly make the parent observation current while starting this one, so
+			// Micrometer tracing derives the span's parent from the parent observation
+			// rather than from whatever scope happens to be open on the current thread
+			// (e.g.
+			// the servlet HTTP span). This keeps span parenting correct without relying
+			// on
+			// automatic context propagation.
+			try (Observation.Scope ignored = parentObservation != null ? parentObservation.openScope()
+					: Observation.Scope.NOOP) {
+				observation.start();
+			}
 
 			// @formatter:off
 			Flux<ChatClientResponse> chatClientResponse = Flux.defer(() -> advisor.adviseStream(chatClientRequest, this)
@@ -195,7 +209,16 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 		return this.observationRegistry;
 	}
 
-	public static final class Builder {
+	@Override
+	public Builder mutate() {
+		LinkedHashSet<Advisor> all = new LinkedHashSet<>(this.originalCallAdvisors);
+		all.addAll(this.originalStreamAdvisors);
+		return DefaultAroundAdvisorChain.builder(this.observationRegistry)
+			.observationConvention(this.observationConvention)
+			.pushAll(new ArrayList<>(all));
+	}
+
+	public static final class Builder implements BaseAdvisorChain.Builder<Builder> {
 
 		private final ObservationRegistry observationRegistry;
 

@@ -30,7 +30,7 @@ The `ChatMemory` abstraction allows you to implement various types of memory to 
 
 === Message Window Chat Memory
 
-`MessageWindowChatMemory` maintains a window of messages up to a specified maximum size. When the number of messages exceeds the maximum, older messages are removed while preserving system messages. The default window size is 20 messages.
+`MessageWindowChatMemory` maintains a sliding window of messages up to a specified maximum size. When the number of messages exceeds the maximum, older messages are evicted while always preserving `SystemMessage` instances. The default window size is 20 messages.
 
 [source,java]
 ----
@@ -40,6 +40,14 @@ MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
 ----
 
 This is the default message type used by Spring AI to auto-configure a `ChatMemory` bean.
+
+==== Turn-boundary eviction
+
+When eviction is needed, `MessageWindowChatMemory` always removes whole turns rather than cutting mid-turn. A _turn_ starts at a `UserMessage` and includes all subsequent assistant replies, tool calls, and tool responses up to the next `UserMessage`. If the raw eviction point lands on a non-user message (for example, an assistant reply in the middle of a tool-calling exchange), the cut is advanced forward to the next `UserMessage` so that the kept window always begins at a complete turn.
+
+This means `maxMessages` is an _upper bound_ on the number of messages stored — the actual count may be somewhat lower when snapping is needed to find the next turn boundary.
+
+NOTE: If `maxMessages` is smaller than a single complete turn (for example, a multi-step tool-calling exchange that exceeds the window size), all non-system messages may be evicted until a new `UserMessage` is added. Size `maxMessages` generously enough to hold at least one representative turn for your use case.
 
 == Memory Storage
 
@@ -71,7 +79,7 @@ ChatMemoryRepository repository = new InMemoryChatMemoryRepository();
 
 `JdbcChatMemoryRepository` is a built-in implementation that uses JDBC to store messages in a relational database. It supports multiple databases out-of-the-box and is suitable for applications that require persistent storage of chat memory.
 
-Messages are retrieved in ascending timestamp order (oldest-to-newest), which is the expected format for LLM conversation history.
+Messages are retrieved in ascending order (oldest-to-newest), which is the expected format for LLM conversation history. Ordering is maintained by a `sequence_id` column that records each message's position within its conversation. Each message also stores a creation `timestamp`, exposed in the message metadata under the `JdbcChatMemoryRepository.CONVERSATION_TS` key as a `java.time.Instant`, so applications can display when a message was created.
 
 First, add the following dependency to your project:
 
@@ -125,6 +133,20 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
     .build();
 ----
 
+==== Reading Message Timestamps
+
+Each stored message records when it was created. The timestamp is available in the message metadata under the `JdbcChatMemoryRepository.CONVERSATION_TS` key as a `java.time.Instant`, which is useful for displaying message times in a UI:
+
+[source,java]
+----
+List<Message> messages = chatMemory.get(conversationId);
+for (Message message : messages) {
+    Instant createdAt = (Instant) message.getMetadata().get(JdbcChatMemoryRepository.CONVERSATION_TS);
+}
+----
+
+The timestamp is preserved when a conversation is saved again, so a message keeps its original creation time for the lifetime of the conversation.
+
 ==== Supported Databases and Dialect Abstraction
 
 Spring AI supports multiple relational databases via a dialect abstraction. The following databases are supported out-of-the-box:
@@ -150,6 +172,8 @@ The correct dialect can be auto-detected from the JDBC URL when using `JdbcChatM
 ==== Schema Initialization
 
 The auto-configuration will automatically create the `SPRING_AI_CHAT_MEMORY` table on startup, using a vendor-specific SQL script for your database. By default, schema initialization runs only for embedded databases (H2, HSQL, Derby, etc.).
+
+NOTE: As of 2.0.0, the schema adds a `sequence_id` column that determines message ordering, alongside the existing `timestamp` column (now exposed via message metadata). Upgrading an existing application requires adding the new column; see xref:upgrade-notes.adoc[] for the migration steps.
 
 You can control schema initialization using the `spring.ai.chat.memory.repository.jdbc.initialize-schema` property:
 
@@ -321,12 +345,12 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
 [cols="2,5,1",stripes=even]
 |===
 |Property | Description | Default Value
-| `spring.ai.chat.memory.repository.neo4j.sessionLabel` | The label for the nodes that store conversation sessions | `Session`
-| `spring.ai.chat.memory.repository.neo4j.messageLabel` | The label for the nodes that store messages | `Message`
-| `spring.ai.chat.memory.repository.neo4j.toolCallLabel` | The label for nodes that store tool calls (e.g. in Assistant Messages) | `ToolCall`
-| `spring.ai.chat.memory.repository.neo4j.metadataLabel` | The label for nodes that store message metadata | `Metadata`
-| `spring.ai.chat.memory.repository.neo4j.toolResponseLabel` | The label for the nodes that store tool responses | `ToolResponse`
-| `spring.ai.chat.memory.repository.neo4j.mediaLabel` | The label for the nodes that store media associated with a message | `Media`
+| `spring.ai.chat.memory.repository.neo4j.session-label` | The label for the nodes that store conversation sessions | `Session`
+| `spring.ai.chat.memory.repository.neo4j.message-label` | The label for the nodes that store messages | `Message`
+| `spring.ai.chat.memory.repository.neo4j.tool-call-label` | The label for nodes that store tool calls (e.g. in Assistant Messages) | `ToolCall`
+| `spring.ai.chat.memory.repository.neo4j.metadata-label` | The label for nodes that store message metadata | `Metadata`
+| `spring.ai.chat.memory.repository.neo4j.tool-response-label` | The label for the nodes that store tool responses | `ToolResponse`
+| `spring.ai.chat.memory.repository.neo4j.media-label` | The label for the nodes that store media associated with a message | `Media`
 |===
 
 ==== Index Initialization
@@ -450,11 +474,11 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
     .build();
 ----
 
-If you'd rather create the `RedisChatMemoryRepository` manually, you can do so by providing a `JedisPooled` client:
+If you'd rather create the `RedisChatMemoryRepository` manually, you can do so by providing a `RedisClient` client:
 
 [source,java]
 ----
-JedisPooled jedisClient = new JedisPooled("localhost", 6379);
+RedisClient jedisClient = RedisClient.builder().hostAndPort("localhost", 6379).build();
 
 ChatMemoryRepository chatMemoryRepository = RedisChatMemoryRepository.builder()
     .jedisClient(jedisClient)

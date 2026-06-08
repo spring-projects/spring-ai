@@ -16,12 +16,16 @@
 
 package org.springframework.ai.model.anthropic.autoconfigure;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -113,6 +117,40 @@ class AnthropicPropertiesTests {
 	}
 
 	@Test
+	void connectionPoolMetricsDisabledByDefault() {
+		new ApplicationContextRunner().withPropertyValues("spring.ai.anthropic.api-key=API_KEY")
+			.withUserConfiguration(MeterRegistryConfiguration.class)
+			.withConfiguration(
+					AutoConfigurations.of(AnthropicChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(AnthropicChatProperties.class);
+				assertThat(chatProperties.isConnectionPoolMetricsEnabled()).isFalse();
+
+				// MeterRegistry is present, but the property defaults to false, so no
+				// okhttp.pool.* gauges should be bound by the auto-configured chat model.
+				assertThat(context.getBean(AnthropicChatModel.class)).isNotNull();
+				assertThat(poolGaugeCount(context.getBean(MeterRegistry.class))).isZero();
+			});
+	}
+
+	@Test
+	void connectionPoolMetricsBoundWhenEnabled() {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.anthropic.api-key=API_KEY",
+					"spring.ai.anthropic.chat.connection-pool-metrics-enabled=true")
+			.withUserConfiguration(MeterRegistryConfiguration.class)
+			.withConfiguration(
+					AutoConfigurations.of(AnthropicChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(AnthropicChatProperties.class);
+				assertThat(chatProperties.isConnectionPoolMetricsEnabled()).isTrue();
+
+				assertThat(context.getBean(AnthropicChatModel.class)).isNotNull();
+				assertThat(poolGaugeCount(context.getBean(MeterRegistry.class))).isGreaterThan(0);
+			});
+	}
+
+	@Test
 	void chatCompletionDisabled() {
 		// Enabled by default
 		new ApplicationContextRunner().withPropertyValues("spring.ai.anthropic.api-key=API_KEY")
@@ -137,6 +175,24 @@ class AnthropicPropertiesTests {
 		new ApplicationContextRunner().withPropertyValues("spring.ai.model.chat=none")
 			.withConfiguration(AutoConfigurations.of(AnthropicChatAutoConfiguration.class))
 			.run(context -> assertThat(context.getBeansOfType(AnthropicChatModel.class)).isEmpty());
+	}
+
+	private static long poolGaugeCount(MeterRegistry registry) {
+		return registry.getMeters()
+			.stream()
+			.map(meter -> meter.getId().getName())
+			.filter(name -> name.startsWith("okhttp.pool"))
+			.count();
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class MeterRegistryConfiguration {
+
+		@Bean
+		MeterRegistry meterRegistry() {
+			return new SimpleMeterRegistry();
+		}
+
 	}
 
 }

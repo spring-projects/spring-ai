@@ -21,10 +21,9 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -42,20 +41,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 public class FunctionCallbackInPromptIT {
 
-	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackInPromptIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
+		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class,
 				org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration.class));
 
 	@Test
 	void functionCallTest() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.openai.chat.model=" + "gpt-4o-mini", "spring.ai.openai.chat.temperature=0.1")
+			.withPropertyValues("spring.ai.openai.chat.model=" + "gpt-4o-mini", "spring.ai.openai.chat.temperature=1")
 			.run(context -> {
 
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+
+				ChatClient chatClient = ChatClient.builder(chatModel).build();
 
 				UserMessage userMessage = new UserMessage(
 						"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.");
@@ -68,9 +67,9 @@ public class FunctionCallbackInPromptIT {
 								.build()))
 					.build();
 
-				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
+				Prompt prompt = new Prompt(List.of(userMessage), promptOptions);
 
-				logger.info("Response: {}", response);
+				ChatResponse response = chatClient.prompt(prompt).call().chatResponse();
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 			});
@@ -80,7 +79,7 @@ public class FunctionCallbackInPromptIT {
 	void streamingFunctionCallTest() {
 
 		this.contextRunner
-			.withPropertyValues("spring.ai.openai.chat.model=" + "gpt-4o-mini", "spring.ai.openai.chat.temperature=0.5")
+			.withPropertyValues("spring.ai.openai.chat.model=" + "gpt-4o-mini", "spring.ai.openai.chat.temperature=1")
 			.run(context -> {
 
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
@@ -96,17 +95,20 @@ public class FunctionCallbackInPromptIT {
 								.build()))
 					.build();
 
-				Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage), promptOptions));
+				Flux<ChatResponse> response = ChatClient.create(chatModel)
+					.prompt(new Prompt(List.of(userMessage), promptOptions))
+					.stream()
+					.chatResponse();
 
 				String content = response.collectList()
-					.block()
+					.blockOptional()
 					.stream()
+					.flatMap(List::stream)
 					.map(ChatResponse::getResults)
 					.flatMap(List::stream)
 					.map(Generation::getOutput)
 					.map(AssistantMessage::getText)
 					.collect(Collectors.joining());
-				logger.info("Response: {}", content);
 
 				assertThat(content).contains("30", "10", "15");
 			});

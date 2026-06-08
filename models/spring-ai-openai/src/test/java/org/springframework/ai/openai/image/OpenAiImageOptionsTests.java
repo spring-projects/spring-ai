@@ -27,13 +27,18 @@ import org.springframework.ai.openai.OpenAiImageOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Unit tests for {@link OpenAiImageOptions}.
+ *
+ * @author guan xu
+ */
 class OpenAiImageOptionsTests {
 
 	@Test
 	void genericImageOptionsAreMerged() {
 		ImageOptions source = ImageOptionsBuilder.builder()
 			.model("generic-model")
-			.N(2)
+			.n(2)
 			.width(1024)
 			.height(1024)
 			.responseFormat("b64_json")
@@ -60,6 +65,26 @@ class OpenAiImageOptionsTests {
 		var params = options.toOpenAiImageGenerateParams(new ImagePrompt("a ducati motorcycle", options));
 
 		assertThat(params._additionalHeaders().values("x-budget-id")).containsExactly("BUDGET_123");
+	}
+
+	@Test
+	void testOptionsBuilderMergeCustomHeaders() {
+		OpenAiImageOptions defaultOptions = OpenAiImageOptions.builder()
+			.customHeaders(Map.of("default-header", "default-value"))
+			.build();
+
+		OpenAiImageOptions requestOptions = OpenAiImageOptions.builder()
+			.customHeaders(Map.of("merged-header1", "merged-value1", "merged-header2", "merged-value2"))
+			.build();
+
+		OpenAiImageOptions mergedOptions = OpenAiImageOptions.builder()
+			.from(defaultOptions)
+			.merge(requestOptions)
+			.build();
+
+		assertThat(mergedOptions.getCustomHeaders()).containsEntry("default-header", "default-value")
+			.containsEntry("merged-header1", "merged-value1")
+			.containsEntry("merged-header2", "merged-value2");
 	}
 
 }

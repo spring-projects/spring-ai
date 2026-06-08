@@ -28,6 +28,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 public class BedrockCohereEmbeddingOptions implements EmbeddingOptions {
 
@@ -38,34 +39,28 @@ public class BedrockCohereEmbeddingOptions implements EmbeddingOptions {
 	 * In this case, embed your corpus with the search_document type and embedded queries with
 	 * type search_query type.
 	 */
-	private @Nullable InputType inputType;
+	private final InputType inputType;
 
 	/**
 	 * Specifies how the API handles inputs longer than the maximum token length. If you specify LEFT or
 	 * RIGHT, the model discards the input until the remaining input is exactly the maximum input token length for the
 	 * model.
 	 */
-	private @Nullable Truncate truncate;
+	private final Truncate truncate;
+
 	// @formatter:on
 
-	public static Builder builder() {
-		return new Builder();
+	protected BedrockCohereEmbeddingOptions(@Nullable InputType inputType, @Nullable Truncate truncate) {
+		this.inputType = inputType != null ? inputType : InputType.SEARCH_DOCUMENT;
+		this.truncate = truncate != null ? truncate : Truncate.NONE;
 	}
 
-	public @Nullable InputType getInputType() {
+	public InputType getInputType() {
 		return this.inputType;
 	}
 
-	public void setInputType(@Nullable InputType inputType) {
-		this.inputType = inputType;
-	}
-
-	public @Nullable Truncate getTruncate() {
+	public Truncate getTruncate() {
 		return this.truncate;
-	}
-
-	public void setTruncate(@Nullable Truncate truncate) {
-		this.truncate = truncate;
 	}
 
 	@Override
@@ -78,22 +73,28 @@ public class BedrockCohereEmbeddingOptions implements EmbeddingOptions {
 		return null;
 	}
 
+	public static BedrockCohereEmbeddingOptions.Builder builder() {
+		return new Builder();
+	}
+
 	public static final class Builder {
 
-		private BedrockCohereEmbeddingOptions options = new BedrockCohereEmbeddingOptions();
+		private @Nullable InputType inputType;
+
+		private @Nullable Truncate truncate;
 
 		public Builder inputType(@Nullable InputType inputType) {
-			this.options.setInputType(inputType);
+			this.inputType = inputType;
 			return this;
 		}
 
 		public Builder truncate(@Nullable Truncate truncate) {
-			this.options.setTruncate(truncate);
+			this.truncate = truncate;
 			return this;
 		}
 
 		public BedrockCohereEmbeddingOptions build() {
-			return this.options;
+			return new BedrockCohereEmbeddingOptions(this.inputType, this.truncate);
 		}
 
 	}

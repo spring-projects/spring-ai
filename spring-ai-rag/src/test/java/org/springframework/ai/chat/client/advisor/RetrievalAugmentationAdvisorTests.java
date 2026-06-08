@@ -45,6 +45,7 @@ import static org.mockito.Mockito.when;
  * Unit tests for {@link RetrievalAugmentationAdvisor}.
  *
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  */
 class RetrievalAugmentationAdvisorTests {
 
@@ -68,7 +69,7 @@ class RetrievalAugmentationAdvisorTests {
 	void theOneWithTheDocumentRetriever() {
 		// Chat Model
 		var chatModel = mock(ChatModel.class);
-		when(chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
+		when(chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
 		var promptCaptor = ArgumentCaptor.forClass(Prompt.class);
 		given(chatModel.call(promptCaptor.capture())).willReturn(ChatResponse.builder()
 			.generations(List.of(new Generation(new AssistantMessage("Felix Felicis"))))

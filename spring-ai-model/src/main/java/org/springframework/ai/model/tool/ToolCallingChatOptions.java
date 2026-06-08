@@ -16,16 +16,11 @@
 
 package org.springframework.ai.model.tool;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.support.ToolUtils;
@@ -38,33 +33,31 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Christian Tzolov
  * @since 1.0.0
  */
 public interface ToolCallingChatOptions extends ChatOptions {
 
-	boolean DEFAULT_TOOL_EXECUTION_ENABLED = true;
-
 	/**
 	 * ToolCallbacks to be registered with the ChatModel.
 	 */
-	List<ToolCallback> getToolCallbacks();
-
-	/**
-	 * Names of the tools to register with the ChatModel.
-	 */
-	Set<String> getToolNames();
-
-	/**
-	 * Whether the {@link ChatModel} is responsible for executing the tools requested by
-	 * the model or if the tools should be executed directly by the caller.
-	 */
-	@Nullable Boolean getInternalToolExecutionEnabled();
+	@Nullable List<ToolCallback> getToolCallbacks();
 
 	/**
 	 * Get the configured tool context.
 	 * @return the tool context map.
 	 */
-	Map<String, Object> getToolContext();
+	@Nullable Map<String, Object> getToolContext();
+
+	/**
+	 * Returns a new {@link ToolCallingChatOptions.Builder} initialized with the values of
+	 * this {@link ToolCallingChatOptions}.
+	 *
+	 * Narrows the return type of {@link ChatOptions#mutate()} so generic tool calling
+	 * code can chain methods without casting.
+	 */
+	@Override
+	ToolCallingChatOptions.Builder<?> mutate();
 
 	/**
 	 * A builder to create a new {@link ToolCallingChatOptions} instance.
@@ -73,51 +66,33 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		return new DefaultToolCallingChatOptions.Builder<>();
 	}
 
-	static boolean isInternalToolExecutionEnabled(ChatOptions chatOptions) {
-		Assert.notNull(chatOptions, "chatOptions cannot be null");
-		boolean internalToolExecutionEnabled;
-		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions
-				&& toolCallingChatOptions.getInternalToolExecutionEnabled() != null) {
-			internalToolExecutionEnabled = Boolean.TRUE
-				.equals(toolCallingChatOptions.getInternalToolExecutionEnabled());
-		}
-		else {
-			internalToolExecutionEnabled = DEFAULT_TOOL_EXECUTION_ENABLED;
-		}
-		return internalToolExecutionEnabled;
-	}
-
-	static Set<String> mergeToolNames(Set<String> runtimeToolNames, Set<String> defaultToolNames) {
-		Assert.notNull(runtimeToolNames, "runtimeToolNames cannot be null");
-		Assert.notNull(defaultToolNames, "defaultToolNames cannot be null");
-		if (CollectionUtils.isEmpty(runtimeToolNames)) {
-			return new HashSet<>(defaultToolNames);
-		}
-		return new HashSet<>(runtimeToolNames);
-	}
-
-	static List<ToolCallback> mergeToolCallbacks(List<ToolCallback> runtimeToolCallbacks,
-			List<ToolCallback> defaultToolCallbacks) {
-		Assert.notNull(runtimeToolCallbacks, "runtimeToolCallbacks cannot be null");
-		Assert.notNull(defaultToolCallbacks, "defaultToolCallbacks cannot be null");
+	static @Nullable List<ToolCallback> mergeToolCallbacks(@Nullable List<ToolCallback> runtimeToolCallbacks,
+			@Nullable List<ToolCallback> defaultToolCallbacks) {
 		if (CollectionUtils.isEmpty(runtimeToolCallbacks)) {
-			return new ArrayList<>(defaultToolCallbacks);
+			return defaultToolCallbacks != null ? List.copyOf(defaultToolCallbacks) : null;
 		}
-		return new ArrayList<>(runtimeToolCallbacks);
+		return List.copyOf(runtimeToolCallbacks);
 	}
 
-	static Map<String, Object> mergeToolContext(Map<String, Object> runtimeToolContext,
-			Map<String, Object> defaultToolContext) {
-		Assert.notNull(runtimeToolContext, "runtimeToolContext cannot be null");
+	static @Nullable Map<String, Object> mergeToolContext(@Nullable Map<String, Object> runtimeToolContext,
+			@Nullable Map<String, Object> defaultToolContext) {
+		if (CollectionUtils.isEmpty(runtimeToolContext)) {
+			return defaultToolContext != null ? Map.copyOf(defaultToolContext) : null;
+		}
 		Assert.noNullElements(runtimeToolContext.keySet(), "runtimeToolContext keys cannot be null");
-		Assert.notNull(defaultToolContext, "defaultToolContext cannot be null");
+		if (CollectionUtils.isEmpty(defaultToolContext)) {
+			return Map.copyOf(runtimeToolContext);
+		}
 		Assert.noNullElements(defaultToolContext.keySet(), "defaultToolContext keys cannot be null");
-		var mergedToolContext = new HashMap<>(defaultToolContext);
+		var mergedToolContext = new java.util.HashMap<>(defaultToolContext);
 		mergedToolContext.putAll(runtimeToolContext);
-		return mergedToolContext;
+		return Map.copyOf(mergedToolContext);
 	}
 
-	static void validateToolCallbacks(List<ToolCallback> toolCallbacks) {
+	static void validateToolCallbacks(@Nullable List<ToolCallback> toolCallbacks) {
+		if (CollectionUtils.isEmpty(toolCallbacks)) {
+			return;
+		}
 		List<String> duplicateToolNames = ToolUtils.getDuplicateToolNames(toolCallbacks);
 		if (!duplicateToolNames.isEmpty()) {
 			throw new IllegalStateException("Multiple tools with the same name (%s) found in ToolCallingChatOptions"
@@ -139,22 +114,6 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		 * ToolCallbacks to be registered with the ChatModel.
 		 */
 		B toolCallbacks(ToolCallback... toolCallbacks);
-
-		/**
-		 * Names of the tools to register with the ChatModel.
-		 */
-		B toolNames(@Nullable Set<String> toolNames);
-
-		/**
-		 * Names of the tools to register with the ChatModel.
-		 */
-		B toolNames(String... toolNames);
-
-		/**
-		 * Whether the {@link ChatModel} is responsible for executing the tools requested
-		 * by the model or if the tools should be executed directly by the caller.
-		 */
-		B internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled);
 
 		/**
 		 * Add a {@link Map} of context values into tool context.

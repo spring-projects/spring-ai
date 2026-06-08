@@ -21,8 +21,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -34,8 +32,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ollama.autoconfigure.BaseOllamaIT;
 import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration;
 import org.springframework.ai.ollama.OllamaChatModel;
-import org.springframework.ai.ollama.api.OllamaChatOptions;
-import org.springframework.ai.ollama.api.OllamaChatOptions.Builder;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -47,8 +43,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class OllamaFunctionCallbackIT extends BaseOllamaIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(OllamaFunctionCallbackIT.class);
-
 	private static final String MODEL_NAME = OllamaModel.QWEN_2_5_3B.getName();
 
 	private static final String USER_MESSAGE_TEXT = "What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.";
@@ -59,10 +53,10 @@ class OllamaFunctionCallbackIT extends BaseOllamaIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
 	// @formatter:off
-				"spring.ai.ollama.baseUrl=" + getBaseUrl(),
+				"spring.ai.ollama.base-url=" + getBaseUrl(),
 				"spring.ai.ollama.chat.model=" + MODEL_NAME,
 				"spring.ai.ollama.chat.temperature=0.5",
-				"spring.ai.ollama.chat.topK=10")
+				"spring.ai.ollama.chat.top-k=10")
 				// @formatter:on
 		.withConfiguration(ollamaAutoConfig(OllamaChatAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
@@ -85,7 +79,6 @@ class OllamaFunctionCallbackIT extends BaseOllamaIT {
 			UserMessage userMessage = new UserMessage("What is 2+2");
 
 			var response = chatClient.prompt(new Prompt(userMessage)).call().content();
-			logger.info("Response: {}", response);
 
 			assertThat(response).contains("4");
 
@@ -97,14 +90,16 @@ class OllamaFunctionCallbackIT extends BaseOllamaIT {
 		this.contextRunner.run(context -> {
 
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
+			ToolCallback weatherFunctionInfo = context.getBean("weatherFunctionInfo", ToolCallback.class);
 
 			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			Builder delta = OllamaChatOptions.builder().toolNames(TOOL_NAME);
-			OllamaChatOptions options = mergeOptions(chatModel, delta);
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), options));
-
-			logger.info("Response: {}", response);
+			ChatResponse response = ChatClient.create(chatModel)
+				.prompt()
+				.messages(userMessage)
+				.tools(weatherFunctionInfo)
+				.call()
+				.chatResponse();
 
 			var result = response.getResult();
 			assertThat(result).isNotNull();
@@ -117,13 +112,16 @@ class OllamaFunctionCallbackIT extends BaseOllamaIT {
 		this.contextRunner.run(context -> {
 
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
+			ToolCallback weatherFunctionInfo = context.getBean("weatherFunctionInfo", ToolCallback.class);
 
 			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			Builder delta = OllamaChatOptions.builder().toolNames(TOOL_NAME);
-			OllamaChatOptions options = mergeOptions(chatModel, delta);
-
-			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage), options));
+			Flux<ChatResponse> response = ChatClient.create(chatModel)
+				.prompt()
+				.messages(userMessage)
+				.tools(weatherFunctionInfo)
+				.stream()
+				.chatResponse();
 
 			String content = response.collectList()
 				.blockOptional()
@@ -134,7 +132,6 @@ class OllamaFunctionCallbackIT extends BaseOllamaIT {
 				.map(Generation::getOutput)
 				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
-			logger.info("Response: {}", content);
 
 			assertThat(content).contains("30", "10", "15");
 		});

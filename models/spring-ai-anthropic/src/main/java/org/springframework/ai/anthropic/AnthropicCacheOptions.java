@@ -33,6 +33,7 @@ import org.springframework.ai.chat.messages.MessageType;
  *
  * @author Austin Dase
  * @author Soby Chacko
+ * @author Sebastien Deleuze
  * @since 1.1.0
  */
 public class AnthropicCacheOptions {
@@ -42,24 +43,44 @@ public class AnthropicCacheOptions {
 	 * returns a fresh instance to avoid shared mutable state.
 	 */
 	public static AnthropicCacheOptions disabled() {
-		return new AnthropicCacheOptions();
+		return builder().strategy(AnthropicCacheStrategy.NONE).build();
 	}
 
 	private static final int DEFAULT_MIN_CONTENT_LENGTH = 1;
 
-	private AnthropicCacheStrategy strategy = AnthropicCacheStrategy.NONE;
+	private final AnthropicCacheStrategy strategy;
 
-	private Function<@Nullable String, Integer> contentLengthFunction = s -> s != null ? s.length() : 0;
+	private final Function<@Nullable String, Integer> contentLengthFunction;
 
-	private Map<MessageType, AnthropicCacheTtl> messageTypeTtl = Stream.of(MessageType.values())
-		.collect(Collectors.toMap(mt -> mt, mt -> AnthropicCacheTtl.FIVE_MINUTES, (m1, m2) -> m1, HashMap::new));
+	private final Map<MessageType, AnthropicCacheTtl> messageTypeTtl;
 
-	private Map<MessageType, Integer> messageTypeMinContentLengths = Stream.of(MessageType.values())
-		.collect(Collectors.toMap(mt -> mt, mt -> DEFAULT_MIN_CONTENT_LENGTH, (m1, m2) -> m1, HashMap::new));
+	private final Map<MessageType, Integer> messageTypeMinContentLengths;
 
-	private boolean multiBlockSystemCaching = false;
+	private final boolean multiBlockSystemCaching;
 
-	public static Builder builder() {
+	private final boolean cacheToolResults;
+
+	protected AnthropicCacheOptions(@Nullable AnthropicCacheStrategy strategy,
+			@Nullable Function<@Nullable String, Integer> contentLengthFunction,
+			@Nullable Map<MessageType, AnthropicCacheTtl> messageTypeTtl,
+			@Nullable Map<MessageType, Integer> messageTypeMinContentLengths, @Nullable Boolean multiBlockSystemCaching,
+			@Nullable Boolean cacheToolResults) {
+		this.strategy = (strategy != null ? strategy : AnthropicCacheStrategy.NONE);
+		this.contentLengthFunction = (contentLengthFunction != null ? contentLengthFunction
+				: s -> s != null ? s.length() : 0);
+		this.messageTypeTtl = Stream.of(MessageType.values())
+			.collect(Collectors.toUnmodifiableMap(mt -> mt,
+					mt -> (messageTypeTtl != null && messageTypeTtl.containsKey(mt)) ? messageTypeTtl.get(mt)
+							: AnthropicCacheTtl.FIVE_MINUTES));
+		this.messageTypeMinContentLengths = Stream.of(MessageType.values())
+			.collect(Collectors.toUnmodifiableMap(mt -> mt,
+					mt -> (messageTypeMinContentLengths != null && messageTypeMinContentLengths.containsKey(mt))
+							? messageTypeMinContentLengths.get(mt) : DEFAULT_MIN_CONTENT_LENGTH));
+		this.multiBlockSystemCaching = (multiBlockSystemCaching != null ? multiBlockSystemCaching : false);
+		this.cacheToolResults = (cacheToolResults != null ? cacheToolResults : false);
+	}
+
+	public static AnthropicCacheOptions.Builder builder() {
 		return new Builder();
 	}
 
@@ -67,51 +88,46 @@ public class AnthropicCacheOptions {
 		return this.strategy;
 	}
 
-	public void setStrategy(AnthropicCacheStrategy strategy) {
-		this.strategy = strategy;
-	}
-
 	public Function<@Nullable String, Integer> getContentLengthFunction() {
 		return this.contentLengthFunction;
-	}
-
-	public void setContentLengthFunction(Function<@Nullable String, Integer> contentLengthFunction) {
-		this.contentLengthFunction = contentLengthFunction;
 	}
 
 	public Map<MessageType, AnthropicCacheTtl> getMessageTypeTtl() {
 		return this.messageTypeTtl;
 	}
 
-	public void setMessageTypeTtl(Map<MessageType, AnthropicCacheTtl> messageTypeTtl) {
-		this.messageTypeTtl = messageTypeTtl;
-	}
-
 	public Map<MessageType, Integer> getMessageTypeMinContentLengths() {
 		return this.messageTypeMinContentLengths;
-	}
-
-	public void setMessageTypeMinContentLengths(Map<MessageType, Integer> messageTypeMinContentLengths) {
-		this.messageTypeMinContentLengths = messageTypeMinContentLengths;
 	}
 
 	public boolean isMultiBlockSystemCaching() {
 		return this.multiBlockSystemCaching;
 	}
 
-	public void setMultiBlockSystemCaching(boolean multiBlockSystemCaching) {
-		this.multiBlockSystemCaching = multiBlockSystemCaching;
+	/**
+	 * Whether a {@code cache_control} breakpoint is placed on the last tool result
+	 * message of a request, so that tool outputs are written to (and read from) the cache
+	 * across tool-calling rounds. Takes effect with strategies whose eligible message
+	 * types include tool results, i.e.
+	 * {@link AnthropicCacheStrategy#CONVERSATION_HISTORY}; it is a no-op for strategies
+	 * that only target tool definitions or system messages.
+	 * @return {@code true} if tool result caching is enabled
+	 * @since 2.0.0
+	 */
+	public boolean isCacheToolResults() {
+		return this.cacheToolResults;
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
 		if (!(o instanceof AnthropicCacheOptions that)) {
 			return false;
 		}
-		return this.multiBlockSystemCaching == that.multiBlockSystemCaching && this.strategy == that.strategy
+		return this.multiBlockSystemCaching == that.multiBlockSystemCaching
+				&& this.cacheToolResults == that.cacheToolResults && this.strategy == that.strategy
 				&& Objects.equals(this.messageTypeTtl, that.messageTypeTtl)
 				&& Objects.equals(this.messageTypeMinContentLengths, that.messageTypeMinContentLengths);
 	}
@@ -119,58 +135,80 @@ public class AnthropicCacheOptions {
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.strategy, this.messageTypeTtl, this.messageTypeMinContentLengths,
-				this.multiBlockSystemCaching);
-	}
-
-	@Override
-	public String toString() {
-		return "AnthropicCacheOptions{" + "strategy=" + this.strategy + ", contentLengthFunction="
-				+ this.contentLengthFunction + ", messageTypeTtl=" + this.messageTypeTtl
-				+ ", messageTypeMinContentLengths=" + this.messageTypeMinContentLengths + ", multiBlockSystemCaching="
-				+ this.multiBlockSystemCaching + '}';
+				this.multiBlockSystemCaching, this.cacheToolResults);
 	}
 
 	public static final class Builder {
 
-		private final AnthropicCacheOptions options = new AnthropicCacheOptions();
+		private @Nullable AnthropicCacheStrategy strategy;
 
-		public Builder strategy(AnthropicCacheStrategy strategy) {
-			this.options.setStrategy(strategy);
+		private @Nullable Function<@Nullable String, Integer> contentLengthFunction;
+
+		private @Nullable Map<MessageType, AnthropicCacheTtl> messageTypeTtl;
+
+		private @Nullable Map<MessageType, Integer> messageTypeMinContentLengths;
+
+		private @Nullable Boolean multiBlockSystemCaching;
+
+		private @Nullable Boolean cacheToolResults;
+
+		public Builder strategy(@Nullable AnthropicCacheStrategy strategy) {
+			this.strategy = strategy;
 			return this;
 		}
 
-		public Builder contentLengthFunction(Function<@Nullable String, Integer> contentLengthFunction) {
-			this.options.setContentLengthFunction(contentLengthFunction);
+		public Builder contentLengthFunction(@Nullable Function<@Nullable String, Integer> contentLengthFunction) {
+			this.contentLengthFunction = contentLengthFunction;
 			return this;
 		}
 
-		public Builder messageTypeTtl(Map<MessageType, AnthropicCacheTtl> messageTypeTtl) {
-			this.options.setMessageTypeTtl(messageTypeTtl);
+		public Builder messageTypeTtl(@Nullable Map<MessageType, AnthropicCacheTtl> messageTypeTtl) {
+			this.messageTypeTtl = messageTypeTtl;
 			return this;
 		}
 
 		public Builder messageTypeTtl(MessageType messageType, AnthropicCacheTtl ttl) {
-			this.options.messageTypeTtl.put(messageType, ttl);
+			if (this.messageTypeTtl == null) {
+				this.messageTypeTtl = new HashMap<>();
+			}
+			this.messageTypeTtl.put(messageType, ttl);
 			return this;
 		}
 
-		public Builder messageTypeMinContentLengths(Map<MessageType, Integer> messageTypeMinContentLengths) {
-			this.options.setMessageTypeMinContentLengths(messageTypeMinContentLengths);
+		public Builder messageTypeMinContentLengths(@Nullable Map<MessageType, Integer> messageTypeMinContentLengths) {
+			this.messageTypeMinContentLengths = messageTypeMinContentLengths;
 			return this;
 		}
 
 		public Builder messageTypeMinContentLength(MessageType messageType, Integer minContentLength) {
-			this.options.messageTypeMinContentLengths.put(messageType, minContentLength);
+			if (this.messageTypeMinContentLengths == null) {
+				this.messageTypeMinContentLengths = new HashMap<>();
+			}
+			this.messageTypeMinContentLengths.put(messageType, minContentLength);
 			return this;
 		}
 
-		public Builder multiBlockSystemCaching(boolean multiBlockSystemCaching) {
-			this.options.setMultiBlockSystemCaching(multiBlockSystemCaching);
+		public Builder multiBlockSystemCaching(@Nullable Boolean multiBlockSystemCaching) {
+			this.multiBlockSystemCaching = multiBlockSystemCaching;
+			return this;
+		}
+
+		/**
+		 * Place a {@code cache_control} breakpoint on the last tool result message of the
+		 * request so that tool outputs are cached across tool-calling rounds. Takes
+		 * effect with {@link AnthropicCacheStrategy#CONVERSATION_HISTORY}.
+		 * @param cacheToolResults whether to cache tool result messages
+		 * @return this builder
+		 * @since 2.0.0
+		 */
+		public Builder cacheToolResults(@Nullable Boolean cacheToolResults) {
+			this.cacheToolResults = cacheToolResults;
 			return this;
 		}
 
 		public AnthropicCacheOptions build() {
-			return this.options;
+			return new AnthropicCacheOptions(this.strategy, this.contentLengthFunction, this.messageTypeTtl,
+					this.messageTypeMinContentLengths, this.multiBlockSystemCaching, this.cacheToolResults);
 		}
 
 	}

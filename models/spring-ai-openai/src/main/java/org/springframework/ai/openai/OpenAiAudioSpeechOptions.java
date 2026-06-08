@@ -18,6 +18,7 @@ package org.springframework.ai.openai;
 
 import java.net.Proxy;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -109,11 +110,11 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 
 	private final @Nullable String input;
 
-	private final @Nullable String voice;
+	private final String voice;
 
-	private final @Nullable String responseFormat;
+	private final String responseFormat;
 
-	private final @Nullable Double speed;
+	private final Double speed;
 
 	protected OpenAiAudioSpeechOptions(@Nullable String baseUrl, @Nullable String apiKey,
 			@Nullable Credential credential, @Nullable String model, @Nullable String microsoftDeploymentName,
@@ -121,12 +122,13 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 			@Nullable Boolean isMicrosoftFoundry, @Nullable Boolean isGitHubModels, @Nullable Duration timeout,
 			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
 			@Nullable String input, @Nullable String voice, @Nullable String responseFormat, @Nullable Double speed) {
-		super(baseUrl, apiKey, credential, model, microsoftDeploymentName, microsoftFoundryServiceVersion,
-				organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries, proxy, customHeaders);
+		super(baseUrl, apiKey, credential, model != null ? model : DEFAULT_SPEECH_MODEL, microsoftDeploymentName,
+				microsoftFoundryServiceVersion, organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries,
+				proxy, customHeaders);
 		this.input = input;
-		this.voice = voice;
-		this.responseFormat = responseFormat;
-		this.speed = speed;
+		this.voice = voice != null ? voice : DEFAULT_VOICE;
+		this.responseFormat = responseFormat != null ? responseFormat : DEFAULT_RESPONSE_FORMAT;
+		this.speed = speed != null ? speed : DEFAULT_SPEED;
 	}
 
 	public static Builder builder() {
@@ -138,50 +140,26 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 	}
 
 	@Override
-	public @Nullable String getVoice() {
+	public String getVoice() {
 		return this.voice;
 	}
 
-	public @Nullable String getResponseFormat() {
+	public String getResponseFormat() {
 		return this.responseFormat;
 	}
 
 	@Override
-	public @Nullable Double getSpeed() {
+	public Double getSpeed() {
 		return this.speed;
 	}
 
 	@Override
 	public @Nullable String getFormat() {
-		return (this.responseFormat != null) ? this.responseFormat.toLowerCase() : null;
+		return this.responseFormat.toLowerCase();
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public OpenAiAudioSpeechOptions copy() {
-		return OpenAiAudioSpeechOptions.builder()
-			.model(this.getModel())
-			.input(this.input)
-			.voice(this.voice)
-			.responseFormat(this.responseFormat)
-			.speed(this.speed)
-			.baseUrl(this.getBaseUrl())
-			.apiKey(this.getApiKey())
-			.credential(this.getCredential())
-			.deploymentName(this.getDeploymentName())
-			.microsoftFoundryServiceVersion(this.getMicrosoftFoundryServiceVersion())
-			.organizationId(this.getOrganizationId())
-			.microsoftFoundry(this.isMicrosoftFoundry())
-			.gitHubModels(this.isGitHubModels())
-			.timeout(this.getTimeout())
-			.maxRetries(this.getMaxRetries())
-			.proxy(this.getProxy())
-			.customHeaders(this.getCustomHeaders())
-			.build();
-	}
-
-	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -197,13 +175,6 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 	@Override
 	public int hashCode() {
 		return Objects.hash(getModel(), this.input, this.voice, this.responseFormat, this.speed);
-	}
-
-	@Override
-	public String toString() {
-		return "OpenAiAudioSpeechOptions{" + "model='" + getModel() + '\'' + ", input='" + this.input + '\''
-				+ ", voice='" + this.voice + '\'' + ", responseFormat='" + this.responseFormat + '\'' + ", speed="
-				+ this.speed + '}';
 	}
 
 	public static final class Builder extends AbstractBuilder<OpenAiAudioSpeechOptions, Builder> {
@@ -280,24 +251,27 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 				}
 				this.isMicrosoftFoundry = castFrom.isMicrosoftFoundry();
 				this.isGitHubModels = castFrom.isGitHubModels();
-				if (castFrom.getTimeout() != null) {
-					this.timeout = castFrom.getTimeout();
-				}
+				this.timeout = castFrom.getTimeout();
 				this.maxRetries = castFrom.getMaxRetries();
 				if (castFrom.getProxy() != null) {
 					this.proxy = castFrom.getProxy();
 				}
 				if (castFrom.getCustomHeaders() != null) {
-					this.customHeaders = castFrom.getCustomHeaders();
+					if (this.customHeaders == null) {
+						this.customHeaders = new HashMap<>(castFrom.getCustomHeaders());
+					}
+					else {
+						Map<String, String> merged = new HashMap<>(this.customHeaders);
+						merged.putAll(castFrom.getCustomHeaders());
+						this.customHeaders = merged;
+					}
 				}
 			}
 			if (from instanceof OpenAiAudioSpeechOptions castFrom) {
 				if (castFrom.getInput() != null) {
 					this.input = castFrom.getInput();
 				}
-				if (castFrom.getResponseFormat() != null) {
-					this.responseFormat = castFrom.getResponseFormat();
-				}
+				this.responseFormat = castFrom.getResponseFormat();
 			}
 			return this;
 		}

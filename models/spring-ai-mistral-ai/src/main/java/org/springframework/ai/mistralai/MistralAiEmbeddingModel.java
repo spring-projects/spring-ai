@@ -21,9 +21,9 @@ import java.util.Map;
 import java.util.Objects;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
@@ -53,11 +53,12 @@ import org.springframework.util.Assert;
  * @author Jason Smith
  * @author Nicolas Krier
  * @author Soby Chacko
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(MistralAiEmbeddingModel.class);
+	private static final Log logger = LogFactory.getLog(MistralAiEmbeddingModel.class);
 
 	/**
 	 * Known embedding dimensions for Mistral AI models. Maps model names to their
@@ -70,7 +71,7 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 
-	private final MistralAiEmbeddingOptions defaultOptions;
+	private final MistralAiEmbeddingOptions options;
 
 	private final MetadataMode metadataMode;
 
@@ -98,7 +99,7 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 		this.mistralAiApi = mistralAiApi;
 		this.metadataMode = metadataMode;
-		this.defaultOptions = options;
+		this.options = options;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
 	}
@@ -126,7 +127,9 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 					.getBody();
 
 				if (apiEmbeddingResponse == null) {
-					logger.warn("No embeddings returned for request: {}", request);
+					if (logger.isWarnEnabled()) {
+						logger.warn("No embeddings returned for request: " + request);
+					}
 					return new EmbeddingResponse(List.of());
 				}
 
@@ -148,18 +151,18 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	private EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
 		EmbeddingOptions requestOptions = embeddingRequest.getOptions();
-		MistralAiEmbeddingOptions mergedOptions = this.defaultOptions;
+		MistralAiEmbeddingOptions mergedOptions = this.options;
 
 		if (requestOptions != null) {
 			MistralAiEmbeddingOptions.Builder builder = MistralAiEmbeddingOptions.builder()
-				.withModel(ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.defaultOptions.getModel()));
+				.model(ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.options.getModel()));
 
 			if (requestOptions instanceof MistralAiEmbeddingOptions mistralOptions) {
-				builder.withEncodingFormat(ModelOptionsUtils.mergeOption(mistralOptions.getEncodingFormat(),
-						this.defaultOptions.getEncodingFormat()));
+				builder.encodingFormat(ModelOptionsUtils.mergeOption(mistralOptions.getEncodingFormat(),
+						this.options.getEncodingFormat()));
 			}
 			else {
-				builder.withEncodingFormat(this.defaultOptions.getEncodingFormat());
+				builder.encodingFormat(this.options.getEncodingFormat());
 			}
 			mergedOptions = builder.build();
 		}
@@ -192,7 +195,7 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public int dimensions() {
-		return KNOWN_EMBEDDING_DIMENSIONS.getOrDefault(this.defaultOptions.getModel(), super.dimensions());
+		return KNOWN_EMBEDDING_DIMENSIONS.getOrDefault(this.options.getModel(), super.dimensions());
 	}
 
 	/**
@@ -214,9 +217,7 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 		private MetadataMode metadataMode = MetadataMode.EMBED;
 
-		private MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder()
-			.withModel(MistralAiApi.EmbeddingModel.EMBED.getValue())
-			.build();
+		private MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder().build();
 
 		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
 

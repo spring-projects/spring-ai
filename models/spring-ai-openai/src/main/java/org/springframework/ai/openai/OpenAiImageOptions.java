@@ -18,6 +18,7 @@ package org.springframework.ai.openai;
 
 import java.net.Proxy;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -29,6 +30,7 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
+import org.springframework.util.CollectionUtils;
 
 /**
  * Configuration information for the Image Model implementation using the OpenAI Java SDK.
@@ -97,8 +99,9 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
 			@Nullable Integer n, @Nullable Integer width, @Nullable Integer height, @Nullable String quality,
 			@Nullable String responseFormat, @Nullable String size, @Nullable String style, @Nullable String user) {
-		super(baseUrl, apiKey, credential, model, microsoftDeploymentName, microsoftFoundryServiceVersion,
-				organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries, proxy, customHeaders);
+		super(baseUrl, apiKey, credential, model != null ? model : DEFAULT_IMAGE_MODEL, microsoftDeploymentName,
+				microsoftFoundryServiceVersion, organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries,
+				proxy, customHeaders);
 		this.n = n;
 		this.width = width;
 		this.height = height;
@@ -154,7 +157,7 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
@@ -169,13 +172,6 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 	public int hashCode() {
 		return Objects.hash(this.n, this.width, this.height, this.quality, this.responseFormat, this.size, this.style,
 				this.user);
-	}
-
-	@Override
-	public String toString() {
-		return "OpenAiImageOptions{" + "n=" + this.n + ", width=" + this.width + ", height=" + this.height
-				+ ", quality='" + this.quality + '\'' + ", responseFormat='" + this.responseFormat + '\'' + ", size='"
-				+ this.size + '\'' + ", style='" + this.style + '\'' + ", user='" + this.user + '\'' + '}';
 	}
 
 	public ImageGenerateParams toOpenAiImageGenerateParams(ImagePrompt imagePrompt) {
@@ -213,7 +209,7 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 		if (this.getUser() != null) {
 			builder.user(this.getUser());
 		}
-		if (!this.getCustomHeaders().isEmpty()) {
+		if (!CollectionUtils.isEmpty(this.getCustomHeaders())) {
 			this.getCustomHeaders().forEach(builder::putAdditionalHeader);
 		}
 
@@ -311,15 +307,20 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 				}
 				this.isMicrosoftFoundry = castFrom.isMicrosoftFoundry();
 				this.isGitHubModels = castFrom.isGitHubModels();
-				if (castFrom.getTimeout() != null) {
-					this.timeout = castFrom.getTimeout();
-				}
+				this.timeout = castFrom.getTimeout();
 				this.maxRetries = castFrom.getMaxRetries();
 				if (castFrom.getProxy() != null) {
 					this.proxy = castFrom.getProxy();
 				}
 				if (castFrom.getCustomHeaders() != null) {
-					this.customHeaders = castFrom.getCustomHeaders();
+					if (this.customHeaders == null) {
+						this.customHeaders = new HashMap<>(castFrom.getCustomHeaders());
+					}
+					else {
+						Map<String, String> merged = new HashMap<>(this.customHeaders);
+						merged.putAll(castFrom.getCustomHeaders());
+						this.customHeaders = merged;
+					}
 				}
 			}
 			if (from instanceof OpenAiImageOptions castFrom) {
@@ -336,17 +337,17 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 			return this;
 		}
 
-		public Builder N(Integer n) {
+		public Builder n(@Nullable Integer n) {
 			this.n = n;
 			return this;
 		}
 
-		public Builder responseFormat(String responseFormat) {
+		public Builder responseFormat(@Nullable String responseFormat) {
 			this.responseFormat = responseFormat;
 			return this;
 		}
 
-		public Builder width(Integer width) {
+		public Builder width(@Nullable Integer width) {
 			this.width = width;
 			if (this.width != null && this.height != null) {
 				this.size = this.width + "x" + this.height;
@@ -354,7 +355,7 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 			return this;
 		}
 
-		public Builder height(Integer height) {
+		public Builder height(@Nullable Integer height) {
 			this.height = height;
 			if (this.width != null && this.height != null) {
 				this.size = this.width + "x" + this.height;
@@ -362,22 +363,22 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 			return this;
 		}
 
-		public Builder user(String user) {
+		public Builder user(@Nullable String user) {
 			this.user = user;
 			return this;
 		}
 
-		public Builder style(String style) {
+		public Builder style(@Nullable String style) {
 			this.style = style;
 			return this;
 		}
 
-		public Builder quality(String quality) {
+		public Builder quality(@Nullable String quality) {
 			this.quality = quality;
 			return this;
 		}
 
-		public Builder size(String size) {
+		public Builder size(@Nullable String size) {
 			this.size = size;
 			return this;
 		}

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.util.Assert;
 
@@ -95,19 +96,36 @@ public final class MessageWindowChatMemory implements ChatMemory {
 			return processedMessages;
 		}
 
-		int messagesToRemove = processedMessages.size() - this.maxMessages;
-
-		List<Message> trimmedMessages = new ArrayList<>();
-		int removed = 0;
-		for (Message message : processedMessages) {
-			if (message instanceof SystemMessage || removed >= messagesToRemove) {
-				trimmedMessages.add(message);
-			}
-			else {
-				removed++;
+		// Collect the indices of non-system messages; SystemMessages are always
+		// preserved.
+		List<Integer> nonSystemIndices = new ArrayList<>();
+		for (int i = 0; i < processedMessages.size(); i++) {
+			if (!(processedMessages.get(i) instanceof SystemMessage)) {
+				nonSystemIndices.add(i);
 			}
 		}
 
+		// Raw cut: the number of non-system messages that must be removed to fit within
+		// maxMessages. This index into nonSystemIndices is where the kept window would
+		// start based on count alone.
+		int cutIndex = processedMessages.size() - this.maxMessages;
+
+		// Snap the cut forward to the nearest USER message so the kept window always
+		// starts at a complete turn. This prevents keeping an assistant reply or tool
+		// result without the user message that originated its turn.
+		while (cutIndex < nonSystemIndices.size()
+				&& processedMessages.get(nonSystemIndices.get(cutIndex)).getMessageType() != MessageType.USER) {
+			cutIndex++;
+		}
+		cutIndex = Math.min(cutIndex, nonSystemIndices.size());
+
+		Set<Integer> removeIndices = new HashSet<>(nonSystemIndices.subList(0, cutIndex));
+		List<Message> trimmedMessages = new ArrayList<>();
+		for (int i = 0; i < processedMessages.size(); i++) {
+			if (!removeIndices.contains(i)) {
+				trimmedMessages.add(processedMessages.get(i));
+			}
+		}
 		return trimmedMessages;
 	}
 

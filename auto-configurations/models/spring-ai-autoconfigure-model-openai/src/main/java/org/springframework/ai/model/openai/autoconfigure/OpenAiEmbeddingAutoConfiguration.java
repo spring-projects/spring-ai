@@ -17,6 +17,7 @@
 package org.springframework.ai.model.openai.autoconfigure;
 
 import com.openai.client.OpenAIClient;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
@@ -52,12 +53,14 @@ public class OpenAiEmbeddingAutoConfiguration {
 	@ConditionalOnMissingBean
 	public OpenAiEmbeddingModel openAiEmbeddingModel(OpenAiCommonProperties commonProperties,
 			OpenAiEmbeddingProperties embeddingProperties, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<MeterRegistry> meterRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
 		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
 				embeddingProperties);
 
-		var embeddingModel = new OpenAiEmbeddingModel(this.openAiClient(resolvedProperties),
+		var embeddingModel = new OpenAiEmbeddingModel(
+				this.openAiClient(resolvedProperties, observationRegistry, meterRegistry),
 				embeddingProperties.getMetadataMode(), embeddingProperties.toOptions(),
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
@@ -66,14 +69,19 @@ public class OpenAiEmbeddingAutoConfiguration {
 		return embeddingModel;
 	}
 
-	private OpenAIClient openAiClient(OpenAiCommonProperties commonProperties) {
+	private OpenAIClient openAiClient(OpenAiCommonProperties commonProperties,
+			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry) {
+
+		MeterRegistry meterRegistryToUse = commonProperties.isConnectionPoolMetricsEnabled()
+				? meterRegistry.getIfAvailable() : null;
 
 		return OpenAiSetup.setupSyncClient(commonProperties.getBaseUrl(), commonProperties.getApiKey(),
 				commonProperties.getCredential(), commonProperties.getMicrosoftDeploymentName(),
 				commonProperties.getMicrosoftFoundryServiceVersion(), commonProperties.getOrganizationId(),
 				commonProperties.isMicrosoftFoundry(), commonProperties.isGitHubModels(), commonProperties.getModel(),
 				commonProperties.getTimeout(), commonProperties.getMaxRetries(), commonProperties.getProxy(),
-				commonProperties.getCustomHeaders());
+				commonProperties.getCustomHeaders(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				meterRegistryToUse, null);
 	}
 
 }

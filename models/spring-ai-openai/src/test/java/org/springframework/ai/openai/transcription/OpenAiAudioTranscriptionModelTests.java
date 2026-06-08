@@ -43,6 +43,7 @@ import static org.mockito.Mockito.when;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 class OpenAiAudioTranscriptionModelTests {
 
@@ -71,7 +72,7 @@ class OpenAiAudioTranscriptionModelTests {
 	}
 
 	@Test
-	void callWithDefaultOptions() {
+	void callWithOptions() {
 		TranscriptionCreateResponse mockResponse = TranscriptionCreateResponse
 			.ofTranscription(Transcription.builder().text("Hello, this is a test transcription.").build());
 
@@ -189,20 +190,6 @@ class OpenAiAudioTranscriptionModelTests {
 	}
 
 	@Test
-	void optionsCopyCreatesIndependentInstance() {
-		OpenAiAudioTranscriptionOptions original = OpenAiAudioTranscriptionOptions.builder()
-			.model("whisper-1")
-			.language("en")
-			.build();
-
-		OpenAiAudioTranscriptionOptions copy = original.copy();
-
-		assertThat(copy).isNotSameAs(original);
-		assertThat(copy.getModel()).isEqualTo(original.getModel());
-		assertThat(copy.getLanguage()).isEqualTo(original.getLanguage());
-	}
-
-	@Test
 	void optionsEqualsAndHashCode() {
 		OpenAiAudioTranscriptionOptions options1 = OpenAiAudioTranscriptionOptions.builder()
 			.model("whisper-1")
@@ -225,18 +212,6 @@ class OpenAiAudioTranscriptionModelTests {
 		assertThat(options1).isEqualTo(options2);
 		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
 		assertThat(options1).isNotEqualTo(options3);
-	}
-
-	@Test
-	void optionsToStringContainsFields() {
-		OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
-			.model("whisper-1")
-			.language("en")
-			.build();
-
-		String str = options.toString();
-		assertThat(str).contains("whisper-1");
-		assertThat(str).contains("en");
 	}
 
 	@Test

@@ -35,10 +35,11 @@ import org.springframework.context.annotation.Bean;
  * @author Christian Tzolov
  * @author Mark Pollack
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 @AutoConfiguration
-@ConditionalOnClass(value = { VertexAiMultimodalEmbeddingModel.class }, name = "com.google.cloud.vertexai.VertexAI")
+@ConditionalOnClass(VertexAiMultimodalEmbeddingModel.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.MULTI_MODAL_EMBEDDING_MODEL,
 		havingValue = SpringAIModels.VERTEX_AI, matchIfMissing = true)
 @EnableConfigurationProperties(VertexAiMultimodalEmbeddingProperties.class)
@@ -49,7 +50,7 @@ public class VertexAiMultiModalEmbeddingAutoConfiguration {
 	public VertexAiMultimodalEmbeddingModel multimodalEmbedding(VertexAiEmbeddingConnectionDetails connectionDetails,
 			VertexAiMultimodalEmbeddingProperties multimodalEmbeddingProperties) throws IOException {
 
-		return new VertexAiMultimodalEmbeddingModel(connectionDetails, multimodalEmbeddingProperties.getOptions());
+		return new VertexAiMultimodalEmbeddingModel(connectionDetails, multimodalEmbeddingProperties.toOptions());
 	}
 
 }

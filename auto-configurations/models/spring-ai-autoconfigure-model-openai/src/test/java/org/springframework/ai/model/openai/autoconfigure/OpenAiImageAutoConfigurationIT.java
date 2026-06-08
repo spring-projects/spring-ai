@@ -16,8 +16,6 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -35,10 +33,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiImageAutoConfigurationIT {
 
-	private static final Log logger = LogFactory.getLog(OpenAiImageAutoConfigurationIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"));
+		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"));
 
 	@Test
 	void generateImage() {
@@ -49,7 +45,6 @@ public class OpenAiImageAutoConfigurationIT {
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("forest"));
 				assertThat(imageResponse.getResults()).hasSize(1);
 				assertThat(imageResponse.getResult().getOutput().getB64Json()).isNotEmpty();
-				logger.info("Generated image successfully");
 			});
 	}
 
@@ -64,7 +59,6 @@ public class OpenAiImageAutoConfigurationIT {
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("forest"));
 				assertThat(imageResponse.getResults()).hasSize(1);
 				assertThat(imageResponse.getResult().getOutput().getB64Json()).isNotEmpty();
-				logger.info("Generated image successfully");
 			});
 	}
 
@@ -121,15 +115,15 @@ public class OpenAiImageAutoConfigurationIT {
 				assertThat(commonProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
 				assertThat(commonProperties.getApiKey()).isEqualTo("API_KEY");
 
-				assertThat(imageProperties.getOptions().getN()).isEqualTo(3);
-				assertThat(imageProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(imageProperties.getOptions().getQuality()).isEqualTo("hd");
-				assertThat(imageProperties.getOptions().getResponseFormat()).isEqualTo("url");
-				assertThat(imageProperties.getOptions().getSize()).isEqualTo("1024x1024");
-				assertThat(imageProperties.getOptions().getWidth()).isEqualTo(1024);
-				assertThat(imageProperties.getOptions().getHeight()).isEqualTo(1024);
-				assertThat(imageProperties.getOptions().getStyle()).isEqualTo("vivid");
-				assertThat(imageProperties.getOptions().getUser()).isEqualTo("userXYZ");
+				assertThat(imageProperties.getN()).isEqualTo(3);
+				assertThat(imageProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(imageProperties.getQuality()).isEqualTo("hd");
+				assertThat(imageProperties.getResponseFormat()).isEqualTo("url");
+				assertThat(imageProperties.getSize()).isEqualTo("1024x1024");
+				assertThat(imageProperties.getWidth()).isEqualTo(1024);
+				assertThat(imageProperties.getHeight()).isEqualTo(1024);
+				assertThat(imageProperties.getStyle()).isEqualTo("vivid");
+				assertThat(imageProperties.getUser()).isEqualTo("userXYZ");
 			});
 	}
 

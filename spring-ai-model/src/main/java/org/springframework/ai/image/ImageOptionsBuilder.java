@@ -30,7 +30,7 @@ public final class ImageOptionsBuilder {
 		return new ImageOptionsBuilder();
 	}
 
-	public ImageOptionsBuilder N(Integer n) {
+	public ImageOptionsBuilder n(Integer n) {
 		this.options.setN(n);
 		return this;
 	}

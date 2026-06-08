@@ -62,12 +62,6 @@ public interface TextToSpeechOptions extends ModelOptions {
 	@Nullable Double getSpeed();
 
 	/**
-	 * Returns a copy of this {@link TextToSpeechOptions}.
-	 * @return a copy of this {@link TextToSpeechOptions}
-	 */
-	<T extends TextToSpeechOptions> T copy();
-
-	/**
 	 * Builder for {@link TextToSpeechOptions}.
 	 */
 	interface Builder {
