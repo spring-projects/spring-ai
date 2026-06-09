@@ -115,15 +115,25 @@ public enum OllamaModel implements ChatModelDescription {
 	LLAMA3_2_3B("llama3.2:3b"),
 
 	/**
-	 * The 7B parameters model
-	 */
-	MISTRAL("mistral"),
-
-	/**
 	 * A 12B model with 128k context length, built by Mistral AI in collaboration with
 	 * NVIDIA.
 	 */
 	MISTRAL_NEMO("mistral-nemo"),
+
+	/**
+	 * The Ministral 3 3B language model from Mistral AI.
+	 */
+	MINISTRAL_3_3B("ministral-3:3b"),
+
+	/**
+	 * The Ministral 3 8B language model from Mistral AI.
+	 */
+	MINISTRAL_3_8B("ministral-3:8b"),
+
+	/**
+	 * The Ministral 3 14B language model from Mistral AI.
+	 */
+	MINISTRAL_3_14B("ministral-3:14b"),
 
 	/**
 	 * A small vision language model designed to run efficiently on edge devices.

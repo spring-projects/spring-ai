@@ -49,9 +49,8 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 
 	@Test
 	void testBasicOptions() {
-		var b1 = OllamaChatOptions.builder().model("model").mainGPU(12);
-
-		var b = OllamaChatOptions.builder().mainGPU(12).model("model");
+		OllamaChatOptions.builder().model("model").mainGPU(12);
+		OllamaChatOptions.builder().mainGPU(12).model("model");
 
 		var options = OllamaChatOptions.builder().temperature(3.14).topK(30).stop(List.of("a", "b", "c")).build();
 
@@ -236,9 +235,9 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 
 		var optionsMap = options.toMap();
 		assertThat(optionsMap).containsOnlyKeys("model");
-		assertThat(optionsMap.get("model")).isEqualTo(OllamaModel.MISTRAL.id());
+		assertThat(optionsMap.get("model")).isEqualTo(OllamaModel.MINISTRAL_3_8B.id());
 
-		assertThat(options.getModel()).isEqualTo(OllamaModel.MISTRAL.id());
+		assertThat(options.getModel()).isEqualTo(OllamaModel.MINISTRAL_3_8B.id());
 
 		// Verify all getters return null
 		assertThat(options.getTemperature()).isNull();
@@ -272,9 +271,10 @@ class OllamaChatOptionsTests extends AbstractChatOptionsTests<OllamaChatOptions,
 
 	/**
 	 * Demonstrates the difference between simple "json" format and JSON Schema format.
-	 *
+	 * <p>
 	 * Simple "json" format: Tells Ollama to return any valid JSON structure. JSON Schema
 	 * format: Tells Ollama to return JSON matching a specific schema.
+	 * </p>
 	 */
 	@Test
 	void testSimpleJsonFormatVsJsonSchema() {

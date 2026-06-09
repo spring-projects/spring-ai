@@ -24,7 +24,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -57,19 +57,21 @@ import static org.mockito.Mockito.when;
  * @author Alexandros Pappas
  * @author Thomas Vitale
  * @author Sebastien Deleuze
+ * @author Nicolas Krier
  * @since 1.0.0
  */
 @ExtendWith(MockitoExtension.class)
 class OllamaChatModelTests {
 
 	@Mock
-	OllamaApi ollamaApi;
+	private OllamaApi ollamaApi;
 
 	@Test
 	void buildOllamaChatModelWithConstructor() {
 		ChatModel chatModel = new OllamaChatModel(this.ollamaApi,
-				OllamaChatOptions.builder().model(OllamaModel.MISTRAL).build(), ToolCallingManager.builder().build(),
-				ObservationRegistry.NOOP, ModelManagementOptions.builder().build());
+				OllamaChatOptions.builder().model(OllamaModel.MINISTRAL_3_8B).build(),
+				ToolCallingManager.builder().build(), ObservationRegistry.NOOP,
+				ModelManagementOptions.builder().build());
 		assertThat(chatModel).isNotNull();
 	}
 
@@ -242,9 +244,8 @@ class OllamaChatModelTests {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = { "LLAMA2", "MISTRAL", "CODELLAMA", "LLAMA3", "GEMMA" })
-	void buildOllamaChatModelWithDifferentModels(String modelName) {
-		OllamaModel model = OllamaModel.valueOf(modelName);
+	@EnumSource(value = OllamaModel.class, names = { "LLAMA2", "MINISTRAL_3_8B", "CODELLAMA", "LLAMA3", "GEMMA" })
+	void buildOllamaChatModelWithDifferentModels(OllamaModel model) {
 		OllamaChatOptions options = OllamaChatOptions.builder().model(model).build();
 
 		ChatModel chatModel = OllamaChatModel.builder().ollamaApi(this.ollamaApi).options(options).build();
@@ -314,7 +315,10 @@ class OllamaChatModelTests {
 	@Test
 	void buildOllamaChatModelImmutability() {
 		// Test that the builder creates immutable instances
-		OllamaChatOptions options = OllamaChatOptions.builder().model(OllamaModel.MISTRAL).temperature(0.5).build();
+		OllamaChatOptions options = OllamaChatOptions.builder()
+			.model(OllamaModel.MINISTRAL_3_14B)
+			.temperature(0.5)
+			.build();
 
 		ChatModel chatModel1 = OllamaChatModel.builder().ollamaApi(this.ollamaApi).options(options).build();
 

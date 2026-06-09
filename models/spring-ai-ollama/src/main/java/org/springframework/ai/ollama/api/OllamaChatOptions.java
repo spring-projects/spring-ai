@@ -93,7 +93,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.mirostatEta = mirostatEta;
 		this.penalizeNewline = penalizeNewline;
 		this.stop = stop != null ? List.copyOf(stop) : null;
-		this.model = model != null ? model : OllamaModel.MISTRAL.id();
+		this.model = model != null ? model : OllamaModel.MINISTRAL_3_8B.id();
 		this.format = format;
 		this.keepAlive = keepAlive;
 		this.truncate = truncate;
