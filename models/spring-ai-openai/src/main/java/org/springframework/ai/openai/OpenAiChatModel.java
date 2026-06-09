@@ -939,20 +939,6 @@ public final class OpenAiChatModel implements ChatModel {
 		this.observationConvention = observationConvention;
 	}
 
-	/**
-	 * Look at the options of the provided prompt. If none are provided, return a new
-	 * prompt using this model {@link ChatModel#getOptions() options}. Otherwise, use the
-	 * prompt as is.
-	 */
-	private Prompt buildRequestPrompt(Prompt prompt) {
-		if (prompt.getOptions() == null) {
-			return prompt.mutate().chatOptions(this.getOptions()).build();
-		}
-		else {
-			return prompt;
-		}
-	}
-
 	private static final class ChunkMerger {
 
 		static boolean hasToolCall(ChatCompletionChunk chunk) {
