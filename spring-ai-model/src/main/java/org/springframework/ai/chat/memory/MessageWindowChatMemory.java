@@ -63,7 +63,6 @@ public final class MessageWindowChatMemory implements ChatMemory {
 		Assert.noNullElements(messages, "messages cannot contain null elements");
 
 		List<Message> memoryMessages = this.chatMemoryRepository.findByConversationId(conversationId);
-		// 회원님의 Delta 로직(MessageChanges) 적용
 		MessageChanges changes = process(memoryMessages, messages);
 
 		if (!changes.toDelete.isEmpty() || !changes.toAdd.isEmpty()) {
@@ -100,7 +99,6 @@ public final class MessageWindowChatMemory implements ChatMemory {
 		List<Message> finalMessages = processedMessages;
 
 		if (processedMessages.size() > this.maxMessages) {
-			// main 브랜치의 새로운 로직: USER 메시지 기준으로 자르기
 			List<Integer> nonSystemIndices = new ArrayList<>();
 			for (int i = 0; i < processedMessages.size(); i++) {
 				if (!(processedMessages.get(i) instanceof SystemMessage)) {
@@ -126,7 +124,6 @@ public final class MessageWindowChatMemory implements ChatMemory {
 			finalMessages = trimmedMessages;
 		}
 
-		// 회원님의 로직: 최종 리스트를 바탕으로 Delete/Add 대상을 추출
 		Set<Message> originalMessageSet = new LinkedHashSet<>(memoryMessages);
 		Set<Message> finalMessageSet = new LinkedHashSet<>(finalMessages);
 
@@ -136,7 +133,6 @@ public final class MessageWindowChatMemory implements ChatMemory {
 		return new MessageChanges(toDelete, toAdd);
 	}
 
-	// 회원님이 추가하신 내부 클래스 유지
 	private static class MessageChanges {
 
 		final List<Message> toDelete;
