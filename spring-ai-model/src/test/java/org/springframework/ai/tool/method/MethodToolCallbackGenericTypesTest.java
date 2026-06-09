@@ -176,6 +176,30 @@ class MethodToolCallbackGenericTypesTest {
 	}
 
 	@Test
+	void testExplicitToolParamNameForSimpleString() throws Exception {
+		TestGenericClass testObject = new TestGenericClass();
+		Method method = TestGenericClass.class.getMethod("processCustomer", String.class);
+
+		MethodToolCallback callback = MethodToolCallback.builder()
+			.toolDefinition(DefaultToolDefinition.builder()
+				.name("processCustomer")
+				.description("Process customer")
+				.inputSchema("{}")
+				.build())
+			.toolMethod(method)
+			.toolObject(testObject)
+			.build();
+
+		String result = callback.call("""
+				{
+					"customer_id": "abc-123"
+				}
+				""");
+
+		assertThat(result).contains("Customer: abc-123");
+	}
+
+	@Test
 	void testDuplicateEffectiveToolParamNamesThrowException() throws Exception {
 		TestGenericClass testObject = new TestGenericClass();
 		Method method = TestGenericClass.class.getMethod("duplicateEffectiveNames", String.class, String.class);
@@ -213,6 +237,10 @@ class MethodToolCallbackGenericTypesTest {
 		public String processStringListInToolContext(ToolContext toolContext) {
 			Map<String, Object> context = toolContext.getContext();
 			return context.size() + " entries processed " + context;
+		}
+
+		public String processCustomer(@ToolParam(name = "customer_id") String customerId) {
+			return "Customer: " + customerId;
 		}
 
 		public String duplicateEffectiveNames(@ToolParam(name = "input") String first, String input) {

@@ -81,6 +81,8 @@ public final class MethodToolCallback implements ToolCallback {
 		this.toolObject = toolObject;
 		this.toolCallResultConverter = toolCallResultConverter != null ? toolCallResultConverter
 				: DEFAULT_RESULT_CONVERTER;
+		// MethodToolCallback can be built with a caller-provided schema, so runtime
+		// argument binding must validate duplicate effective names independently.
 		validateUniqueParameterNames(toolMethod);
 	}
 

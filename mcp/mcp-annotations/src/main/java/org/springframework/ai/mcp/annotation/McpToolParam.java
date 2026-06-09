@@ -31,7 +31,9 @@ import java.lang.annotation.Target;
 public @interface McpToolParam {
 
 	/**
-	 * The name of the tool argument.
+	 * The name of the tool argument. Only effective on method parameters. For fields or
+	 * record components, use {@code @JsonProperty} or {@code @Schema} to customize schema
+	 * property names.
 	 */
 	String name() default "";
 

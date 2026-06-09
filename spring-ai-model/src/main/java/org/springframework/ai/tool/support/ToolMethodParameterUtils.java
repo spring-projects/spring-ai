@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -29,10 +30,17 @@ import org.springframework.util.StringUtils;
  * Utility methods for handling tool method parameters.
  *
  * @author Michał Grandys
+ * @since 2.0.0
  */
 public final class ToolMethodParameterUtils {
 
 	private ToolMethodParameterUtils() {
+	}
+
+	public static void validateUniqueParameterNames(Method method,
+			Predicate<Parameter> infrastructureParameterPredicate) {
+		validateUniqueParameterNames(method, infrastructureParameterPredicate,
+				ToolMethodParameterUtils::getParameterName);
 	}
 
 	public static String getParameterName(Parameter parameter) {
@@ -44,13 +52,13 @@ public final class ToolMethodParameterUtils {
 	}
 
 	public static void validateUniqueParameterNames(Method method,
-			Predicate<Parameter> infrastructureParameterPredicate) {
+			Predicate<Parameter> infrastructureParameterPredicate, Function<Parameter, String> parameterNameResolver) {
 		Set<String> parameterNames = new HashSet<>();
 		for (Parameter parameter : method.getParameters()) {
 			if (infrastructureParameterPredicate.test(parameter)) {
 				continue;
 			}
-			String parameterName = getParameterName(parameter);
+			String parameterName = parameterNameResolver.apply(parameter);
 			if (!parameterNames.add(parameterName)) {
 				throw new IllegalArgumentException(
 						"Duplicate tool parameter name '" + parameterName + "' in method " + method);

@@ -17,4 +17,7 @@
 /**
  * Method callbacks and utilities for MCP tool invocation (call_tool).
  */
+@NullMarked
 package org.springframework.ai.mcp.annotation.method.tool;
+
+import org.jspecify.annotations.NullMarked;

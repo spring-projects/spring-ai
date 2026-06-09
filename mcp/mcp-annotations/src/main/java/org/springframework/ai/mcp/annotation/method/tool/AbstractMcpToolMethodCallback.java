@@ -62,6 +62,8 @@ public abstract class AbstractMcpToolMethodCallback<T, RC extends McpRequestCont
 		this.toolMethod = toolMethod;
 		this.toolObject = toolObject;
 		this.returnMode = returnMode;
+		// MCP callbacks can be built independently from schema generation, so runtime
+		// argument binding must validate duplicate effective names independently.
 		McpToolMethodParameterUtils.validateUniqueParameterNames(toolMethod, this::isInfrastructureParameter);
 	}
 
@@ -155,7 +157,7 @@ public abstract class AbstractMcpToolMethodCallback<T, RC extends McpRequestCont
 	 * @param type The target type
 	 * @return The typed argument
 	 */
-	protected Object buildTypedArgument(@Nullable Object value, Type type) {
+	protected @Nullable Object buildTypedArgument(@Nullable Object value, Type type) {
 		if (value == null) {
 			return null;
 		}

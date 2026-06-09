@@ -18,8 +18,6 @@ package org.springframework.ai.mcp.annotation.method.tool;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Predicate;
 
 import io.modelcontextprotocol.common.McpTransportContext;
@@ -30,6 +28,7 @@ import org.springframework.ai.mcp.annotation.McpProgressToken;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
+import org.springframework.ai.tool.support.ToolMethodParameterUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -40,12 +39,17 @@ import org.springframework.util.StringUtils;
  * remains in the caller.
  *
  * @author Michał Grandys
+ * @since 2.0.0
  */
 public final class McpToolMethodParameterUtils {
 
 	private McpToolMethodParameterUtils() {
 	}
 
+	/**
+	 * Return whether the parameter is a common MCP infrastructure parameter. Server
+	 * exchange types are caller-specific and must be handled by the caller.
+	 */
 	public static boolean isInfrastructureParameter(Parameter parameter) {
 		// Check if parameter is a request context type
 		if (McpSyncRequestContext.class.isAssignableFrom(parameter.getType())
@@ -72,27 +76,18 @@ public final class McpToolMethodParameterUtils {
 		return McpTransportContext.class.isAssignableFrom(parameter.getType());
 	}
 
+	public static void validateUniqueParameterNames(Method method,
+			Predicate<Parameter> infrastructureParameterPredicate) {
+		ToolMethodParameterUtils.validateUniqueParameterNames(method, infrastructureParameterPredicate,
+				McpToolMethodParameterUtils::getParameterName);
+	}
+
 	public static String getParameterName(Parameter parameter) {
 		McpToolParam toolParamAnnotation = parameter.getAnnotation(McpToolParam.class);
 		if (toolParamAnnotation != null && StringUtils.hasText(toolParamAnnotation.name())) {
 			return toolParamAnnotation.name();
 		}
 		return parameter.getName();
-	}
-
-	public static void validateUniqueParameterNames(Method method,
-			Predicate<Parameter> infrastructureParameterPredicate) {
-		Set<String> parameterNames = new HashSet<>();
-		for (Parameter parameter : method.getParameters()) {
-			if (infrastructureParameterPredicate.test(parameter)) {
-				continue;
-			}
-			String parameterName = getParameterName(parameter);
-			if (!parameterNames.add(parameterName)) {
-				throw new IllegalArgumentException(
-						"Duplicate tool parameter name '" + parameterName + "' in method " + method);
-			}
-		}
 	}
 
 }

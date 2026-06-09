@@ -104,21 +104,21 @@ public class CalculatorTools {
 
     @McpTool(name = "add", description = "Add two numbers together")
     public int add(
-            @McpToolParam(name = "a", description = "First number", required = true) int a,
-            @McpToolParam(name = "b", description = "Second number", required = true) int b) {
+            @McpToolParam(name = "first_number", description = "First number", required = true) int a,
+            @McpToolParam(name = "second_number", description = "Second number", required = true) int b) {
         return a + b;
     }
 
     @McpTool(name = "multiply", description = "Multiply two numbers")
     public double multiply(
-            @McpToolParam(name = "x", description = "First number", required = true) double x,
-            @McpToolParam(name = "y", description = "Second number", required = true) double y) {
+            @McpToolParam(description = "First number", required = true) double x,
+            @McpToolParam(description = "Second number", required = true) double y) {
         return x * y;
     }
 }
 ----
 
-Use `@McpToolParam(name = "...")` when publishing libraries or building without Java parameter metadata, so tool schemas and calls do not depend on reflective names such as `arg0`.
+Use `@McpToolParam(name = "...")` to expose a tool argument name that differs from the Java parameter name, or when publishing libraries or building without Java parameter metadata.
 
 And a simple client handler for logging:
 
