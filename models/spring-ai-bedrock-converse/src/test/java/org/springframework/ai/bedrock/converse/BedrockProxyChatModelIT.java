@@ -135,8 +135,10 @@ class BedrockProxyChatModelIT {
 	@Test
 	void streamingWithTokenUsage() {
 		var promptOptions = BedrockChatOptions.builder().temperature(0.0).build();
+		BedrockChatOptions options = (BedrockChatOptions) this.chatModel.getOptions();
+		var mergedOptions = promptOptions.mutate().combineWith(options.mutate()).build();
 
-		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
+		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", mergedOptions);
 		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
@@ -275,13 +277,15 @@ class BedrockProxyChatModelIT {
 				.build()))
 			.build();
 
-		var prompt = new Prompt(messages, options);
+		var mergedOptions = options.mutate().combineWith(this.chatModel.getOptions().mutate()).build();
+
+		var prompt = new Prompt(messages, mergedOptions);
 
 		ChatResponse response = this.chatModel.call(prompt);
 
 		while (response.hasToolCalls()) {
 			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
-			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), mergedOptions);
 			response = this.chatModel.call(prompt);
 		}
 		Generation generation = response.getResult();
