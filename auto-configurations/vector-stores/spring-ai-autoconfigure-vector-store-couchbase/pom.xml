@@ -100,12 +100,6 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-autoconfigure-retry</artifactId>
-			<version>${project.parent.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-model-openai</artifactId>
 			<version>${project.parent.version}</version>
 			<scope>test</scope>
