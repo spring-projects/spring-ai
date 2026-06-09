@@ -2,7 +2,7 @@
 
 The Spring AI project provides a Spring-friendly API and abstractions for developing AI applications.
 
-Its goal is to apply to the AI domain Spring ecosystem design principles such as portability and modular design and promote using POJOs as the building blocks of an application to the AI domain.
+Its goal is to apply Spring ecosystem design principles, such as portability and modular design, to the AI domain and promote using strongly-typed data structures and APIs as the building blocks of an application.
 
 ![spring-ai-integration-diagram-3](https://docs.spring.io/spring-ai/reference/_images/spring-ai-integration-diagram-3.svg)
 
@@ -20,26 +20,34 @@ Spring Boot Version Compatibility:
 
 * [Reference documentation](https://docs.spring.io/spring-ai/reference/)
 * [Javadoc](https://docs.spring.io/spring-ai/docs/current/api/)
+* [Upgrade notes](https://docs.spring.io/spring-ai/reference/upgrade-notes.html)
 * [Awesome Spring AI](https://github.com/spring-ai-community/awesome-spring-ai) - A curated list of awesome resources, tools, tutorials, and projects for building generative AI applications using Spring AI
-* [Spring AI Examples](https://github.com/spring-projects/spring-ai-examples) contains example projects that explain specific features in more detail.
+* [Spring AI Examples](https://github.com/spring-projects/spring-ai-examples) - Contains example projects that explain specific features in more detail.
 * [Spring AI Community](https://github.com/spring-ai-community) - A community-driven organization for building Spring-based integrations with AI models, agents, vector databases, and more.
+
+## Contributing
+
+We welcome contributions of all kinds!
+Please read our [contribution guidelines](CONTRIBUTING.md) before submitting a pull request or an issue.
 
 ## Features
 
 This is a high level feature overview.
 
-* Support for all major [AI Model providers](https://docs.spring.io/spring-ai/reference/api/index.html) such as Anthropic, OpenAI, Amazon Bedrock, Google, Ollama, Mistral AI, DeepSeek, and more. Supported model types include:
-  - [Chat Completion](https://docs.spring.io/spring-ai/reference/api/chatmodel.html)
+* Support for all major [AI Model providers](https://docs.spring.io/spring-ai/reference/api/index.html) such as Anthropic, OpenAI, Amazon Bedrock, Google, Ollama, Mistral AI, DeepSeek, and more.
+  Supported model types include:
+  - [Chat](https://docs.spring.io/spring-ai/reference/api/chatmodel.html)
   - [Embedding](https://docs.spring.io/spring-ai/reference/api/embeddings.html)
   - [Text to Image](https://docs.spring.io/spring-ai/reference/api/imageclient.html)
   - [Audio Transcription](https://docs.spring.io/spring-ai/reference/api/audio/transcriptions.html)
   - [Text to Speech](https://docs.spring.io/spring-ai/reference/api/audio/speech.html)
   - [Moderation](https://docs.spring.io/spring-ai/reference/api/index.html#api/moderation)
-* Portable API support across AI providers for both synchronous and streaming options. Access to [model-specific features](https://docs.spring.io/spring-ai/reference/api/chatmodel.html#_chat_options) is also available.
+* Portable API support across AI providers for both synchronous and streaming options.
+  Access to [model-specific features](https://docs.spring.io/spring-ai/reference/api/chatmodel.html#_chat_options) is also available.
 * [Structured Outputs](https://docs.spring.io/spring-ai/reference/api/structured-output-converter.html) - Mapping of AI Model output to POJOs.
-* Support for all major [Vector Database providers](https://docs.spring.io/spring-ai/reference/api/vectordbs.html) such as *Amazon Bedrock Knowledge Base, Amazon S3, Apache Cassandra, Azure Vector Search, Chroma, Couchbase, Elasticsearch, GemFire, MariaDB, Milvus, MongoDB Atlas, Neo4j, OpenSearch, Oracle, PostgreSQL/PGVector, Pinecone, Qdrant, Redis, Typesense, and Weaviate*.
+* Support for all major [Vector Store providers](https://docs.spring.io/spring-ai/reference/api/vectordbs.html) such as *Amazon Bedrock Knowledge Base, Amazon S3, Apache Cassandra, Azure Vector Search, Chroma, Couchbase, Elasticsearch, GemFire, MariaDB, Milvus, MongoDB Atlas, Neo4j, OpenSearch, Oracle, PostgreSQL/PGVector, Pinecone, Qdrant, Redis, Typesense, and Weaviate*.
 * Portable API across Vector Store providers, including a novel SQL-like [metadata filter API](https://docs.spring.io/spring-ai/reference/api/vectordbs.html#metadata-filters).
-* [Tools/Function Calling](https://docs.spring.io/spring-ai/reference/api/tools.html) - permits the model to request the execution of client-side tools and functions, thereby accessing necessary real-time information as required.
+* [Tool Calling](https://docs.spring.io/spring-ai/reference/api/tools.html) - Permits the model to request the execution of client-side tools and functions, thereby accessing necessary real-time information as required.
 * [Observability](https://docs.spring.io/spring-ai/reference/observability/index.html) - Provides insights into AI-related operations.
 * Document injection [ETL framework](https://docs.spring.io/spring-ai/reference/api/etl-pipeline.html) for Data Engineering.
 * [AI Model Evaluation](https://docs.spring.io/spring-ai/reference/api/testing.html) - Utilities to help evaluate generated content and protect against hallucinated response.
@@ -47,88 +55,15 @@ This is a high level feature overview.
 * [Advisors API](https://docs.spring.io/spring-ai/reference/api/advisors.html) - Encapsulates recurring Generative AI patterns, transforms data sent to and from Language Models (LLMs), and provides portability across various models and use cases.
 * [MCP (Model Context Protocol)](https://docs.spring.io/spring-ai/reference/api/mcp/mcp-overview.html) - First-class support via Boot Starters and MCP Java Annotations for building AI applications that consume MCP servers or expose Spring-based services to the AI ecosystem, with STDIO, SSE, and Streamable-HTTP transport support.
 * Support for [Chat Conversation Memory](https://docs.spring.io/spring-ai/reference/api/chatclient.html#_chat_memory) with pluggable persistent backends (JDBC, Cassandra, MongoDB, Neo4j, Redis) and [Retrieval Augmented Generation (RAG)](https://docs.spring.io/spring-ai/reference/api/chatclient.html#_retrieval_augmented_generation).
-* Spring Boot Auto Configuration and Starters for all AI Models and Vector Stores - use the [start.spring.io](https://start.spring.io/) to select the Model or Vector-store of choice. 
+* Spring Boot Auto Configuration and Starters for all AI Models and Vector Stores - use [start.spring.io](https://start.spring.io/) to select the Model or Vector Store of choice.
 
-## Breaking changes
+## Building from source
 
-Refer to the [upgrade notes](https://docs.spring.io/spring-ai/reference/upgrade-notes.html) to see how to upgrade.
-
-## Contributing
-
-Your contributions are always welcome! Please read the [contribution guidelines](CONTRIBUTING.adoc) first.
-
-## Building
-
-The project targets and builds artifacts compatible with Java 17+, and requires a JDK with support for the [`-XDaddTypeAnnotationsToSymbol` javac argument](https://bugs.openjdk.org/browse/JDK-8373586), like Liberica 17.0.19+, for nullability checks.
-
-The recommended JDK is specified in the `.sdkmanrc` file, which can be installed and configured with the [SDKMAN!](https://sdkman.io/) tool:
- - `sdk env install` to install the related JDK locally
- - `sdk env` to use the related JDK
-
-**NOTE:** Make sure to use a JDK with the same architecture than your processor, not an emulated one (for example with Rosetta on Mac) as Spring AI requires components that depend on your specific CPU architecture (PyTorch for example). If you are unsure if you have the correct JDK distribution for your CPU, run the command `java -XshowSettings:properties -version 2>&1 | grep os.arch` to validate that it matches your machine.
-
-To build with running unit tests:
+You don’t need to build from source to use Spring AI.
+If you want to try out the latest and greatest, Spring AI can be built and published to your local Maven repository:
 ```shell
-./mvnw clean package
+./mvnw clean install
 ```
-### Maven build-cache extension
+This command builds all modules, runs unit tests, and publishes artifacts to your local Maven repository.
 
-The Maven build-cache extension is enabled by default to speedup builds.
-
-If you suspect the build cache is in an invalid state (build broken for no identified reason), try to run the build while disabling the build cache, for example with: 
-```shell
-./mvnw -Dmaven.build.cache.enabled=false clean package
-```
-
-If the build passes without the cache, please [fill an issue](https://github.com/spring-projects/spring-ai/issues) describing with as much details as possible how that happened, and remove the local cache as a workaround:
-```shell
-rm -rf ~/.m2/build-cache/
-```
-
-### Integration Tests
-There are many integration tests, so it often isn't realistic to run them all at once.
-Note that you should set API key environment variables for model providers before running. If the API key isn't set for a specific model provider, the integration test is skipped.
-
-To run the integration test for a specific module:
-```shell
-./mvnw -am -pl spring-ai-spring-boot-testcontainers -Pintegration-tests verify
-```
-
-To run a specific integration test allowing for up to two attempts to succeed (this is useful when a hosted service is not reliable or times out):
-```shell
-./mvnw -am -pl vector-stores/spring-ai-pgvector-store -Pintegration-tests -Dfailsafe.failIfNoSpecifiedTests=false -Dfailsafe.rerunFailingTestsCount=2 -Dit.test=PgVectorStoreIT verify
-```
-
-A quick pass through the most important pathways that runs integration tests can be done with the profile `-Pci-fast-integration-tests` and is used in the main CI build of this project.
-Full integration tests are done regularly in the [Spring AI Integration Tests](https://github.com/spring-projects/spring-ai-integration-tests) repository.
-
-### Documentation
-
-To build the docs:
-```shell
-./mvnw -pl spring-ai-docs antora
-```
-
-The docs are then in the directory `spring-ai-docs/target/antora/site/index.html`
-
-### Formatting the Source Code
-
-Spring AI source code checkstyle tries to follow the checkstyle guidelines used by the core Spring Framework project with some exceptions.
-
-The wiki pages [Code Style](https://github.com/spring-projects/spring-framework/wiki/Code-Style) and [IntelliJ IDEA Editor Settings](https://github.com/spring-projects/spring-framework/wiki/IntelliJ-IDEA-Editor-Settings) define the source file coding standards we use along with some IDEA editor settings we customize.
-
-The code is formatted using the [java-format plugin](https://github.com/spring-io/spring-javaformat) as part of the build. Correct
-formatting is enforced by CI.
-
-To format the code specifically:
-```shell
-./mvnw process-sources
-```
-Note that will not format the import order.
-
-### Javadocs
-
-To check javadocs using the [javadoc:javadoc](https://maven.apache.org/plugins/maven-javadoc-plugin/):
-```shell
-./mvnw javadoc:javadoc
-```
+Please read our [contribution guidelines](CONTRIBUTING.md) for more details.
