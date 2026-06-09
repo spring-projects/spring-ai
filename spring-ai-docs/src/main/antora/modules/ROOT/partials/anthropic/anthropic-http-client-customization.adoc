@@ -1,0 +1,30 @@
+== Customizing the HTTP Client
+
+Spring AI uses the official `anthropic-java` SDK under the hood and configures its HTTP transport with a custom OkHttp client built by `SpringAiAnthropicHttpClient.Builder`.
+You can intercept that builder before the underlying `OkHttpClient` is created by exposing one or more `AnthropicHttpClientBuilderCustomizer` beans.
+
+[source,java]
+----
+@FunctionalInterface
+public interface AnthropicHttpClientBuilderCustomizer {
+    void customize(SpringAiAnthropicHttpClient.Builder builder);
+}
+----
+
+Typical use cases include:
+
+* registering OkHttp `Interceptor` instances (authentication, propagation headers, custom logging);
+* swapping the dispatcher `ExecutorService` (for example, to route async I/O through virtual threads);
+* configuring proxy, SSL, hostname verification, or the connection-pool sizing exposed by the builder.
+
+When several customizers are present, they are applied in `@Order` order, after Spring AI's own defaults, so user code wins.
+
+The same hook is available when wiring the model manually via `AnthropicChatModel.Builder`:
+
+[source,java]
+----
+var chatModel = AnthropicChatModel.builder()
+    .options(AnthropicChatOptions.builder().model("claude-sonnet-4-20250514").build())
+    .httpClientBuilderCustomizer(myCustomizer)
+    .build();
+----
