@@ -76,6 +76,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import org.springframework.ai.anthropic.http.okhttp.AnthropicHttpClientBuilderCustomizer;
 import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
@@ -139,6 +140,7 @@ import org.springframework.util.MimeType;
  * @author Soby Chacko
  * @author Austin Dase
  * @author Sebastien Deleuze
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  * @see AnthropicChatOptions
  * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
@@ -187,7 +189,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	private AnthropicChatModel(@Nullable AnthropicClient anthropicClient,
 			@Nullable AnthropicClientAsync anthropicClientAsync, @Nullable AnthropicChatOptions options,
 			@Nullable ToolCallingManager toolCallingManager, @Nullable ObservationRegistry observationRegistry,
-			@Nullable MeterRegistry meterRegistry, @Nullable ExecutorService dispatcherExecutor) {
+			@Nullable MeterRegistry meterRegistry, @Nullable ExecutorService dispatcherExecutor,
+			List<AnthropicHttpClientBuilderCustomizer> httpClientCustomizers) {
 
 		if (options == null) {
 			this.options = AnthropicChatOptions.builder().build();
@@ -206,13 +209,13 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				() -> AnthropicSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
 						this.options.getCustomHeaders(), this.observationRegistry, this.meterRegistry,
-						this.dispatcherExecutor));
+						this.dispatcherExecutor, httpClientCustomizers));
 
 		this.anthropicClientAsync = Objects.requireNonNullElseGet(anthropicClientAsync,
 				() -> AnthropicSetup.setupAsyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
 						this.options.getCustomHeaders(), this.observationRegistry, this.meterRegistry,
-						this.dispatcherExecutor));
+						this.dispatcherExecutor, httpClientCustomizers));
 
 		this.toolCallingManager = Objects.requireNonNullElse(toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER);
 	}
@@ -1604,6 +1607,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		private @Nullable ExecutorService dispatcherExecutor;
 
+		private List<AnthropicHttpClientBuilderCustomizer> httpClientCustomizers = new ArrayList<>();
+
 		private Builder() {
 		}
 
@@ -1692,12 +1697,54 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		/**
+		 * Registers an {@link AnthropicHttpClientBuilderCustomizer} that mutates the
+		 * underlying OkHttp client builder before the Anthropic clients are constructed.
+		 * Use this to attach OkHttp interceptors (e.g. OAuth2 bearer-token injection),
+		 * swap the dispatcher executor, or tweak any other OkHttp setting. Customizers
+		 * are applied in the order they are registered, after Spring AI's own defaults,
+		 * so user code wins.
+		 * @param customizer the customizer to add
+		 * @return this builder
+		 * @since 2.0.0
+		 */
+		public Builder httpClientBuilderCustomizer(AnthropicHttpClientBuilderCustomizer customizer) {
+			Assert.notNull(customizer, "customizer cannot be null");
+			this.httpClientCustomizers.add(customizer);
+			return this;
+		}
+
+		/**
+		 * Sets the full list of {@link AnthropicHttpClientBuilderCustomizer customizers}
+		 * to apply, replacing any customizers registered earlier on this builder. The
+		 * order of the list is preserved when invoking the customizers.
+		 * @param customizers the list of customizers
+		 * @return this builder
+		 * @since 2.0.0
+		 */
+		public Builder httpClientBuilderCustomizers(List<AnthropicHttpClientBuilderCustomizer> customizers) {
+			Assert.notNull(customizers, "customizers cannot be null");
+			this.httpClientCustomizers = new ArrayList<>(customizers);
+			return this;
+		}
+
+		/**
 		 * Builds a new {@link AnthropicChatModel} instance.
 		 * @return the configured chat model
 		 */
 		public AnthropicChatModel build() {
+			if (!this.httpClientCustomizers.isEmpty() && this.anthropicClient != null) {
+				throw new IllegalArgumentException(
+						"httpClientBuilderCustomizers cannot be combined with a pre-built anthropicClient "
+								+ "because the HTTP layer is already constructed");
+			}
+			if (!this.httpClientCustomizers.isEmpty() && this.anthropicClientAsync != null) {
+				throw new IllegalArgumentException(
+						"httpClientBuilderCustomizers cannot be combined with a pre-built anthropicClientAsync "
+								+ "because the HTTP layer is already constructed");
+			}
 			return new AnthropicChatModel(this.anthropicClient, this.anthropicClientAsync, this.options,
-					this.toolCallingManager, this.observationRegistry, this.meterRegistry, this.dispatcherExecutor);
+					this.toolCallingManager, this.observationRegistry, this.meterRegistry, this.dispatcherExecutor,
+					this.httpClientCustomizers);
 		}
 
 	}

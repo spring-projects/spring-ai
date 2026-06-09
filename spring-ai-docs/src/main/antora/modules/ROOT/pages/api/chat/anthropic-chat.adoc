@@ -1791,6 +1791,8 @@ The following features are not yet supported:
 
 These features are planned for future releases.
 
+include::partial$anthropic/anthropic-http-client-customization.adoc[]
+
 == Additional Resources
 
 * link:https://github.com/anthropics/anthropic-sdk-java[Official Anthropic Java SDK]
