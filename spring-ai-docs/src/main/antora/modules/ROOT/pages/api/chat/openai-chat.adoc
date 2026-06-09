@@ -1094,3 +1094,33 @@ The availability of `reasoning_content` depends entirely on the inference server
 Not all OpenAI-compatible servers expose reasoning content, even when using reasoning-capable models.
 Always refer to your server's API documentation to understand what fields are available in responses.
 ====
+
+=== Tool Call Additional Properties for OpenAI-Compatible Providers
+
+Some OpenAI-compatible providers attach extra fields to tool-call objects in their responses.
+A common example is Google Gemini's OpenAI-compatible endpoint, which returns a `thought_signature` field required for multi-turn tool calling:
+
+[source,json]
+----
+{
+  "tool_calls": [
+    {
+      "id": "call_1",
+      "type": "function",
+      "function": { "name": "get_weather", "arguments": "{\"location\":\"Seoul\"}" },
+      "extra_content": { "google": { "thought_signature": "..." } }
+    }
+  ]
+}
+----
+
+Without these provider-specific fields present in the follow-up request, some models reject the tool-call history.
+
+Spring AI automatically captures any extra fields present on tool-call objects in the provider response and replays them verbatim when the assistant message is included in a subsequent request.
+No configuration is required — the behavior is transparent for both blocking and streaming flows.
+
+[NOTE]
+====
+This applies only to extra fields on the tool-call object itself.
+Extra fields inside the nested `function` object are not preserved.
+====

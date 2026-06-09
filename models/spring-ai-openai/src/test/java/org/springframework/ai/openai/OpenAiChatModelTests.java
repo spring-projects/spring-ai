@@ -17,19 +17,28 @@
 package org.springframework.ai.openai;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
+import com.openai.core.http.AsyncStreamResponse;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam;
+import com.openai.models.chat.completions.ChatCompletionChunk;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
 import com.openai.models.chat.completions.ChatCompletionMessage;
+import com.openai.models.chat.completions.ChatCompletionMessageFunctionToolCall;
 import com.openai.models.chat.completions.ChatCompletionMessageParam;
+import com.openai.models.chat.completions.ChatCompletionMessageToolCall;
 import com.openai.models.completions.CompletionUsage;
+import com.openai.services.async.ChatServiceAsync;
+import com.openai.services.async.chat.ChatCompletionServiceAsync;
 import com.openai.services.blocking.ChatService;
 import com.openai.services.blocking.chat.ChatCompletionService;
 import org.junit.jupiter.api.Test;
@@ -40,6 +49,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -57,6 +67,8 @@ import static org.mockito.Mockito.when;
  */
 @ExtendWith(MockitoExtension.class)
 class OpenAiChatModelTests {
+
+	private static final String TOOL_CALL_ADDITIONAL_PROPERTIES_METADATA_KEY = "openai.tool_calls.additional_properties";
 
 	@Mock
 	OpenAIClient openAiClient;
@@ -115,6 +127,260 @@ class OpenAiChatModelTests {
 		assertThat((Object) metadata.get("list_field")).isEqualTo(List.of("abc", 123));
 		assertThat(metadata.<Map<String, Object>>get("object_field")).containsEntry("key1", 1).containsEntry("key2", 2);
 		assertThat(metadata.containsKey("null_field")).isFalse();
+	}
+
+	@Test
+	void preserveUnmappedToolCallAdditionalProperties() {
+		ChatService chatService = mock(ChatService.class);
+		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
+		when(this.openAiClient.chat()).thenReturn(chatService);
+		when(chatService.completions()).thenReturn(chatCompletionService);
+		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
+			.id("chatcmpl-test")
+			.created(1777799928)
+			.model("gemini-3.5-flash")
+			.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
+			.addChoice(ChatCompletion.Choice.builder()
+				.finishReason(ChatCompletion.Choice.FinishReason.TOOL_CALLS)
+				.index(0)
+				.logprobs(Optional.empty())
+				.message(ChatCompletionMessage.builder()
+					.content("")
+					.refusal(Optional.empty())
+					.role(JsonValue.from("assistant"))
+					.annotations(List.of())
+					.toolCalls(List
+						.of(ChatCompletionMessageToolCall.ofFunction(ChatCompletionMessageFunctionToolCall.builder()
+							.id("call_1")
+							.function(ChatCompletionMessageFunctionToolCall.Function.builder()
+								.name("get_current_weather")
+								.arguments("{\"location\":\"Seoul\"}")
+								.build())
+							.putAdditionalProperty("extra_content",
+									JsonValue.from(Map.of("google", Map.of("thought_signature", "signature-123"))))
+							.build())))
+					.build())
+				.build())
+			.build());
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gemini-3.5-flash").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.call(new Prompt("hi", options));
+
+		AssistantMessage assistantMessage = response.getResult().getOutput();
+		assertThat(assistantMessage.getToolCalls()).singleElement().satisfies(toolCall -> {
+			assertThat(toolCall.id()).isEqualTo("call_1");
+			assertThat(toolCall.name()).isEqualTo("get_current_weather");
+			assertThat(toolCall.arguments()).isEqualTo("{\"location\":\"Seoul\"}");
+		});
+		assertThat(toolCallProperties(assistantMessage, "call_1")).containsEntry("extra_content",
+				Map.of("google", Map.of("thought_signature", "signature-123")));
+	}
+
+	@Test
+	void preserveUnmappedToolCallAdditionalPropertiesFromStream() {
+		ChatServiceAsync chatServiceAsync = mock(ChatServiceAsync.class);
+		ChatCompletionServiceAsync chatCompletionServiceAsync = mock(ChatCompletionServiceAsync.class);
+		when(this.openAiClientAsync.chat()).thenReturn(chatServiceAsync);
+		when(chatServiceAsync.completions()).thenReturn(chatCompletionServiceAsync);
+		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class)))
+			.thenReturn(asyncStreamResponse(
+					ChatCompletionChunk.builder()
+						.id("chatcmpl-stream-test")
+						.created(1777799928)
+						.model("gemini-3.5-flash")
+						.addChoice(ChatCompletionChunk.Choice.builder()
+							.index(0)
+							.finishReason(Optional.empty())
+							.delta(ChatCompletionChunk.Choice.Delta.builder()
+								.addToolCall(ChatCompletionChunk.Choice.Delta.ToolCall.builder()
+									.index(0)
+									.id("call_1")
+									.function(ChatCompletionChunk.Choice.Delta.ToolCall.Function.builder()
+										.name("get_current_weather")
+										.arguments("{\"location\"")
+										.build())
+									.build())
+								.build())
+							.build())
+						.build(),
+					ChatCompletionChunk.builder()
+						.id("chatcmpl-stream-test")
+						.created(1777799928)
+						.model("gemini-3.5-flash")
+						.addChoice(ChatCompletionChunk.Choice.builder()
+							.index(0)
+							.finishReason(Optional.empty())
+							.delta(ChatCompletionChunk.Choice.Delta.builder()
+								.addToolCall(ChatCompletionChunk.Choice.Delta.ToolCall.builder()
+									.index(0)
+									.function(ChatCompletionChunk.Choice.Delta.ToolCall.Function.builder()
+										.arguments(":\"Seoul\"}")
+										.build())
+									.putAdditionalProperty("extra_content",
+											JsonValue
+												.from(Map.of("google", Map.of("thought_signature", "signature-123"))))
+									.build())
+								.build())
+							.build())
+						.build(),
+					ChatCompletionChunk.builder()
+						.id("chatcmpl-stream-test")
+						.created(1777799928)
+						.model("gemini-3.5-flash")
+						.addChoice(ChatCompletionChunk.Choice.builder()
+							.index(0)
+							.finishReason(ChatCompletionChunk.Choice.FinishReason.TOOL_CALLS)
+							.delta(ChatCompletionChunk.Choice.Delta.builder().build())
+							.build())
+						.build()));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gemini-3.5-flash").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.stream(new Prompt("hi", options)).blockLast();
+
+		assertThat(response).isNotNull();
+		AssistantMessage assistantMessage = response.getResult().getOutput();
+		assertThat(assistantMessage.getToolCalls()).singleElement().satisfies(toolCall -> {
+			assertThat(toolCall.id()).isEqualTo("call_1");
+			assertThat(toolCall.name()).isEqualTo("get_current_weather");
+			assertThat(toolCall.arguments()).isEqualTo("{\"location\":\"Seoul\"}");
+		});
+		assertThat(toolCallProperties(assistantMessage, "call_1")).containsEntry("extra_content",
+				Map.of("google", Map.of("thought_signature", "signature-123")));
+	}
+
+	@Test
+	void restoreUnmappedToolCallAdditionalProperties() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gemini-3.5-flash").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("")
+			.properties(Map.of(TOOL_CALL_ADDITIONAL_PROPERTIES_METADATA_KEY,
+					Map.of("call_1", "{\"extra_content\":{\"google\":{\"thought_signature\":\"signature-123\"}}}")))
+			.toolCalls(List.of(new AssistantMessage.ToolCall("call_1", "function", "get_current_weather",
+					"{\"location\":\"Seoul\"}")))
+			.build();
+
+		ChatCompletionCreateParams request = chatModel
+			.createRequest(new Prompt(List.<Message>of(assistantMessage), options), false);
+
+		ChatCompletionMessageFunctionToolCall toolCall = request.messages()
+			.get(0)
+			.asAssistant()
+			.toolCalls()
+			.orElseThrow()
+			.get(0)
+			.asFunction();
+		@SuppressWarnings("unchecked")
+		Map<String, Object> extraContent = toolCall._additionalProperties().get("extra_content").convert(Map.class);
+		assertThat(extraContent).containsEntry("google", Map.of("thought_signature", "signature-123"));
+	}
+
+	@Test
+	void restoreUnmappedToolCallAdditionalPropertiesByToolCallId() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gemini-3.5-flash").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+		Map<String, String> additionalProperties = new LinkedHashMap<>();
+		additionalProperties.put("call_2", "{\"extra_content\":{\"google\":{\"thought_signature\":\"signature-2\"}}}");
+		additionalProperties.put("call_1", "{\"extra_content\":{\"google\":{\"thought_signature\":\"signature-1\"}}}");
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("")
+			.properties(Map.of(TOOL_CALL_ADDITIONAL_PROPERTIES_METADATA_KEY, additionalProperties))
+			.toolCalls(List.of(
+					new AssistantMessage.ToolCall("call_1", "function", "get_current_weather",
+							"{\"location\":\"Seoul\"}"),
+					new AssistantMessage.ToolCall("call_2", "function", "get_current_time",
+							"{\"timezone\":\"Asia/Seoul\"}")))
+			.build();
+
+		ChatCompletionCreateParams request = chatModel
+			.createRequest(new Prompt(List.<Message>of(assistantMessage), options), false);
+
+		List<ChatCompletionMessageToolCall> toolCalls = request.messages()
+			.get(0)
+			.asAssistant()
+			.toolCalls()
+			.orElseThrow();
+		ChatCompletionMessageFunctionToolCall firstToolCall = toolCalls.get(0).asFunction();
+		ChatCompletionMessageFunctionToolCall secondToolCall = toolCalls.get(1).asFunction();
+		assertThat(firstToolCall.id()).isEqualTo("call_1");
+		assertThat(secondToolCall.id()).isEqualTo("call_2");
+		@SuppressWarnings("unchecked")
+		Map<String, Object> firstExtraContent = firstToolCall._additionalProperties()
+			.get("extra_content")
+			.convert(Map.class);
+		@SuppressWarnings("unchecked")
+		Map<String, Object> secondExtraContent = secondToolCall._additionalProperties()
+			.get("extra_content")
+			.convert(Map.class);
+		assertThat(firstExtraContent).containsEntry("google", Map.of("thought_signature", "signature-1"));
+		assertThat(secondExtraContent).containsEntry("google", Map.of("thought_signature", "signature-2"));
+	}
+
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> toolCallProperties(AssistantMessage assistantMessage, String toolCallId) {
+		Map<String, String> toolCallProperties = (Map<String, String>) assistantMessage.getMetadata()
+			.get(TOOL_CALL_ADDITIONAL_PROPERTIES_METADATA_KEY);
+		String json = toolCallProperties.get(toolCallId);
+		return json != null ? new JsonHelper().fromJsonToMap(json) : Map.of();
+	}
+
+	private AsyncStreamResponse<ChatCompletionChunk> asyncStreamResponse(ChatCompletionChunk... chunks) {
+		return new AsyncStreamResponse<>() {
+			private final CompletableFuture<Void> completion = new CompletableFuture<>();
+
+			@Override
+			public AsyncStreamResponse<ChatCompletionChunk> subscribe(
+					AsyncStreamResponse.Handler<? super ChatCompletionChunk> handler) {
+				try {
+					for (ChatCompletionChunk chunk : chunks) {
+						handler.onNext(chunk);
+					}
+					handler.onComplete(Optional.empty());
+					this.completion.complete(null);
+				}
+				catch (Throwable throwable) {
+					handler.onComplete(Optional.of(throwable));
+					this.completion.completeExceptionally(throwable);
+				}
+				return this;
+			}
+
+			@Override
+			public AsyncStreamResponse<ChatCompletionChunk> subscribe(
+					AsyncStreamResponse.Handler<? super ChatCompletionChunk> handler, Executor executor) {
+				executor.execute(() -> subscribe(handler));
+				return this;
+			}
+
+			@Override
+			public CompletableFuture<Void> onCompleteFuture() {
+				return this.completion;
+			}
+
+			@Override
+			public void close() {
+			}
+		};
 	}
 
 	@Test

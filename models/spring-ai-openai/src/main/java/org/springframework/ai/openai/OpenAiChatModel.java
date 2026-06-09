@@ -101,6 +101,7 @@ import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
@@ -117,12 +118,17 @@ import org.springframework.util.StringUtils;
  * @author Ilayaperumal Gopinathan
  * @author Thomas Vitale
  * @author Eric Bottard
+ * @author Taewoong Kim
  */
 public final class OpenAiChatModel implements ChatModel {
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
 	private static final String REASONING_CONTENT = "reasoningContent";
+
+	static final String TOOL_CALL_ADDITIONAL_PROPERTIES_METADATA_KEY = "openai.tool_calls.additional_properties";
+
+	private static final JsonHelper JSON_HELPER = new JsonHelper();
 
 	private final Log logger = LogFactory.getLog(OpenAiChatModel.class);
 
@@ -343,6 +349,11 @@ public final class OpenAiChatModel implements ChatModel {
 	private Generation buildGeneration(ChatCompletion.Choice choice, Map<String, Object> metadata,
 			ChatCompletionCreateParams request) {
 		ChatCompletionMessage message = choice.message();
+		Map<String, Object> assistantMessageMetadata = new LinkedHashMap<>(metadata);
+		Map<String, String> toolCallAdditionalProperties = extractToolCallAdditionalProperties(message);
+		if (!toolCallAdditionalProperties.isEmpty()) {
+			assistantMessageMetadata.put(TOOL_CALL_ADDITIONAL_PROPERTIES_METADATA_KEY, toolCallAdditionalProperties);
+		}
 		List<AssistantMessage.ToolCall> toolCalls = message.toolCalls()
 			.map(list -> list.stream().filter(tc -> tc.function().isPresent()).map(tc -> {
 				var opt = tc.function();
@@ -386,11 +397,23 @@ public final class OpenAiChatModel implements ChatModel {
 
 		var assistantMessage = AssistantMessage.builder()
 			.content(textContent)
-			.properties(metadata)
+			.properties(assistantMessageMetadata)
 			.toolCalls(toolCalls)
 			.media(media)
 			.build();
 		return new Generation(assistantMessage, generationMetadataBuilder.build());
+	}
+
+	private Map<String, String> extractToolCallAdditionalProperties(ChatCompletionMessage message) {
+		Map<String, String> result = new LinkedHashMap<>();
+		message.toolCalls()
+			.ifPresent(toolCalls -> toolCalls.forEach(toolCall -> toolCall.function().ifPresent(functionToolCall -> {
+				Map<String, JsonValue> props = functionToolCall._additionalProperties();
+				if (!CollectionUtils.isEmpty(props)) {
+					result.put(functionToolCall.id(), JSON_HELPER.toJson(props));
+				}
+			})));
+		return result;
 	}
 
 	private ChatResponseMetadata from(ChatCompletion result, Usage usage) {
@@ -572,16 +595,29 @@ public final class OpenAiChatModel implements ChatModel {
 					}
 
 					if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
+						Map<String, String> toolCallAdditionalProperties = toolCallAdditionalPropertiesFromMetadata(
+								assistantMessage);
+
 						List<ChatCompletionMessageToolCall> toolCalls = assistantMessage.getToolCalls()
 							.stream()
-							.map(toolCall -> ChatCompletionMessageToolCall
-								.ofFunction(ChatCompletionMessageFunctionToolCall.builder()
+							.map(toolCall -> {
+								ChatCompletionMessageFunctionToolCall.Builder toolCallBuilder = ChatCompletionMessageFunctionToolCall
+									.builder()
 									.id(toolCall.id())
 									.function(ChatCompletionMessageFunctionToolCall.Function.builder()
 										.name(toolCall.name())
 										.arguments(toolCall.arguments())
-										.build())
-									.build()))
+										.build());
+
+								String jsonProps = toolCallAdditionalProperties.get(toolCall.id());
+								if (StringUtils.hasText(jsonProps)) {
+									Map<String, JsonValue> additionalProperties = new LinkedHashMap<>();
+									JSON_HELPER.fromJsonToMap(jsonProps)
+										.forEach((k, v) -> additionalProperties.put(k, JsonValue.from(v)));
+									toolCallBuilder.putAllAdditionalProperties(additionalProperties);
+								}
+								return ChatCompletionMessageToolCall.ofFunction(toolCallBuilder.build());
+							})
 							.toList();
 
 						builder.toolCalls(toolCalls);
@@ -688,14 +724,14 @@ public final class OpenAiChatModel implements ChatModel {
 			else if (responseFormat.getType().equals(ResponseFormat.Type.JSON_SCHEMA)) {
 				String jsonSchemaString = responseFormat.getJsonSchema() != null ? responseFormat.getJsonSchema() : "";
 				try {
-					com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+
 					ResponseFormatJsonSchema.JsonSchema.Builder jsonSchemaBuilder = ResponseFormatJsonSchema.JsonSchema
 						.builder();
 					jsonSchemaBuilder.name("json_schema");
 					jsonSchemaBuilder.strict(true);
 
-					ResponseFormatJsonSchema.JsonSchema.Schema schema = mapper.readValue(jsonSchemaString,
-							ResponseFormatJsonSchema.JsonSchema.Schema.class);
+					ResponseFormatJsonSchema.JsonSchema.Schema schema = JacksonUtils.getDefaultJsonMapper()
+						.readValue(jsonSchemaString, ResponseFormatJsonSchema.JsonSchema.Schema.class);
 
 					jsonSchemaBuilder.schema(schema);
 
@@ -835,6 +871,20 @@ public final class OpenAiChatModel implements ChatModel {
 		}
 
 		return builder.build();
+	}
+
+	private Map<String, String> toolCallAdditionalPropertiesFromMetadata(AssistantMessage assistantMessage) {
+		Object value = assistantMessage.getMetadata().get(TOOL_CALL_ADDITIONAL_PROPERTIES_METADATA_KEY);
+		if (!(value instanceof Map<?, ?> rawMap)) {
+			return Map.of();
+		}
+		Map<String, String> result = new LinkedHashMap<>();
+		rawMap.forEach((k, v) -> {
+			if (k instanceof String id && v instanceof String json) {
+				result.put(id, json);
+			}
+		});
+		return result;
 	}
 
 	public static ChatCompletionToolChoiceOption parseToolChoice(JsonNode node) {
@@ -1015,6 +1065,7 @@ public final class OpenAiChatModel implements ChatModel {
 					List<ToolCall> result = new ArrayList<>(tcs1);
 					result.set(tcs1.size() - 1,
 							lastFromTc1.toBuilder()
+								.putAllAdditionalProperties(toolCall._additionalProperties())
 								.function(lastFromTc1F.toBuilder().arguments(concatenatedArgs).build())
 								.build());
 					return result;
@@ -1057,6 +1108,7 @@ public final class OpenAiChatModel implements ChatModel {
 					msgBuilder.toolCalls(ccctcs.stream().map(tc -> {
 						ChatCompletionMessageFunctionToolCall.Builder toolCallBuilder = ChatCompletionMessageFunctionToolCall
 							.builder();
+						toolCallBuilder.putAllAdditionalProperties(tc._additionalProperties());
 						toolCallBuilder.id(tc.id().get());
 						toolCallBuilder.function(ChatCompletionMessageFunctionToolCall.Function.builder()
 							.name(tc.function().get().name().get())
