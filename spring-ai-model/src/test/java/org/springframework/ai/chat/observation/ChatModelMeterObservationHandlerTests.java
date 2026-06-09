@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,22 +103,6 @@ class ChatModelMeterObservationHandlerTests {
 
 		observationContext.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("test"))),
 				ChatResponseMetadata.builder().model("model").usage(null).build()));
-
-		observation.stop();
-
-		assertThat(this.meterRegistry.getMeters())
-			.noneMatch(meter -> meter.getId().getName().equals(AiObservationMetricNames.TOKEN_USAGE.value()));
-	}
-
-	@Test
-	void shouldHandleNullResponseMetadata() {
-		var observationContext = generateObservationContext();
-		var observation = Observation
-			.createNotStarted(new DefaultChatModelObservationConvention(), () -> observationContext,
-					this.observationRegistry)
-			.start();
-
-		observationContext.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("test"))), null));
 
 		observation.stop();
 

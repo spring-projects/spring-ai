@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model.chat.client.autoconfigure;
 
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -41,8 +42,14 @@ public class ChatClientBuilderProperties {
 
 	private final Observations observations = new Observations();
 
+	private final ToolCalling toolCalling = new ToolCalling();
+
 	public Observations getObservations() {
 		return this.observations;
+	}
+
+	public ToolCalling getToolCalling() {
+		return this.toolCalling;
 	}
 
 	public boolean isEnabled() {
@@ -51,6 +58,57 @@ public class ChatClientBuilderProperties {
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
+	}
+
+	public static class ToolCalling {
+
+		/**
+		 * Whether to auto-register a {@link ToolCallingAdvisor} in the advisor chain when
+		 * tools are present on a call. Set to {@code false} to disable automatic tool
+		 * execution and handle tool calls manually (user-controlled tool execution).
+		 */
+		private boolean enabled = true;
+
+		/**
+		 * Order of the auto-registered {@link ToolCallingAdvisor} in the advisor chain.
+		 * Controls which advisors are inside the recursive tool-call loop: only advisors
+		 * with a higher order value (i.e. downstream in the request direction)
+		 * participate in each tool-call iteration.
+		 */
+		private int advisorOrder = ToolCallingAdvisor.DEFAULT_ORDER;
+
+		/**
+		 * Whether intermediate tool-call responses are streamed back to the caller during
+		 * a {@code stream()} invocation. When {@code true}, each tool-call iteration
+		 * emits its chunks in real time before the recursive call is made. When
+		 * {@code false} (default), only the final answer is streamed.
+		 */
+		private boolean streamToolCallResponses = false;
+
+		public boolean isEnabled() {
+			return this.enabled;
+		}
+
+		public void setEnabled(boolean enabled) {
+			this.enabled = enabled;
+		}
+
+		public int getAdvisorOrder() {
+			return this.advisorOrder;
+		}
+
+		public void setAdvisorOrder(int advisorOrder) {
+			this.advisorOrder = advisorOrder;
+		}
+
+		public boolean isStreamToolCallResponses() {
+			return this.streamToolCallResponses;
+		}
+
+		public void setStreamToolCallResponses(boolean streamToolCallResponses) {
+			this.streamToolCallResponses = streamToolCallResponses;
+		}
+
 	}
 
 	public static class Observations {

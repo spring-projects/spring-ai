@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * The ToolResponseMessage class represents a message with a function content in a chat
  * application.
@@ -32,19 +34,7 @@ public class ToolResponseMessage extends AbstractMessage {
 
 	protected final List<ToolResponse> responses;
 
-	/**
-	 * @deprecated in favor of using {@link ToolResponseMessage.Builder}
-	 */
-	@Deprecated
-	public ToolResponseMessage(List<ToolResponse> responses) {
-		this(responses, Map.of());
-	}
-
-	/**
-	 * @deprecated in favor of using {@link ToolResponseMessage.Builder}
-	 */
-	@Deprecated
-	public ToolResponseMessage(List<ToolResponse> responses, Map<String, Object> metadata) {
+	protected ToolResponseMessage(List<ToolResponse> responses, Map<String, Object> metadata) {
 		super(MessageType.TOOL, "", metadata);
 		this.responses = responses;
 	}
@@ -58,7 +48,7 @@ public class ToolResponseMessage extends AbstractMessage {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -88,7 +78,7 @@ public class ToolResponseMessage extends AbstractMessage {
 
 	public static final class Builder {
 
-		private List<ToolResponse> responses;
+		private List<ToolResponse> responses = List.of();
 
 		private Map<String, Object> metadata = Map.of();
 

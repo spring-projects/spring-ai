@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.content.Media;
 
@@ -30,77 +32,29 @@ import org.springframework.ai.content.Media;
  */
 public class DeepSeekAssistantMessage extends AssistantMessage {
 
-	private Boolean prefix;
+	private @Nullable Boolean prefix;
 
-	private String reasoningContent;
+	private @Nullable String reasoningContent;
 
-	/**
-	 * @deprecated in favor of {@link DeepSeekAssistantMessage.Builder}
-	 */
-	@Deprecated
-	public DeepSeekAssistantMessage(String content) {
-		super(content);
-	}
-
-	/**
-	 * @deprecated in favor of {@link DeepSeekAssistantMessage.Builder}
-	 */
-	@Deprecated
-	public DeepSeekAssistantMessage(String content, String reasoningContent) {
-		super(content);
-		this.reasoningContent = reasoningContent;
-	}
-
-	/**
-	 * @deprecated in favor of {@link DeepSeekAssistantMessage.Builder}
-	 */
-	@Deprecated
-	public DeepSeekAssistantMessage(String content, Map<String, Object> properties) {
-		super(content, properties);
-	}
-
-	/**
-	 * @deprecated in favor of {@link DeepSeekAssistantMessage.Builder}
-	 */
-	@Deprecated
-	public DeepSeekAssistantMessage(String content, Map<String, Object> properties, List<ToolCall> toolCalls) {
-		super(content, properties, toolCalls);
-	}
-
-	/**
-	 * @deprecated in favor of {@link DeepSeekAssistantMessage.Builder}
-	 */
-	@Deprecated
-	public DeepSeekAssistantMessage(String content, String reasoningContent, Map<String, Object> properties,
-			List<ToolCall> toolCalls) {
-		this(content, reasoningContent, properties, toolCalls, List.of());
-	}
-
-	/**
-	 * @deprecated in favor of {@link DeepSeekAssistantMessage.Builder}
-	 */
-	@Deprecated
-	public DeepSeekAssistantMessage(String content, String reasoningContent, Map<String, Object> properties,
-			List<ToolCall> toolCalls, List<Media> media) {
-		this(content, reasoningContent, null, properties, toolCalls, media);
-	}
-
-	protected DeepSeekAssistantMessage(String content, String reasoningContent, Boolean prefix,
-			Map<String, Object> properties, List<ToolCall> toolCalls, List<Media> media) {
+	protected DeepSeekAssistantMessage(@Nullable String content, @Nullable String reasoningContent,
+			@Nullable Boolean prefix, Map<String, Object> properties, List<ToolCall> toolCalls, List<Media> media) {
 		super(content, properties, toolCalls, media);
 		this.reasoningContent = reasoningContent;
 		this.prefix = prefix;
 	}
 
-	public static DeepSeekAssistantMessage prefixAssistantMessage(String content) {
+	@Deprecated(forRemoval = true, since = "2.0.0")
+	public static DeepSeekAssistantMessage prefixAssistantMessage(@Nullable String content) {
 		return prefixAssistantMessage(content, null);
 	}
 
-	public static DeepSeekAssistantMessage prefixAssistantMessage(String content, String reasoningContent) {
-		return new DeepSeekAssistantMessage.Builder().content(content).reasoningContent(reasoningContent).build();
+	@Deprecated(forRemoval = true, since = "2.0.0")
+	public static DeepSeekAssistantMessage prefixAssistantMessage(@Nullable String content,
+			@Nullable String reasoningContent) {
+		return new Builder().content(content).prefix(true).reasoningContent(reasoningContent).build();
 	}
 
-	public Boolean getPrefix() {
+	public @Nullable Boolean getPrefix() {
 		return this.prefix;
 	}
 
@@ -108,16 +62,16 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 		this.prefix = prefix;
 	}
 
-	public String getReasoningContent() {
+	public @Nullable String getReasoningContent() {
 		return this.reasoningContent;
 	}
 
-	public void setReasoningContent(String reasoningContent) {
+	public void setReasoningContent(@Nullable String reasoningContent) {
 		this.reasoningContent = reasoningContent;
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -142,50 +96,33 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 				+ this.prefix + ", metadata=" + this.metadata + "]";
 	}
 
-	public static final class Builder {
+	public static Builder builder() {
+		return new Builder();
+	}
 
-		private String content;
+	// public Builder class exposed to users. Avoids having to deal with noisy generic
+	// parameters.
+	public static class Builder extends AbstractBuilder<Builder> {
 
-		private Map<String, Object> properties = Map.of();
+	}
 
-		private List<ToolCall> toolCalls = List.of();
+	public static class AbstractBuilder<B extends AbstractBuilder<B>> extends AssistantMessage.Builder<B> {
 
-		private List<Media> media = List.of();
+		protected @Nullable Boolean prefix;
 
-		private Boolean prefix;
+		protected @Nullable String reasoningContent;
 
-		private String reasoningContent;
-
-		public Builder content(String content) {
-			this.content = content;
-			return this;
-		}
-
-		public Builder properties(Map<String, Object> properties) {
-			this.properties = properties;
-			return this;
-		}
-
-		public Builder toolCalls(List<ToolCall> toolCalls) {
-			this.toolCalls = toolCalls;
-			return this;
-		}
-
-		public Builder media(List<Media> media) {
-			this.media = media;
-			return this;
-		}
-
-		public Builder prefix(Boolean prefix) {
+		public B prefix(@Nullable Boolean prefix) {
 			this.prefix = prefix;
-			return this;
+			return self();
 		}
 
-		public Builder reasoningContent(String reasoningContent) {
+		public B reasoningContent(@Nullable String reasoningContent) {
 			this.reasoningContent = reasoningContent;
-			return this;
+			return self();
 		}
 
+		@Override
 		public DeepSeekAssistantMessage build() {
 			return new DeepSeekAssistantMessage(this.content, this.reasoningContent, this.prefix, this.properties,
 					this.toolCalls, this.media);

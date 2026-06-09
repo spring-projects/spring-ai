@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,15 +19,17 @@ package org.springframework.ai.template;
 import java.util.Map;
 import java.util.function.BiFunction;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Renders a template using a given strategy.
  *
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public interface TemplateRenderer extends BiFunction<String, Map<String, Object>, String> {
+public interface TemplateRenderer extends BiFunction<String, Map<String, ? extends @Nullable Object>, String> {
 
 	@Override
-	String apply(String template, Map<String, Object> variables);
+	String apply(String template, Map<String, ? extends @Nullable Object> variables);
 
 }

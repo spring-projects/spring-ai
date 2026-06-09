@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -31,15 +32,16 @@ import org.springframework.jdbc.core.JdbcTemplate;
  *
  * @author Muthukumaran Navaneethakrishnan
  * @author Christian Tzolov
+ * @author Yanming Zhou
  * @since 1.0.0
  */
-public class PgVectorSchemaValidator {
+class PgVectorSchemaValidator {
 
-	private static final Logger logger = LoggerFactory.getLogger(PgVectorSchemaValidator.class);
+	private static final Log logger = LogFactory.getLog(PgVectorSchemaValidator.class);
 
 	private final JdbcTemplate jdbcTemplate;
 
-	public PgVectorSchemaValidator(JdbcTemplate jdbcTemplate) {
+	PgVectorSchemaValidator(JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
@@ -64,7 +66,7 @@ public class PgVectorSchemaValidator {
 
 	}
 
-	public boolean isTableExists(String schemaName, String tableName) {
+	boolean isTableExists(String schemaName, String tableName) {
 		String sql = "SELECT 1 FROM information_schema.tables WHERE table_schema = ? AND table_name = ?";
 		try {
 			// Query for a single integer value, if it exists, table exists
@@ -76,7 +78,7 @@ public class PgVectorSchemaValidator {
 		}
 	}
 
-	void validateTableSchema(String schemaName, String tableName) {
+	void validateTableSchema(String schemaName, String tableName, int dimensions) {
 
 		if (!isValidNameForDatabaseObject(schemaName)) {
 			throw new IllegalArgumentException(
@@ -92,7 +94,9 @@ public class PgVectorSchemaValidator {
 		}
 
 		try {
-			logger.info("Validating PGVectorStore schema for table: {} in schema: {}", tableName, schemaName);
+			if (logger.isInfoEnabled()) {
+				logger.info("Validating PGVectorStore schema for table: " + tableName + " in schema: " + schemaName);
+			}
 
 			List<String> expectedColumns = new ArrayList<>();
 			expectedColumns.add("id");
@@ -104,7 +108,7 @@ public class PgVectorSchemaValidator {
 			// Include the schema name in the query to target the correct table
 			String query = "SELECT column_name, data_type FROM information_schema.columns "
 					+ "WHERE table_schema = ? AND table_name = ?";
-			List<Map<String, Object>> columns = this.jdbcTemplate.queryForList(query,
+			List<Map<String, @Nullable Object>> columns = this.jdbcTemplate.queryForList(query,
 					new Object[] { schemaName, tableName });
 
 			if (columns.isEmpty()) {
@@ -114,7 +118,7 @@ public class PgVectorSchemaValidator {
 
 			// Check each column against expected fields
 			List<String> availableColumns = new ArrayList<>();
-			for (Map<String, Object> column : columns) {
+			for (Map<String, @Nullable Object> column : columns) {
 				String columnName = (String) column.get("column_name");
 				availableColumns.add(columnName);
 
@@ -129,9 +133,34 @@ public class PgVectorSchemaValidator {
 				throw new IllegalStateException("Missing fields " + expectedColumns);
 			}
 
+			// Query the actual dimensions
+			query = """
+					SELECT
+						a.atttypmod
+					FROM
+						pg_attribute a
+					JOIN
+						pg_class c ON a.attrelid = c.oid
+					JOIN
+						pg_namespace n ON c.relnamespace = n.oid
+					WHERE
+						n.nspname = ?
+						AND c.relname = ?
+						AND a.attname = ?
+						AND a.attnum > 0
+						AND NOT a.attisdropped
+					""";
+			Integer actualDimensions = this.jdbcTemplate.queryForObject(query, Integer.class, schemaName, tableName,
+					"embedding");
+			if (actualDimensions == null || actualDimensions != dimensions) {
+				throw new IllegalStateException("Actual vector dimensions is " + actualDimensions
+						+ ", required vector dimensions is " + dimensions);
+			}
 		}
 		catch (DataAccessException | IllegalStateException e) {
-			logger.error("Error while validating table schema{}", e.getMessage());
+			if (logger.isErrorEnabled()) {
+				logger.error("Error while validating table schema: " + e.getMessage());
+			}
 			logger
 				.error("Failed to operate with the specified table in the database. To resolve this issue, please ensure the following steps are completed:\n"
 						+ "1. Ensure the necessary PostgreSQL extensions are enabled. Run the following SQL commands:\n"

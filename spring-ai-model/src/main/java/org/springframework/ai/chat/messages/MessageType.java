@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,15 +55,6 @@ public enum MessageType {
 
 	MessageType(String value) {
 		this.value = value;
-	}
-
-	public static MessageType fromValue(String value) {
-		for (MessageType messageType : MessageType.values()) {
-			if (messageType.getValue().equals(value)) {
-				return messageType;
-			}
-		}
-		throw new IllegalArgumentException("Invalid MessageType value: " + value);
 	}
 
 	public String getValue() {

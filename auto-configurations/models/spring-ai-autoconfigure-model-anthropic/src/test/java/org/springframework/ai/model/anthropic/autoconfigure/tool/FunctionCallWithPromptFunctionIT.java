@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,56 +20,67 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
-import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration;
-import org.springframework.ai.model.anthropic.autoconfigure.BaseAnthropicIT;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".*")
-public class FunctionCallWithPromptFunctionIT {
-
-	private final Logger logger = LoggerFactory.getLogger(FunctionCallWithPromptFunctionIT.class);
+/**
+ * Integration test for tool calling via prompt-level function callbacks using
+ * user-controlled tool execution.
+ *
+ * @author Soby Chacko
+ * @author Christian Tzolov
+ */
+@EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
+class FunctionCallWithPromptFunctionIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.anthropic.apiKey=" + System.getenv("ANTHROPIC_API_KEY"))
-		.withConfiguration(BaseAnthropicIT.anthropicAutoConfig(AnthropicChatAutoConfiguration.class));
+		.withPropertyValues("spring.ai.anthropic.api-key=" + System.getenv("ANTHROPIC_API_KEY"))
+		.withConfiguration(
+				AutoConfigurations.of(AnthropicChatAutoConfiguration.class, ToolCallingAutoConfiguration.class));
 
 	@Test
 	void functionCallTest() {
-		this.contextRunner
-			.withPropertyValues(
-					"spring.ai.anthropic.chat.options.model=" + AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getValue())
-			.run(context -> {
+		this.contextRunner.run(context -> {
 
-				AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
+			AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
+			ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
-				UserMessage userMessage = new UserMessage(
-						"What's the weather like in San Francisco, in Paris and in Tokyo? Return the temperature in Celsius.");
+			AnthropicChatOptions options = AnthropicChatOptions.builder()
+				.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+					.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+					.inputType(MockWeatherService.Request.class)
+					.build()))
+				.build();
 
-				var promptOptions = AnthropicChatOptions.builder()
-					.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
-						.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
-						.inputType(MockWeatherService.Request.class)
-						.build()))
-					.build();
+			Prompt prompt = new Prompt(
+					List.of(new UserMessage("What's the weather like in San Francisco, in Paris and in Tokyo?"
+							+ " Return the temperature in Celsius.")),
+					options);
 
-				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
+			ChatResponse response = chatModel.call(prompt);
 
-				logger.info("Response: {}", response);
+			while (response.hasToolCalls()) {
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+				prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+				response = chatModel.call(prompt);
+			}
 
-				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
-			});
+			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
+		});
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,8 +64,9 @@ public final class FilterHelper {
 	 * 	NOT(a NIN [...]) = a IN [...]
 	 * </pre>
 	 * @param operand Filter expression to negate.
-	 * @return Returns an negation of the input expression.
+	 * @return Returns a negation of the input expression.
 	 */
+	@SuppressWarnings("NullAway") // An AND or OR operand has a non-null right operand
 	public static Filter.Operand negate(Filter.Operand operand) {
 
 		if (operand instanceof Filter.Group group) {
@@ -179,6 +180,7 @@ public final class FilterHelper {
 			}
 		}
 		else {
+			Assert.state(exp.right() != null, "Filter IN right expression was null");
 			throw new IllegalStateException(
 					"Filter IN right expression should be of Filter.Value type but was " + exp.right().getClass());
 		}

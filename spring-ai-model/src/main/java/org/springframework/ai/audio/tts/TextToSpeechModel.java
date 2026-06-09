@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,20 +23,38 @@ import org.springframework.ai.model.ModelResult;
  * Interface for the text to speech model.
  *
  * @author Alexandros Pappas
+ * @author Sebastien Deleuze
  */
-public interface TextToSpeechModel extends Model<TextToSpeechPrompt, TextToSpeechResponse> {
+public interface TextToSpeechModel extends Model<TextToSpeechPrompt, TextToSpeechResponse>, StreamingTextToSpeechModel {
 
 	default byte[] call(String text) {
 		TextToSpeechPrompt prompt = new TextToSpeechPrompt(text);
 		ModelResult<byte[]> result = call(prompt).getResult();
-		return (result != null) ? result.getOutput() : new byte[0];
+		if (result == null) {
+			return new byte[0];
+		}
+		byte[] output = result.getOutput();
+		return (output != null) ? output : new byte[0];
 	}
 
 	@Override
 	TextToSpeechResponse call(TextToSpeechPrompt prompt);
 
-	default TextToSpeechOptions getDefaultOptions() {
+	/**
+	 * Gets the options for this model.
+	 * @return the options
+	 * @since 2.0.0
+	 */
+	default TextToSpeechOptions getOptions() {
 		return TextToSpeechOptions.builder().build();
+	}
+
+	/**
+	 * @deprecated use {@link #getOptions()} instead.
+	 */
+	@Deprecated(forRemoval = true)
+	default TextToSpeechOptions getDefaultOptions() {
+		return getOptions();
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ public class StabilityAiImageOptionsTests {
 		StabilityAiApi stabilityAiApi = mock(StabilityAiApi.class);
 		// Default options
 		StabilityAiImageOptions defaultOptions = StabilityAiImageOptions.builder()
-			.N(1)
+			.n(1)
 			.model("default-model")
 			.width(512)
 			.height(512)
@@ -48,7 +48,7 @@ public class StabilityAiImageOptionsTests {
 
 		// Runtime options with different values
 		StabilityAiImageOptions runtimeOptions = StabilityAiImageOptions.builder()
-			.N(2)
+			.n(2)
 			.model("runtime-model")
 			.width(1024)
 			.height(768)
@@ -86,7 +86,7 @@ public class StabilityAiImageOptionsTests {
 
 		StabilityAiApi stabilityAiApi = mock(StabilityAiApi.class);
 		StabilityAiImageOptions defaultOptions = StabilityAiImageOptions.builder()
-			.N(1)
+			.n(1)
 			.model("default-model")
 			.cfgScale(7.0f)
 			.build();
@@ -107,7 +107,7 @@ public class StabilityAiImageOptionsTests {
 
 		StabilityAiApi stabilityAiApi = mock(StabilityAiApi.class);
 		StabilityAiImageOptions defaultOptions = StabilityAiImageOptions.builder()
-			.N(1)
+			.n(1)
 			.model("default-model")
 			.width(512)
 			.cfgScale(7.0f)

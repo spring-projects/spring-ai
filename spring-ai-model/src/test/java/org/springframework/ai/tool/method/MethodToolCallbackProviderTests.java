@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ class MethodToolCallbackProviderTests {
 	void whenToolObjectHasNoToolAnnotatedMethodThenThrow() {
 		assertThatThrownBy(
 				() -> MethodToolCallbackProvider.builder().toolObjects(new NoToolAnnotatedMethodObject()).build())
-			.isInstanceOf(IllegalStateException.class)
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("No @Tool annotated methods found in");
 	}
 
@@ -68,7 +68,7 @@ class MethodToolCallbackProviderTests {
 	void whenToolObjectHasOnlyFunctionalTypeToolMethodsThenThrow() {
 		assertThatThrownBy(() -> MethodToolCallbackProvider.builder()
 			.toolObjects(new OnlyFunctionalTypeToolMethodsObject())
-			.build()).isInstanceOf(IllegalStateException.class)
+			.build()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("No @Tool annotated methods found in");
 	}
 
@@ -86,7 +86,7 @@ class MethodToolCallbackProviderTests {
 	void whenMultipleToolObjectsWithSameToolNameThenThrow() {
 		assertThatThrownBy(() -> MethodToolCallbackProvider.builder()
 			.toolObjects(new ValidToolObject(), new DuplicateToolNameObject())
-			.build()).isInstanceOf(IllegalStateException.class)
+			.build()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Multiple tools with the same name (validTool) found in sources");
 	}
 

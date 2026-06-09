@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.ai.vectorstore.chroma.autoconfigure;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -32,11 +34,11 @@ public class ChromaApiProperties {
 
 	private int port = 8000;
 
-	private String keyToken;
+	private @Nullable String keyToken;
 
-	private String username;
+	private @Nullable String username;
 
-	private String password;
+	private @Nullable String password;
 
 	public String getHost() {
 		return this.host;
@@ -54,27 +56,27 @@ public class ChromaApiProperties {
 		this.port = port;
 	}
 
-	public String getKeyToken() {
+	public @Nullable String getKeyToken() {
 		return this.keyToken;
 	}
 
-	public void setKeyToken(String keyToken) {
+	public void setKeyToken(@Nullable String keyToken) {
 		this.keyToken = keyToken;
 	}
 
-	public String getUsername() {
+	public @Nullable String getUsername() {
 		return this.username;
 	}
 
-	public void setUsername(String username) {
+	public void setUsername(@Nullable String username) {
 		this.username = username;
 	}
 
-	public String getPassword() {
+	public @Nullable String getPassword() {
 		return this.password;
 	}
 
-	public void setPassword(String password) {
+	public void setPassword(@Nullable String password) {
 		this.password = password;
 	}
 

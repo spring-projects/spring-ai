@@ -2,6 +2,11 @@
 
 Spring AI supports the various AI language models from OpenAI, the company behind ChatGPT, which has been instrumental in sparking interest in AI-driven text generation thanks to its creation of industry-leading text generation models and embeddings.
 
+[NOTE]
+====
+Starting from version `2.0.0-M5`, Spring AI uses the official `openai-java` SDK under the hood for all OpenAI models. The transition is expected to be seamless and there are no breaking changes for existing users of the OpenAI API properties and builders. If you find any issues, please report them to us at https://github.com/spring-projects/spring-ai/issues[Spring AI GitHub Issues].
+====
+
 == Prerequisites
 
 You will need to create an API with OpenAI to access ChatGPT models.
@@ -150,44 +155,51 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 | spring.ai.openai.chat.enabled (Removed and no longer valid) | Enable OpenAI chat model.  | true
 | spring.ai.model.chat | Enable OpenAI chat model.  | openai
 | spring.ai.openai.chat.base-url   | Optional override for the `spring.ai.openai.base-url` property to provide a chat-specific URL. |  -
-| spring.ai.openai.chat.completions-path   | The path to append to the base URL. |  `/v1/chat/completions`
 | spring.ai.openai.chat.api-key   | Optional override for the `spring.ai.openai.api-key` to provide a chat-specific API Key. |  -
 | spring.ai.openai.chat.organization-id | Optionally, you can specify which organization to use for an API request. |  -
 | spring.ai.openai.chat.project-id      | Optionally, you can specify which project to use for an API request. |  -
-| spring.ai.openai.chat.options.model | Name of the OpenAI chat model to use. You can select between models such as: `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `gpt-3.5-turbo`, and more. See the https://platform.openai.com/docs/models[models] page for more information. | `gpt-4o-mini`
-| spring.ai.openai.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify `temperature` and `top_p` for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
-| spring.ai.openai.chat.options.frequencyPenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | 0.0f
-| spring.ai.openai.chat.options.logitBias | Modify the likelihood of specified tokens appearing in the completion. | -
-| spring.ai.openai.chat.options.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. *Use for non-reasoning models* (e.g., gpt-4o, gpt-3.5-turbo). *Cannot be used with reasoning models* (e.g., o1, o3, o4-mini series). *Mutually exclusive with maxCompletionTokens* - setting both will result in an API error. | -
-| spring.ai.openai.chat.options.maxCompletionTokens | An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens. *Required for reasoning models* (e.g., o1, o3, o4-mini series). *Cannot be used with non-reasoning models* (e.g., gpt-4o, gpt-3.5-turbo). *Mutually exclusive with maxTokens* - setting both will result in an API error. | -
-| spring.ai.openai.chat.options.n | How many chat completion choices to generate for each input message. Note that you will be charged based on the number of generated tokens across all of the choices. Keep `n` as 1 to minimize costs. | 1
-| spring.ai.openai.chat.options.store | Whether to store the output of this chat completion request for use in our model | false
-| spring.ai.openai.chat.options.metadata | Developer-defined tags and values used for filtering completions in the chat completion dashboard | empty map
-| spring.ai.openai.chat.options.output-modalities | Output types that you would like the model to generate for this request. Most models are capable of generating text, which is the default.
-The `gpt-4o-audio-preview` model can also be used to generate audio. To request that this model generate both text and audio responses,
+| spring.ai.openai.chat.model | Name of the OpenAI chat model to use. You can select between models such as: `gpt-5-mini`, `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `gpt-3.5-turbo`, and more. See the https://platform.openai.com/docs/models[models] page for more information. | `gpt-5-mini`
+| spring.ai.openai.chat.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify `temperature` and `top_p` for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
+| spring.ai.openai.chat.frequency-penalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | 0.0f
+| spring.ai.openai.chat.logit-bias | Modify the likelihood of specified tokens appearing in the completion. | -
+| spring.ai.openai.chat.max-tokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. *Use for non-reasoning models* (e.g., gpt-4o, gpt-3.5-turbo). *Cannot be used with reasoning models* (e.g., o1, o3, o4-mini series). *Mutually exclusive with maxCompletionTokens* - setting both will result in an API error. | -
+| spring.ai.openai.chat.max-completion-tokens | An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens. *Required for reasoning models* (e.g., o1, o3, o4-mini series). *Cannot be used with non-reasoning models* (e.g., gpt-4o, gpt-3.5-turbo). *Mutually exclusive with maxTokens* - setting both will result in an API error. | -
+| spring.ai.openai.chat.n | How many chat completion choices to generate for each input message. Note that you will be charged based on the number of generated tokens across all of the choices. Keep `n` as 1 to minimize costs. | 1
+| spring.ai.openai.chat.store | Whether to store the output of this chat completion request for use in our model | false
+| spring.ai.openai.chat.metadata | Developer-defined tags and values used for filtering completions in the chat completion dashboard | empty map
+| spring.ai.openai.chat.output-modalities | Output types that you would like the model to generate for this request. Most models are capable of generating text, which is the default.
+The `gpt-audio` model can also be used to generate audio. To request that this model generate both text and audio responses,
 you can use: `text`, `audio`. Not supported for streaming. | -
-| spring.ai.openai.chat.options.output-audio | Audio parameters for the audio generation. Required when audio output is requested with `output-modalities`: `audio`.
-Requires the `gpt-4o-audio-preview` model and is is not supported for streaming completions. | -
-| spring.ai.openai.chat.options.presencePenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. | -
-| spring.ai.openai.chat.options.responseFormat.type | Compatible with `GPT-4o`, `GPT-4o mini`, `GPT-4 Turbo` and all `GPT-3.5 Turbo` models newer than `gpt-3.5-turbo-1106`. The `JSON_OBJECT` type enables JSON mode, which guarantees the message the model generates is valid JSON.
+| spring.ai.openai.chat.output-audio | Audio parameters for the audio generation. Required when audio output is requested with `output-modalities`: `audio`.
+Requires the `gpt-audio` model and is is not supported for streaming completions. | -
+| spring.ai.openai.chat.presence-penalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. | -
+| spring.ai.openai.chat.response-format.type | Compatible with `GPT-4o`, `GPT-4o mini`, `GPT-4 Turbo` and all `GPT-3.5 Turbo` models newer than `gpt-3.5-turbo-1106`. The `JSON_OBJECT` type enables JSON mode, which guarantees the message the model generates is valid JSON.
 The `JSON_SCHEMA` type enables link:https://platform.openai.com/docs/guides/structured-outputs[Structured Outputs] which guarantees the model will match your supplied JSON schema. The JSON_SCHEMA type requires setting the `responseFormat.schema` property as well. | -
-| spring.ai.openai.chat.options.responseFormat.name | Response format schema name. Applicable only for `responseFormat.type=JSON_SCHEMA` | custom_schema
-| spring.ai.openai.chat.options.responseFormat.schema | Response format JSON schema. Applicable only for `responseFormat.type=JSON_SCHEMA` | -
-| spring.ai.openai.chat.options.responseFormat.strict | Response format JSON schema adherence strictness. Applicable only for `responseFormat.type=JSON_SCHEMA` | -
-| spring.ai.openai.chat.options.seed | This feature is in Beta. If specified, our system will make a best effort to sample deterministically, such that repeated requests with the same seed and parameters should return the same result. | -
-| spring.ai.openai.chat.options.stop | Up to 4 sequences where the API will stop generating further tokens. | -
-| spring.ai.openai.chat.options.topP | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with `top_p` probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or `temperature` but not both. | -
-| spring.ai.openai.chat.options.tools | A list of tools the model may call. Currently, only functions are supported as a tool. Use this to provide a list of functions the model may generate JSON inputs for. | -
-| spring.ai.openai.chat.options.toolChoice | Controls which (if any) function is called by the model. `none` means the model will not call a function and instead generates a message. `auto` means the model can pick between generating a message or calling a function. Specifying a particular function via `{"type: "function", "function": {"name": "my_function"}}` forces the model to call that function. `none` is the default when no functions are present. `auto` is the default if functions are present. | -
-| spring.ai.openai.chat.options.user | A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. | -
-| spring.ai.openai.chat.options.stream-usage | (For streaming only) Set to add an additional chunk with token usage statistics for the entire request. The `choices` field for this chunk is an empty array and all other chunks will also include a usage field, but with a null value. | false
-| spring.ai.openai.chat.options.parallel-tool-calls | Whether to enable link:https://platform.openai.com/docs/guides/function-calling/parallel-function-calling[parallel function calling] during tool use. | true
-| spring.ai.openai.chat.options.http-headers | Optional HTTP headers to be added to the chat completion request. To override the `api-key` you need to use an `Authorization` header key, and you have to prefix the key value with the `Bearer` prefix. | -
-| spring.ai.openai.chat.options.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
-| spring.ai.openai.chat.options.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
-| spring.ai.openai.chat.options.internal-tool-execution-enabled | If false, the Spring AI will not handle the tool calls internally, but will proxy them to the client. Then it is the client's responsibility to handle the tool calls, dispatch them to the appropriate function, and return the results. If true (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | true
-| spring.ai.openai.chat.options.service-tier | Specifies the link:https://platform.openai.com/docs/api-reference/responses/create#responses_create-service_tier[processing type] used for serving the request. | -
+| spring.ai.openai.chat.response-format.name | Response format schema name. Applicable only for `responseFormat.type=JSON_SCHEMA` | custom_schema
+| spring.ai.openai.chat.response-format.schema | Response format JSON schema. Applicable only for `responseFormat.type=JSON_SCHEMA` | -
+| spring.ai.openai.chat.response-format.strict | Response format JSON schema adherence strictness. Applicable only for `responseFormat.type=JSON_SCHEMA` | -
+| spring.ai.openai.chat.seed | This feature is in Beta. If specified, our system will make a best effort to sample deterministically, such that repeated requests with the same seed and parameters should return the same result. | -
+| spring.ai.openai.chat.stop | Up to 4 sequences where the API will stop generating further tokens. | -
+| spring.ai.openai.chat.top-p | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with `top_p` probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or `temperature` but not both. | -
+| spring.ai.openai.chat.tools | A list of tools the model may call. Currently, only functions are supported as a tool. Use this to provide a list of functions the model may generate JSON inputs for. | -
+| spring.ai.openai.chat.tool-choice | Controls which (if any) function is called by the model. `none` means the model will not call a function and instead generates a message. `auto` means the model can pick between generating a message or calling a function. Specifying a particular function via `{"type: "function", "function": {"name": "my_function"}}` forces the model to call that function. `none` is the default when no functions are present. `auto` is the default if functions are present. | -
+| spring.ai.openai.chat.user | A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. | -
+| spring.ai.openai.chat.stream-usage | (For streaming only) Set to add an additional chunk with token usage statistics for the entire request. The `choices` field for this chunk is an empty array and all other chunks will also include a usage field, but with a null value. | false
+| spring.ai.openai.chat.parallel-tool-calls | Whether to enable link:https://platform.openai.com/docs/guides/function-calling/parallel-function-calling[parallel function calling] during tool use. | true
+| spring.ai.openai.chat.prompt-cache-key | A cache key used by OpenAI to optimize cache hit rates for similar requests. Improves latency and reduces costs. Replaces the deprecated `user` field for caching purposes. link:https://platform.openai.com/docs/guides/prompt-caching[Learn more]. | -
+| spring.ai.openai.chat.safety-identifier | A stable identifier to help OpenAI detect users violating usage policies. Should be a hashed value (e.g., hashed username or email). Replaces the deprecated `user` field for safety tracking. link:https://platform.openai.com/docs/guides/safety-best-practices#safety-identifiers[Learn more]. | -
+| spring.ai.openai.chat.http-headers | Optional HTTP headers to be added to the chat completion request. To override the `api-key` you need to use an `Authorization` header key, and you have to prefix the key value with the `Bearer` prefix. | -
+| spring.ai.openai.chat.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
+| spring.ai.openai.chat.internal-tool-execution-enabled | If false, the Spring AI will not handle the tool calls internally, but will proxy them to the client. Then it is the client's responsibility to handle the tool calls, dispatch them to the appropriate function, and return the results. If true (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | true
+| spring.ai.openai.chat.service-tier | Specifies the link:https://platform.openai.com/docs/api-reference/responses/create#responses_create-service_tier[processing type] used for serving the request. | -
+| spring.ai.openai.chat.extra-body | Additional parameters to include in the request. Accepts any key-value pairs that are flattened to the top level of the JSON request. Intended for use with OpenAI-compatible servers (vLLM, Ollama, etc.) that support parameters beyond the standard OpenAI API. The official OpenAI API rejects unknown parameters with a 400 error. See <<openai-compatible-servers>> for details. | -
 |====
+
+[NOTE]
+====
+When using a local Docker Model Runner that exposes an OpenAI-compatible API, you may need to append `/v1` to your base URL if the server expects it.
+For example: `spring.ai.openai.chat.base-url=http://localhost:12434/engines/v1` instead of `http://localhost:12434/engines`.
+====
 
 [NOTE]
 ====
@@ -201,7 +213,7 @@ NOTE: You can override the common `spring.ai.openai.base-url` and `spring.ai.ope
 The `spring.ai.openai.chat.base-url` and `spring.ai.openai.chat.api-key` properties, if set, take precedence over the common properties.
 This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
 
-TIP: All properties prefixed with `spring.ai.openai.chat.options` can be overridden at runtime by adding request-specific <<chat-options>> to the `Prompt` call.
+TIP: All properties prefixed with `spring.ai.openai.chat` can be overridden at runtime by adding request-specific <<chat-options>> to the `Prompt` call.
 
 === Token Limit Parameters: Model-Specific Usage
 
@@ -263,7 +275,7 @@ OpenAiChatOptions options = OpenAiChatOptions.builder()
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions.java] class provides model configurations such as the model to use, the temperature, the frequency penalty, etc.
 
-On start-up, the default options can be configured with the `OpenAiChatModel(api, options)` constructor or the `spring.ai.openai.chat.options.*` properties.
+On start-up, the default options can be configured with the `OpenAiChatModel(api, options)` constructor or the `spring.ai.openai.chat.*` properties.
 
 At run-time, you can override the default options by adding new, request-specific options to the `Prompt` call.
 For example, to override the default model and temperature for a specific request:
@@ -287,6 +299,85 @@ TIP: In addition to the model specific https://github.com/spring-projects/spring
 You can register custom Java functions with the `OpenAiChatModel` and have the OpenAI model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
 Read more about xref:api/tools.adoc[Tool Calling].
+
+`OpenAiChatModel` does not execute tool calls internally.
+Tool execution must be handled externally using one of two supported approaches:
+
+* **xref:api/tools.adoc#_advisor_controlled_tool_execution_with_toolcallingadvisor[ChatClient with ToolCallingAdvisor]** — the recommended approach for most use cases. `ToolCallingAdvisor` is automatically registered when tools are present and manages the tool-call loop transparently.
+* **xref:api/tools.adoc#_user_controlled_tool_execution[User-controlled tool execution]** — use `DefaultToolCallingManager` directly when you need full control over the loop (for example, when combining tool calling with direct `ChatModel` access).
+
+=== Tool Calling via ChatClient (Recommended)
+
+Use `ChatClient` for both synchronous and streaming tool execution.
+`ToolCallingAdvisor` is auto-registered when tools are present, so no explicit advisor configuration is required.
+
+[source,java]
+----
+ToolCallback weatherCallback = FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
+    .description("Get the weather in location")
+    .inputType(WeatherService.Request.class)
+    .build();
+
+// Synchronous
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .user("What's the weather in Paris, Tokyo, and New York?")
+    .tools(weatherCallback)
+    .call()
+    .content();
+
+// Streaming
+Flux<String> stream = ChatClient.create(chatModel)
+    .prompt()
+    .user("What's the weather in Paris, Tokyo, and New York?")
+    .tools(weatherCallback)
+    .stream()
+    .content();
+----
+
+=== User-Controlled Tool Execution
+
+Use this pattern when you need direct access to the `ChatModel` API and want full control over the tool-call loop.
+Invoke `ChatModel` directly without `ToolCallingAdvisor`; check for tool calls yourself and drive the loop using `ToolCallingManager`.
+
+[source,java]
+----
+ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+
+ChatOptions options = ToolCallingChatOptions.builder()
+    .toolCallbacks(ToolCallbacks.from(new WeatherService()))
+    .build();
+
+Prompt prompt = new Prompt("What's the weather in Paris, Tokyo, and New York?", options);
+ChatResponse response = chatModel.call(prompt);
+
+while (response.hasToolCalls()) {
+    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, response);
+    prompt = new Prompt(result.conversationHistory(), options);
+    response = chatModel.call(prompt);
+}
+----
+
+For streaming, aggregate each streaming response with `MessageAggregator` to detect tool calls across chunks:
+
+[source,java]
+----
+AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+new MessageAggregator()
+    .aggregate(chatModel.stream(prompt), aggregatedRef::set)
+    .collectList().block();
+
+while (aggregatedRef.get().hasToolCalls()) {
+    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+    prompt = new Prompt(result.conversationHistory(), options);
+    aggregatedRef.set(null);
+    new MessageAggregator()
+        .aggregate(chatModel.stream(prompt), aggregatedRef::set)
+        .collectList().block();
+}
+
+String content = aggregatedRef.get().getResult().getOutput().getText();
+----
 
 == Multimodal
 
@@ -312,7 +403,7 @@ var userMessage = new UserMessage("Explain what do you see on this picture?",
         new Media(MimeTypeUtils.IMAGE_PNG, this.imageResource));
 
 ChatResponse response = chatModel.call(new Prompt(this.userMessage,
-        OpenAiChatOptions.builder().model(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
+        OpenAiChatOptions.builder().model("gpt-4o").build()));
 ----
 
 TIP: GPT_4_VISION_PREVIEW will continue to be available only to existing users of this model starting June 17, 2024. If you are not an existing user, please use the GPT_4_O or GPT_4_TURBO models. More details https://platform.openai.com/docs/deprecations/2024-06-06-gpt-4-32k-and-vision-preview-models[here]
@@ -326,7 +417,7 @@ var userMessage = new UserMessage("Explain what do you see on this picture?",
                 URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png")));
 
 ChatResponse response = chatModel.call(new Prompt(this.userMessage,
-        OpenAiChatOptions.builder().model(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
+        OpenAiChatOptions.builder().model("gpt-4o").build()));
 ----
 
 TIP: You can pass multiple images as well.
@@ -348,7 +439,7 @@ view of the fruit inside.
 
 === Audio
 
-OpenAI models that offer input audio multimodal support include `gpt-4o-audio-preview`.
+OpenAI models that offer input audio multimodal support include `gpt-audio`.
 Refer to the link:https://platform.openai.com/docs/guides/audio[Audio] guide for more information.
 
 The OpenAI link:https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages[User Message API] can incorporate a list of base64-encoded audio files with the message.
@@ -356,7 +447,7 @@ Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring
 This type encompasses data and details regarding media attachments in messages, utilizing Spring’s `org.springframework.util.MimeType` and a `org.springframework.core.io.Resource` for the raw media data.
 Currently, OpenAI support only the following media types: `audio/mp3` and `audio/wav`.
 
-Below is a code example excerpted from link:https://github.com/spring-projects/spring-ai/blob/c9a3e66f90187ce7eae7eb78c462ec622685de6c/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatModelIT.java#L442[OpenAiChatModelIT.java], illustrating the fusion of user text with an audio file using the `gpt-4o-audio-preview` model.
+Below is a code example excerpted from link:https://github.com/spring-projects/spring-ai/blob/c9a3e66f90187ce7eae7eb78c462ec622685de6c/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatModelIT.java#L442[OpenAiChatModelIT.java], illustrating the fusion of user text with an audio file using the `gpt-audio` model.
 
 [source,java]
 ----
@@ -366,14 +457,14 @@ var userMessage = new UserMessage("What is this recording about?",
         List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)));
 
 ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-        OpenAiChatOptions.builder().model(OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW).build()));
+        OpenAiChatOptions.builder().model("gpt-audio").build()));
 ----
 
 TIP: You can pass multiple audio files as well.
 
 === Output Audio
 
-OpenAI models that offer input audio multimodal support include `gpt-4o-audio-preview`.
+OpenAI models that offer input audio multimodal support include `gpt-audio`.
 Refer to the link:https://platform.openai.com/docs/guides/audio[Audio] guide for more information.
 
 The OpenAI link:https://platform.openai.com/docs/api-reference/chat/create#chat-create-messages[Assistant Message API] can contain a list of base64-encoded audio files with the message.
@@ -381,7 +472,7 @@ Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring
 This type encompasses data and details regarding media attachments in messages, utilizing Spring’s `org.springframework.util.MimeType` and a `org.springframework.core.io.Resource` for the raw media data.
 Currently, OpenAI support only the following audio types: `audio/mp3` and `audio/wav`.
 
-Below is a code example, illustrating the response of user text along with an audio byte array, using the `gpt-4o-audio-preview` model:
+Below is a code example, illustrating the response of user text along with an audio byte array, using the `gpt-audio` model:
 
 [source,java]
 ----
@@ -389,12 +480,12 @@ var userMessage = new UserMessage("Tell me joke about Spring Framework");
 
 ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
         OpenAiChatOptions.builder()
-            .model(OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW)
+            .model("gpt-audio")
             .outputModalities(List.of("text", "audio"))
             .outputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
             .build()));
 
-String text = response.getResult().getOutput().getContent(); // audio transcript
+String text = response.getResult().getOutput().getText(); // audio transcript
 
 byte[] waveAudio = response.getResult().getOutput().getMedia().get(0).getDataAsByteArray(); // audio data
 ----
@@ -489,7 +580,7 @@ Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
             .build());
 
 ChatResponse response = this.openAiChatModel.call(this.prompt);
-String content = this.response.getResult().getOutput().getContent();
+String content = this.response.getResult().getOutput().getText();
 
 MathReasoning mathReasoning = this.outputConverter.convert(this.content);
 ----
@@ -520,7 +611,7 @@ val prompt = Prompt("how can I solve 8x + 7 = -23",
 		.build())
 
 val response = openAiChatModel.call(prompt)
-val content = response.getResult().getOutput().getContent()
+val content = response.getResult().getOutput().getText()
 
 val mathReasoning = outputConverter.convert(content)
 ----
@@ -536,12 +627,12 @@ Alternatively, when using the OpenAI auto-configuration, you can configure the d
 [source,application.properties]
 ----
 spring.ai.openai.api-key=YOUR_API_KEY
-spring.ai.openai.chat.options.model=gpt-4o-mini
+spring.ai.openai.chat.model=gpt-4o-mini
 
-spring.ai.openai.chat.options.response-format.type=JSON_SCHEMA
-spring.ai.openai.chat.options.response-format.name=MySchemaName
-spring.ai.openai.chat.options.response-format.schema={"type":"object","properties":{"steps":{"type":"array","items":{"type":"object","properties":{"explanation":{"type":"string"},"output":{"type":"string"}},"required":["explanation","output"],"additionalProperties":false}},"final_answer":{"type":"string"}},"required":["steps","final_answer"],"additionalProperties":false}
-spring.ai.openai.chat.options.response-format.strict=true
+spring.ai.openai.chat.response-format.type=JSON_SCHEMA
+spring.ai.openai.chat.response-format.name=MySchemaName
+spring.ai.openai.chat.response-format.schema={"type":"object","properties":{"steps":{"type":"array","items":{"type":"object","properties":{"explanation":{"type":"string"},"output":{"type":"string"}},"required":["explanation","output"],"additionalProperties":false}},"final_answer":{"type":"string"}},"required":["steps","final_answer"],"additionalProperties":false}
+spring.ai.openai.chat.response-format.strict=true
 ----
 
 == Sample Controller
@@ -553,8 +644,8 @@ Add an `application.properties` file under the `src/main/resources` directory to
 [source,application.properties]
 ----
 spring.ai.openai.api-key=YOUR_API_KEY
-spring.ai.openai.chat.options.model=gpt-4o
-spring.ai.openai.chat.options.temperature=0.7
+spring.ai.openai.chat.model=gpt-4o
+spring.ai.openai.chat.temperature=0.7
 ----
 
 TIP: Replace the `api-key` with your OpenAI credentials.
@@ -616,15 +707,14 @@ Next, create an `OpenAiChatModel` and use it for text generations:
 
 [source,java]
 ----
-var openAiApi = OpenAiApi.builder()
-            .apiKey(System.getenv("OPENAI_API_KEY"))
-            .build();
-var openAiChatOptions = OpenAiChatOptions.builder()
-            .model("gpt-3.5-turbo")
-            .temperature(0.4)
-            .maxTokens(200)
-            .build();
-var chatModel = new OpenAiChatModel(this.openAiApi, this.openAiChatOptions);
+var chatModel = OpenAiChatModel.builder()
+    .options(OpenAiChatOptions.builder()
+        .apiKey(System.getenv("OPENAI_API_KEY"))
+        .model("gpt-3.5-turbo")
+        .temperature(0.4)
+        .maxTokens(200)
+        .build())
+    .build();
 
 ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
@@ -635,84 +725,7 @@ Flux<ChatResponse> response = this.chatModel.stream(
 ----
 
 The `OpenAiChatOptions` provides the configuration information for the chat requests.
-The `OpenAiApi.Builder` and `OpenAiChatOptions.Builder` are fluent options-builders for API client and chat config respectively.
-
-== Low-level OpenAiApi Client [[low-level-api]]
-
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/api/OpenAiApi.java[OpenAiApi] provides is lightweight Java client for OpenAI Chat API link:https://platform.openai.com/docs/api-reference/chat[OpenAI Chat API].
-
-Following class diagram illustrates the `OpenAiApi` chat interfaces and building blocks:
-
-image::openai-chat-api.jpg[OpenAiApi Chat API Diagram, width=1000, align="center"]
-
-Here is a simple snippet showing how to use the API programmatically:
-
-[source,java]
-----
-OpenAiApi openAiApi = OpenAiApi.builder()
-            .apiKey(System.getenv("OPENAI_API_KEY"))
-            .build();
-
-ChatCompletionMessage chatCompletionMessage =
-    new ChatCompletionMessage("Hello world", Role.USER);
-
-// Sync request
-ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(this.chatCompletionMessage), "gpt-3.5-turbo", 0.8, false));
-
-// Streaming request
-Flux<ChatCompletionChunk> streamResponse = this.openAiApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(this.chatCompletionMessage), "gpt-3.5-turbo", 0.8, true));
-----
-
-Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/api/OpenAiApi.java[OpenAiApi.java]'s JavaDoc for further information.
-
-=== Low-level API Examples
-
-* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/api/OpenAiApiIT.java[OpenAiApiIT.java] tests provide some general examples of how to use the lightweight library.
-
-* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/api/tool/OpenAiApiToolFunctionCallIT.java[OpenAiApiToolFunctionCallIT.java] tests show how to use the low-level API to call tool functions.
-Based on the link:https://platform.openai.com/docs/guides/function-calling/parallel-function-calling[OpenAI Function Calling] tutorial.
-
-== Low-level OpenAiFileApi Client [[low-level-file-api]]
-
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/api/OpenAiFileApi.java[OpenAiFileApi] provides a lightweight Java client for the OpenAI Files API, enabling file management operations such as uploading, listing, retrieving, deleting files, and accessing file contents. link:https://platform.openai.com/docs/api-reference/files[OpenAI File API]
-
-Here is a simple snippet showing how to use the API programmatically:
-
-[source,java]
-----
-OpenAiFileApi openAiFileApi = OpenAiFileApi.builder()
-			.apiKey(new SimpleApiKey(System.getenv("OPENAI_API_KEY")))
-			.build();
-
-// Upload a file
-byte[] fileBytes = Files.readAllBytes(Paths.get("evals.jsonl")); 
-OpenAiFileApi.UploadFileRequest uploadRequest = OpenAiFileApi.UploadFileRequest.builder()
-			.file(fileBytes)
-			.fileName("evals-data.jsonl")
-			.purpose(OpenAiFileApi.Purpose.EVALS)
-			.build();
-ResponseEntity<OpenAiFileApi.FileObject> uploadResponse = openAiFileApi.uploadFile(uploadRequest);
-
-// List files
-OpenAiFileApi.ListFileRequest listRequest = OpenAiFileApi.ListFileRequest.builder()
-			.purpose(OpenAiFileApi.Purpose.EVALS)
-			.build();
-ResponseEntity<OpenAiFileApi.FileObjectResponse> listResponse = openAiFileApi.listFiles(listRequest);
-
-// Retrieve file information
-ResponseEntity<OpenAiFileApi.FileObject> fileInfo = openAiFileApi.retrieveFile("file-id");
-
-// Delete a file
-ResponseEntity<OpenAiFileApi.DeleteFileResponse> deleteResponse = openAiFileApi.deleteFile("file-id");
-
-// Retrieve file content
-ResponseEntity<String> fileContent = openAiFileApi.retrieveFileContent("file-id");
-----
-
-=== Low-level File API Examples
-* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/api/OpenAiFileApiIT.java[OpenAiFileApiIT.java] tests provide some general examples of how to use the lightweight file api library.
+The `OpenAiChatOptions.Builder` is a fluent options-builder for the chat config.
 
 == API Key Management
 
@@ -729,7 +742,7 @@ spring.ai.openai.api-key=your-api-key-here
 
 === Custom API Key Configuration
 
-You can create a custom instance of `OpenAiApi` with your own `ApiKey` implementation using the builder pattern:
+You can create a custom instance of `OpenAiChatModel` with your own `ApiKey` implementation using the builder pattern:
 
 [source,java]
 ----
@@ -741,13 +754,11 @@ ApiKey customApiKey = new ApiKey() {
     }
 };
 
-OpenAiApi openAiApi = OpenAiApi.builder()
-    .apiKey(customApiKey)
-    .build();
-
-// Create a chat model with the custom OpenAiApi instance
+// Create a chat model with the custom API key
 OpenAiChatModel chatModel = OpenAiChatModel.builder()
-    .openAiApi(openAiApi)
+    .options(OpenAiChatOptions.builder()
+        .apiKey(customApiKey.getValue())
+        .build())
     .build();
 // Build the ChatClient using the custom chat model
 ChatClient openAiChatClient = ChatClient.builder(chatModel).build();
@@ -758,3 +769,329 @@ This is useful when you need to:
 * Retrieve the API key from a secure key store
 * Rotate API keys dynamically
 * Implement custom API key selection logic
+
+== Observability
+
+Spring AI emits Micrometer observations at two layers for every OpenAI call:
+
+* **Chat-model layer.** A `gen_ai.client.operation` observation wraps every call to `OpenAiChatModel.call(...)` or `.stream(...)`, carrying request parameters, response metadata, and token usage. See the xref:observability/index.adoc[observability reference] for the full set of tags and metrics.
+* **HTTP layer.** An `okhttp.requests` observation wraps every HTTP attempt to the OpenAI API, carrying HTTP method, URI, status code, and exception tags. Each request also propagates `traceparent` on the wire to any downstream services (AI gateways, OpenAI-compatible inference servers, proxies).
+
+In a Spring Boot application with `spring-boot-starter-actuator` and a tracing bridge (`micrometer-tracing-bridge-otel` or `micrometer-tracing-bridge-brave`), both layers are wired automatically — no opt-in required.
+For non-Boot applications, pass an `ObservationRegistry` to `OpenAiChatModel.builder()`:
+
+[source,java]
+----
+OpenAiChatModel chatModel = OpenAiChatModel.builder()
+    .options(...)
+    .observationRegistry(observationRegistry)
+    .build();
+----
+
+=== Connection-pool metrics (opt-in)
+
+Spring AI can additionally bind OkHttp connection-pool gauges (`okhttp.pool.connection.count` with `state=active|idle` and `client.kind=sync|async`) to the application's `MeterRegistry`.
+These are secondary telemetry — useful for capacity tuning but not required for tracing or per-request latency — so they're disabled by default.
+
+To enable them in a Spring Boot application:
+
+[source,properties]
+----
+spring.ai.openai.chat.connection-pool-metrics-enabled=true
+----
+
+For non-Boot applications, pass a `MeterRegistry` directly to the builder; the gauges bind whenever a registry is supplied:
+
+[source,java]
+----
+OpenAiChatModel chatModel = OpenAiChatModel.builder()
+    .options(...)
+    .observationRegistry(observationRegistry)
+    .meterRegistry(meterRegistry)
+    .build();
+----
+
+=== HTTP dispatcher executor (advanced)
+
+By default Spring AI manages the OkHttp dispatcher's executor — an unbounded pool of platform threads, replicating the SDK's stock behavior.
+For workloads with high HTTP concurrency, or to take advantage of Java 21+ virtual threads, you can supply your own `ExecutorService`:
+
+[source,java]
+----
+OpenAiChatModel chatModel = OpenAiChatModel.builder()
+    .options(...)
+    .dispatcherExecutor(Executors.newVirtualThreadPerTaskExecutor())
+    .build();
+----
+
+The same executor backs both the sync and async (streaming) clients.
+When you supply your own executor, you own its lifecycle — Spring AI will never call `shutdown()` on it.
+When omitted, the internal executor is created and cleaned up automatically.
+
+[IMPORTANT]
+====
+**Streaming HTTP observations are not parented under the chat-model observation**
+
+For synchronous calls, the `okhttp.requests` span is correctly nested under the `gen_ai.client.operation` span — the full trace tree forms as expected.
+
+For streaming calls, the `okhttp.requests` span fires and is recorded in the registry, the timer is recorded in `MeterRegistry`, and `traceparent` is still propagated on the outbound request — but the span is **not** nested under the chat-model span.
+This is because the OpenAI SDK's async streaming implementation hops onto `ForkJoinPool.commonPool()` before invoking Spring AI's HTTP client, dropping the calling thread's observation context at that boundary.
+Spring AI cannot recover the context from within its HTTP-client wrapper.
+
+If you need to correlate streaming HTTP spans with their parent chat-model span in your tracing UI, filter by span name `okhttp.requests` with host `api.openai.com` and join to the corresponding `gen_ai.client.operation` span by trace ID or timestamp range.
+Built-in parent linkage for streaming is being pursued upstream in the OpenAI Java SDK.
+====
+
+include::partial$openai/openai-http-client-customization.adoc[]
+
+== Using Extra Parameters with OpenAI-Compatible Servers [[openai-compatible-servers]]
+
+OpenAI-compatible inference servers like vLLM, Ollama, and others often support additional parameters beyond those defined in OpenAI's standard API.
+For example, these servers may accept parameters such as `top_k`, `repetition_penalty`, or other sampling controls that the official OpenAI API does not recognize.
+
+The `extraBody` option allows you to pass arbitrary parameters to these servers.
+Any key-value pairs provided in `extraBody` are included at the top level of the JSON request, enabling you to leverage server-specific features while using Spring AI's OpenAI client.
+
+[IMPORTANT]
+====
+The `extraBody` parameter is intended for use with OpenAI-compatible servers, not the official OpenAI API.
+The official OpenAI API applies strict validation and will return an HTTP 400 error (`"Unknown parameter: 'extra_body'"`) if unrecognized fields are encountered.
+
+If you are communicating with the official OpenAI API, you should **never** populate the `extraBody` parameter.
+
+Also note that the `extraBody` Map is intentionally flattened into the top-level of the JSON request during serialization. So setting `extraBody(Map.of("custom_flag", true))` results in `{"custom_flag": true}` at the root of the JSON payload, matching the behavior of official SDKs.
+====
+
+=== Configuration with Properties
+
+You can configure extra parameters using Spring Boot properties.
+Each property under `spring.ai.openai.chat.extra-body` becomes a top-level parameter in the request:
+
+[source,properties]
+----
+spring.ai.openai.base-url=http://localhost:8000
+spring.ai.openai.chat.model=meta-llama/Llama-3-8B-Instruct
+spring.ai.openai.chat.temperature=0.7
+spring.ai.openai.chat.extra-body.top_k=50
+spring.ai.openai.chat.extra-body.repetition_penalty=1.1
+----
+
+This configuration would produce a JSON request like:
+
+[source,json]
+----
+{
+  "model": "meta-llama/Llama-3-8B-Instruct",
+  "temperature": 0.7,
+  "top_k": 50,
+  "repetition_penalty": 1.1,
+  "messages": [...]
+}
+----
+
+=== Runtime Configuration with Builder
+
+You can also specify extra parameters at runtime using the options builder:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Tell me a creative story",
+        OpenAiChatOptions.builder()
+            .model("meta-llama/Llama-3-8B-Instruct")
+            .temperature(0.7)
+            .extraBody(Map.of(
+                "top_k", 50,
+                "repetition_penalty", 1.1,
+                "frequency_penalty", 0.5
+            ))
+            .build()
+    ));
+----
+
+=== Example: vLLM Server
+
+When running vLLM with a Llama model, you might want to use sampling parameters specific to vLLM:
+
+[source,properties]
+----
+spring.ai.openai.base-url=http://localhost:8000
+spring.ai.openai.chat.model=meta-llama/Llama-3-70B-Instruct
+spring.ai.openai.chat.extra-body.top_k=40
+spring.ai.openai.chat.extra-body.top_p=0.95
+spring.ai.openai.chat.extra-body.repetition_penalty=1.05
+spring.ai.openai.chat.extra-body.min_p=0.05
+----
+
+Refer to the link:https://docs.vllm.ai/en/latest/[vLLM documentation] for a complete list of supported sampling parameters.
+
+=== Example: Ollama Server
+
+When using Ollama through the OpenAI-compatible endpoint, you can pass Ollama-specific parameters:
+
+[source,java]
+----
+OpenAiChatOptions options = OpenAiChatOptions.builder()
+    .model("llama3.2")
+    .extraBody(Map.of(
+        "num_predict", 100,
+        "top_k", 40,
+        "repeat_penalty", 1.1
+    ))
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt("Generate text", options));
+----
+
+Consult the link:https://github.com/ollama/ollama/blob/main/docs/api.md[Ollama API documentation] for available parameters.
+
+[NOTE]
+====
+The `extraBody` parameter accepts any `Map<String, Object>`, allowing you to pass whatever parameters your target server supports.
+Spring AI does not validate these parameters—they are passed directly to the server.
+This design provides maximum flexibility for working with diverse OpenAI-compatible implementations.
+====
+
+=== Reasoning Content from Reasoning Models
+
+Some OpenAI-compatible servers that support reasoning models (such as DeepSeek R1, vLLM with reasoning parsers) expose the model's internal chain of thought via a `reasoning_content` field in their API responses.
+This field contains the step-by-step reasoning process the model used to arrive at its final answer.
+
+Spring AI maps this field from the JSON response to the `reasoningContent` key in the AssistantMessage metadata.
+
+[IMPORTANT]
+====
+**Important distinction about `reasoning_content` availability:**
+
+* **OpenAI-compatible servers** (DeepSeek, vLLM): Expose `reasoning_content` in Chat Completions API responses ✅
+* **Official OpenAI models** (GPT-5, o1, o3): Do **NOT** expose reasoning text in Chat Completions API responses ❌
+
+Official OpenAI reasoning models hide the chain-of-thought content when using the Chat Completions API.
+They only expose `reasoning_tokens` count in usage statistics.
+To access actual reasoning text from official OpenAI models, you must use OpenAI's Responses API (a separate endpoint not currently supported by this client).
+
+**Fallback behavior:** When `reasoning_content` is not provided by the server (e.g., official OpenAI Chat Completions), the `reasoningContent` metadata field will be an empty string.
+====
+
+==== Accessing Reasoning Content
+
+When using a compatible server, you can access the reasoning content from the response metadata.
+
+**Using ChatModel directly:**
+
+[source,java]
+----
+// Configure to use DeepSeek R1 or vLLM with a reasoning model
+ChatResponse response = chatModel.call(
+    new Prompt("Which number is larger: 9.11 or 9.8?")
+);
+
+// Get the assistant message
+AssistantMessage message = response.getResult().getOutput();
+
+// Access the reasoning content from metadata
+String reasoning = message.getMetadata().get("reasoningContent");
+if (reasoning != null && !reasoning.isEmpty()) {
+    System.out.println("Model's reasoning process:");
+    System.out.println(reasoning);
+}
+
+// The final answer is in the regular content
+System.out.println("\nFinal answer:");
+System.out.println(message.getContent());
+----
+
+**Using ChatClient:**
+
+[source,java]
+----
+ChatClient chatClient = ChatClient.create(chatModel);
+
+String result = chatClient.prompt()
+    .user("Which number is larger: 9.11 or 9.8?")
+    .call()
+    .chatResponse()
+    .getResult()
+    .getOutput()
+    .getContent();
+
+// To access reasoning content with ChatClient, retrieve the full response
+ChatResponse response = chatClient.prompt()
+    .user("Which number is larger: 9.11 or 9.8?")
+    .call()
+    .chatResponse();
+
+AssistantMessage message = response.getResult().getOutput();
+String reasoning = message.getMetadata().get("reasoningContent");
+----
+
+==== Streaming Reasoning Content
+
+When using streaming responses, reasoning content is accumulated across chunks just like regular message content:
+
+[source,java]
+----
+Flux<ChatResponse> responseFlux = chatModel.stream(
+    new Prompt("Solve this logic puzzle...")
+);
+
+StringBuilder reasoning = new StringBuilder();
+StringBuilder answer = new StringBuilder();
+
+responseFlux.subscribe(chunk -> {
+    AssistantMessage message = chunk.getResult().getOutput();
+
+    // Accumulate reasoning if present
+    String reasoningChunk = message.getMetadata().get("reasoningContent");
+    if (reasoningChunk != null) {
+        reasoning.append(reasoningChunk);
+    }
+
+    // Accumulate the final answer
+    if (message.getContent() != null) {
+        answer.append(message.getContent());
+    }
+});
+----
+
+==== Example: DeepSeek R1
+
+DeepSeek R1 is a reasoning model that exposes its internal reasoning process:
+
+[source,properties]
+----
+spring.ai.openai.api-key=${DEEPSEEK_API_KEY}
+spring.ai.openai.base-url=https://api.deepseek.com
+spring.ai.openai.chat.model=deepseek-reasoner
+----
+
+When you make requests to DeepSeek R1, responses will include both the reasoning content (the model's thought process) and the final answer.
+
+Refer to the link:https://api-docs.deepseek.com/guides/reasoning_model[DeepSeek API documentation] for more details on reasoning models.
+
+==== Example: vLLM with Reasoning Parser
+
+vLLM supports reasoning models when configured with a reasoning parser:
+
+[source,bash]
+----
+vllm serve deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B \
+    --enable-reasoning \
+    --reasoning-parser deepseek_r1
+----
+
+[source,properties]
+----
+spring.ai.openai.base-url=http://localhost:8000
+spring.ai.openai.chat.model=deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
+----
+
+Consult the link:https://docs.vllm.ai/en/latest/features/reasoning_outputs.html[vLLM reasoning outputs documentation] for supported reasoning models and parsers.
+
+[NOTE]
+====
+The availability of `reasoning_content` depends entirely on the inference server you're using.
+Not all OpenAI-compatible servers expose reasoning content, even when using reasoning-capable models.
+Always refer to your server's API documentation to understand what fields are available in responses.
+====

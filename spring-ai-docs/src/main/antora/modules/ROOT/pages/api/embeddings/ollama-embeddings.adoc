@@ -13,7 +13,6 @@ You first need access to an Ollama instance. There are a few options, including 
 
 * link:https://ollama.com/download[Download and install Ollama] on your local machine.
 * Configure and xref:api/testcontainers.adoc[run Ollama via Testcontainers].
-* Bind to an Ollama instance via xref:api/cloud-bindings.adoc[Kubernetes Service Bindings].
 
 You can pull the models you want to use in your application from the https://ollama.com/search?c=embedding[Ollama model library]:
 
@@ -40,7 +39,7 @@ There has been a significant change in the Spring AI auto-configuration, starter
 Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
 ====
 
-Spring AI provides Spring Boot auto-configuration for the Azure Ollama Embedding Model.
+Spring AI provides Spring Boot auto-configuration for the Ollama Embedding Model.
 To enable it add the following dependency to your Maven `pom.xml` or Gradle `build.gradle` build files:
 
 [tabs]
@@ -164,9 +163,11 @@ TIP: All properties prefixed with `spring.ai.ollama.embedding.options` can be ov
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaEmbeddingOptions.java[OllamaEmbeddingOptions.java] provides the Ollama configurations, such as the model to use, the low level GPU and CPU tuning, etc.
 
+IMPORTANT: The `OllamaOptions` class has been deprecated. Use `OllamaChatOptions` for chat models and `OllamaEmbeddingOptions` for embedding models instead. The new classes provide type-safe, model-specific configuration options.
+
 The default options can be configured using the `spring.ai.ollama.embedding.options` properties as well.
 
-At start-time use the `OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaEmbeddingOptions defaultOptions)` to configure the  default options used for all embedding requests.
+At start-time use the `OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaEmbeddingOptions options)` to configure the  default options used for all embedding requests.
 At run-time you can override the default options, using a `OllamaEmbeddingOptions` instance as part of your `EmbeddingRequest`.
 
 For example to override the default model name for a specific request:

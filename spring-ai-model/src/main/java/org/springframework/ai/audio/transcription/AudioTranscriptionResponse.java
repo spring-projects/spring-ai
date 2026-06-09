@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.ai.audio.transcription;
 import java.util.List;
 
 import org.springframework.ai.model.ModelResponse;
+import org.springframework.util.Assert;
 
 /**
  * A response containing an audio transcription result.
@@ -39,6 +40,8 @@ public class AudioTranscriptionResponse implements ModelResponse<AudioTranscript
 
 	public AudioTranscriptionResponse(AudioTranscription transcript,
 			AudioTranscriptionResponseMetadata transcriptionResponseMetadata) {
+		Assert.notNull(transcript, "AudioTranscription must not be null");
+		Assert.notNull(transcriptionResponseMetadata, "AudioTranscriptionResponseMetadata must not be null");
 		this.transcript = transcript;
 		this.transcriptionResponseMetadata = transcriptionResponseMetadata;
 	}

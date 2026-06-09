@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.ai.chat.model;
 
 import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
@@ -37,7 +39,8 @@ public class Generation implements ModelResult<AssistantMessage> {
 
 	public Generation(AssistantMessage assistantMessage, ChatGenerationMetadata chatGenerationMetadata) {
 		this.assistantMessage = assistantMessage;
-		this.chatGenerationMetadata = chatGenerationMetadata;
+		this.chatGenerationMetadata = chatGenerationMetadata != null ? chatGenerationMetadata
+				: ChatGenerationMetadata.NULL;
 	}
 
 	@Override
@@ -47,12 +50,11 @@ public class Generation implements ModelResult<AssistantMessage> {
 
 	@Override
 	public ChatGenerationMetadata getMetadata() {
-		ChatGenerationMetadata chatGenerationMetadata = this.chatGenerationMetadata;
-		return chatGenerationMetadata != null ? chatGenerationMetadata : ChatGenerationMetadata.NULL;
+		return this.chatGenerationMetadata;
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}

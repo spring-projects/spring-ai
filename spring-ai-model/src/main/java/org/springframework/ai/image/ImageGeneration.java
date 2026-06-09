@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,16 @@ import org.springframework.ai.model.ModelResult;
 
 public class ImageGeneration implements ModelResult<Image> {
 
-	private ImageGenerationMetadata imageGenerationMetadata;
+	private static final ImageGenerationMetadata NONE = new ImageGenerationMetadata() {
 
-	private Image image;
+	};
+
+	private final ImageGenerationMetadata imageGenerationMetadata;
+
+	private final Image image;
 
 	public ImageGeneration(Image image) {
-		this.image = image;
+		this(image, NONE);
 	}
 
 	public ImageGeneration(Image image, ImageGenerationMetadata imageGenerationMetadata) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.springframework.ai.vectorstore.chroma.autoconfigure;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.Disabled;
@@ -27,10 +26,12 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.chromadb.ChromaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.vectorstore.VectorStoreChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -74,11 +75,11 @@ public class ChromaVectorStoreAutoConfigurationIT {
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.ai.vectorstore.chroma.client.host=http://" + chroma.getHost(),
 				"spring.ai.vectorstore.chroma.client.port=" + chroma.getMappedPort(8000),
-				"spring.ai.vectorstore.chroma.collectionName=TestCollection");
+				"spring.ai.vectorstore.chroma.collection-name=TestCollection");
 
 	@Test
 	public void verifyThatChromaCanHandleComplexMetadataValues() {
-		this.contextRunner.withPropertyValues("spring.ai.vectorstore.chroma.initializeSchema=true").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.chroma.initialize-schema=true").run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
@@ -88,7 +89,10 @@ public class ChromaVectorStoreAutoConfigurationIT {
 
 			assertThat(advisor.getName()).isEqualTo("VectorStoreChatMemoryAdvisor");
 
-			var req = ChatClientRequest.builder().prompt(Prompt.builder().content("UserPrompt").build()).build();
+			var req = ChatClientRequest.builder()
+				.prompt(Prompt.builder().content("UserPrompt").build())
+				.context(ChatMemory.CONVERSATION_ID, "test-conversation")
+				.build();
 
 			ChatClientRequest req2 = advisor.before(req, null);
 			assertThat(req2).isNotNull();
@@ -100,6 +104,7 @@ public class ChromaVectorStoreAutoConfigurationIT {
 						.properties(Map.of("annotations", List.of()))
 						.build())))
 					.build())
+				.context(ChatMemory.CONVERSATION_ID, "test-conversation")
 				.build();
 			var res2 = advisor.after(response, null);
 			assertThat(res2).isNotNull();
@@ -114,7 +119,7 @@ public class ChromaVectorStoreAutoConfigurationIT {
 	@Test
 	public void addAndSearchWithFilters() {
 
-		this.contextRunner.withPropertyValues("spring.ai.vectorstore.chroma.initializeSchema=true").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.chroma.initialize-schema=true").run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 			TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
@@ -179,7 +184,7 @@ public class ChromaVectorStoreAutoConfigurationIT {
 
 	@Test
 	public void throwExceptionOnMissingCollectionAndDisabledInitializedSchema() {
-		this.contextRunner.withPropertyValues("spring.ai.vectorstore.chroma.initializeSchema=false")
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.chroma.initialize-schema=false")
 			.run(context -> assertThatThrownBy(() -> context.getBean(VectorStore.class))
 				.isInstanceOf(IllegalStateException.class)
 				.hasCauseInstanceOf(BeanCreationException.class)
@@ -200,7 +205,7 @@ public class ChromaVectorStoreAutoConfigurationIT {
 	@Test
 	@Disabled
 	public void autoConfigurationEnabledByDefault() {
-		this.contextRunner.withPropertyValues("spring.ai.vectorstore.chroma.initializeSchema=true").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.chroma.initialize-schema=true").run(context -> {
 			assertThat(context.getBeansOfType(ChromaVectorStoreProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
 			assertThat(context.getBean(VectorStore.class)).isInstanceOf(ChromaVectorStore.class);
@@ -212,7 +217,7 @@ public class ChromaVectorStoreAutoConfigurationIT {
 	public void autoConfigurationEnabledWhenTypeIsChroma() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.vectorstore.type=chroma",
-					"spring.ai.vectorstore.chroma.initializeSchema=true")
+					"spring.ai.vectorstore.chroma.initialize-schema=true")
 			.run(context -> {
 				assertThat(context.getBeansOfType(ChromaVectorStoreProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
@@ -234,8 +239,8 @@ public class ChromaVectorStoreAutoConfigurationIT {
 		}
 
 		@Bean
-		public ObjectMapper objectMapper() {
-			return new ObjectMapper();
+		public JsonMapper jsonMapper() {
+			return new JsonMapper();
 		}
 
 	}

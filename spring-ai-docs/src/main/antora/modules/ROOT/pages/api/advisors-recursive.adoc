@@ -27,31 +27,95 @@ This approach ensures that:
 
 Spring AI provides two built-in recursive advisors that demonstrate this pattern:
 
-=== ToolCallAdvisor
+=== ToolCallingAdvisor
 
-The `ToolCallAdvisor` implements the tool calling loop as part of the advisor chain, rather than relying on the model's internal tool execution. This enables other advisors in the chain to intercept and observe the tool calling process.
+The `ToolCallingAdvisor` implements the tool calling loop as part of the advisor chain, rather than relying on the model's internal tool execution. This enables other advisors in the chain to intercept and observe the tool calling process.
 
 Key features:
 
-* Disables the model's internal tool execution by setting `setInternalToolExecutionEnabled(false)`
-* Loops through the advisor chain until no more tool calls are present
+* Loops through the advisor chain until the `ToolExecutionEligibilityChecker` reports no more tool calls
 * Supports "return direct" functionality - when a tool execution has `returnDirect=true`, it interrupts the tool calling loop and returns the tool execution result directly to the client application instead of sending it back to the LLM
 * Uses `callAdvisorChain.copy(this)` to create a sub-chain for recursive calls
-* Includes null safety checks to handle cases where the chat response might be null
+* Supports configurable conversation history management via `conversationHistoryEnabled`
+* Supports a pluggable `ToolExecutionEligibilityChecker` to customize when the loop iterates
 
 Example usage:
 
 [source,java]
 ----
-var toolCallAdvisor = ToolCallAdvisor.builder()
+var toolCallingAdvisor = ToolCallingAdvisor.builder()
     .toolCallingManager(toolCallingManager)
     .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 300)
     .build();
 
 var chatClient = ChatClient.builder(chatModel)
-    .defaultAdvisors(toolCallAdvisor)
+    .defaultAdvisors(toolCallingAdvisor)
     .build();
 ----
+
+==== Conversation History Management
+
+The `ToolCallingAdvisor` includes a `conversationHistoryEnabled` configuration option that controls how conversation history is managed during tool calling iterations.
+
+
+By default (`conversationHistoryEnabled=true`), the advisor maintains the full conversation history internally during tool call iterations. This means each subsequent LLM call in the tool calling loop includes all previous messages (user message, assistant responses, tool responses).
+
+By default, memory advisors (`DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER = HIGHEST_PRECEDENCE + 200`) are placed _outside_ the tool-call loop. The `ToolCallingAdvisor` (at `HIGHEST_PRECEDENCE + 300`) manages conversation history internally across iterations. The memory advisor loads history once before the loop and persists only the final user/assistant exchange after it ends. This is the recommended setup because most `ChatMemoryRepository` implementations do not support tool-call message types.
+
+[source,java]
+----
+// Default setup: memory advisor is outside the tool-call loop (no explicit order needed)
+var chatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
+// DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER = HIGHEST_PRECEDENCE + 200 < ToolCallingAdvisor.DEFAULT_ORDER (+300)
+// ToolCallingAdvisor manages its own conversation history across tool-call iterations
+
+var chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(chatMemoryAdvisor)
+    .build();
+----
+
+Use the `.disableInternalConversationHistory()` method only when placing a memory advisor _inside_ the tool-call loop (order above `ToolCallingAdvisor.DEFAULT_ORDER`). The memory advisor then handles history on every iteration. Note that only `InMemoryChatMemoryRepository` supports persisting tool-call messages; other repositories should use the default outside-loop setup above.
+
+TIP: The https://github.com/spring-ai-community/spring-ai-session[spring-ai-session] community project provides a session-aware memory implementation that fully supports tool-call messages and can be safely used inside the tool-call loop with any backend. See the https://spring-ai-community.github.io/spring-ai-session/latest-snapshot/[spring-ai-session documentation].
+
+[source,java]
+----
+var toolCallingAdvisor = ToolCallingAdvisor.builder()
+    .toolCallingManager(toolCallingManager)
+    .disableInternalConversationHistory()  // Memory advisor inside the loop handles history
+    .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 300)
+    .build();
+
+var chatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory)
+    .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 400)  // Inside (after) ToolCallingAdvisor
+    .build();
+
+var chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(chatMemoryAdvisor, toolCallingAdvisor)
+    .build();
+----
+
+==== Streaming Intermediate Tool-Call Responses
+
+By default, only the final LLM answer is emitted when using `.stream()` — chunks from intermediate tool-call iterations are suppressed until the last iteration finishes.
+Set `streamToolCallResponses(true)` on the builder to stream each iteration's chunks in real time as they arrive:
+
+[source,java]
+----
+var toolCallingAdvisor = ToolCallingAdvisor.builder()
+    .toolCallingManager(toolCallingManager)
+    .streamToolCallResponses(true)
+    .build();
+----
+
+When using Spring Boot auto-configuration, set the equivalent property instead:
+
+[source,properties]
+----
+spring.ai.chat.client.tool-calling.stream-tool-call-responses=true
+----
+
+NOTE: Enabling this option increases the number of chunks the client receives but may interleave tool-call fragments with the final answer depending on how the client processes the stream.
 
 ==== Return Direct Functionality
 
@@ -61,37 +125,58 @@ The "return direct" feature allows tools to bypass the LLM and return their resu
 * You want to reduce latency by avoiding an additional LLM call
 * The tool result should be returned as-is without interpretation
 
-When a tool execution has `returnDirect=true`, the `ToolCallAdvisor` will:
+When a tool execution has `returnDirect=true`, the `ToolCallingAdvisor` will:
 
 1. Execute the tool call as normal
 2. Detect the `returnDirect` flag in the `ToolExecutionResult`
 3. Break out of the tool calling loop
 4. Return the tool execution result directly to the client application as a `ChatResponse` with the tool's output as the generation content
 
+[[structured-output-validation-advisor]]
 === StructuredOutputValidationAdvisor
 
-The `StructuredOutputValidationAdvisor` validates the structured JSON output against a generated JSON schema and retries the call if validation fails, up to a specified number of attempts.
+The `StructuredOutputValidationAdvisor` validates the structured JSON output against a JSON schema and retries the call if validation fails, up to a specified number of attempts.
 
 Key features:
 
-* Automatically generates a JSON schema from the expected output type
+* Derives a JSON schema from the expected output type, or accepts a pre-supplied schema string
 * Validates the LLM response against the schema
-* Retries the call if validation fails, up to a configurable number of attempts
+* Retries the call if validation fails, up to a configurable number of attempts (default: 3)
 * Augments the prompt with validation error messages on retry attempts to help the LLM correct its output
 * Uses `callAdvisorChain.copy(this)` to create a sub-chain for recursive calls
-* Optionally supports a custom `ObjectMapper` for JSON processing
+* Optionally supports a custom `JsonMapper` for JSON processing
 
-Example usage:
+The advisor can be configured via `outputType` (schema derived automatically) or `outputJsonSchema` (pre-supplied schema string); the two options are mutually exclusive.
+
+Example usage with `outputType`:
 
 [source,java]
 ----
 var validationAdvisor = StructuredOutputValidationAdvisor.builder()
     .outputType(MyResponseType.class)
     .maxRepeatAttempts(3)
-    .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 1000)
     .build();
 
 var chatClient = ChatClient.builder(chatModel)
     .defaultAdvisors(validationAdvisor)
     .build();
+----
+
+Example usage with a pre-supplied JSON schema:
+
+[source,java]
+----
+var validationAdvisor = StructuredOutputValidationAdvisor.builder()
+    .outputJsonSchema(myConverter.getJsonSchema())
+    .build();
+----
+
+Alternatively, you can enable schema validation directly on an `entity()` call without configuring the advisor manually, using xref:api/chatclient.adoc#_entityparamspec[EntityParamSpec]:
+
+[source,java]
+----
+ActorFilms actorFilms = chatClient.prompt()
+    .user("Generate the filmography for a random actor.")
+    .call()
+    .entity(ActorFilms.class, spec -> spec.schemaValidation());
 ----

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ import org.springframework.core.ParameterizedTypeReference
  * @author Josh Long
  */
 
-inline fun <reified T> ChatClient.CallResponseSpec.entity(): T =
+inline fun <reified T : Any> ChatClient.CallResponseSpec.entity(): T =
 	entity(object : ParameterizedTypeReference<T>() {}) as T
 
-inline fun <reified T> ChatClient.CallResponseSpec.responseEntity(): ResponseEntity<ChatResponse, T> =
+inline fun <reified T : Any> ChatClient.CallResponseSpec.responseEntity(): ResponseEntity<ChatResponse, T> =
 	responseEntity(object : ParameterizedTypeReference<T>() {}) 

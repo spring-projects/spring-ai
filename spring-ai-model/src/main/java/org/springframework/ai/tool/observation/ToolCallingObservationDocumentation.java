@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,6 +97,16 @@ public enum ToolCallingObservationDocumentation implements ObservationDocumentat
 			}
 		},
 
+		/**
+		 * The type of the tool.
+		 */
+		TOOL_TYPE {
+			@Override
+			public String asString() {
+				return "spring.ai.tool.type";
+			}
+		},
+
 	}
 
 	/**
@@ -121,6 +131,16 @@ public enum ToolCallingObservationDocumentation implements ObservationDocumentat
 			@Override
 			public String asString() {
 				return "spring.ai.tool.definition.schema";
+			}
+		},
+
+		/**
+		 * The ID of the tool call.
+		 */
+		TOOL_CALL_ID {
+			@Override
+			public String asString() {
+				return "spring.ai.tool.call.id";
 			}
 		},
 

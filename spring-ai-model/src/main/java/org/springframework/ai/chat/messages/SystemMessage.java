@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.core.io.Resource;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 /**
@@ -34,7 +34,7 @@ import org.springframework.util.StringUtils;
  */
 public class SystemMessage extends AbstractMessage {
 
-	public SystemMessage(String textContent) {
+	public SystemMessage(@Nullable String textContent) {
 		this(textContent, Map.of());
 	}
 
@@ -42,18 +42,12 @@ public class SystemMessage extends AbstractMessage {
 		this(MessageUtils.readResource(resource), Map.of());
 	}
 
-	private SystemMessage(String textContent, Map<String, Object> metadata) {
+	private SystemMessage(@Nullable String textContent, Map<String, Object> metadata) {
 		super(MessageType.SYSTEM, textContent, metadata);
 	}
 
 	@Override
-	@NonNull
-	public String getText() {
-		return this.textContent;
-	}
-
-	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -82,7 +76,12 @@ public class SystemMessage extends AbstractMessage {
 	}
 
 	public Builder mutate() {
-		return new Builder().text(this.textContent).metadata(this.metadata);
+		Builder builder = new Builder();
+		if (this.textContent != null) {
+			builder.text(this.textContent);
+		}
+		builder.metadata(this.metadata);
+		return builder;
 	}
 
 	public static Builder builder() {
@@ -91,11 +90,9 @@ public class SystemMessage extends AbstractMessage {
 
 	public static final class Builder {
 
-		@Nullable
-		private String textContent;
+		private @Nullable String textContent;
 
-		@Nullable
-		private Resource resource;
+		private @Nullable Resource resource;
 
 		private Map<String, Object> metadata = new HashMap<>();
 

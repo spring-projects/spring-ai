@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,10 +28,14 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
@@ -44,12 +48,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Jihoon Kim
  * @author Christian Tzolov
  * @author Alexandros Pappas
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 @ExtendWith(MockitoExtension.class)
@@ -57,16 +64,6 @@ class OllamaChatModelTests {
 
 	@Mock
 	OllamaApi ollamaApi;
-
-	@Test
-	void buildOllamaChatModelWithDeprecatedConstructor() {
-		ChatModel chatModel = OllamaChatModel.builder()
-			.ollamaApi(this.ollamaApi)
-			.defaultOptions(OllamaChatOptions.builder().model(OllamaModel.MISTRAL).build())
-			.observationRegistry(ObservationRegistry.NOOP)
-			.build();
-		assertThat(chatModel).isNotNull();
-	}
 
 	@Test
 	void buildOllamaChatModelWithConstructor() {
@@ -87,7 +84,7 @@ class OllamaChatModelTests {
 		Exception exception = assertThrows(IllegalArgumentException.class,
 				() -> OllamaChatModel.builder()
 					.ollamaApi(this.ollamaApi)
-					.defaultOptions(OllamaChatOptions.builder().model(OllamaModel.LLAMA2).build())
+					.options(OllamaChatOptions.builder().model(OllamaModel.LLAMA2).build())
 					.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 					.modelManagementOptions(null)
 					.build());
@@ -179,8 +176,8 @@ class OllamaChatModelTests {
 	@Test
 	void buildOllamaChatModelWithNullOllamaApi() {
 		assertThatThrownBy(() -> OllamaChatModel.builder().ollamaApi(null).build())
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("ollamaApi must not be null");
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("OllamaApi must not be null");
 	}
 
 	@Test
@@ -196,7 +193,7 @@ class OllamaChatModelTests {
 
 		ChatModel chatModel = OllamaChatModel.builder()
 			.ollamaApi(this.ollamaApi)
-			.defaultOptions(options)
+			.options(options)
 			.toolCallingManager(toolManager)
 			.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 			.observationRegistry(ObservationRegistry.NOOP)
@@ -250,7 +247,7 @@ class OllamaChatModelTests {
 		OllamaModel model = OllamaModel.valueOf(modelName);
 		OllamaChatOptions options = OllamaChatOptions.builder().model(model).build();
 
-		ChatModel chatModel = OllamaChatModel.builder().ollamaApi(this.ollamaApi).defaultOptions(options).build();
+		ChatModel chatModel = OllamaChatModel.builder().ollamaApi(this.ollamaApi).options(options).build();
 
 		assertThat(chatModel).isNotNull();
 		assertThat(chatModel).isInstanceOf(OllamaChatModel.class);
@@ -319,9 +316,9 @@ class OllamaChatModelTests {
 		// Test that the builder creates immutable instances
 		OllamaChatOptions options = OllamaChatOptions.builder().model(OllamaModel.MISTRAL).temperature(0.5).build();
 
-		ChatModel chatModel1 = OllamaChatModel.builder().ollamaApi(this.ollamaApi).defaultOptions(options).build();
+		ChatModel chatModel1 = OllamaChatModel.builder().ollamaApi(this.ollamaApi).options(options).build();
 
-		ChatModel chatModel2 = OllamaChatModel.builder().ollamaApi(this.ollamaApi).defaultOptions(options).build();
+		ChatModel chatModel2 = OllamaChatModel.builder().ollamaApi(this.ollamaApi).options(options).build();
 
 		// Should create different instances
 		assertThat(chatModel1).isNotSameAs(chatModel2);
@@ -351,6 +348,54 @@ class OllamaChatModelTests {
 
 		assertThat(chatModel).isNotNull();
 		assertThat(chatModel).isInstanceOf(OllamaChatModel.class);
+	}
+
+	@Test
+	void thinkingFieldIsStoredInAssistantMessageProperties() {
+		String thinkingText = "Let me reason step by step...";
+		OllamaApi.Message assistantApiMessage = OllamaApi.Message.builder(OllamaApi.Message.Role.ASSISTANT)
+			.content("The answer is 42.")
+			.thinking(thinkingText)
+			.build();
+		OllamaApi.ChatResponse apiResponse = new OllamaApi.ChatResponse("model", Instant.now(), assistantApiMessage,
+				"stop", true, null, null, 10, 1000L, 20, 2000L);
+		when(this.ollamaApi.chat(any())).thenReturn(apiResponse);
+
+		OllamaChatModel chatModel = OllamaChatModel.builder().ollamaApi(this.ollamaApi).build();
+		ChatResponse response = chatModel.call(new Prompt(new UserMessage("What is the answer?")));
+
+		Generation generation = response.getResult();
+		AssistantMessage message = generation.getOutput();
+		assertThat(message.getMetadata()).containsKey("thinking");
+		assertThat(message.getMetadata().get("thinking")).isEqualTo(thinkingText);
+	}
+
+	@Test
+	void thinkingFieldRoundTripsThroughConversationHistory() {
+		String thinkingText = "Step 1: understand the question...";
+		OllamaApi.Message firstApiMessage = OllamaApi.Message.builder(OllamaApi.Message.Role.ASSISTANT)
+			.content("First answer.")
+			.thinking(thinkingText)
+			.build();
+		OllamaApi.ChatResponse firstApiResponse = new OllamaApi.ChatResponse("model", Instant.now(), firstApiMessage,
+				"stop", true, null, null, 10, 1000L, 20, 2000L);
+
+		OllamaApi.Message secondApiMessage = OllamaApi.Message.builder(OllamaApi.Message.Role.ASSISTANT)
+			.content("Second answer.")
+			.build();
+		OllamaApi.ChatResponse secondApiResponse = new OllamaApi.ChatResponse("model", Instant.now(), secondApiMessage,
+				"stop", true, null, null, 10, 1000L, 20, 2000L);
+		when(this.ollamaApi.chat(any())).thenReturn(firstApiResponse).thenReturn(secondApiResponse);
+
+		OllamaChatModel chatModel = OllamaChatModel.builder().ollamaApi(this.ollamaApi).build();
+
+		ChatResponse firstResponse = chatModel.call(new Prompt(new UserMessage("Turn 1")));
+		AssistantMessage firstAssistantMessage = firstResponse.getResult().getOutput();
+		assertThat(firstAssistantMessage.getMetadata().get("thinking")).isEqualTo(thinkingText);
+
+		Prompt secondPrompt = new Prompt(
+				List.of(new UserMessage("Turn 1"), firstAssistantMessage, new UserMessage("Turn 2")));
+		chatModel.call(secondPrompt);
 	}
 
 }

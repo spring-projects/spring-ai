@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,10 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
@@ -34,8 +35,8 @@ import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.metadata.ToolMetadata;
-import org.springframework.ai.util.json.JsonParser;
-import org.springframework.lang.Nullable;
+import org.springframework.ai.util.JsonHelper;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
@@ -48,7 +49,9 @@ import org.springframework.util.CollectionUtils;
  */
 public final class MethodToolCallback implements ToolCallback {
 
-	private static final Logger logger = LoggerFactory.getLogger(MethodToolCallback.class);
+	private static final JsonHelper jsonHelper = new JsonHelper();
+
+	private static final Log logger = LogFactory.getLog(MethodToolCallback.class);
 
 	private static final ToolCallResultConverter DEFAULT_RESULT_CONVERTER = new DefaultToolCallResultConverter();
 
@@ -60,8 +63,7 @@ public final class MethodToolCallback implements ToolCallback {
 
 	private final Method toolMethod;
 
-	@Nullable
-	private final Object toolObject;
+	private final @Nullable Object toolObject;
 
 	private final ToolCallResultConverter toolCallResultConverter;
 
@@ -98,17 +100,22 @@ public final class MethodToolCallback implements ToolCallback {
 	public String call(String toolInput, @Nullable ToolContext toolContext) {
 		Assert.hasText(toolInput, "toolInput cannot be null or empty");
 
-		logger.debug("Starting execution of tool: {}", this.toolDefinition.name());
+		if (logger.isDebugEnabled()) {
+			logger.debug("Starting execution of tool: " + this.toolDefinition.name());
+		}
 
-		validateToolContextSupport(toolContext);
+		this.validateToolContextSupport(toolContext);
 
-		Map<String, Object> toolArguments = extractToolArguments(toolInput);
+		Map<String, Object> toolArguments = this.extractToolArguments(toolInput);
+		Assert.state(toolArguments != null, "toolArguments must not be null");
 
-		Object[] methodArguments = buildMethodArguments(toolArguments, toolContext);
+		Object[] methodArguments = this.buildMethodArguments(toolArguments, toolContext);
 
-		Object result = callMethod(methodArguments);
+		Object result = this.callMethod(methodArguments);
 
-		logger.debug("Successful execution of tool: {}", this.toolDefinition.name());
+		if (logger.isDebugEnabled()) {
+			logger.debug("Successful execution of tool: " + this.toolDefinition.name());
+		}
 
 		Type returnType = this.toolMethod.getGenericReturnType();
 
@@ -124,12 +131,20 @@ public final class MethodToolCallback implements ToolCallback {
 		}
 	}
 
-	private Map<String, Object> extractToolArguments(String toolInput) {
-		return JsonParser.fromJson(toolInput, new TypeReference<>() {
-		});
+	private @Nullable Map<String, Object> extractToolArguments(String toolInput) {
+		try {
+			return jsonHelper.fromJson(toolInput, new ParameterizedTypeReference<>() {
+			});
+		}
+		catch (Exception ex) {
+			logger.warn("Conversion from JSON failed", ex);
+			Throwable cause = (ex.getCause() instanceof JacksonException) ? ex.getCause() : ex;
+			throw new ToolExecutionException(this.getToolDefinition(), cause);
+		}
 	}
 
 	// Based on the implementation in MethodToolCallback.
+	@SuppressWarnings("null")
 	private Object[] buildMethodArguments(Map<String, Object> toolInputArguments, @Nullable ToolContext toolContext) {
 		return Stream.of(this.toolMethod.getParameters()).map(parameter -> {
 			if (parameter.getType().isAssignableFrom(ToolContext.class)) {
@@ -140,23 +155,28 @@ public final class MethodToolCallback implements ToolCallback {
 		}).toArray();
 	}
 
-	@Nullable
-	private Object buildTypedArgument(@Nullable Object value, Type type) {
+	private @Nullable Object buildTypedArgument(@Nullable Object value, Type type) {
 		if (value == null) {
 			return null;
 		}
+		try {
+			if (type instanceof Class<?>) {
+				return jsonHelper.convertToTypedObject(value, (Class<?>) type);
+			}
 
-		if (type instanceof Class<?>) {
-			return JsonParser.toTypedObject(value, (Class<?>) type);
+			// For generic types, use the fromJson method that accepts Type
+			String json = jsonHelper.toJson(value, true);
+			return jsonHelper.fromJson(json, type);
 		}
-
-		// For generic types, use the fromJson method that accepts Type
-		String json = JsonParser.toJson(value);
-		return JsonParser.fromJson(json, type);
+		catch (Exception ex) {
+			logger.warn("Conversion from JSON failed", ex);
+			Throwable cause = (ex.getCause() instanceof JacksonException) ? ex.getCause() : ex;
+			throw new ToolExecutionException(this.getToolDefinition(), cause);
+		}
 	}
 
-	@Nullable
-	private Object callMethod(Object[] methodArguments) {
+	@SuppressWarnings("NullAway") // ex.getCause() is guaranteed to be non-null
+	private @Nullable Object callMethod(Object[] methodArguments) {
 		if (isObjectNotPublic() || isMethodNotPublic()) {
 			this.toolMethod.setAccessible(true);
 		}
@@ -194,15 +214,15 @@ public final class MethodToolCallback implements ToolCallback {
 
 	public static final class Builder {
 
-		private ToolDefinition toolDefinition;
+		private @Nullable ToolDefinition toolDefinition;
 
-		private ToolMetadata toolMetadata;
+		private @Nullable ToolMetadata toolMetadata;
 
-		private Method toolMethod;
+		private @Nullable Method toolMethod;
 
-		private Object toolObject;
+		private @Nullable Object toolObject;
 
-		private ToolCallResultConverter toolCallResultConverter;
+		private @Nullable ToolCallResultConverter toolCallResultConverter;
 
 		private Builder() {
 		}
@@ -232,7 +252,10 @@ public final class MethodToolCallback implements ToolCallback {
 			return this;
 		}
 
+		@SuppressWarnings("null")
 		public MethodToolCallback build() {
+			Assert.state(this.toolDefinition != null, "ToolDefinition is required");
+			Assert.state(this.toolMethod != null, "ToolMethod is required");
 			return new MethodToolCallback(this.toolDefinition, this.toolMetadata, this.toolMethod, this.toolObject,
 					this.toolCallResultConverter);
 		}

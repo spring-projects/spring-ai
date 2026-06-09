@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import static org.mockito.Mockito.when;
  * Unit tests for {@link MistralAiEmbeddingModel}.
  *
  * @author Nicolas Krier
+ * @author Sebastien Deleuze
  */
 class MistralAiEmbeddingModelTests {
 
@@ -42,11 +43,15 @@ class MistralAiEmbeddingModelTests {
 		MistralAiApi mockApi = createMockApiWithEmbeddingResponse(1024);
 
 		MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder()
-			.withModel(MistralAiApi.EmbeddingModel.EMBED.getValue())
+			.model(MistralAiApi.EmbeddingModel.EMBED.getValue())
 			.build();
 
-		MistralAiEmbeddingModel model = new MistralAiEmbeddingModel(mockApi, MetadataMode.EMBED, options,
-				RetryUtils.DEFAULT_RETRY_TEMPLATE);
+		MistralAiEmbeddingModel model = MistralAiEmbeddingModel.builder()
+			.mistralAiApi(mockApi)
+			.metadataMode(MetadataMode.EMBED)
+			.options(options)
+			.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
+			.build();
 
 		assertThat(model.dimensions()).isEqualTo(1024);
 	}
@@ -56,11 +61,15 @@ class MistralAiEmbeddingModelTests {
 		MistralAiApi mockApi = createMockApiWithEmbeddingResponse(1536);
 
 		MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder()
-			.withModel(MistralAiApi.EmbeddingModel.CODESTRAL_EMBED.getValue())
+			.model(MistralAiApi.EmbeddingModel.CODESTRAL_EMBED.getValue())
 			.build();
 
-		MistralAiEmbeddingModel model = new MistralAiEmbeddingModel(mockApi, MetadataMode.EMBED, options,
-				RetryUtils.DEFAULT_RETRY_TEMPLATE);
+		MistralAiEmbeddingModel model = MistralAiEmbeddingModel.builder()
+			.mistralAiApi(mockApi)
+			.metadataMode(MetadataMode.EMBED)
+			.options(options)
+			.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
+			.build();
 
 		assertThat(model.dimensions()).isEqualTo(1536);
 	}
@@ -70,10 +79,14 @@ class MistralAiEmbeddingModelTests {
 		MistralAiApi mockApi = createMockApiWithEmbeddingResponse(512);
 
 		// Use a model name that doesn't exist in KNOWN_EMBEDDING_DIMENSIONS
-		MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder().withModel("unknown-model").build();
+		MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder().model("unknown-model").build();
 
-		MistralAiEmbeddingModel model = new MistralAiEmbeddingModel(mockApi, MetadataMode.EMBED, options,
-				RetryUtils.DEFAULT_RETRY_TEMPLATE);
+		MistralAiEmbeddingModel model = MistralAiEmbeddingModel.builder()
+			.mistralAiApi(mockApi)
+			.metadataMode(MetadataMode.EMBED)
+			.options(options)
+			.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
+			.build();
 
 		// Should fall back to super.dimensions() which detects dimensions from the API
 		// response
@@ -90,11 +103,15 @@ class MistralAiEmbeddingModelTests {
 		for (MistralAiApi.EmbeddingModel embeddingModel : MistralAiApi.EmbeddingModel.values()) {
 			MistralAiApi mockApi = createMockApiWithEmbeddingResponse(1024);
 			MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder()
-				.withModel(embeddingModel.getValue())
+				.model(embeddingModel.getValue())
 				.build();
 
-			MistralAiEmbeddingModel model = new MistralAiEmbeddingModel(mockApi, MetadataMode.EMBED, options,
-					RetryUtils.DEFAULT_RETRY_TEMPLATE);
+			MistralAiEmbeddingModel model = MistralAiEmbeddingModel.builder()
+				.mistralAiApi(mockApi)
+				.metadataMode(MetadataMode.EMBED)
+				.options(options)
+				.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
+				.build();
 
 			// Each model should have a valid dimension (not the fallback -1)
 			assertThat(model.dimensions()).as("Model %s should have a dimension mapping", embeddingModel.getValue())
@@ -109,7 +126,7 @@ class MistralAiEmbeddingModelTests {
 		MistralAiEmbeddingModel model = MistralAiEmbeddingModel.builder()
 			.mistralAiApi(mockApi)
 			.options(MistralAiEmbeddingOptions.builder()
-				.withModel(MistralAiApi.EmbeddingModel.CODESTRAL_EMBED.getValue())
+				.model(MistralAiApi.EmbeddingModel.CODESTRAL_EMBED.getValue())
 				.build())
 			.build();
 

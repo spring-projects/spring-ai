@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,17 @@ package org.springframework.ai.docker.compose.service.connection.opensearch;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 class OpenSearchEnvironment {
 
-	private final String password;
+	private final @Nullable String password;
 
-	OpenSearchEnvironment(Map<String, String> env) {
+	OpenSearchEnvironment(Map<String, @Nullable String> env) {
 		this.password = env.get("OPENSEARCH_INITIAL_ADMIN_PASSWORD");
 	}
 
-	String getPassword() {
+	@Nullable String getPassword() {
 		return this.password;
 	}
 

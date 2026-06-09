@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,10 +65,10 @@ data class KotlinRequest(
 	val location: String,
 
 	@get:JsonPropertyDescription("The city latitude")
-	val lat: Double,
+	val lat: Double = 0.0,
 
 	@get:JsonPropertyDescription("The city longitude")
-	val lon: Double,
+	val lon: Double = 0.0,
 
 	@get:JsonPropertyDescription("Temperature unit")
 	val unit: Unit = Unit.C

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,27 +17,28 @@
 package org.springframework.ai.model.deepseek.autoconfigure.tool;
 
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
-import org.springframework.ai.model.deepseek.autoconfigure.BaseDeepSeekIT;
 import org.springframework.ai.model.deepseek.autoconfigure.DeepSeekChatAutoConfiguration;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -46,17 +47,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Geng Rong
  * @author Hyunsang Han
+ * @author Issam El-atif
  */
 // @Disabled("the deepseek-chat model's Function Calling capability is unstable see:
 // https://api-docs.deepseek.com/guides/function_calling")
-@EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".*")
-public class DeepSeekFunctionCallbackIT extends BaseDeepSeekIT {
-
-	private final Logger logger = LoggerFactory.getLogger(DeepSeekFunctionCallbackIT.class);
+@EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".+")
+public class DeepSeekFunctionCallbackIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.deepseek.apiKey=" + System.getenv("DEEPSEEK_API_KEY"))
-		.withConfiguration(deepSeekAutoConfig(DeepSeekChatAutoConfiguration.class))
+		.withPropertyValues("spring.ai.deepseek.api-key=" + System.getenv("DEEPSEEK_API_KEY"))
+		.withConfiguration(AutoConfigurations.of(DeepSeekChatAutoConfiguration.class, RestClientAutoConfiguration.class,
+				SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class,
+				WebClientAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test
@@ -65,13 +67,24 @@ public class DeepSeekFunctionCallbackIT extends BaseDeepSeekIT {
 
 			DeepSeekChatModel chatModel = context.getBean(DeepSeekChatModel.class);
 
+			ToolCallback weatherInfo = context.getBean("weatherFunctionInfo", ToolCallback.class);
+
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
-			ChatResponse response = chatModel
-				.call(new Prompt(List.of(userMessage), DeepSeekChatOptions.builder().toolNames("WeatherInfo").build()));
+			DeepSeekChatOptions options = DeepSeekChatOptions.builder().toolCallbacks(weatherInfo).build();
 
-			logger.info("Response: {}", response);
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+
+			Prompt prompt = new Prompt(List.of(userMessage), options);
+
+			ChatResponse response = chatModel.call(prompt);
+
+			while (response.hasToolCalls()) {
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+				prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+				response = chatModel.call(prompt);
+			}
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
@@ -84,22 +97,29 @@ public class DeepSeekFunctionCallbackIT extends BaseDeepSeekIT {
 
 			DeepSeekChatModel chatModel = context.getBean(DeepSeekChatModel.class);
 
+			ToolCallback weatherInfo = context.getBean("weatherFunctionInfo", ToolCallback.class);
+
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
-			Flux<ChatResponse> response = chatModel.stream(
-					new Prompt(List.of(userMessage), DeepSeekChatOptions.builder().toolNames("WeatherInfo").build()));
+			DeepSeekChatOptions options = DeepSeekChatOptions.builder().toolCallbacks(weatherInfo).build();
 
-			String content = response.collectList()
-				.block()
-				.stream()
-				.map(ChatResponse::getResults)
-				.flatMap(List::stream)
-				.map(Generation::getOutput)
-				.map(AssistantMessage::getText)
-				.filter(Objects::nonNull)
-				.collect(Collectors.joining());
-			logger.info("Response: {}", content);
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+
+			Prompt prompt = new Prompt(List.of(userMessage), options);
+
+			AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+			new MessageAggregator().aggregate(chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+
+			while (aggregatedRef.get().hasToolCalls()) {
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt,
+						aggregatedRef.get());
+				prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+				aggregatedRef.set(null);
+				new MessageAggregator().aggregate(chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+			}
+
+			String content = aggregatedRef.get().getResult().getOutput().getText();
 
 			assertThat(content).containsAnyOf("30.0", "30");
 			assertThat(content).containsAnyOf("10.0", "10");

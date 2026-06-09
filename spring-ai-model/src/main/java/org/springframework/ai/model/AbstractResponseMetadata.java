@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class AbstractResponseMetadata {
 
@@ -48,8 +47,7 @@ public class AbstractResponseMetadata {
 	 * @param <T> value type
 	 * @return entry or {@code null} if not present
 	 */
-	@Nullable
-	public <T> T get(String key) {
+	public <T> @Nullable T get(String key) {
 		return (T) this.map.get(key);
 	}
 
@@ -60,7 +58,6 @@ public class AbstractResponseMetadata {
 	 * @return entry
 	 * @throws IllegalArgumentException if not present
 	 */
-	@NonNull
 	public <T> T getRequired(Object key) {
 		T object = (T) this.map.get(key);
 		if (object == null) {

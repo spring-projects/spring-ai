@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,9 @@ class GemFireVectorStorePropertiesTests {
 		assertThat(props.getMaxConnections()).isEqualTo(GemFireVectorStore.DEFAULT_MAX_CONNECTIONS);
 		assertThat(props.getFields()).isEqualTo(GemFireVectorStore.DEFAULT_FIELDS);
 		assertThat(props.getBuckets()).isEqualTo(GemFireVectorStore.DEFAULT_BUCKETS);
+		assertThat(props.getUsername()).isNull();
+		assertThat(props.getPassword()).isNull();
+		assertThat(props.getToken()).isNull();
 	}
 
 	@Test
@@ -50,6 +53,9 @@ class GemFireVectorStorePropertiesTests {
 		props.setMaxConnections(10);
 		props.setFields(new String[] { "test" });
 		props.setBuckets(10);
+		props.setUsername("username");
+		props.setPassword("password");
+		props.setToken("token");
 
 		assertThat(props.getIndexName()).isEqualTo("spring-ai-index");
 		assertThat(props.getHost()).isEqualTo("localhost");
@@ -58,6 +64,9 @@ class GemFireVectorStorePropertiesTests {
 		assertThat(props.getMaxConnections()).isEqualTo(10);
 		assertThat(props.getFields()).isEqualTo(new String[] { "test" });
 		assertThat(props.getBuckets()).isEqualTo(10);
+		assertThat(props.getUsername()).isEqualTo("username");
+		assertThat(props.getPassword()).isEqualTo("password");
+		assertThat(props.getToken()).isEqualTo("token");
 
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.springframework.ai.vectorstore.pinecone;
 
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -31,7 +33,7 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
 class PineconeVectorStoreHints implements RuntimeHintsRegistrar {
 
 	@Override
-	public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+	public void registerHints(RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		for (var t : Set.of(com.google.protobuf.Value.class, com.google.protobuf.Value.Builder.class,
 				com.google.protobuf.Struct.class)) {
 			hints.reflection().registerType(t, MemberCategory.values());

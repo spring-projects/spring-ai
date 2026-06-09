@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,13 +32,18 @@ import java.util.function.Consumer;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.ChatModelCallAdvisor;
 import org.springframework.ai.chat.client.advisor.ChatModelStreamAdvisor;
 import org.springframework.ai.chat.client.advisor.DefaultAroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.StructuredOutputValidationAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.MemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.api.ToolAdvisor;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
@@ -60,7 +66,6 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
@@ -78,6 +83,8 @@ import org.springframework.util.StringUtils;
  * @author Dariusz Jedrzejczyk
  * @author Thomas Vitale
  * @author Jonatan Ivanov
+ * @author Wenli Tian
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public class DefaultChatClient implements ChatClient {
@@ -112,14 +119,20 @@ public class DefaultChatClient implements ChatClient {
 
 		DefaultChatClientRequestSpec spec = new DefaultChatClientRequestSpec(this.defaultChatClientRequest);
 
-		// Options
-		if (prompt.getOptions() != null) {
-			spec.options(prompt.getOptions());
-		}
-
 		// Messages
 		if (prompt.getInstructions() != null) {
 			spec.messages(prompt.getInstructions());
+		}
+
+		// ChatOptions
+		if (prompt.getOptions() != null) {
+			ChatOptions.Builder<?> requestOptionsBuilder = prompt.getOptions().mutate();
+			if (spec.getOptionsCustomizer() != null) {
+				spec.getOptionsCustomizer().combineWith(requestOptionsBuilder);
+			}
+			else {
+				spec.options(requestOptionsBuilder);
+			}
 		}
 
 		return spec;
@@ -142,8 +155,7 @@ public class DefaultChatClient implements ChatClient {
 
 		private final List<Media> media = new ArrayList<>();
 
-		@Nullable
-		private String text;
+		private @Nullable String text;
 
 		@Override
 		public PromptUserSpec media(Media... media) {
@@ -235,8 +247,7 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
-		@Nullable
-		protected String text() {
+		protected @Nullable String text() {
 			return this.text;
 		}
 
@@ -260,8 +271,7 @@ public class DefaultChatClient implements ChatClient {
 
 		private final Map<String, Object> metadata = new HashMap<>();
 
-		@Nullable
-		private String text;
+		private @Nullable String text;
 
 		@Override
 		public PromptSystemSpec text(String text) {
@@ -324,8 +334,7 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
-		@Nullable
-		protected String text() {
+		protected @Nullable String text() {
 			return this.text;
 		}
 
@@ -388,6 +397,37 @@ public class DefaultChatClient implements ChatClient {
 
 	}
 
+	/**
+	 * Default implementation of {@link EntityParamSpec}.
+	 */
+	public static class DefaultEntityParamSpec implements EntityParamSpec {
+
+		private boolean enableNative = false;
+
+		private boolean validated = false;
+
+		public boolean isEnableNative() {
+			return this.enableNative;
+		}
+
+		public boolean isValidated() {
+			return this.validated;
+		}
+
+		@Override
+		public EntityParamSpec useProviderStructuredOutput() {
+			this.enableNative = true;
+			return this;
+		}
+
+		@Override
+		public EntityParamSpec validateSchema() {
+			this.validated = true;
+			return this;
+		}
+
+	}
+
 	public static class DefaultCallResponseSpec implements CallResponseSpec {
 
 		private final ChatClientRequest request;
@@ -412,9 +452,27 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
+		public <T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type,
+				Consumer<EntityParamSpec> entityParamSpecConsumer) {
+			Assert.notNull(type, "type cannot be null");
+			Assert.notNull(entityParamSpecConsumer, "entityParamSpecConsumer cannot be null");
+			var converter = new BeanOutputConverter<>(type);
+			return doResponseEntity(converter, resolveAdvisorChain(entityParamSpecConsumer, converter));
+		}
+
+		@Override
 		public <T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type) {
 			Assert.notNull(type, "type cannot be null");
 			return doResponseEntity(new BeanOutputConverter<>(type));
+		}
+
+		@Override
+		public <T> ResponseEntity<ChatResponse, T> responseEntity(ParameterizedTypeReference<T> type,
+				Consumer<EntityParamSpec> entityParamSpecConsumer) {
+			Assert.notNull(type, "type cannot be null");
+			Assert.notNull(entityParamSpecConsumer, "entityParamSpecConsumer cannot be null");
+			var converter = new BeanOutputConverter<>(type);
+			return doResponseEntity(converter, resolveAdvisorChain(entityParamSpecConsumer, converter));
 		}
 
 		@Override
@@ -425,15 +483,40 @@ public class DefaultChatClient implements ChatClient {
 
 		@Override
 		public <T> ResponseEntity<ChatResponse, T> responseEntity(
+				StructuredOutputConverter<T> structuredOutputConverter,
+				Consumer<EntityParamSpec> entityParamSpecConsumer) {
+			Assert.notNull(structuredOutputConverter, "structuredOutputConverter cannot be null");
+			Assert.notNull(entityParamSpecConsumer, "entityParamSpecConsumer cannot be null");
+			return doResponseEntity(structuredOutputConverter,
+					resolveAdvisorChain(entityParamSpecConsumer, structuredOutputConverter));
+		}
+
+		@Override
+		public <T> ResponseEntity<ChatResponse, T> responseEntity(
 				StructuredOutputConverter<T> structuredOutputConverter) {
 			Assert.notNull(structuredOutputConverter, "structuredOutputConverter cannot be null");
 			return doResponseEntity(structuredOutputConverter);
 		}
 
 		protected <T> ResponseEntity<ChatResponse, T> doResponseEntity(StructuredOutputConverter<T> outputConverter) {
+			return this.doResponseEntity(outputConverter, this.advisorChain);
+		}
+
+		protected <T> ResponseEntity<ChatResponse, T> doResponseEntity(StructuredOutputConverter<T> outputConverter,
+				BaseAdvisorChain advisorChain) {
+
 			Assert.notNull(outputConverter, "structuredOutputConverter cannot be null");
-			var chatResponse = doGetObservableChatClientResponse(this.request, outputConverter.getFormat())
-				.chatResponse();
+			Assert.notNull(advisorChain, "advisor chain cannot be null");
+
+			this.request.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), outputConverter.getFormat());
+
+			if (Boolean.TRUE
+				.equals(this.request.context().get(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey()))) {
+				this.request.context()
+					.put(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey(), outputConverter.getJsonSchema());
+			}
+
+			var chatResponse = doGetObservableChatClientResponse(this.request, advisorChain).chatResponse();
 			var responseContent = getContentFromChatResponse(chatResponse);
 			if (responseContent == null) {
 				return new ResponseEntity<>(chatResponse, null);
@@ -443,31 +526,89 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
-		@Nullable
-		public <T> T entity(ParameterizedTypeReference<T> type) {
+		public <T> @Nullable T entity(ParameterizedTypeReference<T> type,
+				Consumer<EntityParamSpec> entitySpecConsumer) {
+			Assert.notNull(type, "type cannot be null");
+			Assert.notNull(entitySpecConsumer, "entitySpecConsumer cannot be null");
+			var converter = new BeanOutputConverter<>(type);
+			return doSingleWithBeanOutputConverter(converter, resolveAdvisorChain(entitySpecConsumer, converter));
+		}
+
+		@Override
+		public <T> @Nullable T entity(Class<T> type, Consumer<EntityParamSpec> entitySpecConsumer) {
+			Assert.notNull(type, "type cannot be null");
+			Assert.notNull(entitySpecConsumer, "entitySpecConsumer cannot be null");
+			var converter = new BeanOutputConverter<>(type);
+			return doSingleWithBeanOutputConverter(converter, resolveAdvisorChain(entitySpecConsumer, converter));
+		}
+
+		@Override
+		public <T> @Nullable T entity(ParameterizedTypeReference<T> type) {
 			Assert.notNull(type, "type cannot be null");
 			return doSingleWithBeanOutputConverter(new BeanOutputConverter<>(type));
 		}
 
 		@Override
-		@Nullable
-		public <T> T entity(StructuredOutputConverter<T> structuredOutputConverter) {
+		public <T> @Nullable T entity(StructuredOutputConverter<T> structuredOutputConverter,
+				Consumer<EntityParamSpec> entitySpecConsumer) {
+			Assert.notNull(structuredOutputConverter, "structuredOutputConverter cannot be null");
+			Assert.notNull(entitySpecConsumer, "entitySpecConsumer cannot be null");
+			return doSingleWithBeanOutputConverter(structuredOutputConverter,
+					resolveAdvisorChain(entitySpecConsumer, structuredOutputConverter));
+		}
+
+		@Override
+		public <T> @Nullable T entity(StructuredOutputConverter<T> structuredOutputConverter) {
 			Assert.notNull(structuredOutputConverter, "structuredOutputConverter cannot be null");
 			return doSingleWithBeanOutputConverter(structuredOutputConverter);
 		}
 
 		@Override
-		@Nullable
-		public <T> T entity(Class<T> type) {
+		public <T> @Nullable T entity(Class<T> type) {
 			Assert.notNull(type, "type cannot be null");
-			var outputConverter = new BeanOutputConverter<>(type);
-			return doSingleWithBeanOutputConverter(outputConverter);
+			return doSingleWithBeanOutputConverter(new BeanOutputConverter<>(type));
 		}
 
-		@Nullable
-		private <T> T doSingleWithBeanOutputConverter(StructuredOutputConverter<T> outputConverter) {
-			var chatResponse = doGetObservableChatClientResponse(this.request, outputConverter.getFormat())
-				.chatResponse();
+		private BaseAdvisorChain resolveAdvisorChain(Consumer<EntityParamSpec> consumer,
+				StructuredOutputConverter<?> converter) {
+			var spec = new DefaultEntityParamSpec();
+			consumer.accept(spec);
+			if (spec.isEnableNative()) {
+				this.request.context().put(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey(), true);
+			}
+			if (spec.isValidated()) {
+				var validationAdvisor = StructuredOutputValidationAdvisor.builder()
+					.outputJsonSchema(converter.getJsonSchema())
+					.build();
+				return this.advisorChain.mutate().push(validationAdvisor).build();
+			}
+			return this.advisorChain;
+		}
+
+		private <T> @Nullable T doSingleWithBeanOutputConverter(StructuredOutputConverter<T> outputConverter) {
+			return doSingleWithBeanOutputConverter(outputConverter, this.advisorChain);
+		}
+
+		private <T> @Nullable T doSingleWithBeanOutputConverter(StructuredOutputConverter<T> outputConverter,
+				BaseAdvisorChain advisorChain) {
+
+			if (StringUtils.hasText(outputConverter.getFormat())) {
+				// Used for default structured output format support, based on prompt
+				// instructions.
+				this.request.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), outputConverter.getFormat());
+			}
+
+			if (Boolean.TRUE
+				.equals(this.request.context().get(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey()))) {
+				// Used for native structured output support, e.g. AI model API should
+				// provide structured output support.
+				this.request.context()
+					.put(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey(), outputConverter.getJsonSchema());
+
+			}
+
+			var chatResponse = doGetObservableChatClientResponse(this.request, advisorChain).chatResponse();
+
 			var stringResponse = getContentFromChatResponse(chatResponse);
 			if (stringResponse == null) {
 				return null;
@@ -481,32 +622,29 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
-		@Nullable
-		public ChatResponse chatResponse() {
+		public @Nullable ChatResponse chatResponse() {
 			return doGetObservableChatClientResponse(this.request).chatResponse();
 		}
 
 		@Override
-		@Nullable
-		public String content() {
+		public @Nullable String content() {
 			ChatResponse chatResponse = doGetObservableChatClientResponse(this.request).chatResponse();
 			return getContentFromChatResponse(chatResponse);
 		}
 
 		private ChatClientResponse doGetObservableChatClientResponse(ChatClientRequest chatClientRequest) {
-			return doGetObservableChatClientResponse(chatClientRequest, null);
+			return doGetObservableChatClientResponse(chatClientRequest, this.advisorChain);
 		}
 
 		private ChatClientResponse doGetObservableChatClientResponse(ChatClientRequest chatClientRequest,
-				@Nullable String outputFormat) {
+				BaseAdvisorChain advisorChain) {
 
-			if (outputFormat != null) {
-				chatClientRequest.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), outputFormat);
-			}
+			String outputFormat = (String) chatClientRequest.context()
+				.getOrDefault(ChatClientAttributes.OUTPUT_FORMAT.getKey(), null);
 
 			ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
 				.request(chatClientRequest)
-				.advisors(this.advisorChain.getCallAdvisors())
+				.advisors(advisorChain.getCallAdvisors())
 				.stream(false)
 				.format(outputFormat)
 				.build();
@@ -517,7 +655,7 @@ public class DefaultChatClient implements ChatClient {
 			// CHECKSTYLE:OFF
 			var chatClientResponse = observation.observe(() -> {
 				// Apply the advisor chain that terminates with the ChatModelCallAdvisor.
-				var response = this.advisorChain.nextCall(chatClientRequest);
+				var response = advisorChain.nextCall(chatClientRequest);
 				observationContext.setResponse(response);
 				return response;
 			});
@@ -525,8 +663,7 @@ public class DefaultChatClient implements ChatClient {
 			return chatClientResponse != null ? chatClientResponse : ChatClientResponse.builder().build();
 		}
 
-		@Nullable
-		private static String getContentFromChatResponse(@Nullable ChatResponse chatResponse) {
+		private static @Nullable String getContentFromChatResponse(@Nullable ChatResponse chatResponse) {
 			return Optional.ofNullable(chatResponse)
 				.map(ChatResponse::getResult)
 				.map(Generation::getOutput)
@@ -572,8 +709,17 @@ public class DefaultChatClient implements ChatClient {
 						this.observationConvention, DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION,
 						() -> observationContext, this.observationRegistry);
 
-				observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null))
-					.start();
+				Observation parentObservation = contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
+				observation.parentObservation(parentObservation);
+				// Briefly make the parent observation current while starting this one, so
+				// Micrometer tracing derives the span's parent from the parent
+				// observation rather than from whatever scope happens to be open on the
+				// current thread (e.g. the servlet HTTP span). This keeps span parenting
+				// correct without relying on automatic context propagation.
+				try (Observation.Scope ignored = parentObservation != null ? parentObservation.openScope()
+						: Observation.Scope.NOOP) {
+					observation.start();
+				}
 
 				// @formatter:off
 				// Apply the advisor chain that terminates with the ChatModelStreamAdvisor.
@@ -593,6 +739,7 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
+		@SuppressWarnings("NullAway") // https://github.com/uber/NullAway/issues/1290
 		public Flux<ChatResponse> chatResponse() {
 			return doGetObservableFluxChatResponse(this.request).mapNotNull(ChatClientResponse::chatResponse);
 		}
@@ -600,8 +747,7 @@ public class DefaultChatClient implements ChatClient {
 		@Override
 		public Flux<String> content() {
 			// @formatter:off
-			return doGetObservableFluxChatResponse(this.request)
-					.mapNotNull(ChatClientResponse::chatResponse)
+			return chatResponse()
 					.map(r -> Optional.ofNullable(r.getResult())
 							.map(Generation::getOutput)
 							.map(AbstractMessage::getText)
@@ -618,14 +764,11 @@ public class DefaultChatClient implements ChatClient {
 
 		private final ChatClientObservationConvention chatClientObservationConvention;
 
-		@Nullable
-		private final AdvisorObservationConvention advisorObservationConvention;
+		private final @Nullable AdvisorObservationConvention advisorObservationConvention;
 
 		private final ChatModel chatModel;
 
 		private final List<Media> media = new ArrayList<>();
-
-		private final List<String> toolNames = new ArrayList<>();
 
 		private final List<ToolCallback> toolCallbacks = new ArrayList<>();
 
@@ -649,50 +792,34 @@ public class DefaultChatClient implements ChatClient {
 
 		private TemplateRenderer templateRenderer;
 
-		@Nullable
-		private String userText;
+		private @Nullable String userText;
 
-		@Nullable
-		private String systemText;
+		private @Nullable String systemText;
 
-		@Nullable
-		private ChatOptions chatOptions;
+		private ChatOptions.@Nullable Builder<?> optionsCustomizer;
+
+		private final ToolCallingAdvisor.Builder<?> toolCallingAdvisorBuilder;
 
 		/* copy constructor */
 		DefaultChatClientRequestSpec(DefaultChatClientRequestSpec ccr) {
 			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.userMetadata, ccr.systemText, ccr.systemParams,
-					ccr.systemMetadata, ccr.toolCallbacks, ccr.toolCallbackProviders, ccr.messages, ccr.toolNames,
-					ccr.media, ccr.chatOptions, ccr.advisors, ccr.advisorParams, ccr.observationRegistry,
+					ccr.systemMetadata, ccr.toolCallbacks, ccr.toolCallbackProviders, ccr.messages, ccr.media,
+					ccr.optionsCustomizer, ccr.advisors, ccr.advisorParams, ccr.observationRegistry,
 					ccr.chatClientObservationConvention, ccr.toolContext, ccr.templateRenderer,
-					ccr.advisorObservationConvention);
-		}
-
-		/**
-		 * @deprecated in favor of the other constructor.
-		 */
-		@Deprecated(since = "1.1.0", forRemoval = true)
-		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
-				Map<String, Object> userParams, Map<String, Object> userMetadata, @Nullable String systemText,
-				Map<String, Object> systemParams, Map<String, Object> systemMetadata, List<ToolCallback> toolCallbacks,
-				List<ToolCallbackProvider> toolCallbackProviders, List<Message> messages, List<String> toolNames,
-				List<Media> media, @Nullable ChatOptions chatOptions, List<Advisor> advisors,
-				Map<String, Object> advisorParams, ObservationRegistry observationRegistry,
-				@Nullable ChatClientObservationConvention chatClientObservationConvention,
-				Map<String, Object> toolContext, @Nullable TemplateRenderer templateRenderer) {
-			this(chatModel, userText, userParams, userMetadata, systemText, systemParams, systemMetadata, toolCallbacks,
-					toolCallbackProviders, messages, toolNames, media, chatOptions, advisors, advisorParams,
-					observationRegistry, chatClientObservationConvention, toolContext, templateRenderer, null);
+					ccr.advisorObservationConvention, ccr.toolCallingAdvisorBuilder);
 		}
 
 		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
 				Map<String, Object> userParams, Map<String, Object> userMetadata, @Nullable String systemText,
 				Map<String, Object> systemParams, Map<String, Object> systemMetadata, List<ToolCallback> toolCallbacks,
-				List<ToolCallbackProvider> toolCallbackProviders, List<Message> messages, List<String> toolNames,
-				List<Media> media, @Nullable ChatOptions chatOptions, List<Advisor> advisors,
-				Map<String, Object> advisorParams, ObservationRegistry observationRegistry,
+				List<ToolCallbackProvider> toolCallbackProviders, List<Message> messages, List<Media> media,
+				ChatOptions.@Nullable Builder<?> customizer, List<Advisor> advisors, Map<String, Object> advisorParams,
+				ObservationRegistry observationRegistry,
 				@Nullable ChatClientObservationConvention chatClientObservationConvention,
 				Map<String, Object> toolContext, @Nullable TemplateRenderer templateRenderer,
-				@Nullable AdvisorObservationConvention advisorObservationConvention) {
+				@Nullable AdvisorObservationConvention advisorObservationConvention,
+				ToolCallingAdvisor.Builder<?> toolCallingAdvisorBuilder) {
+
 			Assert.notNull(chatModel, "chatModel cannot be null");
 			Assert.notNull(userParams, "userParams cannot be null");
 			Assert.notNull(userMetadata, "userMetadata cannot be null");
@@ -701,16 +828,16 @@ public class DefaultChatClient implements ChatClient {
 			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 			Assert.notNull(toolCallbackProviders, "toolCallbackProviders cannot be null");
 			Assert.notNull(messages, "messages cannot be null");
-			Assert.notNull(toolNames, "toolNames cannot be null");
 			Assert.notNull(media, "media cannot be null");
 			Assert.notNull(advisors, "advisors cannot be null");
 			Assert.notNull(advisorParams, "advisorParams cannot be null");
 			Assert.notNull(observationRegistry, "observationRegistry cannot be null");
 			Assert.notNull(toolContext, "toolContext cannot be null");
+			Assert.notNull(toolCallingAdvisorBuilder, "toolCallingAdvisorBuilder cannot be null");
 
 			this.chatModel = chatModel;
-			this.chatOptions = chatOptions != null ? chatOptions.copy()
-					: (chatModel.getDefaultOptions() != null) ? chatModel.getDefaultOptions().copy() : null;
+			this.toolCallingAdvisorBuilder = toolCallingAdvisorBuilder;
+			this.optionsCustomizer = customizer != null ? customizer.clone() : null;
 
 			this.userText = userText;
 			this.userParams.putAll(userParams);
@@ -720,7 +847,6 @@ public class DefaultChatClient implements ChatClient {
 			this.systemParams.putAll(systemParams);
 			this.systemMetadata.putAll(systemMetadata);
 
-			this.toolNames.addAll(toolNames);
 			this.toolCallbacks.addAll(toolCallbacks);
 			this.toolCallbackProviders.addAll(toolCallbackProviders);
 			this.messages.addAll(messages);
@@ -735,8 +861,7 @@ public class DefaultChatClient implements ChatClient {
 			this.advisorObservationConvention = advisorObservationConvention;
 		}
 
-		@Nullable
-		public String getUserText() {
+		public @Nullable String getUserText() {
 			return this.userText;
 		}
 
@@ -748,8 +873,7 @@ public class DefaultChatClient implements ChatClient {
 			return this.userMetadata;
 		}
 
-		@Nullable
-		public String getSystemText() {
+		public @Nullable String getSystemText() {
 			return this.systemText;
 		}
 
@@ -759,11 +883,6 @@ public class DefaultChatClient implements ChatClient {
 
 		public Map<String, Object> getSystemMetadata() {
 			return this.systemMetadata;
-		}
-
-		@Nullable
-		public ChatOptions getChatOptions() {
-			return this.chatOptions;
 		}
 
 		public List<Advisor> getAdvisors() {
@@ -782,10 +901,6 @@ public class DefaultChatClient implements ChatClient {
 			return this.media;
 		}
 
-		public List<String> getToolNames() {
-			return this.toolNames;
-		}
-
 		public List<ToolCallback> getToolCallbacks() {
 			return this.toolCallbacks;
 		}
@@ -802,6 +917,14 @@ public class DefaultChatClient implements ChatClient {
 			return this.templateRenderer;
 		}
 
+		/* package */ ChatModel getChatModel() {
+			return this.chatModel;
+		}
+
+		/* package */ ChatOptions.@Nullable Builder<?> getOptionsCustomizer() {
+			return this.optionsCustomizer;
+		}
+
 		/**
 		 * Return a {@link ChatClient.Builder} to create a new {@link ChatClient} whose
 		 * settings are replicated from this {@link ChatClientRequest}.
@@ -810,31 +933,31 @@ public class DefaultChatClient implements ChatClient {
 		public Builder mutate() {
 			DefaultChatClientBuilder builder = (DefaultChatClientBuilder) ChatClient
 				.builder(this.chatModel, this.observationRegistry, this.chatClientObservationConvention,
-						this.advisorObservationConvention)
+						this.advisorObservationConvention, this.toolCallingAdvisorBuilder)
 				.defaultTemplateRenderer(this.templateRenderer)
-				.defaultToolCallbacks(this.toolCallbacks)
-				.defaultToolCallbacks(this.toolCallbackProviders.toArray(new ToolCallback[0]))
-				.defaultToolContext(this.toolContext)
-				.defaultToolNames(StringUtils.toStringArray(this.toolNames));
+				.defaultTools(this.toolCallbacks.toArray(new ToolCallback[0]))
+				.defaultTools((Object[]) this.toolCallbackProviders.toArray(new ToolCallbackProvider[0]))
+				.defaultToolContext(this.toolContext);
 
 			if (!CollectionUtils.isEmpty(this.advisors)) {
 				builder.defaultAdvisors(a -> a.advisors(this.advisors).params(this.advisorParams));
 			}
 
 			if (StringUtils.hasText(this.userText)) {
-				builder.defaultUser(u -> u.text(this.userText)
+				String text = this.userText;
+				builder.defaultUser(u -> u.text(text)
 					.params(this.userParams)
 					.media(this.media.toArray(new Media[0]))
 					.metadata(this.userMetadata));
 			}
 
 			if (StringUtils.hasText(this.systemText)) {
-				builder.defaultSystem(
-						s -> s.text(this.systemText).params(this.systemParams).metadata(this.systemMetadata));
+				String text = this.systemText;
+				builder.defaultSystem(s -> s.text(text).params(this.systemParams).metadata(this.systemMetadata));
 			}
 
-			if (this.chatOptions != null) {
-				builder.defaultOptions(this.chatOptions);
+			if (this.optionsCustomizer != null) {
+				builder.defaultOptions(this.optionsCustomizer);
 			}
 
 			builder.addMessages(this.messages);
@@ -884,57 +1007,81 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
-		public <T extends ChatOptions> ChatClientRequestSpec options(T options) {
-			Assert.notNull(options, "options cannot be null");
-			this.chatOptions = options;
-			return this;
-		}
-
 		@Override
-		public ChatClientRequestSpec toolNames(String... toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
-			this.toolNames.addAll(List.of(toolNames));
+		public <B extends ChatOptions.Builder<?>> ChatClientRequestSpec options(B customizer) {
+			Assert.notNull(customizer, "customizer cannot be null");
+			this.optionsCustomizer = customizer;
 			return this;
 		}
 
 		@Override
 		public ChatClientRequestSpec toolCallbacks(ToolCallback... toolCallbacks) {
-			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-			Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-			this.toolCallbacks.addAll(List.of(toolCallbacks));
-			return this;
+			return tools(toolCallbacks);
 		}
 
 		@Override
 		public ChatClientRequestSpec toolCallbacks(List<ToolCallback> toolCallbacks) {
-			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-			Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-			this.toolCallbacks.addAll(toolCallbacks);
-			return this;
+			return tools(toolCallbacks);
 		}
 
 		@Override
 		public ChatClientRequestSpec tools(Object... toolObjects) {
 			Assert.notNull(toolObjects, "toolObjects cannot be null");
 			Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
-			this.toolCallbacks.addAll(Arrays.asList(ToolCallbacks.from(toolObjects)));
+
+			List<Object> pojos = new ArrayList<>();
+			for (Object toolObject : toolObjects) {
+				if (toolObject instanceof ToolCallback toolCallback) {
+					this.toolCallbacks.add(toolCallback);
+				}
+				else if (toolObject instanceof ToolCallbackProvider toolCallbackProvider) {
+					this.toolCallbackProviders.add(toolCallbackProvider);
+				}
+				else if (toolObject instanceof ToolCallback[] callbacks) {
+					Assert.noNullElements(callbacks, "toolCallbacks cannot contain null elements");
+					this.toolCallbacks.addAll(Arrays.asList(callbacks));
+				}
+				else if (toolObject instanceof ToolCallbackProvider[] providers) {
+					Assert.noNullElements(providers, "toolCallbackProviders cannot contain null elements");
+					this.toolCallbackProviders.addAll(Arrays.asList(providers));
+				}
+				else if (toolObject instanceof Collection<?> collection) {
+					Assert.noNullElements(collection, "toolObjects collection cannot contain null elements");
+					for (Object element : collection) {
+						if (element instanceof ToolCallback toolCallback) {
+							this.toolCallbacks.add(toolCallback);
+						}
+						else if (element instanceof ToolCallbackProvider toolCallbackProvider) {
+							this.toolCallbackProviders.add(toolCallbackProvider);
+						}
+						else {
+							pojos.add(element);
+						}
+					}
+				}
+				else {
+					pojos.add(toolObject);
+				}
+			}
+
+			if (!pojos.isEmpty()) {
+				this.toolCallbacks.addAll(Arrays.asList(ToolCallbacks.from(pojos.toArray())));
+			}
+
 			return this;
 		}
 
 		@Override
 		public ChatClientRequestSpec toolCallbacks(ToolCallbackProvider... toolCallbackProviders) {
-			Assert.notNull(toolCallbackProviders, "toolCallbackProviders cannot be null");
-			Assert.noNullElements(toolCallbackProviders, "toolCallbackProviders cannot contain null elements");
-			this.toolCallbackProviders.addAll(List.of(toolCallbackProviders));
-			return this;
+			return tools(toolCallbackProviders);
 		}
 
 		@Override
 		public ChatClientRequestSpec toolContext(Map<String, Object> toolContext) {
-			Assert.notNull(toolContext, "toolContext cannot be null");
-			Assert.noNullElements(toolContext.keySet(), "toolContext keys cannot contain null elements");
-			Assert.noNullElements(toolContext.values(), "toolContext values cannot contain null elements");
+			Assert.notNull(toolContext, "context cannot be null");
+			Assert.noNullElements(toolContext.keySet(), "context keys cannot contain null elements");
+			Assert.noNullElements(toolContext.values(), "context values cannot contain null elements");
+			toolContext.keySet().forEach(key -> Assert.hasText(key, "context key cannot be null or empty"));
 			this.toolContext.putAll(toolContext);
 			return this;
 		}
@@ -1040,15 +1187,67 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		private BaseAdvisorChain buildAdvisorChain() {
+			autoRegisterToolCallingAdvisor();
+			validateSingleToolAdvisor();
+
 			// At the stack bottom add the model call advisors.
 			// They play the role of the last advisors in the advisor chain.
-			this.advisors.add(ChatModelCallAdvisor.builder().chatModel(this.chatModel).build());
-			this.advisors.add(ChatModelStreamAdvisor.builder().chatModel(this.chatModel).build());
+			List<Advisor> chain = new ArrayList<>(this.advisors);
+			chain.add(ChatModelCallAdvisor.builder().chatModel(this.chatModel).build());
+			chain.add(ChatModelStreamAdvisor.builder().chatModel(this.chatModel).build());
 
 			return DefaultAroundAdvisorChain.builder(this.observationRegistry)
 				.observationConvention(this.advisorObservationConvention)
-				.pushAll(this.advisors)
+				.pushAll(chain)
 				.build();
+		}
+
+		/**
+		 * Auto-registers a {@link ToolCallingAdvisor} unless auto-registration is
+		 * disabled or a {@link ToolAdvisor} is already present in the chain. The advisor
+		 * is always registered so that tools injected dynamically at runtime (e.g. by
+		 * another advisor) are handled correctly even when no static tools are configured
+		 * on the call.
+		 * <p>
+		 * Disables the advisor's internal conversation history when a
+		 * {@link MemoryAdvisor} with a higher order (i.e. downstream in the request
+		 * direction) is already registered, since that memory advisor will handle history
+		 * for every tool-call iteration.
+		 * <p>
+		 * {@code streamToolCallResponses} must be pre-configured on the
+		 * {@code toolCallingAdvisorBuilder} passed to {@link DefaultChatClient}.
+		 */
+		private void autoRegisterToolCallingAdvisor() {
+
+			boolean autoRegisterDisabled = Boolean.FALSE
+				.equals(this.advisorParams.get(ChatClientAttributes.TOOL_CALLING_ADVISOR_AUTO_REGISTER.getKey()));
+			if (autoRegisterDisabled) {
+				return;
+			}
+
+			boolean hasToolCallingAdvisor = this.advisors.stream().anyMatch(a -> a instanceof ToolAdvisor);
+			if (hasToolCallingAdvisor) {
+				return;
+			}
+
+			int configuredOrder = this.toolCallingAdvisorBuilder.getAdvisorOrder();
+
+			boolean hasDownstreamMemoryAdvisor = this.advisors.stream()
+				.anyMatch(a -> a instanceof MemoryAdvisor && a.getOrder() > configuredOrder);
+
+			this.advisors.add(this.toolCallingAdvisorBuilder.copy()
+				.conversationHistoryEnabled(!hasDownstreamMemoryAdvisor)
+				.build());
+		}
+
+		private void validateSingleToolAdvisor() {
+			List<Advisor> toolAdvisors = this.advisors.stream().filter(a -> a instanceof ToolAdvisor).toList();
+			if (toolAdvisors.size() > 1) {
+				String names = String.join(", ",
+						toolAdvisors.stream().map(a -> a.getName() + " (order=" + a.getOrder() + ")").toList());
+				throw new IllegalStateException("At most one ToolAdvisor is allowed in the advisor chain, but found "
+						+ toolAdvisors.size() + ": [" + names + "]");
+			}
 		}
 
 	}

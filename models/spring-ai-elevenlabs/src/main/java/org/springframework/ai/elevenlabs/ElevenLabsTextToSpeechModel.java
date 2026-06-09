@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,51 +17,52 @@
 package org.springframework.ai.elevenlabs;
 
 import java.util.List;
+import java.util.Objects;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.audio.tts.Speech;
-import org.springframework.ai.audio.tts.StreamingTextToSpeechModel;
 import org.springframework.ai.audio.tts.TextToSpeechModel;
 import org.springframework.ai.audio.tts.TextToSpeechPrompt;
 import org.springframework.ai.audio.tts.TextToSpeechResponse;
 import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 /**
- * Implementation of the {@link TextToSpeechModel} and {@link StreamingTextToSpeechModel}
- * interfaces
+ * Implementation of the {@link TextToSpeechModel} interface for ElevenLabs TTS API.
  *
  * @author Alexandros Pappas
+ * @author Sebastien Deleuze
  */
-public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, StreamingTextToSpeechModel {
+public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final Log logger = LogFactory.getLog(getClass());
 
 	private final ElevenLabsApi elevenLabsApi;
 
 	private final RetryTemplate retryTemplate;
 
-	private final ElevenLabsTextToSpeechOptions defaultOptions;
+	private final ElevenLabsTextToSpeechOptions options;
 
-	public ElevenLabsTextToSpeechModel(ElevenLabsApi elevenLabsApi, ElevenLabsTextToSpeechOptions defaultOptions) {
-		this(elevenLabsApi, defaultOptions, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+	public ElevenLabsTextToSpeechModel(ElevenLabsApi elevenLabsApi, ElevenLabsTextToSpeechOptions options) {
+		this(elevenLabsApi, options, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
-	public ElevenLabsTextToSpeechModel(ElevenLabsApi elevenLabsApi, ElevenLabsTextToSpeechOptions defaultOptions,
+	public ElevenLabsTextToSpeechModel(ElevenLabsApi elevenLabsApi, ElevenLabsTextToSpeechOptions options,
 			RetryTemplate retryTemplate) {
 		Assert.notNull(elevenLabsApi, "ElevenLabsApi must not be null");
-		Assert.notNull(defaultOptions, "ElevenLabsSpeechOptions must not be null");
+		Assert.notNull(options, "ElevenLabsSpeechOptions must not be null");
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
 
 		this.elevenLabsApi = elevenLabsApi;
-		this.defaultOptions = defaultOptions;
+		this.options = options;
 		this.retryTemplate = retryTemplate;
 	}
 
@@ -73,11 +74,13 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, Streaming
 	public TextToSpeechResponse call(TextToSpeechPrompt prompt) {
 		RequestContext requestContext = prepareRequest(prompt);
 
-		byte[] audioData = this.retryTemplate.execute(context -> {
+		byte[] audioData = RetryUtils.execute(this.retryTemplate, () -> {
 			var response = this.elevenLabsApi.textToSpeech(requestContext.request, requestContext.voiceId,
 					requestContext.queryParameters);
 			if (response.getBody() == null) {
-				logger.warn("No speech response returned for request: {}", requestContext.request);
+				if (logger.isWarnEnabled()) {
+					logger.warn("No speech response returned for request: " + requestContext.request);
+				}
 				return new byte[0];
 			}
 			return response.getBody();
@@ -90,15 +93,16 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, Streaming
 	public Flux<TextToSpeechResponse> stream(TextToSpeechPrompt prompt) {
 		RequestContext requestContext = prepareRequest(prompt);
 
-		return this.retryTemplate.execute(context -> this.elevenLabsApi
+		return RetryUtils.execute(this.retryTemplate, () -> this.elevenLabsApi
 			.textToSpeechStream(requestContext.request, requestContext.voiceId, requestContext.queryParameters)
-			.map(entity -> new TextToSpeechResponse(List.of(new Speech(entity.getBody())))));
+			.map(entity -> new TextToSpeechResponse(List.of(new Speech(Objects.requireNonNull(entity.getBody()))))));
 	}
 
 	private RequestContext prepareRequest(TextToSpeechPrompt prompt) {
 		ElevenLabsApi.SpeechRequest request = createRequest(prompt);
 		ElevenLabsTextToSpeechOptions options = getOptions(prompt);
 		String voiceId = options.getVoice();
+		Assert.state(voiceId != null, "voiceId must not be null");
 		MultiValueMap<String, String> queryParameters = buildQueryParameters(options);
 
 		return new RequestContext(request, voiceId, queryParameters);
@@ -144,50 +148,62 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, Streaming
 		ElevenLabsTextToSpeechOptions runtimeOptions = (prompt
 			.getOptions() instanceof ElevenLabsTextToSpeechOptions elevenLabsSpeechOptions) ? elevenLabsSpeechOptions
 					: null;
-		return (runtimeOptions != null) ? merge(runtimeOptions, this.defaultOptions) : this.defaultOptions;
+		return (runtimeOptions != null) ? merge(runtimeOptions, this.options) : this.options;
 	}
 
 	private ElevenLabsTextToSpeechOptions merge(ElevenLabsTextToSpeechOptions runtimeOptions,
-			ElevenLabsTextToSpeechOptions defaultOptions) {
+			ElevenLabsTextToSpeechOptions options) {
 		return ElevenLabsTextToSpeechOptions.builder()
-			.modelId(getOrDefault(runtimeOptions.getModelId(), defaultOptions.getModelId()))
-			.voice(getOrDefault(runtimeOptions.getVoice(), defaultOptions.getVoice()))
-			.voiceId(getOrDefault(runtimeOptions.getVoiceId(), defaultOptions.getVoiceId()))
-			.format(getOrDefault(runtimeOptions.getFormat(), defaultOptions.getFormat()))
-			.outputFormat(getOrDefault(runtimeOptions.getOutputFormat(), defaultOptions.getOutputFormat()))
-			.voiceSettings(getOrDefault(runtimeOptions.getVoiceSettings(), defaultOptions.getVoiceSettings()))
-			.languageCode(getOrDefault(runtimeOptions.getLanguageCode(), defaultOptions.getLanguageCode()))
+			.modelId(getOrDefault(runtimeOptions.getModelId(), options.getModelId()))
+			.voice(getOrDefault(runtimeOptions.getVoice(), options.getVoice()))
+			.voiceId(getOrDefault(runtimeOptions.getVoiceId(), options.getVoiceId()))
+			.format(getOrDefault(runtimeOptions.getFormat(), options.getFormat()))
+			.outputFormat(getOrDefault(runtimeOptions.getOutputFormat(), options.getOutputFormat()))
+			.voiceSettings(getOrDefault(runtimeOptions.getVoiceSettings(), options.getVoiceSettings()))
+			.languageCode(getOrDefault(runtimeOptions.getLanguageCode(), options.getLanguageCode()))
 			.pronunciationDictionaryLocators(getOrDefault(runtimeOptions.getPronunciationDictionaryLocators(),
-					defaultOptions.getPronunciationDictionaryLocators()))
-			.seed(getOrDefault(runtimeOptions.getSeed(), defaultOptions.getSeed()))
-			.previousText(getOrDefault(runtimeOptions.getPreviousText(), defaultOptions.getPreviousText()))
-			.nextText(getOrDefault(runtimeOptions.getNextText(), defaultOptions.getNextText()))
-			.previousRequestIds(
-					getOrDefault(runtimeOptions.getPreviousRequestIds(), defaultOptions.getPreviousRequestIds()))
-			.nextRequestIds(getOrDefault(runtimeOptions.getNextRequestIds(), defaultOptions.getNextRequestIds()))
-			.applyTextNormalization(getOrDefault(runtimeOptions.getApplyTextNormalization(),
-					defaultOptions.getApplyTextNormalization()))
+					options.getPronunciationDictionaryLocators()))
+			.seed(getOrDefault(runtimeOptions.getSeed(), options.getSeed()))
+			.previousText(getOrDefault(runtimeOptions.getPreviousText(), options.getPreviousText()))
+			.nextText(getOrDefault(runtimeOptions.getNextText(), options.getNextText()))
+			.previousRequestIds(getOrDefault(runtimeOptions.getPreviousRequestIds(), options.getPreviousRequestIds()))
+			.nextRequestIds(getOrDefault(runtimeOptions.getNextRequestIds(), options.getNextRequestIds()))
+			.applyTextNormalization(
+					getOrDefault(runtimeOptions.getApplyTextNormalization(), options.getApplyTextNormalization()))
 			.applyLanguageTextNormalization(getOrDefault(runtimeOptions.getApplyLanguageTextNormalization(),
-					defaultOptions.getApplyLanguageTextNormalization()))
+					options.getApplyLanguageTextNormalization()))
 			.build();
 	}
 
-	private <T> T getOrDefault(T runtimeValue, T defaultValue) {
+	private <T> @Nullable T getOrDefault(@Nullable T runtimeValue, @Nullable T defaultValue) {
 		return runtimeValue != null ? runtimeValue : defaultValue;
 	}
 
+	/**
+	 * @since 2.0.0
+	 */
 	@Override
+	public ElevenLabsTextToSpeechOptions getOptions() {
+		return this.options;
+	}
+
+	/**
+	 * @deprecated use {@link #getOptions()} instead.
+	 */
+	@Deprecated(forRemoval = true)
+	@Override
+	@SuppressWarnings("removal")
 	public ElevenLabsTextToSpeechOptions getDefaultOptions() {
-		return this.defaultOptions;
+		return this.options;
 	}
 
 	public static final class Builder {
 
-		private ElevenLabsApi elevenLabsApi;
+		private @Nullable ElevenLabsApi elevenLabsApi;
 
 		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
 
-		private ElevenLabsTextToSpeechOptions defaultOptions = ElevenLabsTextToSpeechOptions.builder().build();
+		private ElevenLabsTextToSpeechOptions options = ElevenLabsTextToSpeechOptions.builder().build();
 
 		public Builder elevenLabsApi(ElevenLabsApi elevenLabsApi) {
 			this.elevenLabsApi = elevenLabsApi;
@@ -199,15 +215,15 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, Streaming
 			return this;
 		}
 
-		public Builder defaultOptions(ElevenLabsTextToSpeechOptions defaultOptions) {
-			this.defaultOptions = defaultOptions;
+		public Builder options(ElevenLabsTextToSpeechOptions options) {
+			this.options = options;
 			return this;
 		}
 
 		public ElevenLabsTextToSpeechModel build() {
 			Assert.notNull(this.elevenLabsApi, "ElevenLabsApi must not be null");
-			Assert.notNull(this.defaultOptions, "ElevenLabsSpeechOptions must not be null");
-			return new ElevenLabsTextToSpeechModel(this.elevenLabsApi, this.defaultOptions, this.retryTemplate);
+			Assert.notNull(this.options, "ElevenLabsSpeechOptions must not be null");
+			return new ElevenLabsTextToSpeechModel(this.elevenLabsApi, this.options, this.retryTemplate);
 		}
 
 	}

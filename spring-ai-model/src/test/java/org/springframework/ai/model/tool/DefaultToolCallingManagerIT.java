@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,10 +91,11 @@ class DefaultToolCallingManagerIT {
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultToolCallingObservationConvention.DEFAULT_NAME)
 			.that()
-			.hasContextualNameEqualTo(SpringAiKind.TOOL_CALL.value() + " " + toolCallback.getToolDefinition().name())
+			.hasContextualNameEqualTo(
+					AiOperationType.EXECUTE_TOOL.value() + " " + toolCallback.getToolDefinition().name())
 			.hasLowCardinalityKeyValue(
 					ToolCallingObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
-					AiOperationType.FRAMEWORK.value())
+					AiOperationType.EXECUTE_TOOL.value())
 			.hasLowCardinalityKeyValue(
 					ToolCallingObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(),
 					AiProvider.SPRING_AI.value())

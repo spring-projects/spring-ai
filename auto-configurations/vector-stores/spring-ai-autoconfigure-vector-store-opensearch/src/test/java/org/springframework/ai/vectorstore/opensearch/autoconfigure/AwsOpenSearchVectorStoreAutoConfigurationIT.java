@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -63,8 +62,7 @@ class AwsOpenSearchVectorStoreAutoConfigurationIT {
 	private static final String DOCUMENT_INDEX = "auto-spring-ai-document-index";
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(OpenSearchVectorStoreAutoConfiguration.class,
-				SpringAiRetryAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(OpenSearchVectorStoreAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.ai.vectorstore.opensearch.initialize-schema=true",
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".aws.host="

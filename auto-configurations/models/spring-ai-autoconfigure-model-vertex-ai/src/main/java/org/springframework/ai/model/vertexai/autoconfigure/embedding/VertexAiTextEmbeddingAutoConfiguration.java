@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
 import org.springframework.ai.vertexai.embedding.text.VertexAiTextEmbeddingModel;
 import org.springframework.beans.factory.ObjectProvider;
@@ -31,7 +31,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 /**
  * Auto-configuration for Vertex AI Gemini Chat.
@@ -39,9 +39,11 @@ import org.springframework.retry.support.RetryTemplate;
  * @author Christian Tzolov
  * @author Mark Pollack
  * @author Ilayaperumal Gopinathan
+ * @author Yanming Zhou
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
-@AutoConfiguration(after = { SpringAiRetryAutoConfiguration.class, VertexAiEmbeddingConnectionAutoConfiguration.class })
+@AutoConfiguration
 @ConditionalOnClass(VertexAiTextEmbeddingModel.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.TEXT_EMBEDDING_MODEL, havingValue = SpringAIModels.VERTEX_AI,
 		matchIfMissing = true)
@@ -51,12 +53,13 @@ public class VertexAiTextEmbeddingAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public VertexAiTextEmbeddingModel textEmbedding(VertexAiEmbeddingConnectionDetails connectionDetails,
-			VertexAiTextEmbeddingProperties textEmbeddingProperties, RetryTemplate retryTemplate,
+			VertexAiTextEmbeddingProperties textEmbeddingProperties, ObjectProvider<RetryTemplate> retryTemplate,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
-		var embeddingModel = new VertexAiTextEmbeddingModel(connectionDetails, textEmbeddingProperties.getOptions(),
-				retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		var embeddingModel = new VertexAiTextEmbeddingModel(connectionDetails, textEmbeddingProperties.toOptions(),
+				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE),
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
 

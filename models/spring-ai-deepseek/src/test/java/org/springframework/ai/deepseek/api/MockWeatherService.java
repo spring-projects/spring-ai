@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,8 +78,8 @@ public class MockWeatherService implements Function<MockWeatherService.Request, 
 	@JsonClassDescription("Weather API request")
 	public record Request(@JsonProperty(required = true,
 			value = "location") @JsonPropertyDescription("The city and state e.g. San Francisco, CA") String location,
-			@JsonProperty("lat") @JsonPropertyDescription("The city latitude") double lat,
-			@JsonProperty("lon") @JsonPropertyDescription("The city longitude") double lon,
+			@JsonProperty("lat") @JsonPropertyDescription("The city latitude") Double lat,
+			@JsonProperty("lon") @JsonPropertyDescription("The city longitude") Double lon,
 			@JsonProperty(required = true, value = "unit") @JsonPropertyDescription("Temperature unit") Unit unit) {
 
 	}

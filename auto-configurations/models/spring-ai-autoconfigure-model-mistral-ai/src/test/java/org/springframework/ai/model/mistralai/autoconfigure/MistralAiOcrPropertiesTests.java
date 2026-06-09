@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.mistralai.ocr.MistralOcrApi;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,13 +31,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@link MistralAiCommonProperties}.
  *
  * @author Alexandros Pappas
+ * @author Issam El-atif
  * @since 1.1.0
  */
 class MistralAiOcrPropertiesTests {
 
 	// Define common configurations to load in tests
-	private final AutoConfigurations autoConfigurations = AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-			RestClientAutoConfiguration.class, MistralAiOcrAutoConfiguration.class);
+	private final AutoConfigurations autoConfigurations = AutoConfigurations.of(MistralAiOcrAutoConfiguration.class,
+			RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class);
 
 	@Test
 	void commonPropertiesAppliedToOcr() {
@@ -59,8 +60,7 @@ class MistralAiOcrPropertiesTests {
 				assertThat(ocrProps.getBaseUrl()).isEqualTo(MistralAiCommonProperties.DEFAULT_BASE_URL);
 				assertThat(ocrProps.getApiKey()).isNull();
 
-				assertThat(ocrProps.getOptions()).isNotNull();
-				assertThat(ocrProps.getOptions().getModel()).isEqualTo("mistral-ocr-specific-model");
+				assertThat(ocrProps.getModel()).isEqualTo("mistral-ocr-specific-model");
 
 				assertThat(context).hasSingleBean(MistralOcrApi.class);
 			});
@@ -87,8 +87,7 @@ class MistralAiOcrPropertiesTests {
 				assertThat(ocrProps.getBaseUrl()).isEqualTo("OCR_BASE_URL");
 				assertThat(ocrProps.getApiKey()).isEqualTo("OCR_API_KEY");
 
-				assertThat(ocrProps.getOptions()).isNotNull();
-				assertThat(ocrProps.getOptions().getModel()).isEqualTo("mistral-ocr-default");
+				assertThat(ocrProps.getModel()).isEqualTo("mistral-ocr-default");
 
 				assertThat(context).hasSingleBean(MistralOcrApi.class);
 			});
@@ -99,21 +98,18 @@ class MistralAiOcrPropertiesTests {
 		new ApplicationContextRunner().withPropertyValues("spring.ai.mistralai.api-key=API_KEY",
 				"spring.ai.mistralai.ocr.options.model=custom-ocr-model",
 				"spring.ai.mistralai.ocr.options.id=ocr-request-id-123", "spring.ai.mistralai.ocr.options.pages=0,1,5",
-				"spring.ai.mistralai.ocr.options.includeImageBase64=true",
-				"spring.ai.mistralai.ocr.options.imageLimit=25", "spring.ai.mistralai.ocr.options.imageMinSize=150")
+				"spring.ai.mistralai.ocr.options.include-image-base64=true",
+				"spring.ai.mistralai.ocr.options.image-limit=25", "spring.ai.mistralai.ocr.options.image-min-size=150")
 			.withConfiguration(this.autoConfigurations)
 			.run(context -> {
 				assertThat(context).hasSingleBean(MistralAiOcrProperties.class);
 				var ocrProps = context.getBean(MistralAiOcrProperties.class);
-				var options = ocrProps.getOptions();
-
-				assertThat(options).isNotNull();
-				assertThat(options.getModel()).isEqualTo("custom-ocr-model");
-				assertThat(options.getId()).isEqualTo("ocr-request-id-123");
-				assertThat(options.getPages()).containsExactly(0, 1, 5);
-				assertThat(options.getIncludeImageBase64()).isTrue();
-				assertThat(options.getImageLimit()).isEqualTo(25);
-				assertThat(options.getImageMinSize()).isEqualTo(150);
+				assertThat(ocrProps.getModel()).isEqualTo("custom-ocr-model");
+				assertThat(ocrProps.getId()).isEqualTo("ocr-request-id-123");
+				assertThat(ocrProps.getPages()).containsExactly(0, 1, 5);
+				assertThat(ocrProps.getIncludeImageBase64()).isTrue();
+				assertThat(ocrProps.getImageLimit()).isEqualTo(25);
+				assertThat(ocrProps.getImageMinSize()).isEqualTo(150);
 			});
 	}
 

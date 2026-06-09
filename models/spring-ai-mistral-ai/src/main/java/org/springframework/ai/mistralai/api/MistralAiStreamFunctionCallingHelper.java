@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,20 +22,24 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionChunk.ChunkChoice;
-import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionFinishReason;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ChatCompletionFunction;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ToolCall;
+import org.springframework.ai.mistralai.api.MistralAiApi.FinishReason;
 import org.springframework.ai.mistralai.api.MistralAiApi.LogProbs;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
  * Helper class to support Streaming function calling.
- *
+ * <p>
  * It can merge the streamed ChatCompletionChunk in case of function calling message.
+ * </p>
  *
  * @author Christian Tzolov
  * @since 0.8.1
@@ -48,7 +52,7 @@ public class MistralAiStreamFunctionCallingHelper {
 	 * @param current the current ChatCompletionChunk
 	 * @return the merged ChatCompletionChunk
 	 */
-	public ChatCompletionChunk merge(ChatCompletionChunk previous, ChatCompletionChunk current) {
+	public ChatCompletionChunk merge(@Nullable ChatCompletionChunk previous, ChatCompletionChunk current) {
 
 		if (previous == null) {
 			return current;
@@ -62,6 +66,7 @@ public class MistralAiStreamFunctionCallingHelper {
 		ChunkChoice previousChoice0 = (CollectionUtils.isEmpty(previous.choices()) ? null : previous.choices().get(0));
 		ChunkChoice currentChoice0 = (CollectionUtils.isEmpty(current.choices()) ? null : current.choices().get(0));
 
+		Assert.state(currentChoice0 != null, "Current choices must not be null or empty");
 		ChunkChoice choice = merge(previousChoice0, currentChoice0);
 
 		MistralAiApi.Usage usage = (current.usage() != null ? current.usage() : previous.usage());
@@ -69,7 +74,7 @@ public class MistralAiStreamFunctionCallingHelper {
 		return new ChatCompletionChunk(id, object, created, model, List.of(choice), usage);
 	}
 
-	private ChunkChoice merge(ChunkChoice previous, ChunkChoice current) {
+	private ChunkChoice merge(@Nullable ChunkChoice previous, ChunkChoice current) {
 		if (previous == null) {
 			if (current.delta() != null && current.delta().toolCalls() != null) {
 				Optional<String> id = current.delta()
@@ -97,8 +102,7 @@ public class MistralAiStreamFunctionCallingHelper {
 			return current;
 		}
 
-		ChatCompletionFinishReason finishReason = (current.finishReason() != null ? current.finishReason()
-				: previous.finishReason());
+		FinishReason finishReason = (current.finishReason() != null ? current.finishReason() : previous.finishReason());
 		Integer index = (current.index() != null ? current.index() : previous.index());
 
 		ChatCompletionMessage message = merge(previous.delta(), current.delta());
@@ -108,7 +112,7 @@ public class MistralAiStreamFunctionCallingHelper {
 	}
 
 	private ChatCompletionMessage merge(ChatCompletionMessage previous, ChatCompletionMessage current) {
-		String content = (current.content() != null ? current.content()
+		var content = (current.content() != null ? current.content()
 				: (previous.content() != null) ? previous.content() : "");
 		Role role = (current.role() != null ? current.role() : previous.role());
 		role = (role != null ? role : Role.ASSISTANT); // default to ASSISTANT (if null
@@ -145,7 +149,7 @@ public class MistralAiStreamFunctionCallingHelper {
 		return new ChatCompletionMessage(content, role, name, toolCalls);
 	}
 
-	private ToolCall merge(ToolCall previous, ToolCall current) {
+	private ToolCall merge(@Nullable ToolCall previous, ToolCall current) {
 		if (previous == null) {
 			return current;
 		}
@@ -199,8 +203,7 @@ public class MistralAiStreamFunctionCallingHelper {
 		}
 
 		var choice = choices.get(0);
-		return choice.finishReason() == ChatCompletionFinishReason.TOOL_CALLS;
+		return choice.finishReason() == FinishReason.TOOL_CALLS;
 	}
 
 }
-// ---

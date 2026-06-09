@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,6 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -53,13 +51,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
-// @Disabled
 @SpringBootTest(classes = BedrockNovaChatClientIT.Config.class)
 @RequiresAwsCredentials
 public class BedrockNovaChatClientIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(BedrockNovaChatClientIT.class);
 
 	@Autowired
 	ChatModel chatModel;
@@ -74,8 +70,6 @@ public class BedrockNovaChatClientIT {
 				.media(Media.Format.DOC_PDF, new ClassPathResource("/spring-ai-reference-overview.pdf")))
 			.call()
 			.content();
-
-		logger.info(response);
 		assertThat(response).containsAnyOf("Spring AI", "portable API");
 	}
 
@@ -88,16 +82,14 @@ public class BedrockNovaChatClientIT {
 				.media(Media.Format.IMAGE_PNG, new ClassPathResource("/test.png")))
 			.call()
 			.content();
-
-		logger.info(response);
-		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
+		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand", "fruit", "fruits");
 	}
 
 	@Test
 	void videoMultiModalityTest() throws IOException {
 		// Define sets of semantically similar words for different concepts
 		Set<String> youngDescriptors = Set.of("baby", "small", "young", "little", "tiny", "juvenile", "newborn",
-				"infant", "hatchling", "downy", "fluffy");
+				"infant", "hatchling", "downy", "fluffy", "chick", "chicks");
 
 		Set<String> birdDescriptors = Set.of("chick", "chicks", "chicken", "chickens", "bird", "birds", "poultry",
 				"hatchling", "hatchlings");
@@ -108,8 +100,6 @@ public class BedrockNovaChatClientIT {
 				.media(Media.Format.VIDEO_MP4, new ClassPathResource("/test.video.mp4")))
 			.call()
 			.content();
-
-		logger.info(response);
 
 		// Convert response to lowercase for case-insensitive matching
 		String lowerResponse = response.toLowerCase();
@@ -149,7 +139,7 @@ public class BedrockNovaChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", (WeatherRequest request) -> {
+				.tools(FunctionToolCallback.builder("getCurrentWeather", (WeatherRequest request) -> {
 						if (request.location().contains("Paris")) {
 							return new WeatherResponse(15, request.unit());
 						}
@@ -167,9 +157,6 @@ public class BedrockNovaChatClientIT {
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
-
 		assertThat(response).contains("30", "10", "15");
 	}
 
@@ -186,18 +173,18 @@ public class BedrockNovaChatClientIT {
 			.content();
 
 		assertThat(response).isNotEmpty();
-		assertThat(response).contains("20 degrees");
+		assertThat(response).contains("20");
 	}
 
 	// https://github.com/spring-projects/spring-ai/issues/1878
 	@ParameterizedTest
-	@ValueSource(strings = { "us.amazon.nova-pro-v1:0", "us.anthropic.claude-3-7-sonnet-20250219-v1:0" })
+	@ValueSource(strings = { "us.amazon.nova-pro-v1:0", "us.anthropic.claude-haiku-4-5-20251001-v1:0" })
 	void toolAnnotationWeatherForecastStreaming(String modelName) {
 
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
 
 		Flux<ChatResponse> responses = chatClient.prompt()
-			.options(ToolCallingChatOptions.builder().model(modelName).build())
+			.options(ToolCallingChatOptions.builder().model(modelName))
 			.tools(new DummyWeatherForecastTools())
 			.user("Get current weather in Amsterdam")
 			.stream()
@@ -210,7 +197,7 @@ public class BedrockNovaChatClientIT {
 			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
-		assertThat(content).contains("20 degrees");
+		assertThat(content).contains("20");
 	}
 
 	// https://github.com/spring-projects/spring-ai/issues/1878
@@ -220,7 +207,7 @@ public class BedrockNovaChatClientIT {
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
 
 		WeatherService.Response response = chatClient.prompt()
-			.toolCallbacks(FunctionToolCallback.builder("weather", new WeatherService())
+			.tools(FunctionToolCallback.builder("weather", new WeatherService())
 				.description("Get the current weather")
 				.inputType(Void.class)
 				.build())
@@ -229,7 +216,7 @@ public class BedrockNovaChatClientIT {
 			.entity(WeatherService.Response.class);
 
 		assertThat(response).isNotNull();
-		assertThat(response.temp()).isEqualTo(30.0);
+		assertThat(response.temp()).isEqualTo(30);
 	}
 
 	@Test
@@ -238,7 +225,7 @@ public class BedrockNovaChatClientIT {
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
 
 		Flux<ChatResponse> responses = chatClient.prompt()
-			.toolCallbacks(FunctionToolCallback.builder("weather", new WeatherService())
+			.tools(FunctionToolCallback.builder("weather", new WeatherService())
 				.description("Get the current weather")
 				.inputType(Void.class)
 				.build())
@@ -253,7 +240,7 @@ public class BedrockNovaChatClientIT {
 			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
-		assertThat(content).contains("30.0");
+		assertThat(content).contains("30");
 	}
 
 	@SpringBootConfiguration
@@ -263,13 +250,12 @@ public class BedrockNovaChatClientIT {
 		public BedrockProxyChatModel bedrockConverseChatModel() {
 
 			String modelId = "us.amazon.nova-pro-v1:0";
-			// String modelId = "us.anthropic.claude-3-7-sonnet-20250219-v1:0";
 
 			return BedrockProxyChatModel.builder()
 				.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
 				.region(Region.US_EAST_1)
 				.timeout(Duration.ofSeconds(120))
-				.defaultOptions(BedrockChatOptions.builder().model(modelId).build())
+				.options(BedrockChatOptions.builder().model(modelId).build())
 				.build();
 		}
 

@@ -1,5 +1,18 @@
 [[Speech]]
 = Speech Model API
 
-Spring AI provides support for OpenAI's Text-To-Speech (TTS) API.
-When additional providers for Speech are implemented, a common `SpeechModel`  and `StreamingSpeechModel` interface will be extracted.
+[NOTE]
+====
+This page has been superseded by the new Text-to-Speech (TTS) documentation.
+
+Please refer to xref:api/audio/speech.adoc[Text-To-Speech (TTS) API] for the current shared interfaces (`TextToSpeechModel` and `StreamingTextToSpeechModel`).
+
+The old provider-specific classes (`SpeechModel`, `StreamingSpeechModel`, `SpeechPrompt`, `SpeechResponse`) have been removed in favor of shared interfaces that work across all TTS providers (OpenAI, ElevenLabs, and future providers).
+====
+
+== Redirects
+
+* For general TTS documentation: xref:api/audio/speech.adoc[Text-To-Speech (TTS) API]
+* For OpenAI-specific documentation: xref:api/audio/speech/openai-speech.adoc[OpenAI Text-to-Speech]
+* For ElevenLabs-specific documentation: xref:api/audio/speech/elevenlabs-speech.adoc[ElevenLabs Text-to-Speech]
+* For migration guide: xref:api/audio/speech/openai-speech.adoc#_migration_guide[Migration Guide]

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,14 @@
 
 package org.springframework.ai.support;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 
 /**
- * An utility class to provide support methods handling {@link Usage}.
+ * A utility class to provide support methods handling {@link Usage}.
  *
  * @author Ilayaperumal Gopinathan
  */
@@ -38,10 +40,10 @@ public final class UsageCalculator {
 	 * @param previousChatResponse the previous chat response.
 	 * @return accumulated usage.
 	 */
-	public static Usage getCumulativeUsage(final Usage currentUsage, final ChatResponse previousChatResponse) {
+	public static Usage getCumulativeUsage(final Usage currentUsage,
+			final @Nullable ChatResponse previousChatResponse) {
 		Usage usageFromPreviousChatResponse = null;
-		if (previousChatResponse != null && previousChatResponse.getMetadata() != null
-				&& previousChatResponse.getMetadata().getUsage() != null) {
+		if (previousChatResponse != null) {
 			usageFromPreviousChatResponse = previousChatResponse.getMetadata().getUsage();
 		}
 		else {
@@ -59,7 +61,24 @@ public final class UsageCalculator {
 			promptTokens += usageFromPreviousChatResponse.getPromptTokens();
 			generationTokens += usageFromPreviousChatResponse.getCompletionTokens();
 			totalTokens += usageFromPreviousChatResponse.getTotalTokens();
-			return new DefaultUsage(promptTokens, generationTokens, totalTokens);
+			// Accumulate cache metrics, preserving null when neither side reports them.
+			Long cacheRead = null;
+			if (currentUsage.getCacheReadInputTokens() != null
+					|| usageFromPreviousChatResponse.getCacheReadInputTokens() != null) {
+				cacheRead = (currentUsage.getCacheReadInputTokens() != null ? currentUsage.getCacheReadInputTokens()
+						: 0L)
+						+ (usageFromPreviousChatResponse.getCacheReadInputTokens() != null
+								? usageFromPreviousChatResponse.getCacheReadInputTokens() : 0L);
+			}
+			Long cacheWrite = null;
+			if (currentUsage.getCacheWriteInputTokens() != null
+					|| usageFromPreviousChatResponse.getCacheWriteInputTokens() != null) {
+				cacheWrite = (currentUsage.getCacheWriteInputTokens() != null ? currentUsage.getCacheWriteInputTokens()
+						: 0L)
+						+ (usageFromPreviousChatResponse.getCacheWriteInputTokens() != null
+								? usageFromPreviousChatResponse.getCacheWriteInputTokens() : 0L);
+			}
+			return new DefaultUsage(promptTokens, generationTokens, totalTokens, null, cacheRead, cacheWrite);
 		}
 		// When current usage is empty, return the usage from the previous chat response.
 		return usageFromPreviousChatResponse;
@@ -71,7 +90,7 @@ public final class UsageCalculator {
 	 * @param usage the usage to check against.
 	 * @return the boolean value to represent if it is empty.
 	 */
-	public static boolean isEmpty(Usage usage) {
+	public static boolean isEmpty(@Nullable Usage usage) {
 		return usage == null || usage.getTotalTokens() == 0L;
 	}
 

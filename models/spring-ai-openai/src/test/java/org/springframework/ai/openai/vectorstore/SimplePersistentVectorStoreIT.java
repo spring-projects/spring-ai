@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ public class SimplePersistentVectorStoreIT {
 	@TempDir(cleanup = CleanupMode.ON_SUCCESS)
 	Path workingDir;
 
-	@Value("file:src/test/resources/data/acme/bikes.json")
+	@Value("classpath:/data/acme/bikes.json")
 	private Resource bikesJsonResource;
 
 	@Autowired

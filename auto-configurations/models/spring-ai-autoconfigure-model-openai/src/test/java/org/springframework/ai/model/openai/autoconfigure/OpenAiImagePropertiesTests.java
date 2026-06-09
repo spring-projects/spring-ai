@@ -1,0 +1,98 @@
+/*
+ * Copyright 2023-present the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.ai.model.openai.autoconfigure;
+
+import org.junit.jupiter.api.Test;
+
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Unit Tests for {@link OpenAiCommonProperties} and {@link OpenAiImageProperties}.
+ *
+ * @author Christian Tzolov
+ * @author Sebastien Deleuze
+ */
+public class OpenAiImagePropertiesTests {
+
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner();
+
+	@Test
+	public void imageProperties() {
+
+		this.contextRunner.withPropertyValues(
+		// @formatter:off
+				"spring.ai.openai.base-url=http://TEST.BASE.URL",
+				"spring.ai.openai.api-key=abc123",
+				"spring.ai.openai.image.options.model=MODEL_XYZ",
+				"spring.ai.openai.image.options.n=2")
+				// @formatter:on
+			.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class))
+			.run(context -> {
+				var imageProperties = context.getBean(OpenAiImageProperties.class);
+				var commonProperties = context.getBean(OpenAiCommonProperties.class);
+
+				assertThat(commonProperties.getApiKey()).isEqualTo("abc123");
+				assertThat(commonProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
+
+				assertThat(imageProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(imageProperties.getN()).isEqualTo(2);
+			});
+	}
+
+	@Test
+	public void imageOptionsTest() {
+
+		this.contextRunner
+			.withPropertyValues(// @formatter:off
+				"spring.ai.openai.api-key=API_KEY",
+				"spring.ai.openai.base-url=http://TEST.BASE.URL",
+
+				"spring.ai.openai.image.options.model=MODEL_XYZ",
+				"spring.ai.openai.image.options.n=3",
+				"spring.ai.openai.image.options.width=1024",
+				"spring.ai.openai.image.options.height=1792",
+				"spring.ai.openai.image.options.quality=hd",
+				"spring.ai.openai.image.options.response-format=url",
+				"spring.ai.openai.image.options.size=1024x1792",
+				"spring.ai.openai.image.options.style=vivid",
+				"spring.ai.openai.image.options.user=userXYZ"
+			)
+			// @formatter:on
+			.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class))
+			.run(context -> {
+				var imageProperties = context.getBean(OpenAiImageProperties.class);
+				var commonProperties = context.getBean(OpenAiCommonProperties.class);
+
+				assertThat(commonProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
+				assertThat(commonProperties.getApiKey()).isEqualTo("API_KEY");
+
+				assertThat(imageProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(imageProperties.getN()).isEqualTo(3);
+				assertThat(imageProperties.getWidth()).isEqualTo(1024);
+				assertThat(imageProperties.getHeight()).isEqualTo(1792);
+				assertThat(imageProperties.getQuality()).isEqualTo("hd");
+				assertThat(imageProperties.getResponseFormat()).isEqualTo("url");
+				assertThat(imageProperties.getSize()).isEqualTo("1024x1792");
+				assertThat(imageProperties.getStyle()).isEqualTo("vivid");
+				assertThat(imageProperties.getUser()).isEqualTo("userXYZ");
+			});
+	}
+
+}

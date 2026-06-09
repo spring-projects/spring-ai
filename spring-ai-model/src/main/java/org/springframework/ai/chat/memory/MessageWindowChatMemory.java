@@ -1,11 +1,11 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.util.Assert;
 
@@ -62,7 +63,9 @@ public final class MessageWindowChatMemory implements ChatMemory {
 		Assert.noNullElements(messages, "messages cannot contain null elements");
 
 		List<Message> memoryMessages = this.chatMemoryRepository.findByConversationId(conversationId);
+		// 회원님의 Delta 로직(MessageChanges) 적용
 		MessageChanges changes = process(memoryMessages, messages);
+
 		if (!changes.toDelete.isEmpty() || !changes.toAdd.isEmpty()) {
 			this.chatMemoryRepository.refresh(conversationId, changes.toDelete, changes.toAdd);
 		}
@@ -81,46 +84,59 @@ public final class MessageWindowChatMemory implements ChatMemory {
 	}
 
 	private MessageChanges process(List<Message> memoryMessages, List<Message> newMessages) {
-		Set<Message> originalMessageSet = new LinkedHashSet<>(memoryMessages);
-		List<Message> uniqueNewMessages = newMessages.stream()
-			.filter(msg -> !originalMessageSet.contains(msg))
-			.toList();
-		boolean hasNewSystemMessage = uniqueNewMessages.stream().anyMatch(SystemMessage.class::isInstance);
+		List<Message> processedMessages = new ArrayList<>();
 
-		List<Message> finalMessages = new ArrayList<>();
-		if (hasNewSystemMessage) {
-			memoryMessages.stream().filter(msg -> !(msg instanceof SystemMessage)).forEach(finalMessages::add);
-			finalMessages.addAll(uniqueNewMessages);
-		}
-		else {
-			finalMessages.addAll(memoryMessages);
-			finalMessages.addAll(uniqueNewMessages);
-		}
+		Set<Message> memoryMessagesSet = new HashSet<>(memoryMessages);
+		boolean hasNewSystemMessage = newMessages.stream()
+				.filter(SystemMessage.class::isInstance)
+				.anyMatch(message -> !memoryMessagesSet.contains(message));
 
-		if (finalMessages.size() > this.maxMessages) {
-			List<Message> trimmedMessages = new ArrayList<>();
-			int messagesToRemove = finalMessages.size() - this.maxMessages;
-			int removed = 0;
-			for (Message message : finalMessages) {
-				if (message instanceof SystemMessage || removed >= messagesToRemove) {
-					trimmedMessages.add(message);
+		memoryMessages.stream()
+				.filter(message -> !(hasNewSystemMessage && message instanceof SystemMessage))
+				.forEach(processedMessages::add);
+
+		processedMessages.addAll(newMessages);
+
+		List<Message> finalMessages = processedMessages;
+
+		if (processedMessages.size() > this.maxMessages) {
+			// main 브랜치의 새로운 로직: USER 메시지 기준으로 자르기
+			List<Integer> nonSystemIndices = new ArrayList<>();
+			for (int i = 0; i < processedMessages.size(); i++) {
+				if (!(processedMessages.get(i) instanceof SystemMessage)) {
+					nonSystemIndices.add(i);
 				}
-				else {
-					removed++;
+			}
+
+			int cutIndex = processedMessages.size() - this.maxMessages;
+
+			while (cutIndex < nonSystemIndices.size()
+					&& processedMessages.get(nonSystemIndices.get(cutIndex)).getMessageType() != MessageType.USER) {
+				cutIndex++;
+			}
+			cutIndex = Math.min(cutIndex, nonSystemIndices.size());
+
+			Set<Integer> removeIndices = new HashSet<>(nonSystemIndices.subList(0, cutIndex));
+			List<Message> trimmedMessages = new ArrayList<>();
+			for (int i = 0; i < processedMessages.size(); i++) {
+				if (!removeIndices.contains(i)) {
+					trimmedMessages.add(processedMessages.get(i));
 				}
 			}
 			finalMessages = trimmedMessages;
 		}
 
+		// 회원님의 로직: 최종 리스트를 바탕으로 Delete/Add 대상을 추출
+		Set<Message> originalMessageSet = new LinkedHashSet<>(memoryMessages);
 		Set<Message> finalMessageSet = new LinkedHashSet<>(finalMessages);
 
 		List<Message> toDelete = originalMessageSet.stream().filter(m -> !finalMessageSet.contains(m)).toList();
-
 		List<Message> toAdd = finalMessageSet.stream().filter(m -> !originalMessageSet.contains(m)).toList();
 
 		return new MessageChanges(toDelete, toAdd);
 	}
 
+	// 회원님이 추가하신 내부 클래스 유지
 	private static class MessageChanges {
 
 		final List<Message> toDelete;
@@ -140,7 +156,7 @@ public final class MessageWindowChatMemory implements ChatMemory {
 
 	public static final class Builder {
 
-		private ChatMemoryRepository chatMemoryRepository;
+		private ChatMemoryRepository chatMemoryRepository = new InMemoryChatMemoryRepository();
 
 		private int maxMessages = DEFAULT_MAX_MESSAGES;
 
@@ -158,9 +174,6 @@ public final class MessageWindowChatMemory implements ChatMemory {
 		}
 
 		public MessageWindowChatMemory build() {
-			if (this.chatMemoryRepository == null) {
-				this.chatMemoryRepository = new InMemoryChatMemoryRepository();
-			}
 			return new MessageWindowChatMemory(this.chatMemoryRepository, this.maxMessages);
 		}
 

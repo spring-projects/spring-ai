@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ public class BedrockTitanEmbeddingAutoConfigurationIT {
 
 	@Test
 	public void singleTextEmbedding() {
-		this.contextRunner.withPropertyValues("spring.ai.bedrock.titan.embedding.inputType=TEXT").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.bedrock.titan.embedding.input-type=TEXT").run(context -> {
 			BedrockTitanEmbeddingModel embeddingModel = context.getBean(BedrockTitanEmbeddingModel.class);
 			assertThat(embeddingModel).isNotNull();
 			EmbeddingResponse embeddingResponse = embeddingModel.embedForResponse(List.of("Hello World"));
@@ -65,7 +65,7 @@ public class BedrockTitanEmbeddingAutoConfigurationIT {
 
 	@Test
 	public void singleImageEmbedding() {
-		this.contextRunner.withPropertyValues("spring.ai.bedrock.titan.embedding.inputType=IMAGE").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.bedrock.titan.embedding.input-type=IMAGE").run(context -> {
 			BedrockTitanEmbeddingModel embeddingModel = context.getBean(BedrockTitanEmbeddingModel.class);
 			assertThat(embeddingModel).isNotNull();
 
@@ -90,7 +90,7 @@ public class BedrockTitanEmbeddingAutoConfigurationIT {
 					"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
 					"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
 					"spring.ai.bedrock.titan.embedding.model=MODEL_XYZ",
-					"spring.ai.bedrock.titan.embedding.inputType=TEXT")
+					"spring.ai.bedrock.titan.embedding.input-type=TEXT")
 			.withConfiguration(AutoConfigurations.of(BedrockTitanEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var properties = context.getBean(BedrockTitanEmbeddingProperties.class);

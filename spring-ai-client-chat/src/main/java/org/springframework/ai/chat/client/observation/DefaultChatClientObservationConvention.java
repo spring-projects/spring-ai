@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package org.springframework.ai.chat.client.observation;
 
-import java.util.ArrayList;
-
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 
@@ -28,7 +26,6 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.observation.ObservabilityHelper;
 import org.springframework.ai.observation.conventions.SpringAiKind;
-import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -59,7 +56,6 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 	}
 
 	@Override
-	@Nullable
 	public String getContextualName(ChatClientObservationContext context) {
 		return "%s %s".formatted(context.getOperationMetadata().provider(), SpringAiKind.CHAT_CLIENT.value());
 	}
@@ -130,14 +126,13 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 			return keyValues;
 		}
 
-		var toolNames = new ArrayList<>(options.getToolNames());
 		var toolCallbacks = options.getToolCallbacks();
 
-		if (CollectionUtils.isEmpty(toolNames) && CollectionUtils.isEmpty(toolCallbacks)) {
+		if (CollectionUtils.isEmpty(toolCallbacks)) {
 			return keyValues;
 		}
 
-		toolCallbacks.forEach(toolCallback -> toolNames.add(toolCallback.getToolDefinition().name()));
+		var toolNames = toolCallbacks.stream().map(toolCallback -> toolCallback.getToolDefinition().name()).toList();
 
 		return keyValues.and(
 				ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_TOOL_NAMES.asString(),

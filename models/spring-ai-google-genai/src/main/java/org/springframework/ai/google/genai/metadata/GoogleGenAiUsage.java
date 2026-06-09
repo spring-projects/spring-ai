@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.genai.types.GenerateContentResponseUsageMetadata;
 import com.google.genai.types.ModalityTokenCount;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
-import org.springframework.lang.Nullable;
 
 /**
  * Extended usage metadata for Google GenAI responses that includes thinking tokens,
@@ -37,29 +37,21 @@ import org.springframework.lang.Nullable;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class GoogleGenAiUsage extends DefaultUsage {
 
-	@Nullable
-	private final Integer thoughtsTokenCount;
+	@Nullable private final Integer thoughtsTokenCount;
 
-	@Nullable
-	private final Integer cachedContentTokenCount;
+	@Nullable private final Integer cachedContentTokenCount;
 
-	@Nullable
-	private final Integer toolUsePromptTokenCount;
+	@Nullable private final Integer toolUsePromptTokenCount;
 
-	@Nullable
-	private final List<GoogleGenAiModalityTokenCount> promptTokensDetails;
+	@Nullable private final List<GoogleGenAiModalityTokenCount> promptTokensDetails;
 
-	@Nullable
-	private final List<GoogleGenAiModalityTokenCount> candidatesTokensDetails;
+	@Nullable private final List<GoogleGenAiModalityTokenCount> candidatesTokensDetails;
 
-	@Nullable
-	private final List<GoogleGenAiModalityTokenCount> cacheTokensDetails;
+	@Nullable private final List<GoogleGenAiModalityTokenCount> cacheTokensDetails;
 
-	@Nullable
-	private final List<GoogleGenAiModalityTokenCount> toolUsePromptTokensDetails;
+	@Nullable private final List<GoogleGenAiModalityTokenCount> toolUsePromptTokensDetails;
 
-	@Nullable
-	private final GoogleGenAiTrafficType trafficType;
+	@Nullable private final GoogleGenAiTrafficType trafficType;
 
 	/**
 	 * Creates a new GoogleGenAiUsage instance with all extended metadata.
@@ -88,7 +80,7 @@ public class GoogleGenAiUsage extends DefaultUsage {
 	 * @param usageMetadata the usage metadata from the Google GenAI SDK
 	 * @return a new GoogleGenAiUsage instance with all available metadata
 	 */
-	public static GoogleGenAiUsage from(GenerateContentResponseUsageMetadata usageMetadata) {
+	public static GoogleGenAiUsage from(@Nullable GenerateContentResponseUsageMetadata usageMetadata) {
 		if (usageMetadata == null) {
 			return new GoogleGenAiUsage(0, 0, 0, null, null, null, null, null, null, null, null, null);
 		}
@@ -114,7 +106,7 @@ public class GoogleGenAiUsage extends DefaultUsage {
 				usageMetadata);
 	}
 
-	private static List<GoogleGenAiModalityTokenCount> convertModalityDetails(
+	private static @Nullable List<GoogleGenAiModalityTokenCount> convertModalityDetails(
 			Optional<List<ModalityTokenCount>> modalityTokens) {
 		return modalityTokens.map(tokens -> tokens.stream().map(GoogleGenAiModalityTokenCount::from).toList())
 			.orElse(null);
@@ -126,8 +118,7 @@ public class GoogleGenAiUsage extends DefaultUsage {
 	 * @return the thoughts token count, or null if not available
 	 */
 	@JsonProperty("thoughtsTokenCount")
-	@Nullable
-	public Integer getThoughtsTokenCount() {
+	@Nullable public Integer getThoughtsTokenCount() {
 		return this.thoughtsTokenCount;
 	}
 
@@ -136,9 +127,13 @@ public class GoogleGenAiUsage extends DefaultUsage {
 	 * @return the cached content token count, or null if not available
 	 */
 	@JsonProperty("cachedContentTokenCount")
-	@Nullable
-	public Integer getCachedContentTokenCount() {
+	@Nullable public Integer getCachedContentTokenCount() {
 		return this.cachedContentTokenCount;
+	}
+
+	@Override
+	public @Nullable Long getCacheReadInputTokens() {
+		return this.cachedContentTokenCount != null ? this.cachedContentTokenCount.longValue() : null;
 	}
 
 	/**
@@ -146,8 +141,7 @@ public class GoogleGenAiUsage extends DefaultUsage {
 	 * @return the tool-use prompt token count, or null if not available
 	 */
 	@JsonProperty("toolUsePromptTokenCount")
-	@Nullable
-	public Integer getToolUsePromptTokenCount() {
+	@Nullable public Integer getToolUsePromptTokenCount() {
 		return this.toolUsePromptTokenCount;
 	}
 
@@ -156,8 +150,7 @@ public class GoogleGenAiUsage extends DefaultUsage {
 	 * @return the prompt tokens details by modality, or null if not available
 	 */
 	@JsonProperty("promptTokensDetails")
-	@Nullable
-	public List<GoogleGenAiModalityTokenCount> getPromptTokensDetails() {
+	@Nullable public List<GoogleGenAiModalityTokenCount> getPromptTokensDetails() {
 		return this.promptTokensDetails;
 	}
 
@@ -166,8 +159,7 @@ public class GoogleGenAiUsage extends DefaultUsage {
 	 * @return the candidates tokens details by modality, or null if not available
 	 */
 	@JsonProperty("candidatesTokensDetails")
-	@Nullable
-	public List<GoogleGenAiModalityTokenCount> getCandidatesTokensDetails() {
+	@Nullable public List<GoogleGenAiModalityTokenCount> getCandidatesTokensDetails() {
 		return this.candidatesTokensDetails;
 	}
 
@@ -176,8 +168,7 @@ public class GoogleGenAiUsage extends DefaultUsage {
 	 * @return the cache tokens details by modality, or null if not available
 	 */
 	@JsonProperty("cacheTokensDetails")
-	@Nullable
-	public List<GoogleGenAiModalityTokenCount> getCacheTokensDetails() {
+	@Nullable public List<GoogleGenAiModalityTokenCount> getCacheTokensDetails() {
 		return this.cacheTokensDetails;
 	}
 
@@ -186,8 +177,7 @@ public class GoogleGenAiUsage extends DefaultUsage {
 	 * @return the tool-use prompt tokens details by modality, or null if not available
 	 */
 	@JsonProperty("toolUsePromptTokensDetails")
-	@Nullable
-	public List<GoogleGenAiModalityTokenCount> getToolUsePromptTokensDetails() {
+	@Nullable public List<GoogleGenAiModalityTokenCount> getToolUsePromptTokensDetails() {
 		return this.toolUsePromptTokensDetails;
 	}
 
@@ -197,8 +187,7 @@ public class GoogleGenAiUsage extends DefaultUsage {
 	 * @return the traffic type, or null if not available
 	 */
 	@JsonProperty("trafficType")
-	@Nullable
-	public GoogleGenAiTrafficType getTrafficType() {
+	@Nullable public GoogleGenAiTrafficType getTrafficType() {
 		return this.trafficType;
 	}
 

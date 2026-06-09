@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -38,13 +40,11 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.CreateIndexResponse;
 import org.opensearch.client.transport.endpoints.BooleanResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -102,6 +102,16 @@ import org.springframework.util.Assert;
  * }</pre>
  *
  * <p>
+ * AWS OpenSearch Serverless usage example:
+ * </p>
+ * <pre>{@code
+ * OpenSearchVectorStore vectorStore = OpenSearchVectorStore.builder(openSearchClient, embeddingModel)
+ *     .initializeSchema(true)
+ *     .manageDocumentIds(false)  // Required for AWS OpenSearch Serverless
+ *     .build();
+ * }</pre>
+ *
+ * <p>
  * Advanced configuration example:
  * </p>
  * <pre>{@code
@@ -137,11 +147,13 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author inpink
+ * @author Sanghun Lee
+ * @author chabinhwang
  * @since 1.0.0
  */
 public class OpenSearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenSearchVectorStore.class);
+	private static final Log logger = LogFactory.getLog(OpenSearchVectorStore.class);
 
 	public static final String COSINE_SIMILARITY_FUNCTION = "cosinesimil";
 
@@ -174,6 +186,8 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	private final int dimensions;
 
+	private final boolean manageDocumentIds;
+
 	/**
 	 * Creates a new OpenSearchVectorStore using the builder pattern.
 	 * @param builder The configured builder instance
@@ -193,6 +207,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		this.initializeSchema = builder.initializeSchema;
 		this.useApproximateKnn = builder.useApproximateKnn;
 		this.dimensions = builder.dimensions;
+		this.manageDocumentIds = builder.manageDocumentIds;
 	}
 
 	/**
@@ -210,20 +225,34 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		List<float[]> embedding = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embedding = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
-		for (Document document : documents) {
-			OpenSearchDocument openSearchDocument = new OpenSearchDocument(document.getId(), document.getText(),
-					document.getMetadata(), embedding.get(documents.indexOf(document)));
-			bulkRequestBuilder.operations(op -> op
-				.index(idx -> idx.index(this.index).id(openSearchDocument.id()).document(openSearchDocument)));
+		for (int i = 0; i < documents.size(); i++) {
+			Document document = documents.get(i);
+			OpenSearchDocument openSearchDocument = new OpenSearchDocument(document.getId(),
+					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(), embedding.get(i));
+
+			// Conditionally set document ID based on manageDocumentIds flag
+			if (this.manageDocumentIds) {
+				bulkRequestBuilder.operations(op -> op
+					.index(idx -> idx.index(this.index).id(openSearchDocument.id()).document(openSearchDocument)));
+			}
+			else {
+				bulkRequestBuilder
+					.operations(op -> op.index(idx -> idx.index(this.index).document(openSearchDocument)));
+			}
 		}
 		bulkRequest(bulkRequestBuilder.build());
 	}
 
 	@Override
 	public void doDelete(List<String> idList) {
+		if (!this.manageDocumentIds) {
+			logger.warn("Document ID management is disabled. Delete operations may not work as expected "
+					+ "since document IDs are auto-generated by OpenSearch. Consider using filter-based deletion instead.");
+		}
+
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 		for (String id : idList) {
 			bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.index).id(id)));
@@ -255,14 +284,18 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 				.build();
 
 			DeleteByQueryResponse response = this.openSearchClient.deleteByQuery(request);
-			logger.debug("Deleted {} documents matching filter expression", response.deleted());
+			if (logger.isDebugEnabled()) {
+				logger.debug("Deleted " + response.deleted() + " documents matching filter expression");
+			}
 
 			if (!response.failures().isEmpty()) {
 				throw new IllegalStateException("Failed to delete some documents: " + response.failures());
 			}
 		}
 		catch (Exception e) {
-			logger.error("Failed to delete documents by filter: {}", e.getMessage());
+			if (logger.isErrorEnabled()) {
+				logger.error("Failed to delete documents by filter: " + e.getMessage());
+			}
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}
@@ -275,14 +308,14 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	}
 
 	public List<Document> similaritySearch(float[] embedding, int topK, double similarityThreshold,
-			Filter.Expression filterExpression) {
+			Filter.@Nullable Expression filterExpression) {
 		return similaritySearch(
 				this.useApproximateKnn ? buildApproximateQuery(embedding, topK, similarityThreshold, filterExpression)
 						: buildExactQuery(embedding, topK, similarityThreshold, filterExpression));
 	}
 
 	private org.opensearch.client.opensearch.core.SearchRequest buildApproximateQuery(float[] embedding, int topK,
-			double similarityThreshold, Filter.Expression filterExpression) {
+			double similarityThreshold, Filter.@Nullable Expression filterExpression) {
 		return new org.opensearch.client.opensearch.core.SearchRequest.Builder().index(this.index)
 			.query(Query.of(builder -> builder.knn(knnQueryBuilder -> knnQueryBuilder
 				.filter(Query
@@ -290,13 +323,13 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 						.query(getOpenSearchQueryString(filterExpression)))))
 				.field("embedding")
 				.k(topK)
-				.vector(embedding))))
+				.vector(toFloatList(embedding)))))
 			.minScore(similarityThreshold)
 			.build();
 	}
 
 	private org.opensearch.client.opensearch.core.SearchRequest buildExactQuery(float[] embedding, int topK,
-			double similarityThreshold, Filter.Expression filterExpression) {
+			double similarityThreshold, Filter.@Nullable Expression filterExpression) {
 		return new org.opensearch.client.opensearch.core.SearchRequest.Builder()
 			.query(buildExactQuery(embedding, filterExpression))
 			.index(this.index)
@@ -307,16 +340,16 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 			.build();
 	}
 
-	private Query buildExactQuery(float[] embedding, Filter.Expression filterExpression) {
+	private Query buildExactQuery(float[] embedding, Filter.@Nullable Expression filterExpression) {
 		return Query.of(queryBuilder -> queryBuilder.scriptScore(scriptScoreQueryBuilder -> {
 			scriptScoreQueryBuilder
 				.query(queryBuilder2 -> queryBuilder2.queryString(queryStringQuerybuilder -> queryStringQuerybuilder
 					.query(getOpenSearchQueryString(filterExpression))))
 				.script(scriptBuilder -> scriptBuilder
 					.inline(inlineScriptBuilder -> inlineScriptBuilder.source("knn_score")
-						.lang("knn")
+						.lang(langBuilder -> langBuilder.custom("knn"))
 						.params("field", JsonData.of("embedding"))
-						.params("query_value", JsonData.of(embedding))
+						.params("query_value", JsonData.of(toFloatList(embedding)))
 						.params("space_type", JsonData.of(this.similarityFunction))));
 			// https://opensearch.org/docs/latest/search-plugins/knn/knn-score-script
 			// k-NN ensures non-negative scores by adding 1 to cosine similarity,
@@ -327,7 +360,15 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		}));
 	}
 
-	private String getOpenSearchQueryString(Filter.Expression filterExpression) {
+	private List<Float> toFloatList(float[] array) {
+		List<Float> list = new java.util.ArrayList<>(array.length);
+		for (float value : array) {
+			list.add(value);
+		}
+		return list;
+	}
+
+	private String getOpenSearchQueryString(Filter.@Nullable Expression filterExpression) {
 		return Objects.isNull(filterExpression) ? "*"
 				: this.filterExpressionConverter.convertExpression(filterExpression);
 
@@ -340,7 +381,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 				.hits()
 				.stream()
 				.map(this::toDocument)
-				.collect(Collectors.toList());
+				.toList();
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
@@ -349,6 +390,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	private Document toDocument(Hit<Document> hit) {
 		Document document = hit.source();
+		Assert.notNull(document, "Document must not be null");
 		Document.Builder documentBuilder = document.mutate();
 		if (hit.score() != null) {
 			documentBuilder.metadata(DocumentMetadata.DISTANCE.value(), 1 - hit.score().floatValue());
@@ -481,6 +523,8 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 		private int dimensions = 1536;
 
+		private boolean manageDocumentIds = true;
+
 		/**
 		 * Sets the OpenSearch client.
 		 * @param openSearchClient The OpenSearch client to use
@@ -582,6 +626,28 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		public Builder dimensions(int dimensions) {
 			Assert.isTrue(dimensions > 0, "dimensions must be greater than 0");
 			this.dimensions = dimensions;
+			return this;
+		}
+
+		/**
+		 * Sets whether to manage document IDs during indexing operations.
+		 * <p>
+		 * When set to {@code true} (default), document IDs will be explicitly set during
+		 * indexing operations. When set to {@code false}, OpenSearch will auto-generate
+		 * document IDs, which is required for AWS OpenSearch Serverless vector search
+		 * collections.
+		 * </p>
+		 * <p>
+		 * Note: When document ID management is disabled, the {@link #doDelete(List)}
+		 * method may not work as expected since document IDs are auto-generated by
+		 * OpenSearch.
+		 * </p>
+		 * @param manageDocumentIds true to manage document IDs (default), false to let
+		 * OpenSearch auto-generate IDs
+		 * @return The builder instance
+		 */
+		public Builder manageDocumentIds(boolean manageDocumentIds) {
+			this.manageDocumentIds = manageDocumentIds;
 			return this;
 		}
 

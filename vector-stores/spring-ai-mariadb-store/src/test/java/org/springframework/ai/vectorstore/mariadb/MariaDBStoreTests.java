@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ public class MariaDBStoreTests {
 			"user_data, false, user_data", "test123, false, test123", "valid_table_name, false, valid_table_name",
 			"1234567890123456789012345678901234567890123456789012345678901234, false, `1234567890123456789012345678901234567890123456789012345678901234`" })
 	void enquoteIdentifier(String tableName, boolean alwaysQuote, String expected) {
-		assertThat(MariaDBSchemaValidator.validateAndEnquoteIdentifier(tableName, alwaysQuote));
+		assertThat(MariaDBSchemaValidator.validateAndEnquoteIdentifier(tableName, alwaysQuote)).isEqualTo(expected);
 	}
 
 	@ParameterizedTest(name = "{0} - error identifier validation")

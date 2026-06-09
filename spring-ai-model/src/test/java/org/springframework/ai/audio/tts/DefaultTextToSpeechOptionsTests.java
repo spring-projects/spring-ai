@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,19 +41,6 @@ class DefaultTextToSpeechOptionsTests {
 		assertThat(options.getVoice()).isEqualTo("test-voice");
 		assertThat(options.getFormat()).isEqualTo("test-format");
 		assertThat(options.getSpeed()).isCloseTo(0.8, within(0.0001));
-	}
-
-	@Test
-	void testCopy() {
-		TextToSpeechOptions original = DefaultTextToSpeechOptions.builder()
-			.model("test-model")
-			.voice("test-voice")
-			.format("test-format")
-			.speed(0.8)
-			.build();
-
-		DefaultTextToSpeechOptions copied = original.copy();
-		assertThat(copied).isNotSameAs(original).isEqualTo(original);
 	}
 
 	@Test

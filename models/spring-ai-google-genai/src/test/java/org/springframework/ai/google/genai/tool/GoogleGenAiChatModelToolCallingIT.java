@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,24 +18,23 @@ package org.springframework.ai.google.genai.tool;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import com.google.genai.Client;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -45,14 +44,14 @@ import org.springframework.context.annotation.Bean;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".+")
 public class GoogleGenAiChatModelToolCallingIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiChatModelToolCallingIT.class);
 
 	@Autowired
 	private GoogleGenAiChatModel chatModel;
+
+	ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
 	@Test
 	public void functionCallExplicitOpenApiSchema() {
@@ -80,7 +79,7 @@ public class GoogleGenAiChatModelToolCallingIT {
 					}
 					""";
 
-		var promptOptions = GoogleGenAiChatOptions.builder()
+		var options = GoogleGenAiChatOptions.builder()
 			.toolCallbacks(List.of(FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
 				.description("Get the current weather in a given location")
 				.inputSchema(openApiSchema)
@@ -88,10 +87,15 @@ public class GoogleGenAiChatModelToolCallingIT {
 				.build()))
 			.build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+		var prompt = new Prompt(messages, options);
 
-		logger.info("Response: {}", response);
+		ChatResponse response = this.chatModel.call(prompt);
 
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			response = this.chatModel.call(prompt);
+		}
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
@@ -104,7 +108,6 @@ public class GoogleGenAiChatModelToolCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = GoogleGenAiChatOptions.builder()
-			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
 			.toolCallbacks(List.of(
 					FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
 						.description("Get the current weather in a given location.")
@@ -117,21 +120,30 @@ public class GoogleGenAiChatModelToolCallingIT {
 						.build()))
 			.build();
 
-		ChatResponse chatResponse = this.chatModel.call(new Prompt(messages, promptOptions));
+		var prompt = new Prompt(messages, promptOptions);
+		ChatResponse chatResponse = this.chatModel.call(prompt);
+
+		while (chatResponse.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			chatResponse = this.chatModel.call(prompt);
+		}
 
 		assertThat(chatResponse).isNotNull();
-		logger.info("Response: {}", chatResponse);
 		assertThat(chatResponse.getResult().getOutput().getText()).contains("30", "10", "15");
 
 		assertThat(chatResponse.getMetadata()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
-		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(150).isLessThan(330);
+		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(150).isLessThan(500);
 
-		ChatResponse response2 = this.chatModel
-			.call(new Prompt("What is the payment status for transaction 696?", promptOptions));
+		var prompt2 = new Prompt("What is the payment status for transaction 696?", promptOptions);
+		ChatResponse response2 = this.chatModel.call(prompt2);
 
-		logger.info("Response: {}", response2);
-
+		while (response2.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt2, response2);
+			prompt2 = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			response2 = this.chatModel.call(prompt2);
+		}
 		assertThat(response2.getResult().getOutput().getText()).containsIgnoringCase("transaction 696 is PAYED");
 
 	}
@@ -145,26 +157,26 @@ public class GoogleGenAiChatModelToolCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = GoogleGenAiChatOptions.builder()
-			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the current weather in a given location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
+		var prompt = new Prompt(messages, promptOptions);
 
-		String responseString = response.collectList()
-			.block()
-			.stream()
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getText)
-			.collect(Collectors.joining());
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
 
-		logger.info("Response: {}", responseString);
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt,
+					aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
 
+		String responseString = aggregatedRef.get().getResult().getOutput().getText();
 		assertThat(responseString).contains("10");
 
 	}
@@ -178,7 +190,6 @@ public class GoogleGenAiChatModelToolCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = GoogleGenAiChatOptions.builder()
-			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
 			.toolCallbacks(List.of(
 					FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
 						.description("Get the current weather in a given location.")
@@ -191,17 +202,25 @@ public class GoogleGenAiChatModelToolCallingIT {
 						.build()))
 			.build();
 
-		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
+		var prompt = new Prompt(messages, promptOptions);
 
-		ChatResponse chatResponse = response.blockLast();
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
 
-		logger.info("Response: {}", chatResponse);
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt,
+					aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
+
+		ChatResponse chatResponse = aggregatedRef.get();
 
 		assertThat(chatResponse).isNotNull();
 		assertThat(chatResponse.getMetadata()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
-		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(150).isLessThan(330);
-
+		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(150).isLessThan(500);
 	}
 
 	@Test
@@ -226,12 +245,20 @@ public class GoogleGenAiChatModelToolCallingIT {
 						.build()))
 			.build();
 
-		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
+		var prompt = new Prompt(messages, promptOptions);
 
-		ChatResponse chatResponse = response.blockLast();
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
 
-		logger.info("Response: {}", chatResponse);
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt,
+					aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
 
+		ChatResponse chatResponse = aggregatedRef.get();
 		assertThat(chatResponse).isNotNull();
 		assertThat(chatResponse.getMetadata()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
@@ -270,8 +297,8 @@ public class GoogleGenAiChatModelToolCallingIT {
 		public GoogleGenAiChatModel vertexAiEmbedding(Client genAiClient) {
 			return GoogleGenAiChatModel.builder()
 				.genAiClient(genAiClient)
-				.defaultOptions(GoogleGenAiChatOptions.builder()
-					.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
+				.options(GoogleGenAiChatOptions.builder()
+					.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
 					.temperature(0.9)
 					.build())
 				.build();

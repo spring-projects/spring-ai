@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 import io.pinecone.clients.Pinecone;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -63,8 +65,9 @@ public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 
 	private static final String PINECONE_INDEX_NAME = "spring-ai-test-index";
 
-	// NOTE: Leave it empty as for free tier as later doesn't support namespaces.
-	private static final String PINECONE_NAMESPACE = "";
+	// Use unique namespace per test run for isolation when env is not set; set
+	// PINECONE_NAMESPACE="" for free tier (no namespaces).
+	private static String PINECONE_NAMESPACE;
 
 	private static final String CUSTOM_CONTENT_FIELD_NAME = "article";
 
@@ -93,6 +96,12 @@ public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 		Awaitility.setDefaultPollInterval(2, TimeUnit.SECONDS);
 		Awaitility.setDefaultPollDelay(Duration.ZERO);
 		Awaitility.setDefaultTimeout(Duration.ofMinutes(1));
+	}
+
+	@BeforeEach
+	public void setUpNamespace() {
+		String env = System.getenv("PINECONE_NAMESPACE");
+		PINECONE_NAMESPACE = (env != null) ? env : ("spring-ai-it-" + UUID.randomUUID());
 	}
 
 	@Override
@@ -267,7 +276,10 @@ public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 			List<Document> fullResult = vectorStore
 				.similaritySearch(SearchRequest.builder().query("Depression").topK(5).similarityThresholdAll().build());
 
-			List<Double> scores = fullResult.stream().map(Document::getScore).toList();
+			List<Double> scores = fullResult.stream()
+				.sorted(Comparator.comparing(Document::getScore).reversed())
+				.map(Document::getScore)
+				.toList();
 
 			assertThat(scores).hasSize(3);
 

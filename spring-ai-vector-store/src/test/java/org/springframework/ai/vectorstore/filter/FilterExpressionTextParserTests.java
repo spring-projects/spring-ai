@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,19 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR
 public class FilterExpressionTextParserTests {
 
 	FilterExpressionTextParser parser = new FilterExpressionTextParser();
+
+	@Test
+	public void testStringEscaping() {
+		Expression exp = this.parser.parse("stuff == \"he'd say \\\"hello\\\", I'd say 'hi'\"");
+		assertThat(((Value) exp.right()).value()).isEqualTo("he'd say \"hello\", I'd say 'hi'");
+
+		exp = this.parser.parse("stuff == 'he\\'d say \"hello\", I\\'d say \\'hi\\''");
+		assertThat(((Value) exp.right()).value()).isEqualTo("he'd say \"hello\", I'd say 'hi'");
+
+		exp = this.parser.parse("stuff == 'This is a single backslash: \\\\'");
+		assertThat(((Value) exp.right()).value()).isEqualTo("This is a single backslash: \\");
+
+	}
 
 	@Test
 	public void testEQ() {
@@ -193,13 +206,20 @@ public class FilterExpressionTextParserTests {
 	@Test
 	public void testIdentifiers() {
 		Expression exp = this.parser.parse("'country.1' == 'BG'");
-		assertThat(exp).isEqualTo(new Expression(EQ, new Key("'country.1'"), new Value("BG")));
+		assertThat(exp).isEqualTo(new Expression(EQ, new Key("country.1"), new Value("BG")));
 
 		exp = this.parser.parse("'country_1_2_3' == 'BG'");
-		assertThat(exp).isEqualTo(new Expression(EQ, new Key("'country_1_2_3'"), new Value("BG")));
+		assertThat(exp).isEqualTo(new Expression(EQ, new Key("country_1_2_3"), new Value("BG")));
 
 		exp = this.parser.parse("\"country 1 2 3\" == 'BG'");
-		assertThat(exp).isEqualTo(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
+		assertThat(exp).isEqualTo(new Expression(EQ, new Key("country 1 2 3"), new Value("BG")));
+
+		// case where there is an actual quote in the identifier (assuming this is what
+		// the user really wants
+		// may not be supported by all VS impl., but this is correct at the DSL -> java
+		// level
+		exp = this.parser.parse("\"country \\\"1 2 3\" == 'BG'");
+		assertThat(exp).isEqualTo(new Expression(EQ, new Key("country \"1 2 3"), new Value("BG")));
 	}
 
 	@Test

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,24 +21,19 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration;
-import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,25 +41,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 public class FunctionCallbackInPromptIT {
 
-	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackInPromptIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
-		.withConfiguration(
-				AutoConfigurations.of(SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
-						ToolCallingAutoConfiguration.class, OpenAiChatAutoConfiguration.class));
+		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"))
+		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class,
+				org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration.class));
 
 	@Test
 	void functionCallTest() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName(),
-					"spring.ai.openai.chat.options.temperature=0.1")
+			.withPropertyValues("spring.ai.openai.chat.model=" + "gpt-4o-mini", "spring.ai.openai.chat.temperature=1")
 			.run(context -> {
 
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
+				ChatClient chatClient = ChatClient.builder(chatModel).build();
+
 				UserMessage userMessage = new UserMessage(
-						"What's the weather like in San Francisco, Tokyo, and Paris?");
+						"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.");
 
 				var promptOptions = OpenAiChatOptions.builder()
 					.toolCallbacks(
@@ -74,9 +67,9 @@ public class FunctionCallbackInPromptIT {
 								.build()))
 					.build();
 
-				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
+				Prompt prompt = new Prompt(List.of(userMessage), promptOptions);
 
-				logger.info("Response: {}", response);
+				ChatResponse response = chatClient.prompt(prompt).call().chatResponse();
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 			});
@@ -86,14 +79,13 @@ public class FunctionCallbackInPromptIT {
 	void streamingFunctionCallTest() {
 
 		this.contextRunner
-			.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName(),
-					"spring.ai.openai.chat.options.temperature=0.5")
+			.withPropertyValues("spring.ai.openai.chat.model=" + "gpt-4o-mini", "spring.ai.openai.chat.temperature=1")
 			.run(context -> {
 
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 				UserMessage userMessage = new UserMessage(
-						"What's the weather like in San Francisco, Tokyo, and Paris?");
+						"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.");
 
 				var promptOptions = OpenAiChatOptions.builder()
 					.toolCallbacks(
@@ -103,17 +95,20 @@ public class FunctionCallbackInPromptIT {
 								.build()))
 					.build();
 
-				Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage), promptOptions));
+				Flux<ChatResponse> response = ChatClient.create(chatModel)
+					.prompt(new Prompt(List.of(userMessage), promptOptions))
+					.stream()
+					.chatResponse();
 
 				String content = response.collectList()
-					.block()
+					.blockOptional()
 					.stream()
+					.flatMap(List::stream)
 					.map(ChatResponse::getResults)
 					.flatMap(List::stream)
 					.map(Generation::getOutput)
 					.map(AssistantMessage::getText)
 					.collect(Collectors.joining());
-				logger.info("Response: {}", content);
 
 				assertThat(content).contains("30", "10", "15");
 			});

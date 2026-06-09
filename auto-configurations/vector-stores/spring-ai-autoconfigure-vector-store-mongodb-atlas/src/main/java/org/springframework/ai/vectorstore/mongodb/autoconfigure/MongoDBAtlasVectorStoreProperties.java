@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.ai.vectorstore.mongodb.autoconfigure;
 
 import java.util.List;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -37,44 +39,44 @@ public class MongoDBAtlasVectorStoreProperties extends CommonVectorStoreProperti
 	/**
 	 * The name of the collection to store the vectors. Defaults to "vector_store".
 	 */
-	private String collectionName;
+	private @Nullable String collectionName;
 
 	/**
 	 * The name of the path to store the vectors. Defaults to "embedding".
 	 */
-	private String pathName;
+	private @Nullable String pathName;
 
 	/**
 	 * The name of the index to store the vectors. Defaults to "vector_index".
 	 */
-	private String indexName;
+	private @Nullable String indexName;
 
 	/**
 	 * Name of the metadata fields to use as filters.
 	 */
 	private List<String> metadataFieldsToFilter = List.of();
 
-	public String getCollectionName() {
+	public @Nullable String getCollectionName() {
 		return this.collectionName;
 	}
 
-	public void setCollectionName(String collectionName) {
+	public void setCollectionName(@Nullable String collectionName) {
 		this.collectionName = collectionName;
 	}
 
-	public String getPathName() {
+	public @Nullable String getPathName() {
 		return this.pathName;
 	}
 
-	public void setPathName(String pathName) {
+	public void setPathName(@Nullable String pathName) {
 		this.pathName = pathName;
 	}
 
-	public String getIndexName() {
+	public @Nullable String getIndexName() {
 		return this.indexName;
 	}
 
-	public void setIndexName(String indexName) {
+	public void setIndexName(@Nullable String indexName) {
 		this.indexName = indexName;
 	}
 

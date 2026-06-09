@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -33,7 +34,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
-import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
@@ -62,24 +62,34 @@ public final class ElevenLabsApi {
 	 * @param webClientBuilder A builder for the Spring WebClient.
 	 * @param responseErrorHandler A custom error handler for API responses.
 	 */
-	private ElevenLabsApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
-			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
+	private ElevenLabsApi(String baseUrl, ApiKey apiKey, HttpHeaders headers, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = h -> {
 			if (!(apiKey instanceof NoopApiKey)) {
 				h.set("xi-api-key", apiKey.getValue());
 			}
-			h.addAll(headers);
+			h.addAll(HttpHeaders.readOnlyHttpHeaders(headers));
 			h.setContentType(MediaType.APPLICATION_JSON);
 		};
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
+		this.restClient = restClientBuilder.clone()
+			.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 
-		this.webClient = webClientBuilder.baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
+		this.webClient = webClientBuilder.clone().baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
+	}
+
+	/**
+	 * Create a new ElevenLabs API client.
+	 * @param restClient Spring RestClient instance.
+	 * @param webClient Spring WebClient instance.
+	 */
+	public ElevenLabsApi(RestClient restClient, WebClient webClient) {
+		this.restClient = restClient;
+		this.webClient = webClient;
 	}
 
 	public static Builder builder() {
@@ -167,16 +177,16 @@ public final class ElevenLabsApi {
 	 * Represents a request to the ElevenLabs Text-to-Speech API.
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record SpeechRequest(@JsonProperty("text") String text, @JsonProperty("model_id") String modelId,
-			@JsonProperty("language_code") String languageCode,
-			@JsonProperty("voice_settings") VoiceSettings voiceSettings,
-			@JsonProperty("pronunciation_dictionary_locators") List<PronunciationDictionaryLocator> pronunciationDictionaryLocators,
-			@JsonProperty("seed") Integer seed, @JsonProperty("previous_text") String previousText,
-			@JsonProperty("next_text") String nextText,
-			@JsonProperty("previous_request_ids") List<String> previousRequestIds,
-			@JsonProperty("next_request_ids") List<String> nextRequestIds,
-			@JsonProperty("apply_text_normalization") TextNormalizationMode applyTextNormalization,
-			@JsonProperty("apply_language_text_normalization") Boolean applyLanguageTextNormalization) {
+	public record SpeechRequest(@JsonProperty("text") String text, @JsonProperty("model_id") @Nullable String modelId,
+			@JsonProperty("language_code") @Nullable String languageCode,
+			@JsonProperty("voice_settings") @Nullable VoiceSettings voiceSettings,
+			@JsonProperty("pronunciation_dictionary_locators") @Nullable List<PronunciationDictionaryLocator> pronunciationDictionaryLocators,
+			@JsonProperty("seed") @Nullable Integer seed, @JsonProperty("previous_text") @Nullable String previousText,
+			@JsonProperty("next_text") @Nullable String nextText,
+			@JsonProperty("previous_request_ids") @Nullable List<String> previousRequestIds,
+			@JsonProperty("next_request_ids") @Nullable List<String> nextRequestIds,
+			@JsonProperty("apply_text_normalization") @Nullable TextNormalizationMode applyTextNormalization,
+			@JsonProperty("apply_language_text_normalization") @Nullable Boolean applyLanguageTextNormalization) {
 
 		public static Builder builder() {
 			return new Builder();
@@ -209,9 +219,11 @@ public final class ElevenLabsApi {
 		 * Voice settings to override defaults for the given voice.
 		 */
 		@JsonInclude(JsonInclude.Include.NON_NULL)
-		public record VoiceSettings(@JsonProperty("stability") Double stability,
-				@JsonProperty("similarity_boost") Double similarityBoost, @JsonProperty("style") Double style,
-				@JsonProperty("use_speaker_boost") Boolean useSpeakerBoost, @JsonProperty("speed") Double speed) {
+		public record VoiceSettings(@JsonProperty("stability") @Nullable Double stability,
+				@JsonProperty("similarity_boost") @Nullable Double similarityBoost,
+				@JsonProperty("style") @Nullable Double style,
+				@JsonProperty("use_speaker_boost") @Nullable Boolean useSpeakerBoost,
+				@JsonProperty("speed") @Nullable Double speed) {
 		}
 
 		/**
@@ -225,87 +237,87 @@ public final class ElevenLabsApi {
 
 		public static final class Builder {
 
-			private String text;
+			private @Nullable String text;
 
-			private String modelId;
+			private @Nullable String modelId;
 
-			private String languageCode;
+			private @Nullable String languageCode;
 
-			private VoiceSettings voiceSettings;
+			private @Nullable VoiceSettings voiceSettings;
 
-			private List<PronunciationDictionaryLocator> pronunciationDictionaryLocators;
+			private @Nullable List<PronunciationDictionaryLocator> pronunciationDictionaryLocators;
 
-			private Integer seed;
+			private @Nullable Integer seed;
 
-			private String previousText;
+			private @Nullable String previousText;
 
-			private String nextText;
+			private @Nullable String nextText;
 
-			private List<String> previousRequestIds;
+			private @Nullable List<String> previousRequestIds;
 
-			private List<String> nextRequestIds;
+			private @Nullable List<String> nextRequestIds;
 
-			private TextNormalizationMode applyTextNormalization;
+			private @Nullable TextNormalizationMode applyTextNormalization;
 
-			private Boolean applyLanguageTextNormalization = false;
+			private @Nullable Boolean applyLanguageTextNormalization = false;
 
 			public Builder text(String text) {
 				this.text = text;
 				return this;
 			}
 
-			public Builder modelId(String modelId) {
+			public Builder modelId(@Nullable String modelId) {
 				this.modelId = modelId;
 				return this;
 			}
 
-			public Builder languageCode(String languageCode) {
+			public Builder languageCode(@Nullable String languageCode) {
 				this.languageCode = languageCode;
 				return this;
 			}
 
-			public Builder voiceSettings(VoiceSettings voiceSettings) {
+			public Builder voiceSettings(@Nullable VoiceSettings voiceSettings) {
 				this.voiceSettings = voiceSettings;
 				return this;
 			}
 
 			public Builder pronunciationDictionaryLocators(
-					List<PronunciationDictionaryLocator> pronunciationDictionaryLocators) {
+					@Nullable List<PronunciationDictionaryLocator> pronunciationDictionaryLocators) {
 				this.pronunciationDictionaryLocators = pronunciationDictionaryLocators;
 				return this;
 			}
 
-			public Builder seed(Integer seed) {
+			public Builder seed(@Nullable Integer seed) {
 				this.seed = seed;
 				return this;
 			}
 
-			public Builder previousText(String previousText) {
+			public Builder previousText(@Nullable String previousText) {
 				this.previousText = previousText;
 				return this;
 			}
 
-			public Builder nextText(String nextText) {
+			public Builder nextText(@Nullable String nextText) {
 				this.nextText = nextText;
 				return this;
 			}
 
-			public Builder previousRequestIds(List<String> previousRequestIds) {
+			public Builder previousRequestIds(@Nullable List<String> previousRequestIds) {
 				this.previousRequestIds = previousRequestIds;
 				return this;
 			}
 
-			public Builder nextRequestIds(List<String> nextRequestIds) {
+			public Builder nextRequestIds(@Nullable List<String> nextRequestIds) {
 				this.nextRequestIds = nextRequestIds;
 				return this;
 			}
 
-			public Builder applyTextNormalization(TextNormalizationMode applyTextNormalization) {
+			public Builder applyTextNormalization(@Nullable TextNormalizationMode applyTextNormalization) {
 				this.applyTextNormalization = applyTextNormalization;
 				return this;
 			}
 
-			public Builder applyLanguageTextNormalization(Boolean applyLanguageTextNormalization) {
+			public Builder applyLanguageTextNormalization(@Nullable Boolean applyLanguageTextNormalization) {
 				this.applyLanguageTextNormalization = applyLanguageTextNormalization;
 				return this;
 			}
@@ -329,9 +341,9 @@ public final class ElevenLabsApi {
 
 		private String baseUrl = DEFAULT_BASE_URL;
 
-		private ApiKey apiKey;
+		private @Nullable ApiKey apiKey;
 
-		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		private HttpHeaders headers = new HttpHeaders();
 
 		private RestClient.Builder restClientBuilder = RestClient.builder();
 
@@ -345,19 +357,17 @@ public final class ElevenLabsApi {
 			return this;
 		}
 
-		public Builder apiKey(ApiKey apiKey) {
-			Assert.notNull(apiKey, "apiKey cannot be null");
+		public Builder apiKey(@Nullable ApiKey apiKey) {
 			this.apiKey = apiKey;
 			return this;
 		}
 
-		public Builder apiKey(String simpleApiKey) {
-			Assert.notNull(simpleApiKey, "simpleApiKey cannot be null");
-			this.apiKey = new SimpleApiKey(simpleApiKey);
+		public Builder apiKey(@Nullable String simpleApiKey) {
+			this.apiKey = simpleApiKey != null ? new SimpleApiKey(simpleApiKey) : null;
 			return this;
 		}
 
-		public Builder headers(MultiValueMap<String, String> headers) {
+		public Builder headers(HttpHeaders headers) {
 			Assert.notNull(headers, "headers cannot be null");
 			this.headers = headers;
 			return this;

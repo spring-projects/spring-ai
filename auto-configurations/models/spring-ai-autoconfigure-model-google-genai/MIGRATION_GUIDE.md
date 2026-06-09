@@ -45,11 +45,11 @@ New properties:
 # For Vertex AI mode
 spring.ai.google.genai.project-id=my-project
 spring.ai.google.genai.location=us-central1
-spring.ai.google.genai.chat.options.model=gemini-2.0-flash
+spring.ai.google.genai.chat.model=gemini-2.0-flash
 
 # For Gemini Developer API mode (new!)
 spring.ai.google.genai.api-key=your-api-key
-spring.ai.google.genai.chat.options.model=gemini-2.0-flash
+spring.ai.google.genai.chat.model=gemini-2.0-flash
 
 # Embedding properties
 spring.ai.google.genai.embedding.project-id=my-project

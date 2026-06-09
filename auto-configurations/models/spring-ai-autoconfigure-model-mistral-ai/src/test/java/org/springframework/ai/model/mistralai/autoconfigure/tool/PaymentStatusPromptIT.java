@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,24 +20,31 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
-import org.springframework.ai.model.mistralai.autoconfigure.BaseMistralAiIT;
+import org.springframework.ai.model.mistralai.autoconfigure.MistralAiChatAutoConfiguration;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 public class PaymentStatusPromptIT {
 
 	// Assuming we have the following payment data.
@@ -46,19 +53,25 @@ public class PaymentStatusPromptIT {
 			new Transaction("T1003"), new StatusDate("Paid", "2021-10-07"), new Transaction("T1004"),
 			new StatusDate("Paid", "2021-10-05"), new Transaction("T1005"), new StatusDate("Pending", "2021-10-08"));
 
-	private final Logger logger = LoggerFactory.getLogger(WeatherServicePromptIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.mistralai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"))
-		.withConfiguration(BaseMistralAiIT.mistralAiChatAutoConfig());
+		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"))
+		.withConfiguration(AutoConfigurations.of(MistralAiChatAutoConfiguration.class,
+				RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+				ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class));
 
 	@Test
 	void functionCallTest() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.mistralai.chat.options.model=" + MistralAiApi.ChatModel.SMALL.getValue())
+			.withPropertyValues("spring.ai.mistralai.chat.model=" + MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
 			.run(context -> {
 
 				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
+				ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+
+				var chatClient = ChatClient
+					.builder(chatModel, ObservationRegistry.NOOP, null, null,
+							ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
+					.build();
 
 				UserMessage userMessage = new UserMessage("What's the status of my transaction with id T1001?");
 
@@ -71,9 +84,9 @@ public class PaymentStatusPromptIT {
 						.build()))
 					.build();
 
-				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
-
-				logger.info("Response: {}", response);
+				ChatResponse response = chatClient.prompt(new Prompt(List.of(userMessage), promptOptions))
+					.call()
+					.chatResponse();
 
 				assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("T1001");
 				assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("paid");

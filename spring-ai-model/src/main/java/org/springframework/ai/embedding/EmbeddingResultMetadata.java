@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.ai.embedding;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.model.ResultMetadata;
 import org.springframework.util.Assert;
@@ -40,14 +42,14 @@ public class EmbeddingResultMetadata implements ResultMetadata {
 
 	private final MimeType mimeType;
 
-	private final Object documentData;
+	private final @Nullable Object documentData;
 
 	public EmbeddingResultMetadata() {
 		this("", ModalityType.TEXT, MimeTypeUtils.TEXT_PLAIN, null);
 	}
 
 	public EmbeddingResultMetadata(String documentId, ModalityType modalityType, MimeType mimeType,
-			Object documentData) {
+			@Nullable Object documentData) {
 		Assert.notNull(modalityType, "ModalityType must not be null");
 		Assert.notNull(mimeType, "MimeType must not be null");
 
@@ -69,7 +71,7 @@ public class EmbeddingResultMetadata implements ResultMetadata {
 		return this.documentId;
 	}
 
-	public Object getDocumentData() {
+	public @Nullable Object getDocumentData() {
 		return this.documentData;
 	}
 

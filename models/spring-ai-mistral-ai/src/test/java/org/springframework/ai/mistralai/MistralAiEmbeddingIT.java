@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Nicolas Krier
+ * @author Sebastien Deleuze
  */
 @SpringBootTest(classes = MistralAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
@@ -59,8 +60,8 @@ class MistralAiEmbeddingIT {
 
 	@ParameterizedTest
 	@CsvSource({ "mistral-embed, 1024", "codestral-embed, 1536" })
-	void defaultOptionsEmbedding(String model, int dimensions) {
-		var mistralAiEmbeddingOptions = MistralAiEmbeddingOptions.builder().withModel(model).build();
+	void optionsEmbedding(String model, int dimensions) {
+		var mistralAiEmbeddingOptions = MistralAiEmbeddingOptions.builder().model(model).build();
 		var anotherMistralAiEmbeddingModel = MistralAiEmbeddingModel.builder()
 			.mistralAiApi(this.mistralAiApi)
 			.options(mistralAiEmbeddingOptions)
@@ -80,7 +81,7 @@ class MistralAiEmbeddingIT {
 	@ParameterizedTest
 	@CsvSource({ "mistral-embed, 1024", "codestral-embed, 1536" })
 	void calledOptionsEmbedding(String model, int dimensions) {
-		var mistralAiEmbeddingOptions = MistralAiEmbeddingOptions.builder().withModel(model).build();
+		var mistralAiEmbeddingOptions = MistralAiEmbeddingOptions.builder().model(model).build();
 		var embeddingRequest = new EmbeddingRequest(List.of("Hello World", "World is big", "We are small"),
 				mistralAiEmbeddingOptions);
 		var embeddingResponse = this.mistralAiEmbeddingModel.call(embeddingRequest);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,9 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.autoconfigure.sql.init.SqlInitializationAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.JdbcTemplateAutoConfiguration;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -51,10 +52,8 @@ import static org.assertj.core.api.Assertions.fail;
 				"logging.level.org.springframework.boot.sql.init=DEBUG" })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @ImportAutoConfiguration({ org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration.class,
-		JdbcChatMemoryRepositoryAutoConfiguration.class,
-		org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration.class,
-		org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
-		SqlInitializationAutoConfiguration.class })
+		JdbcChatMemoryRepositoryAutoConfiguration.class, JdbcTemplateAutoConfiguration.class,
+		DataSourceAutoConfiguration.class })
 public class JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT {
 
 	@Autowired
@@ -93,14 +92,15 @@ public class JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT {
 				System.out.println("Dropped existing table if it existed");
 
 				// Create the table with a simplified schema
-				this.jdbcTemplate.execute("CREATE TABLE SPRING_AI_CHAT_MEMORY ("
-						+ "conversation_id VARCHAR(36) NOT NULL, " + "content LONGVARCHAR NOT NULL, "
-						+ "type VARCHAR(10) NOT NULL, " + "timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)");
+				this.jdbcTemplate
+					.execute("CREATE TABLE SPRING_AI_CHAT_MEMORY (" + "conversation_id VARCHAR(36) NOT NULL, "
+							+ "content LONGVARCHAR NOT NULL, " + "type VARCHAR(10) NOT NULL, "
+							+ "timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, sequence_id BIGINT NOT NULL)");
 				System.out.println("Created table with simplified schema");
 
 				// Create index
 				this.jdbcTemplate.execute(
-						"CREATE INDEX SPRING_AI_CHAT_MEMORY_IDX ON SPRING_AI_CHAT_MEMORY(conversation_id, timestamp DESC)");
+						"CREATE INDEX SPRING_AI_CHAT_MEMORY_IDX ON SPRING_AI_CHAT_MEMORY(conversation_id, sequence_id)");
 				System.out.println("Created index");
 
 				// Verify table was created
@@ -166,12 +166,15 @@ public class JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT {
 
 		chatMemory.add(conversationId, userMessage);
 		assertThat(chatMemory.get(conversationId)).hasSize(1);
-		assertThat(chatMemory.get(conversationId)).isEqualTo(List.of(userMessage));
+		// Read-back messages carry timestamp metadata, so compare content rather than
+		// full object equality.
+		assertThat(chatMemory.get(conversationId)).extracting(Message::getText).containsExactly(userMessage.getText());
 
 		var assistantMessage = new AssistantMessage("Message from the assistant");
 		chatMemory.add(conversationId, List.of(assistantMessage));
 		assertThat(chatMemory.get(conversationId)).hasSize(2);
-		assertThat(chatMemory.get(conversationId)).isEqualTo(List.of(userMessage, assistantMessage));
+		assertThat(chatMemory.get(conversationId)).extracting(Message::getText)
+			.containsExactly(userMessage.getText(), assistantMessage.getText());
 
 		chatMemory.clear(conversationId);
 		assertThat(chatMemory.get(conversationId)).isEmpty();
@@ -180,7 +183,8 @@ public class JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT {
 				new AssistantMessage("Message from the assistant 1"));
 		chatMemory.add(conversationId, multipleMessages);
 		assertThat(chatMemory.get(conversationId)).hasSize(multipleMessages.size());
-		assertThat(chatMemory.get(conversationId)).isEqualTo(multipleMessages);
+		assertThat(chatMemory.get(conversationId)).extracting(Message::getText)
+			.containsExactlyElementsOf(multipleMessages.stream().map(Message::getText).toList());
 	}
 
 	@SpringBootConfiguration

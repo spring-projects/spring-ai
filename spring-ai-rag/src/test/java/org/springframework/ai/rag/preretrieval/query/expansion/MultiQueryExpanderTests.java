@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ class MultiQueryExpanderTests {
 	@Test
 	void whenChatClientBuilderIsNullThenThrow() {
 		assertThatThrownBy(() -> MultiQueryExpander.builder().chatClientBuilder(null).build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("chatClientBuilder cannot be null");
 	}
 
@@ -72,7 +72,7 @@ class MultiQueryExpanderTests {
 
 	@Test
 	void whenBuilderIsNullThenThrow() {
-		assertThatThrownBy(() -> MultiQueryExpander.builder().build()).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> MultiQueryExpander.builder().build()).isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("chatClientBuilder cannot be null");
 	}
 

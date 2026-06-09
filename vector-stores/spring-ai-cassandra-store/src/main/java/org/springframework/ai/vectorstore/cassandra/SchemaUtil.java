@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import java.time.Duration;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * Utility class for working with Cassandra schema.
@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class SchemaUtil {
 
-	private static final Logger logger = LoggerFactory.getLogger(SchemaUtil.class);
+	private static final Log logger = LogFactory.getLog(SchemaUtil.class);
 
 	private SchemaUtil() {
 
@@ -61,7 +61,9 @@ public final class SchemaUtil {
 				.withSimpleStrategy(1)
 				.build();
 
-			logger.debug("Executing {}", keyspaceStmt.getQuery());
+			if (logger.isDebugEnabled()) {
+				logger.debug("Executing " + keyspaceStmt.getQuery());
+			}
 			session.execute(keyspaceStmt);
 		}
 	}

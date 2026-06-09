@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -157,7 +157,10 @@ public class MessageWindowChatMemoryTests {
 		customChatMemory.add(conversationId, messages);
 		List<Message> result = customChatMemory.get(conversationId);
 
-		assertThat(result).hasSize(2);
+		// Turn-boundary snapping: the raw cut lands on "Response 2" (ASSISTANT), which
+		// is mid-turn, so the cut advances to "Message 3" (USER). Only the incomplete
+		// last turn is kept rather than producing an orphaned assistant message.
+		assertThat(result).containsExactly(new UserMessage("Message 3"));
 	}
 
 	@Test
@@ -238,9 +241,12 @@ public class MessageWindowChatMemoryTests {
 
 		List<Message> result = customChatMemory.get(conversationId);
 
-		assertThat(result).hasSize(limit);
+		// Two system messages occupy 2 of the 3 slots, leaving only 1 for non-system
+		// messages. A single slot cannot hold a complete turn (USER + ASSISTANT = 2),
+		// so turn-boundary snapping evicts all non-system messages rather than keeping
+		// an orphaned assistant message.
 		assertThat(result).containsExactly(new SystemMessage("System instruction 1"),
-				new SystemMessage("System instruction 2"), new AssistantMessage("Response 2"));
+				new SystemMessage("System instruction 2"));
 	}
 
 	@Test
@@ -250,6 +256,83 @@ public class MessageWindowChatMemoryTests {
 		List<Message> result = this.chatMemory.get(conversationId);
 
 		assertThat(result).isEmpty();
+	}
+
+	@Test
+	void turnBoundarySnappingPreventsOrphanedAssistantMessage() {
+		// Turn 1: [U1, A1] Turn 2: [U2, A2] Turn 3: [U3, A3]
+		// With limit=3 and 6 total messages, the raw cut index is 3 — landing on A2
+		// (ASSISTANT), which is mid-turn 2. Snapping advances to U3, evicting both
+		// turns 1 and 2 rather than producing an orphaned assistant message.
+		int limit = 3;
+		MessageWindowChatMemory customChatMemory = MessageWindowChatMemory.builder().maxMessages(limit).build();
+
+		String conversationId = UUID.randomUUID().toString();
+		List<Message> messages = List.of(new UserMessage("Question 1"), new AssistantMessage("Answer 1"),
+				new UserMessage("Question 2"), new AssistantMessage("Answer 2"), new UserMessage("Question 3"),
+				new AssistantMessage("Answer 3"));
+		customChatMemory.add(conversationId, messages);
+
+		List<Message> result = customChatMemory.get(conversationId);
+
+		assertThat(result).containsExactly(new UserMessage("Question 3"), new AssistantMessage("Answer 3"));
+	}
+
+	@Test
+	void turnBoundarySnappingEvictsAllMessagesWithinTheSameTurn() {
+		// Turn 1: [U1, A1a, A1b, A1c] Turn 2: [U2, A2]
+		// With limit=4 and 6 total messages, the raw cut index is 2 — landing on A1b
+		// (ASSISTANT), still inside turn 1. Snapping skips A1b and A1c to reach U2,
+		// evicting all four messages of turn 1 rather than leaving a partial turn.
+		int limit = 4;
+		MessageWindowChatMemory customChatMemory = MessageWindowChatMemory.builder().maxMessages(limit).build();
+
+		String conversationId = UUID.randomUUID().toString();
+		List<Message> messages = List.of(new UserMessage("Question 1"), new AssistantMessage("Step 1"),
+				new AssistantMessage("Step 2"), new AssistantMessage("Final answer"), new UserMessage("Question 2"),
+				new AssistantMessage("Answer 2"));
+		customChatMemory.add(conversationId, messages);
+
+		List<Message> result = customChatMemory.get(conversationId);
+
+		assertThat(result).containsExactly(new UserMessage("Question 2"), new AssistantMessage("Answer 2"));
+	}
+
+	@Test
+	void noSnapWhenRawCutAlreadyLandsOnUserMessage() {
+		// When the raw cut happens to fall exactly on a USER message no additional
+		// messages should be evicted.
+		int limit = 4;
+		MessageWindowChatMemory customChatMemory = MessageWindowChatMemory.builder().maxMessages(limit).build();
+
+		String conversationId = UUID.randomUUID().toString();
+		List<Message> messages = List.of(new UserMessage("Message 1"), new AssistantMessage("Response 1"),
+				new UserMessage("Message 2"), new AssistantMessage("Response 2"), new UserMessage("Message 3"),
+				new AssistantMessage("Response 3"));
+		customChatMemory.add(conversationId, messages);
+
+		List<Message> result = customChatMemory.get(conversationId);
+
+		// Raw cut lands at "Message 2" (USER) — no snapping needed; exactly 4 kept.
+		assertThat(result).containsExactly(new UserMessage("Message 2"), new AssistantMessage("Response 2"),
+				new UserMessage("Message 3"), new AssistantMessage("Response 3"));
+	}
+
+	@Test
+	void noExceptionWhenSystemMessagesExceedMaxMessages() {
+		// If more SystemMessages accumulate than maxMessages, cutIndex would exceed
+		// nonSystemIndices.size() and subList would throw without the min() clamp.
+		int limit = 2;
+		MessageWindowChatMemory customChatMemory = MessageWindowChatMemory.builder().maxMessages(limit).build();
+
+		String conversationId = UUID.randomUUID().toString();
+		customChatMemory.add(conversationId, List.of(new SystemMessage("S1"), new SystemMessage("S2")));
+		customChatMemory.add(conversationId,
+				List.of(new UserMessage("Hello"), new AssistantMessage("Hi"), new UserMessage("Again")));
+
+		List<Message> result = customChatMemory.get(conversationId);
+
+		assertThat(result).containsExactly(new SystemMessage("S1"), new SystemMessage("S2"));
 	}
 
 	@Test

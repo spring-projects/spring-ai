@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -45,7 +46,7 @@ import org.springframework.util.StreamUtils;
  */
 public class PromptTemplate implements PromptTemplateActions, PromptTemplateMessageActions {
 
-	private static final Logger log = LoggerFactory.getLogger(PromptTemplate.class);
+	private static final Log log = LogFactory.getLog(PromptTemplate.class);
 
 	private static final TemplateRenderer DEFAULT_TEMPLATE_RENDERER = StTemplateRenderer.builder().build();
 
@@ -54,7 +55,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	 * together with the new PromptTemplateRenderer interface, designed to give you more
 	 * flexibility and control over the rendering process.
 	 */
-	private String template;
+	private final String template;
 
 	private final Map<String, Object> variables = new HashMap<>();
 
@@ -109,7 +110,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	@Override
 	public String render() {
 		// Process internal variables to handle Resources before rendering
-		Map<String, Object> processedVariables = new HashMap<>();
+		Map<String, @Nullable Object> processedVariables = new HashMap<>();
 		for (Entry<String, Object> entry : this.variables.entrySet()) {
 			if (entry.getValue() instanceof Resource resource) {
 				processedVariables.put(entry.getKey(), renderResource(resource));
@@ -123,7 +124,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 
 	@Override
 	public String render(Map<String, Object> additionalVariables) {
-		Map<String, Object> combinedVariables = new HashMap<>();
+		Map<String, @Nullable Object> combinedVariables = new HashMap<>();
 		Map<String, Object> mergedVariables = new HashMap<>(this.variables);
 		// variables + additionalVariables => mergedVariables
 		if (additionalVariables != null && !additionalVariables.isEmpty()) {
@@ -160,7 +161,9 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 			return resource.getContentAsString(StandardCharsets.UTF_8);
 		}
 		catch (IOException e) {
-			log.warn("Failed to render resource: {}", resource.getDescription(), e);
+			if (log.isWarnEnabled()) {
+				log.warn("Failed to render resource: " + resource.getDescription(), e);
+			}
 			return "[Unable to render resource: " + resource.getDescription() + "]";
 		}
 	}
@@ -216,9 +219,9 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 
 	public static class Builder {
 
-		protected String template;
+		protected @Nullable String template;
 
-		protected Resource resource;
+		protected @Nullable Resource resource;
 
 		protected Map<String, Object> variables = new HashMap<>();
 
@@ -259,8 +262,11 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 			else if (this.resource != null) {
 				return new PromptTemplate(this.resource, this.variables, this.renderer);
 			}
-			else {
+			else if (this.template != null) {
 				return new PromptTemplate(this.template, this.variables, this.renderer);
+			}
+			else {
+				throw new IllegalStateException("Neither template nor resource is set");
 			}
 		}
 

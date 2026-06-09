@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.springframework.ai.chat.messages;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.content.Media;
 import org.springframework.ai.content.MediaContent;
@@ -42,31 +44,11 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 
 	protected final List<Media> media;
 
-	public AssistantMessage(String content) {
-		this(content, Map.of());
+	public AssistantMessage(@Nullable String content) {
+		this(content, Map.of(), List.of(), List.of());
 	}
 
-	/**
-	 * @deprecated in favor of {@link AssistantMessage#builder()}.
-	 */
-	@Deprecated
-	public AssistantMessage(String content, Map<String, Object> properties) {
-		this(content, properties, List.of());
-	}
-
-	/**
-	 * @deprecated in favor of {@link AssistantMessage#builder()}.
-	 */
-	@Deprecated
-	public AssistantMessage(String content, Map<String, Object> properties, List<ToolCall> toolCalls) {
-		this(content, properties, toolCalls, List.of());
-	}
-
-	/**
-	 * @deprecated in favor of {@link AssistantMessage#builder()}.
-	 */
-	@Deprecated
-	public AssistantMessage(String content, Map<String, Object> properties, List<ToolCall> toolCalls,
+	protected AssistantMessage(@Nullable String content, Map<String, Object> properties, List<ToolCall> toolCalls,
 			List<Media> media) {
 		super(MessageType.ASSISTANT, content, properties);
 		Assert.notNull(toolCalls, "Tool calls must not be null");
@@ -89,7 +71,7 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -113,45 +95,50 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 				+ this.textContent + ", metadata=" + this.metadata + "]";
 	}
 
-	public static Builder builder() {
-		return new Builder();
+	public static Builder<?> builder() {
+		return new Builder<>();
 	}
 
 	public record ToolCall(String id, String type, String name, String arguments) {
 
 	}
 
-	public static final class Builder {
+	public static class Builder<B extends Builder<B>> {
 
-		private String content;
+		protected @Nullable String content;
 
-		private Map<String, Object> properties = Map.of();
+		protected Map<String, Object> properties = Map.of();
 
-		private List<ToolCall> toolCalls = List.of();
+		protected List<ToolCall> toolCalls = List.of();
 
-		private List<Media> media = List.of();
+		protected List<Media> media = List.of();
 
-		private Builder() {
+		protected Builder() {
 		}
 
-		public Builder content(String content) {
+		@SuppressWarnings("unchecked")
+		protected B self() {
+			return (B) this;
+		}
+
+		public B content(@Nullable String content) {
 			this.content = content;
-			return this;
+			return self();
 		}
 
-		public Builder properties(Map<String, Object> properties) {
+		public B properties(Map<String, Object> properties) {
 			this.properties = properties;
-			return this;
+			return self();
 		}
 
-		public Builder toolCalls(List<ToolCall> toolCalls) {
+		public B toolCalls(List<ToolCall> toolCalls) {
 			this.toolCalls = toolCalls;
-			return this;
+			return self();
 		}
 
-		public Builder media(List<Media> media) {
+		public B media(List<Media> media) {
 			this.media = media;
-			return this;
+			return self();
 		}
 
 		public AssistantMessage build() {

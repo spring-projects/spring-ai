@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.ai.tokenizer;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.content.MediaContent;
 
 /**
@@ -31,7 +33,7 @@ public interface TokenCountEstimator {
 	 * @param text the text to estimate the number of tokens for.
 	 * @return the estimated number of tokens.
 	 */
-	int estimate(String text);
+	int estimate(@Nullable String text);
 
 	/**
 	 * Estimates the number of tokens in the given message.

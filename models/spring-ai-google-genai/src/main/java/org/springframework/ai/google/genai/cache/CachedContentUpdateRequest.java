@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.time.Instant;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Request for updating cached content in Google GenAI.
@@ -30,21 +31,21 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public final class CachedContentUpdateRequest {
 
 	@JsonProperty("ttl")
-	private final Duration ttl;
+	@Nullable private final Duration ttl;
 
 	@JsonProperty("expire_time")
-	private final Instant expireTime;
+	@Nullable private final Instant expireTime;
 
 	private CachedContentUpdateRequest(Builder builder) {
 		this.ttl = builder.ttl;
 		this.expireTime = builder.expireTime;
 	}
 
-	public Duration getTtl() {
+	public @Nullable Duration getTtl() {
 		return this.ttl;
 	}
 
-	public Instant getExpireTime() {
+	public @Nullable Instant getExpireTime() {
 		return this.expireTime;
 	}
 
@@ -59,9 +60,9 @@ public final class CachedContentUpdateRequest {
 
 	public static final class Builder {
 
-		private Duration ttl;
+		@Nullable private Duration ttl;
 
-		private Instant expireTime;
+		@Nullable private Instant expireTime;
 
 		private Builder() {
 		}

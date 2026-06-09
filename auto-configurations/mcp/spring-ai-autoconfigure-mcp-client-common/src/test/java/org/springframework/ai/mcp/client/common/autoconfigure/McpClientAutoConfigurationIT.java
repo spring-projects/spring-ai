@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
+import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.json.TypeRef;
 import io.modelcontextprotocol.spec.McpClientTransport;
@@ -29,9 +30,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.configurer.McpSyncClientConfigurer;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
-import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;
+import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -84,8 +86,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class McpClientAutoConfigurationIT {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withConfiguration(
-			AutoConfigurations.of(McpToolCallbackAutoConfiguration.class, McpClientAutoConfiguration.class));
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withConfiguration(AutoConfigurations.of(McpToolCallbackAutoConfiguration.class,
+				McpClientAutoConfiguration.class, McpClientAnnotationScannerAutoConfiguration.class));
 
 	/**
 	 * Tests the default MCP client auto-configuration.
@@ -207,6 +210,24 @@ public class McpClientAutoConfigurationIT {
 			});
 	}
 
+	@Test
+	void missingAnnotationScanner() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.client.annotation-scanner.enabled=false").run(context -> {
+			assertThat(context).hasBean("mcpSyncClients");
+			List<?> clients = context.getBean("mcpSyncClients", List.class);
+			assertThat(clients).isNotNull();
+		});
+
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.client.annotation-scanner.enabled=false",
+					"spring.ai.mcp.client.type=ASYNC")
+			.run(context -> {
+				assertThat(context).hasBean("mcpAsyncClients");
+				List<?> clients = context.getBean("mcpAsyncClients", List.class);
+				assertThat(clients).isNotNull();
+			});
+	}
+
 	/**
 	 * Tests that closeable wrapper beans are created properly.
 	 *
@@ -258,7 +279,7 @@ public class McpClientAutoConfigurationIT {
 	static class CustomizerConfiguration {
 
 		@Bean
-		McpSyncClientCustomizer testCustomizer() {
+		McpClientCustomizer<McpClient.SyncSpec> testCustomizer() {
 			return (name, spec) -> {
 				/* no-op */ };
 		}

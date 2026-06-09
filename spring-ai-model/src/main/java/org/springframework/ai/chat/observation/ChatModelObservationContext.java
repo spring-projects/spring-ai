@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,14 @@
 
 package org.springframework.ai.chat.observation;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.observation.ModelObservationContext;
 import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.AiOperationType;
+import org.springframework.util.Assert;
 
 /**
  * Context used to store metadata for chat model exchanges.
@@ -30,9 +33,16 @@ import org.springframework.ai.observation.conventions.AiOperationType;
  */
 public class ChatModelObservationContext extends ModelObservationContext<Prompt, ChatResponse> {
 
-	ChatModelObservationContext(Prompt prompt, String provider) {
+	private final boolean streaming;
+
+	ChatModelObservationContext(Prompt prompt, String provider, boolean streaming) {
 		super(prompt,
 				AiOperationMetadata.builder().operationType(AiOperationType.CHAT.value()).provider(provider).build());
+		this.streaming = streaming;
+	}
+
+	public boolean isStreaming() {
+		return this.streaming;
 	}
 
 	public static Builder builder() {
@@ -41,9 +51,11 @@ public class ChatModelObservationContext extends ModelObservationContext<Prompt,
 
 	public static final class Builder {
 
-		private Prompt prompt;
+		private @Nullable Prompt prompt;
 
-		private String provider;
+		private @Nullable String provider;
+
+		private boolean streaming;
 
 		private Builder() {
 		}
@@ -58,8 +70,15 @@ public class ChatModelObservationContext extends ModelObservationContext<Prompt,
 			return this;
 		}
 
+		public Builder streaming(boolean streaming) {
+			this.streaming = streaming;
+			return this;
+		}
+
 		public ChatModelObservationContext build() {
-			return new ChatModelObservationContext(this.prompt, this.provider);
+			Assert.state(this.prompt != null, "Prompt must not be null");
+			Assert.state(this.provider != null, "Provider must not be null");
+			return new ChatModelObservationContext(this.prompt, this.provider, this.streaming);
 		}
 
 	}

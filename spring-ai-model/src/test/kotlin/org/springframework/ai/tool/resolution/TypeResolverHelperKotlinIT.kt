@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ class TypeResolverHelperKotlinIT {
 		val functionType = TypeResolverHelper.resolveBeanType(this.applicationContext, beanName);
 		val functionInputClass = TypeResolverHelper.getFunctionArgumentType(functionType, 0).rawClass;
 		assertThat(functionInputClass).isNotNull();
-		assertThat(functionInputClass.typeName).isEqualTo(WeatherRequest::class.java.getName());
+		assertThat(functionInputClass?.typeName).isEqualTo(WeatherRequest::class.java.getName());
 	}
 
 	class Outer {

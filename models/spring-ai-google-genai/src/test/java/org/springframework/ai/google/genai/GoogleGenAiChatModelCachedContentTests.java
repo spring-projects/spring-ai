@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import org.springframework.ai.google.genai.cache.CachedContentRequest;
 import org.springframework.ai.google.genai.cache.GoogleGenAiCachedContent;
 import org.springframework.ai.google.genai.cache.GoogleGenAiCachedContentService;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -44,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit tests for GoogleGenAiChatModel cached content functionality.
  *
  * @author Dan Dobrin
+ * @author Sebastien Deleuze
  * @since 1.1.0
  */
 public class GoogleGenAiChatModelCachedContentTests {
@@ -66,13 +67,13 @@ public class GoogleGenAiChatModelCachedContentTests {
 		this.cachedContentService = new TestGoogleGenAiCachedContentService(this.mockClient);
 
 		// Initialize chat model with default options
-		GoogleGenAiChatOptions defaultOptions = GoogleGenAiChatOptions.builder()
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
 			.model("gemini-2.0-flash")
 			.temperature(0.7)
 			.build();
 
-		this.chatModel = new TestGoogleGenAiGeminiChatModelWithCache(this.mockClient, defaultOptions,
-				this.retryTemplate, this.cachedContentService);
+		this.chatModel = new TestGoogleGenAiGeminiChatModelWithCache(this.mockClient, options, this.retryTemplate,
+				this.cachedContentService);
 	}
 
 	@Test

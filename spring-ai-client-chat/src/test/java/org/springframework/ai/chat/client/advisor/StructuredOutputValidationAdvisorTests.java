@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,13 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.List;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import io.micrometer.observation.ObservationRegistry;
-import io.modelcontextprotocol.json.TypeRef;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
+import tools.jackson.core.type.TypeReference;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
@@ -60,33 +59,54 @@ public class StructuredOutputValidationAdvisorTests {
 	private StreamAdvisorChain streamAdvisorChain;
 
 	@Test
-	void whenOutputTypeIsNullThenThrow() {
+	void whenNeitherOutputTypeNorSchemaIsSetThenThrow() {
 		assertThatThrownBy(() -> StructuredOutputValidationAdvisor.builder().build())
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("outputType must be set");
+			.hasMessageContaining("Either outputType or outputJsonSchema must be set");
+	}
+
+	@Test
+	void whenBothOutputTypeAndSchemaAreSetThenThrow() {
+		assertThatThrownBy(() -> StructuredOutputValidationAdvisor.builder().outputType(new TypeReference<Person>() {
+		}).outputJsonSchema("{\"type\":\"object\"}").build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Only outputType or outputJsonSchema can be set, not both");
+	}
+
+	@Test
+	void whenOutputJsonSchemaIsSetThenBuildSucceeds() {
+		String schema = """
+				{"type":"object","properties":{"name":{"type":"string"},"age":{"type":"integer"}},"required":["name","age"]}
+				""";
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputJsonSchema(schema)
+			.build();
+
+		assertThat(advisor).isNotNull();
+		assertThat(advisor.getName()).isEqualTo("Structured Output Validation Advisor");
+		assertThat(advisor.getOrder()).isEqualTo(Ordered.LOWEST_PRECEDENCE - 2000);
 	}
 
 	@Test
 	void whenAdvisorOrderIsOutOfRangeThenThrow() {
-		assertThatThrownBy(() -> StructuredOutputValidationAdvisor.builder().outputType(new TypeRef<Person>() {
+		assertThatThrownBy(() -> StructuredOutputValidationAdvisor.builder().outputType(new TypeReference<Person>() {
 		}).advisorOrder(Ordered.HIGHEST_PRECEDENCE).build()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("advisorOrder must be between HIGHEST_PRECEDENCE and LOWEST_PRECEDENCE");
 
-		assertThatThrownBy(() -> StructuredOutputValidationAdvisor.builder().outputType(new TypeRef<Person>() {
+		assertThatThrownBy(() -> StructuredOutputValidationAdvisor.builder().outputType(new TypeReference<Person>() {
 		}).advisorOrder(Ordered.LOWEST_PRECEDENCE).build()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("advisorOrder must be between HIGHEST_PRECEDENCE and LOWEST_PRECEDENCE");
 	}
 
 	@Test
 	void whenRepeatAttemptsIsNegativeThenThrow() {
-		assertThatThrownBy(() -> StructuredOutputValidationAdvisor.builder().outputType(new TypeRef<Person>() {
+		assertThatThrownBy(() -> StructuredOutputValidationAdvisor.builder().outputType(new TypeReference<Person>() {
 		}).maxRepeatAttempts(-1).build()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("repeatAttempts must be greater than or equal to 0");
 	}
 
 	@Test
-	void testBuilderMethodChainingWithTypeRef() {
-		TypeRef<Person> typeRef = new TypeRef<>() {
+	void testBuilderMethodChainingWithJacksonTypeReference() {
+		TypeReference<Person> typeRef = new TypeReference<>() {
 		};
 		int customOrder = Ordered.HIGHEST_PRECEDENCE + 500;
 		int customAttempts = 5;
@@ -137,7 +157,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void testDefaultValues() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<Person>() {
+			.outputType(new TypeReference<Person>() {
 			})
 			.build();
 
@@ -149,7 +169,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void whenChatClientRequestIsNullThenThrow() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<Person>() {
+			.outputType(new TypeReference<Person>() {
 			})
 			.build();
 
@@ -161,7 +181,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void whenCallAdvisorChainIsNullThenThrow() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<Person>() {
+			.outputType(new TypeReference<Person>() {
 			})
 			.build();
 		ChatClientRequest request = createMockRequest();
@@ -173,7 +193,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void testAdviseCallWithValidJsonOnFirstAttempt() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<Person>() {
+			.outputType(new TypeReference<Person>() {
 			})
 			.maxRepeatAttempts(3)
 			.build();
@@ -215,7 +235,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void testAdviseCallWithInvalidJsonRetries() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<Person>() {
+			.outputType(new TypeReference<Person>() {
 			})
 			.maxRepeatAttempts(2)
 			.build();
@@ -259,7 +279,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void testAdviseCallExhaustsAllRetries() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<Person>() {
+			.outputType(new TypeReference<Person>() {
 			})
 			.maxRepeatAttempts(2)
 			.build();
@@ -302,7 +322,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void testAdviseCallWithZeroRetries() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<Person>() {
+			.outputType(new TypeReference<Person>() {
 			})
 			.maxRepeatAttempts(0)
 			.build();
@@ -345,7 +365,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void testAdviseCallWithNullChatResponse() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<Person>() {
+			.outputType(new TypeReference<Person>() {
 			})
 			.maxRepeatAttempts(1)
 			.build();
@@ -390,7 +410,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void testAdviseCallWithNullResult() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<Person>() {
+			.outputType(new TypeReference<Person>() {
 			})
 			.maxRepeatAttempts(1)
 			.build();
@@ -437,7 +457,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void testAdviseCallWithComplexType() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<Address>() {
+			.outputType(new TypeReference<Address>() {
 			})
 			.maxRepeatAttempts(2)
 			.build();
@@ -476,7 +496,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void testAdviseStreamThrowsUnsupportedOperationException() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<Person>() {
+			.outputType(new TypeReference<Person>() {
 			})
 			.build();
 		ChatClientRequest request = createMockRequest();
@@ -490,7 +510,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void testGetName() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<Person>() {
+			.outputType(new TypeReference<Person>() {
 			})
 			.build();
 		assertThat(advisor.getName()).isEqualTo("Structured Output Validation Advisor");
@@ -500,7 +520,7 @@ public class StructuredOutputValidationAdvisorTests {
 	void testGetOrder() {
 		int customOrder = Ordered.HIGHEST_PRECEDENCE + 1500;
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<Person>() {
+			.outputType(new TypeReference<Person>() {
 			})
 			.advisorOrder(customOrder)
 			.build();
@@ -511,7 +531,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void testMultipleRetriesWithDifferentInvalidResponses() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<Person>() {
+			.outputType(new TypeReference<Person>() {
 			})
 			.maxRepeatAttempts(3)
 			.build();
@@ -565,7 +585,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void testPromptAugmentationWithValidationError() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<Person>() {
+			.outputType(new TypeReference<Person>() {
 			})
 			.maxRepeatAttempts(1)
 			.build();
@@ -623,7 +643,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void testValidationWithEmptyJsonString() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<Person>() {
+			.outputType(new TypeReference<Person>() {
 			})
 			.maxRepeatAttempts(1)
 			.build();
@@ -667,7 +687,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void testValidationWithMalformedJson() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<Person>() {
+			.outputType(new TypeReference<Person>() {
 			})
 			.maxRepeatAttempts(1)
 			.build();
@@ -712,7 +732,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void testValidationWithExtraFields() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<Person>() {
+			.outputType(new TypeReference<Person>() {
 			})
 			.maxRepeatAttempts(0)
 			.build();
@@ -752,7 +772,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void testValidationWithNestedObject() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<PersonWithAddress>() {
+			.outputType(new TypeReference<PersonWithAddress>() {
 			})
 			.maxRepeatAttempts(2)
 			.build();
@@ -790,7 +810,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void testValidationWithInvalidNestedObject() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<PersonWithAddress>() {
+			.outputType(new TypeReference<PersonWithAddress>() {
 			})
 			.maxRepeatAttempts(1)
 			.build();
@@ -835,7 +855,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void testValidationWithListType() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<List<Person>>() {
+			.outputType(new TypeReference<List<Person>>() {
 			})
 			.maxRepeatAttempts(1)
 			.build();
@@ -873,7 +893,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void testValidationWithInvalidListType() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<List<Person>>() {
+			.outputType(new TypeReference<List<Person>>() {
 			})
 			.maxRepeatAttempts(1)
 			.build();
@@ -918,7 +938,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void testValidationWithWrongTypeInField() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<Person>() {
+			.outputType(new TypeReference<Person>() {
 			})
 			.maxRepeatAttempts(1)
 			.build();
@@ -964,7 +984,7 @@ public class StructuredOutputValidationAdvisorTests {
 	void testAdvisorOrderingInChain() {
 		int customOrder = Ordered.HIGHEST_PRECEDENCE + 1000;
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
-			.outputType(new TypeRef<Person>() {
+			.outputType(new TypeReference<Person>() {
 			})
 			.advisorOrder(customOrder)
 			.build();

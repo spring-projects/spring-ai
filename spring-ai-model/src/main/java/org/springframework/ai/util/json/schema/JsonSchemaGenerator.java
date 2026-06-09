@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,6 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.generator.Option;
 import com.github.victools.jsonschema.generator.OptionPreset;
@@ -34,15 +32,20 @@ import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.generator.SchemaVersion;
-import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
+import com.github.victools.jsonschema.module.jackson.JacksonSchemaModule;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.model.KotlinModule;
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.ai.util.json.JsonParser;
-import org.springframework.lang.Nullable;
+import org.springframework.ai.util.JacksonUtils;
+import org.springframework.core.KotlinDetector;
+import org.springframework.core.Nullness;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
@@ -69,6 +72,7 @@ import org.springframework.util.StringUtils;
  * <p>
  *
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public final class JsonSchemaGenerator {
@@ -81,15 +85,16 @@ public final class JsonSchemaGenerator {
 	 */
 	private static final boolean PROPERTY_REQUIRED_BY_DEFAULT = true;
 
-	private static final SchemaGenerator TYPE_SCHEMA_GENERATOR;
+	private static final SchemaGenerator typeSchemaGenerator;
 
-	private static final SchemaGenerator SUBTYPE_SCHEMA_GENERATOR;
+	private static final SchemaGenerator subtypeSchemaGenerator;
 
 	/*
 	 * Initialize JSON Schema generators.
 	 */
 	static {
-		Module jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
+		Module jacksonModule = new JacksonSchemaModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
+				JacksonOption.RESPECT_JSONPROPERTY_ORDER);
 		Module openApiModule = new Swagger2Module();
 		Module springAiSchemaModule = PROPERTY_REQUIRED_BY_DEFAULT ? new SpringAiSchemaModule()
 				: new SpringAiSchemaModule(SpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
@@ -102,25 +107,36 @@ public final class JsonSchemaGenerator {
 			.with(Option.EXTRA_OPEN_API_FORMAT_VALUES)
 			.with(Option.PLAIN_DEFINITION_KEYS);
 
+		if (KotlinDetector.isKotlinReflectPresent()) {
+			schemaGeneratorConfigBuilder.with(new KotlinModule());
+		}
+
 		SchemaGeneratorConfig typeSchemaGeneratorConfig = schemaGeneratorConfigBuilder.build();
-		TYPE_SCHEMA_GENERATOR = new SchemaGenerator(typeSchemaGeneratorConfig);
+		typeSchemaGenerator = new SchemaGenerator(typeSchemaGeneratorConfig);
 
 		SchemaGeneratorConfig subtypeSchemaGeneratorConfig = schemaGeneratorConfigBuilder
 			.without(Option.SCHEMA_VERSION_INDICATOR)
 			.build();
-		SUBTYPE_SCHEMA_GENERATOR = new SchemaGenerator(subtypeSchemaGeneratorConfig);
+		subtypeSchemaGenerator = new SchemaGenerator(subtypeSchemaGeneratorConfig);
 	}
 
 	private JsonSchemaGenerator() {
+	}
+
+	private static ObjectNode generateSchema(SchemaGenerator generator, Type type) {
+		synchronized (generator) {
+			return generator.generateSchema(type);
+		}
 	}
 
 	/**
 	 * Generate a JSON Schema for a method's input parameters.
 	 */
 	public static String generateForMethodInput(Method method, SchemaOption... schemaOptions) {
-		ObjectNode schema = JsonParser.getObjectMapper().createObjectNode();
+		ObjectNode schema = JacksonUtils.getDefaultJsonMapper().createObjectNode();
 		schema.put("$schema", SchemaVersion.DRAFT_2020_12.getIdentifier());
 		schema.put("type", "object");
+		ObjectNode defs = schema.putObject("$defs");
 
 		ObjectNode properties = schema.putObject("properties");
 		List<String> required = new ArrayList<>();
@@ -139,7 +155,13 @@ public final class JsonSchemaGenerator {
 			if (isMethodParameterRequired(method, i)) {
 				required.add(parameterName);
 			}
-			ObjectNode parameterNode = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
+			ObjectNode parameterNode = generateSchema(subtypeSchemaGenerator, parameterType);
+			// victools generates self-contained schemas where $defs and the $ref
+			// pointers into them are rooted at the sub-schema. Inlining the
+			// sub-schema under properties.<paramName> re-parents existing
+			// "#/$defs/<Name>" refs to the outer root, leaving them unresolvable.
+			// Hoist $defs to the outer root so those refs resolve again.
+			JsonSchemaUtils.hoistDefsToRoot(schema, parameterNode);
 			// Remove OpenAPI format as some LLMs (like Mistral) don't handle them.
 			parameterNode.remove("format");
 			String parameterDescription = getMethodParameterDescription(method, i);
@@ -147,6 +169,10 @@ public final class JsonSchemaGenerator {
 				parameterNode.put("description", parameterDescription);
 			}
 			properties.set(parameterName, parameterNode);
+		}
+
+		if (defs.isEmpty()) {
+			schema.remove("$defs");
 		}
 
 		var requiredArray = schema.putArray("required");
@@ -162,7 +188,7 @@ public final class JsonSchemaGenerator {
 	 */
 	public static String generateForType(Type type, SchemaOption... schemaOptions) {
 		Assert.notNull(type, "type cannot be null");
-		ObjectNode schema = TYPE_SCHEMA_GENERATOR.generateSchema(type);
+		ObjectNode schema = generateSchema(typeSchemaGenerator, type);
 		if ((type == Void.class) && !schema.has("properties")) {
 			schema.putObject("properties");
 		}
@@ -173,7 +199,7 @@ public final class JsonSchemaGenerator {
 	private static void processSchemaOptions(SchemaOption[] schemaOptions, ObjectNode schema) {
 		if (Stream.of(schemaOptions)
 			.noneMatch(option -> option == SchemaOption.ALLOW_ADDITIONAL_PROPERTIES_BY_DEFAULT)) {
-			schema.put("additionalProperties", false);
+			forbidAdditionalProperties(schema);
 		}
 		if (Stream.of(schemaOptions).anyMatch(option -> option == SchemaOption.UPPER_CASE_TYPE_VALUES)) {
 			convertTypeValuesToUpperCase(schema);
@@ -215,8 +241,8 @@ public final class JsonSchemaGenerator {
 					|| schemaAnnotation.requiredMode() == Schema.RequiredMode.AUTO || schemaAnnotation.required();
 		}
 
-		var nullableAnnotation = parameter.getAnnotation(Nullable.class);
-		if (nullableAnnotation != null) {
+		Nullness nullness = Nullness.forParameter(parameter);
+		if (nullness == Nullness.NULLABLE) {
 			return false;
 		}
 
@@ -234,8 +260,7 @@ public final class JsonSchemaGenerator {
 	 * </ul>
 	 * <p>
 	 */
-	@Nullable
-	private static String getMethodParameterDescription(Method method, int index) {
+	private static @Nullable String getMethodParameterDescription(Method method, int index) {
 		Parameter parameter = method.getParameters()[index];
 
 		var toolParamAnnotation = parameter.getAnnotation(ToolParam.class);
@@ -256,16 +281,40 @@ public final class JsonSchemaGenerator {
 		return null;
 	}
 
-	// Based on the method in ModelOptionsUtils.
+	/**
+	 * Recursively adds {@code "additionalProperties": false} to all object schemas (nodes
+	 * with a {@code "properties"} key) that do not already define
+	 * {@code "additionalProperties"}. The guard preserves {@code Map<K,V>} schemas where
+	 * {@code "additionalProperties"} is a type reference rather than a boolean.
+	 */
+	private static void forbidAdditionalProperties(ObjectNode node) {
+		if (node.has("properties") && !node.has("additionalProperties")) {
+			node.put("additionalProperties", false);
+		}
+		node.properties().forEach(entry -> {
+			JsonNode value = entry.getValue();
+			if (value.isObject()) {
+				forbidAdditionalProperties((ObjectNode) value);
+			}
+			else if (value.isArray()) {
+				value.forEach(element -> {
+					if (element.isObject()) {
+						forbidAdditionalProperties((ObjectNode) element);
+					}
+				});
+			}
+		});
+	}
+
 	public static void convertTypeValuesToUpperCase(ObjectNode node) {
 		if (node.isObject()) {
-			node.fields().forEachRemaining(entry -> {
+			node.properties().forEach(entry -> {
 				JsonNode value = entry.getValue();
 				if (value.isObject()) {
 					convertTypeValuesToUpperCase((ObjectNode) value);
 				}
 				else if (value.isArray()) {
-					value.elements().forEachRemaining(element -> {
+					value.forEach(element -> {
 						if (element.isObject() || element.isArray()) {
 							convertTypeValuesToUpperCase((ObjectNode) element);
 						}
@@ -278,7 +327,7 @@ public final class JsonSchemaGenerator {
 			});
 		}
 		else if (node.isArray()) {
-			node.elements().forEachRemaining(element -> {
+			node.forEach(element -> {
 				if (element.isObject() || element.isArray()) {
 					convertTypeValuesToUpperCase((ObjectNode) element);
 				}

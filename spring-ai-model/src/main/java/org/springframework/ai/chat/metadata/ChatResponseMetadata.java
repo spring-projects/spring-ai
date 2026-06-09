@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,13 @@ package org.springframework.ai.chat.metadata;
 import java.util.Map;
 import java.util.Objects;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.model.AbstractResponseMetadata;
 import org.springframework.ai.model.ResponseMetadata;
+import org.springframework.util.Assert;
 
 /**
  * Models common AI provider metadata returned in an AI response.
@@ -36,7 +38,7 @@ import org.springframework.ai.model.ResponseMetadata;
  */
 public class ChatResponseMetadata extends AbstractResponseMetadata implements ResponseMetadata {
 
-	private static final Logger logger = LoggerFactory.getLogger(ChatResponseMetadata.class);
+	private static final Log logger = LogFactory.getLog(ChatResponseMetadata.class);
 
 	private String id = ""; // Set to blank to preserve backward compat with previous
 
@@ -97,7 +99,7 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -132,15 +134,15 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 			return this;
 		}
 
-		public Builder keyValue(String key, Object value) {
-			if (key == null) {
-				throw new IllegalArgumentException("Key must not be null");
-			}
+		public Builder keyValue(String key, @Nullable Object value) {
+			Assert.notNull(key, "Key must not be null"); // Defensive check
 			if (value != null) {
 				this.chatResponseMetadata.map.put(key, value);
 			}
 			else {
-				logger.debug("Ignore null value for key [{}]", key);
+				if (logger.isDebugEnabled()) {
+					logger.debug("Ignore null value for key [" + key + "]");
+				}
 			}
 			return this;
 		}

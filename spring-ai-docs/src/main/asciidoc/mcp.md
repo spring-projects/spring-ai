@@ -90,7 +90,7 @@ spring:
 Required dependencies:
 ```xml
 <dependency>
-    <groupId>io.modelcontextprotocol.sdk</groupId>
+    <groupId>org.springframework.ai</groupId>
     <artifactId>mcp-spring-webmvc</artifactId>
 </dependency>
 <dependency>
@@ -115,7 +115,7 @@ spring:
 Required dependencies:
 ```xml
 <dependency>
-    <groupId>io.modelcontextprotocol.sdk</groupId>
+    <groupId>org.springframework.ai</groupId>
     <artifactId>mcp-spring-webflux</artifactId>
 </dependency>
 <dependency>

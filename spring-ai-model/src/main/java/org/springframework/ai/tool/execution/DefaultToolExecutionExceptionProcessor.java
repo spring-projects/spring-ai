@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ package org.springframework.ai.tool.execution;
 import java.util.Collections;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.util.Assert;
 
@@ -36,7 +36,7 @@ import org.springframework.util.Assert;
  */
 public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExceptionProcessor {
 
-	private static final Logger logger = LoggerFactory.getLogger(DefaultToolExecutionExceptionProcessor.class);
+	private static final Log logger = LogFactory.getLog(DefaultToolExecutionExceptionProcessor.class);
 
 	private static final boolean DEFAULT_ALWAYS_THROW = false;
 
@@ -77,7 +77,10 @@ public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExce
 			message = "Exception occurred in tool: " + exception.getToolDefinition().name() + " ("
 					+ cause.getClass().getSimpleName() + ")";
 		}
-		logger.debug("Exception thrown by tool: {}. Message: {}", exception.getToolDefinition().name(), message);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Exception thrown by tool: " + exception.getToolDefinition().name() + ". Message: " + message,
+					exception);
+		}
 		return message;
 	}
 

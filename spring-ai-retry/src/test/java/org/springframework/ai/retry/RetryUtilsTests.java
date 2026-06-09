@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.core.retry.RetryException;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.retry.support.RetryTemplate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -98,20 +99,20 @@ class RetryUtilsTests {
 		AtomicInteger counter = new AtomicInteger(0);
 		RetryTemplate template = RetryUtils.SHORT_RETRY_TEMPLATE;
 
-		assertThrows(TransientAiException.class, () -> template.execute(cb -> {
+		assertThrows(RetryException.class, () -> template.execute(() -> {
 			counter.incrementAndGet();
 			throw new TransientAiException("test fail");
 		}));
 
-		assertEquals(10, counter.get());
+		assertEquals(11, counter.get());
 	}
 
 	@Test
-	void shortRetryTemplateSucceedsBeforeMaxAttempts() {
+	void shortRetryTemplateSucceedsBeforeMaxAttempts() throws RetryException {
 		AtomicInteger counter = new AtomicInteger(0);
 		RetryTemplate template = RetryUtils.SHORT_RETRY_TEMPLATE;
 
-		String result = template.execute(cb -> {
+		String result = template.execute(() -> {
 			if (counter.incrementAndGet() < 5) {
 				throw new TransientAiException("test fail");
 			}

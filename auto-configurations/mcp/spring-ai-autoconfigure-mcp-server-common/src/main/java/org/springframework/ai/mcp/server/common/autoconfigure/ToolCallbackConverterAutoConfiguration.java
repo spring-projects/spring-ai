@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.springframework.ai.mcp.server.common.autoconfigure;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,7 +32,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 
 /**
@@ -49,10 +47,11 @@ public class ToolCallbackConverterAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
 	public List<McpServerFeatures.SyncToolSpecification> syncTools(ObjectProvider<List<ToolCallback>> toolCalls,
-			List<ToolCallback> toolCallbacksList, List<ToolCallbackProvider> toolCallbackProvider,
-			McpServerProperties serverProperties) {
+			List<ToolCallback> toolCallbackList, ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
+			ObjectProvider<ToolCallbackProvider> tcbProviders, McpServerProperties serverProperties) {
 
-		List<ToolCallback> tools = this.aggregateToolCallbacks(toolCalls, toolCallbacksList, toolCallbackProvider);
+		List<ToolCallback> tools = ToolCallbackUtils.aggregateToolCallbacks(toolCalls, toolCallbackList,
+				tcbProviderList, tcbProviders, serverProperties.isExposeMcpClientTools());
 
 		return this.toSyncToolSpecifications(tools, serverProperties);
 	}
@@ -63,10 +62,7 @@ public class ToolCallbackConverterAutoConfiguration {
 		// De-duplicate tools by their name, keeping the first occurrence of each tool
 		// name
 		return tools.stream() // Key: tool name
-			.collect(Collectors.toMap(tool -> tool.getToolDefinition().name(), tool -> tool, // Value:
-																								// the
-																								// tool
-																								// itself
+			.collect(Collectors.toMap(tool -> tool.getToolDefinition().name(), tool -> tool,
 					(existing, replacement) -> existing)) // On duplicate key, keep the
 															// existing tool
 			.values()
@@ -83,10 +79,10 @@ public class ToolCallbackConverterAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	public List<McpServerFeatures.AsyncToolSpecification> asyncTools(ObjectProvider<List<ToolCallback>> toolCalls,
-			List<ToolCallback> toolCallbacksList, List<ToolCallbackProvider> toolCallbackProvider,
-			McpServerProperties serverProperties) {
-
-		List<ToolCallback> tools = this.aggregateToolCallbacks(toolCalls, toolCallbacksList, toolCallbackProvider);
+			List<ToolCallback> toolCallbackList, ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
+			ObjectProvider<ToolCallbackProvider> tcbProviders, McpServerProperties serverProperties) {
+		List<ToolCallback> tools = ToolCallbackUtils.aggregateToolCallbacks(toolCalls, toolCallbackList,
+				tcbProviderList, tcbProviders, serverProperties.isExposeMcpClientTools());
 
 		return this.toAsyncToolSpecification(tools, serverProperties);
 	}
@@ -96,12 +92,10 @@ public class ToolCallbackConverterAutoConfiguration {
 		// De-duplicate tools by their name, keeping the first occurrence of each tool
 		// name
 		return tools.stream() // Key: tool name
-			.collect(Collectors.toMap(tool -> tool.getToolDefinition().name(), tool -> tool, // Value:
-																								// the
-																								// tool
-																								// itself
+			.collect(Collectors.toMap(tool -> tool.getToolDefinition().name(), tool -> tool,
+					// Value: the tool itself
 					(existing, replacement) -> existing)) // On duplicate key, keep the
-															// existing tool
+			// existing tool
 			.values()
 			.stream()
 			.map(tool -> {
@@ -113,24 +107,9 @@ public class ToolCallbackConverterAutoConfiguration {
 			.toList();
 	}
 
-	private List<ToolCallback> aggregateToolCallbacks(ObjectProvider<List<ToolCallback>> toolCalls,
-			List<ToolCallback> toolCallbacksList, List<ToolCallbackProvider> toolCallbackProvider) {
-
-		List<ToolCallback> tools = new ArrayList<>(toolCalls.stream().flatMap(List::stream).toList());
-
-		if (!CollectionUtils.isEmpty(toolCallbacksList)) {
-			tools.addAll(toolCallbacksList);
-		}
-
-		List<ToolCallback> providerToolCallbacks = toolCallbackProvider.stream()
-			.map(pr -> List.of(pr.getToolCallbacks()))
-			.flatMap(List::stream)
-			.filter(fc -> fc instanceof ToolCallback)
-			.map(fc -> (ToolCallback) fc)
-			.toList();
-
-		tools.addAll(providerToolCallbacks);
-		return tools;
+	private static boolean isMcpToolProvider(ToolCallbackProvider tcbp) {
+		return !(tcbp instanceof org.springframework.ai.mcp.SyncMcpToolCallbackProvider)
+				&& !(tcbp instanceof org.springframework.ai.mcp.AsyncMcpToolCallbackProvider);
 	}
 
 	public static class ToolCallbackConverterCondition extends AllNestedConditions {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,33 +16,62 @@
 
 package org.springframework.ai.embedding;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Default implementation of {@link EmbeddingOptions}.
  *
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  */
 public class DefaultEmbeddingOptions implements EmbeddingOptions {
 
-	private String model;
+	private final @Nullable String model;
 
-	private Integer dimensions;
+	private final @Nullable Integer dimensions;
+
+	protected DefaultEmbeddingOptions(@Nullable String model, @Nullable Integer dimensions) {
+		this.model = model;
+		this.dimensions = dimensions;
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
 
 	@Override
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
-	}
-
 	@Override
-	public Integer getDimensions() {
+	public @Nullable Integer getDimensions() {
 		return this.dimensions;
 	}
 
-	public void setDimensions(Integer dimensions) {
-		this.dimensions = dimensions;
+	public static final class Builder implements EmbeddingOptions.Builder {
+
+		private @Nullable String model;
+
+		private @Nullable Integer dimensions;
+
+		private Builder() {
+		}
+
+		public Builder model(@Nullable String model) {
+			this.model = model;
+			return this;
+		}
+
+		public Builder dimensions(@Nullable Integer dimensions) {
+			this.dimensions = dimensions;
+			return this;
+		}
+
+		public DefaultEmbeddingOptions build() {
+			return new DefaultEmbeddingOptions(this.model, this.dimensions);
+		}
+
 	}
 
 }

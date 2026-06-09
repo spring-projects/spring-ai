@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,9 @@ import java.util.Optional;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 import org.typesense.api.Client;
 import org.typesense.api.FieldTypes;
 import org.typesense.model.CollectionResponse;
@@ -40,7 +41,7 @@ import org.typesense.model.MultiSearchSearchesParameter;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -50,7 +51,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -72,6 +72,7 @@ import org.springframework.util.Assert;
  * @author Eddú Meléndez
  * @author Mark Pollack
  * @author Soby Chacko
+ * @author chabinhwang
  * @see org.springframework.ai.vectorstore.VectorStore
  * @see org.springframework.ai.embedding.EmbeddingModel
  */
@@ -95,7 +96,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 	public static final int INVALID_EMBEDDING_DIMENSION = -1;
 
-	private static final Logger logger = LoggerFactory.getLogger(TypesenseVectorStore.class);
+	private static final Log logger = LogFactory.getLog(TypesenseVectorStore.class);
 
 	public final FilterExpressionConverter filterExpressionConverter = new TypesenseFilterExpressionConverter();
 
@@ -141,15 +142,16 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	public void doAdd(List<Document> documents) {
 		Assert.notNull(documents, "Documents must not be null");
 
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
-		List<HashMap<String, Object>> documentList = documents.stream().map(document -> {
+		List<HashMap<String, Object>> documentList = IntStream.range(0, documents.size()).mapToObj(i -> {
+			Document document = documents.get(i);
 			HashMap<String, Object> typesenseDoc = new HashMap<>();
 			typesenseDoc.put(DOC_ID_FIELD_NAME, document.getId());
 			typesenseDoc.put(CONTENT_FIELD_NAME, document.getText());
 			typesenseDoc.put(METADATA_FIELD_NAME, document.getMetadata());
-			typesenseDoc.put(EMBEDDING_FIELD_NAME, embeddings.get(documents.indexOf(document)));
+			typesenseDoc.put(EMBEDDING_FIELD_NAME, embeddings.get(i));
 
 			return typesenseDoc;
 		}).toList();
@@ -160,7 +162,9 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		try {
 			this.client.collections(this.collectionName).documents().import_(documentList, importDocumentsParameters);
 
-			logger.info("Added {} documents", documentList.size());
+			if (logger.isInfoEnabled()) {
+				logger.info("Added " + documentList.size() + " documents");
+			}
 		}
 		catch (Exception e) {
 			logger.error("Failed to add documents", e);
@@ -170,7 +174,12 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	@Override
 	public void doDelete(List<String> idList) {
 		DeleteDocumentsParameters deleteDocumentsParameters = new DeleteDocumentsParameters();
-		deleteDocumentsParameters.filterBy(DOC_ID_FIELD_NAME + ":=[" + String.join(",", idList) + "]");
+		// Typesense filter_by for the id field expects bare string values, not quoted
+		// literals — e.g. id: [id1,id2]. Typesense document IDs are restricted to
+		// URL-safe characters (no commas, brackets, or quotes), so raw string joining
+		// is safe here. The operator is `: ` (not `:=`) per the Typesense recommendation
+		// for multi-value id filters.
+		deleteDocumentsParameters.filterBy(DOC_ID_FIELD_NAME + ": [" + String.join(",", idList) + "]");
 
 		try {
 			int deletedDocs = (Integer) this.client.collections(this.collectionName)
@@ -204,8 +213,8 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			if (deletedDocs == 0) {
 				logger.warn("No documents were deleted matching filter expression");
 			}
-			else {
-				logger.debug("Deleted {} documents matching filter expression", deletedDocs);
+			else if (logger.isDebugEnabled()) {
+				logger.debug("Deleted " + deletedDocs + " documents matching filter expression");
 			}
 		}
 		catch (Exception e) {
@@ -221,7 +230,9 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		String nativeFilterExpressions = (request.getFilterExpression() != null)
 				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
 
-		logger.info("Filter expression: {}", nativeFilterExpressions);
+		if (logger.isInfoEnabled()) {
+			logger.info("Filter expression: " + nativeFilterExpressions);
+		}
 
 		float[] embedding = this.embeddingModel.embed(request.getQuery());
 
@@ -249,8 +260,9 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 				.stream()
 				.flatMap(searchResult -> searchResult.getHits().stream().map(hit -> {
 					Map<String, Object> rawDocument = hit.getDocument();
-					String docId = rawDocument.get(DOC_ID_FIELD_NAME).toString();
-					String content = rawDocument.get(CONTENT_FIELD_NAME).toString();
+					String docId = (String) rawDocument.get(DOC_ID_FIELD_NAME);
+					Assert.state(docId != null, "document id must not be null");
+					String content = (String) rawDocument.getOrDefault(CONTENT_FIELD_NAME, "");
 					Map<String, Object> metadata = rawDocument.get(METADATA_FIELD_NAME) instanceof Map
 							? (Map<String, Object>) rawDocument.get(METADATA_FIELD_NAME) : Map.of();
 					metadata.put(DocumentMetadata.DISTANCE.value(), hit.getVectorDistance());
@@ -263,7 +275,9 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 				}))
 				.toList();
 
-			logger.info("Found {} documents", documents.size());
+			if (logger.isInfoEnabled()) {
+				logger.info("Found " + documents.size() + " documents");
+			}
 			return documents;
 		}
 		catch (Exception e) {
@@ -283,9 +297,12 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			}
 		}
 		catch (Exception e) {
-			logger.warn(
-					"Failed to obtain the embedding dimensions from the embedding model and fall backs to default:{}",
-					this.embeddingDimension, e);
+			if (logger.isWarnEnabled()) {
+				logger.warn(
+						"Failed to obtain the embedding dimensions from the embedding model and fall backs to default: "
+								+ this.embeddingDimension,
+						e);
+			}
 		}
 		return OPENAI_EMBEDDING_DIMENSION_SIZE;
 	}
@@ -312,7 +329,9 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 	void createCollection() {
 		if (this.hasCollection()) {
-			logger.info("Collection {} already exists", this.collectionName);
+			if (logger.isInfoEnabled()) {
+				logger.info("Collection " + this.collectionName + " already exists");
+			}
 			return;
 		}
 
@@ -330,30 +349,39 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 		try {
 			this.client.collections().create(collectionSchema);
-			logger.info("Collection {} created", this.collectionName);
+			if (logger.isInfoEnabled()) {
+				logger.info("Collection " + this.collectionName + " created");
+			}
 		}
 		catch (Exception e) {
-			logger.error("Failed to create collection {}", this.collectionName, e);
+			if (logger.isErrorEnabled()) {
+				logger.error("Failed to create collection " + this.collectionName, e);
+			}
 		}
 	}
 
 	void dropCollection() {
 		if (!this.hasCollection()) {
-			logger.info("Collection {} does not exist", this.collectionName);
+			if (logger.isInfoEnabled()) {
+				logger.info("Collection " + this.collectionName + " does not exist");
+			}
 			return;
 		}
 
 		try {
 			this.client.collections(this.collectionName).delete();
-			logger.info("Collection {} dropped", this.collectionName);
+			if (logger.isInfoEnabled()) {
+				logger.info("Collection " + this.collectionName + " dropped");
+			}
 		}
 		catch (Exception e) {
-			logger.error("Failed to drop collection {}", this.collectionName, e);
+			if (logger.isErrorEnabled()) {
+				logger.error("Failed to drop collection " + this.collectionName, e);
+			}
 		}
 	}
 
-	@Nullable
-	Map<String, Object> getCollectionInfo() {
+	@Nullable Map<String, Object> getCollectionInfo() {
 		try {
 			CollectionResponse retrievedCollection = this.client.collections(this.collectionName).retrieve();
 			return Map.of("name", retrievedCollection.getName(), "num_documents",

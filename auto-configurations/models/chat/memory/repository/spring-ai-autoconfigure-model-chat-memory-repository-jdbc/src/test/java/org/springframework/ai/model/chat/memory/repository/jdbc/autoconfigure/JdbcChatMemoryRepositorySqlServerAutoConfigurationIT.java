@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,8 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -98,14 +98,16 @@ class JdbcChatMemoryRepositorySqlServerAutoConfigurationIT {
 				chatMemory.add(conversationId, userMessage);
 
 				assertThat(chatMemory.get(conversationId)).hasSize(1);
-				assertThat(chatMemory.get(conversationId)).isEqualTo(List.of(userMessage));
+				assertThat(chatMemory.get(conversationId)).extracting(Message::getText)
+					.containsExactly(userMessage.getText());
 
 				var assistantMessage = new AssistantMessage("Message from the assistant");
 
 				chatMemory.add(conversationId, List.of(assistantMessage));
 
 				assertThat(chatMemory.get(conversationId)).hasSize(2);
-				assertThat(chatMemory.get(conversationId)).isEqualTo(List.of(userMessage, assistantMessage));
+				assertThat(chatMemory.get(conversationId)).extracting(Message::getText)
+					.containsExactly(userMessage.getText(), assistantMessage.getText());
 
 				chatMemory.clear(conversationId);
 
@@ -117,7 +119,8 @@ class JdbcChatMemoryRepositorySqlServerAutoConfigurationIT {
 				chatMemory.add(conversationId, multipleMessages);
 
 				assertThat(chatMemory.get(conversationId)).hasSize(multipleMessages.size());
-				assertThat(chatMemory.get(conversationId)).isEqualTo(multipleMessages);
+				assertThat(chatMemory.get(conversationId)).extracting(Message::getText)
+					.containsExactlyElementsOf(multipleMessages.stream().map(Message::getText).toList());
 			});
 	}
 

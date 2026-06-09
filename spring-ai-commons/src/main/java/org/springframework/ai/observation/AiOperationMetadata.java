@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.ai.observation;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
@@ -56,9 +58,9 @@ public record AiOperationMetadata(String operationType, String provider) {
 	 */
 	public static final class Builder {
 
-		private String operationType;
+		private @Nullable String operationType;
 
-		private String provider;
+		private @Nullable String provider;
 
 		private Builder() {
 		}
@@ -88,6 +90,8 @@ public record AiOperationMetadata(String operationType, String provider) {
 		 * @return a new {@link AiOperationMetadata} instance
 		 */
 		public AiOperationMetadata build() {
+			Assert.hasText(this.operationType, "operationType cannot be null or empty");
+			Assert.hasText(this.provider, "provider cannot be null or empty");
 			return new AiOperationMetadata(this.operationType, this.provider);
 		}
 

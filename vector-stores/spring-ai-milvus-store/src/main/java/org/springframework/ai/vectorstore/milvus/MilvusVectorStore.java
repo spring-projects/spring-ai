@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -53,13 +54,13 @@ import io.milvus.param.index.DescribeIndexParam;
 import io.milvus.param.index.DropIndexParam;
 import io.milvus.response.QueryResultsWrapper.RowRecord;
 import io.milvus.response.SearchResultsWrapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -141,6 +142,7 @@ import org.springframework.util.StringUtils;
  * @author Soby Chacko
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author chabinhwang
  * @see org.springframework.ai.vectorstore.VectorStore
  * @see io.milvus.client.MilvusServiceClient
  */
@@ -165,7 +167,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	// Metadata, automatically assigned by Milvus.
 	public static final String SIMILARITY_FIELD_NAME = "score";
 
-	private static final Logger logger = LoggerFactory.getLogger(MilvusVectorStore.class);
+	private static final Log logger = LogFactory.getLog(MilvusVectorStore.class);
 
 	private static final Map<MetricType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			MetricType.COSINE, VectorStoreSimilarityMetric.COSINE, MetricType.L2, VectorStoreSimilarityMetric.EUCLIDEAN,
@@ -242,18 +244,19 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		List<List<Float>> embeddingArray = new ArrayList<>();
 
 		// TODO: Need to customize how we pass the embedding options
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
-		for (Document document : documents) {
+		for (int i = 0; i < documents.size(); i++) {
+			Document document = documents.get(i);
 			docIdArray.add(document.getId());
 			// Use a (future) DocumentTextLayoutFormatter instance to extract
 			// the content used to compute the embeddings
-			contentArray.add(document.getText());
+			contentArray.add(Objects.requireNonNullElse(document.getText(), ""));
 			Gson gson = new Gson();
 			String jsonString = gson.toJson(document.getMetadata());
 			metadataArray.add(gson.fromJson(jsonString, JsonObject.class));
-			embeddingArray.add(EmbeddingUtils.toList(embeddings.get(documents.indexOf(document))));
+			embeddingArray.add(EmbeddingUtils.toList(embeddings.get(i)));
 		}
 
 		List<InsertParam.Field> fields = new ArrayList<>();
@@ -281,8 +284,14 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	public void doDelete(List<String> idList) {
 		Assert.notNull(idList, "Document id list must not be null");
 
+		// Ids are user-supplied strings that get inlined into a Milvus filter
+		// expression. Delegate escaping to the same Jackson-based JSON serialization
+		// used by MilvusFilterExpressionConverter so quotes, backslashes and control
+		// chars cannot break out of the string literal and inject filter syntax.
 		String deleteExpression = String.format("%s in [%s]", this.idFieldName,
-				idList.stream().map(id -> "'" + id + "'").collect(Collectors.joining(",")));
+				idList.stream()
+					.map(MilvusFilterExpressionConverter::toFilterExpressionLiteral)
+					.collect(Collectors.joining(",")));
 
 		R<MutationResult> status = this.milvusClient.delete(DeleteParam.newBuilder()
 			.withDatabaseName(this.databaseName)
@@ -291,8 +300,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			.build());
 
 		long deleteCount = status.getData().getDeleteCnt();
-		if (deleteCount != idList.size()) {
-			logger.warn("Deleted only {} entries from requested {} ", deleteCount, idList.size());
+		if (logger.isWarnEnabled() && deleteCount != idList.size()) {
+			logger.warn("Deleted only " + deleteCount + " entries from requested " + idList.size());
 		}
 	}
 
@@ -314,10 +323,14 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			}
 
 			long deleteCount = status.getData().getDeleteCnt();
-			logger.debug("Deleted {} documents matching filter expression", deleteCount);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Deleted " + deleteCount + " documents matching filter expression");
+			}
 		}
 		catch (Exception e) {
-			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
+			if (logger.isErrorEnabled()) {
+				logger.error("Failed to delete documents by filter: " + e.getMessage(), e);
+			}
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}
@@ -351,7 +364,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			.withMetricType(this.metricType)
 			.withOutFields(outFieldNames)
 			.withTopK(request.getTopK())
-			.withVectors(List.of(EmbeddingUtils.toList(embedding)))
+			.withFloatVectors(List.of(EmbeddingUtils.toList(embedding)))
 			.withVectorFieldName(this.embeddingFieldName);
 
 		if (StringUtils.hasText(nativeFilterExpressions)) {
@@ -544,9 +557,12 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			}
 		}
 		catch (Exception e) {
-			logger.warn(
-					"Failed to obtain the embedding dimensions from the embedding model and fall backs to default:{}",
-					this.embeddingDimension, e);
+			if (logger.isWarnEnabled()) {
+				logger.warn(
+						"Failed to obtain the embedding dimensions from the embedding model and fall backs to default: "
+								+ this.embeddingDimension,
+						e);
+			}
 		}
 		return OPENAI_EMBEDDING_DIMENSION_SIZE;
 	}
@@ -650,7 +666,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		 * COSINE
 		 */
 		public Builder metricType(MetricType metricType) {
-			Assert.notNull(metricType, "Collection Name must not be empty");
+			Assert.notNull(metricType, "metricType must not be null");
 			Assert.isTrue(metricType == MetricType.IP || metricType == MetricType.L2 || metricType == MetricType.COSINE,
 					"Only the text metric types IP and L2 are supported");
 			this.metricType = metricType;

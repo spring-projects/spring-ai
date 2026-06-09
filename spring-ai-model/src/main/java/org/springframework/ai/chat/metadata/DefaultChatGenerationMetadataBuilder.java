@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata.Builder;
 
 /**
@@ -30,17 +32,17 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata.Builder;
 
 public class DefaultChatGenerationMetadataBuilder implements Builder {
 
-	private String finishReason;
+	private @Nullable String finishReason;
 
-	private Map<String, Object> metadata = new HashMap<>();
+	private final Map<String, Object> metadata = new HashMap<>();
 
-	private Set<String> contentFilters = new HashSet<>();
+	private final Set<String> contentFilters = new HashSet<>();
 
 	DefaultChatGenerationMetadataBuilder() {
 	}
 
 	@Override
-	public Builder finishReason(String finishReason) {
+	public Builder finishReason(@Nullable String finishReason) {
 		this.finishReason = finishReason;
 		return this;
 	}

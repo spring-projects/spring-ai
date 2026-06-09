@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,84 +16,85 @@
 
 package org.springframework.ai.model.anthropic.autoconfigure;
 
-import org.springframework.ai.anthropic.api.AnthropicApi;
+import java.net.Proxy;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Anthropic API connection properties.
+ * Anthropic connection properties.
  *
- * @author Christian Tzolov
- * @since 1.0.0
+ * @author Soby Chacko
+ * @author Sebastien Deleuze
+ * @since 2.0.0
  */
 @ConfigurationProperties(AnthropicConnectionProperties.CONFIG_PREFIX)
 public class AnthropicConnectionProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.anthropic";
 
-	/**
-	 * Anthropic API access key.
-	 */
-	private String apiKey;
+	private @Nullable String baseUrl;
 
-	/**
-	 * Anthropic API base URL.
-	 */
-	private String baseUrl = AnthropicApi.DEFAULT_BASE_URL;
+	private @Nullable String apiKey;
 
-	/**
-	 * Path to append to the base URL
-	 */
-	private String completionsPath = AnthropicApi.DEFAULT_MESSAGE_COMPLETIONS_PATH;
+	private @Nullable Duration timeout;
 
-	/**
-	 * Anthropic API version.
-	 */
-	private String version = AnthropicApi.DEFAULT_ANTHROPIC_VERSION;
+	private @Nullable Integer maxRetries;
 
-	/**
-	 * Beta features version. Such as tools-2024-04-04 or
-	 * max-tokens-3-5-sonnet-2024-07-15.
-	 */
-	private String betaVersion = AnthropicApi.DEFAULT_ANTHROPIC_BETA_VERSION;
+	private @Nullable Proxy proxy;
 
-	public String getApiKey() {
-		return this.apiKey;
-	}
+	private Map<String, String> customHeaders = new HashMap<>();
 
-	public void setApiKey(String apiKey) {
-		this.apiKey = apiKey;
-	}
-
-	public String getBaseUrl() {
+	public @Nullable String getBaseUrl() {
 		return this.baseUrl;
 	}
 
-	public void setBaseUrl(String baseUrl) {
+	public void setBaseUrl(@Nullable String baseUrl) {
 		this.baseUrl = baseUrl;
 	}
 
-	public String getCompletionsPath() {
-		return this.completionsPath;
+	public @Nullable String getApiKey() {
+		return this.apiKey;
 	}
 
-	public void setCompletionsPath(String completionsPath) {
-		this.completionsPath = completionsPath;
+	public void setApiKey(@Nullable String apiKey) {
+		this.apiKey = apiKey;
 	}
 
-	public String getVersion() {
-		return this.version;
+	public @Nullable Duration getTimeout() {
+		return this.timeout;
 	}
 
-	public void setVersion(String version) {
-		this.version = version;
+	public void setTimeout(@Nullable Duration timeout) {
+		this.timeout = timeout;
 	}
 
-	public String getBetaVersion() {
-		return this.betaVersion;
+	public @Nullable Integer getMaxRetries() {
+		return this.maxRetries;
 	}
 
-	public void setBetaVersion(String betaVersion) {
-		this.betaVersion = betaVersion;
+	public void setMaxRetries(@Nullable Integer maxRetries) {
+		this.maxRetries = maxRetries;
+	}
+
+	public @Nullable Proxy getProxy() {
+		return this.proxy;
+	}
+
+	public void setProxy(@Nullable Proxy proxy) {
+		this.proxy = proxy;
+	}
+
+	public Map<String, String> getCustomHeaders() {
+		return this.customHeaders;
+	}
+
+	public void setCustomHeaders(Map<String, String> customHeaders) {
+		this.customHeaders = customHeaders;
 	}
 
 }

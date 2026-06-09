@@ -2,6 +2,11 @@
 
 Spring AI supports https://platform.openai.com/docs/api-reference/audio/createTranscription[OpenAI's Transcription model].
 
+[NOTE]
+====
+Starting from version `2.0.0-M5`, Spring AI uses the official `openai-java` SDK under the hood for all OpenAI models. The transition is expected to be seamless and there are no breaking changes for existing users of the OpenAI API properties and builders. If you find any issues, please report them to us at https://github.com/spring-projects/spring-ai/issues[Spring AI GitHub Issues].
+====
+
 == Prerequisites
 
 
@@ -159,6 +164,8 @@ var audioFile = new FileSystemResource("/path/to/your/resource/speech/jfk.flac")
 AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(this.audioFile, this.transcriptionOptions);
 AudioTranscriptionResponse response = openAiTranscriptionModel.call(this.transcriptionRequest);
 ----
+
+include::partial$openai/openai-http-client-customization.adoc[]
 
 == Example Code
 * The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/audio/transcription/OpenAiTranscriptionModelIT.java[OpenAiTranscriptionModelIT.java] test provides some general examples how to use the library.

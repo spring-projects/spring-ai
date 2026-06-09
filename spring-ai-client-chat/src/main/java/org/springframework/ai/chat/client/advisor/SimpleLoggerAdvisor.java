@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,9 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.function.Function;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClientMessageAggregator;
@@ -30,8 +31,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.lang.Nullable;
+import org.springframework.ai.util.JacksonUtils;
 
 /**
  * A simple logger advisor that logs the request and response messages.
@@ -40,15 +40,17 @@ import org.springframework.lang.Nullable;
  */
 public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 
-	public static final Function<ChatClientRequest, String> DEFAULT_REQUEST_TO_STRING = ChatClientRequest::toString;
+	public static final Function<@Nullable ChatClientRequest, String> DEFAULT_REQUEST_TO_STRING = chatClientRequest -> chatClientRequest != null
+			? chatClientRequest.toString() : "null";
 
-	public static final Function<ChatResponse, String> DEFAULT_RESPONSE_TO_STRING = ModelOptionsUtils::toJsonStringPrettyPrinter;
+	public static final Function<@Nullable ChatResponse, String> DEFAULT_RESPONSE_TO_STRING = object -> object != null
+			? JacksonUtils.getDefaultJsonMapper().writerWithDefaultPrettyPrinter().writeValueAsString(object) : "null";
 
-	private static final Logger logger = LoggerFactory.getLogger(SimpleLoggerAdvisor.class);
+	private static final Log logger = LogFactory.getLog(SimpleLoggerAdvisor.class);
 
-	private final Function<ChatClientRequest, String> requestToString;
+	private final Function<@Nullable ChatClientRequest, String> requestToString;
 
-	private final Function<ChatResponse, String> responseToString;
+	private final Function<@Nullable ChatResponse, String> responseToString;
 
 	private final int order;
 
@@ -60,8 +62,8 @@ public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 		this(DEFAULT_REQUEST_TO_STRING, DEFAULT_RESPONSE_TO_STRING, order);
 	}
 
-	public SimpleLoggerAdvisor(@Nullable Function<ChatClientRequest, String> requestToString,
-			@Nullable Function<ChatResponse, String> responseToString, int order) {
+	public SimpleLoggerAdvisor(@Nullable Function<@Nullable ChatClientRequest, String> requestToString,
+			@Nullable Function<@Nullable ChatResponse, String> responseToString, int order) {
 		this.requestToString = requestToString != null ? requestToString : DEFAULT_REQUEST_TO_STRING;
 		this.responseToString = responseToString != null ? responseToString : DEFAULT_RESPONSE_TO_STRING;
 		this.order = order;
@@ -89,11 +91,15 @@ public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 	}
 
 	protected void logRequest(ChatClientRequest request) {
-		logger.debug("request: {}", this.requestToString.apply(request));
+		if (logger.isDebugEnabled()) {
+			logger.debug("request: " + this.requestToString.apply(request));
+		}
 	}
 
 	protected void logResponse(ChatClientResponse chatClientResponse) {
-		logger.debug("response: {}", this.responseToString.apply(chatClientResponse.chatResponse()));
+		if (logger.isDebugEnabled()) {
+			logger.debug("response: " + this.responseToString.apply(chatClientResponse.chatResponse()));
+		}
 	}
 
 	@Override
@@ -117,21 +123,21 @@ public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 
 	public static final class Builder {
 
-		private Function<ChatClientRequest, String> requestToString;
+		private @Nullable Function<@Nullable ChatClientRequest, String> requestToString;
 
-		private Function<ChatResponse, String> responseToString;
+		private @Nullable Function<@Nullable ChatResponse, String> responseToString;
 
 		private int order = 0;
 
 		private Builder() {
 		}
 
-		public Builder requestToString(Function<ChatClientRequest, String> requestToString) {
+		public Builder requestToString(Function<@Nullable ChatClientRequest, String> requestToString) {
 			this.requestToString = requestToString;
 			return this;
 		}
 
-		public Builder responseToString(Function<ChatResponse, String> responseToString) {
+		public Builder responseToString(Function<@Nullable ChatResponse, String> responseToString) {
 			this.responseToString = responseToString;
 			return this;
 		}

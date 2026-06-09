@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,12 @@ import org.bson.Document;
 
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperationContext;
-import org.springframework.lang.NonNull;
 
 record VectorSearchAggregation(List<Float> embeddings, String path, int numCandidates, String index, int count,
 		String filter) implements AggregationOperation {
 
-	@SuppressWarnings("null")
 	@Override
-	public org.bson.Document toDocument(@NonNull AggregationOperationContext context) {
+	public org.bson.Document toDocument(AggregationOperationContext context) {
 		var vectorSearch = new Document("queryVector", this.embeddings).append("path", this.path)
 			.append("numCandidates", this.numCandidates)
 			.append("index", this.index)

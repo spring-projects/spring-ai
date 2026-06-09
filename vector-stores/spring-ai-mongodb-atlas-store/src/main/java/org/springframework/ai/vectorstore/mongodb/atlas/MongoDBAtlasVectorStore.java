@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,17 +20,18 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import com.mongodb.MongoCommandException;
 import com.mongodb.client.result.DeleteResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -124,11 +125,12 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author chabinhwang
  * @since 1.0.0
  */
 public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final Logger logger = LoggerFactory.getLogger(MongoDBAtlasVectorStore.class);
+	private static final Log logger = LogFactory.getLog(MongoDBAtlasVectorStore.class);
 
 	public static final String ID_FIELD_NAME = "_id";
 
@@ -258,11 +260,12 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
-		for (Document document : documents) {
-			MongoDBDocument mdbDocument = new MongoDBDocument(document.getId(), document.getText(),
-					document.getMetadata(), embeddings.get(documents.indexOf(document)));
+		for (int i = 0; i < documents.size(); i++) {
+			Document document = documents.get(i);
+			MongoDBDocument mdbDocument = new MongoDBDocument(document.getId(),
+					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(), embeddings.get(i));
 			this.mongoTemplate.save(mdbDocument, this.collectionName);
 		}
 	}
@@ -282,7 +285,9 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 			BasicQuery query = new BasicQuery(nativeFilterExpression);
 			DeleteResult deleteResult = this.mongoTemplate.remove(query, this.collectionName);
 
-			logger.debug("Deleted {} documents matching filter expression", deleteResult.getDeletedCount());
+			if (logger.isDebugEnabled()) {
+				logger.debug("Deleted " + deleteResult.getDeletedCount() + " documents matching filter expression");
+			}
 		}
 		catch (Exception e) {
 			throw new IllegalStateException("Failed to delete documents by filter", e);

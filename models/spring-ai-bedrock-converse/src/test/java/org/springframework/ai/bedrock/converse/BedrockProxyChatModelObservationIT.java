@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration tests for observation instrumentation in {@link BedrockProxyChatModel}.
  *
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 @SpringBootTest(classes = BedrockProxyChatModelObservationIT.Config.class,
 		properties = "spring.ai.retry.on-http-codes=429")
@@ -67,10 +68,10 @@ public class BedrockProxyChatModelObservationIT {
 	@Test
 	void observationForChatOperation() {
 		var options = BedrockChatOptions.builder()
-			.model("us.anthropic.claude-3-5-sonnet-20240620-v1:0")
+			.model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
 			.maxTokens(2048)
 			.stopSequences(List.of("this-is-the-end"))
-			.temperature(0.7)
+			// .temperature(0.7)
 			// .withTopK(1)
 			.topP(1.0)
 			.build();
@@ -78,21 +79,22 @@ public class BedrockProxyChatModelObservationIT {
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
+		assertThat(chatResponse.getResult()).isNotNull();
 		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata, "[\"end_turn\"]");
+		validate(responseMetadata, "[\"end_turn\"]", false);
 	}
 
 	@Test
 	void observationForStreamingChatOperation() {
 		var options = BedrockChatOptions.builder()
-			.model("us.anthropic.claude-3-5-sonnet-20240620-v1:0")
+			.model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
 			.maxTokens(2048)
 			.stopSequences(List.of("this-is-the-end"))
-			.temperature(0.7)
+			// .temperature(0.7)
 			.topP(1.0)
 			.build();
 
@@ -116,21 +118,21 @@ public class BedrockProxyChatModelObservationIT {
 		ChatResponseMetadata responseMetadata = lastChatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata, "[\"end_turn\"]");
+		validate(responseMetadata, "[\"end_turn\"]", true);
 	}
 
-	private void validate(ChatResponseMetadata responseMetadata, String finishReasons) {
-		TestObservationRegistryAssert.assertThat(this.observationRegistry)
+	private void validate(ChatResponseMetadata responseMetadata, String finishReasons, boolean streaming) {
+		var observationAssert = TestObservationRegistryAssert.assertThat(this.observationRegistry)
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
 			.that()
-			.hasContextualNameEqualTo("chat " + "us.anthropic.claude-3-5-sonnet-20240620-v1:0")
+			.hasContextualNameEqualTo("chat " + "us.anthropic.claude-haiku-4-5-20251001-v1:0")
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.CHAT.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(),
 					AiProvider.BEDROCK_CONVERSE.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					"us.anthropic.claude-3-5-sonnet-20240620-v1:0")
+					"us.anthropic.claude-haiku-4-5-20251001-v1:0")
 			// .hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(),
 			// responseMetadata.getModel())
 			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString())
@@ -153,6 +155,13 @@ public class BedrockProxyChatModelObservationIT {
 					String.valueOf(responseMetadata.getUsage().getTotalTokens()))
 			.hasBeenStarted()
 			.hasBeenStopped();
+		if (streaming) {
+			observationAssert.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_STREAM.asString(), "true");
+		}
+		else {
+			observationAssert
+				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_STREAM.asString());
+		}
 	}
 
 	@SpringBootConfiguration
@@ -166,13 +175,13 @@ public class BedrockProxyChatModelObservationIT {
 		@Bean
 		public BedrockProxyChatModel bedrockConverseChatModel(ObservationRegistry observationRegistry) {
 
-			String modelId = "us.anthropic.claude-3-5-sonnet-20240620-v1:0";
+			String modelId = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 
 			return BedrockProxyChatModel.builder()
 				.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
 				.region(Region.US_EAST_1)
 				.observationRegistry(observationRegistry)
-				.defaultOptions(BedrockChatOptions.builder().model(modelId).build())
+				.options(BedrockChatOptions.builder().model(modelId).build())
 				.build();
 		}
 

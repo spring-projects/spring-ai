@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.ai.vectorstore.cassandra.autoconfigure;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.vectorstore.cassandra.CassandraVectorStore;
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
@@ -36,7 +38,7 @@ public class CassandraVectorStoreProperties extends CommonVectorStoreProperties 
 
 	private String table = CassandraVectorStore.DEFAULT_TABLE_NAME;
 
-	private String indexName = null;
+	private @Nullable String indexName = null;
 
 	private String contentColumnName = CassandraVectorStore.DEFAULT_CONTENT_COLUMN_NAME;
 
@@ -60,11 +62,11 @@ public class CassandraVectorStoreProperties extends CommonVectorStoreProperties 
 		this.table = table;
 	}
 
-	public String getIndexName() {
+	public @Nullable String getIndexName() {
 		return this.indexName;
 	}
 
-	public void setIndexName(String indexName) {
+	public void setIndexName(@Nullable String indexName) {
 		this.indexName = indexName;
 	}
 

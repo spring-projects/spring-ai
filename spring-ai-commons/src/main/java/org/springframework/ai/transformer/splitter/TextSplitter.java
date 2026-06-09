@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,12 @@ package org.springframework.ai.transformer.splitter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.document.ContentFormatter;
 import org.springframework.ai.document.Document;
@@ -30,11 +32,11 @@ import org.springframework.ai.document.DocumentTransformer;
 
 public abstract class TextSplitter implements DocumentTransformer {
 
-	private static final Logger logger = LoggerFactory.getLogger(TextSplitter.class);
+	private static final Log logger = LogFactory.getLog(TextSplitter.class);
 
 	/**
-	 * If true the children documents inherit the content-type of the parent they were
-	 * split from.
+	 * If true the children documents inherit the content formatter of the parent they
+	 * were split from.
 	 */
 	private boolean copyContentFormatter = true;
 
@@ -63,11 +65,11 @@ public abstract class TextSplitter implements DocumentTransformer {
 		List<String> texts = new ArrayList<>();
 		List<Map<String, Object>> metadataList = new ArrayList<>();
 		List<ContentFormatter> formatters = new ArrayList<>();
-		List<Double> scores = new ArrayList<>();
+		List<@Nullable Double> scores = new ArrayList<>();
 		List<String> originalIds = new ArrayList<>();
 
 		for (Document doc : documents) {
-			texts.add(doc.getText());
+			texts.add(Objects.requireNonNullElse(doc.getText(), ""));
 			metadataList.add(doc.getMetadata());
 			formatters.add(doc.getContentFormatter());
 			scores.add(doc.getScore());
@@ -78,7 +80,7 @@ public abstract class TextSplitter implements DocumentTransformer {
 	}
 
 	private List<Document> createDocuments(List<String> texts, List<ContentFormatter> formatters,
-			List<Map<String, Object>> metadataList, List<Double> scores, List<String> originalIds) {
+			List<Map<String, Object>> metadataList, List<@Nullable Double> scores, List<String> originalIds) {
 
 		// Process the data in a column oriented way and recreate the Document
 		List<Document> documents = new ArrayList<>();
@@ -91,7 +93,9 @@ public abstract class TextSplitter implements DocumentTransformer {
 
 			List<String> chunks = splitText(text);
 			if (chunks.size() > 1) {
-				logger.info("Splitting up document into {} chunks.", chunks.size());
+				if (logger.isInfoEnabled()) {
+					logger.info("Splitting up document into " + chunks.size() + " chunks.");
+				}
 			}
 
 			for (int chunkIndex = 0; chunkIndex < chunks.size(); chunkIndex++) {
@@ -99,6 +103,8 @@ public abstract class TextSplitter implements DocumentTransformer {
 
 				Map<String, Object> enhancedMetadata = metadata.entrySet()
 					.stream()
+					// filter left here despite explicit JSpecify disallowing nulls for
+					// now.
 					.filter(e -> e.getKey() != null && e.getValue() != null)
 					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 

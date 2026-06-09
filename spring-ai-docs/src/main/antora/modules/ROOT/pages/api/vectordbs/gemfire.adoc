@@ -58,6 +58,9 @@ You can use the following properties in your Spring Boot configuration to furthe
 |`spring.ai.vectorstore.gemfire.vector-similarity-function`|COSINE
 |`spring.ai.vectorstore.gemfire.fields`|[]
 |`spring.ai.vectorstore.gemfire.buckets`|0
+|`spring.ai.vectorstore.gemfire.username`|null
+|`spring.ai.vectorstore.gemfire.password`|null
+|`spring.ai.vectorstore.gemfire.token`|null
 |===
 
 
@@ -93,6 +96,8 @@ public GemFireVectorStore vectorStore(EmbeddingModel embeddingModel) {
     return GemFireVectorStore.builder(embeddingModel)
         .host("localhost")
         .port(7071)
+        .username("my-user-name")
+        .password("my-password")
         .indexName("my-vector-index")
         .fields(new String[] {"country", "year", "activationDate"}) // Optional: fields for metadata filtering
         .initializeSchema(true)

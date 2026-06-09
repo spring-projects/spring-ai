@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.ai.retry;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Root of the hierarchy of Model access exceptions that are considered non-transient -
  * where a retry of the same operation would fail unless the cause of the Exception is
@@ -26,11 +28,20 @@ package org.springframework.ai.retry;
  */
 public class NonTransientAiException extends RuntimeException {
 
-	public NonTransientAiException(String message) {
+	/**
+	 * Constructor with message.
+	 * @param message the exception message
+	 */
+	public NonTransientAiException(final String message) {
 		super(message);
 	}
 
-	public NonTransientAiException(String message, Throwable cause) {
+	/**
+	 * Constructor with message and cause.
+	 * @param message the exception message
+	 * @param cause the exception cause
+	 */
+	public NonTransientAiException(final String message, final @Nullable Throwable cause) {
 		super(message, cause);
 	}
 

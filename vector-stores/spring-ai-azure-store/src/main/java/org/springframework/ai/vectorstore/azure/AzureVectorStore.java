@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.fastjson2.TypeReference;
@@ -43,13 +43,14 @@ import com.azure.search.documents.models.IndexingResult;
 import com.azure.search.documents.models.SearchOptions;
 import com.azure.search.documents.models.VectorSearchOptions;
 import com.azure.search.documents.models.VectorizedQuery;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -59,7 +60,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -77,12 +77,14 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Soby Chacko
  * @author Jinwoo Lee
+ * @author Alexandros Pappas
+ * @author chabinhwang
  */
 public class AzureVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
 	public static final String DEFAULT_INDEX_NAME = "spring_ai_azure_vector_store";
 
-	private static final Logger logger = LoggerFactory.getLogger(AzureVectorStore.class);
+	private static final Log logger = LogFactory.getLog(AzureVectorStore.class);
 
 	private static final String SPRING_AI_VECTOR_CONFIG = "spring-ai-vector-config";
 
@@ -119,14 +121,19 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	 */
 	private final List<MetadataField> filterMetadataFields;
 
-	@Nullable
-	private SearchClient searchClient;
+	private final String contentFieldName;
 
-	private int defaultTopK;
+	private final String embeddingFieldName;
 
-	private Double defaultSimilarityThreshold;
+	private final String metadataFieldName;
 
-	private String indexName;
+	private final SearchClient searchClient;
+
+	private final int defaultTopK;
+
+	private final Double defaultSimilarityThreshold;
+
+	private final String indexName;
 
 	/**
 	 * Protected constructor that accepts a builder instance. This is the preferred way to
@@ -140,11 +147,15 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		Assert.notNull(builder.filterMetadataFields, "The filterMetadataFields cannot be null");
 
 		this.searchIndexClient = builder.searchIndexClient;
+		this.indexName = builder.indexName;
+		this.searchClient = this.searchIndexClient.getSearchClient(this.indexName);
 		this.initializeSchema = builder.initializeSchema;
 		this.filterMetadataFields = builder.filterMetadataFields;
 		this.defaultTopK = builder.defaultTopK;
 		this.defaultSimilarityThreshold = builder.defaultSimilarityThreshold;
-		this.indexName = builder.indexName;
+		this.contentFieldName = builder.contentFieldName;
+		this.embeddingFieldName = builder.embeddingFieldName;
+		this.metadataFieldName = builder.metadataFieldName;
 		this.filterExpressionConverter = new AzureAiSearchFilterExpressionConverter(this.filterMetadataFields);
 	}
 
@@ -160,15 +171,16 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			return; // nothing to do;
 		}
 
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
-		final var searchDocuments = documents.stream().map(document -> {
+		final var searchDocuments = IntStream.range(0, documents.size()).mapToObj(i -> {
+			Document document = documents.get(i);
 			SearchDocument searchDocument = new SearchDocument();
 			searchDocument.put(ID_FIELD_NAME, document.getId());
-			searchDocument.put(EMBEDDING_FIELD_NAME, embeddings.get(documents.indexOf(document)));
-			searchDocument.put(CONTENT_FIELD_NAME, document.getText());
-			searchDocument.put(METADATA_FIELD_NAME, new JSONObject(document.getMetadata()).toJSONString());
+			searchDocument.put(this.embeddingFieldName, embeddings.get(i));
+			searchDocument.put(this.contentFieldName, document.getText());
+			searchDocument.put(this.metadataFieldName, new JSONObject(document.getMetadata()).toJSONString());
 
 			// Add the filterable metadata fields as top level fields, allowing filler
 			// expressions on them.
@@ -223,12 +235,13 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			.setKNearestNeighborsCount(request.getTopK())
 			// Set the fields to compare the vector against. This is a comma-delimited
 			// list of field names.
-			.setFields(EMBEDDING_FIELD_NAME);
+			.setFields(this.embeddingFieldName);
 
 		var searchOptions = new SearchOptions()
 			.setVectorSearchOptions(new VectorSearchOptions().setQueries(vectorQuery));
 
 		if (request.hasFilterExpression()) {
+			Assert.notNull(request.getFilterExpression(), "filterExpression should not be null at this point");
 			String oDataFilter = this.filterExpressionConverter.convertExpression(request.getFilterExpression());
 			searchOptions.setFilter(oDataFilter);
 		}
@@ -239,27 +252,26 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			.filter(result -> result.getScore() >= request.getSimilarityThreshold())
 			.map(result -> {
 
-				final AzureSearchDocument entry = result.getDocument(AzureSearchDocument.class);
+				SearchDocument document = result.getDocument(SearchDocument.class);
 
-				Map<String, Object> metadata = parseMetadataToMutable(entry.metadata());
+				String id = document.get(ID_FIELD_NAME) != null ? document.get(ID_FIELD_NAME).toString() : "";
+				String content = document.get(this.contentFieldName) != null
+						? document.get(this.contentFieldName).toString() : "";
+				String metadataJson = document.get(this.metadataFieldName) != null
+						? document.get(this.metadataFieldName).toString() : "";
+
+				Map<String, Object> metadata = parseMetadataToMutable(metadataJson);
 
 				metadata.put(DocumentMetadata.DISTANCE.value(), 1.0 - result.getScore());
 
-				return Document.builder()
-					.id(entry.id())
-					.text(entry.content)
-					.metadata(metadata)
-					.score(result.getScore())
-					.build();
+				return Document.builder().id(id).text(content).metadata(metadata).score(result.getScore()).build();
 			})
-			.collect(Collectors.toList());
+			.toList();
 	}
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-
 		if (!this.initializeSchema) {
-			this.searchClient = this.searchIndexClient.getSearchClient(this.indexName);
 			return;
 		}
 
@@ -270,15 +282,15 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		fields.add(new SearchField(ID_FIELD_NAME, SearchFieldDataType.STRING).setKey(true)
 			.setFilterable(true)
 			.setSortable(true));
-		fields.add(new SearchField(EMBEDDING_FIELD_NAME, SearchFieldDataType.collection(SearchFieldDataType.SINGLE))
+		fields.add(new SearchField(this.embeddingFieldName, SearchFieldDataType.collection(SearchFieldDataType.SINGLE))
 			.setSearchable(true)
 			.setHidden(false)
 			.setVectorSearchDimensions(dimensions)
 			// This must match a vector search configuration name.
 			.setVectorSearchProfileName(SPRING_AI_VECTOR_PROFILE));
-		fields.add(new SearchField(CONTENT_FIELD_NAME, SearchFieldDataType.STRING).setSearchable(true)
+		fields.add(new SearchField(this.contentFieldName, SearchFieldDataType.STRING).setSearchable(true)
 			.setFilterable(true));
-		fields.add(new SearchField(METADATA_FIELD_NAME, SearchFieldDataType.STRING).setSearchable(true)
+		fields.add(new SearchField(this.metadataFieldName, SearchFieldDataType.STRING).setSearchable(true)
 			.setFilterable(true));
 
 		for (MetadataField filterableMetadataField : this.filterMetadataFields) {
@@ -303,18 +315,21 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 		SearchIndex index = this.searchIndexClient.createOrUpdateIndex(searchIndex);
 
-		logger.info("Created search index: {}", index.getName());
-
-		this.searchClient = this.searchIndexClient.getSearchClient(this.indexName);
+		if (logger.isInfoEnabled()) {
+			logger.info("Created search index: " + index.getName());
+		}
 	}
 
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
-
-		return VectorStoreObservationContext.builder(VectorStoreProvider.AZURE.value(), operationName)
+		VectorStoreObservationContext.Builder builder = VectorStoreObservationContext
+			.builder(VectorStoreProvider.AZURE.value(), operationName)
 			.collectionName(this.indexName)
-			.dimensions(this.embeddingModel.dimensions())
-			.similarityMetric(this.initializeSchema ? VectorStoreSimilarityMetric.COSINE.value() : null);
+			.dimensions(this.embeddingModel.dimensions());
+		if (this.initializeSchema) {
+			builder.similarityMetric(VectorStoreSimilarityMetric.COSINE.value());
+		}
+		return builder;
 	}
 
 	@Override
@@ -334,7 +349,9 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			return (parsed == null) ? new HashMap<>() : new HashMap<>(parsed);
 		}
 		catch (Exception ex) {
-			logger.warn("Failed to parse metadata JSON. Using empty metadata. json={}", metadataJson, ex);
+			if (logger.isWarnEnabled()) {
+				logger.warn("Failed to parse metadata JSON. Using empty metadata. json=" + metadataJson, ex);
+			}
 			return new HashMap<>();
 		}
 	}
@@ -368,13 +385,6 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	/**
-	 * Internal data structure for retrieving and storing documents.
-	 */
-	private record AzureSearchDocument(String id, String content, List<Float> embedding, String metadata) {
-
-	}
-
-	/**
 	 * Builder class for creating {@link AzureVectorStore} instances.
 	 * <p>
 	 * Provides a fluent API for configuring all aspects of the Azure vector store.
@@ -394,6 +404,12 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		private Double defaultSimilarityThreshold = DEFAULT_SIMILARITY_THRESHOLD;
 
 		private String indexName = DEFAULT_INDEX_NAME;
+
+		private String contentFieldName = CONTENT_FIELD_NAME;
+
+		private String embeddingFieldName = EMBEDDING_FIELD_NAME;
+
+		private String metadataFieldName = METADATA_FIELD_NAME;
 
 		private Builder(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
@@ -457,6 +473,38 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			Assert.isTrue(defaultSimilarityThreshold >= 0.0 && defaultSimilarityThreshold <= 1.0,
 					"The similarity threshold must be in range [0.0:1.00].");
 			this.defaultSimilarityThreshold = defaultSimilarityThreshold;
+			return this;
+		}
+
+		/**
+		 * Sets the content field name in the Azure Search index.
+		 * @param contentFieldName the name of the content field (defaults to "content")
+		 * @return the builder instance
+		 */
+		public Builder contentFieldName(@Nullable String contentFieldName) {
+			this.contentFieldName = contentFieldName != null ? contentFieldName : CONTENT_FIELD_NAME;
+			return this;
+		}
+
+		/**
+		 * Sets the embedding field name in the Azure Search index.
+		 * @param embeddingFieldName the name of the embedding field (defaults to
+		 * "embedding")
+		 * @return the builder instance
+		 */
+		public Builder embeddingFieldName(@Nullable String embeddingFieldName) {
+			this.embeddingFieldName = embeddingFieldName != null ? embeddingFieldName : EMBEDDING_FIELD_NAME;
+			return this;
+		}
+
+		/**
+		 * Sets the metadata field name in the Azure Search index.
+		 * @param metadataFieldName the name of the metadata field (defaults to
+		 * "metadata")
+		 * @return the builder instance
+		 */
+		public Builder metadataFieldName(@Nullable String metadataFieldName) {
+			this.metadataFieldName = metadataFieldName != null ? metadataFieldName : METADATA_FIELD_NAME;
 			return this;
 		}
 

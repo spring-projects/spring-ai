@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,13 @@
 package org.springframework.ai.observation.conventions;
 
 /**
- * Collection of systems providing AI functionality. Based on the OpenTelemetry Semantic
- * Conventions for AI Systems.
+ * Collection of systems providing AI functionality. Inspired by the OpenTelemetry
+ * Semantic Conventions for Generative AI.
  *
  * @author Thomas Vitale
  * @since 1.0.0
- * @see <a href=
- * "https://github.com/open-telemetry/semantic-conventions/tree/main/docs/gen-ai">OTel
- * Semantic Conventions</a>.
+ * @see <a href="https://opentelemetry.io/docs/specs/semconv/gen-ai">OpenTelemetry
+ * Semantic Conventions for Generative AI</a>.
  */
 public enum AiProvider {
 
@@ -34,11 +33,6 @@ public enum AiProvider {
 	 * AI system provided by Anthropic.
 	 */
 	ANTHROPIC("anthropic"),
-
-	/**
-	 * AI system provided by Azure.
-	 */
-	AZURE_OPENAI("azure-openai"),
 
 	/**
 	 * AI system provided by Bedrock Converse.
@@ -51,24 +45,14 @@ public enum AiProvider {
 	DEEPSEEK("deepseek"),
 
 	/**
-	 * AI system provided by Vertex AI.
+	 * AI system provided by Google Gen AI.
 	 */
 	GOOGLE_GENAI_AI("google_genai"),
-
-	/**
-	 * AI system provided by Minimax.
-	 */
-	MINIMAX("minimax"),
 
 	/**
 	 * AI system provided by Mistral.
 	 */
 	MISTRAL_AI("mistral_ai"),
-
-	/**
-	 * AI system provided by Oracle OCI.
-	 */
-	OCI_GENAI("oci_genai"),
 
 	/**
 	 * AI system provided by Ollama.
@@ -93,12 +77,7 @@ public enum AiProvider {
 	/**
 	 * AI system provided by Vertex AI.
 	 */
-	VERTEX_AI("vertex_ai"),
-
-	/**
-	 * AI system provided by Zhipuai.
-	 */
-	ZHIPUAI("zhipuai");
+	VERTEX_AI("vertex_ai");
 
 	private final String value;
 

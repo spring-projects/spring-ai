@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,10 @@ import org.springframework.context.annotation.Bean;
  * @author Eddú Meléndez
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  * @since 0.8.0
  */
-@AutoConfiguration(after = OllamaApiAutoConfiguration.class)
+@AutoConfiguration
 @ConditionalOnClass(OllamaEmbeddingModel.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.OLLAMA,
 		matchIfMissing = true)
@@ -59,7 +60,7 @@ public class OllamaEmbeddingAutoConfiguration {
 
 		var embeddingModel = OllamaEmbeddingModel.builder()
 			.ollamaApi(ollamaApi)
-			.defaultOptions(properties.getOptions())
+			.options(properties.toOptions())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.modelManagementOptions(new ModelManagementOptions(embeddingModelPullStrategy,
 					initProperties.getEmbedding().getAdditionalModels(), initProperties.getTimeout(),

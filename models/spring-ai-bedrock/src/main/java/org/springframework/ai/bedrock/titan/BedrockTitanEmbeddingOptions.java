@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,7 @@
 
 package org.springframework.ai.bedrock.titan;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingModel.InputType;
 import org.springframework.ai.embedding.EmbeddingOptions;
@@ -29,57 +27,50 @@ import org.springframework.util.Assert;
  *
  * @author Wei Jiang
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  */
-@JsonInclude(Include.NON_NULL)
 public class BedrockTitanEmbeddingOptions implements EmbeddingOptions {
 
 	/**
 	 * Titan Embedding API input types. Could be either text or image (encoded in base64).
 	 */
-	private InputType inputType;
+	private final @Nullable InputType inputType;
 
-	public static Builder builder() {
-		return new Builder();
-	}
-
-	public InputType getInputType() {
-		return this.inputType;
-	}
-
-	public void setInputType(InputType inputType) {
+	protected BedrockTitanEmbeddingOptions(@Nullable InputType inputType) {
 		this.inputType = inputType;
 	}
 
+	public static BedrockTitanEmbeddingOptions.Builder builder() {
+		return new Builder();
+	}
+
+	public @Nullable InputType getInputType() {
+		return this.inputType;
+	}
+
 	@Override
-	@JsonIgnore
-	public String getModel() {
+	public @Nullable String getModel() {
 		return null;
 	}
 
 	@Override
-	@JsonIgnore
-	public Integer getDimensions() {
+	public @Nullable Integer getDimensions() {
 		return null;
 	}
 
 	public static final class Builder {
 
-		private BedrockTitanEmbeddingOptions options = new BedrockTitanEmbeddingOptions();
-
-		@Deprecated
-		public Builder withInputType(InputType inputType) {
-			return this.inputType(inputType);
-		}
+		private @Nullable InputType inputType;
 
 		public Builder inputType(InputType inputType) {
 			Assert.notNull(inputType, "input type can not be null.");
 
-			this.options.setInputType(inputType);
+			this.inputType = inputType;
 			return this;
 		}
 
 		public BedrockTitanEmbeddingOptions build() {
-			return this.options;
+			return new BedrockTitanEmbeddingOptions(this.inputType);
 		}
 
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,6 @@ package org.springframework.ai.model.mistralai.autoconfigure;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
@@ -31,64 +29,77 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiEmbeddingModel;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
+ * @author Issam El-atif
  * @since 0.8.1
  */
-@EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 public class MistralAiAutoConfigurationIT {
 
-	private static final Log logger = LogFactory.getLog(MistralAiAutoConfigurationIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.mistralai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"));
+		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"));
 
 	@Test
 	void generate() {
-		this.contextRunner.withConfiguration(BaseMistralAiIT.mistralAiChatAutoConfig()).run(context -> {
-			MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
-			String response = chatModel.call("Hello");
-			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
-		});
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(MistralAiChatAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+					ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class))
+			.run(context -> {
+				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
+				String response = chatModel.call("Hello");
+				assertThat(response).isNotEmpty();
+			});
 	}
 
 	@Test
 	void generateStreaming() {
-		this.contextRunner.withConfiguration(BaseMistralAiIT.mistralAiChatAutoConfig()).run(context -> {
-			MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
-			Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
-			String response = responseFlux.collectList()
-				.block()
-				.stream()
-				.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getText())
-				.collect(Collectors.joining());
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(MistralAiChatAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+					ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class))
+			.run(context -> {
+				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
+				Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
+				String response = responseFlux.collectList()
+					.block()
+					.stream()
+					.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getText())
+					.collect(Collectors.joining());
 
-			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
-		});
+				assertThat(response).isNotEmpty();
+			});
 	}
 
 	@Test
 	void embedding() {
-		this.contextRunner.withConfiguration(BaseMistralAiIT.mistralAiEmbeddingAutoConfig()).run(context -> {
-			MistralAiEmbeddingModel embeddingModel = context.getBean(MistralAiEmbeddingModel.class);
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(MistralAiEmbeddingAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class))
+			.run(context -> {
+				MistralAiEmbeddingModel embeddingModel = context.getBean(MistralAiEmbeddingModel.class);
 
-			EmbeddingResponse embeddingResponse = embeddingModel
-				.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
-			assertThat(embeddingResponse.getResults()).hasSize(2);
-			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
-			assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
-			assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
-			assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
+				EmbeddingResponse embeddingResponse = embeddingModel
+					.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+				assertThat(embeddingResponse.getResults()).hasSize(2);
+				assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
+				assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
+				assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
+				assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 
-			assertThat(embeddingModel.dimensions()).isEqualTo(1024);
-		});
+				assertThat(embeddingModel.dimensions()).isEqualTo(1024);
+			});
 	}
 
 }

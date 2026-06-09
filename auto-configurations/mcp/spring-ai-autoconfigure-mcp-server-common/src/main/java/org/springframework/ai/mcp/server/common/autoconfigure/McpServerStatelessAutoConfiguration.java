@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,11 +56,7 @@ import org.springframework.web.context.support.StandardServletEnvironment;
 /**
  * @author Christian Tzolov
  */
-@AutoConfiguration(afterName = {
-		"org.springframework.ai.mcp.server.common.autoconfigure.annotations.StatelessServerSpecificationFactoryAutoConfiguration",
-		"org.springframework.ai.mcp.server.common.autoconfigure.StatelessToolCallbackConverterAutoConfiguration",
-		"org.springframework.ai.mcp.server.autoconfigure.McpServerStatelessWebFluxAutoConfiguration",
-		"org.springframework.ai.mcp.server.autoconfigure.McpServerStatelessWebMvcAutoConfiguration" })
+@AutoConfiguration
 @ConditionalOnClass(McpSchema.class)
 @EnableConfigurationProperties(McpServerProperties.class)
 @Conditional({ McpServerStdioDisabledCondition.class,

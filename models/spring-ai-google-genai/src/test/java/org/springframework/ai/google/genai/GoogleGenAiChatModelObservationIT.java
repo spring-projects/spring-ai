@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,10 +43,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Soby Chacko
+ * @author Thomas Vitale
+ * @author Sebastien Deleuze
  */
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".+")
 public class GoogleGenAiChatModelObservationIT {
 
 	@Autowired
@@ -64,7 +66,7 @@ public class GoogleGenAiChatModelObservationIT {
 	void observationForChatOperation() {
 
 		var options = GoogleGenAiChatOptions.builder()
-			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
+			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue())
 			.temperature(0.7)
 			.stopSequences(List.of("this-is-the-end"))
 			.maxOutputTokens(2048)
@@ -74,19 +76,20 @@ public class GoogleGenAiChatModelObservationIT {
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
+		assertThat(chatResponse.getResult()).isNotNull();
 		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata);
+		validate(responseMetadata, false);
 	}
 
 	@Test
 	void observationForStreamingOperation() {
 
 		var options = GoogleGenAiChatOptions.builder()
-			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
+			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue())
 			.temperature(0.7)
 			.stopSequences(List.of("this-is-the-end"))
 			.maxOutputTokens(2048)
@@ -111,11 +114,11 @@ public class GoogleGenAiChatModelObservationIT {
 		ChatResponseMetadata responseMetadata = lastChatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata);
+		validate(responseMetadata, true);
 	}
 
-	private void validate(ChatResponseMetadata responseMetadata) {
-		TestObservationRegistryAssert.assertThat(this.observationRegistry)
+	private void validate(ChatResponseMetadata responseMetadata, boolean streaming) {
+		var observationAssert = TestObservationRegistryAssert.assertThat(this.observationRegistry)
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
 			.that()
@@ -126,7 +129,7 @@ public class GoogleGenAiChatModelObservationIT {
 					AiProvider.GOOGLE_GENAI_AI.value())
 			.hasLowCardinalityKeyValue(
 					ChatModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
+					GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue())
 			.hasHighCardinalityKeyValue(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), "2048")
 			.hasHighCardinalityKeyValue(
@@ -152,6 +155,14 @@ public class GoogleGenAiChatModelObservationIT {
 					String.valueOf(responseMetadata.getUsage().getTotalTokens()))
 			.hasBeenStarted()
 			.hasBeenStopped();
+		if (streaming) {
+			observationAssert.hasHighCardinalityKeyValue(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STREAM.asString(), "true");
+		}
+		else {
+			observationAssert.doesNotHaveHighCardinalityKeyValueWithKey(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STREAM.asString());
+		}
 	}
 
 	@SpringBootConfiguration
@@ -175,8 +186,8 @@ public class GoogleGenAiChatModelObservationIT {
 			return GoogleGenAiChatModel.builder()
 				.genAiClient(genAiClient)
 				.observationRegistry(observationRegistry)
-				.defaultOptions(
-						GoogleGenAiChatOptions.builder().model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH).build())
+				.options(
+						GoogleGenAiChatOptions.builder().model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH).build())
 				.build();
 		}
 

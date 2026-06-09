@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -144,7 +144,7 @@ public class TextSplitterTests {
 				+ "4being forced to choose. It isn’t the lack of an exit, but the abundance of exits that is so disorienting.",
 				Map.of("file_name", "sample1.pdf", "page_number", 4));
 
-		var tokenTextSplitter = new TokenTextSplitter();
+		var tokenTextSplitter = TokenTextSplitter.builder().build();
 
 		// when
 		List<Document> splitedDocument = tokenTextSplitter.apply(List.of(doc1, doc2, doc3, doc4));
@@ -212,7 +212,7 @@ public class TextSplitterTests {
 				+ "3being forced to choose. It isn’t the lack of an exit, but the abundance of exits that is so disorienting.",
 				Map.of("file_name", "sample1.pdf", "page_number", 3));
 
-		var tokenTextSplitter = new TokenTextSplitter();
+		var tokenTextSplitter = TokenTextSplitter.builder().build();
 
 		// when
 		List<Document> splitedDocument = tokenTextSplitter.apply(List.of(doc1, doc2, doc3));

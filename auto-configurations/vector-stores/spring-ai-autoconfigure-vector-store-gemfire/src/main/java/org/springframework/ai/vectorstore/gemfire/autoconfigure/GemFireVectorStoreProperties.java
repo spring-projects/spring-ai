@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.ai.vectorstore.gemfire.autoconfigure;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.vectorstore.gemfire.GemFireVectorStore;
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
@@ -95,6 +97,27 @@ public class GemFireVectorStoreProperties extends CommonVectorStoreProperties {
 	 */
 	private boolean sslEnabled = GemFireVectorStore.DEFAULT_SSL_ENABLED;
 
+	/**
+	 * Configures the username for the GemFire VectorStore connection
+	 *
+	 * To specify username, use "spring.ai.vectorstore.gemfire.username";
+	 */
+	private @Nullable String username;
+
+	/**
+	 * Configures the password for the GemFire VectorStore connection
+	 *
+	 * To specify password, use "spring.ai.vectorstore.gemfire.password";
+	 */
+	private @Nullable String password;
+
+	/**
+	 * Configures the token for the GemFire VectorStore connection
+	 *
+	 * To specify token, use "spring.ai.vectorstore.gemfire.token";
+	 */
+	private @Nullable String token;
+
 	public int getBeamWidth() {
 		return this.beamWidth;
 	}
@@ -165,6 +188,30 @@ public class GemFireVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public void setSslEnabled(boolean sslEnabled) {
 		this.sslEnabled = sslEnabled;
+	}
+
+	public @Nullable String getToken() {
+		return this.token;
+	}
+
+	public void setToken(@Nullable String token) {
+		this.token = token;
+	}
+
+	public @Nullable String getPassword() {
+		return this.password;
+	}
+
+	public void setPassword(@Nullable String password) {
+		this.password = password;
+	}
+
+	public @Nullable String getUsername() {
+		return this.username;
+	}
+
+	public void setUsername(@Nullable String username) {
+		this.username = username;
 	}
 
 }

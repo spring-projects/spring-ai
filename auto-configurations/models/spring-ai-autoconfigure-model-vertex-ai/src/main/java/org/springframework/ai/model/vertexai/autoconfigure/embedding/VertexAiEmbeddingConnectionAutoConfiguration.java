@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package org.springframework.ai.model.vertexai.autoconfigure.embedding;
 
-import com.google.cloud.vertexai.VertexAI;
+import com.google.cloud.aiplatform.v1.PredictionServiceSettings;
 
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -33,10 +33,11 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Mark Pollack
  * @author Ilayaperumal Gopinathan
+ * @author Nguyen Tran
  * @since 1.0.0
  */
 @AutoConfiguration
-@ConditionalOnClass(VertexAI.class)
+@ConditionalOnClass(PredictionServiceSettings.class)
 @EnableConfigurationProperties(VertexAiEmbeddingConnectionProperties.class)
 public class VertexAiEmbeddingConnectionAutoConfiguration {
 
