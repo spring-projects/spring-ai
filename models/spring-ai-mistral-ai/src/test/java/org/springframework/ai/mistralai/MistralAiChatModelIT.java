@@ -50,7 +50,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.model.StreamingChatModel;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -61,7 +60,6 @@ import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.support.ToolCallbacks;
@@ -377,7 +375,7 @@ class MistralAiChatModelIT {
 			.media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)))
 			.build();
 
-		var chatOptions = ChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()).build();
+		var chatOptions = MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()).build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage), chatOptions));
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
@@ -394,7 +392,7 @@ class MistralAiChatModelIT {
 				.build()))
 			.build();
 
-		var chatOptions = ChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()).build();
+		var chatOptions = MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()).build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), chatOptions));
 		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
@@ -412,7 +410,7 @@ class MistralAiChatModelIT {
 			.build();
 
 		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(List.of(userMessage),
-				ChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()).build()));
+				MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()).build()));
 
 		String content = response.collectList()
 			.blockOptional()
@@ -488,7 +486,7 @@ class MistralAiChatModelIT {
 		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
 		String conversationId = UUID.randomUUID().toString();
 
-		ChatOptions chatOptions = ToolCallingChatOptions.builder()
+		MistralAiChatOptions chatOptions = MistralAiChatOptions.builder()
 			.toolCallbacks(ToolCallbacks.from(new MathTools()))
 			.build();
 		Prompt prompt = new Prompt(
