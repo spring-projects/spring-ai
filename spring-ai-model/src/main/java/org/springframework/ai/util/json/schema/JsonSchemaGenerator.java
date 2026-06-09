@@ -320,8 +320,8 @@ public final class JsonSchemaGenerator {
 						}
 					});
 				}
-				else if (value.isTextual() && entry.getKey().equals("type")) {
-					String oldValue = node.get("type").asText();
+				else if (value.isString() && entry.getKey().equals("type")) {
+					String oldValue = node.get("type").asString();
 					node.put("type", oldValue.toUpperCase());
 				}
 			});
