@@ -35,6 +35,8 @@ Ideally, that would include a small sample project that reproduces the problem, 
 
 You can also submit an enhancement or a new feature proposal.
 
+The issue title is used to generate the changelog so please use a short and descriptive text with types or filenames enclosed in backticks. 
+
 ### Submit a pull request
 
 Should you create an issue first?
@@ -47,7 +49,8 @@ Please don't submit pull requests:
 * For already assigned issues (as the assignee is or plans to work on it)
 * For straightforward or polish-style changes
 
-If your pull request is related to an issue, please mention the related issue with its number in the PR description, for example "Fixes #123".
+The pull request title is used to generate the changelog so please use a short and descriptive text with types or filenames enclosed in backticks.
+If your pull request is related to an issue, please mention the related issue with its number in the PR description (not in the title), for example "Fixes #123".
 
 Before submitting a pull request:
 
