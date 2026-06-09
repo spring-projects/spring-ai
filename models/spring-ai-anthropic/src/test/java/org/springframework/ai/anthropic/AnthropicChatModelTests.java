@@ -248,8 +248,7 @@ class AnthropicChatModelTests {
 
 		AnthropicChatOptions runtimeOptions = AnthropicChatOptions.builder().cacheOptions(cacheOptions).build();
 
-		Prompt originalPrompt = new Prompt("Test", runtimeOptions);
-		Prompt requestPrompt = model.buildRequestPrompt(originalPrompt);
+		Prompt requestPrompt = new Prompt("Test", runtimeOptions);
 
 		AnthropicChatOptions mergedOptions = (AnthropicChatOptions) requestPrompt.getOptions();
 		assertThat(mergedOptions.getCacheOptions()).isNotNull();

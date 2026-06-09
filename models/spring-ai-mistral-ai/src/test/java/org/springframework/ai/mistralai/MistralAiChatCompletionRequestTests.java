@@ -59,7 +59,7 @@ class MistralAiChatCompletionRequestTests {
 
 	@Test
 	void chatCompletionDefaultRequestTest() {
-		var prompt = this.chatModel.buildRequestPrompt(new Prompt("test content"));
+		var prompt = new Prompt("test content", MistralAiChatOptions.builder().build());
 		var request = this.chatModel.createRequest(prompt, false);
 
 		assertThat(request.messages()).hasSize(1);
@@ -90,7 +90,7 @@ class MistralAiChatCompletionRequestTests {
 			.toolChoice(MistralAiApi.ChatCompletionRequest.ToolChoice.AUTO)
 			.build();
 
-		var prompt = this.chatModel.buildRequestPrompt(new Prompt("test content", options));
+		var prompt = new Prompt("test content", options);
 		var request = this.chatModel.createRequest(prompt, true);
 
 		assertThat(request.messages()).hasSize(1);
@@ -173,8 +173,7 @@ class MistralAiChatCompletionRequestTests {
 	private Prompt createPrompt(Message message) {
 		var chatOptions = MistralAiChatOptions.builder().temperature(0.7d).build();
 		var prompt = new Prompt(message, chatOptions);
-
-		return this.chatModel.buildRequestPrompt(prompt);
+		return prompt;
 	}
 
 	private static void verifyToolChatCompletionMessage(ChatCompletionMessage chatCompletionMessage,

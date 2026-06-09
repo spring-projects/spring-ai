@@ -944,7 +944,7 @@ public final class OpenAiChatModel implements ChatModel {
 	 * prompt using this model {@link ChatModel#getOptions() options}. Otherwise, use the
 	 * prompt as is.
 	 */
-	/* package */ Prompt buildRequestPrompt(Prompt prompt) {
+	private Prompt buildRequestPrompt(Prompt prompt) {
 		if (prompt.getOptions() == null) {
 			return prompt.mutate().chatOptions(this.getOptions()).build();
 		}

@@ -19,6 +19,7 @@ package org.springframework.ai.google.genai;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 import com.google.genai.Client;
 import com.google.genai.types.Content;
@@ -58,46 +59,16 @@ public class CreateGeminiRequestTests {
 	Client genAiClient;
 
 	@Test
-	public void createRequestWithChatOptions() {
-
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build())
-			.build();
-
-		GeminiRequest request = client
-			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
-
-		assertThat(request.contents()).hasSize(1);
-
-		assertThat(request.config().systemInstruction()).isNotPresent();
-		assertThat(request.modelName()).isEqualTo("DEFAULT_MODEL");
-		assertThat(request.config().temperature().orElse(0f)).isEqualTo(66.6f);
-
-		request = client.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content",
-				GoogleGenAiChatOptions.builder().model("PROMPT_MODEL").temperature(99.9).build())));
-
-		assertThat(request.contents()).hasSize(1);
-
-		assertThat(request.config().systemInstruction()).isNotPresent();
-		assertThat(request.modelName()).isEqualTo("PROMPT_MODEL");
-		assertThat(request.config().temperature().orElse(0f)).isEqualTo(99.9f);
-	}
-
-	@Test
 	public void createRequestWithFrequencyAndPresencePenalty() {
 
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder()
-				.model("DEFAULT_MODEL")
-				.frequencyPenalty(.25)
-				.presencePenalty(.75)
-				.build())
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("DEFAULT_MODEL")
+			.frequencyPenalty(.25)
+			.presencePenalty(.75)
 			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		GeminiRequest request = client
-			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content", options));
 
 		assertThat(request.contents()).hasSize(1);
 
@@ -116,13 +87,10 @@ public class CreateGeminiRequestTests {
 				.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(URI.create("http://example.com")).build()))
 			.build();
 
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build())
-			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		GeminiRequest request = client
-			.createGeminiRequest(client.buildRequestPrompt(new Prompt(List.of(systemMessage, userMessage))));
+		GeminiRequest request = client.createGeminiRequest(new Prompt(List.of(systemMessage, userMessage),
+				GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build()));
 
 		assertThat(request.modelName()).isEqualTo("DEFAULT_MODEL");
 		assertThat(request.config().temperature().orElse(0f)).isEqualTo(66.6f);
@@ -158,14 +126,14 @@ public class CreateGeminiRequestTests {
 			.options(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build())
 			.build();
 
-		var requestPrompt = client.buildRequestPrompt(new Prompt("Test message content",
+		var requestPrompt = new Prompt("Test message content",
 				GoogleGenAiChatOptions.builder()
 					.model("PROMPT_MODEL")
 					.toolCallbacks(List.of(FunctionToolCallback.builder(TOOL_FUNCTION_NAME, new MockWeatherService())
 						.description("Get the weather in location")
 						.inputType(MockWeatherService.Request.class)
 						.build()))
-					.build()));
+					.build());
 
 		var request = client.createGeminiRequest(requestPrompt);
 
@@ -190,22 +158,19 @@ public class CreateGeminiRequestTests {
 	@Test
 	public void createRequestWithGenerationConfigOptions() {
 
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder()
-				.model("DEFAULT_MODEL")
-				.temperature(66.6)
-				.maxOutputTokens(100)
-				.topK(10)
-				.topP(5.0)
-				.stopSequences(List.of("stop1", "stop2"))
-				.candidateCount(1)
-				.responseMimeType("application/json")
-				.build())
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("DEFAULT_MODEL")
+			.temperature(66.6)
+			.maxOutputTokens(100)
+			.topK(10)
+			.topP(5.0)
+			.stopSequences(List.of("stop1", "stop2"))
+			.candidateCount(1)
+			.responseMimeType("application/json")
 			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		GeminiRequest request = client
-			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content", options));
 
 		assertThat(request.contents()).hasSize(1);
 
@@ -223,13 +188,10 @@ public class CreateGeminiRequestTests {
 	@Test
 	public void createRequestWithThinkingBudget() {
 
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").thinkingBudget(12853).build())
-			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		GeminiRequest request = client
-			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content",
+				GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").thinkingBudget(12853).build()));
 
 		assertThat(request.contents()).hasSize(1);
 		assertThat(request.modelName()).isEqualTo("DEFAULT_MODEL");
@@ -249,8 +211,8 @@ public class CreateGeminiRequestTests {
 			.build();
 
 		// Override default thinkingBudget with prompt-specific value
-		GeminiRequest request = client.createGeminiRequest(client.buildRequestPrompt(
-				new Prompt("Test message content", GoogleGenAiChatOptions.builder().thinkingBudget(25000).build())));
+		GeminiRequest request = client.createGeminiRequest(
+				new Prompt("Test message content", GoogleGenAiChatOptions.builder().thinkingBudget(25000).build()));
 
 		assertThat(request.contents()).hasSize(1);
 		assertThat(request.modelName())
@@ -264,13 +226,10 @@ public class CreateGeminiRequestTests {
 
 	@Test
 	public void createRequestWithNullThinkingBudget() {
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").thinkingBudget(null).build())
-			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		GeminiRequest request = client
-			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content",
+				GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").thinkingBudget(null).build()));
 
 		assertThat(request.contents()).hasSize(1);
 		assertThat(request.modelName()).isEqualTo("DEFAULT_MODEL");
@@ -281,13 +240,10 @@ public class CreateGeminiRequestTests {
 
 	@Test
 	public void createRequestWithZeroThinkingBudget() {
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").thinkingBudget(0).build())
-			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		GeminiRequest request = client
-			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content",
+				GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").thinkingBudget(0).build()));
 
 		assertThat(request.config().thinkingConfig()).isPresent();
 		assertThat(request.config().thinkingConfig().get().thinkingBudget()).isPresent();
@@ -296,12 +252,10 @@ public class CreateGeminiRequestTests {
 
 	@Test
 	public void createRequestWithNoMessages() {
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build())
-			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		GeminiRequest request = client.createGeminiRequest(client.buildRequestPrompt(new Prompt(List.of())));
+		GeminiRequest request = client.createGeminiRequest(
+				new Prompt(List.of(), GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build()));
 
 		assertThat(request.contents()).isEmpty();
 	}
@@ -310,13 +264,10 @@ public class CreateGeminiRequestTests {
 	public void createRequestWithOnlySystemMessage() {
 		var systemMessage = new SystemMessage("System Message Only");
 
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build())
-			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		GeminiRequest request = client
-			.createGeminiRequest(client.buildRequestPrompt(new Prompt(List.of(systemMessage))));
+		GeminiRequest request = client.createGeminiRequest(
+				new Prompt(List.of(systemMessage), GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build()));
 
 		assertThat(request.config().systemInstruction()).isPresent();
 		assertThat(request.contents()).isEmpty();
@@ -324,16 +275,13 @@ public class CreateGeminiRequestTests {
 
 	@Test
 	public void createRequestWithLabels() {
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder()
-				.model("DEFAULT_MODEL")
-				.labels(java.util.Map.of("org", "my-org", "env", "test"))
-				.build())
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("DEFAULT_MODEL")
+			.labels(Map.of("org", "my-org", "env", "test"))
 			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		GeminiRequest request = client
-			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content", options));
 
 		assertThat(request.config().labels()).isPresent();
 		assertThat(request.config().labels().get()).containsEntry("org", "my-org");
@@ -342,16 +290,13 @@ public class CreateGeminiRequestTests {
 
 	@Test
 	public void createRequestWithThinkingLevel() {
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder()
-				.model("DEFAULT_MODEL")
-				.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
-				.build())
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("DEFAULT_MODEL")
+			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
 			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).options(options).build();
 
-		GeminiRequest request = client
-			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content", options));
 
 		assertThat(request.contents()).hasSize(1);
 		assertThat(request.modelName()).isEqualTo("DEFAULT_MODEL");
@@ -373,8 +318,8 @@ public class CreateGeminiRequestTests {
 			.build();
 
 		// Override default thinkingLevel with prompt-specific value
-		GeminiRequest request = client.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content",
-				GoogleGenAiChatOptions.builder().thinkingLevel(GoogleGenAiThinkingLevel.HIGH).build())));
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content",
+				GoogleGenAiChatOptions.builder().thinkingLevel(GoogleGenAiThinkingLevel.HIGH).build()));
 
 		assertThat(request.config().thinkingConfig()).isPresent();
 		assertThat(request.config().thinkingConfig().get().thinkingLevel()).isPresent();
@@ -383,18 +328,15 @@ public class CreateGeminiRequestTests {
 
 	@Test
 	public void createRequestWithThinkingLevelAndBudgetCombined() {
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder()
-				.model("DEFAULT_MODEL")
-				.thinkingBudget(8192)
-				.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
-				.includeThoughts(true)
-				.build())
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("DEFAULT_MODEL")
+			.thinkingBudget(8192)
+			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
+			.includeThoughts(true)
 			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		GeminiRequest request = client
-			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content", options));
 
 		assertThat(request.config().thinkingConfig()).isPresent();
 		var thinkingConfig = request.config().thinkingConfig().get();
@@ -408,13 +350,10 @@ public class CreateGeminiRequestTests {
 
 	@Test
 	public void createRequestWithNullThinkingLevel() {
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").thinkingLevel(null).build())
-			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		GeminiRequest request = client
-			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content",
+				GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").thinkingLevel(null).build()));
 
 		// Verify thinkingConfig is not present when only thinkingLevel is null
 		assertThat(request.config().thinkingConfig()).isEmpty();
@@ -422,16 +361,13 @@ public class CreateGeminiRequestTests {
 
 	@Test
 	public void createRequestWithOnlyThinkingLevel() {
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder()
-				.model("DEFAULT_MODEL")
-				.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
-				.build())
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("DEFAULT_MODEL")
+			.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
 			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		GeminiRequest request = client
-			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content", options));
 
 		// Verify thinkingConfig is present when only thinkingLevel is set
 		assertThat(request.config().thinkingConfig()).isPresent();
@@ -443,16 +379,13 @@ public class CreateGeminiRequestTests {
 
 	@Test
 	public void createRequestWithThinkingLevelMinimal() {
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder()
-				.model("gemini-3-flash-preview")
-				.thinkingLevel(GoogleGenAiThinkingLevel.MINIMAL)
-				.build())
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("gemini-3-flash-preview")
+			.thinkingLevel(GoogleGenAiThinkingLevel.MINIMAL)
 			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		GeminiRequest request = client
-			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content", options));
 
 		assertThat(request.config().thinkingConfig()).isPresent();
 		assertThat(request.config().thinkingConfig().get().thinkingLevel()).isPresent();
@@ -461,16 +394,13 @@ public class CreateGeminiRequestTests {
 
 	@Test
 	public void createRequestWithThinkingLevelMedium() {
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder()
-				.model("gemini-3-flash-preview")
-				.thinkingLevel(GoogleGenAiThinkingLevel.MEDIUM)
-				.build())
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("gemini-3-flash-preview")
+			.thinkingLevel(GoogleGenAiThinkingLevel.MEDIUM)
 			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		GeminiRequest request = client
-			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content", options));
 
 		assertThat(request.config().thinkingConfig()).isPresent();
 		assertThat(request.config().thinkingConfig().get().thinkingLevel()).isPresent();
@@ -479,16 +409,13 @@ public class CreateGeminiRequestTests {
 
 	@Test
 	public void createRequestWithThinkingLevelMinimalOnProModelThrows() {
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder()
-				.model("gemini-3-pro-preview")
-				.thinkingLevel(GoogleGenAiThinkingLevel.MINIMAL)
-				.build())
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("gemini-3-pro-preview")
+			.thinkingLevel(GoogleGenAiThinkingLevel.MINIMAL)
 			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		assertThatThrownBy(
-				() -> client.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content"))))
+		assertThatThrownBy(() -> client.createGeminiRequest(new Prompt("Test message content", options)))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("MINIMAL")
 			.hasMessageContaining("not supported")
@@ -497,16 +424,13 @@ public class CreateGeminiRequestTests {
 
 	@Test
 	public void createRequestWithThinkingLevelMediumOnProModelThrows() {
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder()
-				.model("gemini-3-pro-preview")
-				.thinkingLevel(GoogleGenAiThinkingLevel.MEDIUM)
-				.build())
-			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		assertThatThrownBy(
-				() -> client.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content"))))
+		assertThatThrownBy(() -> client.createGeminiRequest(new Prompt("Test message content",
+				GoogleGenAiChatOptions.builder()
+					.model("gemini-3-pro-preview")
+					.thinkingLevel(GoogleGenAiThinkingLevel.MEDIUM)
+					.build())))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("MEDIUM")
 			.hasMessageContaining("not supported")
@@ -515,16 +439,13 @@ public class CreateGeminiRequestTests {
 
 	@Test
 	public void createRequestWithThinkingLevelLowOnProModel() {
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder()
-				.model("gemini-3-pro-preview")
-				.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
-				.build())
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("gemini-3-pro-preview")
+			.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
 			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		GeminiRequest request = client
-			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content", options));
 
 		assertThat(request.config().thinkingConfig()).isPresent();
 		assertThat(request.config().thinkingConfig().get().thinkingLevel()).isPresent();
@@ -533,16 +454,13 @@ public class CreateGeminiRequestTests {
 
 	@Test
 	public void createRequestWithThinkingLevelHighOnProModel() {
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder()
-				.model("gemini-3-pro-preview")
-				.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
-				.build())
-			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		GeminiRequest request = client
-			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content",
+				GoogleGenAiChatOptions.builder()
+					.model("gemini-3-pro-preview")
+					.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
+					.build()));
 
 		assertThat(request.config().thinkingConfig()).isPresent();
 		assertThat(request.config().thinkingConfig().get().thinkingLevel()).isPresent();
@@ -553,13 +471,10 @@ public class CreateGeminiRequestTests {
 	public void createRequestWithAllThinkingLevelsOnFlashModel() {
 		for (GoogleGenAiThinkingLevel level : List.of(GoogleGenAiThinkingLevel.MINIMAL, GoogleGenAiThinkingLevel.LOW,
 				GoogleGenAiThinkingLevel.MEDIUM, GoogleGenAiThinkingLevel.HIGH)) {
-			var client = GoogleGenAiChatModel.builder()
-				.genAiClient(this.genAiClient)
-				.options(GoogleGenAiChatOptions.builder().model("gemini-3-flash-preview").thinkingLevel(level).build())
-				.build();
+			var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-			GeminiRequest request = client
-				.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+			GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content",
+					GoogleGenAiChatOptions.builder().model("gemini-3-flash-preview").thinkingLevel(level).build()));
 
 			assertThat(request.config().thinkingConfig()).isPresent();
 			assertThat(request.config().thinkingConfig().get().thinkingLevel()).isPresent();
@@ -580,11 +495,11 @@ public class CreateGeminiRequestTests {
 			.build();
 
 		// Runtime override with unsupported level should throw
-		assertThatThrownBy(() -> client.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content",
+		assertThatThrownBy(() -> client.createGeminiRequest(new Prompt("Test message content",
 				GoogleGenAiChatOptions.builder()
 					.model("gemini-3-pro-preview")
 					.thinkingLevel(GoogleGenAiThinkingLevel.MINIMAL)
-					.build()))))
+					.build())))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("MINIMAL")
 			.hasMessageContaining("not supported");
@@ -593,16 +508,13 @@ public class CreateGeminiRequestTests {
 	@Test
 	public void createRequestWithThinkingLevelUnspecifiedOnProModel() {
 		// THINKING_LEVEL_UNSPECIFIED should be allowed on Pro models
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder()
-				.model("gemini-3-pro-preview")
-				.thinkingLevel(GoogleGenAiThinkingLevel.THINKING_LEVEL_UNSPECIFIED)
-				.build())
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("gemini-3-pro-preview")
+			.thinkingLevel(GoogleGenAiThinkingLevel.THINKING_LEVEL_UNSPECIFIED)
 			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		GeminiRequest request = client
-			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content", options));
 
 		assertThat(request.config().thinkingConfig()).isPresent();
 		assertThat(request.config().thinkingConfig().get().thinkingLevel()).isPresent();
@@ -611,16 +523,13 @@ public class CreateGeminiRequestTests {
 	@Test
 	public void createRequestWithProModelInCustomPath() {
 		// Test custom paths like "projects/.../gemini-3-pro-preview"
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder()
-				.model("projects/my-project/locations/us-central1/publishers/google/models/gemini-3-pro-preview")
-				.thinkingLevel(GoogleGenAiThinkingLevel.MINIMAL)
-				.build())
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("projects/my-project/locations/us-central1/publishers/google/models/gemini-3-pro-preview")
+			.thinkingLevel(GoogleGenAiThinkingLevel.MINIMAL)
 			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		assertThatThrownBy(
-				() -> client.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content"))))
+		assertThatThrownBy(() -> client.createGeminiRequest(new Prompt("Test message content", options)))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("MINIMAL")
 			.hasMessageContaining("not supported");
@@ -633,11 +542,11 @@ public class CreateGeminiRequestTests {
 			.options(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build())
 			.build();
 
-		GeminiRequest request = client.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content",
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content",
 				GoogleGenAiChatOptions.builder()
 					.googleSearchRetrieval(true)
 					.includeServerSideToolInvocations(true)
-					.build())));
+					.build()));
 
 		assertThat(request.config().toolConfig()).isPresent();
 		assertThat(request.config().toolConfig().get().includeServerSideToolInvocations()).isPresent();
@@ -652,70 +561,42 @@ public class CreateGeminiRequestTests {
 			.options(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build())
 			.build();
 
-		GeminiRequest request = client.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content",
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content",
 				GoogleGenAiChatOptions.builder()
 					.googleSearchRetrieval(true)
 					.includeServerSideToolInvocations(false)
-					.build())));
+					.build()));
 
 		assertThat(request.config().toolConfig()).isNotPresent();
 	}
 
 	@Test
 	public void createRequestWithIncludeServerSideToolInvocationsDefault() {
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").googleSearchRetrieval(true).build())
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("DEFAULT_MODEL")
+			.googleSearchRetrieval(true)
 			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		GeminiRequest request = client
-			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content", options));
 
 		// Default is false, so no ToolConfig should be set
 		assertThat(request.config().toolConfig()).isNotPresent();
 	}
 
 	@Test
-	public void createRequestWithIncludeServerSideToolInvocationsRuntimeOverride() {
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder()
-				.model("DEFAULT_MODEL")
-				.includeServerSideToolInvocations(false)
-				.build())
-			.build();
-
-		GeminiRequest request = client.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content",
-				GoogleGenAiChatOptions.builder()
-					.googleSearchRetrieval(true)
-					.includeServerSideToolInvocations(true)
-					.build())));
-
-		assertThat(request.config().toolConfig()).isPresent();
-		assertThat(request.config().toolConfig().get().includeServerSideToolInvocations().get()).isTrue();
-	}
-
-	@Test
 	public void createRequestWithServiceTier() {
-		var client = GoogleGenAiChatModel.builder()
-			.genAiClient(this.genAiClient)
-			.options(GoogleGenAiChatOptions.builder()
-				.model("DEFAULT_MODEL")
-				.serviceTier(GoogleGenAiServiceTier.PRIORITY)
-				.build())
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("DEFAULT_MODEL")
+			.serviceTier(GoogleGenAiServiceTier.PRIORITY)
 			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		GeminiRequest request = client
-			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content", options));
 
 		assertThat(request.config().serviceTier()).isPresent();
 		assertThat(request.config().serviceTier().get().toString()).isEqualTo("priority");
 
-		request = client.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content",
-				GoogleGenAiChatOptions.builder().serviceTier(GoogleGenAiServiceTier.STANDARD).build())));
-
-		assertThat(request.config().serviceTier()).isPresent();
-		assertThat(request.config().serviceTier().get().toString()).isEqualTo("standard");
 	}
 
 }

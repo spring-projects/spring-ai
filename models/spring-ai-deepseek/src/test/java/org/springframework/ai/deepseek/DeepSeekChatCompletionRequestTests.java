@@ -37,8 +37,8 @@ public class DeepSeekChatCompletionRequestTests {
 
 		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
 
-		var prompt = client.buildRequestPrompt(new Prompt("Test message content",
-				DeepSeekChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build()));
+		var prompt = new Prompt("Test message content",
+				DeepSeekChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build());
 
 		var request = client.createRequest(prompt, false);
 
@@ -67,8 +67,8 @@ public class DeepSeekChatCompletionRequestTests {
 			.reasoningContent("Let me think about this step by step...")
 			.build();
 
-		var prompt = client.buildRequestPrompt(new Prompt(List.of(assistantMessage),
-				DeepSeekChatOptions.builder().model("deepseek-reasoner").build()));
+		var prompt = new Prompt(List.of(assistantMessage),
+				DeepSeekChatOptions.builder().model("deepseek-reasoner").build());
 
 		var request = client.createRequest(prompt, false);
 
@@ -87,8 +87,8 @@ public class DeepSeekChatCompletionRequestTests {
 			.content("The answer is 42")
 			.build();
 
-		var prompt = client.buildRequestPrompt(new Prompt(List.of(assistantMessage),
-				DeepSeekChatOptions.builder().model("deepseek-reasoner").build()));
+		var prompt = new Prompt(List.of(assistantMessage),
+				DeepSeekChatOptions.builder().model("deepseek-reasoner").build());
 
 		var request = client.createRequest(prompt, false);
 
@@ -105,8 +105,8 @@ public class DeepSeekChatCompletionRequestTests {
 
 		AssistantMessage assistantMessage = new AssistantMessage("The answer is 42");
 
-		var prompt = client.buildRequestPrompt(new Prompt(List.of(assistantMessage),
-				DeepSeekChatOptions.builder().model("deepseek-reasoner").build()));
+		var prompt = new Prompt(List.of(assistantMessage),
+				DeepSeekChatOptions.builder().model("deepseek-reasoner").build());
 
 		var request = client.createRequest(prompt, false);
 
@@ -127,8 +127,8 @@ public class DeepSeekChatCompletionRequestTests {
 			.prefix(true)
 			.build();
 
-		var prompt = client.buildRequestPrompt(new Prompt(List.of(assistantMessage),
-				DeepSeekChatOptions.builder().model("deepseek-reasoner").build()));
+		var prompt = new Prompt(List.of(assistantMessage),
+				DeepSeekChatOptions.builder().model("deepseek-reasoner").build());
 
 		var request = client.createRequest(prompt, false);
 
