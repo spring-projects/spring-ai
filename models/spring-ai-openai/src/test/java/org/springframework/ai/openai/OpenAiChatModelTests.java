@@ -31,6 +31,11 @@ import com.openai.core.http.AsyncStreamResponse;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam;
 import com.openai.models.chat.completions.ChatCompletionChunk;
+import com.openai.models.chat.completions.ChatCompletionChunk.Choice;
+import com.openai.models.chat.completions.ChatCompletionChunk.Choice.Delta;
+import com.openai.models.chat.completions.ChatCompletionChunk.Choice.Delta.ToolCall;
+import com.openai.models.chat.completions.ChatCompletionChunk.Choice.Delta.ToolCall.Function;
+import com.openai.models.chat.completions.ChatCompletionChunk.Choice.FinishReason;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
 import com.openai.models.chat.completions.ChatCompletionMessage;
 import com.openai.models.chat.completions.ChatCompletionMessageFunctionToolCall;
@@ -698,6 +703,7 @@ class OpenAiChatModelTests {
 			.model("gpt-4o-mini")
 			.promptCacheKey("my-cache-key")
 			.build();
+
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
 			.openAiClient(this.openAiClient)
 			.openAiClientAsync(this.openAiClientAsync)
@@ -706,6 +712,95 @@ class OpenAiChatModelTests {
 
 		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("hi", options), false);
 		assertThat(request.promptCacheKey()).contains("my-cache-key");
+	}
+
+	@Test
+	void streamMergesToolCallContinuationChunksWithEmptyIds() {
+		ChatServiceAsync chatService = mock(ChatServiceAsync.class);
+		ChatCompletionServiceAsync chatCompletionService = mock(ChatCompletionServiceAsync.class);
+		AsyncStreamResponse<ChatCompletionChunk> streamResponse = asyncStreamResponse(
+				List.of(toolCallChunk(toolCall(0, "call_123", "rag_search", "")),
+						toolCallChunk(toolCall(0, "", "", "{\"arg0\":1")),
+						toolCallChunk(toolCall(0, "", "", ",\"arg1\":\"spring\"}")),
+						toolCallChunk(toolCall(0, "", "", null)), toolCallFinishChunk()));
+
+		when(this.openAiClientAsync.chat()).thenReturn(chatService);
+		when(chatService.completions()).thenReturn(chatCompletionService);
+		when(chatCompletionService.createStreaming(any(ChatCompletionCreateParams.class))).thenReturn(streamResponse);
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.stream(new Prompt("hi", options)).blockLast();
+
+		assertThat(response).isNotNull();
+		var toolCalls = response.getResult().getOutput().getToolCalls();
+		assertThat(toolCalls).hasSize(1);
+		var toolCall = toolCalls.get(0);
+		assertThat(toolCall.id()).isEqualTo("call_123");
+		assertThat(toolCall.name()).isEqualTo("rag_search");
+		assertThat(toolCall.arguments()).isEqualTo("{\"arg0\":1,\"arg1\":\"spring\"}");
+	}
+
+	private static ChatCompletionChunk toolCallChunk(ToolCall toolCall) {
+		return ChatCompletionChunk.builder()
+			.id("chatcmpl-test")
+			.created(123L)
+			.model("test-model")
+			.addChoice(Choice.builder()
+				.index(0)
+				.finishReason(Optional.empty())
+				.delta(Delta.builder().addToolCall(toolCall).build())
+				.build())
+			.build();
+	}
+
+	private static ChatCompletionChunk toolCallFinishChunk() {
+		return ChatCompletionChunk.builder()
+			.id("chatcmpl-test")
+			.created(123L)
+			.model("test-model")
+			.addChoice(Choice.builder()
+				.index(0)
+				.finishReason(FinishReason.TOOL_CALLS)
+				.delta(Delta.builder().build())
+				.build())
+			.build();
+	}
+
+	private static ToolCall toolCall(long index, String id, String name, String arguments) {
+		Function.Builder functionBuilder = Function.builder();
+		if (name != null) {
+			functionBuilder.name(name);
+		}
+		if (arguments != null) {
+			functionBuilder.arguments(arguments);
+		}
+
+		ToolCall.Builder toolCallBuilder = ToolCall.builder()
+			.index(index)
+			.type(ToolCall.Type.FUNCTION)
+			.function(functionBuilder.build());
+		if (id != null) {
+			toolCallBuilder.id(id);
+		}
+		return toolCallBuilder.build();
+	}
+
+	@SuppressWarnings("unchecked")
+	private static AsyncStreamResponse<ChatCompletionChunk> asyncStreamResponse(List<ChatCompletionChunk> chunks) {
+		AsyncStreamResponse<ChatCompletionChunk> response = mock(AsyncStreamResponse.class);
+		when(response.subscribe(any())).thenAnswer(invocation -> {
+			AsyncStreamResponse.Handler<ChatCompletionChunk> handler = invocation.getArgument(0);
+			chunks.forEach(handler::onNext);
+			return response;
+		});
+		when(response.onCompleteFuture()).thenReturn(CompletableFuture.completedFuture(null));
+		return response;
 	}
 
 }

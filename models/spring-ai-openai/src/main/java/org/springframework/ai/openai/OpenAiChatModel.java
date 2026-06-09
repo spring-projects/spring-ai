@@ -1063,7 +1063,7 @@ public final class OpenAiChatModel implements ChatModel {
 			var tcs = Stream.of(left.toolCalls(), right.toolCalls()).flatMap(Optional::stream).reduce((tcs1, tcs2) -> {
 				Assert.isTrue(tcs2.size() <= 1, "no more than one tool call per message currently supported");
 				ToolCall toolCall = tcs2.get(0);
-				if (toolCall.id().isPresent()) {
+				if (toolCall.id().filter(StringUtils::hasText).isPresent()) {
 					List<ToolCall> result = new ArrayList<>(tcs1);
 					result.add(toolCall);
 					return result;
