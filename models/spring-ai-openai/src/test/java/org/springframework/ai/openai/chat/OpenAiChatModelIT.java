@@ -51,7 +51,6 @@ import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.MessageAggregator;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -60,7 +59,6 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -638,7 +636,7 @@ public class OpenAiChatModelIT {
 		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
 		String conversationId = UUID.randomUUID().toString();
 
-		ChatOptions chatOptions = ToolCallingChatOptions.builder()
+		OpenAiChatOptions chatOptions = OpenAiChatOptions.builder()
 			.toolCallbacks(ToolCallbacks.from(new MathTools()))
 			.build();
 		Prompt prompt = new Prompt(
