@@ -273,6 +273,19 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 						logger.debug("The server does not support SSE streams, using request-response mode.");
 						return Flux.empty();
 					}
+					else if (isStatelessOk(response)) {
+						// Per the MCP spec, the server MUST return either
+						// Content-Type: text/event-stream or HTTP 405 Method Not Allowed
+						// on the GET probe. Some servers (e.g. ModelScope Model API MCP)
+						// return 200 OK with a non-SSE content type (typically
+						// application/json) as a no-stream endpoint. Treat that as
+						// "stateless server that does not stream" — same as 405 — and
+						// fall back to request-response mode rather than failing the
+						// initialization. See spring-ai issue #5239.
+						logger.debug("The server returned a non-SSE 2xx response to the GET probe; "
+								+ "treating as a stateless endpoint and using request-response mode.");
+						return Flux.empty();
+					}
 					else if (isNotFound(response)) {
 						if (transportSession.sessionId().isPresent()) {
 							String sessionIdRepresentation = sessionIdOrPlaceholder(transportSession);
@@ -503,6 +516,35 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 	private static boolean isEventStream(ClientResponse response) {
 		return response.statusCode().is2xxSuccessful() && response.headers().contentType().isPresent()
 				&& response.headers().contentType().get().isCompatibleWith(MediaType.TEXT_EVENT_STREAM);
+	}
+
+	/**
+	 * Detects the case where the GET probe returns a successful response that is not an
+	 * SSE stream. Per the MCP streamable-http spec, the server is required to return
+	 * either {@code Content-Type: text/event-stream} or {@code 405 Method Not Allowed} on
+	 * the GET probe. Some servers instead return a plain {@code 200 OK} with a non-SSE
+	 * content type (e.g. {@code application/json} or no {@code Content-Type} header at
+	 * all) to signal that they do not offer a server-initiated stream at this endpoint.
+	 * The Spring AI client must treat that as a valid no-stream response and fall back to
+	 * request-response mode rather than failing the initialization with an
+	 * {@code McpTransportException}.
+	 *
+	 * <p>
+	 * See <a href="https://github.com/spring-projects/spring-ai/issues/5239">spring-ai
+	 * issue #5239</a>.
+	 */
+	private static boolean isStatelessOk(ClientResponse response) {
+		if (!response.statusCode().is2xxSuccessful()) {
+			return false;
+		}
+		// A 200 with text/event-stream is handled by isEventStream above.
+		if (response.headers().contentType().isPresent()
+				&& response.headers().contentType().get().isCompatibleWith(MediaType.TEXT_EVENT_STREAM)) {
+			return false;
+		}
+		// Any other 2xx (with or without a non-SSE content type) is treated as a
+		// stateless no-stream endpoint.
+		return true;
 	}
 
 	private static String sessionIdOrPlaceholder(McpTransportSession<?> transportSession) {
