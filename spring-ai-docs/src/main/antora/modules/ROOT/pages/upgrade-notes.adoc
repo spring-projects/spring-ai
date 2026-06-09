@@ -25,6 +25,23 @@ chatClient.prompt("...")
 
 Or disable it globally via `spring.ai.chat.client.tool-calling.enabled=false`.
 
+==== `ChatModel` Options Replacing Instead of Merging
+
+`ChatModel` options handling change merged by mistake in `2.0.0-M6` has been reverted to replacing instead of merging.
+Out-of-the box options merging is supported at the `ChatClient` level, but not at the `ChatModel` level where that's still possible but needs to be handled manually.
+
+The logic supported at the `ChatModel` level in 2.0 is:
+
+* If `prompt.options` is set, use them.
+* If `prompt.options` is null, use the ones from the model.
+
+The `buildRequestPrompt` method is no longer part of the public API.
+It was previously promoted by mistake and has been restored to its private or package-private visibility.
+
+==== Fixed Binding Failure for `spring.ai.ollama.chat.think`
+
+`spring.ai.ollama.chat.think-option` property has been renamed to `spring.ai.ollama.chat.think`.
+
 [[upgrading-to-2-0-0-RC1]]
 == Upgrading to 2.0.0-RC1
 
