@@ -49,7 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(classes = TestApplication.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-public class ToolCallingManagerTests {
+public class ToolCallingManagerIT {
 
 	private final Tools tools = new Tools();
 

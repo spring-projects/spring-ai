@@ -50,12 +50,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  */
 @SpringBootTest(classes = TestApplication.class)
-@Import(FunctionToolCallbackTests.Tools.class)
+@Import(FunctionToolCallbackIT.Tools.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-public class FunctionToolCallbackTests {
+public class FunctionToolCallbackIT {
 
-	private static final Log logger = LogFactory.getLog(FunctionToolCallbackTests.class);
+	private static final Log logger = LogFactory.getLog(FunctionToolCallbackIT.class);
 
 	@Autowired
 	OpenAiChatModel openAiChatModel;
@@ -127,7 +127,7 @@ public class FunctionToolCallbackTests {
 						(Consumer<Object>) user -> logger
 							.info("CALLBACK - Welcoming " + ((User) user).name() + " to the library"))
 				.description("Welcome a specific user to the library")
-				.inputType(FunctionToolCallbackTests.User.class)
+				.inputType(FunctionToolCallbackIT.User.class)
 				.build())
 			.call()
 			.content();
@@ -229,9 +229,9 @@ public class FunctionToolCallbackTests {
 			return FunctionToolCallback
 				.builder(WELCOME_USER,
 						(Consumer<Object>) user -> logger
-							.info("Welcoming " + ((FunctionToolCallbackTests.User) user).name() + " to the library"))
+							.info("Welcoming " + ((FunctionToolCallbackIT.User) user).name() + " to the library"))
 				.description("Welcome a specific user to the library")
-				.inputType(FunctionToolCallbackTests.User.class)
+				.inputType(FunctionToolCallbackIT.User.class)
 				.build();
 		}
 

@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(classes = TestApplication.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-public class MethodToolCallbackTests {
+public class MethodToolCallbackIT {
 
 	@Autowired
 	OpenAiChatModel openAiChatModel;
