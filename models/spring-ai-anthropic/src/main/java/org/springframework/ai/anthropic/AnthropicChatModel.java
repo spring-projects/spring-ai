@@ -1455,7 +1455,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * prompt using this model {@link ChatModel#getOptions() options}. Otherwise, use the
 	 * prompt as is.
 	 */
-	/* package */ Prompt buildRequestPrompt(Prompt prompt) {
+	private Prompt buildRequestPrompt(Prompt prompt) {
 		if (prompt.getOptions() == null) {
 			return prompt.mutate().chatOptions(this.getOptions()).build();
 		}

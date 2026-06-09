@@ -954,7 +954,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	 * {@link org.springframework.ai.chat.model.ChatModel#getOptions() options}.
 	 * Otherwise, use the prompt as is.
 	 */
-	/* package */ Prompt buildRequestPrompt(Prompt prompt) {
+	private Prompt buildRequestPrompt(Prompt prompt) {
 		if (prompt.getOptions() == null) {
 			return prompt.mutate().chatOptions(this.getOptions()).build();
 		}
