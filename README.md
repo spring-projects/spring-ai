@@ -2,7 +2,7 @@
 
 The Spring AI project provides a Spring-friendly API and abstractions for developing AI applications.
 
-Its goal is to apply to the AI domain Spring ecosystem design principles such as portability and modular design and promote using POJOs as the building blocks of an application to the AI domain.
+Its goal is to apply to the AI domain Spring ecosystem design principles such as portability and modular design and promote using POJOs as the building blocks of an application.
 
 ![spring-ai-integration-diagram-3](https://docs.spring.io/spring-ai/reference/_images/spring-ai-integration-diagram-3.svg)
 
@@ -65,7 +65,7 @@ The recommended JDK is specified in the `.sdkmanrc` file, which can be installed
  - `sdk env install` to install the related JDK locally
  - `sdk env` to use the related JDK
 
-**NOTE:** Make sure to use a JDK with the same architecture than your processor, not an emulated one (for example with Rosetta on Mac) as Spring AI requires components that depend on your specific CPU architecture (PyTorch for example). If you are unsure if you have the correct JDK distribution for your CPU, run the command `java -XshowSettings:properties -version 2>&1 | grep os.arch` to validate that it matches your machine.
+**NOTE:** Make sure to use a JDK with the same architecture as your processor, not an emulated one (for example with Rosetta on Mac) as Spring AI requires components that depend on your specific CPU architecture (PyTorch for example). If you are unsure if you have the correct JDK distribution for your CPU, run the command `java -XshowSettings:properties -version 2>&1 | grep os.arch` to validate that it matches your machine.
 
 To build with running unit tests:
 ```shell
