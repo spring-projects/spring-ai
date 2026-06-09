@@ -105,8 +105,6 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 	 */
 	private final boolean referenceToolNameAccumulation;
 
-	@Nullable private final Integer maxResults;
-
 	private final String sessionIdKeyName;
 
 	/**
@@ -129,7 +127,6 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 		this.toolIndex = toolIndex;
 		this.systemMessageSuffix = systemMessageSuffix;
 		this.referenceToolNameAccumulation = referenceToolNameAccumulation;
-		this.maxResults = maxResults;
 		this.sessionIdKeyName = sessionIdKeyName;
 		this.evictionStrategy = evictionStrategy;
 		this.toolSearchToolCallback = MethodToolCallbackProvider.builder()
