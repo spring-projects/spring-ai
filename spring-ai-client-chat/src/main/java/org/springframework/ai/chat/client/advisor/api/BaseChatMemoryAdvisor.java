@@ -28,6 +28,7 @@ import org.springframework.util.Assert;
  *
  * @author Mark Pollack
  * @author Thomas Vitale
+ * @author Yanming Zhou
  * @since 1.0
  */
 public interface BaseChatMemoryAdvisor extends BaseAdvisor, MemoryAdvisor {
@@ -37,9 +38,9 @@ public interface BaseChatMemoryAdvisor extends BaseAdvisor, MemoryAdvisor {
 	 */
 	default String getConversationId(Map<String, @Nullable Object> context) {
 		Assert.notNull(context, "context cannot be null");
-		Assert.noNullElements(context.keySet().toArray(), "context cannot contain null keys");
-		Assert.notNull(context.get(ChatMemory.CONVERSATION_ID), "conversationId cannot be null");
-		return context.get(ChatMemory.CONVERSATION_ID).toString();
+		Object conversationId = context.get(ChatMemory.CONVERSATION_ID);
+		Assert.notNull(conversationId, "conversationId cannot be null");
+		return conversationId.toString();
 	}
 
 }
