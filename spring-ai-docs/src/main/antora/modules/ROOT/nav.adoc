@@ -128,7 +128,7 @@
 ** xref:api/chat/prompt-engineering-patterns.adoc[]
 ** xref:api/effective-agents.adoc[Building Effective Agents]
 
-// * xref:contribution-guidelines.adoc[Contribution Guidelines]
+* xref:contribution-guidelines.adoc[Contribution Guidelines]
 
 * xref:upgrade-notes.adoc[]
 ** xref:api/tools-migration.adoc[Migrating FunctionCallback to ToolCallback API]
