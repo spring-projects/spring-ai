@@ -42,7 +42,6 @@ import org.springframework.ai.chat.client.advisor.StructuredOutputValidationAdvi
 import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
-import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.MemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.ToolAdvisor;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
@@ -60,7 +59,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.StructuredOutputConverter;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.template.st.StTemplateRenderer;
@@ -1205,11 +1203,16 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		/**
-		 * Auto-registers a {@link ToolCallingAdvisor} when tools are configured but no
-		 * {@link ToolAdvisor} is present. Disables the advisor's internal conversation
-		 * history when a {@link BaseChatMemoryAdvisor} with a higher order (i.e.
-		 * downstream in the request direction) is already registered, since that memory
-		 * advisor will handle history for every tool-call iteration.
+		 * Auto-registers a {@link ToolCallingAdvisor} unless auto-registration is
+		 * disabled or a {@link ToolAdvisor} is already present in the chain. The advisor
+		 * is always registered so that tools injected dynamically at runtime (e.g. by
+		 * another advisor) are handled correctly even when no static tools are configured
+		 * on the call.
+		 * <p>
+		 * Disables the advisor's internal conversation history when a
+		 * {@link MemoryAdvisor} with a higher order (i.e. downstream in the request
+		 * direction) is already registered, since that memory advisor will handle history
+		 * for every tool-call iteration.
 		 * <p>
 		 * {@code streamToolCallResponses} must be pre-configured on the
 		 * {@code toolCallingAdvisorBuilder} passed to {@link DefaultChatClient}.
@@ -1219,13 +1222,6 @@ public class DefaultChatClient implements ChatClient {
 			boolean autoRegisterDisabled = Boolean.FALSE
 				.equals(this.advisorParams.get(ChatClientAttributes.TOOL_CALLING_ADVISOR_AUTO_REGISTER.getKey()));
 			if (autoRegisterDisabled) {
-				return;
-			}
-
-			boolean hasTools = !this.toolCallbacks.isEmpty() || !this.toolCallbackProviders.isEmpty()
-					|| hasToolsInChatOptions(this.optionsCustomizer)
-					|| hasToolsInChatOptions(this.chatModel.getOptions());
-			if (!hasTools) {
 				return;
 			}
 
@@ -1242,17 +1238,6 @@ public class DefaultChatClient implements ChatClient {
 			this.advisors.add(this.toolCallingAdvisorBuilder.copy()
 				.conversationHistoryEnabled(!hasDownstreamMemoryAdvisor)
 				.build());
-		}
-
-		private static boolean hasToolsInChatOptions(@Nullable Object options) {
-			ToolCallingChatOptions tco = null;
-			if (options instanceof ToolCallingChatOptions direct) {
-				tco = direct;
-			}
-			else if (options instanceof ToolCallingChatOptions.Builder<?> builder) {
-				tco = (ToolCallingChatOptions) builder.build();
-			}
-			return tco != null && ((tco.getToolCallbacks() != null && !tco.getToolCallbacks().isEmpty()));
 		}
 
 		private void validateSingleToolAdvisor() {

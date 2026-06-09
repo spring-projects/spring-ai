@@ -51,6 +51,11 @@ import org.springframework.util.Assert;
  * <p>
  * This enables intercepting the tool calling loop by the rest of the advisors next in the
  * chain.
+ * <p>
+ * When the prompt options do not implement
+ * {@link org.springframework.ai.model.tool.ToolCallingChatOptions} (e.g. for models that
+ * don't support tool calling), this advisor passes the request through to the next
+ * advisor without modification.
  *
  * @author Christian Tzolov
  * @since 2.0.0
@@ -121,14 +126,12 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		Assert.notNull(chatClientRequest, "chatClientRequest must not be null");
 
 		ChatOptions options = chatClientRequest.prompt().getOptions();
-		if (!(options instanceof ToolCallingChatOptions)) {
-			throw new IllegalArgumentException(
-					"ToolCall Advisor requires ToolCallingChatOptions to be set in the ChatClientRequest options.");
+		if (!(options instanceof ToolCallingChatOptions toolCallingChatOptions)) {
+			// No tool calling options - skip the tool calling advisor
+			return callAdvisorChain.nextCall(chatClientRequest);
 		}
 
 		chatClientRequest = this.doInitializeLoop(chatClientRequest, callAdvisorChain);
-
-		var optionsCopy = ((ToolCallingChatOptions) options).mutate().build();
 
 		var instructions = chatClientRequest.prompt().getInstructions();
 
@@ -140,7 +143,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 			// Before Call
 			var processedChatClientRequest = ChatClientRequest.builder()
-				.prompt(new Prompt(instructions, optionsCopy))
+				.prompt(new Prompt(instructions, toolCallingChatOptions))
 				.context(chatClientRequest.context())
 				.build();
 
@@ -228,28 +231,26 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		Assert.notNull(streamAdvisorChain, "streamAdvisorChain must not be null");
 		Assert.notNull(chatClientRequest, "chatClientRequest must not be null");
 
-		if (chatClientRequest.prompt().getOptions() == null
-				|| !(chatClientRequest.prompt().getOptions() instanceof ToolCallingChatOptions)) {
-			throw new IllegalArgumentException(
-					"ToolCall Advisor requires ToolCallingChatOptions to be set in the ChatClientRequest options.");
+		ChatOptions options = chatClientRequest.prompt().getOptions();
+		if (!(options instanceof ToolCallingChatOptions toolCallingChatOptions)) {
+			// No tool calling options - skip the tool calling advisor
+			return streamAdvisorChain.nextStream(chatClientRequest);
 		}
 
 		ChatClientRequest initializedRequest = this.doInitializeLoopStream(chatClientRequest, streamAdvisorChain);
 
-		var optionsCopy = ((ToolCallingChatOptions.Builder<?>) chatClientRequest.prompt().getOptions().mutate())
-			.build();
-
-		return this.internalStream(streamAdvisorChain, initializedRequest, optionsCopy,
+		return this.internalStream(streamAdvisorChain, initializedRequest, toolCallingChatOptions,
 				initializedRequest.prompt().getInstructions());
 	}
 
 	private Flux<ChatClientResponse> internalStream(StreamAdvisorChain streamAdvisorChain,
-			ChatClientRequest originalRequest, ToolCallingChatOptions optionsCopy, List<Message> instructions) {
+			ChatClientRequest originalRequest, ToolCallingChatOptions toolCallingChatOptions,
+			List<Message> instructions) {
 
 		return Flux.deferContextual(contextView -> {
 			// Build request with current instructions
 			var processedRequest = ChatClientRequest.builder()
-				.prompt(new Prompt(instructions, optionsCopy))
+				.prompt(new Prompt(instructions, toolCallingChatOptions))
 				.context(originalRequest.context())
 				.build();
 
@@ -263,7 +264,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 			Flux<ChatClientResponse> responseFlux = chainCopy.nextStream(processedRequest);
 
 			return streamWithToolCallResponses(responseFlux, finalRequest, streamAdvisorChain, originalRequest,
-					optionsCopy);
+					toolCallingChatOptions);
 		});
 	}
 

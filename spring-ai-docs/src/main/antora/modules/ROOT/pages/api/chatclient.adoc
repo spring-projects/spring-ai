@@ -842,15 +842,15 @@ TIP: Be cautious about logging sensitive information in production environments.
 
 === Tool Calling
 
-When tools are registered on a `ChatClient` call (via `.tools(...)` or defaults set on the builder), the `ChatClient` automatically registers a `ToolCallingAdvisor` in the advisor chain to handle the tool execution lifecycle.
-This means you do not need to add a `ToolCallingAdvisor` manually for the common case.
+The `ChatClient` always auto-registers a `ToolCallingAdvisor` in the advisor chain unless auto-registration is explicitly disabled (see below).
+This ensures that tools injected dynamically at runtime by another advisor are handled correctly, even when no static tools are configured on the call.
 
 [source,java]
 ----
 String response = ChatClient.builder(chatModel)
     .build()
     .prompt("What day is tomorrow?")
-    .tools(new DateTimeTools())   // ToolCallingAdvisor is auto-registered here
+    .tools(new DateTimeTools())   // ToolCallingAdvisor is auto-registered
     .call()
     .content();
 ----

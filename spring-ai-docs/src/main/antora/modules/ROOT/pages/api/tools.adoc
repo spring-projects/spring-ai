@@ -1028,7 +1028,7 @@ Spring AI supports three approaches to tool execution lifecycle management. The 
 
 === Framework-Controlled Tool Execution
 
-When using `ChatClient`, Spring AI automatically handles the entire tool calling lifecycle through the `ToolCallingAdvisor`, which is auto-registered in the advisor chain whenever tools are configured. All of this is done transparently — you provide the tools and ask your question; the framework manages the rest.
+When using `ChatClient`, Spring AI automatically handles the entire tool calling lifecycle through the `ToolCallingAdvisor`, which is always auto-registered in the advisor chain (unless explicitly disabled). This means dynamic tools injected at runtime by another advisor are also supported, not just tools declared statically on the call. All of this is done transparently — you provide the tools and ask your question; the framework manages the rest.
 
 image::tools/framework-manager.jpg[Framework-controlled tool execution lifecycle, width=700, align="center"]
 

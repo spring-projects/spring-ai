@@ -229,28 +229,34 @@ public class ToolCallingAdvisorTests {
 	}
 
 	@Test
-	void whenOptionsAreNullThenThrow() {
+	void whenOptionsAreNullThenPassThrough() {
 		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().build();
 
 		Prompt prompt = new Prompt(List.of(new UserMessage("test")));
 		ChatClientRequest request = ChatClientRequest.builder().prompt(prompt).build();
+		ChatClientResponse expected = mock(ChatClientResponse.class);
+		when(this.callAdvisorChain.nextCall(request)).thenReturn(expected);
 
-		assertThatThrownBy(() -> advisor.adviseCall(request, this.callAdvisorChain))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("ToolCall Advisor requires ToolCallingChatOptions");
+		ChatClientResponse result = advisor.adviseCall(request, this.callAdvisorChain);
+
+		assertThat(result).isEqualTo(expected);
+		verify(this.callAdvisorChain).nextCall(request);
 	}
 
 	@Test
-	void whenOptionsAreNotToolCallingChatOptionsThenThrow() {
+	void whenOptionsAreNotToolCallingChatOptionsThenPassThrough() {
 		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().build();
 
 		ChatOptions nonToolOptions = mock(ChatOptions.class);
 		Prompt prompt = new Prompt(List.of(new UserMessage("test")), nonToolOptions);
 		ChatClientRequest request = ChatClientRequest.builder().prompt(prompt).build();
+		ChatClientResponse expected = mock(ChatClientResponse.class);
+		when(this.callAdvisorChain.nextCall(request)).thenReturn(expected);
 
-		assertThatThrownBy(() -> advisor.adviseCall(request, this.callAdvisorChain))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("ToolCall Advisor requires ToolCallingChatOptions");
+		ChatClientResponse result = advisor.adviseCall(request, this.callAdvisorChain);
+
+		assertThat(result).isEqualTo(expected);
+		verify(this.callAdvisorChain).nextCall(request);
 	}
 
 	@Test
@@ -546,22 +552,19 @@ public class ToolCallingAdvisorTests {
 	}
 
 	@Test
-	void whenStreamOptionsAreNotToolCallingChatOptionsThenThrow() {
+	void whenStreamOptionsAreNotToolCallingChatOptionsThenPassThrough() {
 		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().build();
 
 		ChatOptions nonToolOptions = mock(ChatOptions.class);
 		Prompt prompt = new Prompt(List.of(new UserMessage("test")), nonToolOptions);
 		ChatClientRequest request = ChatClientRequest.builder().prompt(prompt).build();
+		ChatClientResponse expected = createMockResponse(false);
+		when(this.streamAdvisorChain.nextStream(request)).thenReturn(Flux.just(expected));
 
-		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor(
-				(req, chain) -> Flux.just(createMockResponse(false)));
-		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
-			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
-			.build();
+		ChatClientResponse result = advisor.adviseStream(request, this.streamAdvisorChain).blockFirst();
 
-		assertThatThrownBy(() -> advisor.adviseStream(request, realChain).blockFirst())
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("ToolCall Advisor requires ToolCallingChatOptions");
+		assertThat(result).isEqualTo(expected);
+		verify(this.streamAdvisorChain).nextStream(request);
 	}
 
 	@Test
