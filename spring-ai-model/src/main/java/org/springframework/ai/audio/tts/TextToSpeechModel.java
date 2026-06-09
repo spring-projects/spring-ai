@@ -49,12 +49,4 @@ public interface TextToSpeechModel extends Model<TextToSpeechPrompt, TextToSpeec
 		return TextToSpeechOptions.builder().build();
 	}
 
-	/**
-	 * @deprecated use {@link #getOptions()} instead.
-	 */
-	@Deprecated(forRemoval = true)
-	default TextToSpeechOptions getDefaultOptions() {
-		return getOptions();
-	}
-
 }

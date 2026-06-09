@@ -53,14 +53,6 @@ public interface ChatModel extends Model<Prompt, ChatResponse>, StreamingChatMod
 		return ChatOptions.builder().build();
 	}
 
-	/**
-	 * @deprecated use {@link #getOptions()} instead.
-	 */
-	@Deprecated(forRemoval = true)
-	default ChatOptions getDefaultOptions() {
-		return getOptions();
-	}
-
 	default Flux<ChatResponse> stream(Prompt prompt) {
 		throw new UnsupportedOperationException("streaming is not supported");
 	}

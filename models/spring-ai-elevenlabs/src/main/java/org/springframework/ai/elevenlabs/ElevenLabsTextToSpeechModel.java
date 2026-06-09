@@ -187,16 +187,6 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 		return this.options;
 	}
 
-	/**
-	 * @deprecated use {@link #getOptions()} instead.
-	 */
-	@Deprecated(forRemoval = true)
-	@Override
-	@SuppressWarnings("removal")
-	public ElevenLabsTextToSpeechOptions getDefaultOptions() {
-		return this.options;
-	}
-
 	public static final class Builder {
 
 		private @Nullable ElevenLabsApi elevenLabsApi;

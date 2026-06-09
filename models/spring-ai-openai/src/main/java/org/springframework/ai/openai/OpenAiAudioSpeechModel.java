@@ -33,7 +33,6 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.audio.tts.Speech;
 import org.springframework.ai.audio.tts.TextToSpeechModel;
-import org.springframework.ai.audio.tts.TextToSpeechOptions;
 import org.springframework.ai.audio.tts.TextToSpeechPrompt;
 import org.springframework.ai.audio.tts.TextToSpeechResponse;
 import org.springframework.ai.openai.metadata.OpenAiAudioSpeechResponseMetadata;
@@ -177,16 +176,6 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 	 */
 	@Override
 	public OpenAiAudioSpeechOptions getOptions() {
-		return this.options;
-	}
-
-	/**
-	 * @deprecated use {@link #getOptions()} instead.
-	 */
-	@Deprecated(forRemoval = true)
-	@Override
-	@SuppressWarnings("removal")
-	public TextToSpeechOptions getDefaultOptions() {
 		return this.options;
 	}
 
