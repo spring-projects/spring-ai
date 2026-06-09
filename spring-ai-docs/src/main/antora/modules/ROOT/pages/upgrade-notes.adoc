@@ -1,6 +1,30 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-2-0-0-RC2]]
+== Upgrading to 2.0.0-RC2
+
+=== Tool Calling
+
+==== Changed: `ToolCallingAdvisor` Always Auto-Registered
+
+`ChatClient` now always auto-registers a `ToolCallingAdvisor` in the advisor chain (unless explicitly disabled), so tool calls requested by the model are handled automatically regardless of whether tools were configured statically or injected by another advisor at runtime.
+
+Previously (as of 2.0.0-M7), auto-registration only happened when tools were explicitly configured on the call. Starting with 2.0.0-RC2, the advisor is registered unconditionally, ensuring that tools injected at runtime by other advisors are also handled correctly.
+
+===== Impact
+
+No action is required in the common case. If you relied on the absence of `ToolCallingAdvisor` when no tools were configured, add an explicit opt-out:
+
+[source,java]
+----
+chatClient.prompt("...")
+    .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+    .call().content();
+----
+
+Or disable it globally via `spring.ai.chat.client.tool-calling.enabled=false`.
+
 [[upgrading-to-2-0-0-RC1]]
 == Upgrading to 2.0.0-RC1
 
@@ -453,30 +477,6 @@ import org.springframework.ai.google.genai.GoogleGenAiEmbeddingConnectionDetails
 // After
 import org.springframework.ai.google.genai.embedding.GoogleGenAiEmbeddingConnectionDetails;
 ----
-
-[[upgrading-to-2-0-0-RC2]]
-== Upgrading to 2.0.0-RC2
-
-=== Tool Calling
-
-==== Changed: `ToolCallingAdvisor` Always Auto-Registered
-
-`ChatClient` now always auto-registers a `ToolCallingAdvisor` in the advisor chain (unless explicitly disabled), so tool calls requested by the model are handled automatically regardless of whether tools were configured statically or injected by another advisor at runtime.
-
-Previously (as of 2.0.0-M7), auto-registration only happened when tools were explicitly configured on the call. Starting with 2.0.0-RC2, the advisor is registered unconditionally, ensuring that tools injected at runtime by other advisors are also handled correctly.
-
-===== Impact
-
-No action is required in the common case. If you relied on the absence of `ToolCallingAdvisor` when no tools were configured, add an explicit opt-out:
-
-[source,java]
-----
-chatClient.prompt("...")
-    .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
-    .call().content();
-----
-
-Or disable it globally via `spring.ai.chat.client.tool-calling.enabled=false`.
 
 [[upgrading-to-2-0-0-M7]]
 == Upgrading to 2.0.0-M7
