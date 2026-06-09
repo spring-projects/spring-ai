@@ -112,6 +112,7 @@ Here are the advanced request parameter for the Ollama chat model:
 | spring.ai.ollama.chat.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported model] to use. | mistral
 | spring.ai.ollama.chat.format  | The format to return a response in. Accepts either `"json"` (any JSON structure) or a JSON Schema object (enforced structure). See <<Structured Outputs>> for details. | -
 | spring.ai.ollama.chat.keep_alive  | Controls how long the model will stay loaded into memory following the request | 5m
+| spring.ai.ollama.chat.think | Controls whether models emit their reasoning trace before the final answer. | -
 |====
 
 The remaining `options` properties are based on the link:https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values[Ollama Valid Parameters and Values] and link:https://github.com/ollama/ollama/blob/main/api/types.go[Ollama Types]. The default values are based on the link:https://github.com/ollama/ollama/blob/b538dc3858014f94b099730a592751a5454cab0a/api/types.go#L364[Ollama Types Defaults].

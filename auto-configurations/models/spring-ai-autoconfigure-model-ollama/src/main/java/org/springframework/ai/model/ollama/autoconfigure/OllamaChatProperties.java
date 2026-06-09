@@ -44,7 +44,7 @@ public class OllamaChatProperties {
 
 	private @Nullable Boolean truncate;
 
-	private @Nullable ThinkOption thinkOption;
+	private @Nullable OllamaThinkProperties think;
 
 	private @Nullable Boolean useNUMA;
 
@@ -138,12 +138,12 @@ public class OllamaChatProperties {
 		this.truncate = truncate;
 	}
 
-	public @Nullable ThinkOption getThinkOption() {
-		return this.thinkOption;
+	public @Nullable OllamaThinkProperties getThink() {
+		return this.think;
 	}
 
-	public void setThinkOption(@Nullable ThinkOption thinkOption) {
-		this.thinkOption = thinkOption;
+	public void setThink(@Nullable OllamaThinkProperties think) {
+		this.think = think;
 	}
 
 	public @Nullable Boolean getUseNUMA() {
@@ -392,7 +392,7 @@ public class OllamaChatProperties {
 			.format(this.format)
 			.keepAlive(this.keepAlive)
 			.truncate(this.truncate)
-			.thinkOption(this.thinkOption)
+			.thinkOption(toThinkOption(this.think))
 			.useNUMA(this.useNUMA)
 			.numCtx(this.numCtx)
 			.numBatch(this.numBatch)
@@ -424,6 +424,19 @@ public class OllamaChatProperties {
 			.penalizeNewline(this.penalizeNewline)
 			.stop(this.stop)
 			.build();
+	}
+
+	private @Nullable ThinkOption toThinkOption(@Nullable OllamaThinkProperties thinkOption) {
+		if (thinkOption == null) {
+			return null;
+		}
+		return switch (thinkOption) {
+			case TRUE -> ThinkOption.ThinkBoolean.ENABLED;
+			case FALSE -> ThinkOption.ThinkBoolean.DISABLED;
+			case HIGH -> ThinkOption.ThinkLevel.HIGH;
+			case MEDIUM -> ThinkOption.ThinkLevel.MEDIUM;
+			case LOW -> ThinkOption.ThinkLevel.LOW;
+		};
 	}
 
 	private Options options = new Options();
@@ -480,14 +493,15 @@ public class OllamaChatProperties {
 			OllamaChatProperties.this.setTruncate(truncate);
 		}
 
-		@DeprecatedConfigurationProperty(replacement = "spring.ai.ollama.chat.think-option")
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.ollama.chat.think")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public @Nullable ThinkOption getThinkOption() {
-			return OllamaChatProperties.this.getThinkOption();
+		public @Nullable OllamaThinkProperties getThinkOption() {
+			return OllamaChatProperties.this.getThink();
 		}
 
-		public void setThinkOption(@Nullable ThinkOption thinkOption) {
-			OllamaChatProperties.this.setThinkOption(thinkOption);
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public void setThinkOption(@Nullable OllamaThinkProperties think) {
+			OllamaChatProperties.this.setThink(think);
 		}
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.ollama.chat.use-numa")
