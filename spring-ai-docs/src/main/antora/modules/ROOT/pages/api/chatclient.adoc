@@ -333,8 +333,9 @@ ActorFilms actorFilms = chatClient.prompt()
     .entity(ActorFilms.class, spec -> spec.useProviderStructuredOutput());
 ----
 
-NOTE: Some AI models such as OpenAI don't support arrays of objects natively.
-In such cases, you can use the Spring AI default structured output conversion.
+IMPORTANT: Native structured output is *not enabled by default* because support varies significantly across models and providers.
+Notable limitations include Ollama models with reasoning/thinking mode (which may return plain text instead of JSON) and OpenAI's lack of support for top-level array schemas.
+See xref:api/structured-output-converter.adoc#_known_limitations[Known Limitations] for details and workarounds.
 
 You can still set this globally for all calls via the advisor parameter:
 

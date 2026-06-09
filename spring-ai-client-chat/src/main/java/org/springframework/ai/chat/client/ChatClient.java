@@ -206,6 +206,21 @@ public interface ChatClient {
 		 * than appending it as prompt text. Has no effect if the underlying
 		 * {@link org.springframework.ai.chat.model.ChatModel} does not support
 		 * {@link org.springframework.ai.model.tool.StructuredOutputChatOptions}.
+		 *
+		 * <p>
+		 * <b>Not enabled by default</b> because native structured output support varies
+		 * across models and providers. Known limitations:
+		 * <ul>
+		 * <li><b>Ollama</b>: models with a built-in reasoning/thinking mode (e.g.
+		 * {@code qwen3:8b}, {@code qwen3.5:9b}) may return plain text instead of JSON,
+		 * causing deserialization failures. Use {@link #validateSchema()} alongside this
+		 * option for automatic retry, or switch to a non-reasoning model such as
+		 * {@code llama3.1:latest}.</li>
+		 * <li><b>OpenAI</b>: the Structured Outputs API does not accept a top-level JSON
+		 * array schema. Requesting a {@code List<T>} with this option enabled will fail.
+		 * Wrap the list in a container record or use the default prompt-based approach
+		 * instead.</li>
+		 * </ul>
 		 */
 		EntityParamSpec useProviderStructuredOutput();
 
