@@ -42,6 +42,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.DefaultToolExecutionResult;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -207,7 +208,9 @@ class ToolCallingAdvisorAutoRegistrationTests {
 		}
 
 		@Test
-		void doesNotAutoRegisterWhenNoTools() {
+		void singleIterationWhenNoToolsConfigured() {
+			// ToolCallingAdvisor is always registered, but exits after one pass when the
+			// model returns no tool calls.
 			stubSingleCallCycle();
 
 			var counter = new ChainIterationCountingAdvisor();
@@ -215,6 +218,25 @@ class ToolCallingAdvisorAutoRegistrationTests {
 
 			assertThat(counter.getCallCount()).isEqualTo(1);
 			verify(chatModel, times(1)).call(any(Prompt.class));
+		}
+
+		@Test
+		void autoRegistersForDynamicallyInjectedTools() {
+			// Issue #6325: ToolCallingAdvisor must be registered even when no static
+			// tools are configured, so advisors that inject tools at runtime still get
+			// tool-call loop support.
+			stubTwoCallCycle();
+
+			var counter = new ChainIterationCountingAdvisor();
+			ChatClient.create(chatModel)
+				.prompt()
+				.advisors(new DynamicToolInjectingAdvisor(weatherTool), counter)
+				.user("weather?")
+				.call()
+				.content();
+
+			assertThat(counter.getCallCount()).isGreaterThanOrEqualTo(2);
+			verify(chatModel, times(2)).call(any(Prompt.class));
 		}
 
 		@Test
@@ -375,6 +397,24 @@ class ToolCallingAdvisorAutoRegistrationTests {
 			assertThat(counter.getCallCount()).isEqualTo(1);
 		}
 
+		@Test
+		void autoRegistersForDynamicallyInjectedTools() {
+			// Issue #6325: same scenario as the call-path test, but for streaming.
+			stubTwoStreamCallCycle();
+
+			var counter = new ChainIterationCountingAdvisor();
+			ChatClient.create(chatModel)
+				.prompt()
+				.advisors(new DynamicToolInjectingAdvisor(weatherTool), counter)
+				.user("weather?")
+				.stream()
+				.content()
+				.collectList()
+				.block();
+
+			assertThat(counter.getCallCount()).isGreaterThanOrEqualTo(2);
+		}
+
 	}
 
 	// -------------------------------------------------------------------------
@@ -450,6 +490,42 @@ class ToolCallingAdvisorAutoRegistrationTests {
 		@Override
 		public int getOrder() {
 			return ToolCallingAdvisor.DEFAULT_ORDER;
+		}
+
+	}
+
+	/**
+	 * Simulates an advisor that injects tools at runtime (e.g. based on user context),
+	 * without any tools being declared statically on the {@link ChatClient}.
+	 */
+	static class DynamicToolInjectingAdvisor implements BaseAdvisor {
+
+		private final ToolCallback tool;
+
+		DynamicToolInjectingAdvisor(ToolCallback tool) {
+			this.tool = tool;
+		}
+
+		@Override
+		public ChatClientRequest before(ChatClientRequest request, AdvisorChain advisorChain) {
+			if (request.prompt().getOptions() instanceof ToolCallingChatOptions opts) {
+				var newOpts = opts.mutate().toolCallbacks(List.of(this.tool)).build();
+				return ChatClientRequest.builder()
+					.prompt(new Prompt(request.prompt().getInstructions(), newOpts))
+					.context(request.context())
+					.build();
+			}
+			return request;
+		}
+
+		@Override
+		public ChatClientResponse after(ChatClientResponse response, AdvisorChain advisorChain) {
+			return response;
+		}
+
+		@Override
+		public int getOrder() {
+			return ToolCallingAdvisor.DEFAULT_ORDER - 10;
 		}
 
 	}

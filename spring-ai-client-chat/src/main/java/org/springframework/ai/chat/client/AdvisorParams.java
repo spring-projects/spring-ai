@@ -38,10 +38,11 @@ public final class AdvisorParams {
 	/**
 	 * Controls whether a
 	 * {@link org.springframework.ai.chat.client.advisor.ToolCallingAdvisor} is
-	 * automatically added to the chain when tools are configured on the
-	 * {@code ChatClient} and no explicit
-	 * {@link org.springframework.ai.chat.client.advisor.api.ToolAdvisor} is already
-	 * present. Auto-registration is enabled by default; pass {@code false} to opt out:
+	 * automatically added to the chain. Auto-registration is enabled by default so that
+	 * tools injected at runtime by another advisor are handled correctly even when no
+	 * static tools are configured. No explicit
+	 * {@link org.springframework.ai.chat.client.advisor.api.ToolAdvisor} must be present.
+	 * Pass {@code false} to opt out:
 	 *
 	 * <pre>{@code
 	 * client.prompt()
