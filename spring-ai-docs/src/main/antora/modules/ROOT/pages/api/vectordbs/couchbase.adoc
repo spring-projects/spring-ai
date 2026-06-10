@@ -38,7 +38,7 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-couchbase-store-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-couchbase'
 }
 ----
 NOTE: Couchbase Vector search is only available in starting version 7.6 and Java SDK version 3.6.0"
