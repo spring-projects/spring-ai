@@ -174,7 +174,7 @@ This is a powerful technique for connecting the LLM capabilities with external t
 
 === Tool Example
 
-Here's a simple example of how to use Docker Model Runner function calling with Spring AI:
+Here's a simple example of how to use Docker Model Runner tool calling with Spring AI:
 
 [source,application.properties]
 ----
@@ -185,52 +185,37 @@ spring.ai.openai.chat.model=ai/gemma3:4B-F16
 
 [source,java]
 ----
-@SpringBootApplication
-public class DockerModelRunnerLlmApplication {
+public class WeatherService implements Function<WeatherService.Request, WeatherService.Response> {
 
-    public static void main(String[] args) {
-        SpringApplication.run(DockerModelRunnerLlmApplication.class, args);
-    }
+    public record Request(String location, String unit) {}
+    public record Response(double temp, String unit) {}
 
-    @Bean
-    CommandLineRunner runner(ChatClient.Builder chatClientBuilder) {
-        return args -> {
-            var chatClient = chatClientBuilder.build();
-
-            var response = chatClient.prompt()
-                .user("What is the weather in Amsterdam and Paris?")
-                .tools("weatherFunction") // reference by bean name.
-                .call()
-                .content();
-
-            System.out.println(response);
-        };
-    }
-
-    @Bean
-    @Description("Get the weather in location")
-    public Function<WeatherRequest, WeatherResponse> weatherFunction() {
-        return new MockWeatherService();
-    }
-
-    public static class MockWeatherService implements Function<WeatherRequest, WeatherResponse> {
-
-        public record WeatherRequest(String location, String unit) {}
-        public record WeatherResponse(double temp, String unit) {}
-
-        @Override
-        public WeatherResponse apply(WeatherRequest request) {
-            double temperature = request.location().contains("Amsterdam") ? 20 : 25;
-            return new WeatherResponse(temperature, request.unit);
-        }
+    @Override
+    public Response apply(Request request) {
+        double temperature = request.location().contains("Amsterdam") ? 20 : 25;
+        return new Response(temperature, request.unit);
     }
 }
 ----
 
-In this example, when the model needs weather information, it will automatically call the `weatherFunction` bean, which can then fetch real-time weather data.
+[source,java]
+----
+ToolCallback weatherCallback = FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
+    .description("Get the weather in location")
+    .inputType(WeatherService.Request.class)
+    .build();
+
+var response = chatClient.prompt()
+    .user("What is the weather in Amsterdam and Paris?")
+    .tools(weatherCallback)
+    .call()
+    .content();
+----
+
+In this example, when the model needs weather information, it will automatically call the `WeatherService`, which can then fetch real-time weather data.
 The expected response is: "The weather in Amsterdam is currently 20 degrees Celsius, and the weather in Paris is currently 25 degrees Celsius."
 
-Read more about OpenAI link:https://docs.spring.io/spring-ai/reference/api/chat/functions/openai-chat-functions.html[Function Calling].
+Read more about xref:api/tools.adoc[Tool Calling].
 
 
 == Sample Controller
