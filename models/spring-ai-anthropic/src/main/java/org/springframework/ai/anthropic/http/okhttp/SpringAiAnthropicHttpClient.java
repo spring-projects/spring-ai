@@ -110,6 +110,11 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 		return new Builder();
 	}
 
+	/** Test-only accessor */
+	OkHttpClient getOkHttpClient() {
+		return this.okHttpClient;
+	}
+
 	@Override
 	public HttpResponse execute(HttpRequest request, RequestOptions requestOptions) {
 		HttpRequest preparedRequest = prepareRequest(request);
@@ -587,8 +592,9 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 			Backend resolvedBackend = Objects.requireNonNull(this.backend, "backend");
 
 			OkHttpClient.Builder okBuilder = new OkHttpClient.Builder()
-				// SDK's RetryingHttpClient owns retries; disable here to avoid doubling.
-				.retryOnConnectionFailure(false)
+				// Recover from stale pooled connections (OkHttp's default); distinct from
+				// the SDK's status-code/backoff retries, so no duplication. See gh-6318.
+				.retryOnConnectionFailure(true)
 				.pingInterval(Duration.ofMinutes(1))
 				.connectTimeout(this.timeout.connect())
 				.readTimeout(this.timeout.read())
