@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
@@ -47,12 +49,15 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.util.JsonHelper;
 
@@ -64,6 +69,8 @@ import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link OpenAiChatModel}.
+ *
+ * @author Jewoo Shin
  */
 @ExtendWith(MockitoExtension.class)
 class OpenAiChatModelTests {
@@ -665,6 +672,182 @@ class OpenAiChatModelTests {
 			.orElseThrow();
 		assertThat(assistantParam._additionalProperties()).containsEntry("reasoning_content",
 				JsonValue.from("25 * 4 = 100."));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "reasoning_content", "reasoning" })
+	void streamingReasoningContentSurvivesAggregationWithToolCalls(String reasoningKey) {
+		// DeepSeek-style ("reasoning_content") or OpenRouter-style ("reasoning")
+		// stream: reasoning deltas first, then a tool call split across chunks, then
+		// finish_reason=tool_calls.
+		List<ChatCompletionChunk> chunks = List.of(
+				streamingChunk(delta -> delta.role(ChatCompletionChunk.Choice.Delta.Role.ASSISTANT)
+					.putAdditionalProperty(reasoningKey, JsonValue.from("Think step one. ")), null),
+				streamingChunk(delta -> delta.putAdditionalProperty(reasoningKey, JsonValue.from("Now call the tool.")),
+						null),
+				streamingChunk(delta -> delta.toolCalls(List.of(ChatCompletionChunk.Choice.Delta.ToolCall.builder()
+					.index(0L)
+					.id("call_1")
+					.function(ChatCompletionChunk.Choice.Delta.ToolCall.Function.builder()
+						.name("getWeather")
+						.arguments("{\"city\":")
+						.build())
+					.build())), null),
+				streamingChunk(delta -> delta.toolCalls(List.of(ChatCompletionChunk.Choice.Delta.ToolCall.builder()
+					.index(0L)
+					.function(ChatCompletionChunk.Choice.Delta.ToolCall.Function.builder()
+						.arguments("\"Seoul\"}")
+						.build())
+					.build())).putAdditionalProperty(reasoningKey, JsonValue.from(" One more thought.")), null),
+				streamingChunk(delta -> {
+				}, ChatCompletionChunk.Choice.FinishReason.TOOL_CALLS));
+
+		AssistantMessage aggregated = aggregateStreaming(chunks);
+
+		assertThat(aggregated.getToolCalls()).hasSize(1);
+		assertThat(aggregated.getToolCalls().get(0).name()).isEqualTo("getWeather");
+		assertThat(aggregated.getToolCalls().get(0).arguments()).isEqualTo("{\"city\":\"Seoul\"}");
+		assertThat(aggregated.getMetadata().get("reasoningContent"))
+			.isEqualTo("Think step one. Now call the tool. One more thought.");
+
+		// Replaying the aggregated message on the next turn must re-attach the wire
+		// field that providers like DeepSeek require on assistant tool-call messages.
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("deepseek-reasoner").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+		Prompt replayPrompt = new Prompt(List.of(new UserMessage("What's the weather in Seoul?"), aggregated,
+				ToolResponseMessage.builder()
+					.responses(List.of(new ToolResponseMessage.ToolResponse("call_1", "getWeather", "{\"temp\":20}")))
+					.build()),
+				options);
+
+		ChatCompletionAssistantMessageParam assistantParam = chatModel.createRequest(replayPrompt, false)
+			.messages()
+			.stream()
+			.filter(ChatCompletionMessageParam::isAssistant)
+			.map(ChatCompletionMessageParam::asAssistant)
+			.findFirst()
+			.orElseThrow();
+		assertThat(assistantParam._additionalProperties()).containsEntry("reasoning_content",
+				JsonValue.from("Think step one. Now call the tool. One more thought."));
+	}
+
+	@Test
+	void streamingReasoningContentSurvivesAggregationWithoutToolCalls() {
+		List<ChatCompletionChunk> chunks = List.of(
+				streamingChunk(delta -> delta.role(ChatCompletionChunk.Choice.Delta.Role.ASSISTANT)
+					.putAdditionalProperty("reasoning_content", JsonValue.from("Quick thought. ")), null),
+				streamingChunk(
+						delta -> delta.putAdditionalProperty("reasoning_content", JsonValue.from("Another thought.")),
+						null),
+				streamingChunk(delta -> delta.content("Hello"), null),
+				streamingChunk(delta -> delta.content("!"), ChatCompletionChunk.Choice.FinishReason.STOP));
+
+		AssistantMessage aggregated = aggregateStreaming(chunks);
+
+		assertThat(aggregated.getText()).isEqualTo("Hello!");
+		assertThat(aggregated.getMetadata().get("reasoningContent")).isEqualTo("Quick thought. Another thought.");
+	}
+
+	@Test
+	void streamingReasoningContentAccumulatesAcrossIntermediateResponses() {
+		List<ChatCompletionChunk> chunks = List.of(
+				streamingChunk(delta -> delta.role(ChatCompletionChunk.Choice.Delta.Role.ASSISTANT)
+					.putAdditionalProperty("reasoning_content", JsonValue.from("Think step one. ")), null),
+				streamingChunk(
+						delta -> delta.putAdditionalProperty("reasoning_content", JsonValue.from("Think step two.")),
+						null),
+				streamingChunk(delta -> delta.content("Hello"), ChatCompletionChunk.Choice.FinishReason.STOP));
+
+		List<ChatResponse> responses = streamResponses(chunks).collectList().block();
+
+		assertThat(responses).hasSize(3);
+		assertThat(responses.get(0).getResult().getOutput().getMetadata().get("reasoningContent"))
+			.isEqualTo("Think step one. ");
+		assertThat(responses.get(1).getResult().getOutput().getMetadata().get("reasoningContent"))
+			.isEqualTo("Think step one. Think step two.");
+		assertThat(responses.get(2).getResult().getOutput().getMetadata().get("reasoningContent"))
+			.isEqualTo("Think step one. Think step two.");
+	}
+
+	private AssistantMessage aggregateStreaming(List<ChatCompletionChunk> chunks) {
+		Flux<ChatResponse> responses = streamResponses(chunks);
+
+		// Aggregate the way ChatClient advisors (e.g. ToolCallingAdvisor) do before
+		// re-injecting the assistant message into the next request.
+		AtomicReference<ChatResponse> aggregatedResponse = new AtomicReference<>();
+		new MessageAggregator().aggregate(responses, aggregatedResponse::set).blockLast();
+
+		assertThat(aggregatedResponse.get()).isNotNull();
+		return aggregatedResponse.get().getResult().getOutput();
+	}
+
+	private Flux<ChatResponse> streamResponses(List<ChatCompletionChunk> chunks) {
+		ChatServiceAsync chatServiceAsync = mock(ChatServiceAsync.class);
+		ChatCompletionServiceAsync chatCompletionServiceAsync = mock(ChatCompletionServiceAsync.class);
+		when(this.openAiClientAsync.chat()).thenReturn(chatServiceAsync);
+		when(chatServiceAsync.completions()).thenReturn(chatCompletionServiceAsync);
+		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class)))
+			.thenReturn(asyncStreamResponseOf(chunks));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("deepseek-reasoner").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		return chatModel.stream(new Prompt("Preserve reasoning metadata while streaming", options));
+	}
+
+	private static ChatCompletionChunk streamingChunk(
+			Consumer<ChatCompletionChunk.Choice.Delta.Builder> deltaCustomizer,
+			ChatCompletionChunk.Choice.FinishReason finishReason) {
+		ChatCompletionChunk.Choice.Delta.Builder deltaBuilder = ChatCompletionChunk.Choice.Delta.builder();
+		deltaCustomizer.accept(deltaBuilder);
+		return ChatCompletionChunk.builder()
+			.id("chatcmpl-123")
+			.created(1777799928L)
+			.model("deepseek-reasoner")
+			.addChoice(ChatCompletionChunk.Choice.builder()
+				.index(0L)
+				.delta(deltaBuilder.build())
+				.finishReason(finishReason)
+				.build())
+			.build();
+	}
+
+	private static AsyncStreamResponse<ChatCompletionChunk> asyncStreamResponseOf(List<ChatCompletionChunk> chunks) {
+		CompletableFuture<Void> onComplete = new CompletableFuture<>();
+		return new AsyncStreamResponse<>() {
+
+			@Override
+			public AsyncStreamResponse<ChatCompletionChunk> subscribe(Handler<? super ChatCompletionChunk> handler) {
+				chunks.forEach(handler::onNext);
+				handler.onComplete(Optional.empty());
+				onComplete.complete(null);
+				return this;
+			}
+
+			@Override
+			public AsyncStreamResponse<ChatCompletionChunk> subscribe(Handler<? super ChatCompletionChunk> handler,
+					Executor executor) {
+				return subscribe(handler);
+			}
+
+			@Override
+			public CompletableFuture<Void> onCompleteFuture() {
+				return onComplete;
+			}
+
+			@Override
+			public void close() {
+			}
+
+		};
 	}
 
 	@Test
