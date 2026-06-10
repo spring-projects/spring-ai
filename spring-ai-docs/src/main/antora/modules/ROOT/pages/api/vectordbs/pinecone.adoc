@@ -20,7 +20,7 @@ To set up `PineconeVectorStore`, gather the following details from your Pinecone
 [NOTE]
 ====
 This information is available to you in the Pinecone UI portal.
-The namespace support is not available in the Pinecone free tier.
+Namespaces are supported on all current Pinecone plans, including the free Starter plan; the maximum number of namespaces per serverless index depends on your plan.
 ====
 
 == Auto-configuration
@@ -192,7 +192,7 @@ public VectorStore pineconeVectorStore(EmbeddingModel embeddingModel) {
     return PineconeVectorStore.builder(embeddingModel)
             .apiKey(PINECONE_API_KEY)
             .indexName(PINECONE_INDEX_NAME)
-            .namespace(PINECONE_NAMESPACE) // the free tier doesn't support namespaces.
+            .namespace(PINECONE_NAMESPACE)
             .contentFieldName(CUSTOM_CONTENT_FIELD_NAME) // optional field to store the original content. Defaults to `document_content`
             .build();
 }
