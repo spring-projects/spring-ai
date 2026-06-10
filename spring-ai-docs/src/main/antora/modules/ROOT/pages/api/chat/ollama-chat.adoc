@@ -672,7 +672,7 @@ Spring AI provides two methods for configuring structured output:
 
 | `.format(mapObject)`
 | JSON Schema mode - alternative API
-| `.format(new ObjectMapper().readValue(schema, Map.class))`
+| `.format(new JsonMapper().readValue(schema, Map.class))`
 |====
 
 TIP: For most use cases, use `.outputSchema(jsonSchemaString)` for JSON Schema validation or `.format("json")` for simple JSON output.
