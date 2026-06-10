@@ -53,6 +53,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 /**
  * @author John Blum
  * @author Christian Tzolov
+ * @author Jewoo Shin
  * @since 0.7.0
  */
 @RestClientTest(OpenAiChatModelWithChatResponseMetadataTests.Config.class)
@@ -142,6 +143,46 @@ public class OpenAiChatModelWithChatResponseMetadataTests {
 
 		var logprobs = response.getResult().getMetadata().get("logprobs");
 		assertThat(logprobs).isNotNull().isInstanceOf(OpenAiApi.LogProbs.class);
+	}
+
+	@Test
+	void aiResponseContainsReasoningContentMetadata() {
+
+		String json = """
+				   {
+				      "id": "chatcmpl-123",
+				      "object": "chat.completion",
+				      "created": 1677652288,
+				      "model": "deepseek-reasoner",
+				      "choices": [{
+				      "index": 0,
+				      "message": {
+				         "role": "assistant",
+				         "content": "I surrender!",
+				         "reasoning_content": "The user demands surrender, so complying is the safest option."
+				      },
+				      "finish_reason": "stop"
+				      }],
+				      "usage": {
+				      "prompt_tokens": 9,
+				      "completion_tokens": 12,
+				      "total_tokens": 21
+				      }
+				   }
+				""";
+
+		this.server.expect(requestTo(StringContains.containsString("/v1/chat/completions")))
+			.andExpect(method(HttpMethod.POST))
+			.andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer " + TEST_API_KEY))
+			.andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+
+		Prompt prompt = new Prompt("Reach for the sky.");
+
+		ChatResponse response = this.openAiChatClient.call(prompt);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResult().getOutput().getMetadata()).containsEntry("reasoningContent",
+				"The user demands surrender, so complying is the safest option.");
 	}
 
 	private void prepareMock(boolean includeLogprobs) {
