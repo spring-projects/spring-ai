@@ -208,7 +208,7 @@ Invoke `ChatModel` directly without `ToolCallingAdvisor`; check for tool calls y
 ----
 ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
 
-ChatOptions options = ToolCallingChatOptions.builder()
+GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
         .toolCallbacks(ToolCallbacks.from(new WeatherService()))
         .build();
 
