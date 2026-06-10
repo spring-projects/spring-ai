@@ -270,13 +270,12 @@ Cache growing conversation history for multi-turn chatbots and assistants:
 // Cache conversation history with ChatClient and memory
 ChatClient chatClient = ChatClient.builder(chatModel)
     .defaultSystem("You are a personalized career counselor...")
-    .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory)
-        .conversationId(conversationId)
-        .build())
+    .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
     .build();
 
 String response = chatClient.prompt()
     .user("What career advice would you give me?")
+    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
     .options(BedrockChatOptions.builder()
         .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
         .cacheOptions(BedrockCacheOptions.builder()
