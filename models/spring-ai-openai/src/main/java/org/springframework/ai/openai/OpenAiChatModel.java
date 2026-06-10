@@ -755,6 +755,10 @@ public final class OpenAiChatModel implements ChatModel {
 			builder.serviceTier(ChatCompletionCreateParams.ServiceTier.of(requestOptions.getServiceTier()));
 		}
 
+		if (requestOptions.getPromptCacheKey() != null) {
+			builder.promptCacheKey(requestOptions.getPromptCacheKey());
+		}
+
 		if (requestOptions.getCustomHeaders() != null && !requestOptions.getCustomHeaders().isEmpty()) {
 			requestOptions.getCustomHeaders().forEach(builder::putAdditionalHeader);
 		}
