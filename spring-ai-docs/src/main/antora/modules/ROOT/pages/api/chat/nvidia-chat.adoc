@@ -215,7 +215,7 @@ spring.ai.openai.base-url=https://integrate.api.nvidia.com
 spring.ai.openai.chat.model=meta/llama-3.1-70b-instruct
 
 # The NVIDIA LLM API doesn't support embeddings, so we need to disable it.
-spring.ai.openai.embedding.enabled=false
+spring.ai.model.embedding=none
 
 # The NVIDIA LLM API requires this parameter to be set explicitly or server internal error will be thrown.
 spring.ai.openai.chat.max-tokens=2048

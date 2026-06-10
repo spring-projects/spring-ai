@@ -142,7 +142,6 @@ The prefix `spring.ai.openai.embedding` is property prefix that configures the `
 |====
 | Property | Description | Default
 
-| spring.ai.openai.embedding.enabled (Required and no longer valid) | Enable OpenAI embedding model.  | true
 | spring.ai.model.embedding | Enable OpenAI embedding model.  | openai
 | spring.ai.openai.embedding.base-url   | Optional overrides the spring.ai.openai.base-url to provide embedding specific url | -
 | spring.ai.openai.embedding.api-key    | Optional overrides the spring.ai.openai.api-key to provide embedding specific api-key  | -
