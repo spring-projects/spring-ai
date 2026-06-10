@@ -130,6 +130,8 @@ public final class OpenAiChatModel implements ChatModel {
 
 	private static final JsonHelper JSON_HELPER = new JsonHelper();
 
+	private static final com.fasterxml.jackson.databind.ObjectMapper OPENAI_SDK_OBJECT_MAPPER = new com.fasterxml.jackson.databind.ObjectMapper();
+
 	private final Log logger = LogFactory.getLog(OpenAiChatModel.class);
 
 	private final OpenAIClient openAiClient;
@@ -730,7 +732,7 @@ public final class OpenAiChatModel implements ChatModel {
 					jsonSchemaBuilder.name("json_schema");
 					jsonSchemaBuilder.strict(true);
 
-					ResponseFormatJsonSchema.JsonSchema.Schema schema = JacksonUtils.getDefaultJsonMapper()
+					ResponseFormatJsonSchema.JsonSchema.Schema schema = OPENAI_SDK_OBJECT_MAPPER
 						.readValue(jsonSchemaString, ResponseFormatJsonSchema.JsonSchema.Schema.class);
 
 					jsonSchemaBuilder.schema(schema);
@@ -940,9 +942,9 @@ public final class OpenAiChatModel implements ChatModel {
 			if (!toolDefinition.inputSchema().isEmpty()) {
 				// Parse the schema and add its properties directly
 				try {
-					com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
 					@SuppressWarnings("unchecked")
-					Map<String, Object> schemaMap = mapper.readValue(toolDefinition.inputSchema(), Map.class);
+					Map<String, Object> schemaMap = OPENAI_SDK_OBJECT_MAPPER.readValue(toolDefinition.inputSchema(),
+							Map.class);
 
 					// Add each property from the schema to the parameters
 					schemaMap
