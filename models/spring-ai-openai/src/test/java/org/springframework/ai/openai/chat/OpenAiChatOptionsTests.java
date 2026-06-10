@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Julien Dubois
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatOptions, Builder> {
 

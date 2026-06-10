@@ -37,6 +37,7 @@ import org.springframework.boot.context.properties.DeprecatedConfigurationProper
  *
  * @author Christian Tzolov
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 @ConfigurationProperties(OpenAiChatProperties.CONFIG_PREFIX)
 public class OpenAiChatProperties extends AbstractOpenAiProperties {
@@ -92,6 +93,8 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 	private @Nullable String verbosity;
 
 	private @Nullable String serviceTier;
+
+	private @Nullable String promptCacheKey;
 
 	private @Nullable Map<String, Object> extraBody;
 
@@ -295,6 +298,14 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 		this.serviceTier = serviceTier;
 	}
 
+	public @Nullable String getPromptCacheKey() {
+		return this.promptCacheKey;
+	}
+
+	public void setPromptCacheKey(@Nullable String promptCacheKey) {
+		this.promptCacheKey = promptCacheKey;
+	}
+
 	public @Nullable Map<String, Object> getExtraBody() {
 		return this.extraBody;
 	}
@@ -330,6 +341,7 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 			.reasoningEffort(this.reasoningEffort)
 			.verbosity(this.verbosity)
 			.serviceTier(this.serviceTier)
+			.promptCacheKey(this.promptCacheKey)
 			.extraBody(this.extraBody)
 			.build();
 	}
@@ -751,6 +763,16 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 
 		public void setServiceTier(@Nullable String serviceTier) {
 			OpenAiChatProperties.this.setServiceTier(serviceTier);
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.chat.prompt-cache-key")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable String getPromptCacheKey() {
+			return OpenAiChatProperties.this.getPromptCacheKey();
+		}
+
+		public void setPromptCacheKey(@Nullable String promptCacheKey) {
+			OpenAiChatProperties.this.setPromptCacheKey(promptCacheKey);
 		}
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.chat.extra-body")

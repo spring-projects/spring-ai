@@ -51,6 +51,7 @@ import org.springframework.ai.tool.ToolCallback;
  * @author lambochen
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
