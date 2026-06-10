@@ -426,4 +426,20 @@ class OpenAiChatModelTests {
 		assertThat(assistantParam._additionalProperties()).doesNotContainKey("reasoning_content");
 	}
 
+	@Test
+	void promptCacheKeyIsIncludedInRequest() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("gpt-4o-mini")
+			.promptCacheKey("my-cache-key")
+			.build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("hi", options), false);
+		assertThat(request.promptCacheKey()).contains("my-cache-key");
+	}
+
 }
