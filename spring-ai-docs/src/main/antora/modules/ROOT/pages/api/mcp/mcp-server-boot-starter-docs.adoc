@@ -33,7 +33,7 @@ Use the dedicated starter and the correct `spring.ai.mcp.server.protocol` proper
 
 |===
 |Server Type | Dependency | Property
-| xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc#_sse_webmvc_server[SSE WebMVC] | `spring-ai-starter-mcp-server-webmvc` | `spring.ai.mcp.server.protocol=SSE` or empty
+| xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc#_sse_webmvc_server[SSE WebMVC] _(deprecated since 2.0.0, use STREAMABLE instead)_ | `spring-ai-starter-mcp-server-webmvc` | `spring.ai.mcp.server.protocol=SSE`
 | xref:api/mcp/mcp-streamable-http-server-boot-starter-docs.adoc#_streamable_http_webmvc_server[Streamable-HTTP WebMVC] | `spring-ai-starter-mcp-server-webmvc` | `spring.ai.mcp.server.protocol=STREAMABLE`
 | xref:api/mcp/mcp-stateless-server-boot-starter-docs.adoc#_stateless_webmvc_server[Stateless WebMVC] | `spring-ai-starter-mcp-server-webmvc` | `spring.ai.mcp.server.protocol=STATELESS`
 |===
@@ -41,7 +41,7 @@ Use the dedicated starter and the correct `spring.ai.mcp.server.protocol` proper
 === WebFlux (Reactive)
 |===
 |Server Type | Dependency | Property
-| xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc#_sse_webflux_server[SSE WebFlux] | `spring-ai-starter-mcp-server-webflux` | `spring.ai.mcp.server.protocol=SSE` or empty
+| xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc#_sse_webflux_server[SSE WebFlux] _(deprecated since 2.0.0, use STREAMABLE instead)_ | `spring-ai-starter-mcp-server-webflux` | `spring.ai.mcp.server.protocol=SSE`
 | xref:api/mcp/mcp-streamable-http-server-boot-starter-docs.adoc#_streamable_http_webflux_server[Streamable-HTTP WebFlux] | `spring-ai-starter-mcp-server-webflux` | `spring.ai.mcp.server.protocol=STREAMABLE`
 | xref:api/mcp/mcp-stateless-server-boot-starter-docs.adoc#_stateless_webflux_server[Stateless WebFlux] | `spring-ai-starter-mcp-server-webflux` | `spring.ai.mcp.server.protocol=STATELESS`
 |===
@@ -139,11 +139,28 @@ This is by design, to keep the MCP server transport-agnostic.
 If you need transport-specific metadata (for example, HTTP headers, remote host, etc) in your tools,
 configure a `TransportContextExtractor` on your transport provider.
 
+For WebMVC:
+
 [source,java]
 ----
 @Bean
-public WebMvcStreamableServerTransportProvider transport(ObjectMapper objectMapper) {
+public WebMvcStreamableServerTransportProvider transport() {
     return WebMvcStreamableServerTransportProvider.builder()
+        .contextExtractor(serverRequest -> {
+            String authorization = serverRequest.headers().firstHeader("Authorization");
+            return McpTransportContext.create(Map.of("authorization", authorization));
+        })
+        .build();
+}
+----
+
+For WebFlux (reactive):
+
+[source,java]
+----
+@Bean
+public WebFluxStreamableServerTransportProvider transport() {
+    return WebFluxStreamableServerTransportProvider.builder()
         .contextExtractor(serverRequest -> {
             String authorization = serverRequest.headers().firstHeader("Authorization");
             return McpTransportContext.create(Map.of("authorization", authorization));
