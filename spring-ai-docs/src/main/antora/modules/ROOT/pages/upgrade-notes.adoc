@@ -5,7 +5,6 @@
 == Upgrading to 2.0.0
 
 This section covers all breaking changes and migration steps when upgrading from Spring AI 1.x to 2.0.0.
-The changes are organized thematically — each subsection is self-contained and can be read independently.
 
 === Advisors
 
@@ -302,6 +301,23 @@ OpenAiChatOptions.builder().N(1).build();
 OpenAiChatOptions.builder().n(1).build();
 ----
 
+=== Ollama
+
+==== Renamed: `spring.ai.ollama.chat.think-option` to `spring.ai.ollama.chat.think`
+
+The `spring.ai.ollama.chat.think-option` configuration property has been renamed to `spring.ai.ollama.chat.think`.
+
+Update your `application.properties` or `application.yml` accordingly:
+
+[source,properties]
+----
+# Before
+spring.ai.ollama.chat.think-option=true
+
+# After
+spring.ai.ollama.chat.think=true
+----
+
 === Minimax dedicated support superseded by Anthropic support
 
 Minimax dedicated support has been removed in favor of using Anthropic support as recommended by https://platform.minimax.io/docs/api-reference/text-anthropic-api[Minimax themselves].
@@ -486,9 +502,9 @@ import org.springframework.ai.google.genai.embedding.GoogleGenAiEmbeddingConnect
 
 === ChatClient Tool Calling
 
-==== New: Automatic `ToolCallingAdvisor` Registration
+==== Automatic `ToolCallingAdvisor` Registration
 
-`ChatClient` now automatically registers a `ToolCallingAdvisor` in the advisor chain whenever tools are configured on a call (via `.tools(...)`, `.toolCallbacks(...)`, or defaults set on the builder). Previously, callers had to add `ToolCallingAdvisor` manually.
+`ChatClient` now always auto-registers a `ToolCallingAdvisor` in the advisor chain (unless explicitly disabled), so tool calls requested by the model are handled automatically regardless of whether tools were configured statically or injected by another advisor at runtime.
 
 ===== Impact
 
@@ -899,6 +915,11 @@ String response = chatClient.prompt("Tell me a joke")
 ----
 
 NOTE: This restriction applies to `ChatClient` only. When calling `ChatModel.call(Prompt)` directly, the prompt must carry a fully built `ChatOptions` instance of the concrete type expected by the model (_e.g._ `AnthropicChatOptions` for `AnthropicChatModel`). The `ChatModel` does **not** merge options: if `Prompt.getOptions()` is non-null it is used as-is; if it is `null`, the model's own default options are used instead. No partial merging occurs at the `ChatModel` level.
+
+==== `buildRequestPrompt` Removed from Public API
+
+The `buildRequestPrompt` method is no longer part of the public API.
+It was previously exposed by mistake and has been restored to its private or package-private visibility.
 
 === OpenAI Java SDK Transition
 
