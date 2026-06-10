@@ -51,6 +51,7 @@ import org.springframework.ai.tool.ToolCallback;
  * @author lambochen
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
@@ -174,6 +175,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 	private final @Nullable String serviceTier;
 
+	private final @Nullable String promptCacheKey;
+
 	/**
 	 * Extra parameters that are not part of the standard OpenAI API. These parameters are
 	 * passed as additional body properties to support OpenAI-compatible providers like
@@ -200,7 +203,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			@Nullable StreamOptions streamOptions, @Nullable Integer seed, @Nullable Object toolChoice,
 			@Nullable String user, @Nullable Boolean parallelToolCalls, @Nullable Boolean store,
 			@Nullable Map<String, String> metadata, @Nullable String reasoningEffort, @Nullable String verbosity,
-			@Nullable String serviceTier, @Nullable Map<String, Object> extraBody) {
+			@Nullable String serviceTier, @Nullable String promptCacheKey, @Nullable Map<String, Object> extraBody) {
 		this.baseUrl = baseUrl;
 		this.apiKey = apiKey;
 		this.credential = credential;
@@ -243,6 +246,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.reasoningEffort = reasoningEffort;
 		this.verbosity = verbosity;
 		this.serviceTier = serviceTier;
+		this.promptCacheKey = promptCacheKey;
 		this.extraBody = (extraBody != null ? Map.copyOf(extraBody) : null);
 	}
 
@@ -492,6 +496,14 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		return this.serviceTier;
 	}
 
+	/**
+	 * Gets the prompt cache key.
+	 * @return the prompt cache key
+	 */
+	public @Nullable String getPromptCacheKey() {
+		return this.promptCacheKey;
+	}
+
 	public @Nullable Map<String, Object> getExtraBody() {
 		return this.extraBody;
 	}
@@ -567,6 +579,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			.reasoningEffort(this.reasoningEffort)
 			.verbosity(this.verbosity)
 			.serviceTier(this.serviceTier)
+			.promptCacheKey(this.promptCacheKey)
 			.extraBody(this.extraBody);
 	}
 
@@ -598,6 +611,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 				&& Objects.equals(this.reasoningEffort, options.reasoningEffort)
 				&& Objects.equals(this.verbosity, options.verbosity)
 				&& Objects.equals(this.serviceTier, options.serviceTier)
+				&& Objects.equals(this.promptCacheKey, options.promptCacheKey)
 				&& Objects.equals(this.extraBody, options.extraBody)
 				&& Objects.equals(this.toolCallbacks, options.toolCallbacks)
 				&& Objects.equals(this.toolContext, options.toolContext);
@@ -609,8 +623,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 				this.maxTokens, this.maxCompletionTokens, this.n, this.outputModalities, this.outputAudio,
 				this.presencePenalty, this.responseFormat, this.streamOptions, this.seed, this.stop, this.temperature,
 				this.topP, this.toolChoice, this.user, this.parallelToolCalls, this.store, this.metadata,
-				this.reasoningEffort, this.verbosity, this.serviceTier, this.extraBody, this.toolCallbacks,
-				this.toolContext);
+				this.reasoningEffort, this.verbosity, this.serviceTier, this.promptCacheKey, this.extraBody,
+				this.toolCallbacks, this.toolContext);
 	}
 
 	public record AudioParameters(@Nullable Voice voice, @Nullable AudioResponseFormat format) {
@@ -782,6 +796,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		protected @Nullable String verbosity;
 
 		protected @Nullable String serviceTier;
+
+		protected @Nullable String promptCacheKey;
 
 		protected @Nullable Map<String, Object> extraBody;
 
@@ -990,6 +1006,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			return self();
 		}
 
+		public B promptCacheKey(@Nullable String promptCacheKey) {
+			this.promptCacheKey = promptCacheKey;
+			return self();
+		}
+
 		public B extraBody(@Nullable Map<String, Object> extraBody) {
 			this.extraBody = extraBody;
 			return self();
@@ -1109,6 +1130,9 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 				if (that.serviceTier != null) {
 					this.serviceTier = that.serviceTier;
 				}
+				if (that.promptCacheKey != null) {
+					this.promptCacheKey = that.promptCacheKey;
+				}
 				if (that.extraBody != null) {
 					if (this.extraBody == null) {
 						this.extraBody = new HashMap<>(that.extraBody);
@@ -1155,7 +1179,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 					this.topLogprobs, this.maxCompletionTokens, this.n, this.outputModalities, this.outputAudio,
 					this.responseFormat, this.streamOptions, this.seed, this.toolChoice, this.user,
 					this.parallelToolCalls, this.store, this.metadata, this.reasoningEffort, this.verbosity,
-					this.serviceTier, this.extraBody);
+					this.serviceTier, this.promptCacheKey, this.extraBody);
 		}
 
 	}
