@@ -1050,10 +1050,25 @@ public final class OpenAiChatModel implements ChatModel {
 					.content(cccc.delta().content())
 					.refusal(cccc.delta().refusal());
 				cccc.delta().toolCalls().ifPresent(ccctcs -> {
-					msgBuilder.toolCalls(ccctcs.stream().map(tc -> {
+					Map<String, ToolCallBuilder> builders = new HashMap<>();
+					for (ToolCall ccctc : ccctcs) {
+						String key = cccc.index() + "-" + ccctc.index();
+						ToolCallBuilder toolCallBuilder = builders.computeIfAbsent(key, k -> new ToolCallBuilder());
+						toolCallBuilder.merge(ccctc);
+					}
+
+					List<ToolCall> mergedToolCalls = builders.values()
+						.stream()
+						.map(ToolCallBuilder::build)
+						.filter(tc -> tc.function().isPresent() && tc.function().get().name().isPresent()
+								&& StringUtils.hasText(tc.function().get().name().get()))
+						.toList();
+
+					msgBuilder.toolCalls(mergedToolCalls.stream().map(tc -> {
 						ChatCompletionMessageFunctionToolCall.Builder toolCallBuilder = ChatCompletionMessageFunctionToolCall
 							.builder();
 						toolCallBuilder.id(tc.id().get());
+						toolCallBuilder.type(JsonValue.from(tc.type().get()));
 						toolCallBuilder.function(ChatCompletionMessageFunctionToolCall.Function.builder()
 							.name(tc.function().get().name().get())
 							.arguments(tc.function().get().arguments().get())
@@ -1178,6 +1193,55 @@ public final class OpenAiChatModel implements ChatModel {
 			 */
 			JSON_SCHEMA
 
+		}
+
+	}
+
+	/**
+	 * Helper class to merge streaming tool calls that arrive in pieces across multiple
+	 * chunks. In OpenAI streaming, a tool call's ID, name, and arguments can arrive in
+	 * separate chunks.
+	 */
+	private static class ToolCallBuilder {
+
+		private long index;
+
+		private String id = "";
+
+		private String type = "function";
+
+		private String name = "";
+
+		private final StringBuilder arguments = new StringBuilder();
+
+		void merge(ToolCall toolCall) {
+			this.index = toolCall.index();
+			if (toolCall.id().isPresent() && StringUtils.hasText(toolCall.id().get())) {
+				this.id = toolCall.id().get();
+			}
+			if (toolCall.type().isPresent()) {
+				this.type = toolCall.type().get().asString();
+			}
+			if (toolCall.function().isPresent()) {
+				if (toolCall.function().get().name().isPresent()
+						&& StringUtils.hasText(toolCall.function().get().name().get())) {
+					this.name = toolCall.function().get().name().get();
+				}
+
+				if (toolCall.function().get().arguments().isPresent()
+						&& StringUtils.hasText(toolCall.function().get().arguments().get())) {
+					this.arguments.append(toolCall.function().get().arguments().get());
+				}
+			}
+		}
+
+		ToolCall build() {
+			return ToolCall.builder()
+				.index(this.index)
+				.id(this.id)
+				.type(ToolCall.Type.of(this.type))
+				.function(Function.builder().name(this.name).arguments(this.arguments.toString()).build())
+				.build();
 		}
 
 	}
