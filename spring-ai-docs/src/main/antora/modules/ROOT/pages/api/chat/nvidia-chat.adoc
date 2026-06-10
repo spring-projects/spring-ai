@@ -183,7 +183,7 @@ public class NvidiaLlmApplication {
 
             var response = chatClient.prompt()
                 .user("What is the weather in Amsterdam and Paris?")
-                .functions("weatherFunction") // reference by bean name.
+                .tools("weatherFunction") // reference by bean name.
                 .call()
                 .content();
 
