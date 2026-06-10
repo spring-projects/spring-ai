@@ -108,10 +108,10 @@ public class CreateGeminiRequestTests {
 		Part textPart = parts.get(0);
 		assertThat(textPart.text().orElse("")).isEqualTo("User Message Text");
 
-		Part mediaPart = parts.get(1);
 		// Media parts are now created as inline data with Part.fromBytes()
 		// The test needs to be updated based on how media is handled in the new SDK
-		System.out.println(mediaPart);
+		Part mediaPart = parts.get(1);
+		assertThat(mediaPart.fileData().isPresent()).isTrue();
 	}
 
 	@Test

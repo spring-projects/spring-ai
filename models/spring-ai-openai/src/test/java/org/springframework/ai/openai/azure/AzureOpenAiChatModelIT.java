@@ -101,7 +101,6 @@ class AzureOpenAiChatModelIT {
 				new UserMessage("Repeat the last assistant message.")));
 		response = this.chatModel.call(promptWithMessageHistory);
 
-		System.out.println(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard");
 	}
 

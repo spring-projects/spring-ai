@@ -59,7 +59,6 @@ class CompressionQueryTransformerIT {
 		Query transformedQuery = queryTransformer.apply(query);
 
 		assertThat(transformedQuery).isNotNull();
-		System.out.println(transformedQuery);
 		assertThat(transformedQuery.text()).containsIgnoringCase("Denmark");
 	}
 

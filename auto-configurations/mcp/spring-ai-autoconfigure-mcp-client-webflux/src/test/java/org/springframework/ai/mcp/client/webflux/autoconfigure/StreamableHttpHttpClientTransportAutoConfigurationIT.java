@@ -50,7 +50,6 @@ public class StreamableHttpHttpClientTransportAutoConfigurationIT {
 	@SuppressWarnings("resource")
 	static GenericContainer<?> container = new GenericContainer<>("docker.io/tzolov/mcp-everything-server:v2")
 		.withCommand("node dist/index.js streamableHttp")
-		.withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
 		.withExposedPorts(3001)
 		.waitingFor(Wait.forHttp("/").forStatusCode(404));
 

@@ -75,17 +75,6 @@ public final class SyncMcpResourceMethodCallbackExample {
 
 					resourceHandlers.put(uriPattern, callback);
 
-					// Print information about URI variables if present
-					if (uriPattern.contains("{") && uriPattern.contains("}")) {
-						System.out.println("  URI Template: " + uriPattern);
-						System.out.println("  URI Variables: " + extractUriVariables(uriPattern));
-					}
-
-					System.out.println("Registered resource handler for URI pattern: " + uriPattern);
-					System.out.println("  Name: " + resourceAnnotation.name());
-					System.out.println("  Description: " + resourceAnnotation.description());
-					System.out.println("  MIME Type: " + resourceAnnotation.mimeType());
-					System.out.println();
 				}
 				catch (IllegalArgumentException e) {
 					System.err
@@ -96,8 +85,6 @@ public final class SyncMcpResourceMethodCallbackExample {
 
 		// Example of using registered handlers
 		if (!resourceHandlers.isEmpty()) {
-			System.out.println("\nTesting resource handlers:");
-
 			// Test a handler with a ReadResourceRequest
 			testHandler(resourceHandlers, "user-profile://john", "Standard handler");
 
@@ -133,7 +120,6 @@ public final class SyncMcpResourceMethodCallbackExample {
 			String pattern = entry.getKey();
 			if (uriMatchesPattern(uri, pattern)) {
 				handler = entry.getValue();
-				System.out.println("\nTesting " + description + " with URI pattern: " + pattern);
 				break;
 			}
 		}
@@ -146,25 +132,10 @@ public final class SyncMcpResourceMethodCallbackExample {
 
 				// Execute the handler
 				ReadResourceResult result = handler.apply(exchange, request);
-
-				// Print the result
-				System.out.println("Resource request result for " + request.uri() + ":");
-				for (ResourceContents content : result.contents()) {
-					if (content instanceof TextResourceContents) {
-						System.out.println("  " + ((TextResourceContents) content).text());
-					}
-					else {
-						System.out.println("  " + content);
-					}
-				}
 			}
 			catch (Exception e) {
-				System.out.println("Error executing handler: " + e.getMessage());
 				e.printStackTrace();
 			}
-		}
-		else {
-			System.out.println("\nNo handler found for URI: " + uri);
 		}
 	}
 

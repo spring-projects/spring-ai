@@ -346,7 +346,6 @@ class GoogleGenAiChatModelIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
-		// System.out.println("{}", actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}

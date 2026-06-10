@@ -49,7 +49,6 @@ public class SseWebFluxTransportAutoConfigurationIT {
 	@SuppressWarnings("resource")
 	static GenericContainer<?> container = new GenericContainer<>("docker.io/tzolov/mcp-everything-server:v2")
 		.withCommand("node dist/index.js sse")
-		.withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
 		.withExposedPorts(3001)
 		.waitingFor(Wait.forHttp("/").forStatusCode(404));
 
