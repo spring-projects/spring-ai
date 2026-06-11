@@ -95,13 +95,6 @@ public class ToolSearchAdvisorProperties {
 	 */
 	private int advisorOrder = ToolCallingAdvisor.DEFAULT_ORDER;
 
-	/**
-	 * Whether intermediate tool-call responses are streamed back to the caller during a
-	 * {@code stream()} invocation. When {@code false} (default), only the final answer is
-	 * streamed.
-	 */
-	private boolean streamToolCallResponses = false;
-
 	private final Eviction eviction = new Eviction();
 
 	private final Lucene lucene = new Lucene();
@@ -161,14 +154,6 @@ public class ToolSearchAdvisorProperties {
 
 	public void setAdvisorOrder(int advisorOrder) {
 		this.advisorOrder = advisorOrder;
-	}
-
-	public boolean isStreamToolCallResponses() {
-		return this.streamToolCallResponses;
-	}
-
-	public void setStreamToolCallResponses(boolean streamToolCallResponses) {
-		this.streamToolCallResponses = streamToolCallResponses;
 	}
 
 	public Eviction getEviction() {

@@ -120,7 +120,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 	class CallTests {
 
 		@ParameterizedTest(name = "[{index}] {0}")
-		@MethodSource("org.springframework.ai.tool.toolsearch.advisor.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
+		@MethodSource("org.springframework.ai.chat.client.advisor.toolsearch.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
 		void callMultipleToolInvocations(ToolIndex toolIndex) {
 			String response = ChatClient.create(getChatModel())
 				.prompt()
@@ -134,7 +134,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 		}
 
 		@ParameterizedTest(name = "[{index}] {0}")
-		@MethodSource("org.springframework.ai.tool.toolsearch.advisor.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
+		@MethodSource("org.springframework.ai.chat.client.advisor.toolsearch.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
 		void callMultipleToolInvocationsWithExternalMemory(ToolIndex toolIndex) {
 			String response = ChatClient.create(getChatModel())
 				.prompt()
@@ -150,7 +150,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 		}
 
 		@ParameterizedTest(name = "[{index}] {0}")
-		@MethodSource("org.springframework.ai.tool.toolsearch.advisor.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
+		@MethodSource("org.springframework.ai.chat.client.advisor.toolsearch.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
 		void callDefaultAdvisorConfiguration(ToolIndex toolIndex) {
 			var chatClient = ChatClient.builder(getChatModel())
 				.defaultAdvisors(createToolSearchToolCallingAdvisor(toolIndex))
@@ -166,7 +166,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 		}
 
 		@ParameterizedTest(name = "[{index}] {0}")
-		@MethodSource("org.springframework.ai.tool.toolsearch.advisor.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
+		@MethodSource("org.springframework.ai.chat.client.advisor.toolsearch.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
 		void callDefaultAdvisorConfigurationWithExternalMemory(ToolIndex toolIndex) {
 			var chatClient = ChatClient.builder(getChatModel())
 				.defaultAdvisors(createToolSearchToolCallingAdvisorWithExternalMemory(toolIndex),
@@ -188,7 +188,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 	class StreamTests {
 
 		@ParameterizedTest(name = "[{index}] {0}")
-		@MethodSource("org.springframework.ai.tool.toolsearch.advisor.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
+		@MethodSource("org.springframework.ai.chat.client.advisor.toolsearch.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
 		void streamMultipleToolInvocations(ToolIndex toolIndex) {
 			Flux<String> response = ChatClient.create(getChatModel())
 				.prompt()
@@ -204,7 +204,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 		}
 
 		@ParameterizedTest(name = "[{index}] {0}")
-		@MethodSource("org.springframework.ai.tool.toolsearch.advisor.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
+		@MethodSource("org.springframework.ai.chat.client.advisor.toolsearch.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
 		void streamMultipleToolInvocationsWithExternalMemory(ToolIndex toolIndex) {
 			Flux<String> response = ChatClient.create(getChatModel())
 				.prompt()
@@ -222,7 +222,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 		}
 
 		@ParameterizedTest(name = "[{index}] {0}")
-		@MethodSource("org.springframework.ai.tool.toolsearch.advisor.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
+		@MethodSource("org.springframework.ai.chat.client.advisor.toolsearch.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
 		void streamDefaultAdvisorConfiguration(ToolIndex toolIndex) {
 			var chatClient = ChatClient.builder(getChatModel())
 				.defaultAdvisors(createToolSearchToolCallingAdvisor(toolIndex))
@@ -240,7 +240,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 		}
 
 		@ParameterizedTest(name = "[{index}] {0}")
-		@MethodSource("org.springframework.ai.tool.toolsearch.advisor.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
+		@MethodSource("org.springframework.ai.chat.client.advisor.toolsearch.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
 		void streamDefaultAdvisorConfigurationWithExternalMemory(ToolIndex toolIndex) {
 			var chatClient = ChatClient.builder(getChatModel())
 				.defaultAdvisors(createToolSearchToolCallingAdvisorWithExternalMemory(toolIndex),

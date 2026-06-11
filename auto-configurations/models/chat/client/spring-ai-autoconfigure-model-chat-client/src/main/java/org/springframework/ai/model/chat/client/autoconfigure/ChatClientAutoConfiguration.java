@@ -102,8 +102,7 @@ public class ChatClientAutoConfiguration {
 			ObjectProvider<ToolExecutionEligibilityChecker> toolExecutionEligibilityChecker) {
 		var builder = ToolCallingAdvisor.builder()
 			.toolCallingManager(toolCallingManager)
-			.advisorOrder(properties.getToolCalling().getAdvisorOrder())
-			.streamToolCallResponses(properties.getToolCalling().isStreamToolCallResponses());
+			.advisorOrder(properties.getToolCalling().getAdvisorOrder());
 
 		toolExecutionEligibilityChecker.ifAvailable(builder::toolExecutionEligibilityChecker);
 

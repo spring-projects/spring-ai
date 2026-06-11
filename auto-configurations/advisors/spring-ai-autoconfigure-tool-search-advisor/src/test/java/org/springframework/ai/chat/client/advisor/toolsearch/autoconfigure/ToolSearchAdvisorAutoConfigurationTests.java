@@ -186,17 +186,6 @@ class ToolSearchAdvisorAutoConfigurationTests {
 	// --- Remaining builder properties ---
 
 	@Test
-	void streamToolCallResponsesPropertyIsApplied() {
-		this.contextRunner
-			.withPropertyValues("spring.ai.chat.client.tool-search-advisor.enabled=true",
-					"spring.ai.chat.client.tool-search-advisor.stream-tool-call-responses=true")
-			.run(context -> {
-				var builder = context.getBean(ToolCallingAdvisor.Builder.class);
-				assertThat(ReflectionTestUtils.getField(builder, "streamToolCallResponses")).isEqualTo(true);
-			});
-	}
-
-	@Test
 	void referenceToolNameAccumulationPropertyIsApplied() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.chat.client.tool-search-advisor.enabled=true",

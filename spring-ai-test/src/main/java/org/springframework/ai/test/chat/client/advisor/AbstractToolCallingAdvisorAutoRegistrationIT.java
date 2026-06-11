@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Nested;
@@ -30,6 +31,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientAttributes;
+import org.springframework.ai.chat.client.ChatClientMessageAggregator;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -38,7 +40,13 @@ import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
@@ -84,6 +92,12 @@ public abstract class AbstractToolCallingAdvisorAutoRegistrationIT {
 
 	private static String collect(Flux<String> flux) {
 		return Objects.requireNonNull(flux.collectList().block()).stream().collect(Collectors.joining());
+	}
+
+	private static ChatClientResponse aggregateStream(Flux<ChatClientResponse> flux) {
+		AtomicReference<ChatClientResponse> ref = new AtomicReference<>();
+		new ChatClientMessageAggregator().aggregateChatClientResponse(flux, ref::set).blockLast();
+		return Objects.requireNonNull(ref.get());
 	}
 
 	// -------------------------------------------------------------------------
@@ -354,6 +368,135 @@ public abstract class AbstractToolCallingAdvisorAutoRegistrationIT {
 				.content();
 
 			assertThat(counter.getCallCount()).isEqualTo(1);
+		}
+
+	}
+
+	// -------------------------------------------------------------------------
+	// User-controlled tool execution (ToolCallingAdvisor disabled)
+	// -------------------------------------------------------------------------
+
+	@Nested
+	class UserControlledToolExecution {
+
+		@Test
+		void callPathManualLoopProducesCorrectAnswer() {
+			ToolCallback weatherTool = createWeatherToolCallback();
+			ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+			ToolCallingChatOptions toolOptions = ToolCallingChatOptions.builder()
+				.toolCallbacks(List.of(weatherTool))
+				.build();
+
+			ChatClient chatClient = ChatClient.create(getChatModel());
+			Prompt currentPrompt = new Prompt(
+					List.of(new UserMessage("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")),
+					toolOptions);
+
+			ChatResponse response = chatClient.prompt()
+				.messages(currentPrompt.getInstructions())
+				.tools(weatherTool)
+				.advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+				.call()
+				.chatResponse();
+
+			while (response != null && response.hasToolCalls()) {
+				ToolExecutionResult result = toolCallingManager.executeToolCalls(currentPrompt, response);
+				currentPrompt = new Prompt(result.conversationHistory(), toolOptions);
+				response = chatClient.prompt()
+					.messages(currentPrompt.getInstructions())
+					.tools(weatherTool)
+					.advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+					.call()
+					.chatResponse();
+			}
+
+			var finalResponse = Objects.requireNonNull(response, "Expected a non-null final ChatResponse");
+			var finalGeneration = Objects.requireNonNull(finalResponse.getResult());
+			assertThat(finalGeneration.getOutput().getText()).contains("30", "10", "15");
+		}
+
+		@Test
+		void callPathManualLoopTraversesChainOncePerIteration() {
+			ToolCallback weatherTool = createWeatherToolCallback();
+			ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+			ToolCallingChatOptions toolOptions = ToolCallingChatOptions.builder()
+				.toolCallbacks(List.of(weatherTool))
+				.build();
+
+			var counter = new ChainIterationCountingAdvisor();
+			ChatClient chatClient = ChatClient.create(getChatModel());
+			Prompt currentPrompt = new Prompt(
+					List.of(new UserMessage("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")),
+					toolOptions);
+
+			int chatClientCallCount = 0;
+			ChatResponse response = chatClient.prompt()
+				.messages(currentPrompt.getInstructions())
+				.tools(weatherTool)
+				.advisors(counter)
+				.advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+				.call()
+				.chatResponse();
+			chatClientCallCount++;
+
+			while (response != null && response.hasToolCalls()) {
+				ToolExecutionResult result = toolCallingManager.executeToolCalls(currentPrompt, response);
+				currentPrompt = new Prompt(result.conversationHistory(), toolOptions);
+				response = chatClient.prompt()
+					.messages(currentPrompt.getInstructions())
+					.tools(weatherTool)
+					.advisors(counter)
+					.advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+					.call()
+					.chatResponse();
+				chatClientCallCount++;
+			}
+
+			// Chain is traversed exactly once per ChatClient call — never looped by
+			// ToolCallingAdvisor
+			assertThat(counter.getCallCount()).isEqualTo(chatClientCallCount);
+			var finalResponse = Objects.requireNonNull(response, "Expected a non-null final ChatResponse");
+			var finalGeneration = Objects.requireNonNull(finalResponse.getResult());
+			assertThat(finalGeneration.getOutput().getText()).contains("30", "10", "15");
+		}
+
+		@Test
+		void streamPathManualLoopProducesCorrectAnswer() {
+			ToolCallback weatherTool = createWeatherToolCallback();
+			ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+			ToolCallingChatOptions toolOptions = ToolCallingChatOptions.builder()
+				.toolCallbacks(List.of(weatherTool))
+				.build();
+
+			ChatClient chatClient = ChatClient.create(getChatModel());
+			Prompt currentPrompt = new Prompt(
+					List.of(new UserMessage("What's the weather in San Francisco, Tokyo, and Paris in Celsius?")),
+					toolOptions);
+
+			// In streaming mode the caller must aggregate chunks before inspecting for
+			// tool calls — the same step ToolCallingAdvisor performs internally.
+			ChatClientResponse aggregated = aggregateStream(chatClient.prompt()
+				.messages(currentPrompt.getInstructions())
+				.tools(weatherTool)
+				.advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+				.stream()
+				.chatClientResponse());
+
+			while (aggregated.chatResponse() != null && aggregated.chatResponse().hasToolCalls()) {
+				ToolExecutionResult result = toolCallingManager.executeToolCalls(currentPrompt,
+						aggregated.chatResponse());
+				currentPrompt = new Prompt(result.conversationHistory(), toolOptions);
+				aggregated = aggregateStream(chatClient.prompt()
+					.messages(currentPrompt.getInstructions())
+					.tools(weatherTool)
+					.advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+					.stream()
+					.chatClientResponse());
+			}
+
+			var finalChatResponse = Objects.requireNonNull(aggregated.chatResponse());
+			var finalGeneration = Objects.requireNonNull(finalChatResponse.getResult());
+			assertThat(finalGeneration.getOutput().getText()).contains("30", "10", "15");
 		}
 
 	}

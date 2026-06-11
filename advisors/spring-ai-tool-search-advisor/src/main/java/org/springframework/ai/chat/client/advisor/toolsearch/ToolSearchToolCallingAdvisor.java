@@ -119,13 +119,11 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 	private final ToolIndexEvictionStrategy evictionStrategy;
 
 	protected ToolSearchToolCallingAdvisor(ToolCallingManager toolCallingManager, int advisorOrder,
-			boolean streamToolCallResponses, ToolExecutionEligibilityChecker toolExecutionEligibilityChecker,
-			ToolIndex toolIndex, String systemMessageSuffix, boolean referenceToolNameAccumulation,
-			@Nullable Integer maxResults, boolean conversationHistoryEnabled, String sessionIdKeyName,
-			ToolIndexEvictionStrategy evictionStrategy) {
+			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, ToolIndex toolIndex,
+			String systemMessageSuffix, boolean referenceToolNameAccumulation, @Nullable Integer maxResults,
+			boolean conversationHistoryEnabled, String sessionIdKeyName, ToolIndexEvictionStrategy evictionStrategy) {
 
-		super(toolCallingManager, toolExecutionEligibilityChecker, advisorOrder, conversationHistoryEnabled,
-				streamToolCallResponses);
+		super(toolCallingManager, toolExecutionEligibilityChecker, advisorOrder, conversationHistoryEnabled);
 		this.toolIndex = toolIndex;
 		this.systemMessageSuffix = systemMessageSuffix;
 		this.referenceToolNameAccumulation = referenceToolNameAccumulation;
@@ -481,7 +479,7 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 
 			Assert.notNull(this.toolIndex, "toolIndex is required");
 			return new ToolSearchToolCallingAdvisor(getToolCallingManager(), getAdvisorOrder(),
-					isStreamToolCallResponses(), getToolExecutionEligibilityChecker(), this.toolIndex,
+					getToolExecutionEligibilityChecker(), this.toolIndex,
 					Objects.requireNonNull(this.systemMessageSuffix), this.referenceToolNameAccumulation,
 					this.maxResults, this.isConversationHistoryEnabled(), this.sessionIdKeyName, this.evictionStrategy);
 		}
