@@ -122,6 +122,30 @@ public final class MethodToolCallback implements ToolCallback {
 		return this.toolCallResultConverter.convert(result, returnType);
 	}
 
+	@Override
+	public @Nullable Object callDirect(String toolInput, @Nullable ToolContext toolContext) {
+		Assert.hasText(toolInput, "toolInput cannot be null or empty");
+
+		if (logger.isDebugEnabled()) {
+			logger.debug("Starting execution of tool: " + this.toolDefinition.name());
+		}
+
+		this.validateToolContextSupport(toolContext);
+
+		Map<String, Object> toolArguments = this.extractToolArguments(toolInput);
+		Assert.state(toolArguments != null, "toolArguments must not be null");
+
+		Object[] methodArguments = this.buildMethodArguments(toolArguments, toolContext);
+
+		Object result = this.callMethod(methodArguments);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug("Successful execution of tool: " + this.toolDefinition.name());
+		}
+
+		return result;
+	}
+
 	private void validateToolContextSupport(@Nullable ToolContext toolContext) {
 		var isNonEmptyToolContextProvided = toolContext != null && !CollectionUtils.isEmpty(toolContext.getContext());
 		var isToolContextAcceptedByMethod = Stream.of(this.toolMethod.getParameterTypes())

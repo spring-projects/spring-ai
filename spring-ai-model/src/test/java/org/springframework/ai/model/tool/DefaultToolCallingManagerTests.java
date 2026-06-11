@@ -21,9 +21,11 @@ import java.util.List;
 import java.util.Map;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -188,6 +190,81 @@ class DefaultToolCallingManagerTests {
 
 		assertThat(toolExecutionResult.conversationHistory()).contains(expectedToolResponse);
 		assertThat(toolExecutionResult.returnDirect()).isTrue();
+	}
+
+	@Test
+	void whenSingleToolCallWithReturnDirectRawObjectThenExecute() {
+		class CustomTestObject {
+
+			final String message;
+
+			CustomTestObject(String message) {
+				this.message = message;
+			}
+
+		}
+
+		CustomTestObject expectedRawObj = new CustomTestObject("Hello raw object");
+
+		ToolCallback toolCallback = new ToolCallback() {
+			private final ToolDefinition toolDefinition = DefaultToolDefinition.builder()
+				.name("toolA")
+				.inputSchema("{}")
+				.build();
+
+			private final ToolMetadata toolMetadata = ToolMetadata.builder().returnDirect(true).build();
+
+			@Override
+			public ToolDefinition getToolDefinition() {
+				return this.toolDefinition;
+			}
+
+			@Override
+			public ToolMetadata getToolMetadata() {
+				return this.toolMetadata;
+			}
+
+			@Override
+			public String call(String toolInput) {
+				return "serialized-string";
+			}
+
+			@Override
+			public Object callDirect(String toolInput, @Nullable ToolContext toolContext) {
+				return expectedRawObj;
+			}
+		};
+
+		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(List.of(toolCallback));
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
+			.toolCallbackResolver(toolCallbackResolver)
+			.build();
+
+		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
+		ChatResponse chatResponse = ChatResponse.builder()
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.content("")
+				.properties(Map.of())
+				.toolCalls(List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}")))
+				.build())))
+			.build();
+
+		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
+
+		assertThat(toolExecutionResult.returnDirect()).isTrue();
+		List<Message> history = toolExecutionResult.conversationHistory();
+		assertThat(history).isNotEmpty();
+		Message lastMsg = history.get(history.size() - 1);
+		assertThat(lastMsg).isInstanceOf(ToolResponseMessage.class);
+		ToolResponseMessage toolResponseMessage = (ToolResponseMessage) lastMsg;
+		assertThat(toolResponseMessage.getResponses()).hasSize(1);
+		ToolResponse toolResponse = toolResponseMessage.getResponses().get(0);
+		assertThat(toolResponse.responseDataObj()).isSameAs(expectedRawObj);
+
+		List<Generation> gens = ToolExecutionResult.buildGenerations(toolExecutionResult);
+		assertThat(gens).hasSize(1);
+		AssistantMessage assistantMessage = gens.get(0).getOutput();
+		assertThat(assistantMessage.getMetadata().get("tool-output")).isSameAs(expectedRawObj);
 	}
 
 	@Test

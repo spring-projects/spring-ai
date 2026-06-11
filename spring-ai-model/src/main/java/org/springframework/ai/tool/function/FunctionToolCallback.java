@@ -115,6 +115,24 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 		return this.toolCallResultConverter.convert(response, null);
 	}
 
+	@Override
+	public @Nullable Object callDirect(String toolInput, @Nullable ToolContext toolContext) {
+		Assert.hasText(toolInput, "toolInput cannot be null or empty");
+
+		if (logger.isDebugEnabled()) {
+			logger.debug("Starting execution of tool: " + this.toolDefinition.name());
+		}
+
+		I request = jsonHelper.fromJson(toolInput, this.toolInputType);
+		O response = callMethod(request, toolContext);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug("Successful execution of tool: " + this.toolDefinition.name());
+		}
+
+		return response;
+	}
+
 	private O callMethod(@Nullable I request, @Nullable ToolContext toolContext) {
 		try {
 			return this.toolFunction.apply(request, toolContext);

@@ -70,7 +70,14 @@ public interface ToolExecutionResult {
 		if (conversationHistory
 			.get(conversationHistory.size() - 1) instanceof ToolResponseMessage toolResponseMessage) {
 			toolResponseMessage.getResponses().forEach(response -> {
-				AssistantMessage assistantMessage = new AssistantMessage(response.responseData());
+				java.util.Map<String, Object> properties = new java.util.HashMap<>();
+				if (response.responseDataObj() != null) {
+					properties.put("tool-output", response.responseDataObj());
+				}
+				AssistantMessage assistantMessage = AssistantMessage.builder()
+					.content(response.responseData())
+					.properties(properties)
+					.build();
 				Generation generation = new Generation(assistantMessage,
 						ChatGenerationMetadata.builder()
 							.metadata(METADATA_TOOL_ID, response.id())
