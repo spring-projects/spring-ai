@@ -60,6 +60,27 @@ class ResourceAdapterTests {
 		assertThat(resource.uri()).isEqualTo("https://example.com/data");
 	}
 
+	@Test
+	void asResource_uiUriWithMimeTypeContainingWhitespace_succeeds() {
+		McpResource annotation = mockResource("ui://my-server/app.html", "text/html; profile=mcp-app");
+		McpSchema.Resource resource = ResourceAdapter.asResource(annotation);
+		assertThat(resource.mimeType()).isEqualTo("text/html; profile=mcp-app");
+	}
+
+	@Test
+	void asResource_uiUriWithMixedCaseMimeType_succeeds() {
+		McpResource annotation = mockResource("ui://my-server/app.html", "Text/HTML;profile=mcp-app");
+		McpSchema.Resource resource = ResourceAdapter.asResource(annotation);
+		assertThat(resource.mimeType()).isEqualTo("Text/HTML;profile=mcp-app");
+	}
+
+	@Test
+	void asResource_upperCaseUiSchemeWithWrongMimeType_throwsIllegalArgumentException() {
+		McpResource annotation = mockResource("UI://my-server/app.html", "text/plain");
+		assertThatIllegalArgumentException().isThrownBy(() -> ResourceAdapter.asResource(annotation))
+			.withMessageContaining("ui:// URI must use MIME type 'text/html;profile=mcp-app'");
+	}
+
 	// ---------------------------------------------------------------------------
 	// asResource — invalid cases
 	// ---------------------------------------------------------------------------

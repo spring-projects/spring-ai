@@ -142,6 +142,12 @@ final class MetaUtilsTest {
 	}
 
 	@Test
+	void testBuildUiMetaWithBlankResourceUri() {
+		Map<String, Object> uiMeta = MetaUtils.buildUiMeta("   ", new Visibility[0], null);
+		assertThat(uiMeta).isNull();
+	}
+
+	@Test
 	void testMergeMetaProviderWinsOnConflict() {
 		Map<String, Object> providerMeta = Map.of("ui",
 				Map.of("resourceUri", "ui://provider/override.html", "custom", "value"), "other", "data");
@@ -158,6 +164,20 @@ final class MetaUtilsTest {
 		assertThat(ui.get("resourceUri")).isEqualTo("ui://provider/override.html");
 		assertThat(ui.get("custom")).isEqualTo("value");
 		assertThat(ui.get("visibility")).isEqualTo(List.of("app"));
+	}
+
+	@Test
+	void testMergeMetaKeepsFlatAliasConsistentWithNestedUi() {
+		Map<String, Object> providerMeta = Map.of("ui", Map.of("resourceUri", "ui://provider/override.html"));
+		Map<String, Object> annotationMeta = MetaUtils.buildUiMeta("ui://annotation/view.html", new Visibility[0],
+				null);
+
+		Map<String, Object> merged = MetaUtils.mergeMeta(providerMeta, annotationMeta);
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> ui = (Map<String, Object>) merged.get("ui");
+		assertThat(ui.get("resourceUri")).isEqualTo("ui://provider/override.html");
+		assertThat(merged.get("ui/resourceUri")).isEqualTo("ui://provider/override.html");
 	}
 
 	@Test

@@ -34,6 +34,7 @@ import net.javacrumbs.jsonunit.core.Option;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.mcp.annotation.McpAppResult;
 import org.springframework.ai.mcp.annotation.McpCsp;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.Visibility;
@@ -985,7 +986,8 @@ public class SyncMcpToolProviderTests {
 		class ResourceUriCspTool {
 
 			@McpTool(name = "csp-tool", description = "Tool with resourceUri and CSP",
-					resourceUri = "ui://test-server/app.html", csp = @McpCsp(connectDomains = "api.example.com"))
+					resourceUri = "ui://test-server/app.html",
+					csp = @McpCsp(connectDomains = "https://api.example.com"))
 			public String cspTool(String input) {
 				return "result: " + input;
 			}
@@ -1011,7 +1013,7 @@ public class SyncMcpToolProviderTests {
 		assertThat(csp.get("connectDomains")).isInstanceOf(List.class);
 		@SuppressWarnings("unchecked")
 		List<String> connectDomains = (List<String>) csp.get("connectDomains");
-		assertThat(connectDomains).containsExactly("api.example.com");
+		assertThat(connectDomains).containsExactly("https://api.example.com");
 	}
 
 	@Test
@@ -1038,13 +1040,10 @@ public class SyncMcpToolProviderTests {
 
 		@SuppressWarnings("unchecked")
 		Map<String, Object> ui = (Map<String, Object>) tool.meta().get("ui");
-		// Annotation-derived fields should be present
-		assertThat(ui.get("resourceUri")).isEqualTo("ui://test/view.html"); // provider
-																			// wins
-		assertThat(ui).containsKey("visibility");
-		// Provider's extra key should also be present (deep-merged)
-		assertThat(ui.get("visibility")).isInstanceOf(List.class);
-		// Provider wins on conflict — provider has ["model", "app"], annotation has
+		// Provider wins on conflict: UiMetaProvider overrides the annotation's
+		// resourceUri ("ui://test-server/app.html" -> "ui://test/view.html")
+		assertThat(ui.get("resourceUri")).isEqualTo("ui://test/view.html");
+		// Provider wins on conflict: provider sets ["model", "app"], annotation set
 		// ["app"]
 		@SuppressWarnings("unchecked")
 		List<String> mergedVisibility = (List<String>) ui.get("visibility");
@@ -1069,6 +1068,69 @@ public class SyncMcpToolProviderTests {
 
 		assertThat(toolSpecs).hasSize(1);
 		assertThat(toolSpecs.get(0).tool().meta()).isNull();
+	}
+
+	@Test
+	void testToolReturningMcpAppResultSplitsTextAndStructuredContent() {
+		class AppResultTool {
+
+			@McpTool(name = "app-result-tool", description = "Tool returning McpAppResult",
+					resourceUri = "ui://test-server/app.html", generateOutputSchema = true)
+			public McpAppResult appResultTool(String input) {
+				return McpAppResult.of("text for the LLM", Map.of("key", "value"));
+			}
+
+		}
+
+		AppResultTool toolObject = new AppResultTool();
+		SyncMcpToolProvider provider = new SyncMcpToolProvider(List.of(toolObject));
+
+		List<SyncToolSpecification> toolSpecs = provider.getToolSpecifications();
+
+		assertThat(toolSpecs).hasSize(1);
+		McpSchema.Tool tool = toolSpecs.get(0).tool();
+		// McpAppResult is a wire-format container: no output schema must be generated
+		assertThat(tool.outputSchema()).isNull();
+
+		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+		CallToolRequest request = new CallToolRequest("app-result-tool", Map.of("input", "hello"));
+		CallToolResult result = toolSpecs.get(0).callHandler().apply(exchange, request);
+
+		assertThat(result.content()).hasSize(1);
+		assertThat(((TextContent) result.content().get(0)).text()).isEqualTo("text for the LLM");
+		assertThat(result.structuredContent()).isEqualTo(Map.of("key", "value"));
+	}
+
+	@Test
+	void testToolReturningMcpAppResultWithExplicitOutputSchemaGenerationDisabled() {
+		class AppResultSchemaDisabledTool {
+
+			@McpTool(name = "app-result-schema-tool", description = "McpAppResult with generateOutputSchema true",
+					resourceUri = "ui://test-server/app.html", generateOutputSchema = true)
+			public McpAppResult appResultTool(String input) {
+				return McpAppResult.of("text for the LLM", Map.of("key", "value"));
+			}
+
+		}
+
+		AppResultSchemaDisabledTool toolObject = new AppResultSchemaDisabledTool();
+		SyncMcpToolProvider provider = new SyncMcpToolProvider(List.of(toolObject));
+
+		List<SyncToolSpecification> toolSpecs = provider.getToolSpecifications();
+
+		assertThat(toolSpecs).hasSize(1);
+		McpSchema.Tool tool = toolSpecs.get(0).tool();
+		// Even with generateOutputSchema=true, McpAppResult must be excluded from schema
+		// generation — it's a wire-format container, not a structured data output.
+		assertThat(tool.outputSchema()).isNull();
+
+		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+		CallToolRequest request = new CallToolRequest("app-result-schema-tool", Map.of("input", "hello"));
+		CallToolResult result = toolSpecs.get(0).callHandler().apply(exchange, request);
+
+		assertThat(result.content()).hasSize(1);
+		assertThat(((TextContent) result.content().get(0)).text()).isEqualTo("text for the LLM");
+		assertThat(result.structuredContent()).isEqualTo(Map.of("key", "value"));
 	}
 
 	public static class UiMetaProvider implements MetaProvider {

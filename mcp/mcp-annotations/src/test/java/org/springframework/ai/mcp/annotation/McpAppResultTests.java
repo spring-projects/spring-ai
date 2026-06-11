@@ -21,6 +21,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 class McpAppResultTests {
 
@@ -41,10 +42,23 @@ class McpAppResultTests {
 	}
 
 	@Test
-	void testNullValues() {
-		var result = McpAppResult.of(null, null);
+	void testNullTextAllowed() {
+		var result = McpAppResult.of(null, Map.of("key", "value"));
 		assertThat(result.text()).isNull();
+		assertThat(result.structuredContent()).containsEntry("key", "value");
+	}
+
+	@Test
+	void testNullStructuredContentAllowed() {
+		var result = McpAppResult.of("text only", null);
+		assertThat(result.text()).isEqualTo("text only");
 		assertThat(result.structuredContent()).isNull();
+	}
+
+	@Test
+	void testBothNullThrows() {
+		assertThatIllegalArgumentException().isThrownBy(() -> McpAppResult.of(null, null))
+			.withMessageContaining("At least one of text or structuredContent");
 	}
 
 }

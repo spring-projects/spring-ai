@@ -34,7 +34,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import org.springframework.ai.mcp.annotation.McpAppResult;
 import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.Visibility;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -1019,6 +1021,67 @@ public class AsyncMcpToolProviderTests {
 		assertThat(toolSpec.tool().inputSchema()).isNotNull();
 		// Output schema should be generated for complex return types
 		assertThat(toolSpec.tool().outputSchema()).isNotNull();
+	}
+
+	@Test
+	void testToolReturningMcpAppResultSplitsTextAndStructuredContent() {
+		class AppResultTool {
+
+			@McpTool(name = "app-result-tool", description = "Tool returning McpAppResult",
+					resourceUri = "ui://test-server/app.html", generateOutputSchema = true)
+			public Mono<McpAppResult> appResultTool(String input) {
+				return Mono.just(McpAppResult.of("text for the LLM", Map.of("key", "value")));
+			}
+
+		}
+
+		AppResultTool toolObject = new AppResultTool();
+		AsyncMcpToolProvider provider = new AsyncMcpToolProvider(List.of(toolObject));
+
+		var toolSpecs = provider.getToolSpecifications();
+
+		assertThat(toolSpecs).hasSize(1);
+		// McpAppResult is a wire-format container: no output schema must be generated
+		assertThat(toolSpecs.get(0).tool().outputSchema()).isNull();
+
+		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
+		CallToolRequest request = new CallToolRequest("app-result-tool", Map.of("input", "hello"));
+
+		StepVerifier.create(toolSpecs.get(0).callHandler().apply(exchange, request)).assertNext(result -> {
+			assertThat(result.content()).hasSize(1);
+			assertThat(((TextContent) result.content().get(0)).text()).isEqualTo("text for the LLM");
+			assertThat(result.structuredContent()).isEqualTo(Map.of("key", "value"));
+		}).verifyComplete();
+	}
+
+	@Test
+	void testToolWithResourceUriAddsUiMeta() {
+		class ResourceUriTool {
+
+			@McpTool(name = "uri-tool", description = "Tool with resourceUri",
+					resourceUri = "ui://test-server/app.html", visibility = Visibility.APP)
+			public Mono<String> uriTool(String input) {
+				return Mono.just("result: " + input);
+			}
+
+		}
+
+		ResourceUriTool toolObject = new ResourceUriTool();
+		AsyncMcpToolProvider provider = new AsyncMcpToolProvider(List.of(toolObject));
+
+		var toolSpecs = provider.getToolSpecifications();
+
+		assertThat(toolSpecs).hasSize(1);
+		var tool = toolSpecs.get(0).tool();
+		assertThat(tool.meta()).isNotNull();
+		assertThat(tool.meta()).containsKey("ui");
+		assertThat(tool.meta()).containsKey("ui/resourceUri");
+		assertThat(tool.meta().get("ui/resourceUri")).isEqualTo("ui://test-server/app.html");
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> ui = (Map<String, Object>) tool.meta().get("ui");
+		assertThat(ui.get("resourceUri")).isEqualTo("ui://test-server/app.html");
+		assertThat(ui.get("visibility")).isEqualTo(List.of("app"));
 	}
 
 }

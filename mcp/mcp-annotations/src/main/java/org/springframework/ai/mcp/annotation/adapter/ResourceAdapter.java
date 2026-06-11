@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.annotation.adapter;
 
 import java.util.List;
+import java.util.Locale;
 
 import io.modelcontextprotocol.spec.McpSchema;
 
@@ -43,6 +44,35 @@ public final class ResourceAdapter {
 
 	private static final String MCP_APP_MIME_TYPE = "text/html;profile=mcp-app";
 
+	private static final String UI_URI_SCHEME = "ui://";
+
+	private static void validateMcpAppResource(String uri, String mimeType) {
+		boolean uiUri = isUiUri(uri);
+		boolean mcpAppMimeType = isMcpAppMimeType(mimeType);
+		if (uiUri && !mcpAppMimeType) {
+			throw new IllegalArgumentException(
+					"Resource with ui:// URI must use MIME type 'text/html;profile=mcp-app', but got: " + mimeType);
+		}
+		if (mcpAppMimeType && !uiUri) {
+			throw new IllegalArgumentException(
+					"Resource with MIME type 'text/html;profile=mcp-app' must use a ui:// URI, but got: " + uri);
+		}
+	}
+
+	private static boolean isUiUri(String uri) {
+		// URI schemes are case-insensitive (RFC 3986)
+		return uri != null && uri.regionMatches(true, 0, UI_URI_SCHEME, 0, UI_URI_SCHEME.length());
+	}
+
+	private static boolean isMcpAppMimeType(String mimeType) {
+		if (mimeType == null) {
+			return false;
+		}
+		// MIME types are case-insensitive and allow whitespace around parameters
+		String normalized = mimeType.replace(" ", "").replace("\t", "").toLowerCase(Locale.ROOT);
+		return MCP_APP_MIME_TYPE.equals(normalized);
+	}
+
 	private ResourceAdapter() {
 	}
 
@@ -53,16 +83,7 @@ public final class ResourceAdapter {
 		}
 		var meta = MetaUtils.getMeta(mcpResourceAnnotation.metaProvider());
 
-		String uri = mcpResourceAnnotation.uri();
-		String mimeType = mcpResourceAnnotation.mimeType();
-		if (uri.startsWith("ui://") && !MCP_APP_MIME_TYPE.equals(mimeType)) {
-			throw new IllegalArgumentException(
-					"Resource with ui:// URI must use MIME type 'text/html;profile=mcp-app', but got: " + mimeType);
-		}
-		if (MCP_APP_MIME_TYPE.equals(mimeType) && !uri.startsWith("ui://")) {
-			throw new IllegalArgumentException(
-					"Resource with MIME type 'text/html;profile=mcp-app' must use a ui:// URI, but got: " + uri);
-		}
+		validateMcpAppResource(mcpResourceAnnotation.uri(), mcpResourceAnnotation.mimeType());
 
 		var resourceBuilder = McpSchema.Resource.builder(mcpResourceAnnotation.uri(), name)
 			.title(mcpResourceAnnotation.title())
@@ -91,16 +112,7 @@ public final class ResourceAdapter {
 		}
 		var meta = MetaUtils.getMeta(mcpResource.metaProvider());
 
-		String uri = mcpResource.uri();
-		String mimeType = mcpResource.mimeType();
-		if (uri.startsWith("ui://") && !MCP_APP_MIME_TYPE.equals(mimeType)) {
-			throw new IllegalArgumentException(
-					"Resource with ui:// URI must use MIME type 'text/html;profile=mcp-app', but got: " + mimeType);
-		}
-		if (MCP_APP_MIME_TYPE.equals(mimeType) && !uri.startsWith("ui://")) {
-			throw new IllegalArgumentException(
-					"Resource with MIME type 'text/html;profile=mcp-app' must use a ui:// URI, but got: " + uri);
-		}
+		validateMcpAppResource(mcpResource.uri(), mcpResource.mimeType());
 
 		return McpSchema.ResourceTemplate.builder(mcpResource.uri(), name)
 			.description(mcpResource.description())

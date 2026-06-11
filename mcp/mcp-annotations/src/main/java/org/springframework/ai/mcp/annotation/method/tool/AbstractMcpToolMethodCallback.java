@@ -176,18 +176,13 @@ public abstract class AbstractMcpToolMethodCallback<T, RC extends McpRequestCont
 			return CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build();
 		}
 
-		if (this.returnMode == ReturnMode.STRUCTURED) {
-			String jsonOutput = jsonHelper.toJson(result);
-			Object structuredOutput = jsonHelper.fromJson(jsonOutput, Object.class);
-			return CallToolResult.builder().structuredContent(structuredOutput).build();
-		}
-
-		// Default to text output
 		if (result == null) {
 			return CallToolResult.builder().addTextContent("null").build();
 		}
 
-		// For McpAppResult, split text into content[] and structuredContent
+		// McpAppResult splits text into content[] and structuredContent. Must be
+		// handled before the STRUCTURED branch so the container record is never
+		// re-serialized whole into structuredContent.
 		if (result instanceof McpAppResult appResult) {
 			var builder = CallToolResult.builder();
 			if (appResult.text() != null) {
@@ -198,6 +193,14 @@ public abstract class AbstractMcpToolMethodCallback<T, RC extends McpRequestCont
 			}
 			return builder.build();
 		}
+
+		if (this.returnMode == ReturnMode.STRUCTURED) {
+			String jsonOutput = jsonHelper.toJson(result);
+			Object structuredOutput = jsonHelper.fromJson(jsonOutput, Object.class);
+			return CallToolResult.builder().structuredContent(structuredOutput).build();
+		}
+
+		// Default to text output
 
 		// For string results in TEXT mode, return the string directly without JSON
 		// serialization

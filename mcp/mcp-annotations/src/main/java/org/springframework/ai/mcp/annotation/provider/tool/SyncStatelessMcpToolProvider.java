@@ -31,6 +31,7 @@ import io.modelcontextprotocol.util.Utils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.ai.mcp.annotation.McpAppResult;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
 import org.springframework.ai.mcp.annotation.common.MetaUtils;
@@ -123,12 +124,13 @@ public class SyncStatelessMcpToolProvider extends AbstractMcpToolProvider {
 
 					// Generate Output Schema from the method return type.
 					// Output schema is not generated for primitive types, void,
-					// CallToolResult, simple value types (String, etc.)
+					// CallToolResult, McpAppResult, simple value types (String, etc.)
 					// or if generateOutputSchema attribute is set to false.
 					Class<?> methodReturnType = mcpToolMethod.getReturnType();
 					if (toolJavaAnnotation.generateOutputSchema() && methodReturnType != null
-							&& methodReturnType != CallToolResult.class && methodReturnType != Void.class
-							&& methodReturnType != void.class && !ClassUtils.isPrimitiveOrWrapper(methodReturnType)
+							&& methodReturnType != CallToolResult.class && methodReturnType != McpAppResult.class
+							&& methodReturnType != Void.class && methodReturnType != void.class
+							&& !ClassUtils.isPrimitiveOrWrapper(methodReturnType)
 							&& !ClassUtils.isSimpleValueType(methodReturnType)) {
 
 						toolBuilder.outputSchema(this.getJsonMapper(),

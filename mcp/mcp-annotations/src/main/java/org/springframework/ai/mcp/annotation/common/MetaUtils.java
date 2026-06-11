@@ -124,7 +124,7 @@ public final class MetaUtils {
 	 * @return the {@code _meta} map, or {@code null} if no SEP-1865 fields are set
 	 */
 	public static Map<String, Object> buildUiMeta(String resourceUri, Visibility[] visibility, McpCsp csp) {
-		if (resourceUri == null || resourceUri.isEmpty()) {
+		if (resourceUri == null || resourceUri.isBlank()) {
 			return null;
 		}
 
@@ -197,6 +197,15 @@ public final class MetaUtils {
 			}
 			else {
 				merged.put(key, providerValue);
+			}
+		}
+
+		// Re-derive the flat "ui/resourceUri" alias from the merged nested value so the
+		// two never diverge when a MetaProvider overrides ui.resourceUri.
+		if (merged.containsKey("ui/resourceUri") && merged.get("ui") instanceof Map<?, ?> uiMap) {
+			Object mergedResourceUri = uiMap.get("resourceUri");
+			if (mergedResourceUri != null) {
+				merged.put("ui/resourceUri", mergedResourceUri);
 			}
 		}
 

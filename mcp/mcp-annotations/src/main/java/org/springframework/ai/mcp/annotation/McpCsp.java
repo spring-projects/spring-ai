@@ -31,6 +31,10 @@ import java.lang.annotation.Target;
  * requests.
  *
  * <p>
+ * Domain entries must be full origins including the scheme, for example
+ * {@code "https://api.example.com"}.
+ *
+ * <p>
  * On the wire, these are serialized into {@code _meta.ui.csp} as:
  *
  * <pre>
