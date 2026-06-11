@@ -123,8 +123,9 @@
 ** xref:guides/llm-as-judge.adoc[LLM-as-a-Judge Evaluation]
 ** xref:api/chat/prompt-engineering-patterns.adoc[]
 ** xref:api/effective-agents.adoc[Building Effective Agents]
-
-// * xref:contribution-guidelines.adoc[Contribution Guidelines]
+** https://catalog.workshops.aws/java-spring-ai-agents[Building agents with Spring AI by AWS]
+** https://catalog.workshops.aws/java-spring-ai-agentcore[Building agents with Spring AI and AgentCore by AWS]
+** https://github.com/microsoft/Spring-AI-for-Beginners[Spring AI for Beginners by Microsoft]
 
 * xref:upgrade-notes.adoc[]
 ** xref:api/tools-migration.adoc[Migrating FunctionCallback to ToolCallback API]
