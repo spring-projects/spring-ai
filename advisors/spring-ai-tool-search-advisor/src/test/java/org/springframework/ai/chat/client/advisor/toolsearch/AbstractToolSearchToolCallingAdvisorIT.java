@@ -49,6 +49,7 @@ import org.springframework.ai.tool.toolsearch.index.regex.RegexToolIndex;
 import org.springframework.ai.tool.toolsearch.index.vectorstore.VectorToolIndex;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SimpleVectorStore;
+import org.springframework.core.Ordered;
 import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -120,13 +121,13 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 	class CallTests {
 
 		@ParameterizedTest(name = "[{index}] {0}")
-		@MethodSource("org.springframework.ai.tool.toolsearch.advisor.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
+		@MethodSource("org.springframework.ai.chat.client.advisor.toolsearch.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
 		void callMultipleToolInvocations(ToolIndex toolIndex) {
 			String response = ChatClient.create(getChatModel())
 				.prompt()
 				.advisors(createToolSearchToolCallingAdvisor(toolIndex))
 				.user("Use the weather tool to get the current temperature in San Francisco, Tokyo, and Paris. Report the exact readings in Celsius.")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(createWeatherToolCallback())
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "chat_memory_conversation_id"))
 				.call()
 				.content();
@@ -134,15 +135,16 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 		}
 
 		@ParameterizedTest(name = "[{index}] {0}")
-		@MethodSource("org.springframework.ai.tool.toolsearch.advisor.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
+		@MethodSource("org.springframework.ai.chat.client.advisor.toolsearch.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
 		void callMultipleToolInvocationsWithExternalMemory(ToolIndex toolIndex) {
 			String response = ChatClient.create(getChatModel())
 				.prompt()
 				.advisors(createToolSearchToolCallingAdvisorWithExternalMemory(toolIndex),
 						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(500).build())
+							.order(Ordered.HIGHEST_PRECEDENCE + 1000)
 							.build())
 				.user("Use the weather tool to get the current temperature in San Francisco, Tokyo, and Paris. Report the exact readings in Celsius.")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(createWeatherToolCallback())
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "chat_memory_conversation_id"))
 				.call()
 				.content();
@@ -150,7 +152,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 		}
 
 		@ParameterizedTest(name = "[{index}] {0}")
-		@MethodSource("org.springframework.ai.tool.toolsearch.advisor.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
+		@MethodSource("org.springframework.ai.chat.client.advisor.toolsearch.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
 		void callDefaultAdvisorConfiguration(ToolIndex toolIndex) {
 			var chatClient = ChatClient.builder(getChatModel())
 				.defaultAdvisors(createToolSearchToolCallingAdvisor(toolIndex))
@@ -158,7 +160,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 
 			String response = chatClient.prompt()
 				.user("Use the weather tool to get the current temperature in San Francisco, Tokyo, and Paris. Report the exact readings in Celsius.")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(createWeatherToolCallback())
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "chat_memory_conversation_id"))
 				.call()
 				.content();
@@ -166,16 +168,18 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 		}
 
 		@ParameterizedTest(name = "[{index}] {0}")
-		@MethodSource("org.springframework.ai.tool.toolsearch.advisor.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
+		@MethodSource("org.springframework.ai.chat.client.advisor.toolsearch.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
 		void callDefaultAdvisorConfigurationWithExternalMemory(ToolIndex toolIndex) {
 			var chatClient = ChatClient.builder(getChatModel())
 				.defaultAdvisors(createToolSearchToolCallingAdvisorWithExternalMemory(toolIndex),
-						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().build()).build())
+						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().build())
+							.order(Ordered.HIGHEST_PRECEDENCE + 1000)
+							.build())
 				.build();
 
 			String response = chatClient.prompt()
 				.user("Use the weather tool to get the current temperature in San Francisco, Tokyo, and Paris. Report the exact readings in Celsius.")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(createWeatherToolCallback())
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "chat_memory_conversation_id"))
 				.call()
 				.content();
@@ -188,13 +192,13 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 	class StreamTests {
 
 		@ParameterizedTest(name = "[{index}] {0}")
-		@MethodSource("org.springframework.ai.tool.toolsearch.advisor.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
+		@MethodSource("org.springframework.ai.chat.client.advisor.toolsearch.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
 		void streamMultipleToolInvocations(ToolIndex toolIndex) {
 			Flux<String> response = ChatClient.create(getChatModel())
 				.prompt()
 				.advisors(createToolSearchToolCallingAdvisor(toolIndex))
 				.user("Use the weather tool to get the current temperature in San Francisco, Tokyo, and Paris. Report the exact readings in Celsius.")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(createWeatherToolCallback())
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "chat_memory_conversation_id"))
 				.stream()
 				.content();
@@ -204,15 +208,16 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 		}
 
 		@ParameterizedTest(name = "[{index}] {0}")
-		@MethodSource("org.springframework.ai.tool.toolsearch.advisor.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
+		@MethodSource("org.springframework.ai.chat.client.advisor.toolsearch.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
 		void streamMultipleToolInvocationsWithExternalMemory(ToolIndex toolIndex) {
 			Flux<String> response = ChatClient.create(getChatModel())
 				.prompt()
 				.advisors(createToolSearchToolCallingAdvisorWithExternalMemory(toolIndex),
 						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(500).build())
+							.order(Ordered.HIGHEST_PRECEDENCE + 1000)
 							.build())
 				.user("Use the weather tool to get the current temperature in San Francisco, Tokyo, and Paris. Report the exact readings in Celsius.")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(createWeatherToolCallback())
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "chat_memory_conversation_id"))
 				.stream()
 				.content();
@@ -222,7 +227,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 		}
 
 		@ParameterizedTest(name = "[{index}] {0}")
-		@MethodSource("org.springframework.ai.tool.toolsearch.advisor.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
+		@MethodSource("org.springframework.ai.chat.client.advisor.toolsearch.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
 		void streamDefaultAdvisorConfiguration(ToolIndex toolIndex) {
 			var chatClient = ChatClient.builder(getChatModel())
 				.defaultAdvisors(createToolSearchToolCallingAdvisor(toolIndex))
@@ -230,7 +235,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 
 			Flux<String> response = chatClient.prompt()
 				.user("Use the weather tool to get the current temperature in San Francisco, Tokyo, and Paris. Report the exact readings in Celsius.")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(createWeatherToolCallback())
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "chat_memory_conversation_id"))
 				.stream()
 				.content();
@@ -240,16 +245,18 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 		}
 
 		@ParameterizedTest(name = "[{index}] {0}")
-		@MethodSource("org.springframework.ai.tool.toolsearch.advisor.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
+		@MethodSource("org.springframework.ai.chat.client.advisor.toolsearch.AbstractToolSearchToolCallingAdvisorIT#toolIndexes")
 		void streamDefaultAdvisorConfigurationWithExternalMemory(ToolIndex toolIndex) {
 			var chatClient = ChatClient.builder(getChatModel())
 				.defaultAdvisors(createToolSearchToolCallingAdvisorWithExternalMemory(toolIndex),
-						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().build()).build())
+						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().build())
+							.order(Ordered.HIGHEST_PRECEDENCE + 1000)
+							.build())
 				.build();
 
 			Flux<String> response = chatClient.prompt()
 				.user("Use the weather tool to get the current temperature in San Francisco, Tokyo, and Paris. Report the exact readings in Celsius.")
-				.toolCallbacks(createWeatherToolCallback())
+				.tools(createWeatherToolCallback())
 				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "chat_memory_conversation_id"))
 				.stream()
 				.content();

@@ -1102,7 +1102,6 @@ The `ToolCallingAdvisor.Builder` supports the following configuration options:
 - `toolCallingManager`: The `ToolCallingManager` instance to use for executing tool calls. If not provided, a default instance is used.
 - `advisorOrder`: The order in which the advisor is applied in the chain. Must be between `BaseAdvisor.HIGHEST_PRECEDENCE` and `BaseAdvisor.LOWEST_PRECEDENCE`.
 - `conversationHistoryEnabled`: Controls whether the advisor maintains conversation history internally during tool call iterations. Default is `true`.
-- `streamToolCallResponses`: When `true`, each tool-call iteration streams its chunks in real time during a `.stream()` call. When `false` (default), only the final answer is streamed.
 - `toolExecutionEligibilityChecker`: A `Function<ChatResponse, Boolean>` that decides whether a model response should trigger the next tool-call iteration. The default checks `chatResponse.hasToolCalls()`. Override this to apply provider-specific stop-reason logic (e.g. checking a finish reason field in addition to tool-call presence).
 
 ==== Conversation History Management
@@ -1150,9 +1149,109 @@ For more details about `ToolCallingAdvisor`, see xref:api/advisors-recursive.ado
 
 === User-Controlled Tool Execution
 
-There are cases where you'd rather control the tool execution lifecycle yourself. To do so, invoke the `ChatModel` directly without adding `ToolCallingAdvisor` to the advisor chain.
+There are cases where you'd rather control the tool execution lifecycle yourself — for example, to stream intermediate progress to a UI, add custom observability, or apply conditional logic between iterations.
 
-It's your responsibility to check for tool calls in the `ChatResponse` and execute them using the `ToolCallingManager`.
+Both `ChatClient` and `ChatModel` support user-controlled tool execution.
+In either case you are responsible for detecting tool calls in the `ChatResponse` and executing them with the `ToolCallingManager`.
+
+==== With ChatClient
+
+When using `ChatClient`, disable the auto-registered `ToolCallingAdvisor` for a single call using `AdvisorParams.toolCallingAdvisorAutoRegister(false)`, then drive the tool-call loop yourself.
+
+The following example shows user-controlled tool execution with the `call()` path:
+
+[source,java]
+----
+ChatClient chatClient = ...
+ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+
+ToolCallback[] tools = ToolCallbacks.from(new WeatherTools());
+ChatOptions chatOptions = ToolCallingChatOptions.builder()
+    .toolCallbacks(tools)
+    .build();
+
+String question = "What is the weather in Amsterdam and Paris?";
+
+// ToolCallingAdvisor is disabled — no tool loop runs automatically
+ChatClientResponse response = chatClient.prompt()
+    .user(question)
+    .options(chatOptions)
+    .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+    .call()
+    .chatClientResponse();
+
+Prompt prompt = new Prompt(List.of(new UserMessage(question)), chatOptions);
+
+// Drive the tool-call loop manually
+while (response.chatResponse() != null && response.chatResponse().hasToolCalls()) {
+    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, response.chatResponse());
+    prompt = new Prompt(result.conversationHistory(), chatOptions);
+    response = chatClient.prompt()
+        .messages(result.conversationHistory())
+        .options(chatOptions)
+        .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+        .call()
+        .chatClientResponse();
+}
+
+System.out.println(response.chatResponse().getResult().getOutput().getText());
+----
+
+The same pattern works with the streaming API.
+Because tool calls span multiple stream chunks, each streaming call must be aggregated using `ChatClientMessageAggregator` before checking for tool calls.
+The `Flux` of chunks produced by each iteration can be forwarded to a subscriber (for example an SSE endpoint) while aggregating, giving you full control over what is emitted at each step:
+
+[source,java]
+----
+ChatClient chatClient = ...
+ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+
+ToolCallback[] tools = ToolCallbacks.from(new WeatherTools());
+ChatOptions chatOptions = ToolCallingChatOptions.builder()
+    .toolCallbacks(tools)
+    .build();
+
+String question = "What is the weather in Amsterdam and Paris?";
+Prompt prompt = new Prompt(List.of(new UserMessage(question)), chatOptions);
+
+AtomicReference<ChatClientResponse> ref = new AtomicReference<>();
+new ChatClientMessageAggregator().aggregateChatClientResponse(
+    chatClient.prompt()
+        .messages(prompt.getInstructions())
+        .options(chatOptions)
+        .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+        .stream()
+        .chatClientResponse(),
+    ref::set
+).blockLast();
+
+ChatClientResponse response = ref.get();
+
+while (response != null && response.chatResponse() != null && response.chatResponse().hasToolCalls()) {
+    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, response.chatResponse());
+    prompt = new Prompt(result.conversationHistory(), chatOptions);
+
+    ref.set(null);
+    new ChatClientMessageAggregator().aggregateChatClientResponse(
+        chatClient.prompt()
+            .messages(prompt.getInstructions())
+            .options(chatOptions)
+            .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+            .stream()
+            .chatClientResponse(),
+        ref::set
+    ).blockLast();
+    response = ref.get();
+}
+
+System.out.println(response.chatResponse().getResult().getOutput().getText());
+----
+
+==== With ChatModel
+
+To drive the tool-call loop with `ChatModel`, invoke it directly without a `ToolCallingAdvisor` in the chain and execute tool calls using the `ToolCallingManager`.
+
+NOTE: When choosing the user-controlled tool execution approach, we recommend using a `ToolCallingManager` to manage the tool calling operations. This way, you can benefit from the built-in support provided by Spring AI for tool execution. However, nothing prevents you from implementing your own tool execution logic.
 
 The following example demonstrates a minimal implementation of the user-controlled tool execution approach:
 
@@ -1178,8 +1277,6 @@ while (chatResponse.hasToolCalls()) {
 
 System.out.println(chatResponse.getResult().getOutput().getText());
 ----
-
-NOTE: When choosing the user-controlled tool execution approach, we recommend using a `ToolCallingManager` to manage the tool calling operations. This way, you can benefit from the built-in support provided by Spring AI for tool execution. However, nothing prevents you from implementing your own tool execution logic.
 
 The same pattern works with the streaming API.
 Because tool calls span multiple stream chunks, each streaming call must be aggregated first using `MessageAggregator` before checking for tool calls:
@@ -1762,10 +1859,6 @@ A custom `ToolIndex` bean declared by the application always takes precedence.
 | `spring.ai.chat.client.tool-search-advisor.advisor-order`
 | Position of this advisor in the advisor chain.
 | `HIGHEST_PRECEDENCE + 300`
-
-| `spring.ai.chat.client.tool-search-advisor.stream-tool-call-responses`
-| Stream intermediate tool-call responses during `stream()` invocations.
-| `false`
 
 | `spring.ai.chat.client.tool-search-advisor.eviction.lru-max-sessions`
 | Maximum active sessions retained by the LRU eviction strategy.

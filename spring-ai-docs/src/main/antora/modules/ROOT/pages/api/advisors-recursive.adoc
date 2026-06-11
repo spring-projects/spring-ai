@@ -95,27 +95,109 @@ var chatClient = ChatClient.builder(chatModel)
     .build();
 ----
 
-==== Streaming Intermediate Tool-Call Responses
+==== User-Controlled Tool Execution
 
-By default, only the final LLM answer is emitted when using `.stream()` — chunks from intermediate tool-call iterations are suppressed until the last iteration finishes.
-Set `streamToolCallResponses(true)` on the builder to stream each iteration's chunks in real time as they arrive:
+By default, `ToolCallingAdvisor` is auto-registered and manages the entire tool-calling loop internally — the caller only receives the final LLM answer.
+When you need full control over the loop (for example, to stream intermediate progress to a UI, add custom observability, or apply conditional logic between iterations), you can opt out of the auto-registered advisor and drive the loop yourself.
+
+Disable the auto-registration on a per-call basis using `AdvisorParams.toolCallingAdvisorAutoRegister(false)`:
 
 [source,java]
 ----
-var toolCallingAdvisor = ToolCallingAdvisor.builder()
-    .toolCallingManager(toolCallingManager)
-    .streamToolCallResponses(true)
+ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+ToolCallback[] tools = ToolCallbacks.from(new WeatherTools());
+ChatOptions chatOptions = ToolCallingChatOptions.builder()
+    .toolCallbacks(tools)
     .build();
+
+String question = "What is the weather in Amsterdam and Paris?";
+
+// ToolCallingAdvisor is disabled — no tool loop runs automatically
+ChatClientResponse response = chatClient.prompt()
+    .user(question)
+    .options(chatOptions)
+    .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+    .call()
+    .chatClientResponse();
+
+Prompt prompt = new Prompt(List.of(new UserMessage(question)), chatOptions);
+
+// Drive the loop manually — each iteration can be forwarded to a UI as it happens
+while (response.chatResponse() != null && response.chatResponse().hasToolCalls()) {
+    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, response.chatResponse());
+    prompt = new Prompt(result.conversationHistory(), chatOptions);
+    response = chatClient.prompt()
+        .messages(result.conversationHistory())
+        .options(chatOptions)
+        .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+        .call()
+        .chatClientResponse();
+}
 ----
 
-When using Spring Boot auto-configuration, set the equivalent property instead:
+For a complete example including the streaming path, see xref:api/tools.adoc#_with_chatclient[User-Controlled Tool Execution — With ChatClient].
 
-[source,properties]
+==== Observing the Tool-Calling Loop
+
+As an alternative to driving the loop manually, you can place a custom advisor _inside_ the `ToolCallingAdvisor` loop by giving it an order value greater than `ToolCallingAdvisor.DEFAULT_ORDER` (e.g. `HIGHEST_PRECEDENCE + 400`).
+Such an advisor is invoked on **every iteration** of the tool-calling loop, not just once at the end, which means it has access to all intermediate messages:
+
+* **In streaming mode** — it receives the model's raw chunk stream for each iteration, including tool-call request chunks, before `ToolCallingAdvisor` filters them out of the outbound stream.
+* **In the call path** — the conversation history passed in each subsequent request includes the `ToolResponseMessage`(s) from the previous iteration, so the advisor observes both tool-call requests and their responses.
+
+This pattern lets you forward intermediate chunks to a side channel (SSE, WebSocket, log) without disrupting the tool-calling loop:
+
+[source,java]
 ----
-spring.ai.chat.client.tool-calling.stream-tool-call-responses=true
+public class ToolCallObservingAdvisor implements CallAdvisor, StreamAdvisor {
+
+    private final Consumer<ChatClientResponse> observer;
+
+    public ToolCallObservingAdvisor(Consumer<ChatClientResponse> observer) {
+        this.observer = observer;
+    }
+
+    @Override
+    public ChatClientResponse aroundCall(ChatClientRequest request, CallAdvisorChain chain) {
+        // Inspect all messages on every iteration — subsequent requests include ToolResponseMessages
+        request.prompt().getInstructions().forEach(msg -> log.debug("Message: {}", msg));
+        ChatClientResponse response = chain.nextCall(request);
+        observer.accept(response);
+        return response;
+    }
+
+    @Override
+    public Flux<ChatClientResponse> aroundStream(ChatClientRequest request, StreamAdvisorChain chain) {
+        // Observe every chunk including tool-call request chunks that ToolCallingAdvisor will suppress upstream
+        return chain.nextStream(request).doOnNext(observer);
+    }
+
+    @Override
+    public int getOrder() {
+        return Ordered.HIGHEST_PRECEDENCE + 400; // inside ToolCallingAdvisor (order 300)
+    }
+}
 ----
 
-NOTE: Enabling this option increases the number of chunks the client receives but may interleave tool-call fragments with the final answer depending on how the client processes the stream.
+Register the observing advisor alongside the auto-registered `ToolCallingAdvisor`:
+
+[source,java]
+----
+var chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(new ToolCallObservingAdvisor(chunk -> forwardToSse(chunk)))
+    .build();
+
+String response = chatClient.prompt()
+    .user("What is the weather in Amsterdam and Paris?")
+    .tools(new WeatherTools())
+    .call()
+    .content();
+----
+
+Because `ToolCallObservingAdvisor` is at order `HIGHEST_PRECEDENCE + 400` it is inserted _after_ the auto-registered `ToolCallingAdvisor` (order `HIGHEST_PRECEDENCE + 300`) in the chain, so it participates in every tool-call iteration.
+`ToolCallingAdvisor` still filters tool-call chunks from what it returns to the outer chain, so the main caller receives only the final answer — the observing advisor handles the side-channel emission.
+
+This approach keeps the tool-calling loop fully managed by the framework while still giving you complete visibility into every intermediate step, and it pairs naturally with the `conversationHistoryEnabled` and memory advisor patterns described in xref:_conversation_history_management[].
 
 ==== Return Direct Functionality
 

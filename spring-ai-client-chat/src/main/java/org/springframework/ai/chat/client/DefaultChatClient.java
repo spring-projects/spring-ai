@@ -1213,9 +1213,6 @@ public class DefaultChatClient implements ChatClient {
 		 * {@link MemoryAdvisor} with a higher order (i.e. downstream in the request
 		 * direction) is already registered, since that memory advisor will handle history
 		 * for every tool-call iteration.
-		 * <p>
-		 * {@code streamToolCallResponses} must be pre-configured on the
-		 * {@code toolCallingAdvisorBuilder} passed to {@link DefaultChatClient}.
 		 */
 		private void autoRegisterToolCallingAdvisor() {
 

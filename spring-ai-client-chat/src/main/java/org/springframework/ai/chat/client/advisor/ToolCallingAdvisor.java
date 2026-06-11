@@ -90,11 +90,9 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 	private final boolean conversationHistoryEnabled;
 
-	private final boolean streamToolCallResponses;
-
 	protected ToolCallingAdvisor(ToolCallingManager toolCallingManager,
 			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, int advisorOrder,
-			boolean conversationHistoryEnabled, boolean streamToolCallResponses) {
+			boolean conversationHistoryEnabled) {
 		Assert.notNull(toolCallingManager, "toolCallingManager must not be null");
 		Assert.notNull(toolExecutionEligibilityChecker, "toolExecutionEligibilityChecker must not be null");
 		Assert.isTrue(advisorOrder > BaseAdvisor.HIGHEST_PRECEDENCE && advisorOrder < BaseAdvisor.LOWEST_PRECEDENCE,
@@ -104,7 +102,6 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
 		this.advisorOrder = advisorOrder;
 		this.conversationHistoryEnabled = conversationHistoryEnabled;
-		this.streamToolCallResponses = streamToolCallResponses;
 	}
 
 	@Override
@@ -277,8 +274,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		return CHAT_CLIENT_MESSAGE_AGGREGATOR.aggregateChatClientResponse(responseFlux, aggregatedResponseRef::set)
 			.concatWith(Flux.defer(() -> this.handleToolCallRecursion(aggregatedResponseRef.get(), finalRequest,
 					streamAdvisorChain, originalRequest, optionsCopy)))
-			.filter(ccr -> this.streamToolCallResponses
-					|| !this.toolExecutionEligibilityChecker.isToolCallResponse(ccr.chatResponse()));
+			.filter(ccr -> !this.toolExecutionEligibilityChecker.isToolCallResponse(ccr.chatResponse()));
 	}
 
 	/**
@@ -432,8 +428,6 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 		private boolean conversationHistoryEnabled = true;
 
-		private boolean streamToolCallResponses = false;
-
 		protected Builder() {
 		}
 
@@ -503,20 +497,6 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		}
 
 		/**
-		 * Sets whether intermediate tool call responses should be streamed to downstream
-		 * consumers. When enabled (default), all chunks including tool call responses are
-		 * streamed in real-time. When disabled, only the final answer chunks are
-		 * streamed, and intermediate tool call responses are filtered out.
-		 * @param streamToolCallResponses true to stream tool call responses (default),
-		 * false to filter them out
-		 * @return this Builder instance for method chaining
-		 */
-		public T streamToolCallResponses(boolean streamToolCallResponses) {
-			this.streamToolCallResponses = streamToolCallResponses;
-			return self();
-		}
-
-		/**
 		 * Returns the configured ToolCallingManager.
 		 * @return the ToolCallingManager instance
 		 */
@@ -543,8 +523,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		/**
 		 * Creates a shallow copy of this builder with all current settings. The copy can
 		 * be used as a template from which per-call overrides (e.g.
-		 * {@code conversationHistoryEnabled}, {@code streamToolCallResponses}) are
-		 * applied without mutating the original.
+		 * {@code conversationHistoryEnabled}) are applied without mutating the original.
 		 * <p>
 		 * Subclasses must override {@link #newCopy()} to return an instance of their own
 		 * type, and override this method to copy their additional fields into it.
@@ -556,7 +535,6 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 			copy.toolExecutionEligibilityChecker = this.toolExecutionEligibilityChecker;
 			copy.advisorOrder = this.advisorOrder;
 			copy.conversationHistoryEnabled = this.conversationHistoryEnabled;
-			copy.streamToolCallResponses = this.streamToolCallResponses;
 			return copy;
 		}
 
@@ -569,14 +547,6 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		 */
 		protected Builder<?> newCopy() {
 			return new Builder<>();
-		}
-
-		/**
-		 * Returns whether tool call responses should be streamed.
-		 * @return true if tool call responses should be streamed
-		 */
-		protected boolean isStreamToolCallResponses() {
-			return this.streamToolCallResponses;
 		}
 
 		/**
@@ -596,7 +566,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		 */
 		public ToolCallingAdvisor build() {
 			return new ToolCallingAdvisor(this.toolCallingManager, this.toolExecutionEligibilityChecker,
-					this.advisorOrder, this.conversationHistoryEnabled, this.streamToolCallResponses);
+					this.advisorOrder, this.conversationHistoryEnabled);
 		}
 
 	}

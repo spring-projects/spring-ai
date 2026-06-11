@@ -117,7 +117,6 @@ public class ToolSearchAdvisorAutoConfiguration implements InitializingBean {
 			.toolCallingManager(toolCallingManager)
 			.toolIndex(toolIndex)
 			.advisorOrder(properties.getAdvisorOrder())
-			.streamToolCallResponses(properties.isStreamToolCallResponses())
 			.referenceToolNameAccumulation(properties.isReferenceToolNameAccumulation())
 			.sessionIdKeyName(properties.getSessionIdKeyName())
 			.evictionStrategy(buildEvictionStrategy(properties.getEviction()));

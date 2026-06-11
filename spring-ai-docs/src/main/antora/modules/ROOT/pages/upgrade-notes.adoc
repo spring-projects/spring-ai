@@ -1,6 +1,80 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-2-0-0-GA]]
+== Upgrading to 2.0.0
+
+=== Tool Calling
+
+==== Removed: `streamToolCallResponses` from Advisor Builders and Auto-Configuration
+
+The `streamToolCallResponses` option has been removed from `ToolCallingAdvisor.Builder`, `ToolCallAdvisor.Builder`, and `ToolSearchToolCallingAdvisor.Builder`, as well as from their corresponding Spring Boot auto-configuration properties:
+
+* `spring.ai.chat.client.tool-calling.stream-tool-call-responses`
+* `spring.ai.chat.client.tool-search-advisor.stream-tool-call-responses`
+
+===== Why
+
+When `streamToolCallResponses=true`, intermediate tool-call request chunks were streamed downstream but the paired `ToolResponseMessage` (sent back to the LLM) was not.
+Any downstream memory advisor that recorded those chunks would receive a tool-call request without the corresponding tool response, producing a corrupted conversation history.
+The design flaw cannot be fixed without introducing a breaking change to `ChatClientResponse`, so the option has been removed entirely.
+
+===== Impact
+
+* Any code that calls `.streamToolCallResponses(true)` or `.streamToolCallResponses(false)` on an advisor builder will fail to compile.
+* Any `application.properties` or `application.yml` entry for the removed properties is silently ignored.
+
+===== Migration
+
+Remove all calls to `.streamToolCallResponses(...)` from your builder chains:
+
+[source,java]
+----
+// Before
+var advisor = ToolCallingAdvisor.builder()
+    .streamToolCallResponses(true)   // <-- remove this line
+    .build();
+
+// After
+var advisor = ToolCallingAdvisor.builder().build();
+----
+
+To gain visibility into each iteration of the tool-calling loop — the use case that `streamToolCallResponses=true` was intended to address — opt out of the auto-registered advisor and drive the loop manually using `AdvisorParams.toolCallingAdvisorAutoRegister(false)`:
+
+[source,java]
+----
+ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+ToolCallback[] tools = ToolCallbacks.from(new WeatherTools());
+ChatOptions chatOptions = ToolCallingChatOptions.builder()
+    .toolCallbacks(tools)
+    .build();
+
+String question = "What is the weather in Amsterdam and Paris?";
+Prompt prompt = new Prompt(List.of(new UserMessage(question)), chatOptions);
+
+ChatClientResponse response = chatClient.prompt()
+    .user(question)
+    .options(chatOptions)
+    .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+    .call()
+    .chatClientResponse();
+
+while (response.chatResponse() != null && response.chatResponse().hasToolCalls()) {
+    // inspect or forward the tool-call chunk here before executing
+    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, response.chatResponse());
+    prompt = new Prompt(result.conversationHistory(), chatOptions);
+    response = chatClient.prompt()
+        .messages(result.conversationHistory())
+        .options(chatOptions)
+        .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+        .call()
+        .chatClientResponse();
+}
+// forward or process the final answer here
+----
+
+For a complete example including the streaming path, see xref:api/tools.adoc#_user_controlled_tool_execution[User-Controlled Tool Execution — With ChatClient].
+
 [[upgrading-to-2-0-0-RC2]]
 == Upgrading to 2.0.0-RC2
 
