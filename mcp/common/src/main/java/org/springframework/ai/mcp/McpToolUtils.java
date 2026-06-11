@@ -43,6 +43,7 @@ import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.JsonHelper;
 import org.springframework.ai.util.json.schema.JsonSchemaUtils;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 
@@ -266,6 +267,14 @@ public final class McpToolUtils {
 						.isError(false)
 						.build();
 				}
+				try {
+					List<McpSchema.Content> contents = deserializeContents(callResult);
+					if (contents != null) {
+						return McpSchema.CallToolResult.builder().content(contents).isError(false).build();
+					}
+				}
+				catch (Exception ignore) {
+				}
 				return McpSchema.CallToolResult.builder()
 					.content(List.of(new McpSchema.TextContent(callResult)))
 					.isError(false)
@@ -278,6 +287,69 @@ public final class McpToolUtils {
 					.build();
 			}
 		});
+	}
+
+	private static @Nullable List<McpSchema.Content> deserializeContents(String callResult) {
+		try {
+			List<Map<String, Object>> list = jsonHelper.fromJson(callResult,
+					new ParameterizedTypeReference<List<Map<String, Object>>>() {
+					});
+			if (list != null && !list.isEmpty()) {
+				java.util.List<McpSchema.Content> contents = new java.util.ArrayList<>();
+				for (Map<String, Object> map : list) {
+					if (map != null) {
+						McpSchema.Content content = deserializeSingleContent(map);
+						if (content != null) {
+							contents.add(content);
+						}
+					}
+				}
+				if (!contents.isEmpty()) {
+					return contents;
+				}
+			}
+		}
+		catch (Exception ignore) {
+		}
+		try {
+			Map<String, Object> map = jsonHelper.fromJsonToMap(callResult);
+			if (map != null && !map.isEmpty()) {
+				McpSchema.Content content = deserializeSingleContent(map);
+				if (content != null) {
+					return List.of(content);
+				}
+			}
+		}
+		catch (Exception ignore) {
+		}
+		return null;
+	}
+
+	private static McpSchema.@Nullable Content deserializeSingleContent(Map<String, Object> map) {
+		java.util.Map<String, Object> mutableMap = new java.util.HashMap<>(map);
+		if (!mutableMap.containsKey("type")) {
+			if (mutableMap.containsKey("resource")) {
+				mutableMap.put("type", "resource");
+			}
+			else if (mutableMap.containsKey("text")) {
+				mutableMap.put("type", "text");
+			}
+			else if (mutableMap.containsKey("data") || mutableMap.containsKey("mimeType")) {
+				mutableMap.put("type", "image");
+			}
+		}
+
+		String type = (String) mutableMap.get("type");
+		if ("resource".equals(type)) {
+			return jsonHelper.convertFromMap(mutableMap, McpSchema.EmbeddedResource.class);
+		}
+		else if ("text".equals(type)) {
+			return jsonHelper.convertFromMap(mutableMap, McpSchema.TextContent.class);
+		}
+		else if ("image".equals(type)) {
+			return jsonHelper.convertFromMap(mutableMap, McpSchema.ImageContent.class);
+		}
+		return null;
 	}
 
 	/**

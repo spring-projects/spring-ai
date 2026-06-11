@@ -32,6 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.ai.util.JsonHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -41,6 +42,8 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SyncMcpToolCallbackTests {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	@Mock
 	private McpSyncClient mcpClient;
@@ -267,6 +270,84 @@ class SyncMcpToolCallbackTests {
 		assertThatThrownBy(() -> SyncMcpToolCallback.builder().mcpClient(this.mcpClient).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("MCP tool must not be null");
+	}
+
+	@Test
+	void toSyncToolSpecificationShouldNativelySupportEmbeddedResources() {
+		var annotations = new McpSchema.Annotations(List.of(McpSchema.Role.ASSISTANT), null);
+		var textResource = new McpSchema.TextResourceContents("file:///test.txt", "text/plain",
+				"Embedded Resource Content");
+		var embeddedResource = new McpSchema.EmbeddedResource(annotations, textResource);
+
+		var jsonResource = jsonHelper.toJson(embeddedResource);
+
+		org.springframework.ai.tool.ToolCallback toolCallback = new org.springframework.ai.tool.ToolCallback() {
+			@Override
+			public org.springframework.ai.tool.definition.ToolDefinition getToolDefinition() {
+				return org.springframework.ai.tool.definition.DefaultToolDefinition.builder()
+					.name("resourceTool")
+					.description("Returns resource")
+					.inputSchema("{}")
+					.build();
+			}
+
+			@Override
+			public String call(String toolInput) {
+				return jsonResource;
+			}
+		};
+
+		var spec = McpToolUtils.toSyncToolSpecification(toolCallback);
+		var result = spec.callHandler()
+			.apply(mock(io.modelcontextprotocol.server.McpSyncServerExchange.class),
+					new CallToolRequest("resourceTool", Map.of()));
+
+		assertThat(result).isNotNull();
+		assertThat(result.isError()).isFalse();
+		assertThat(result.content()).hasSize(1);
+		assertThat(result.content().get(0)).isInstanceOf(McpSchema.EmbeddedResource.class);
+		McpSchema.EmbeddedResource actualResource = (McpSchema.EmbeddedResource) result.content().get(0);
+		assertThat(actualResource.resource()).isInstanceOf(McpSchema.TextResourceContents.class);
+		assertThat(((McpSchema.TextResourceContents) actualResource.resource()).text())
+			.isEqualTo("Embedded Resource Content");
+	}
+
+	@Test
+	void toSyncToolSpecificationShouldNativelySupportContentList() {
+		var annotations = new McpSchema.Annotations(List.of(McpSchema.Role.ASSISTANT), null);
+		var textResource = new McpSchema.TextResourceContents("file:///test.txt", "text/plain",
+				"Embedded Resource Content");
+		var embeddedResource = new McpSchema.EmbeddedResource(annotations, textResource);
+		var textContent = new McpSchema.TextContent("Additional text content");
+
+		var jsonList = jsonHelper.toJson(List.of(embeddedResource, textContent));
+
+		org.springframework.ai.tool.ToolCallback toolCallback = new org.springframework.ai.tool.ToolCallback() {
+			@Override
+			public org.springframework.ai.tool.definition.ToolDefinition getToolDefinition() {
+				return org.springframework.ai.tool.definition.DefaultToolDefinition.builder()
+					.name("resourceListTool")
+					.description("Returns resource list")
+					.inputSchema("{}")
+					.build();
+			}
+
+			@Override
+			public String call(String toolInput) {
+				return jsonList;
+			}
+		};
+
+		var spec = McpToolUtils.toSyncToolSpecification(toolCallback);
+		var result = spec.callHandler()
+			.apply(mock(io.modelcontextprotocol.server.McpSyncServerExchange.class),
+					new CallToolRequest("resourceListTool", Map.of()));
+
+		assertThat(result).isNotNull();
+		assertThat(result.isError()).isFalse();
+		assertThat(result.content()).hasSize(2);
+		assertThat(result.content().get(0)).isInstanceOf(McpSchema.EmbeddedResource.class);
+		assertThat(result.content().get(1)).isInstanceOf(McpSchema.TextContent.class);
 	}
 
 }

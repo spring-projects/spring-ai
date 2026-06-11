@@ -960,4 +960,74 @@ public class SyncStatelessMcpToolProviderTests {
 		assertThat(((TextContent) result.content().get(0)).text()).isEqualTo("Only context tool executed");
 	}
 
+	@Test
+	void testGetToolSpecificationsWithEmbeddedResourceReturn() {
+		class EmbeddedResourceTool {
+
+			@McpTool(name = "resource-tool", description = "Tool returning EmbeddedResource")
+			public McpSchema.EmbeddedResource resourceTool(String uri) {
+				var annotations = new McpSchema.Annotations(List.of(McpSchema.Role.ASSISTANT), null);
+				var textResource = new McpSchema.TextResourceContents(uri, "text/plain", "Embedded Resource Content");
+				return new McpSchema.EmbeddedResource(annotations, textResource);
+			}
+
+		}
+
+		EmbeddedResourceTool toolObject = new EmbeddedResourceTool();
+		SyncStatelessMcpToolProvider provider = new SyncStatelessMcpToolProvider(List.of(toolObject));
+
+		List<SyncToolSpecification> toolSpecs = provider.getToolSpecifications();
+
+		assertThat(toolSpecs).hasSize(1);
+		SyncToolSpecification toolSpec = toolSpecs.get(0);
+
+		McpTransportContext context = mock(McpTransportContext.class);
+		CallToolRequest request = new CallToolRequest("resource-tool", Map.of("uri", "file:///test.txt"));
+		CallToolResult result = toolSpec.callHandler().apply(context, request);
+
+		assertThat(result).isNotNull();
+		assertThat(result.isError()).isFalse();
+		assertThat(result.content()).hasSize(1);
+		assertThat(result.content().get(0)).isInstanceOf(McpSchema.EmbeddedResource.class);
+		McpSchema.EmbeddedResource actualResource = (McpSchema.EmbeddedResource) result.content().get(0);
+		assertThat(((McpSchema.TextResourceContents) actualResource.resource()).text())
+			.isEqualTo("Embedded Resource Content");
+	}
+
+	@Test
+	void testGetToolSpecificationsWithContentListReturn() {
+		class ContentListTool {
+
+			@McpTool(name = "content-list-tool", description = "Tool returning List of Content")
+			public List<McpSchema.Content> contentListTool(String text) {
+				var annotations = new McpSchema.Annotations(List.of(McpSchema.Role.ASSISTANT), null);
+				var textResource = new McpSchema.TextResourceContents("file:///test.txt", "text/plain",
+						"Embedded Resource Content");
+				var embeddedResource = new McpSchema.EmbeddedResource(annotations, textResource);
+				var textContent = new McpSchema.TextContent(text);
+				return List.of(embeddedResource, textContent);
+			}
+
+		}
+
+		ContentListTool toolObject = new ContentListTool();
+		SyncStatelessMcpToolProvider provider = new SyncStatelessMcpToolProvider(List.of(toolObject));
+
+		List<SyncToolSpecification> toolSpecs = provider.getToolSpecifications();
+
+		assertThat(toolSpecs).hasSize(1);
+		SyncToolSpecification toolSpec = toolSpecs.get(0);
+
+		McpTransportContext context = mock(McpTransportContext.class);
+		CallToolRequest request = new CallToolRequest("content-list-tool", Map.of("text", "hello"));
+		CallToolResult result = toolSpec.callHandler().apply(context, request);
+
+		assertThat(result).isNotNull();
+		assertThat(result.isError()).isFalse();
+		assertThat(result.content()).hasSize(2);
+		assertThat(result.content().get(0)).isInstanceOf(McpSchema.EmbeddedResource.class);
+		assertThat(result.content().get(1)).isInstanceOf(McpSchema.TextContent.class);
+		assertThat(((McpSchema.TextContent) result.content().get(1)).text()).isEqualTo("hello");
+	}
+
 }
