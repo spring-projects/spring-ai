@@ -22,10 +22,19 @@ import java.util.Map;
  * Convenience return type for MCP App tool methods that need to provide both model-facing
  * content and widget-facing structured content.
  *
- * @param text plain-text content sent to the LLM in content[]
- * @param structuredContent map sent to the widget UI as structuredContent
+ * @param text plain-text content sent to the LLM in content[]; may be {@code null} when
+ * {@code structuredContent} is provided
+ * @param structuredContent map sent to the widget UI as structuredContent; may be
+ * {@code null} when {@code text} is provided
+ * @author Alexandros Pappas
  */
 public record McpAppResult(String text, Map<String, Object> structuredContent) {
+
+	public McpAppResult {
+		if (text == null && structuredContent == null) {
+			throw new IllegalArgumentException("At least one of text or structuredContent must be provided");
+		}
+	}
 
 	public static McpAppResult of(String text, Map<String, Object> structuredContent) {
 		return new McpAppResult(text, structuredContent);
