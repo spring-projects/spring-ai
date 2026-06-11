@@ -29,6 +29,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
@@ -101,7 +104,6 @@ import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.JacksonUtils;
-import org.springframework.ai.util.JsonHelper;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
@@ -128,9 +130,11 @@ public final class OpenAiChatModel implements ChatModel {
 
 	static final String TOOL_CALL_ADDITIONAL_PROPERTIES_METADATA_KEY = "openai.tool_calls.additional_properties";
 
-	private static final JsonHelper JSON_HELPER = new JsonHelper();
+	private static final TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<>() {
+	};
 
-	private static final com.fasterxml.jackson.databind.ObjectMapper OPENAI_SDK_OBJECT_MAPPER = new com.fasterxml.jackson.databind.ObjectMapper();
+	// Jackson 2 required due to OpenAI deserializers
+	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	private final Log logger = LogFactory.getLog(OpenAiChatModel.class);
 
@@ -412,7 +416,12 @@ public final class OpenAiChatModel implements ChatModel {
 			.ifPresent(toolCalls -> toolCalls.forEach(toolCall -> toolCall.function().ifPresent(functionToolCall -> {
 				Map<String, JsonValue> props = functionToolCall._additionalProperties();
 				if (!CollectionUtils.isEmpty(props)) {
-					result.put(functionToolCall.id(), JSON_HELPER.toJson(props));
+					try {
+						result.put(functionToolCall.id(), objectMapper.writeValueAsString(props));
+					}
+					catch (JsonProcessingException ex) {
+						throw new RuntimeException(ex);
+					}
 				}
 			})));
 		return result;
@@ -614,8 +623,14 @@ public final class OpenAiChatModel implements ChatModel {
 								String jsonProps = toolCallAdditionalProperties.get(toolCall.id());
 								if (StringUtils.hasText(jsonProps)) {
 									Map<String, JsonValue> additionalProperties = new LinkedHashMap<>();
-									JSON_HELPER.fromJsonToMap(jsonProps)
-										.forEach((k, v) -> additionalProperties.put(k, JsonValue.from(v)));
+									try {
+										objectMapper.readValue(jsonProps, MAP_TYPE_REF)
+											.forEach((k, v) -> additionalProperties.put(k, JsonValue.from(v)));
+									}
+									catch (JsonProcessingException ex) {
+										throw new IllegalStateException("Conversion from JSON to %s failed"
+											.formatted(MAP_TYPE_REF.getType().getTypeName()), ex);
+									}
 									toolCallBuilder.putAllAdditionalProperties(additionalProperties);
 								}
 								return ChatCompletionMessageToolCall.ofFunction(toolCallBuilder.build());
@@ -732,8 +747,8 @@ public final class OpenAiChatModel implements ChatModel {
 					jsonSchemaBuilder.name("json_schema");
 					jsonSchemaBuilder.strict(true);
 
-					ResponseFormatJsonSchema.JsonSchema.Schema schema = OPENAI_SDK_OBJECT_MAPPER
-						.readValue(jsonSchemaString, ResponseFormatJsonSchema.JsonSchema.Schema.class);
+					ResponseFormatJsonSchema.JsonSchema.Schema schema = objectMapper.readValue(jsonSchemaString,
+							ResponseFormatJsonSchema.JsonSchema.Schema.class);
 
 					jsonSchemaBuilder.schema(schema);
 
@@ -943,8 +958,7 @@ public final class OpenAiChatModel implements ChatModel {
 				// Parse the schema and add its properties directly
 				try {
 					@SuppressWarnings("unchecked")
-					Map<String, Object> schemaMap = OPENAI_SDK_OBJECT_MAPPER.readValue(toolDefinition.inputSchema(),
-							Map.class);
+					Map<String, Object> schemaMap = objectMapper.readValue(toolDefinition.inputSchema(), Map.class);
 
 					// Add each property from the schema to the parameters
 					schemaMap
