@@ -105,15 +105,24 @@ public class OpenAiImageApi {
 
 		/**
 		 * The latest DALL·E model released in Nov 2023.
+		 * @deprecated Use {@link #GTP_IMAGE_1_MINI} instead.
 		 */
+		@Deprecated
 		DALL_E_3("dall-e-3"),
 
 		/**
 		 * The previous DALL·E model released in Nov 2022. The 2nd iteration of DALL·E
 		 * with more realistic, accurate, and 4x greater resolution images than the
 		 * original model.
+		 * @deprecated Use {@link #GTP_IMAGE_1_MINI} instead.
 		 */
-		DALL_E_2("dall-e-2");
+		@Deprecated
+		DALL_E_2("dall-e-2"),
+
+		/**
+		 * The latest GPT Image model released.
+		 */
+		GTP_IMAGE_1_MINI("gpt-image-1-mini");
 
 		private final String value;
 

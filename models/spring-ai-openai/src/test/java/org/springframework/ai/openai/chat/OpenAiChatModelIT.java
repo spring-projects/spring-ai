@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.assertj.core.data.Percentage;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -530,7 +531,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4o-audio-preview" })
+	@ValueSource(strings = { "gpt-audio-1.5" })
 	void multiModalityOutputAudio(String modelName) throws IOException {
 		var userMessage = new UserMessage("Tell me joke about Spring Framework");
 
@@ -550,7 +551,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4o-audio-preview" })
+	@ValueSource(strings = { "gpt-audio-1.5" })
 	void streamingMultiModalityOutputAudio(String modelName) {
 		var userMessage = new UserMessage("Tell me joke about Spring Framework");
 
@@ -577,7 +578,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4o-audio-preview" })
+	@ValueSource(strings = { "gpt-audio-1.5" })
 	void multiModalityInputAudio(String modelName) {
 		var audioResource = new ClassPathResource("speech/speech1.mp3");
 		var userMessage = UserMessage.builder()
@@ -606,7 +607,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4o-audio-preview" })
+	@ValueSource(strings = { "gpt-audio-1.5" })
 	void streamingMultiModalityInputAudio(String modelName) {
 		var audioResource = new ClassPathResource("speech/speech1.mp3");
 		var userMessage = UserMessage.builder()
@@ -751,6 +752,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 	}
 
 	@Test
+	@Disabled("OpenAI gpt-4o-search-preview model doesn't seem to return web search annotations in streaming mode.")
 	void streamWebSearchAnnotationsTest() {
 		UserMessage userMessage = new UserMessage("What is the weather in San Francisco?");
 

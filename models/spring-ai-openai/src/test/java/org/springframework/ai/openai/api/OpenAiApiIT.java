@@ -110,14 +110,14 @@ public class OpenAiApiIT {
 							ChatCompletionMessage.MediaContent.InputAudio.Format.MP3)));
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage(content, Role.USER);
 		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(List.of(chatCompletionMessage),
-				OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW.getValue(), 0.0);
+				OpenAiApi.ChatModel.GPT_AUDIO_1_5.getValue(), 0.0);
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(chatCompletionRequest);
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
 
 		assertThat(response.getBody().usage().promptTokensDetails().audioTokens()).isGreaterThan(0);
-		assertThat(response.getBody().usage().completionTokenDetails().audioTokens()).isEqualTo(0);
+		assertThat(response.getBody().usage().completionTokenDetails().audioTokens()).isZero();
 
 		assertThat(response.getBody().choices().get(0).message().content()).containsIgnoringCase("hobbits");
 	}
@@ -129,13 +129,13 @@ public class OpenAiApiIT {
 				ChatCompletionRequest.AudioParameters.Voice.NOVA,
 				ChatCompletionRequest.AudioParameters.AudioResponseFormat.MP3);
 		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(List.of(chatCompletionMessage),
-				OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW.getValue(), audioParameters, false);
+				OpenAiApi.ChatModel.GPT_AUDIO_1_5.getValue(), audioParameters, false);
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(chatCompletionRequest);
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
 
-		assertThat(response.getBody().usage().promptTokensDetails().audioTokens()).isEqualTo(0);
+		assertThat(response.getBody().usage().promptTokensDetails().audioTokens()).isZero();
 		assertThat(response.getBody().usage().completionTokenDetails().audioTokens()).isGreaterThan(0);
 
 		assertThat(response.getBody().choices().get(0).message().audioOutput().data()).isNotNull();
@@ -151,10 +151,11 @@ public class OpenAiApiIT {
 				ChatCompletionRequest.AudioParameters.Voice.NOVA,
 				ChatCompletionRequest.AudioParameters.AudioResponseFormat.MP3);
 		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(List.of(chatCompletionMessage),
-				OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW.getValue(), audioParameters, true);
+				OpenAiApi.ChatModel.GPT_AUDIO_1_5.getValue(), audioParameters, true);
 
-		assertThatThrownBy(() -> this.openAiApi.chatCompletionStream(chatCompletionRequest).collectList().block())
-			.isInstanceOf(RuntimeException.class)
+		Flux<ChatCompletionChunk> response = this.openAiApi.chatCompletionStream(chatCompletionRequest);
+
+		assertThatThrownBy(response::blockLast).isInstanceOf(RuntimeException.class)
 			.hasMessageContaining("400 Bad Request from POST https://api.openai.com/v1/chat/completions");
 	}
 

@@ -25,7 +25,9 @@ import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.ImageResponseMetadata;
+import org.springframework.ai.openai.OpenAiImageOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
+import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,8 +39,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class OpenAiImageModelIT extends AbstractIT {
 
 	@Test
-	void imageAsUrlTest() {
-		var options = ImageOptionsBuilder.builder().height(1024).width(1024).build();
+	void imageAsB64JsonTest() {
+		var options = OpenAiImageOptions.builder()
+			.model(OpenAiImageApi.ImageModel.GTP_IMAGE_1_MINI.getValue())
+			.height(1024)
+			.width(1024)
+			.build();
 
 		var instructions = """
 				A light cream colored mini golden doodle with a sign that contains the message "I'm on my way to BARCADE!".""";
@@ -54,9 +60,8 @@ public class OpenAiImageModelIT extends AbstractIT {
 
 		var generation = imageResponse.getResult();
 		Image image = generation.getOutput();
-		assertThat(image.getUrl()).isNotEmpty();
-		// System.out.println(image.getUrl());
-		assertThat(image.getB64Json()).isNull();
+		assertThat(image.getB64Json()).isNotEmpty();
+		assertThat(image.getUrl()).isNull();
 
 		var imageGenerationMetadata = generation.getMetadata();
 		Assertions.assertThat(imageGenerationMetadata).isInstanceOf(OpenAiImageGenerationMetadata.class);
@@ -64,7 +69,6 @@ public class OpenAiImageModelIT extends AbstractIT {
 		OpenAiImageGenerationMetadata openAiImageGenerationMetadata = (OpenAiImageGenerationMetadata) imageGenerationMetadata;
 
 		assertThat(openAiImageGenerationMetadata).isNotNull();
-		assertThat(openAiImageGenerationMetadata.getRevisedPrompt()).isNotBlank();
 	}
 
 }
