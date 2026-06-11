@@ -21,6 +21,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
@@ -41,6 +42,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
+import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -113,7 +115,29 @@ public class OpenAiChatModelIT {
 		var prompt = new Prompt("What is 2+2? Think step by step.", promptOptions);
 		ChatResponse response = this.chatModel.call(prompt);
 
-		assertThat((Object) response.getResult().getOutput().getMetadata().get("reasoningContent")).isNotNull();
+		assertThat(response.getResult().getOutput().getMetadata().get("reasoningContent")).isNotNull();
+	}
+
+	@Test
+	void streamReasoningContentTest() {
+		var promptOptions = OpenAiChatOptions.builder()
+			.model("o3-mini")
+			.reasoningEffort(ReasoningEffort.LOW.toString())
+			.build();
+
+		var prompt = new Prompt("What is 2+2? Think step by step.", promptOptions);
+		String reasoningContent = this.chatModel.stream(prompt)
+			.collectList()
+			.block()
+			.stream()
+			.map(ChatResponse::getResult)
+			.filter(Objects::nonNull)
+			.map(Generation::getOutput)
+			.map(AbstractMessage::getMetadata)
+			.map(metadata -> metadata.get("reasoningContent").toString())
+			.collect(Collectors.joining());
+
+		assertThat(reasoningContent).isNotNull();
 	}
 
 	void roleTest() {

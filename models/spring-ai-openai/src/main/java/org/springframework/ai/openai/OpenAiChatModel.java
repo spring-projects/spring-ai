@@ -121,6 +121,7 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Eric Bottard
  * @author Taewoong Kim
+ * @author guan xu
  */
 public final class OpenAiChatModel implements ChatModel {
 
@@ -1119,7 +1120,8 @@ public final class OpenAiChatModel implements ChatModel {
 
 				ChatCompletionMessage.Builder msgBuilder = ChatCompletionMessage.builder()
 					.content(cccc.delta().content())
-					.refusal(cccc.delta().refusal());
+					.refusal(cccc.delta().refusal())
+					.additionalProperties(cccc.delta()._additionalProperties());
 				cccc.delta().toolCalls().ifPresent(ccctcs -> {
 					msgBuilder.toolCalls(ccctcs.stream().map(tc -> {
 						ChatCompletionMessageFunctionToolCall.Builder toolCallBuilder = ChatCompletionMessageFunctionToolCall
