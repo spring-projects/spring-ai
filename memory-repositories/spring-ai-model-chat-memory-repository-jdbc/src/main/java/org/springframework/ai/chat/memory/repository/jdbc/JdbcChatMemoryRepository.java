@@ -23,6 +23,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.sql.DataSource;
 
@@ -86,15 +87,18 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 	}
 
 	@Override
-	@SuppressWarnings("NullAway") // Assume query can't return null rows
 	public List<String> findConversationIds() {
-		return this.jdbcTemplate.queryForList(this.dialect.getSelectConversationIdsSql(), String.class);
+		return this.jdbcTemplate.query(this.dialect.getSelectConversationIdsSql(),
+				(rs, rowNum) -> Objects.requireNonNull(rs.getString(1)));
 	}
 
 	@Override
 	public List<Message> findByConversationId(String conversationId) {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
-		return this.jdbcTemplate.query(this.dialect.getSelectMessagesSql(), new MessageRowMapper(), conversationId);
+		return this.jdbcTemplate.query(this.dialect.getSelectMessagesSql(), new MessageRowMapper(), conversationId)
+			.stream()
+			.filter(Objects::nonNull)
+			.toList();
 	}
 
 	@Override
@@ -103,10 +107,15 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		Assert.notNull(messages, "messages cannot be null");
 		Assert.noNullElements(messages, "messages cannot contain null elements");
 
+		List<Message> persistableMessages = messages.stream()
+			.filter(m -> !(m instanceof ToolResponseMessage)
+					&& !(m instanceof AssistantMessage am && am.hasToolCalls()))
+			.toList();
+
 		this.transactionTemplate.executeWithoutResult(status -> {
 			deleteByConversationId(conversationId);
 			this.jdbcTemplate.batchUpdate(this.dialect.getInsertMessageSql(),
-					new AddBatchPreparedStatement(conversationId, messages));
+					new AddBatchPreparedStatement(conversationId, persistableMessages));
 		});
 	}
 
@@ -148,10 +157,10 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		}
 	}
 
-	private static class MessageRowMapper implements RowMapper<Message> {
+	private static class MessageRowMapper implements RowMapper<@Nullable Message> {
 
 		@Override
-		public Message mapRow(ResultSet rs, int i) throws SQLException {
+		public @Nullable Message mapRow(ResultSet rs, int i) throws SQLException {
 			var content = rs.getString(1);
 			var type = MessageType.valueOf(rs.getString(2));
 			Timestamp timestamp = rs.getTimestamp(3);
@@ -162,10 +171,9 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 				case USER -> UserMessage.builder().text(content).metadata(metadata).build();
 				case ASSISTANT -> AssistantMessage.builder().content(content).properties(metadata).build();
 				case SYSTEM -> SystemMessage.builder().text(content).metadata(metadata).build();
-				// The content is always stored empty for ToolResponseMessages.
-				// If we want to capture the actual content, we need to extend
-				// AddBatchPreparedStatement to support it.
-				case TOOL -> ToolResponseMessage.builder().responses(List.of()).metadata(metadata).build();
+				// this implementation doesn't support tool calls message persistence, so
+				// TOOL rows are filtered out by the caller
+				case TOOL -> null;
 			};
 		}
 

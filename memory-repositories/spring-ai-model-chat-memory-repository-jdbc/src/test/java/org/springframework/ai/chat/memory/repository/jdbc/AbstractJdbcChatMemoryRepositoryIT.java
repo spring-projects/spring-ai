@@ -32,6 +32,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -214,6 +215,37 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 		for (int i = 0; i < 50; i++) {
 			assertThat(retrievedMessages.get(i).getText()).isEqualTo("Message " + i);
 		}
+	}
+
+	@Test
+	void toolResponseMessagesAreFilteredOnSave() {
+		var conversationId = UUID.randomUUID().toString();
+		var user = new UserMessage("Hello");
+		var toolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("id1", "myTool", "result")))
+			.build();
+
+		this.chatMemoryRepository.saveAll(conversationId, List.of(user, toolResponse));
+
+		var results = this.chatMemoryRepository.findByConversationId(conversationId);
+		assertThat(results).hasSize(1);
+		assertThat(results.get(0).getText()).isEqualTo("Hello");
+	}
+
+	@Test
+	void assistantMessagesWithToolCallsAreFilteredOnSave() {
+		var conversationId = UUID.randomUUID().toString();
+		var user = new UserMessage("What is the weather?");
+		var toolCallAssistant = AssistantMessage.builder()
+			.toolCalls(List.of(new AssistantMessage.ToolCall("call1", "function", "getWeather", "{}")))
+			.build();
+		var plainAssistant = new AssistantMessage("It is sunny.");
+
+		this.chatMemoryRepository.saveAll(conversationId, List.of(user, toolCallAssistant, plainAssistant));
+
+		var results = this.chatMemoryRepository.findByConversationId(conversationId);
+		assertThat(results).hasSize(2);
+		assertThat(results).extracting(Message::getText).containsExactly("What is the weather?", "It is sunny.");
 	}
 
 	@Test

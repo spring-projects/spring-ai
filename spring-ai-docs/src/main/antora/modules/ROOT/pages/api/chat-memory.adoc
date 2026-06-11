@@ -81,6 +81,13 @@ ChatMemoryRepository repository = new InMemoryChatMemoryRepository();
 
 Messages are retrieved in ascending order (oldest-to-newest), which is the expected format for LLM conversation history. Ordering is maintained by a `sequence_id` column that records each message's position within its conversation. Each message also stores a creation `timestamp`, exposed in the message metadata under the `JdbcChatMemoryRepository.CONVERSATION_TS` key as a `java.time.Instant`, so applications can display when a message was created.
 
+[WARNING]
+====
+*`JdbcChatMemoryRepository` does not support tool call messages.*
+`AssistantMessage` instances containing tool calls and `ToolResponseMessage` instances are silently filtered out on save and will not appear in the retrieved conversation history.
+If your application uses tool calling, consider the https://spring-ai-community.github.io/spring-ai-session/latest/[Spring AI Session] project and the https://spring-ai-community.github.io/spring-ai-session/latest/session-jdbc/[JDBC session store], which properly persist all message types.
+====
+
 First, add the following dependency to your project:
 
 [tabs]
