@@ -268,7 +268,7 @@
 		<bedrockruntime.version>2.41.22</bedrockruntime.version>
 		<coherence.version>24.09</coherence.version>
 		<com.google.cloud.version>26.83.0</com.google.cloud.version>
-		<com.google.genai.version>1.54.0</com.google.genai.version>
+		<com.google.genai.version>1.58.0</com.google.genai.version>
 		<commonmark.version>0.22.0</commonmark.version>
 		<couchbase.version>3.9.1</couchbase.version>
 		<djl.version>0.32.0</djl.version>
