@@ -32,6 +32,9 @@ import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -49,6 +52,8 @@ import org.springframework.util.Assert;
  * @since 1.0.0
  */
 public final class CassandraChatMemoryRepository implements ChatMemoryRepository {
+
+	private static final Log logger = LogFactory.getLog(CassandraChatMemoryRepository.class);
 
 	public static final String CONVERSATION_TS = CassandraChatMemoryRepository.class.getSimpleName()
 			+ "_message_timestamp";
@@ -113,7 +118,10 @@ public final class CassandraChatMemoryRepository implements ChatMemoryRepository
 		for (Row r : this.conf.session.execute(builder.build())) {
 			for (UdtValue udt : Objects.requireNonNullElse(r.getList(this.conf.messagesColumn, UdtValue.class),
 					List.<UdtValue>of())) {
-				messages.add(getMessage(udt));
+				Message msg = getMessage(udt);
+				if (msg != null) {
+					messages.add(msg);
+				}
 			}
 		}
 		return messages;
@@ -125,6 +133,16 @@ public final class CassandraChatMemoryRepository implements ChatMemoryRepository
 		Assert.notNull(messages, "messages cannot be null");
 		Assert.noNullElements(messages, "messages cannot contain null elements");
 
+		List<Message> persistableMessages = messages.stream()
+			.filter(m -> !(m instanceof ToolResponseMessage)
+					&& !(m instanceof AssistantMessage am && am.hasToolCalls()))
+			.toList();
+		if (logger.isWarnEnabled() && persistableMessages.size() < messages.size()) {
+			logger.warn(
+					"CassandraChatMemoryRepository does not support tool call messages. Some messages were filtered out for conversation: "
+							+ conversationId);
+		}
+
 		Instant instant = Instant.now();
 		List<Object> primaryKeys = this.conf.primaryKeyTranslator.apply(conversationId);
 		BoundStatementBuilder builder = this.addStmt.boundStatementBuilder();
@@ -135,7 +153,7 @@ public final class CassandraChatMemoryRepository implements ChatMemoryRepository
 		}
 
 		List<UdtValue> msgs = new ArrayList<>();
-		for (Message msg : messages) {
+		for (Message msg : persistableMessages) {
 
 			Preconditions.checkArgument(
 					!msg.getMetadata().containsKey(CONVERSATION_TS)
@@ -207,7 +225,7 @@ public final class CassandraChatMemoryRepository implements ChatMemoryRepository
 		return this.conf.session.prepare(stmt.build());
 	}
 
-	private Message getMessage(UdtValue udt) {
+	private @Nullable Message getMessage(UdtValue udt) {
 		String content = Objects.requireNonNullElse(udt.getString(this.conf.messageUdtContentColumn), "");
 		Map<String, Object> props = Map.of(CONVERSATION_TS, udt.getInstant(this.conf.messageUdtTimestampColumn));
 		String type = udt.getString(this.conf.messageUdtTypeColumn);
@@ -216,9 +234,9 @@ public final class CassandraChatMemoryRepository implements ChatMemoryRepository
 			case ASSISTANT -> AssistantMessage.builder().content(content).properties(props).build();
 			case USER -> UserMessage.builder().text(content).metadata(props).build();
 			case SYSTEM -> SystemMessage.builder().text(content).metadata(props).build();
-			case TOOL ->
-				// todo – persist ToolResponse somehow
-				ToolResponseMessage.builder().responses(List.of()).metadata(props).build();
+			// this implementation doesn't support tool calls message persistence, so
+			// TOOL rows are filtered out by the caller
+			case TOOL -> null;
 			default -> throw new IllegalStateException(String.format("unknown message type %s", type));
 		};
 	}
