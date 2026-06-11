@@ -107,7 +107,7 @@ This change is done to allow configuration of multiple models.
 If you see an error like `Caused by: ai.onnxruntime.OrtException: Supplied array is ragged,..`, you need to also enable the tokenizer padding in `application.properties` as follows:
 
 ----
-spring.ai.embedding.transformer.tokenizer.options.padding=true
+spring.ai.embedding.transformer.tokenizer.padding=true
 ----
 ====
 

@@ -1694,14 +1694,14 @@ The following options are available on `ToolSearchToolCallingAdvisor.Builder`:
 
 === ToolIndex API
 
-The `ToolIndex` interface and its companion types (`ToolSearchRequest`, `ToolSearchResponse`, `ToolReference`) live in the `spring-ai-tool-search-tool` module under the package `org.springframework.ai.tool.toolsearch`.
+The `ToolIndex` interface and its companion types (`ToolSearchRequest`, `ToolSearchResponse`, `ToolReference`) live in the `spring-ai-tool-search-advisor` module under the package `org.springframework.ai.chat.client.advisor.toolsearch`.
 The built-in index implementations (`LuceneToolIndex`, `VectorToolIndex`, `RegexToolIndex`) are also provided in this module.
 
 [source,xml]
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-tool-search-tool</artifactId>
+    <artifactId>spring-ai-tool-search-advisor</artifactId>
 </dependency>
 ----
 

@@ -121,7 +121,9 @@ var chatOptions = AnthropicChatOptions.builder()
     .apiKey(System.getenv("ANTHROPIC_API_KEY"))
     .build();
 
-var chatModel = new AnthropicChatModel(chatOptions);
+var chatModel = AnthropicChatModel.builder()
+    .defaultOptions(chatOptions)
+    .build();
 ----
 
 Or set the environment variable and let the SDK auto-detect it:
@@ -134,11 +136,12 @@ export ANTHROPIC_API_KEY=<your-api-key>
 [source,java]
 ----
 // API key will be detected from ANTHROPIC_API_KEY environment variable
-var chatModel = new AnthropicChatModel(
-    AnthropicChatOptions.builder()
+var chatModel = AnthropicChatModel.builder()
+    .defaultOptions(AnthropicChatOptions.builder()
         .model("claude-sonnet-4-20250514")
         .maxTokens(1024)
-        .build());
+        .build())
+    .build();
 ----
 
 === Basic Usage
@@ -157,7 +160,7 @@ Flux<ChatResponse> stream = chatModel.stream(
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/AnthropicChatOptions.java[AnthropicChatOptions.java] class provides model configurations such as the model to use, temperature, max tokens, etc.
 
-On start-up, configure default options with the `AnthropicChatModel(options)` constructor.
+On start-up, configure default options with the `AnthropicChatModel.builder().defaultOptions(options).build()` constructor.
 
 At run-time, you can override the default options by adding new, request-specific options to the `Prompt` call.
 For example, to override the default model and temperature for a specific request:
@@ -1296,7 +1299,9 @@ public class ChatController {
             .maxTokens(1024)
             .apiKey(System.getenv("ANTHROPIC_API_KEY"))
             .build();
-        this.chatModel = new AnthropicChatModel(options);
+        this.chatModel = AnthropicChatModel.builder()
+            .defaultOptions(options)
+            .build();
     }
 
     @GetMapping("/ai/generate")
