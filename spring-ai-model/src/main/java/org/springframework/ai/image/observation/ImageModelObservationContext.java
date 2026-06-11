@@ -16,6 +16,8 @@
 
 package org.springframework.ai.image.observation;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.model.observation.ModelObservationContext;
@@ -47,9 +49,9 @@ public class ImageModelObservationContext extends ModelObservationContext<ImageP
 
 	public static final class Builder {
 
-		private ImagePrompt imagePrompt;
+		private @Nullable ImagePrompt imagePrompt;
 
-		private String provider;
+		private @Nullable String provider;
 
 		private Builder() {
 		}
@@ -65,6 +67,8 @@ public class ImageModelObservationContext extends ModelObservationContext<ImageP
 		}
 
 		public ImageModelObservationContext build() {
+			Assert.notNull(this.imagePrompt, "request cannot be null");
+			Assert.notNull(this.provider, "provider cannot be null or empty");
 			return new ImageModelObservationContext(this.imagePrompt, this.provider);
 		}
 

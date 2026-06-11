@@ -41,9 +41,9 @@ public class DefaultImageModelObservationConvention implements ImageModelObserva
 
 	@Override
 	public String getContextualName(ImageModelObservationContext context) {
-		if (StringUtils.hasText(context.getRequest().getOptions().getModel())) {
-			return "%s %s".formatted(context.getOperationMetadata().operationType(),
-					context.getRequest().getOptions().getModel());
+		var options = context.getRequest().getOptions();
+		if (options != null && StringUtils.hasText(options.getModel())) {
+			return "%s %s".formatted(context.getOperationMetadata().operationType(), options.getModel());
 		}
 		return context.getOperationMetadata().operationType();
 	}
@@ -64,9 +64,10 @@ public class DefaultImageModelObservationConvention implements ImageModelObserva
 	}
 
 	protected KeyValue requestModel(ImageModelObservationContext context) {
-		if (StringUtils.hasText(context.getRequest().getOptions().getModel())) {
+		var options = context.getRequest().getOptions();
+		if (options != null && StringUtils.hasText(options.getModel())) {
 			return KeyValue.of(ImageModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL,
-					context.getRequest().getOptions().getModel());
+					options.getModel());
 		}
 		return REQUEST_MODEL_NONE;
 	}
@@ -84,30 +85,31 @@ public class DefaultImageModelObservationConvention implements ImageModelObserva
 	// Request
 
 	protected KeyValues requestImageFormat(KeyValues keyValues, ImageModelObservationContext context) {
-		if (StringUtils.hasText(context.getRequest().getOptions().getResponseFormat())) {
+		var options = context.getRequest().getOptions();
+		if (options != null && StringUtils.hasText(options.getResponseFormat())) {
 			return keyValues.and(
 					ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_RESPONSE_FORMAT.asString(),
-					context.getRequest().getOptions().getResponseFormat());
+					options.getResponseFormat());
 		}
 		return keyValues;
 	}
 
 	protected KeyValues requestImageSize(KeyValues keyValues, ImageModelObservationContext context) {
-		if (context.getRequest().getOptions().getWidth() != null
-				&& context.getRequest().getOptions().getHeight() != null) {
+		var options = context.getRequest().getOptions();
+		if (options != null && options.getWidth() != null && options.getHeight() != null) {
 			return keyValues.and(
 					ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_SIZE.asString(),
-					"%sx%s".formatted(context.getRequest().getOptions().getWidth(),
-							context.getRequest().getOptions().getHeight()));
+					"%sx%s".formatted(options.getWidth(), options.getHeight()));
 		}
 		return keyValues;
 	}
 
 	protected KeyValues requestImageStyle(KeyValues keyValues, ImageModelObservationContext context) {
-		if (StringUtils.hasText(context.getRequest().getOptions().getStyle())) {
+		var options = context.getRequest().getOptions();
+		if (options != null && StringUtils.hasText(options.getStyle())) {
 			return keyValues.and(
 					ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_STYLE.asString(),
-					context.getRequest().getOptions().getStyle());
+					options.getStyle());
 		}
 		return keyValues;
 	}
