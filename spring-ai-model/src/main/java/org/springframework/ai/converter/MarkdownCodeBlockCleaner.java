@@ -48,8 +48,9 @@ public class MarkdownCodeBlockCleaner implements ResponseTextCleaner {
 				// Extract language identifier if present
 				String firstLine = lines[0].trim();
 				if (firstLine.length() > 3) {
-					// Has language identifier like ```json
-					text = lines.length > 1 ? lines[1] : "";
+					// A single-line block has no language line:
+					// strip the leading fence, keeping the content.
+					text = lines.length > 1 ? lines[1] : text.substring(3);
 				}
 				else {
 					// Just ``` without language
