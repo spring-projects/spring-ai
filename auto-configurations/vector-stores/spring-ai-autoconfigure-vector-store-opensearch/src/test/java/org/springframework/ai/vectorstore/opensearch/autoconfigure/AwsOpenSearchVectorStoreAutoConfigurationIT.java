@@ -57,7 +57,7 @@ class AwsOpenSearchVectorStoreAutoConfigurationIT {
 
 	@Container
 	private static final LocalStackContainer localstack = new LocalStackContainer(
-			DockerImageName.parse("localstack/localstack:3.5.0"))
+			DockerImageName.parse("localstack/localstack:3.8.1"))
 		.withEnv("LOCALSTACK_HOST", "localhost.localstack.cloud");
 
 	private static final String DOCUMENT_INDEX = "auto-spring-ai-document-index";
