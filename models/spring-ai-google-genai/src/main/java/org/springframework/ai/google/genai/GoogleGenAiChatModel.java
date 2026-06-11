@@ -1052,6 +1052,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		 * See: <a href=
 		 * "https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-0-flash">gemini-2.0-flash</a>
 		 */
+		@Deprecated
 		GEMINI_2_0_FLASH("gemini-2.0-flash-001"),
 
 		/**
@@ -1069,6 +1070,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		 * See: <a href=
 		 * "https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-0-flash-lite">gemini-2.0-flash-lite</a>
 		 */
+		@Deprecated
 		GEMINI_2_0_FLASH_LIGHT("gemini-2.0-flash-lite-001"),
 
 		/**
@@ -1120,11 +1122,17 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		 */
 		GEMINI_2_5_FLASH_LIGHT("gemini-2.5-flash-lite"),
 
+		/**
+		 * @deprecated Use {@link #GEMINI_3_1_PRO_PREVIEW} instead
+		 */
+		@Deprecated
 		GEMINI_3_PRO_PREVIEW("gemini-3.1-pro-preview"),
 
-		GEMINI_3_5_FLASH("gemini-3.5-flash"),
+		GEMINI_3_1_PRO_PREVIEW("gemini-3.1-pro-preview"),
 
-		GEMINI_3_1_FLASH_LITE("gemini-3.1-flash-lite");
+		GEMINI_3_1_FLASH_LITE("gemini-3.1-flash-lite"),
+
+		GEMINI_3_5_FLASH("gemini-3.5-flash");
 
 		public final String value;
 

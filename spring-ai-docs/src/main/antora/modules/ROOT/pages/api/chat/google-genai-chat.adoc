@@ -105,7 +105,7 @@ The prefix `spring.ai.google.genai.chat` is the property prefix that lets you co
 |====
 | Property | Description | Default
 
-| spring.ai.google.genai.chat.model | Supported https://ai.google.dev/gemini-api/docs/models[Google GenAI Chat models] to use include `gemini-2.0-flash`, `gemini-2.0-flash-lite`, `gemini-pro`, and `gemini-1.5-flash`. | gemini-2.0-flash
+| spring.ai.google.genai.chat.model | Supported https://ai.google.dev/gemini-api/docs/models[Google GenAI Chat models] to use, includes `gemini-2.5-flash`, `gemini-2.5-flash-lite`, `gemini-2.5-pro`, `gemini-3.1-pro-preview`, `gemini-3.1-flash-lite` and `gemini-3.5-flash`. | gemini-2.5-flash
 | spring.ai.google.genai.chat.response-mime-type | Output response mimetype of the generated candidate text. |  `text/plain`: (default) Text output or `application/json`: JSON response.
 | spring.ai.google.genai.chat.google-search-retrieval | Use Google search Grounding feature | `true` or `false`, default `false`.
 | spring.ai.google.genai.chat.include-server-side-tool-invocations | When true, the API response includes server-side tool calls and responses (e.g., Google Search invocations) in the response metadata, allowing observation of the server's tool usage. Only supported with Gemini Developer API (MLDev), not Vertex AI. See <<server-side-tool-invocations>>. | `false`
@@ -230,7 +230,7 @@ When Google Search or other server-side tools are enabled via `googleSearchRetri
 
 [IMPORTANT]
 ====
-This feature is only supported with the **Gemini Developer API** (MLDev / API key authentication), and models from Gemini 3.x and up. It is **not supported** on Vertex AI.
+This feature is only supported with the **Gemini Developer API** (MLDev / API key authentication). It is **not supported** on Vertex AI.
 ====
 
 === Configuration
@@ -342,16 +342,18 @@ The `thinkingLevel` option controls the depth of reasoning tokens the model gene
 |====
 | Value | Description
 
-| `LOW` | Minimal thinking. Use for simple queries where speed is preferred over deep analysis.
-| `HIGH` | Extensive thinking. Use for complex problems requiring deep analysis and step-by-step reasoning.
 | `THINKING_LEVEL_UNSPECIFIED` | The model uses its default behavior.
+| `MINIMAL` | Matches the "no thinking" setting for most queries. Minimizes latency.
+| `LOW` | Low thinking. Minimal reasoning tokens.
+| `MEDIUM` | Balanced thinking for most tasks.
+| `HIGH` | Extensive thinking. Use for complex problems requiring deep analysis and step-by-step reasoning.
 |====
 
 ==== Configuration via Properties
 
 [source,application.properties]
 ----
-spring.ai.google.genai.chat.model=gemini-3-pro-preview
+spring.ai.google.genai.chat.model=gemini-3.1-pro-preview
 spring.ai.google.genai.chat.thinking-level=HIGH
 ----
 
@@ -365,7 +367,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Explain the theory of relativity in simple terms.",
         GoogleGenAiChatOptions.builder()
-            .model("gemini-3-pro-preview")
+            .model("gemini-3.1-pro-preview")
             .thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
             .build()
     ));
@@ -397,20 +399,20 @@ ChatResponse response = chatModel.call(
 ====
 **`thinkingLevel` and `thinkingBudget` are mutually exclusive.** You cannot use both in the same request - doing so will result in an API error.
 
-* Use `thinkingLevel` (`LOW`, `HIGH`) for **Gemini 3 Pro** models
-* Use `thinkingBudget` (token count) for **Gemini 2.5** series models
+* Use `thinkingLevel` for **Gemini 3.x** models. Gemini 3 Pro only supports `LOW` and `HIGH`; Gemini 3 Flash models support all levels (`MINIMAL`, `LOW`, `MEDIUM`, `HIGH`).
+* Use `thinkingBudget` (token count) for **Gemini 2.5** series models.
 ====
 
 You can combine `includeThoughts` with either `thinkingLevel` or `thinkingBudget` (but not both):
 
 [source,java]
 ----
-// For Gemini 3 Pro: use thinkingLevel + includeThoughts
+// For Gemini 3.x (e.g. Pro): use thinkingLevel + includeThoughts
 ChatResponse response = chatModel.call(
     new Prompt(
         "Analyze this complex scenario.",
         GoogleGenAiChatOptions.builder()
-            .model("gemini-3-pro-preview")
+            .model("gemini-3.1-pro-preview")
             .thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
             .includeThoughts(true)
             .build()
@@ -432,31 +434,48 @@ ChatResponse response = chatModel.call(
 
 The thinking configuration options are model-specific:
 
-[cols="2,1,1,2", stripes=even]
+[cols="2,2,1,1,2", stripes=even]
 |====
-| Model | thinkingLevel | thinkingBudget | Notes
+| Model | Model ID | thinkingLevel | thinkingBudget | Notes
 
-| Gemini 3 Pro (Preview)
-| ✅ Supported
+| Gemini 3 Pro Preview
+| `gemini-3.1-pro-preview`
+| ✅ Only `LOW` and `HIGH`
 | ⚠️ Backwards compatible only
 | Use `thinkingLevel`. Cannot disable thinking. Requires **global** endpoint.
 
+| Gemini 3.5 Flash
+| `gemini-3.5-flash`
+| ✅ All levels
+| ❌ Not supported
+| Use `thinkingLevel` with any level including `MINIMAL` and `MEDIUM`.
+
+| Gemini 3.1 Flash-Lite
+| `gemini-3.1-flash-lite`
+| ✅ All levels
+| ❌ Not supported
+| Use `thinkingLevel` with any level including `MINIMAL` and `MEDIUM`.
+
 | Gemini 2.5 Pro
+| `gemini-2.5-pro`
 | ❌ Not supported
 | ✅ Supported
 | Use `thinkingBudget`. Set to 0 to disable, -1 for dynamic.
 
 | Gemini 2.5 Flash
+| `gemini-2.5-flash`
 | ❌ Not supported
 | ✅ Supported
 | Use `thinkingBudget`. Set to 0 to disable, -1 for dynamic.
 
 | Gemini 2.5 Flash-Lite
+| `gemini-2.5-flash-lite`
 | ❌ Not supported
 | ✅ Supported
 | Thinking disabled by default. Set `thinkingBudget` to enable.
 
 | Gemini 2.0 Flash
+| `gemini-2.0-flash-001`
 | ❌ Not supported
 | ❌ Not supported
 | Thinking not available.
@@ -465,6 +484,7 @@ The thinking configuration options are model-specific:
 [IMPORTANT]
 ====
 * Using `thinkingLevel` with unsupported models (e.g., Gemini 2.5 or earlier) will result in an API error.
+* Using `MINIMAL` or `MEDIUM` with Gemini 3 Pro models will result in an `IllegalArgumentException`.
 * Gemini 3 Pro Preview is only available on **global** endpoints. Set `spring.ai.google.genai.location=global` or `GOOGLE_CLOUD_LOCATION=global`.
 * Check the https://ai.google.dev/gemini-api/docs/thinking[Google GenAI Thinking documentation] for the latest model capabilities.
 ====
@@ -494,7 +514,7 @@ Enable thought signatures using configuration properties:
 
 [source,application.properties]
 ----
-spring.ai.google.genai.chat.model=gemini-3-pro-preview
+spring.ai.google.genai.chat.model=gemini-3.1-pro-preview
 spring.ai.google.genai.chat.include-thoughts=true
 ----
 
@@ -506,7 +526,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Your question here",
         GoogleGenAiChatOptions.builder()
-            .model("gemini-3-pro-preview")
+            .model("gemini-3.1-pro-preview")
             .includeThoughts(true)
             .toolCallbacks(callbacks)
             .build()
@@ -535,7 +555,7 @@ ToolCallback weatherFunction() {
 String response = ChatClient.create(this.chatModel)
         .prompt("What's the weather like in Boston?")
         .options(GoogleGenAiChatOptions.builder()
-            .model("gemini-3-pro-preview")
+            .model("gemini-3.1-pro-preview")
             .includeThoughts(true)
             .build())
         .tools(weatherFunction)
@@ -640,7 +660,7 @@ private GoogleGenAiCachedContentService cachedContentService;
 String largeDocument = "... your large context here (>32k tokens) ...";
 
 CachedContentRequest request = CachedContentRequest.builder()
-    .model("gemini-2.0-flash")
+    .model("gemini-2.5-flash")
     .contents(List.of(
         Content.builder()
             .role("user")
@@ -809,7 +829,7 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 [source,application.properties]
 ----
 spring.ai.google.genai.api-key=YOUR_API_KEY
-spring.ai.google.genai.chat.model=gemini-2.0-flash
+spring.ai.google.genai.chat.model=gemini-2.5-flash
 spring.ai.google.genai.chat.temperature=0.5
 ----
 
@@ -819,7 +839,7 @@ spring.ai.google.genai.chat.temperature=0.5
 ----
 spring.ai.google.genai.project-id=PROJECT_ID
 spring.ai.google.genai.location=LOCATION
-spring.ai.google.genai.chat.model=gemini-2.0-flash
+spring.ai.google.genai.chat.model=gemini-2.5-flash
 spring.ai.google.genai.chat.temperature=0.5
 ----
 

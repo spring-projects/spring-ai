@@ -179,7 +179,7 @@ class GoogleGenAiThoughtSignatureLifecycleIT {
 	 */
 	static Stream<Arguments> sequentialFunctionCallingModels() {
 		return Stream.of(Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH, "Gemini 2.5 Flash"),
-				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW, "Gemini 3 Pro"));
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW, "Gemini 3.1 Pro"));
 	}
 
 	/**

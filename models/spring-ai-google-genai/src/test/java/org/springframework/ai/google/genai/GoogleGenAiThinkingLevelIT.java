@@ -56,17 +56,17 @@ class GoogleGenAiThinkingLevelIT {
 
 	static Stream<Arguments> proModelUnsupportedLevels() {
 		return Stream.of(
-				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW.getValue(),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW.getValue(),
 						GoogleGenAiThinkingLevel.MINIMAL),
-				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW.getValue(),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW.getValue(),
 						GoogleGenAiThinkingLevel.MEDIUM));
 	}
 
 	static Stream<Arguments> proModelSupportedLevels() {
 		return Stream.of(
-				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW.getValue(),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW.getValue(),
 						GoogleGenAiThinkingLevel.LOW),
-				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW.getValue(),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW.getValue(),
 						GoogleGenAiThinkingLevel.HIGH));
 	}
 
