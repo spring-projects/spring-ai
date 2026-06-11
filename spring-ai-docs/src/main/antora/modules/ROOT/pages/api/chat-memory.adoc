@@ -290,6 +290,13 @@ The auto-configuration will automatically create the `ai_chat_memory` table.
 
 You can disable the schema initialization by setting the property `spring.ai.chat.memory.repository.cassandra.initialize-schema` to `false`.
 
+[WARNING]
+====
+*`CassandraChatMemoryRepository` does not support tool call messages.*
+`AssistantMessage` instances containing tool calls and `ToolResponseMessage` instances are silently filtered out on save and will not appear in the retrieved conversation history.
+If your application uses tool calling, consider the https://spring-ai-community.github.io/spring-ai-session/latest/[Spring AI Session] project and the https://spring-ai-community.github.io/spring-ai-session/latest/session-jdbc/[JDBC session store], which properly persist all message types.
+====
+
 === Neo4j ChatMemoryRepository
 
 `Neo4jChatMemoryRepository` is a built-in implementation that uses Neo4j to store chat messages as nodes and relationships in a property graph database. It is suitable for applications that want to leverage Neo4j's graph capabilities for chat memory persistence.
