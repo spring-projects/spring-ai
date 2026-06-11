@@ -66,7 +66,7 @@ class AwsOpenSearchContainerConnectionDetailsFactoryIT {
 	@Container
 	@ServiceConnection
 	private static final LocalStackContainer localstack = new LocalStackContainer(
-			DockerImageName.parse("localstack/localstack:3.5.0"))
+			DockerImageName.parse("localstack/localstack:3.8.1"))
 		.withEnv("LOCALSTACK_HOST", "localhost.localstack.cloud");
 
 	private final List<Document> documents = List.of(
