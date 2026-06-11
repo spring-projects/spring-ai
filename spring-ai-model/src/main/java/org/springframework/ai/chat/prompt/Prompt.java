@@ -41,12 +41,13 @@ import org.springframework.util.Assert;
  * @author Mark Pollack
  * @author luocongqiu
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  */
 public class Prompt implements ModelRequest<List<Message>> {
 
 	private final List<Message> messages;
 
-	private @Nullable ChatOptions chatOptions;
+	private final @Nullable ChatOptions chatOptions;
 
 	public Prompt(String contents) {
 		this(new UserMessage(contents));
@@ -308,7 +309,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 			return this;
 		}
 
-		public Builder messages(Message... messages) {
+		public Builder messages(Message @Nullable ... messages) {
 			if (messages != null) {
 				this.messages = Arrays.asList(messages);
 			}
