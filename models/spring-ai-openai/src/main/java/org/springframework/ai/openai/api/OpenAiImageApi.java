@@ -45,7 +45,7 @@ import org.springframework.web.client.RestClient;
  */
 public class OpenAiImageApi {
 
-	public static final String DEFAULT_IMAGE_MODEL = ImageModel.DALL_E_3.getValue();
+	public static final String DEFAULT_IMAGE_MODEL = ImageModel.GTP_IMAGE_1_MINI.getValue();
 
 	private final RestClient restClient;
 

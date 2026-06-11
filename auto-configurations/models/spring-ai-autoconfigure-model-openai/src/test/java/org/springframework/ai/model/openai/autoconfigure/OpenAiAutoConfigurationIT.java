@@ -39,6 +39,7 @@ import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiImageModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.core.io.ClassPathResource;
@@ -67,8 +68,7 @@ public class OpenAiAutoConfigurationIT {
 	@Test
 	void chatCallAudioResponse() {
 		this.contextRunner
-			.withPropertyValues(
-					"spring.ai.openai.chat.options.model=" + OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW.getValue(),
+			.withPropertyValues("spring.ai.openai.chat.options.model=" + OpenAiApi.ChatModel.GPT_AUDIO_1_5.getValue(),
 					"spring.ai.openai.chat.options.output-modalities=text,audio",
 					"spring.ai.openai.chat.options.output-audio.voice=ALLOY",
 					"spring.ai.openai.chat.options.output-audio.format=WAV")
@@ -189,24 +189,24 @@ public class OpenAiAutoConfigurationIT {
 				OpenAiImageModel imageModel = context.getBean(OpenAiImageModel.class);
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("forest"));
 				assertThat(imageResponse.getResults()).hasSize(1);
-				assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
-				logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
+				assertThat(imageResponse.getResult().getOutput().getB64Json()).isNotEmpty();
+				logger.info("Generated image: " + imageResponse.getResult().getOutput().getB64Json());
 			});
 	}
 
 	@Test
 	void generateImageWithModel() {
-		// The 256x256 size is supported by dall-e-2, but not by dall-e-3.
 		this.contextRunner
-			.withPropertyValues("spring.ai.openai.image.options.model=dall-e-2",
-					"spring.ai.openai.image.options.size=256x256")
+			.withPropertyValues(
+					"spring.ai.openai.image.options.model=" + OpenAiImageApi.ImageModel.GTP_IMAGE_1_MINI.getValue(),
+					"spring.ai.openai.image.options.size=1024x1024")
 			.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class))
 			.run(context -> {
 				OpenAiImageModel imageModel = context.getBean(OpenAiImageModel.class);
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("forest"));
 				assertThat(imageResponse.getResults()).hasSize(1);
-				assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
-				logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
+				assertThat(imageResponse.getResult().getOutput().getB64Json()).isNotEmpty();
+				logger.info("Generated image: " + imageResponse.getResult().getOutput().getB64Json());
 			});
 	}
 
