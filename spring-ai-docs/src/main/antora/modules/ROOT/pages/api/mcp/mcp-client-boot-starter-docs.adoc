@@ -508,7 +508,7 @@ Sync::
 [source,java]
 ----
 @Component
-public class CustomMcpSyncClientCustomizer implements McpCustomizer<McpClient.SyncSpec> {
+public class CustomMcpSyncClientCustomizer implements McpClientCustomizer<McpClient.SyncSpec> {
     @Override
     public void customize(String serverConfigurationName, McpClient.SyncSpec spec) {
 
@@ -567,7 +567,7 @@ Async::
 [source,java]
 ----
 @Component
-public class CustomMcpAsyncClientCustomizer implements McpCustomizer<McpClient.AsyncSpec> {
+public class CustomMcpAsyncClientCustomizer implements McpClientCustomizer<McpClient.AsyncSpec> {
     @Override
     public void customize(String serverConfigurationName, McpClient.AsyncSpec spec) {
         // Customize the async client configuration
