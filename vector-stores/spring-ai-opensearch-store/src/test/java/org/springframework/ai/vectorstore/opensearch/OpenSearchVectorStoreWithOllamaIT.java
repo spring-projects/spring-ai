@@ -201,12 +201,7 @@ class OpenSearchVectorStoreWithOllamaIT {
 		public EmbeddingModel embeddingModel() {
 			return OllamaEmbeddingModel.builder()
 				.ollamaApi(OllamaApi.builder().build())
-				.defaultOptions(OllamaOptions.builder()
-					.model(OllamaModel.MXBAI_EMBED_LARGE)
-					.mainGPU(11)
-					.useMMap(true)
-					.numGPU(1)
-					.build())
+				.defaultOptions(OllamaOptions.builder().model(OllamaModel.MXBAI_EMBED_LARGE).build())
 				.build();
 		}
 
