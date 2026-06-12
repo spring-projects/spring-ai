@@ -211,4 +211,58 @@ class DeepSeekStreamFunctionCallingHelperTest {
 		assertThat(result).isNotNull();
 	}
 
+	@Test
+	void mergeSameToolCallIndexWithRepeatedIdShouldMerge() {
+		ChatCompletionChunk chunk1 = toolCallChunk(0, "call_123", "todoList", null);
+		ChatCompletionChunk chunk2 = toolCallChunk(0, "call_123", null, "{\"page");
+		ChatCompletionChunk chunk3 = toolCallChunk(0, "call_123", null, "No\":1}");
+
+		ChatCompletionChunk merged1 = this.helper.merge(chunk1, chunk2);
+		ChatCompletionChunk merged2 = this.helper.merge(merged1, chunk3);
+
+		List<ToolCall> toolCalls = merged2.choices().get(0).delta().toolCalls();
+		assertThat(toolCalls).hasSize(1);
+		assertThat(toolCalls.get(0).index()).isEqualTo(0);
+		assertThat(toolCalls.get(0).id()).isEqualTo("call_123");
+		assertThat(toolCalls.get(0).function().name()).isEqualTo("todoList");
+		assertThat(toolCalls.get(0).function().arguments()).isEqualTo("{\"pageNo\":1}");
+	}
+
+	@Test
+	void mergeDifferentToolCallIndexesShouldRemainSeparate() {
+		ChatCompletionChunk chunk1 = toolCallChunk(0, "call_1", "getWeather", "{\"city\":\"Seoul\"}");
+		ChatCompletionChunk chunk2 = toolCallChunk(1, "call_2", "getTime", "{\"timezone\":\"KST\"}");
+
+		ChatCompletionChunk merged = this.helper.merge(chunk1, chunk2);
+
+		List<ToolCall> toolCalls = merged.choices().get(0).delta().toolCalls();
+		assertThat(toolCalls).hasSize(2);
+		assertThat(toolCalls.get(0).index()).isEqualTo(0);
+		assertThat(toolCalls.get(0).function().name()).isEqualTo("getWeather");
+		assertThat(toolCalls.get(1).index()).isEqualTo(1);
+		assertThat(toolCalls.get(1).function().name()).isEqualTo("getTime");
+	}
+
+	@Test
+	void mergeToolCallIndexShouldTakePrecedenceOverRepeatedId() {
+		ChatCompletionChunk chunk1 = toolCallChunk(0, "call_123", "getWeather", "{\"city\":\"Seoul\"}");
+		ChatCompletionChunk chunk2 = toolCallChunk(1, "call_123", "getTime", "{\"timezone\":\"KST\"}");
+
+		ChatCompletionChunk merged = this.helper.merge(chunk1, chunk2);
+
+		List<ToolCall> toolCalls = merged.choices().get(0).delta().toolCalls();
+		assertThat(toolCalls).hasSize(2);
+		assertThat(toolCalls.get(0).index()).isEqualTo(0);
+		assertThat(toolCalls.get(0).function().name()).isEqualTo("getWeather");
+		assertThat(toolCalls.get(1).index()).isEqualTo(1);
+		assertThat(toolCalls.get(1).function().name()).isEqualTo("getTime");
+	}
+
+	private ChatCompletionChunk toolCallChunk(Integer toolCallIndex, String id, String name, String arguments) {
+		ToolCall toolCall = new ToolCall(toolCallIndex, id, "function", new ChatCompletionFunction(name, arguments));
+		ChatCompletionMessage msg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, List.of(toolCall));
+		return new ChatCompletionChunk("id", List.of(new ChatCompletionChunk.ChunkChoice(null, 0, msg, null)), 123L,
+				"model", null, null, null, null);
+	}
+
 }

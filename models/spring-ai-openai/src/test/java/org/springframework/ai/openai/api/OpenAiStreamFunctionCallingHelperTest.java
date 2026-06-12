@@ -335,4 +335,61 @@ public class OpenAiStreamFunctionCallingHelperTest {
 		assertThat(this.helper.isStreamingToolFunctionCall(chunk)).isFalse();
 	}
 
+	@Test
+	public void merge_sameToolCallIndexWithRepeatedId_shouldMerge() {
+		var chunk1 = toolCallChunk(0, "call_123", "get_weather", "");
+		var chunk2 = toolCallChunk(0, "call_123", "", "{\"city\"");
+		var chunk3 = toolCallChunk(0, "", "", ":\"Seoul\"}");
+
+		var merged1 = this.helper.merge(chunk1, chunk2);
+		var merged2 = this.helper.merge(merged1, chunk3);
+
+		var toolCalls = merged2.choices().get(0).delta().toolCalls();
+		assertThat(toolCalls).hasSize(1);
+		assertThat(toolCalls.get(0).index()).isEqualTo(0);
+		assertThat(toolCalls.get(0).id()).isEqualTo("call_123");
+		assertThat(toolCalls.get(0).function().name()).isEqualTo("get_weather");
+		assertThat(toolCalls.get(0).function().arguments()).isEqualTo("{\"city\":\"Seoul\"}");
+	}
+
+	@Test
+	public void merge_differentToolCallIndexes_shouldRemainSeparate() {
+		var chunk1 = toolCallChunk(0, "call_1", "get_weather", "{\"city\":\"Seoul\"}");
+		var chunk2 = toolCallChunk(1, "call_2", "get_time", "{\"timezone\":\"KST\"}");
+
+		var merged = this.helper.merge(chunk1, chunk2);
+
+		var toolCalls = merged.choices().get(0).delta().toolCalls();
+		assertThat(toolCalls).hasSize(2);
+		assertThat(toolCalls.get(0).index()).isEqualTo(0);
+		assertThat(toolCalls.get(0).function().name()).isEqualTo("get_weather");
+		assertThat(toolCalls.get(1).index()).isEqualTo(1);
+		assertThat(toolCalls.get(1).function().name()).isEqualTo("get_time");
+	}
+
+	@Test
+	public void merge_toolCallIndexShouldTakePrecedenceOverRepeatedId() {
+		var chunk1 = toolCallChunk(0, "call_123", "get_weather", "{\"city\":\"Seoul\"}");
+		var chunk2 = toolCallChunk(1, "call_123", "get_time", "{\"timezone\":\"KST\"}");
+
+		var merged = this.helper.merge(chunk1, chunk2);
+
+		var toolCalls = merged.choices().get(0).delta().toolCalls();
+		assertThat(toolCalls).hasSize(2);
+		assertThat(toolCalls.get(0).index()).isEqualTo(0);
+		assertThat(toolCalls.get(0).function().name()).isEqualTo("get_weather");
+		assertThat(toolCalls.get(1).index()).isEqualTo(1);
+		assertThat(toolCalls.get(1).function().name()).isEqualTo("get_time");
+	}
+
+	private OpenAiApi.ChatCompletionChunk toolCallChunk(Integer toolCallIndex, String id, String name,
+			String arguments) {
+		var function = new OpenAiApi.ChatCompletionMessage.ChatCompletionFunction(name, arguments);
+		var toolCall = new OpenAiApi.ChatCompletionMessage.ToolCall(toolCallIndex, id, "function", function);
+		var delta = new OpenAiApi.ChatCompletionMessage(null, null, null, null, List.of(toolCall), null, null, null,
+				null);
+		var choice = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, 0, delta, null);
+		return new OpenAiApi.ChatCompletionChunk("chat-1", List.of(choice), 1L, "model", null, null, null, null);
+	}
+
 }
