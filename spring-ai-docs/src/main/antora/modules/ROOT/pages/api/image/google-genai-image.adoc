@@ -1,0 +1,264 @@
+= Google GenAI Image
+
+The https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash-image[Nano Banana] and https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-image[Nano Banana 2] provides image generation using Google's image models through either the Gemini Developer API or Vertex AI.
+
+They provide high-quality image generation and conversational editing at a mainstream price point and low latency.
+
+It serves as the high-efficiency counterpart to https://ai.google.dev/gemini-api/docs/models/gemini-3-pro-image[Gemini 3 Pro Image], optimized for speed and high-volume developer use cases.
+
+
+This implementation provides two authentication modes:
+
+- **Gemini Developer API**: Use an API key for quick prototyping and development
+- **Vertex AI**: Use Google Cloud credentials for production deployments with enterprise features
+
+== Prerequisites
+
+Choose one of the following authentication methods:
+
+=== Option 1: Gemini Developer API (API Key)
+
+- Obtain an API key from the https://aistudio.google.com/app/apikey[Google AI Studio]
+- Set the API key as an environment variable or in your application properties
+
+=== Option 2: Vertex AI (Google Cloud)
+
+- Install the link:https://cloud.google.com/sdk/docs/install[gcloud] CLI, appropriate for your OS.
+- Authenticate by running the following command.
+Replace `PROJECT_ID` with your Google Cloud project ID and `ACCOUNT` with your Google Cloud username.
+
+[source]
+----
+gcloud config set project <PROJECT_ID> &&
+gcloud auth application-default login <ACCOUNT>
+----
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+
+== Auto-configuration
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
+Spring AI provides Spring Boot auto-configuration for the Google GenAI image Model.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-google-genai-image</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-google-genai-image'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Image generation Properties
+
+==== Connection Properties
+
+The prefix `spring.ai.google.genai.image` is used as the property prefix that lets you connect to Google GenAI image generation API.
+
+[NOTE]
+====
+The connection properties are shared with the Google GenAI Chat module. If you're using both chat and image, you only need to configure the connection once using either `spring.ai.google.genai` prefix (for chat) or `spring.ai.google.genai.image` prefix (for images).
+====
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.google.genai.image.api-key   | API key for Gemini Developer API. When provided, the client uses the Gemini Developer API instead of Vertex AI. |  -
+| spring.ai.google.genai.image.project-id   | Google Cloud Platform project ID (required for Vertex AI mode) |  -
+| spring.ai.google.genai.image.location   | Google Cloud region (required for Vertex AI mode) |  -
+| spring.ai.google.genai.image.credentials-uri   | URI to Google Cloud credentials. When provided it is used to create a `GoogleCredentials` instance for authentication. |  -
+|====
+
+[NOTE]
+====
+Enabling and disabling of the auto-configurations are now configured via top level properties with the prefix `spring.ai.model.image`.
+
+To enable, spring.ai.model.image=google-genai (It is enabled by default)
+
+To disable, spring.ai.model.image=none (or any value which doesn't match google-genai)
+
+This change is done to allow configuration of multiple models.
+====
+
+==== Image generation Properties
+
+The prefix `spring.ai.google.genai.image` is the property prefix that lets you configure the image model implementation for Google GenAI.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.model.image | Enable Google GenAI API model. | google-genai
+
+| spring.ai.google.genai.image.options.n | The number of images to generate. Must be between 1 and 4. | 4
+| spring.ai.google.genai.image.options.model | The https://docs.cloud.google.com/gemini-enterprise-agent-platform/models[Google GenAI model] to use. Supported models include `gemini-2.5-flash-image`, `gemini-3-pro-image` and `gemini-3.1-flash-image` | -
+| spring.ai.google.genai.image.options.aspect-ratio | The aspect ratio of the generated images. Supported values are 1:1, 3:4, 4:3, 9:16, and 16:9 | 1:1
+| spring.ai.google.genai.image.options.seed | Random seed for image generation. This is not available when `add-watermark` is set to true. | -
+| spring.ai.google.genai.image.options.safety-filter-level | Filter level for safety filtering. Supported values are BLOCK_LOW_AND_ABOVE, BLOCK_MEDIUM_AND_ABOVE, BLOCK_ONLY_HIGH and BLOCK_NONE. | -
+| spring.ai.google.genai.image.options.person-generation | Allows generation of people by the model. Supported values are DONT_ALLOW, ALLOW_ADULT and ALLOW_ALL. | -
+| spring.ai.google.genai.image.options.output-mime-type | MIME type of the generated image. | -
+| spring.ai.google.genai.image.options.output-compression-quality | Compression quality of the generated image (for `image/jpeg` only). | -
+| spring.ai.google.genai.image.options.labels | User specified labels to track billing usage. | -
+| spring.ai.google.genai.image.options.image-size | The size of the largest dimension of the generated image. Supported sizes are 1K and 2K. | -
+| spring.ai.google.genai.image.options.temperature | Controls the degree of randomness in token selection. Lower values produce less open-ended responses, higher values produce more diverse or creative results. | -
+| spring.ai.google.genai.image.options.top-p | Tokens are selected from the most to least probable until the sum of their probabilities equals this value. | -
+| spring.ai.google.genai.image.options.top-k | For each token selection step, the `top-k` tokens with the highest probabilities are sampled. | -
+| spring.ai.google.genai.image.options.max-output-tokens | Maximum number of tokens that can be generated in the response. | -
+
+|====
+
+== Sample Controller
+
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-starter-model-google-genai-image` to your pom (or gradle) dependencies.
+
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Google GenAI image model:
+
+=== Using Gemini Developer API (API Key)
+
+[source,application.properties]
+----
+spring.ai.google.genai.image.api-key=YOUR_API_KEY
+spring.ai.google.genai.image.model=gemini-2.5-flash-image
+----
+
+=== Using Vertex AI
+
+[source,application.properties]
+----
+spring.ai.google.genai.image.project-id=YOUR_PROJECT_ID
+spring.ai.google.genai.image.location=YOUR_PROJECT_LOCATION
+spring.ai.google.genai.image.model=gemini-2.5-flash-image
+----
+
+
+This will create a `GoogleGenAiImageModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the image model for images generations.
+
+[source,java]
+----
+@RestController
+public class ImageController {
+
+    private final ImageModel imageModel;
+
+    @Autowired
+    public ImageController(ImageModel imageModel) {
+        this.imageModel = imageModel;
+    }
+
+    @GetMapping("/ai/image")
+    public Map generate(@RequestParam(value = "message", defaultValue = "A painting of a sunset over a mountain") String message) {
+        ImagePrompt imagePrompt = new ImagePrompt(message);
+        ImageResponse imageResponse = this.imageModel.call(imagePrompt);
+        return Map.of("images", imageResponse);
+    }
+}
+----
+
+== Manual Configuration
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-google-genai-image/src/main/java/org/springframework/ai/google/genai/GoogleGenAiImageModel.java[GoogleGenAiImageModel] implements the `ImageModel`.
+
+Add the `spring-ai-google-genai-image` dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-google-genai-image</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-google-genai-image'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `GoogleGenAiImageModel` and use it for images:
+
+=== Using API Key
+
+[source,java]
+----
+GoogleGenAiImageConnectionDetails connectionDetails =
+    GoogleGenAiImageConnectionDetails.builder()
+        .apiKey(System.getenv("GOOGLE_API_KEY"))
+        .build();
+
+GoogleGenAiImageOptions options = GoogleGenAiImageOptions.builder()
+    .model(GoogleGenAiImageOptions.DEFAULT_MODEL_NAME)
+    .build();
+
+var imageModel = new GoogleGenAiImageModel(connectionDetails, options);
+
+ImageResponse imageResponse = imageModel
+	.call("A painting of a sunset over a mountain");
+----
+
+=== Using Vertex AI
+
+[source,java]
+----
+GoogleGenAiImageConnectionDetails connectionDetails =
+    GoogleGenAiImageConnectionDetails.builder()
+        .projectId(System.getenv("GOOGLE_CLOUD_PROJECT"))
+        .location(System.getenv("GOOGLE_CLOUD_LOCATION"))
+        .build();
+
+GoogleGenAiImageOptions options = GoogleGenAiImageOptions.builder()
+    .model(GoogleGenAiImageOptions.DEFAULT_MODEL_NAME)
+    .build();
+
+var imageModel = new GoogleGenAiImageModel(connectionDetails, options);
+
+ImageResponse imageResponse = imageModel
+	.call("A painting of a sunset over a mountain");
+----
+
+== Safety Filter Levels
+
+The Google GenAI image API supports different filter levels for safety filtering:
+
+- `BLOCK_LOW_AND_ABOVE`: Block when low, medium or high probability of unsafe content
+- `BLOCK_MEDIUM_AND_ABOVE`: Block when medium or high probability of unsafe content
+- `BLOCK_ONLY_HIGH`: Block when high probability of unsafe content
+- `BLOCK_NONE`: Always show regardless of probability of unsafe content
+- `SAFETY_FILTER_LEVEL_UNSPECIFIED`: Threshold is unspecified, block using default threshold
+
+== Person Generation
+
+The Google GenAI image API allows the model to generate images of people with different levels:
+
+- `DONT_ALLOW`: Block generation of images of people
+- `ALLOW_ADULT`: Generate images of adults, but not children
+- `ALLOW_ALL`: Generate images that include adults and children
+- `PERSON_GENERATION_UNSPECIFIED`: Threshold is unspecified, generate images of people using default threshold
