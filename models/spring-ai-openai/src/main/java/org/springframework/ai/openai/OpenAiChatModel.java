@@ -566,6 +566,14 @@ public final class OpenAiChatModel implements ChatModel {
 											.inputAudio())
 										.build()));
 							}
+							else if ("application/pdf".equals(mimeType)) {
+								parts.add(ChatCompletionContentPart.ofFile(ChatCompletionContentPart.File.builder()
+									.file(ChatCompletionContentPart.File.FileObject.builder()
+										.filename(media.getName())
+										.fileData(fromMediaData(media.getMimeType(), media.getData()))
+										.build())
+									.build()));
+							}
 							else {
 								// Assume it's a file or other media type represented as a
 								// data URL

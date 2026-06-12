@@ -16,6 +16,7 @@
 
 package org.springframework.ai.openai;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,6 +32,7 @@ import com.openai.core.http.AsyncStreamResponse;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam;
 import com.openai.models.chat.completions.ChatCompletionChunk;
+import com.openai.models.chat.completions.ChatCompletionContentPart;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
 import com.openai.models.chat.completions.ChatCompletionMessage;
 import com.openai.models.chat.completions.ChatCompletionMessageFunctionToolCall;
@@ -54,6 +56,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.util.JsonHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -706,6 +709,76 @@ class OpenAiChatModelTests {
 
 		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("hi", options), false);
 		assertThat(request.promptCacheKey()).contains("my-cache-key");
+	}
+
+	@Test
+	void userMessagePdfMediaMapsToFileContentPart() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		UserMessage userMessage = UserMessage.builder()
+			.text("Summarize the attached document.")
+			.media(Media.builder()
+				.mimeType(Media.Format.DOC_PDF)
+				.data("%PDF-1.7".getBytes(StandardCharsets.UTF_8))
+				.name("sample.pdf")
+				.build())
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt(List.<Message>of(userMessage), options),
+				false);
+
+		List<ChatCompletionContentPart> parts = request.messages()
+			.get(0)
+			.user()
+			.orElseThrow()
+			.content()
+			.arrayOfContentParts()
+			.orElseThrow();
+		assertThat(parts).hasSize(2);
+		assertThat(parts.get(0).text().orElseThrow().text()).isEqualTo("Summarize the attached document.");
+		ChatCompletionContentPart.File.FileObject file = parts.get(1).file().orElseThrow().file();
+		assertThat(file.filename()).contains("sample.pdf");
+		assertThat(file.fileData()).contains("data:application/pdf;base64,JVBERi0xLjc=");
+	}
+
+	@Test
+	void userMessagePdfMediaWithStringDataPassesItThroughAsFileData() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		UserMessage userMessage = UserMessage.builder()
+			.text("Summarize the attached document.")
+			.media(Media.builder()
+				.mimeType(Media.Format.DOC_PDF)
+				.data("data:application/pdf;base64,JVBERi0xLjc=")
+				.name("sample.pdf")
+				.build())
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt(List.<Message>of(userMessage), options),
+				false);
+
+		ChatCompletionContentPart.File.FileObject file = request.messages()
+			.get(0)
+			.user()
+			.orElseThrow()
+			.content()
+			.arrayOfContentParts()
+			.orElseThrow()
+			.get(1)
+			.file()
+			.orElseThrow()
+			.file();
+		assertThat(file.fileData()).contains("data:application/pdf;base64,JVBERi0xLjc=");
 	}
 
 }
