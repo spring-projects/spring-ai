@@ -525,7 +525,7 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-autoconfigure-model-chat-memory-redis</artifactId>
+				<artifactId>spring-ai-autoconfigure-model-chat-memory-repository-redis</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
