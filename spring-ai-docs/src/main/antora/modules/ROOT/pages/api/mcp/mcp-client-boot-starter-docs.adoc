@@ -508,7 +508,7 @@ Sync::
 [source,java]
 ----
 @Component
-public class CustomMcpSyncClientCustomizer implements McpCustomizer<McpClient.SyncSpec> {
+public class CustomMcpSyncClientCustomizer implements McpClientCustomizer<McpClient.SyncSpec> {
     @Override
     public void customize(String serverConfigurationName, McpClient.SyncSpec spec) {
 
@@ -567,7 +567,7 @@ Async::
 [source,java]
 ----
 @Component
-public class CustomMcpAsyncClientCustomizer implements McpCustomizer<McpClient.AsyncSpec> {
+public class CustomMcpAsyncClientCustomizer implements McpClientCustomizer<McpClient.AsyncSpec> {
     @Override
     public void customize(String serverConfigurationName, McpClient.AsyncSpec spec) {
         // Customize the async client configuration
@@ -824,10 +824,7 @@ public class McpClientHandlers {
         // Process the request and generate a response
         String response = generateLLMResponse(request);
 
-        return CreateMessageResult.builder()
-            .role(Role.ASSISTANT)
-            .content(new TextContent(response))
-            .model("gpt-4")
+        return CreateMessageResult.builder(Role.ASSISTANT, response, "gpt-4")
             .build();
     }
 
@@ -861,10 +858,7 @@ public void handleServer1Logs(LoggingMessageNotification notification) {
 public Mono<CreateMessageResult> handleAsyncSampling(CreateMessageRequest request) {
     return Mono.fromCallable(() -> {
         String response = generateLLMResponse(request);
-        return CreateMessageResult.builder()
-            .role(Role.ASSISTANT)
-            .content(new TextContent(response))
-            .model("gpt-4")
+        return CreateMessageResult.builder(Role.ASSISTANT, response, "gpt-4")
             .build();
     }).subscribeOn(Schedulers.boundedElastic());
 }

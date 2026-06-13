@@ -20,8 +20,6 @@ import java.time.Duration;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -46,8 +44,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 @SpringBootTest
 class OllamaChatModelMultimodalIT extends BaseOllamaIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(OllamaChatModelMultimodalIT.class);
 
 	private static final String MODEL = OllamaModel.GEMMA3.getName();
 
@@ -77,8 +73,6 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
-
-		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
 				"fruit stand");
 	}
@@ -105,12 +99,11 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 				@Override
 				public void onRetryFailure(final RetryPolicy policy, final Retryable<?> retryable,
 						final Throwable throwable) {
-					logger.warn("Retry error. Retry count:" + (throwable.getSuppressed().length + 1), throwable);
 				}
 			});
 			return OllamaChatModel.builder()
 				.ollamaApi(ollamaApi)
-				.defaultOptions(OllamaChatOptions.builder().model(MODEL).temperature(0.9).build())
+				.options(OllamaChatOptions.builder().model(MODEL).temperature(0.9).build())
 				.retryTemplate(retryTemplate)
 				.build();
 		}

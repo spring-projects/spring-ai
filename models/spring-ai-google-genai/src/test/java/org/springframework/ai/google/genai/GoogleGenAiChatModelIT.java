@@ -29,11 +29,10 @@ import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -73,8 +72,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".+")
 class GoogleGenAiChatModelIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiChatModelIT.class);
-
 	@Autowired
 	private GoogleGenAiChatModel chatModel;
 
@@ -113,7 +110,7 @@ class GoogleGenAiChatModelIT {
 	@Test
 	void googleSearchToolFlash() {
 		Prompt prompt = createPrompt(
-				GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_2_0_FLASH).googleSearchRetrieval(true).build());
+				GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_2_5_FLASH).googleSearchRetrieval(true).build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew", "Bob");
 	}
@@ -318,7 +315,6 @@ class GoogleGenAiChatModelIT {
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
-		// logger.info("{}", actorsFilms);
 		assertThat(generationTextFromStream).isNotEmpty();
 	}
 
@@ -350,7 +346,6 @@ class GoogleGenAiChatModelIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
-		// logger.info("{}", actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -440,8 +435,8 @@ class GoogleGenAiChatModelIT {
 		GoogleGenAiChatModel chatModelWithTools = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient())
 			.toolCallingManager(toolCallingManager)
-			.defaultOptions(GoogleGenAiChatOptions.builder()
-				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
+			.options(GoogleGenAiChatOptions.builder()
+				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
 				.temperature(0.1)
 				.build())
 			.build();
@@ -475,13 +470,16 @@ class GoogleGenAiChatModelIT {
 		GoogleGenAiChatModel chatModelWithTools = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient())
 			.toolCallingManager(toolCallingManager)
-			.defaultOptions(GoogleGenAiChatOptions.builder()
-				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
+			.options(GoogleGenAiChatOptions.builder()
+				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
 				.temperature(0.1)
 				.build())
 			.build();
 
-		ChatClient chatClient = ChatClient.builder(chatModelWithTools).build();
+		ChatClient chatClient = ChatClient
+			.builder(chatModelWithTools, ObservationRegistry.NOOP, null, null,
+					ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
+			.build();
 
 		// Create a prompt that will trigger the tool call with a specific request that
 		// should invoke the tool
@@ -499,7 +497,7 @@ class GoogleGenAiChatModelIT {
 	void testThinkingBudgetGeminiProAutomaticDecisionByModel() {
 		GoogleGenAiChatModel chatModelWithThinkingBudget = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient())
-			.defaultOptions(GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_2_5_PRO).temperature(0.1).build())
+			.options(GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_2_5_PRO).temperature(0.1).build())
 			.build();
 
 		ChatClient chatClient = ChatClient.builder(chatModelWithThinkingBudget).build();
@@ -513,14 +511,13 @@ class GoogleGenAiChatModelIT {
 			.content();
 
 		assertThat(response).isNotEmpty();
-		logger.info("Response: {} in {} ms", response, System.currentTimeMillis() - start);
 	}
 
 	@Test
 	void testThinkingBudgetGeminiProMinBudget() {
 		GoogleGenAiChatModel chatModelWithThinkingBudget = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient())
-			.defaultOptions(GoogleGenAiChatOptions.builder()
+			.options(GoogleGenAiChatOptions.builder()
 				.model(ChatModel.GEMINI_2_5_PRO)
 				.temperature(0.1)
 				.thinkingBudget(128)
@@ -538,14 +535,13 @@ class GoogleGenAiChatModelIT {
 			.content();
 
 		assertThat(response).isNotEmpty();
-		logger.info("Response: {} in {} ms", response, System.currentTimeMillis() - start);
 	}
 
 	@Test
 	void testThinkingBudgetGeminiFlashDefaultBudget() {
 		GoogleGenAiChatModel chatModelWithThinkingBudget = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient())
-			.defaultOptions(GoogleGenAiChatOptions.builder()
+			.options(GoogleGenAiChatOptions.builder()
 				.model(ChatModel.GEMINI_2_5_FLASH)
 				.temperature(0.1)
 				.thinkingBudget(8192)
@@ -563,14 +559,13 @@ class GoogleGenAiChatModelIT {
 			.content();
 
 		assertThat(response).isNotEmpty();
-		logger.info("Response: {} in {} ms", response, System.currentTimeMillis() - start);
 	}
 
 	@Test
 	void testThinkingBudgetGeminiFlashThinkingTurnedOff() {
 		GoogleGenAiChatModel chatModelWithThinkingBudget = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient())
-			.defaultOptions(GoogleGenAiChatOptions.builder()
+			.options(GoogleGenAiChatOptions.builder()
 				.model(ChatModel.GEMINI_2_5_FLASH)
 				.temperature(0.1)
 				.thinkingBudget(0)
@@ -588,7 +583,6 @@ class GoogleGenAiChatModelIT {
 			.content();
 
 		assertThat(response).isNotEmpty();
-		logger.info("Response: {} in {} ms", response, System.currentTimeMillis() - start);
 	}
 
 	/**
@@ -602,7 +596,7 @@ class GoogleGenAiChatModelIT {
 	void testThinkingLevelUnsupportedModels() {
 		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient())
-			.defaultOptions(GoogleGenAiChatOptions.builder()
+			.options(GoogleGenAiChatOptions.builder()
 				.model(ChatModel.GEMINI_2_5_FLASH)
 				.temperature(0.1)
 				.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
@@ -622,8 +616,8 @@ class GoogleGenAiChatModelIT {
 	void testThinkingLevelLow() {
 		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClientGlobal())
-			.defaultOptions(GoogleGenAiChatOptions.builder()
-				.model(ChatModel.GEMINI_3_PRO_PREVIEW)
+			.options(GoogleGenAiChatOptions.builder()
+				.model(ChatModel.GEMINI_3_1_PRO_PREVIEW)
 				.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
 				.build())
 			.build();
@@ -634,15 +628,14 @@ class GoogleGenAiChatModelIT {
 		String response = chatClient.prompt().user("What is 2+2? Give a brief answer.").call().content();
 
 		assertThat(response).isNotEmpty();
-		logger.info("ThinkingLevel=LOW Response: {} in {} ms", response, System.currentTimeMillis() - start);
 	}
 
 	@Test
 	void testThinkingLevelHigh() {
 		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClientGlobal())
-			.defaultOptions(GoogleGenAiChatOptions.builder()
-				.model(ChatModel.GEMINI_3_PRO_PREVIEW)
+			.options(GoogleGenAiChatOptions.builder()
+				.model(ChatModel.GEMINI_3_1_PRO_PREVIEW)
 				.temperature(0.1)
 				.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
 				.build())
@@ -657,7 +650,6 @@ class GoogleGenAiChatModelIT {
 			.content();
 
 		assertThat(response).isNotEmpty();
-		logger.info("ThinkingLevel=HIGH Response: {} in {} ms", response, System.currentTimeMillis() - start);
 	}
 
 	/**
@@ -676,8 +668,8 @@ class GoogleGenAiChatModelIT {
 	void testThinkingLevelWithBudgetCombinedExpectsError() {
 		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClientGlobal())
-			.defaultOptions(GoogleGenAiChatOptions.builder()
-				.model(ChatModel.GEMINI_3_PRO_PREVIEW)
+			.options(GoogleGenAiChatOptions.builder()
+				.model(ChatModel.GEMINI_3_1_PRO_PREVIEW)
 				.temperature(0.1)
 				.thinkingBudget(4096)
 				.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
@@ -745,8 +737,8 @@ class GoogleGenAiChatModelIT {
 		public GoogleGenAiChatModel vertexAiEmbedding(Client genAiClient) {
 			return GoogleGenAiChatModel.builder()
 				.genAiClient(genAiClient)
-				.defaultOptions(
-						GoogleGenAiChatOptions.builder().model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH).build())
+				.options(
+						GoogleGenAiChatOptions.builder().model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH).build())
 				.build();
 		}
 

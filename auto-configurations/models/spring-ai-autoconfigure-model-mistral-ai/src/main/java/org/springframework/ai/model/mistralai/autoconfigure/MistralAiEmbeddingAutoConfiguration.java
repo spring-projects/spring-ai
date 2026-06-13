@@ -17,6 +17,7 @@
 package org.springframework.ai.model.mistralai.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.mistralai.MistralAiEmbeddingModel;
@@ -45,6 +46,7 @@ import org.springframework.web.client.RestClient;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author Yanming Zhou
+ * @author Sebastien Deleuze
  * @since 0.8.1
  */
 @AutoConfiguration
@@ -70,7 +72,7 @@ public class MistralAiEmbeddingAutoConfiguration {
 		var embeddingModel = MistralAiEmbeddingModel.builder()
 			.mistralAiApi(mistralAiApi)
 			.metadataMode(embeddingProperties.getMetadataMode())
-			.options(embeddingProperties.getOptions())
+			.options(embeddingProperties.toOptions())
 			.retryTemplate(retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.build();
@@ -80,8 +82,9 @@ public class MistralAiEmbeddingAutoConfiguration {
 		return embeddingModel;
 	}
 
-	private MistralAiApi mistralAiApi(String apiKey, String commonApiKey, String baseUrl, String commonBaseUrl,
-			RestClient.Builder restClientBuilder, ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
+	private MistralAiApi mistralAiApi(@Nullable String apiKey, @Nullable String commonApiKey, @Nullable String baseUrl,
+			@Nullable String commonBaseUrl, RestClient.Builder restClientBuilder,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		var resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
 		var resoledBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;

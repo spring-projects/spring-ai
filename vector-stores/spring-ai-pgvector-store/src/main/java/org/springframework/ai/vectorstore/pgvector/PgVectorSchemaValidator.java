@@ -20,9 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -32,11 +32,12 @@ import org.springframework.jdbc.core.JdbcTemplate;
  *
  * @author Muthukumaran Navaneethakrishnan
  * @author Christian Tzolov
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 class PgVectorSchemaValidator {
 
-	private static final Logger logger = LoggerFactory.getLogger(PgVectorSchemaValidator.class);
+	private static final Log logger = LogFactory.getLog(PgVectorSchemaValidator.class);
 
 	private final JdbcTemplate jdbcTemplate;
 
@@ -77,7 +78,7 @@ class PgVectorSchemaValidator {
 		}
 	}
 
-	void validateTableSchema(String schemaName, String tableName) {
+	void validateTableSchema(String schemaName, String tableName, int dimensions) {
 
 		if (!isValidNameForDatabaseObject(schemaName)) {
 			throw new IllegalArgumentException(
@@ -93,7 +94,9 @@ class PgVectorSchemaValidator {
 		}
 
 		try {
-			logger.info("Validating PGVectorStore schema for table: {} in schema: {}", tableName, schemaName);
+			if (logger.isInfoEnabled()) {
+				logger.info("Validating PGVectorStore schema for table: " + tableName + " in schema: " + schemaName);
+			}
 
 			List<String> expectedColumns = new ArrayList<>();
 			expectedColumns.add("id");
@@ -115,7 +118,7 @@ class PgVectorSchemaValidator {
 
 			// Check each column against expected fields
 			List<String> availableColumns = new ArrayList<>();
-			for (Map<String, Object> column : columns) {
+			for (Map<String, @Nullable Object> column : columns) {
 				String columnName = (String) column.get("column_name");
 				availableColumns.add(columnName);
 
@@ -130,9 +133,34 @@ class PgVectorSchemaValidator {
 				throw new IllegalStateException("Missing fields " + expectedColumns);
 			}
 
+			// Query the actual dimensions
+			query = """
+					SELECT
+						a.atttypmod
+					FROM
+						pg_attribute a
+					JOIN
+						pg_class c ON a.attrelid = c.oid
+					JOIN
+						pg_namespace n ON c.relnamespace = n.oid
+					WHERE
+						n.nspname = ?
+						AND c.relname = ?
+						AND a.attname = ?
+						AND a.attnum > 0
+						AND NOT a.attisdropped
+					""";
+			Integer actualDimensions = this.jdbcTemplate.queryForObject(query, Integer.class, schemaName, tableName,
+					"embedding");
+			if (actualDimensions == null || actualDimensions != dimensions) {
+				throw new IllegalStateException("Actual vector dimensions is " + actualDimensions
+						+ ", required vector dimensions is " + dimensions);
+			}
 		}
 		catch (DataAccessException | IllegalStateException e) {
-			logger.error("Error while validating table schema{}", e.getMessage());
+			if (logger.isErrorEnabled()) {
+				logger.error("Error while validating table schema: " + e.getMessage());
+			}
 			logger
 				.error("Failed to operate with the specified table in the database. To resolve this issue, please ensure the following steps are completed:\n"
 						+ "1. Ensure the necessary PostgreSQL extensions are enabled. Run the following SQL commands:\n"

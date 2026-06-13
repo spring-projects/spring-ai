@@ -289,6 +289,43 @@ public class TypesenseVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@Test
+	void deleteByIdListDeletesOnlySpecifiedDocuments() {
+		// Verifies that delete-by-id-list correctly removes only the specified documents
+		// using the id: [id1,id2] bare-value filter_by format that Typesense requires
+		// for its special id field. If the filter matched nothing, the count would stay
+		// at 3 rather than dropping to 1.
+		this.contextRunner.run(context -> {
+			TypesenseVectorStore vectorStore = context.getBean(TypesenseVectorStore.class);
+
+			// Drop and recreate to guarantee a clean collection regardless of what
+			// previous tests (e.g. BaseVectorStoreTests) may have left behind.
+			vectorStore.dropCollection();
+			vectorStore.createCollection();
+
+			var doc1 = new Document(UUID.randomUUID().toString(), "Content one", Map.of("keep", "true"));
+			var doc2 = new Document(UUID.randomUUID().toString(), "Content two", Map.of("keep", "false"));
+			var doc3 = new Document(UUID.randomUUID().toString(), "Content three", Map.of("keep", "false"));
+
+			vectorStore.add(List.of(doc1, doc2, doc3));
+
+			Map<String, Object> info = vectorStore.getCollectionInfo();
+			assertThat(info.get("num_documents")).isEqualTo(3L);
+
+			vectorStore.delete(List.of(doc2.getId(), doc3.getId()));
+
+			info = vectorStore.getCollectionInfo();
+			assertThat(info.get("num_documents")).isEqualTo(1L);
+
+			List<Document> remaining = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Content").topK(5).similarityThresholdAll().build());
+			assertThat(remaining).hasSize(1);
+			assertThat(remaining.get(0).getId()).isEqualTo(doc1.getId());
+
+			vectorStore.dropCollection();
+		});
+	}
+
+	@Test
 	void getNativeClientTest() {
 		this.contextRunner.run(context -> {
 			TypesenseVectorStore vectorStore = context.getBean(TypesenseVectorStore.class);

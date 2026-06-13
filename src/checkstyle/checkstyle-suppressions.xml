@@ -27,7 +27,6 @@
 
 	<suppress files=".*BeanOutputConverterTest\.java$" checks="RegexpSinglelineJava"/>
 	<suppress  files="BaseOllamaIT.java" checks="HideUtilityClassConstructor"/>
-	<suppress  files="OpenAiApiBuilderTests.java" checks="RegexpSinglelineJava"/>
 	<suppress  files="AnthropicApiBuilderTests.java" checks="RegexpSinglelineJava"/>
 	<suppress  files="OpenAiChatModelResponseFormatIT.java" checks="RegexpSinglelineJava"/>
 	<suppress files="ClientIT.java" checks="RegexpSinglelineJava"/>
@@ -41,17 +40,13 @@
 	<suppress files="CouchbaseSearchVectorStore.java" checks="RegexpSinglelineJava"/>
 	<suppress files="DeepSeekChatModelIT.java" checks="RegexpSinglelineJava"/>
 	<suppress files="OpenAiSdk*.java" checks="RegexpSinglelineJava"/>
-	<suppress files="OpenAiApi.java" checks="AnnotationLocation"/>
 
 	<suppress files="AzureVectorStore.java" checks="FinalClass"/>
 	<suppress files="CassandraVectorStore.java" checks="FinalClass"/>
 	<suppress files="CoherenceVectorStore.java" checks="FinalClass"/>
-	<suppress files="CosmosDBChatMemoryRepository.java" checks="FinalClass"/>
-	<suppress files="CosmosDBVectorStore.java" checks="FinalClass"/>
 	<suppress files="CouchbaseSearchVectorStore.java" checks="FinalClass"/>
 	<suppress files="GemFireVectorStore.java" checks="FinalClass"/>
 	<suppress files="MilvusVectorStore.java" checks="FinalClass"/>
-	<suppress files="HanaCloudVectorStore.java" checks="FinalClass"/>
 	<suppress files="MongoDBAtlasVectorStore.java" checks="FinalClass"/>
 	<suppress files="Neo4jVectorStore.java" checks="FinalClass"/>
 	<suppress files="OpenSearchVectorStore.java" checks="FinalClass"/>
@@ -66,26 +61,7 @@
 	<suppress files="ToolInputSchemaAugmenterTest.java" checks="[a-zA-Z0-9]*"/>
 
 	<suppress files="[\\/]src[\\/]test[\\/]java[\\/]" id="bannedNullabilityImports" />
-	<!-- This list will gradually shrink as we migrate to JSpecify -->
-	<suppress files="auto-configurations[\\/]models[\\/]spring-ai-autoconfigure-model-" id="bannedNullabilityImports" />
-
-	<suppress files="models[\\/]spring-ai-azure-openai" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-bedrock" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-bedrock-converse" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-elevenlabs" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-google-genai" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-google-genai-embedding" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-minimax" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-mistral-ai" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-openai" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-openai-sdk" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-transformers" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-vertex-ai-embedding" id="bannedNullabilityImports" />
-
 	<suppress files="spring-ai-integration-tests" id="bannedNullabilityImports" />
-	<suppress files="spring-ai-spring-boot-docker-compose" id="bannedNullabilityImports" />
-	<suppress files="spring-ai-spring-boot-starters" id="bannedNullabilityImports" />
-	<suppress files="spring-ai-spring-boot-testcontainers" id="bannedNullabilityImports" />
 
-	<suppress files="models|auto-configurations[\\/]models[\\/]spring-ai-autoconfigure-model-|spring-ai-integration-tests|spring-ai-spring-boot-docker-compose|spring-ai-spring-boot-starters|spring-ai-spring-boot-testcontainers" checks="JavadocPackage" />
+	<suppress files="spring-ai-integration-tests" checks="JavadocPackage" />
 </suppressions>

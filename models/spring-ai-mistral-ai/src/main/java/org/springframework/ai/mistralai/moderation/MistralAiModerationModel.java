@@ -20,9 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.mistralai.api.MistralAiModerationApi;
 import org.springframework.ai.mistralai.api.MistralAiModerationApi.MistralAiModerationRequest;
@@ -46,16 +46,17 @@ import org.springframework.util.Assert;
 /**
  * @author Ricken Bazolo
  * @author Jason Smith
+ * @author Sebastien Deleuze
  */
 public class MistralAiModerationModel implements ModerationModel {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final Log logger = LogFactory.getLog(getClass());
 
 	private final MistralAiModerationApi mistralAiModerationApi;
 
 	private final RetryTemplate retryTemplate;
 
-	private final MistralAiModerationOptions defaultOptions;
+	private final MistralAiModerationOptions options;
 
 	public MistralAiModerationModel(MistralAiModerationApi mistralAiModerationApi, RetryTemplate retryTemplate,
 			MistralAiModerationOptions options) {
@@ -64,7 +65,7 @@ public class MistralAiModerationModel implements ModerationModel {
 		Assert.notNull(options, "options must not be null");
 		this.mistralAiModerationApi = mistralAiModerationApi;
 		this.retryTemplate = retryTemplate;
-		this.defaultOptions = options;
+		this.options = options;
 	}
 
 	@Override
@@ -74,19 +75,14 @@ public class MistralAiModerationModel implements ModerationModel {
 
 			var instructions = moderationPrompt.getInstructions().getText();
 
-			var moderationRequest = new MistralAiModerationRequest(instructions);
+			ModerationOptions requestOptions = moderationPrompt.getOptions();
+			String model = this.options.getModel();
 
-			if (this.defaultOptions != null) {
-				moderationRequest = ModelOptionsUtils.merge(this.defaultOptions, moderationRequest,
-						MistralAiModerationRequest.class);
+			if (requestOptions != null) {
+				model = ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.options.getModel());
 			}
-			else {
-				// moderationPrompt.getOptions() never null but model can be empty,
-				// cause
-				// by ModerationPrompt constructor
-				moderationRequest = ModelOptionsUtils.merge(toMistralAiModerationOptions(moderationPrompt.getOptions()),
-						moderationRequest, MistralAiModerationRequest.class);
-			}
+
+			var moderationRequest = new MistralAiModerationRequest(instructions, model);
 
 			var moderationResponseEntity = this.mistralAiModerationApi.moderate(moderationRequest);
 
@@ -98,7 +94,9 @@ public class MistralAiModerationModel implements ModerationModel {
 			MistralAiModerationRequest mistralAiModerationRequest) {
 		var moderationApiResponse = moderationResponseEntity.getBody();
 		if (moderationApiResponse == null) {
-			logger.warn("No moderation response returned for request: {}", mistralAiModerationRequest);
+			if (logger.isWarnEnabled()) {
+				logger.warn("No moderation response returned for request: " + mistralAiModerationRequest);
+			}
 			return new ModerationResponse(null);
 		}
 
@@ -151,14 +149,6 @@ public class MistralAiModerationModel implements ModerationModel {
 			.build();
 
 		return new ModerationResponse(new Generation(moderation));
-	}
-
-	private MistralAiModerationOptions toMistralAiModerationOptions(ModerationOptions runtimeModerationOptions) {
-		var mistralAiModerationOptionsBuilder = MistralAiModerationOptions.builder();
-		if (runtimeModerationOptions != null && runtimeModerationOptions.getModel() != null) {
-			mistralAiModerationOptionsBuilder.model(runtimeModerationOptions.getModel());
-		}
-		return mistralAiModerationOptionsBuilder.build();
 	}
 
 	public static Builder builder() {

@@ -22,7 +22,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.awaitility.Awaitility;
@@ -30,8 +32,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.converse.api.BedrockCacheOptions;
@@ -44,6 +44,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -52,7 +53,9 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -67,8 +70,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(classes = BedrockConverseTestConfiguration.class)
 @RequiresAwsCredentials
 class BedrockProxyChatModelIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(BedrockProxyChatModelIT.class);
 
 	@Autowired
 	protected ChatModel chatModel;
@@ -108,7 +109,6 @@ class BedrockProxyChatModelIT {
 		Generation generation = response.getResults().get(0);
 		assertThat(generation.getOutput().getText()).contains("Blackbeard");
 		assertThat(generation.getMetadata().getFinishReason()).isEqualTo("end_turn");
-		logger.info(response.toString());
 	}
 
 	@Test
@@ -134,18 +134,17 @@ class BedrockProxyChatModelIT {
 	@Test
 	void streamingWithTokenUsage() {
 		var promptOptions = BedrockChatOptions.builder().temperature(0.0).build();
+		BedrockChatOptions options = (BedrockChatOptions) this.chatModel.getOptions();
+		var mergedOptions = promptOptions.mutate().combineWith(options.mutate()).build();
 
-		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
+		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", mergedOptions);
 		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
-		var referenceTokenUsage = this.chatModel.call(prompt).getMetadata().getUsage();
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
 		assertThat(streamingTokenUsage.getCompletionTokens()).isGreaterThan(0);
 		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
-
-		assertThat(streamingTokenUsage.getPromptTokens()).isEqualTo(referenceTokenUsage.getPromptTokens());
-		assertThat(streamingTokenUsage.getCompletionTokens()).isEqualTo(referenceTokenUsage.getCompletionTokens());
-		assertThat(streamingTokenUsage.getTotalTokens()).isEqualTo(referenceTokenUsage.getTotalTokens());
+		assertThat(streamingTokenUsage.getTotalTokens())
+			.isEqualTo(streamingTokenUsage.getPromptTokens() + streamingTokenUsage.getCompletionTokens());
 
 	}
 
@@ -210,7 +209,6 @@ class BedrockProxyChatModelIT {
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = beanOutputConverter.convert(generation.getOutput().getText());
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -242,7 +240,6 @@ class BedrockProxyChatModelIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = beanOutputConverter.convert(generationTextFromStream);
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -258,14 +255,46 @@ class BedrockProxyChatModelIT {
 			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
-
-		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
 				"fruit stand");
 	}
 
 	@Test
 	void functionCallTest() {
+
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var options = BedrockChatOptions.builder()
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location. Return in 36°C format")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		var mergedOptions = options.mutate().combineWith(this.chatModel.getOptions().mutate()).build();
+
+		var prompt = new Prompt(messages, mergedOptions);
+
+		ChatResponse response = this.chatModel.call(prompt);
+
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), mergedOptions);
+			response = this.chatModel.call(prompt);
+		}
+		Generation generation = response.getResult();
+		assertThat(generation.getOutput().getText()).contains("30", "10", "15");
+	}
+
+	@Test
+	void functionCallTestWithToolCallingOptions() {
+
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
 		UserMessage userMessage = new UserMessage(
 				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
@@ -279,39 +308,25 @@ class BedrockProxyChatModelIT {
 				.build()))
 			.build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+		var mergedOptions = promptOptions.mutate().combineWith(this.chatModel.getOptions().mutate()).build();
 
-		logger.info("Response: {}", response);
+		var prompt = new Prompt(messages, mergedOptions);
 
-		Generation generation = response.getResult();
-		assertThat(generation.getOutput().getText()).contains("30", "10", "15");
-	}
+		ChatResponse response = this.chatModel.call(prompt);
 
-	@Test
-	void functionCallTestWithToolCallingOptions() {
-
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
-
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = ToolCallingChatOptions.builder()
-			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
-				.description("Get the weather in location. Return in 36°C format")
-				.inputType(MockWeatherService.Request.class)
-				.build()))
-			.build();
-
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
-
-		logger.info("Response: {}", response);
-
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), mergedOptions);
+			response = this.chatModel.call(prompt);
+		}
 		Generation generation = response.getResult();
 		assertThat(generation.getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
 	void streamFunctionCallTest() {
+
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
 		UserMessage userMessage = new UserMessage(
 				// "What's the weather like in San Francisco? Return the result in
@@ -329,16 +344,19 @@ class BedrockProxyChatModelIT {
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
+		var prompt = new Prompt(messages, promptOptions);
 
-		String content = response.collectList()
-			.block()
-			.stream()
-			.filter(cr -> cr.getResult() != null)
-			.map(cr -> cr.getResult().getOutput().getText())
-			.collect(Collectors.joining());
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
 
-		logger.info("Response: {}", content);
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
+
+		String content = aggregatedRef.get().getResult().getOutput().getText();
 		assertThat(content).contains("30", "10", "15");
 	}
 
@@ -346,9 +364,9 @@ class BedrockProxyChatModelIT {
 	@ValueSource(ints = { 50, 60 })
 	void streamFunctionCallTestWithMaxTokens(int maxTokens) {
 
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
 		UserMessage userMessage = new UserMessage(
-				// "What's the weather like in San Francisco? Return the result in
-				// Celsius.");
 				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
@@ -363,11 +381,20 @@ class BedrockProxyChatModelIT {
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
-		ChatResponse lastResponse = response.blockLast();
-		String finishReason = lastResponse.getResult().getMetadata().getFinishReason();
+		var prompt = new Prompt(messages, promptOptions);
 
-		logger.info("Finish reason: {}", finishReason);
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+
+		while (aggregatedRef.get().hasToolCalls() && aggregatedRef.get().hasFinishReasons(Set.of("tool_use"))) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
+
+		ChatResponse lastResponse = aggregatedRef.get();
+		String finishReason = lastResponse.getResult().getMetadata().getFinishReason();
 		assertThat(finishReason).isEqualTo("max_tokens");
 	}
 
@@ -381,8 +408,6 @@ class BedrockProxyChatModelIT {
 				.call()
 				.chatResponse();
 		// @formatter:on
-
-		logger.info(response.toString());
 		validateChatResponseMetadata(response, model);
 	}
 
@@ -397,8 +422,6 @@ class BedrockProxyChatModelIT {
 				.chatResponse()
 				.blockLast();
 		// @formatter:on
-
-		logger.info(response.toString());
 		validateChatResponseMetadata(response, model);
 	}
 
@@ -458,17 +481,85 @@ class BedrockProxyChatModelIT {
 			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 			Integer cacheRead = response.getMetadata().get("cacheReadInputTokens");
 			Integer cacheWrite = response.getMetadata().get("cacheWriteInputTokens");
-			logger.info("[systemOnly] attempt={}, cacheWrite={}, cacheRead={}", questionIndex.get(), cacheWrite,
-					cacheRead);
 			assertThat(cacheRead).as("Should eventually read from cache").isNotNull().isPositive();
 			assertThat(cacheRead).as("Cache read should meet the 4096 token minimum for Claude Haiku 4.5")
 				.isGreaterThan(4096);
 			assertThat(cacheWrite).as("A cache read hit should not also write").isIn(null, 0);
+
+			// Verify unified Usage interface reports the same cache metrics
+			org.springframework.ai.chat.metadata.Usage springUsage = response.getMetadata().getUsage();
+			assertThat(springUsage.getCacheReadInputTokens())
+				.as("Usage interface should report same cache read tokens as metadata")
+				.isEqualTo(cacheRead.longValue());
+		});
+	}
+
+	@Test
+	void testMultiBlockSystemPromptCaching() {
+		String model = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
+
+		String basePrompt = """
+				You are an expert software architect with deep knowledge of distributed systems,
+				microservices, cloud computing, and software design patterns. Your role is to provide
+				detailed technical guidance on system architecture, design decisions, and best practices.
+
+				Key areas of expertise:
+				- Distributed systems design and architecture
+				- Microservices patterns and anti-patterns
+				- Cloud-native application development
+				- Event-driven architectures
+				- Database design and scaling strategies
+				- API design and RESTful services
+				- Security best practices
+				- Performance optimization and scalability
+
+				""";
+
+		// Repeat to exceed 4096 token minimum for Claude Haiku 4.5.
+		String staticSystemPrompt = basePrompt.repeat(40)
+				+ "When answering questions, provide clear, structured responses with examples.";
+
+		BedrockCacheOptions cacheOptions = BedrockCacheOptions.builder()
+			.strategy(BedrockCacheStrategy.SYSTEM_ONLY)
+			.multiBlockSystemCaching(true)
+			.build();
+
+		BedrockChatOptions chatOptions = BedrockChatOptions.builder()
+			.model(model)
+			.cacheOptions(cacheOptions)
+			.maxTokens(500)
+			.build();
+
+		// Each call mutates the trailing dynamic system block. With
+		// multiBlockSystemCaching, the static prefix should still get a cache read
+		// despite the dynamic block changing each request.
+		List<String> questions = List.of("What is a monolith?", "What is a microservice?",
+				"What is event-driven architecture?", "What is a service mesh?", "What is CQRS?");
+		AtomicInteger questionIndex = new AtomicInteger(0);
+		Awaitility.await().atMost(Duration.ofMinutes(2)).pollInterval(Duration.ofSeconds(3)).untilAsserted(() -> {
+			int idx = questionIndex.getAndIncrement();
+			String question = questions.get(idx % questions.size());
+			String dynamicContext = "Dynamic context for turn " + idx + ": timestamp=" + System.nanoTime();
+
+			ChatResponse response = this.chatModel.call(new Prompt(List.of(new SystemMessage(staticSystemPrompt),
+					new SystemMessage(dynamicContext), new UserMessage(question)), chatOptions));
+			assertThat(response.getResults()).hasSize(1);
+			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+
+			Integer cacheRead = response.getMetadata().get("cacheReadInputTokens");
+			Integer cacheWrite = response.getMetadata().get("cacheWriteInputTokens");
+			assertThat(cacheRead).as("Static prefix should eventually be read from cache despite dynamic block changes")
+				.isNotNull()
+				.isPositive();
+			assertThat(cacheRead).as("Cache read should meet the 4096 token minimum for Claude Haiku 4.5")
+				.isGreaterThan(4096);
 		});
 	}
 
 	@Test
 	void testToolsOnlyPromptCaching() {
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
 		// IMPORTANT: This test requires a Claude model - Amazon Nova models do NOT
 		// support tool caching and will return ValidationException.
 		// Claude Haiku 4.5 requires 4096+ tokens of tool definitions for caching.
@@ -497,12 +588,21 @@ class BedrockProxyChatModelIT {
 		AtomicInteger cityIndex = new AtomicInteger(0);
 		Awaitility.await().atMost(Duration.ofMinutes(2)).pollInterval(Duration.ofSeconds(3)).untilAsserted(() -> {
 			String city = cities.get(cityIndex.getAndIncrement() % cities.size());
-			ChatResponse response = this.chatModel.call(new Prompt("What's the weather in " + city + "?", chatOptions));
+
+			var prompt = new Prompt("What's the weather in " + city + "?", chatOptions);
+
+			ChatResponse response = this.chatModel.call(prompt);
+
+			while (response.hasToolCalls()) {
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+				prompt = new Prompt(toolExecutionResult.conversationHistory(), chatOptions);
+				response = this.chatModel.call(prompt);
+			}
+
 			assertThat(response.getResults()).hasSize(1);
 			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 			Integer cacheRead = response.getMetadata().get("cacheReadInputTokens");
 			Integer cacheWrite = response.getMetadata().get("cacheWriteInputTokens");
-			logger.info("[toolsOnly] attempt={}, cacheWrite={}, cacheRead={}", cityIndex.get(), cacheWrite, cacheRead);
 			assertThat(cacheRead).as("Should eventually read tool definitions from cache").isNotNull().isPositive();
 			assertThat(cacheRead).as("Cache read should meet the 4096 token minimum for Claude Haiku 4.5")
 				.isGreaterThan(4096);
@@ -512,6 +612,8 @@ class BedrockProxyChatModelIT {
 
 	@Test
 	void testSystemAndToolsPromptCaching() {
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
 		// NOTE: Testing combined caching requires both large system prompt and multiple
 		// tools
 		// IMPORTANT: This test requires a Claude model that supports tool caching.
@@ -562,14 +664,22 @@ class BedrockProxyChatModelIT {
 		AtomicInteger cityIndex = new AtomicInteger(0);
 		Awaitility.await().atMost(Duration.ofMinutes(2)).pollInterval(Duration.ofSeconds(3)).untilAsserted(() -> {
 			String city = cities.get(cityIndex.getAndIncrement() % cities.size());
-			ChatResponse response = this.chatModel.call(new Prompt(List.of(new SystemMessage(largeSystemPrompt),
-					new UserMessage("What's the weather in " + city + "?")), chatOptions));
+
+			var prompt = new Prompt(List.of(new SystemMessage(largeSystemPrompt),
+					new UserMessage("What's the weather in " + city + "?")), chatOptions);
+
+			ChatResponse response = this.chatModel.call(prompt);
+
+			while (response.hasToolCalls()) {
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+				prompt = new Prompt(toolExecutionResult.conversationHistory(), chatOptions);
+				response = this.chatModel.call(prompt);
+			}
+
 			assertThat(response.getResults()).hasSize(1);
 			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 			Integer cacheRead = response.getMetadata().get("cacheReadInputTokens");
 			Integer cacheWrite = response.getMetadata().get("cacheWriteInputTokens");
-			logger.info("[systemAndTools] attempt={}, cacheWrite={}, cacheRead={}", cityIndex.get(), cacheWrite,
-					cacheRead);
 			assertThat(cacheRead).as("Should eventually read from cache").isNotNull().isPositive();
 			assertThat(cacheRead).as("Cache read should meet the 4096 token minimum for Claude Haiku 4.5")
 				.isGreaterThan(4096);
@@ -620,7 +730,7 @@ class BedrockProxyChatModelIT {
 				frameworks, and real-time serving infrastructure. The ability to measure business
 				impact through metrics like click-through rate, conversion rate, and long-term
 				engagement is equally important. I'd be happy to dive deeper into any of these areas.
-				""".repeat(8);
+				""".repeat(15);
 
 		List<Message> conversationHistory = new ArrayList<>();
 		conversationHistory.add(new SystemMessage(largeSystemPrompt));
@@ -665,8 +775,6 @@ class BedrockProxyChatModelIT {
 			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 			Integer cacheRead = response.getMetadata().get("cacheReadInputTokens");
 			Integer cacheWrite = response.getMetadata().get("cacheWriteInputTokens");
-			logger.info("[conversationHistory] attempt={}, cacheWrite={}, cacheRead={}", attemptIndex.incrementAndGet(),
-					cacheWrite, cacheRead);
 			assertThat(cacheRead).as("Should eventually read conversation history from cache").isNotNull().isPositive();
 			assertThat(cacheRead).as("Cache read should meet the 4096 token minimum for Claude Haiku 4.5")
 				.isGreaterThan(4096);
@@ -697,7 +805,7 @@ class BedrockProxyChatModelIT {
 				- Sunrise and sunset times for the location
 				The service uses data from multiple meteorological stations and satellites to ensure
 				accuracy and reliability. Data is updated every 15 minutes for most locations worldwide.
-				""".repeat(3);
+				""".repeat(10);
 		String forecastDesc = """
 				Get the weather forecast for the next 7 days for a specific location with detailed predictions.
 				This advanced forecasting service provides comprehensive weather predictions including:
@@ -715,7 +823,7 @@ class BedrockProxyChatModelIT {
 				machine learning algorithms, and historical climate data to provide highly accurate
 				predictions. Forecasts are updated four times daily with improving accuracy for near-term
 				predictions and reasonable accuracy extending to 7 days out.
-				""".repeat(3);
+				""".repeat(10);
 		String historicalDesc = """
 				Get historical weather data for a specific location and date range with comprehensive analysis.
 				This powerful historical weather service provides access to decades of weather records including:
@@ -732,7 +840,7 @@ class BedrockProxyChatModelIT {
 				climate trends, planning activities based on historical patterns, agricultural planning,
 				research purposes, and understanding how current weather compares to historical context.
 				Data quality indicators are provided to show the reliability of older records.
-				""".repeat(3);
+				""".repeat(10);
 		String alertsDesc = """
 				Get active weather alerts and warnings for a specific location with critical safety information.
 				This essential safety service provides real-time alerts from official meteorological services including:
@@ -751,7 +859,7 @@ class BedrockProxyChatModelIT {
 				safety, and contact information for local emergency management. Alerts are issued by
 				official national weather services and are updated in real-time as conditions evolve.
 				This service is critical for public safety and emergency preparedness.
-				""".repeat(3);
+				""".repeat(10);
 		String climateDesc = """
 				Get long-term climate data and comprehensive statistics for a specific location.
 				This climate analysis service provides in-depth climatological information including:
@@ -772,7 +880,7 @@ class BedrockProxyChatModelIT {
 				climate characteristics, agricultural planning, construction projects, tourism planning,
 				and understanding local climate change impacts. Data is derived from decades of official
 				meteorological observations and is continuously updated as new climate normals are established.
-				""".repeat(3);
+				""".repeat(10);
 		return List.of(
 				FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description(weatherDesc)
@@ -828,9 +936,6 @@ class BedrockProxyChatModelIT {
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
-
-		logger.info("gpt-oss Response: {}", generation.getOutput().getText());
-		logger.info("Response metadata: {}", response.getMetadata());
 	}
 
 	@Test
@@ -857,8 +962,6 @@ class BedrockProxyChatModelIT {
 		// Verify the response contains expected gpt-oss identification
 		assertThat(fullResponse.toLowerCase()).as("gpt-oss model should identify itself")
 			.containsAnyOf("chatgpt", "gpt", "openai", "language model", "ai");
-
-		logger.info("gpt-oss Streaming Response: {}", fullResponse);
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {

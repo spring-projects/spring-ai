@@ -22,42 +22,31 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration;
-import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 public class FunctionCallbackInPrompt2IT {
 
-	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackInPromptIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class, RestClientAutoConfiguration.class,
-				SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class,
-				WebClientAutoConfiguration.class));
+		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"))
+		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class,
+				org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration.class));
 
 	@Test
 	void functionCallTest() {
-		this.contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName())
-			.run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.openai.chat.model=" + "gpt-4o-mini").run(context -> {
 
-				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
-				ChatClient chatClient = ChatClient.builder(chatModel).build();
+			ChatClient chatClient = ChatClient.builder(chatModel).build();
 
 			// @formatter:off
 			chatClient.prompt()
@@ -65,8 +54,8 @@ public class FunctionCallbackInPrompt2IT {
 					.call().content();
 
 			String content = ChatClient.builder(chatModel).build().prompt()
-					.user("What's the weather like in San Francisco, Tokyo, and Paris?")
-					.toolCallbacks(FunctionToolCallback
+					.user("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.")
+					.tools(FunctionToolCallback
 						.builder("CurrentWeatherService", new MockWeatherService())
 						.description("Get the weather in location")
 						.inputType(MockWeatherService.Request.class)
@@ -74,10 +63,8 @@ public class FunctionCallbackInPrompt2IT {
 					.call().content();
 			// @formatter:on
 
-				logger.info("Response: {}", content);
-
-				assertThat(content).contains("30", "10", "15");
-			});
+			assertThat(content).contains("30", "10", "15");
+		});
 	}
 
 	@Test
@@ -92,19 +79,15 @@ public class FunctionCallbackInPrompt2IT {
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 			// @formatter:off
-			String content = ChatClient.builder(chatModel).build().prompt()
+			ChatClient.builder(chatModel).build().prompt()
 					.user("Turn the light on in the kitchen and in the living room!")
-					.toolCallbacks(FunctionToolCallback
-						.builder("turnLight", (LightInfo lightInfo) -> {
-							logger.info("Turning light to [" + lightInfo.isOn + "] in " + lightInfo.roomName());
-							state.put(lightInfo.roomName(), lightInfo.isOn());
-						})
+					.tools(FunctionToolCallback
+						.builder("turnLight", (LightInfo lightInfo) -> state.put(lightInfo.roomName(), lightInfo.isOn()))
 						.description("Turn light on or off in a room")
 						.inputType(LightInfo.class)
 						.build())
 					.call().content();
 			// @formatter:on
-			logger.info("Response: {}", content);
 			assertThat(state).containsEntry("kitchen", Boolean.TRUE);
 			assertThat(state).containsEntry("living room", Boolean.TRUE);
 		});
@@ -112,39 +95,36 @@ public class FunctionCallbackInPrompt2IT {
 
 	@Test
 	void functionCallTest2() {
-		this.contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName())
-			.run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.openai.chat.model=" + "gpt-4o-mini").run(context -> {
 
-				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("What's the weather like in Amsterdam?")
-					.toolCallbacks(FunctionToolCallback
+					.tools(FunctionToolCallback
 						.builder("CurrentWeatherService", input -> "18 degrees Celsius")
 						.description("Get the weather in location")
 						.inputType(MockWeatherService.Request.class)
-					.build())
+						.build())
 					.call().content();
 			// @formatter:on
-				logger.info("Response: {}", content);
 
-				assertThat(content).contains("18");
-			});
+			assertThat(content).contains("18");
+		});
 	}
 
 	@Test
 	void streamingFunctionCallTest() {
 
-		this.contextRunner.withPropertyValues("spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName())
-			.run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.openai.chat.model=" + "gpt-4o-mini").run(context -> {
 
-				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
-					.user("What's the weather like in San Francisco, Tokyo, and Paris?")
-					.toolCallbacks(FunctionToolCallback
+					.user("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.")
+					.tools(FunctionToolCallback
 						.builder("CurrentWeatherService", new MockWeatherService())
 						.description("Get the weather in location")
 						.inputType(MockWeatherService.Request.class)
@@ -153,10 +133,8 @@ public class FunctionCallbackInPrompt2IT {
 					.collectList().block().stream().collect(Collectors.joining());
 			// @formatter:on
 
-				logger.info("Response: {}", content);
-
-				assertThat(content).contains("30", "10", "15");
-			});
+			assertThat(content).contains("30", "10", "15");
+		});
 	}
 
 }

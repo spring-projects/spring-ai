@@ -17,6 +17,7 @@
 package org.springframework.ai.bedrock.converse;
 
 import java.net.URL;
+import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
@@ -29,10 +30,16 @@ import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest;
+import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
 
+import org.springframework.ai.bedrock.converse.api.BedrockCacheOptions;
+import org.springframework.ai.bedrock.converse.api.BedrockCacheStrategy;
 import org.springframework.ai.bedrock.converse.api.MediaFetcher;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.util.MimeType;
 
@@ -55,8 +62,7 @@ class BedrockProxyChatModelTest {
 
 	private BedrockProxyChatModel newModel() {
 		return new BedrockProxyChatModel(this.syncClient, this.asyncClient, BedrockChatOptions.builder().build(),
-				ObservationRegistry.NOOP, ToolCallingManager.builder().build(),
-				new DefaultToolExecutionEligibilityPredicate());
+				ObservationRegistry.NOOP, ToolCallingManager.builder().build());
 	}
 
 	@Test
@@ -192,13 +198,135 @@ class BedrockProxyChatModelTest {
 	void allowlistRejectsUnlistedStringUrlMediaThrowsRuntimeException() {
 		BedrockProxyChatModel model = new BedrockProxyChatModel(this.syncClient, this.asyncClient,
 				BedrockChatOptions.builder().build(), ObservationRegistry.NOOP, ToolCallingManager.builder().build(),
-				new DefaultToolExecutionEligibilityPredicate(), new MediaFetcher(java.util.Set.of("trusted-cdn.com")));
+				new MediaFetcher(java.util.Set.of("trusted-cdn.com")));
 		Media media = Media.builder().mimeType(MimeType.valueOf("image/png")).data("http://evil.com/image.png").build();
 
 		assertThatThrownBy(() -> model.mapMediaToContentBlock(media)).isInstanceOf(RuntimeException.class)
 			.cause()
 			.isInstanceOf(SecurityException.class)
 			.hasMessageContaining("evil.com");
+	}
+
+	@Test
+	void multiBlockSystemCachingPlacesCachePointBeforeLastSystemBlock() {
+		BedrockProxyChatModel model = newModel();
+
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.cacheOptions(BedrockCacheOptions.builder()
+				.strategy(BedrockCacheStrategy.SYSTEM_ONLY)
+				.multiBlockSystemCaching(true)
+				.build())
+			.build();
+
+		Prompt prompt = new Prompt(List.of(new SystemMessage("Static system instructions."),
+				new SystemMessage("Dynamic RAG context."), new UserMessage("Question?")), options);
+
+		ConverseRequest request = model.createRequest(prompt);
+		List<SystemContentBlock> system = request.system();
+
+		// Expect: [text(static), cachePoint, text(dynamic)]
+		assertThat(system).hasSize(3);
+		assertThat(system.get(0).text()).isEqualTo("Static system instructions.");
+		assertThat(system.get(0).cachePoint()).isNull();
+		assertThat(system.get(1).text()).isNull();
+		assertThat(system.get(1).cachePoint()).isNotNull();
+		assertThat(system.get(1).cachePoint().typeAsString()).isEqualTo("default");
+		assertThat(system.get(2).text()).isEqualTo("Dynamic RAG context.");
+		assertThat(system.get(2).cachePoint()).isNull();
+	}
+
+	@Test
+	void multiBlockSystemCachingWithSingleMessageFallsBackToLastBlockPlacement() {
+		BedrockProxyChatModel model = newModel();
+
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.cacheOptions(BedrockCacheOptions.builder()
+				.strategy(BedrockCacheStrategy.SYSTEM_ONLY)
+				.multiBlockSystemCaching(true)
+				.build())
+			.build();
+
+		Prompt prompt = new Prompt(List.of(new SystemMessage("Only system message."), new UserMessage("Question?")),
+				options);
+
+		ConverseRequest request = model.createRequest(prompt);
+		List<SystemContentBlock> system = request.system();
+
+		// Single message: cache point goes after the only text block.
+		assertThat(system).hasSize(2);
+		assertThat(system.get(0).text()).isEqualTo("Only system message.");
+		assertThat(system.get(1).cachePoint()).isNotNull();
+	}
+
+	@Test
+	void multiBlockSystemCachingDisabledByDefaultPlacesCachePointAfterLastBlock() {
+		BedrockProxyChatModel model = newModel();
+
+		// multiBlockSystemCaching not set: defaults to false.
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.cacheOptions(BedrockCacheOptions.builder().strategy(BedrockCacheStrategy.SYSTEM_ONLY).build())
+			.build();
+
+		Prompt prompt = new Prompt(List.of(new SystemMessage("Static system instructions."),
+				new SystemMessage("Dynamic RAG context."), new UserMessage("Question?")), options);
+
+		ConverseRequest request = model.createRequest(prompt);
+		List<SystemContentBlock> system = request.system();
+
+		// Expect: [text(static), text(dynamic), cachePoint] - backward compatible.
+		assertThat(system).hasSize(3);
+		assertThat(system.get(0).text()).isEqualTo("Static system instructions.");
+		assertThat(system.get(1).text()).isEqualTo("Dynamic RAG context.");
+		assertThat(system.get(2).cachePoint()).isNotNull();
+	}
+
+	@Test
+	void multiBlockSystemCachingHonorsSystemAndToolsStrategy() {
+		BedrockProxyChatModel model = newModel();
+
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.cacheOptions(BedrockCacheOptions.builder()
+				.strategy(BedrockCacheStrategy.SYSTEM_AND_TOOLS)
+				.multiBlockSystemCaching(true)
+				.build())
+			.build();
+
+		Prompt prompt = new Prompt(
+				List.of(new SystemMessage("Static."), new SystemMessage("Dynamic."), new UserMessage("Question?")),
+				options);
+
+		ConverseRequest request = model.createRequest(prompt);
+		List<SystemContentBlock> system = request.system();
+
+		// SYSTEM_AND_TOOLS still places the system cache point between blocks.
+		assertThat(system).hasSize(3);
+		assertThat(system.get(0).text()).isEqualTo("Static.");
+		assertThat(system.get(1).cachePoint()).isNotNull();
+		assertThat(system.get(2).text()).isEqualTo("Dynamic.");
+	}
+
+	@Test
+	void multiBlockSystemCachingHasNoEffectWhenStrategyIsNone() {
+		BedrockProxyChatModel model = newModel();
+
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.cacheOptions(BedrockCacheOptions.builder()
+				.strategy(BedrockCacheStrategy.NONE)
+				.multiBlockSystemCaching(true)
+				.build())
+			.build();
+
+		Prompt prompt = new Prompt(
+				List.of(new SystemMessage("Static."), new SystemMessage("Dynamic."), new UserMessage("Question?")),
+				options);
+
+		ConverseRequest request = model.createRequest(prompt);
+		List<SystemContentBlock> system = request.system();
+
+		// No cache point added when caching is off.
+		assertThat(system).hasSize(2);
+		assertThat(system.get(0).cachePoint()).isNull();
+		assertThat(system.get(1).cachePoint()).isNull();
 	}
 
 }

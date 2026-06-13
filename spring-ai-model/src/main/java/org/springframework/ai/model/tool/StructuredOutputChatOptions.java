@@ -30,9 +30,25 @@ public interface StructuredOutputChatOptions extends ChatOptions {
 
 	@Nullable String getOutputSchema();
 
-	void setOutputSchema(String outputSchema);
+	/**
+	 * Returns a new {@link StructuredOutputChatOptions.Builder} initialized with the
+	 * values of this {@link StructuredOutputChatOptions}.
+	 *
+	 * Narrows the return type of {@link ChatOptions#mutate()} so generic structured
+	 * output code can chain
+	 * {@code structuredOptions.mutate().outputSchema(schema).build()} without casting.
+	 */
+	@Override
+	StructuredOutputChatOptions.Builder<?> mutate();
 
-	interface Builder<B extends Builder<B>> extends ChatOptions.Builder<B> {
+	/**
+	 * A builder to create a new {@link StructuredOutputChatOptions} instance.
+	 */
+	static StructuredOutputChatOptions.Builder<?> builder() {
+		return new DefaultStructuredOutputChatOptions.Builder<>();
+	}
+
+	interface Builder<B extends StructuredOutputChatOptions.Builder<B>> extends ChatOptions.Builder<B> {
 
 		B outputSchema(@Nullable String outputSchema);
 

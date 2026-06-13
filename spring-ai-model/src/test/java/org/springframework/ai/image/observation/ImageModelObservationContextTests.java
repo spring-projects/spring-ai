@@ -60,7 +60,7 @@ class ImageModelObservationContextTests {
 		assertThatThrownBy(
 				() -> ImageModelObservationContext.builder().imagePrompt(null).provider("test-provider").build())
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("request cannot be null");
+			.hasMessage("imagePrompt cannot be null");
 	}
 
 	@Test

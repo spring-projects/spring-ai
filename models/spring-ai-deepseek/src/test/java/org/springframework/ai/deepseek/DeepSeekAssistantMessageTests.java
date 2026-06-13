@@ -119,6 +119,7 @@ class DeepSeekAssistantMessageTests {
 	}
 
 	@Test
+	@SuppressWarnings("deprecation")
 	public void testPrefixAssistantMessageFactoryMethod() {
 		String content = "Hello, world!";
 		DeepSeekAssistantMessage message = DeepSeekAssistantMessage.prefixAssistantMessage(content);
@@ -128,6 +129,7 @@ class DeepSeekAssistantMessageTests {
 	}
 
 	@Test
+	@SuppressWarnings("deprecation")
 	public void testPrefixAssistantMessageFactoryMethodWithReasoning() {
 		String content = "Hello, world!";
 		String reasoningContent = "This is my reasoning";

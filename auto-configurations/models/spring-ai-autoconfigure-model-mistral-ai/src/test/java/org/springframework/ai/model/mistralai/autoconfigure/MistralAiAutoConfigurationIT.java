@@ -19,8 +19,6 @@ package org.springframework.ai.model.mistralai.autoconfigure;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
@@ -49,10 +47,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 public class MistralAiAutoConfigurationIT {
 
-	private static final Log logger = LogFactory.getLog(MistralAiAutoConfigurationIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.mistralai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"));
+		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"));
 
 	@Test
 	void generate() {
@@ -64,7 +60,6 @@ public class MistralAiAutoConfigurationIT {
 				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
 				String response = chatModel.call("Hello");
 				assertThat(response).isNotEmpty();
-				logger.info("Response: " + response);
 			});
 	}
 
@@ -84,7 +79,6 @@ public class MistralAiAutoConfigurationIT {
 					.collect(Collectors.joining());
 
 				assertThat(response).isNotEmpty();
-				logger.info("Response: " + response);
 			});
 	}
 

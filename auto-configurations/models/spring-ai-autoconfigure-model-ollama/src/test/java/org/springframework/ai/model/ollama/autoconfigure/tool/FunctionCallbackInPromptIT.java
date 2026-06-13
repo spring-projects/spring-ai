@@ -21,10 +21,9 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -42,8 +41,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class FunctionCallbackInPromptIT extends BaseOllamaIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(FunctionCallbackInPromptIT.class);
-
 	private static final String MODEL_NAME = OllamaModel.QWEN_2_5_3B.getName();
 
 	private static final String USER_MESSAGE_TEXT = "What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.";
@@ -54,10 +51,10 @@ class FunctionCallbackInPromptIT extends BaseOllamaIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
 	// @formatter:off
-				"spring.ai.ollama.baseUrl=" + getBaseUrl(),
-				"spring.ai.ollama.chat.options.model=" + MODEL_NAME,
-				"spring.ai.ollama.chat.options.temperature=0.5",
-				"spring.ai.ollama.chat.options.topK=10")
+				"spring.ai.ollama.base-url=" + getBaseUrl(),
+				"spring.ai.ollama.chat.model=" + MODEL_NAME,
+				"spring.ai.ollama.chat.temperature=0.5",
+				"spring.ai.ollama.chat.top-k=10")
 				// @formatter:on
 		.withConfiguration(ollamaAutoConfig(OllamaChatAutoConfiguration.class));
 
@@ -81,9 +78,10 @@ class FunctionCallbackInPromptIT extends BaseOllamaIT {
 							.inputType(MockWeatherService.Request.class)
 							.build())));
 
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
-
-			logger.info("Response: {}", response);
+			ChatResponse response = ChatClient.create(chatModel)
+				.prompt(new Prompt(List.of(userMessage), promptOptions))
+				.call()
+				.chatResponse();
 
 			var result = response.getResult();
 			assertThat(result).isNotNull();
@@ -106,7 +104,10 @@ class FunctionCallbackInPromptIT extends BaseOllamaIT {
 							.inputType(MockWeatherService.Request.class)
 							.build())));
 
-			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage), promptOptions));
+			Flux<ChatResponse> response = ChatClient.create(chatModel)
+				.prompt(new Prompt(List.of(userMessage), promptOptions))
+				.stream()
+				.chatResponse();
 
 			String content = response.collectList()
 				.blockOptional()
@@ -117,7 +118,6 @@ class FunctionCallbackInPromptIT extends BaseOllamaIT {
 				.map(Generation::getOutput)
 				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
-			logger.info("Response: {}", content);
 
 			assertThat(content).containsAnyOf("30.0", "30");
 			assertThat(content).containsAnyOf("10.0", "10");

@@ -22,8 +22,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -50,8 +48,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class AcmeIT extends AbstractIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(AcmeIT.class);
-
 	@Value("classpath:/data/acme/bikes.json")
 	private Resource bikesResource;
 
@@ -77,18 +73,14 @@ public class AcmeIT extends AbstractIT {
 		// Step 1 - load documents
 		JsonReader jsonReader = new JsonReader(this.bikesResource, "name", "price", "shortDescription", "description");
 
-		var textSplitter = TokenTextSplitter.builder().build();
+		var textSplitter = new TokenTextSplitter();
 
 		// Step 2 - Create embeddings and save to vector store
-
-		logger.info("Creating Embeddings...");
 		VectorStore vectorStore = SimpleVectorStore.builder(this.embeddingModel).build();
 
 		vectorStore.accept(textSplitter.apply(jsonReader.get()));
 
 		// Now user query
-
-		logger.info("Retrieving relevant documents");
 		String userQuery = "What bike is good for city commuting?";
 
 		// "Tell me more about the bike 'The SonicRide 8S'" ;
@@ -96,7 +88,6 @@ public class AcmeIT extends AbstractIT {
 
 		// Eventually include metadata in query.
 		List<Document> similarDocuments = vectorStore.similaritySearch(userQuery);
-		logger.info(String.format("Found %s relevant documents.", similarDocuments.size()));
 
 		// Try the case where not product was specified, so query over whatever docs might
 		// be relevant.
@@ -106,9 +97,7 @@ public class AcmeIT extends AbstractIT {
 
 		// Create the prompt ad-hoc for now, need to put in system message and user
 		// message via ChatPromptTemplate or some other message building mechanic;
-		logger.info("Asking AI generative to reply to question.");
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
-		logger.info("AI responded.");
 		ChatResponse response = this.chatModel.call(prompt);
 
 		evaluateQuestionAndAnswer(userQuery, response, true);

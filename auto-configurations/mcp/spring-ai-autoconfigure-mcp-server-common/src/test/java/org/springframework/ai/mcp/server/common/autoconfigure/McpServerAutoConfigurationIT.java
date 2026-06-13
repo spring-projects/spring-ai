@@ -210,10 +210,12 @@ public class McpServerAutoConfigurationIT {
 
 	@Test
 	void toolSpecificationConfiguration() {
-		this.contextRunner.withUserConfiguration(TestToolConfiguration.class).run(context -> {
-			List<SyncToolSpecification> tools = context.getBean("syncTools", List.class);
-			assertThat(tools).hasSize(1);
-		});
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.expose-mcp-client-tools=true")
+			.withUserConfiguration(TestToolConfiguration.class)
+			.run(context -> {
+				List<SyncToolSpecification> tools = context.getBean("syncTools", List.class);
+				assertThat(tools).hasSize(1);
+			});
 	}
 
 	@Test
@@ -255,7 +257,8 @@ public class McpServerAutoConfigurationIT {
 
 	@Test
 	void asyncToolSpecificationConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.server.type=ASYNC", "spring.ai.mcp.server.expose-mcp-client-tools=true")
 			.withUserConfiguration(TestToolConfiguration.class)
 			.run(context -> {
 				List<AsyncToolSpecification> tools = context.getBean("asyncTools", List.class);
@@ -310,7 +313,9 @@ public class McpServerAutoConfigurationIT {
 
 	@Test
 	void toolResponseMimeTypeConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.tool-response-mime-type.test-tool=application/json")
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.server.tool-response-mime-type.test-tool=application/json",
+					"spring.ai.mcp.server.expose-mcp-client-tools=true")
 			.withUserConfiguration(TestToolConfiguration.class)
 			.run(context -> {
 				McpServerProperties properties = context.getBean(McpServerProperties.class);

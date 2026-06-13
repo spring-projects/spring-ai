@@ -17,22 +17,23 @@
 package org.springframework.ai.mistralai;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.junit.jupiter.params.ParameterizedTest;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientAttributes;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
@@ -42,12 +43,13 @@ import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.model.StreamingChatModel;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -58,15 +60,16 @@ import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.json.BasicJsonTester;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -78,13 +81,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Alexandros Pappas
  * @author Thomas Vitale
+ * @author Nicolas Krier
  * @since 0.8.1
  */
 @SpringBootTest(classes = MistralAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 class MistralAiChatModelIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(MistralAiChatModelIT.class);
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	@Autowired
 	private ChatModel chatModel;
@@ -101,13 +105,17 @@ class MistralAiChatModelIT {
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
-		// NOTE: Mistral expects the system message to be before the user message or
-		// will
+		// NOTE: Mistral expects the system message to be before the user message or will
 		// fail with 400 error.
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
-		ChatResponse response = this.chatModel.call(prompt);
-		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
+		var results = this.chatModel.call(prompt).getResults();
+		assertThat(results).hasSize(1);
+		var output = results.get(0).getOutput();
+		assertThat(output.getText()).contains("Blackbeard");
+		var outputMetadata = output.getMetadata();
+		assertThat(outputMetadata).doesNotContainKey(MistralAiChatModel.REFERENCE_CONTENT_METADATA);
+		assertThat(outputMetadata).doesNotContainKey(MistralAiChatModel.REFERENCE_THINKING_CONTENT_METADATA);
+		assertThat(outputMetadata).doesNotContainKey(MistralAiChatModel.THINKING_CONTENT_METADATA);
 	}
 
 	@Test
@@ -152,6 +160,98 @@ class MistralAiChatModelIT {
 
 	}
 
+	/**
+	 * This integration test verifies the correct handling of citations and references in
+	 * responses generated by Mistral Large model, as described in the
+	 * <a href="https://docs.mistral.ai/capabilities/citations">Mistral AI Citations &
+	 * References Documentation</a>.
+	 */
+	@Test
+	void referenceCall() {
+		var systemMessage = new SystemMessage(
+				"Answer the user by providing references to the source of the information using the tool available.");
+		var userMessage = new UserMessage("Who won the Nobel Prize in 2024?");
+		var functionName = "get_information";
+		var toolCallId = "3DHY8663m";
+		var toolCall = new AssistantMessage.ToolCall(toolCallId, "function", functionName, "{}");
+		var assistantMessage = AssistantMessage.builder().toolCalls(List.of(toolCall)).build();
+		var referencesJsonString = extractReferencesAsJsonString();
+		var toolResponse = new ToolResponseMessage.ToolResponse(toolCallId, functionName, referencesJsonString);
+		var toolResponseMessage = ToolResponseMessage.builder().responses(List.of(toolResponse)).build();
+		// @formatter:off
+		var parameters = Map.of(
+				"type", "object",
+				"properties", Map.of(),
+				"additionalProperties", false
+		);
+		// @formatter:on
+		var function = new MistralAiApi.FunctionTool.Function("Get information from external source.", functionName,
+				parameters);
+		var functionTool = new MistralAiApi.FunctionTool(MistralAiApi.FunctionTool.Type.FUNCTION, function);
+		var mistralAiChatOptions = MistralAiChatOptions.builder()
+			.model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue())
+			.tools(List.of(functionTool))
+			.toolChoice(MistralAiApi.ChatCompletionRequest.ToolChoice.AUTO)
+			.build();
+		var prompt = Prompt.builder()
+			.chatOptions(mistralAiChatOptions)
+			.messages(systemMessage, userMessage, assistantMessage, toolResponseMessage)
+			.build();
+
+		var generation = this.chatModel.call(prompt).getResult();
+		assertThat(generation).isNotNull();
+		var output = generation.getOutput();
+		assertThat(output.getText()).contains("Nihon Hidankyo");
+		assertThat(output.getMetadata()).containsEntry(MistralAiChatModel.REFERENCE_CONTENT_METADATA, List.of(0));
+	}
+
+	@ThinkingModelSource
+	@ParameterizedTest
+	void thinkingCall(MistralAiApi.ChatModel chatModel) {
+		var prompt = createThinkingPrompt(chatModel);
+
+		var generation = this.chatModel.call(prompt).getResult();
+		assertThat(generation).isNotNull();
+		var output = generation.getOutput();
+		var outputText = output.getText();
+		assertThat(outputText).contains("Jupiter");
+		var outputMetadata = output.getMetadata();
+		var thinkingContent = outputMetadata.get(MistralAiChatModel.THINKING_CONTENT_METADATA);
+		assertThat(thinkingContent).asString().isNotEmpty();
+		assertThat(outputMetadata).doesNotContainKey(MistralAiChatModel.REFERENCE_CONTENT_METADATA);
+		assertThat(outputMetadata).doesNotContainKey(MistralAiChatModel.REFERENCE_THINKING_CONTENT_METADATA);
+	}
+
+	@ThinkingModelSource
+	@ParameterizedTest
+	void thinkingStream(MistralAiApi.ChatModel chatModel) {
+		var prompt = createThinkingPrompt(chatModel);
+
+		var assistantMessages = this.chatModel.stream(prompt)
+			.collectList()
+			.blockOptional()
+			.stream()
+			.flatMap(List::stream)
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.toList();
+
+		var content = assistantMessages.stream().map(AssistantMessage::getText).collect(Collectors.joining());
+		assertThat(content).contains("Jupiter");
+
+		var thinkingContent = assistantMessages.stream()
+			.map(AssistantMessage::getMetadata)
+			.map(metadata -> metadata.get(MistralAiChatModel.THINKING_CONTENT_METADATA))
+			.filter(Objects::nonNull)
+			.map(String.class::cast)
+			.collect(Collectors.joining());
+		assertThat(thinkingContent).isNotEmpty();
+
+		assertThat(hasMetadata(assistantMessages, MistralAiChatModel.REFERENCE_CONTENT_METADATA)).isFalse();
+		assertThat(hasMetadata(assistantMessages, MistralAiChatModel.REFERENCE_THINKING_CONTENT_METADATA)).isFalse();
+	}
+
 	@Test
 	void beanOutputConverterRecords() {
 
@@ -170,7 +270,6 @@ class MistralAiChatModelIT {
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -203,7 +302,6 @@ class MistralAiChatModelIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
-		logger.info(actorsFilms.toString());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -211,58 +309,61 @@ class MistralAiChatModelIT {
 	@Test
 	void functionCallTest() {
 
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo, and Paris? Response in Celsius");
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
-			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+		var options = MistralAiChatOptions.builder()
+			.model(MistralAiApi.ChatModel.MISTRAL_SMALL)
+			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
-				.build()))
+				.build())
 			.build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+		Prompt prompt = new Prompt(List.of(new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius.")),
+				options);
 
-		logger.info("Response: {}", response);
+		ChatResponse response = this.chatModel.call(prompt);
 
-		assertThat(response.getResult().getOutput().getText()).containsAnyOf("30.0", "30");
-		assertThat(response.getMetadata()).isNotNull();
-		assertThat(response.getMetadata().getUsage()).isNotNull();
-		assertThat(response.getMetadata().getUsage().getTotalTokens()).isLessThan(1050).isGreaterThan(500);
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			response = this.chatModel.call(prompt);
+		}
+
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
 	void streamFunctionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in Tokyo, Japan? Response in Celsius");
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
-			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+		var options = MistralAiChatOptions.builder()
+			.model(MistralAiApi.ChatModel.MISTRAL_SMALL)
+			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
-				.build()))
+				.build())
 			.build();
 
-		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(messages, promptOptions));
+		Prompt prompt = new Prompt(List.of(new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius.")),
+				options);
 
-		String content = response.collectList()
-			.blockOptional()
-			.stream()
-			.flatMap(List::stream)
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getText)
-			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
 
-		assertThat(content).containsAnyOf("10.0", "10");
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
+
+		String content = aggregatedRef.get().getResult().getOutput().getText();
+
+		assertThat(content).contains("30", "10", "15");
 	}
 
 	@Test
@@ -274,11 +375,9 @@ class MistralAiChatModelIT {
 			.media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)))
 			.build();
 
-		var chatOptions = ChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build();
+		var chatOptions = MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()).build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage), chatOptions));
-
-		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
 				"fruit stand");
 	}
@@ -293,11 +392,9 @@ class MistralAiChatModelIT {
 				.build()))
 			.build();
 
-		var chatOptions = ChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build();
+		var chatOptions = MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()).build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), chatOptions));
-
-		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bowl", "basket", "fruit stand");
 	}
@@ -313,7 +410,7 @@ class MistralAiChatModelIT {
 			.build();
 
 		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(List.of(userMessage),
-				ChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build()));
+				MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()).build()));
 
 		String content = response.collectList()
 			.blockOptional()
@@ -324,32 +421,40 @@ class MistralAiChatModelIT {
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
 		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
 	@Test
 	void streamFunctionCallUsageTest() {
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo, and Paris? Response in Celsius");
 
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
-		var promptOptions = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
-			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+		var options = MistralAiChatOptions.builder()
+			.model(MistralAiApi.ChatModel.MISTRAL_SMALL)
+			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
-				.build()))
+				.build())
 			.build();
 
-		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(messages, promptOptions));
-		ChatResponse chatResponse = response.last().block();
+		Prompt prompt = new Prompt(List
+			.of(new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris? Response in Celsius")),
+				options);
 
-		logger.info("Response: {}", chatResponse);
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
+
+		ChatResponse chatResponse = aggregatedRef.get();
 		assertThat(chatResponse.getMetadata()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
-		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isLessThan(1050).isGreaterThan(650);
+		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isLessThan(1050).isGreaterThan(400);
 	}
 
 	@Test
@@ -381,9 +486,8 @@ class MistralAiChatModelIT {
 		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
 		String conversationId = UUID.randomUUID().toString();
 
-		ChatOptions chatOptions = ToolCallingChatOptions.builder()
+		MistralAiChatOptions chatOptions = MistralAiChatOptions.builder()
 			.toolCallbacks(ToolCallbacks.from(new MathTools()))
-			.internalToolExecutionEnabled(false)
 			.build();
 		Prompt prompt = new Prompt(
 				List.of(new SystemMessage("You are a helpful assistant."), new UserMessage("What is 6 * 8?")),
@@ -430,8 +534,6 @@ class MistralAiChatModelIT {
 
 		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 
-		logger.info("Response: {}", response.getResult().getOutput().getText());
-
 		String content = response.getResult().getOutput().getText();
 		assertThat(content).isNotNull();
 		assertThat(content).contains("title");
@@ -448,8 +550,6 @@ class MistralAiChatModelIT {
 		assertThat(movie.director()).isNotBlank();
 		assertThat(movie.year()).isGreaterThan(1900);
 		assertThat(movie.plotSummary()).isNotBlank();
-
-		logger.info("Parsed movie: {}", movie);
 	}
 
 	@Test
@@ -471,8 +571,6 @@ class MistralAiChatModelIT {
 
 		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 
-		logger.info("Response: {}", response.getResult().getOutput().getText());
-
 		String content = response.getResult().getOutput().getText();
 		assertThat(content).isNotNull();
 		assertThat(content).containsIgnoringCase("Paris");
@@ -487,24 +585,26 @@ class MistralAiChatModelIT {
 
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
 
-		// Advisor to verify that native structured output is being used
+		// Advisor to verify that native structured output is being used.
+		// The schema is passed via context to ChatModelCallAdvisor which applies it
+		// to a new ChatClientRequest - so we verify the context attributes here,
+		// not the prompt options (which are only modified inside ChatModelCallAdvisor).
+		var expectedOutputSchemaMap = new BeanOutputConverter<>(ActorsFilmsRecord.class).getJsonSchemaMap();
 		AtomicBoolean nativeStructuredOutputUsed = new AtomicBoolean(false);
 		CallAdvisor verifyNativeStructuredOutputAdvisor = new CallAdvisor() {
 			@Override
 			public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
-				ChatClientResponse response = chain.nextCall(request);
-				ChatOptions chatOptions = request.prompt().getOptions();
+				var nativeFlag = request.context().get(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey());
+				var schemaString = (String) request.context()
+					.get(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey());
 
-				if (chatOptions instanceof MistralAiChatOptions mistralAiChatOptions) {
-					ResponseFormat responseFormat = mistralAiChatOptions.getResponseFormat();
-					if (responseFormat != null && responseFormat.getType() == ResponseFormat.Type.JSON_SCHEMA) {
+				if (Boolean.TRUE.equals(nativeFlag) && schemaString != null) {
+					var actualSchemaMap = jsonHelper.fromJsonToMap(schemaString);
+					if (expectedOutputSchemaMap.equals(actualSchemaMap)) {
 						nativeStructuredOutputUsed.set(true);
-						logger.info("Native structured output verified - ResponseFormat type: {}",
-								responseFormat.getType());
 					}
 				}
-
-				return response;
+				return chain.nextCall(request);
 			}
 
 			@Override
@@ -525,8 +625,6 @@ class MistralAiChatModelIT {
 			.call()
 			.entity(ActorsFilmsRecord.class);
 
-		logger.info("ChatClient entity result: {}", actorsFilms);
-
 		// Verify that native structured output was used
 		assertThat(nativeStructuredOutputUsed.get())
 			.as("Native structured output should be used with ResponseFormat.Type.JSON_SCHEMA")
@@ -535,6 +633,27 @@ class MistralAiChatModelIT {
 		assertThat(actorsFilms).isNotNull();
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	private static boolean hasMetadata(List<AssistantMessage> assistantMessages, String metadataKey) {
+		return assistantMessages.stream()
+			.map(AssistantMessage::getMetadata)
+			.anyMatch(metadata -> metadata.containsKey(metadataKey));
+	}
+
+	private static Prompt createThinkingPrompt(MistralAiApi.ChatModel chatModel) {
+		var reasoningEffort = ThinkingModelUtils.provideReasoningEffort(chatModel);
+		var model = ThinkingModelUtils.provideChatModelValue(chatModel);
+		var chatOptions = MistralAiChatOptions.builder().model(model).reasoningEffort(reasoningEffort).build();
+		var systemMessage = new SystemMessage("You are a helpful assistant providing accurate short answers.");
+		var userMessage = new UserMessage(
+				"What is the first planet of the solar system based on the mass in descending order?");
+
+		return Prompt.builder().messages(systemMessage, userMessage).chatOptions(chatOptions).build();
+	}
+
+	private static String extractReferencesAsJsonString() {
+		return new BasicJsonTester(MistralAiChatModelIT.class).from(new ClassPathResource("references.json")).getJson();
 	}
 
 	static class MathTools {

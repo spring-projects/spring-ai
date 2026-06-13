@@ -19,11 +19,11 @@ package org.springframework.ai.testcontainers.service.connection.ollama;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.ollama.OllamaContainer;
@@ -54,7 +54,7 @@ class OllamaContainerConnectionDetailsFactoryIT {
 
 	static final String MODEL_NAME = "nomic-embed-text";
 
-	private static final Logger logger = LoggerFactory.getLogger(OllamaContainerConnectionDetailsFactoryIT.class);
+	private static final Log logger = LogFactory.getLog(OllamaContainerConnectionDetailsFactoryIT.class);
 
 	@Container
 	@ServiceConnection
@@ -65,9 +65,9 @@ class OllamaContainerConnectionDetailsFactoryIT {
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
-		logger.info("Start pulling the '{}' model. The operation can take several minutes...", MODEL_NAME);
+		logger.info("Start pulling the '" + MODEL_NAME + "' model. The operation can take several minutes...");
 		ollama.execInContainer("ollama", "pull", MODEL_NAME);
-		logger.info("Completed pulling the '{}' model", MODEL_NAME);
+		logger.info("Completed pulling the '" + MODEL_NAME + "' model");
 	}
 
 	@Test

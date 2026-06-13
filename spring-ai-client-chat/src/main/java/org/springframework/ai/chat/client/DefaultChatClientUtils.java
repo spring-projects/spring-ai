@@ -17,7 +17,6 @@
 package org.springframework.ai.chat.client;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -39,6 +38,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Thomas Vitale
  * @author Sun Yuhan
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 final class DefaultChatClientUtils {
@@ -100,15 +100,13 @@ final class DefaultChatClientUtils {
 		 * ==========* OPTIONS * ==========
 		 */
 
-		ChatOptions.Builder<?> builder = inputRequest.getChatModel().getDefaultOptions().mutate();
+		ChatOptions.Builder<?> builder = inputRequest.getChatModel().getOptions().mutate();
 		if (inputRequest.getOptionsCustomizer() != null) {
 			builder = builder.combineWith(inputRequest.getOptionsCustomizer());
 		}
 
 		if (builder instanceof ToolCallingChatOptions.Builder<?> tbuilder) {
-			if (!inputRequest.getToolNames().isEmpty()) {
-				tbuilder.toolNames(new HashSet<>(inputRequest.getToolNames()));
-			}
+
 			List<ToolCallback> toolCallbacks = new ArrayList<>(inputRequest.getToolCallbacks());
 			for (var provider : inputRequest.getToolCallbackProviders()) {
 				toolCallbacks.addAll(java.util.List.of(provider.getToolCallbacks()));

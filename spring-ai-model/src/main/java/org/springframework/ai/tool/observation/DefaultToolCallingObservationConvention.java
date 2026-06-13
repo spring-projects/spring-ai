@@ -19,6 +19,7 @@ package org.springframework.ai.tool.observation;
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 
+import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.util.Assert;
 
@@ -51,13 +52,17 @@ public class DefaultToolCallingObservationConvention implements ToolCallingObser
 	public String getContextualName(ToolCallingObservationContext context) {
 		Assert.notNull(context, "context cannot be null");
 		String toolName = context.getToolDefinition().name();
-		return "%s %s".formatted(SpringAiKind.TOOL_CALL.value(), toolName);
+		return "%s %s".formatted(AiOperationType.EXECUTE_TOOL.value(), toolName);
 	}
 
 	@Override
 	public KeyValues getLowCardinalityKeyValues(ToolCallingObservationContext context) {
-		return KeyValues.of(aiOperationType(context), aiProvider(context), springAiKind(context),
+		return KeyValues.of(aiOperationType(context), aiProvider(context), springAiKind(context), toolType(context),
 				toolDefinitionName(context));
+	}
+
+	protected KeyValue toolType(ToolCallingObservationContext context) {
+		return KeyValue.of(ToolCallingObservationDocumentation.LowCardinalityKeyNames.TOOL_TYPE, context.getToolType());
 	}
 
 	protected KeyValue aiOperationType(ToolCallingObservationContext context) {
@@ -85,6 +90,7 @@ public class DefaultToolCallingObservationConvention implements ToolCallingObser
 		var keyValues = KeyValues.empty();
 		keyValues = toolDefinitionDescription(keyValues, context);
 		keyValues = toolDefinitionSchema(keyValues, context);
+		keyValues = toolCallId(keyValues, context);
 		return keyValues;
 	}
 
@@ -100,6 +106,12 @@ public class DefaultToolCallingObservationConvention implements ToolCallingObser
 		return keyValues.and(
 				ToolCallingObservationDocumentation.HighCardinalityKeyNames.TOOL_DEFINITION_SCHEMA.asString(),
 				toolSchema);
+	}
+
+	protected KeyValues toolCallId(KeyValues keyValues, ToolCallingObservationContext context) {
+		String toolCallId = context.getToolCallId();
+		return keyValues.and(ToolCallingObservationDocumentation.HighCardinalityKeyNames.TOOL_CALL_ID.asString(),
+				toolCallId);
 	}
 
 }

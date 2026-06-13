@@ -51,6 +51,7 @@ import static org.mockito.Mockito.when;
  * Tests for the OllamaRetryTests class.
  *
  * @author Alexandros Pappas
+ * @author Sebastien Deleuze
  */
 @ExtendWith(MockitoExtension.class)
 class OllamaRetryTests {
@@ -74,7 +75,7 @@ class OllamaRetryTests {
 
 		this.chatModel = OllamaChatModel.builder()
 			.ollamaApi(this.ollamaApi)
-			.defaultOptions(OllamaChatOptions.builder().model(MODEL).temperature(0.9).build())
+			.options(OllamaChatOptions.builder().model(MODEL).temperature(0.9).build())
 			.retryTemplate(this.retryTemplate)
 			.build();
 	}

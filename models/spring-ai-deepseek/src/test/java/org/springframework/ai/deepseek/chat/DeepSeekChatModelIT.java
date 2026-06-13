@@ -25,8 +25,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -44,7 +42,6 @@ import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.deepseek.DeepSeekAssistantMessage;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.deepseek.DeepSeekTestConfiguration;
-import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -65,8 +62,6 @@ class DeepSeekChatModelIT {
 
 	@Autowired
 	protected StreamingChatModel streamingChatModel;
-
-	private static final Logger logger = LoggerFactory.getLogger(DeepSeekChatModelIT.class);
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
@@ -169,7 +164,6 @@ class DeepSeekChatModelIT {
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -202,7 +196,6 @@ class DeepSeekChatModelIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -224,22 +217,18 @@ class DeepSeekChatModelIT {
 				```
 				""";
 		UserMessage userMessage = new UserMessage(userMessageContent);
-		Message assistantMessage = DeepSeekAssistantMessage
-			.prefixAssistantMessage("{\"code\":200,\"result\":{\"total\":1,\"data\":[1");
+		Message assistantMessage = DeepSeekAssistantMessage.builder()
+			.content("{\"code\":200,\"result\":{\"total\":1,\"data\":[1")
+			.prefix(true)
+			.build();
 		Prompt prompt = new Prompt(List.of(userMessage, assistantMessage));
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).isEqualTo(",2,3]}}");
 	}
 
-	/**
-	 * For deepseek-reasoner model only. The reasoning contents of the assistant message,
-	 * before the final answer.
-	 */
 	@Test
-	void reasonerModelTest() {
-		var promptOptions = DeepSeekChatOptions.builder()
-			.model(DeepSeekApi.ChatModel.DEEPSEEK_REASONER.getValue())
-			.build();
+	void reasoningTest() {
+		var promptOptions = DeepSeekChatOptions.builder().build();
 		Prompt prompt = new Prompt("9.11 and 9.8, which is greater?", promptOptions);
 		ChatResponse response = this.chatModel.call(prompt);
 
@@ -248,16 +237,11 @@ class DeepSeekChatModelIT {
 		assertThat(deepSeekAssistantMessage.getText()).isNotEmpty();
 	}
 
-	/**
-	 * the deepseek-reasoner model Multi-round Conversation.
-	 */
 	@Test
-	void reasonerModelMultiRoundTest() {
+	void reasoningMultiRoundTest() {
 		List<Message> messages = new ArrayList<>();
 		messages.add(new UserMessage("9.11 and 9.8, which is greater?"));
-		var promptOptions = DeepSeekChatOptions.builder()
-			.model(DeepSeekApi.ChatModel.DEEPSEEK_REASONER.getValue())
-			.build();
+		var promptOptions = DeepSeekChatOptions.builder().build();
 
 		Prompt prompt = new Prompt(messages, promptOptions);
 		ChatResponse response = this.chatModel.call(prompt);

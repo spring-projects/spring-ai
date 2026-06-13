@@ -64,7 +64,7 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 				ElasticsearchVectorStoreAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.elasticsearch.uris=" + elasticsearchContainer.getHttpHostAddress(),
-				"spring.ai.vectorstore.elasticsearch.initializeSchema=true",
+				"spring.ai.vectorstore.elasticsearch.initialize-schema=true",
 				"spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"));
 
 	private List<Document> documents = List.of(
@@ -131,7 +131,7 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 					ElasticsearchVectorStoreAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class))
 			.withPropertyValues("spring.elasticsearch.uris=" + elasticsearchContainer.getHttpHostAddress(),
 					"spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"),
-					"spring.ai.vectorstore.elasticsearch.initializeSchema=true",
+					"spring.ai.vectorstore.elasticsearch.initialize-schema=true",
 					"spring.ai.vectorstore.elasticsearch.index-name=example",
 					"spring.ai.vectorstore.elasticsearch.dimensions=1024",
 					"spring.ai.vectorstore.elasticsearch.dense-vector-indexing=true",

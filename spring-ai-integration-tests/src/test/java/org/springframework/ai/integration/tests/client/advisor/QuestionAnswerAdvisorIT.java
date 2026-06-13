@@ -33,7 +33,7 @@ import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.evaluation.EvaluationRequest;
 import org.springframework.ai.evaluation.EvaluationResponse;
 import org.springframework.ai.integration.tests.TestApplication;
-import org.springframework.ai.openaisdk.OpenAiSdkChatModel;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.reader.markdown.MarkdownDocumentReader;
 import org.springframework.ai.reader.markdown.config.MarkdownDocumentReaderConfig;
 import org.springframework.ai.template.st.StTemplateRenderer;
@@ -57,7 +57,7 @@ public class QuestionAnswerAdvisorIT {
 	private List<Document> knowledgeBaseDocuments;
 
 	@Autowired
-	OpenAiSdkChatModel openAiChatModel;
+	OpenAiChatModel openAiChatModel;
 
 	@Autowired
 	PgVectorStore pgVectorStore;
@@ -94,7 +94,6 @@ public class QuestionAnswerAdvisorIT {
 		assertThat(chatResponse).isNotNull();
 
 		String response = chatResponse.getResult().getOutput().getText();
-		System.out.println(response);
 		assertThat(response).containsIgnoringCase("Highlands");
 
 		evaluateRelevancy(question, chatResponse);
@@ -118,7 +117,6 @@ public class QuestionAnswerAdvisorIT {
 		assertThat(chatResponse).isNotNull();
 
 		String response = chatResponse.getResult().getOutput().getText();
-		System.out.println(response);
 		assertThat(response).containsIgnoringCase("Highlands");
 
 		evaluateRelevancy("Where does the adventure of Anacletus and Birba take place?", chatResponse);
@@ -159,7 +157,6 @@ public class QuestionAnswerAdvisorIT {
 		assertThat(chatResponse).isNotNull();
 
 		String response = chatResponse.getResult().getOutput().getText();
-		System.out.println(response);
 		assertThat(response).containsIgnoringCase("Highlands");
 
 		evaluateRelevancy(question, chatResponse);
@@ -180,7 +177,6 @@ public class QuestionAnswerAdvisorIT {
 
 		assertThat(answer).isNotNull();
 
-		System.out.println(answer);
 		assertThat(answer.content()).containsIgnoringCase("Highlands");
 	}
 

@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model.chat.client.autoconfigure;
 
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -41,8 +42,14 @@ public class ChatClientBuilderProperties {
 
 	private final Observations observations = new Observations();
 
+	private final ToolCalling toolCalling = new ToolCalling();
+
 	public Observations getObservations() {
 		return this.observations;
+	}
+
+	public ToolCalling getToolCalling() {
+		return this.toolCalling;
 	}
 
 	public boolean isEnabled() {
@@ -51,6 +58,41 @@ public class ChatClientBuilderProperties {
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
+	}
+
+	public static class ToolCalling {
+
+		/**
+		 * Whether to auto-register a {@link ToolCallingAdvisor} in the advisor chain when
+		 * tools are present on a call. Set to {@code false} to disable automatic tool
+		 * execution and handle tool calls manually (user-controlled tool execution).
+		 */
+		private boolean enabled = true;
+
+		/**
+		 * Order of the auto-registered {@link ToolCallingAdvisor} in the advisor chain.
+		 * Controls which advisors are inside the recursive tool-call loop: only advisors
+		 * with a higher order value (i.e. downstream in the request direction)
+		 * participate in each tool-call iteration.
+		 */
+		private int advisorOrder = ToolCallingAdvisor.DEFAULT_ORDER;
+
+		public boolean isEnabled() {
+			return this.enabled;
+		}
+
+		public void setEnabled(boolean enabled) {
+			this.enabled = enabled;
+		}
+
+		public int getAdvisorOrder() {
+			return this.advisorOrder;
+		}
+
+		public void setAdvisorOrder(int advisorOrder) {
+			this.advisorOrder = advisorOrder;
+		}
+
 	}
 
 	public static class Observations {

@@ -16,9 +16,7 @@
 
 package org.springframework.ai.google.genai.text;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.util.StringUtils;
@@ -29,9 +27,9 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
  * @author Dan Dobrin
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
-@JsonInclude(Include.NON_NULL)
 public class GoogleGenAiTextEmbeddingOptions implements EmbeddingOptions {
 
 	public static final String DEFAULT_MODEL_NAME = GoogleGenAiTextEmbeddingModelName.GEMINI_EMBEDDING_001.getName();
@@ -41,7 +39,7 @@ public class GoogleGenAiTextEmbeddingOptions implements EmbeddingOptions {
 	 * (recommended for Gemini API), text-embedding-004, text-multilingual-embedding-002
 	 * and multimodalembedding@001.
 	 */
-	private @JsonProperty("model") String model;
+	private final @Nullable String model;
 
 	// @formatter:off
 
@@ -49,86 +47,65 @@ public class GoogleGenAiTextEmbeddingOptions implements EmbeddingOptions {
 	 * The intended downstream application to help the model produce better quality embeddings.
 	 * Not all model versions support all task types.
 	 */
-	private @JsonProperty("task") TaskType taskType;
+	private final @Nullable TaskType taskType;
 
 	/**
 	 * The number of dimensions the resulting output embeddings should have.
 	 * Supported for model version 004 and later. You can use this parameter to reduce the
 	 * embedding size, for example, for storage optimization.
 	 */
-	private @JsonProperty("dimensions") Integer dimensions;
+	private final @Nullable Integer dimensions;
 
 	/**
 	 * Optional title, only valid with task_type=RETRIEVAL_DOCUMENT.
 	 */
-	private @JsonProperty("title") String title;
+	private final @Nullable String title;
 
 	/**
 	 * When set to true, input text will be truncated. When set to false, an error is returned
 	 * if the input text is longer than the maximum length supported by the model. Defaults to true.
 	 */
-	private @JsonProperty("autoTruncate") Boolean autoTruncate;
+	private final @Nullable Boolean autoTruncate;
 
-	public static Builder builder() {
+	protected GoogleGenAiTextEmbeddingOptions(@Nullable String model, @Nullable TaskType taskType,
+			@Nullable Integer dimensions, @Nullable String title, @Nullable Boolean autoTruncate) {
+		this.model = (model != null ? model : DEFAULT_MODEL_NAME);
+		if (StringUtils.hasText(title) && taskType != TaskType.RETRIEVAL_DOCUMENT) {
+			throw new IllegalArgumentException("Title is only valid with task_type=RETRIEVAL_DOCUMENT");
+		}
+		this.taskType = (taskType != null ? taskType : TaskType.RETRIEVAL_DOCUMENT);
+		this.dimensions = dimensions;
+		this.title = title;
+		this.autoTruncate = autoTruncate;
+	}
+
+	public static GoogleGenAiTextEmbeddingOptions.Builder builder() {
 		return new Builder();
 	}
 
 
 	// @formatter:on
 
-	public GoogleGenAiTextEmbeddingOptions initializeDefaults() {
-
-		if (this.getTaskType() == null) {
-			this.setTaskType(TaskType.RETRIEVAL_DOCUMENT);
-		}
-
-		if (StringUtils.hasText(this.getTitle()) && this.getTaskType() != TaskType.RETRIEVAL_DOCUMENT) {
-			throw new IllegalArgumentException("Title is only valid with task_type=RETRIEVAL_DOCUMENT");
-		}
-
-		return this;
-	}
-
 	@Override
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
-	}
-
-	public TaskType getTaskType() {
+	public @Nullable TaskType getTaskType() {
 		return this.taskType;
 	}
 
-	public void setTaskType(TaskType taskType) {
-		this.taskType = taskType;
-	}
-
 	@Override
-	public Integer getDimensions() {
+	public @Nullable Integer getDimensions() {
 		return this.dimensions;
 	}
 
-	public void setDimensions(Integer dimensions) {
-		this.dimensions = dimensions;
-	}
-
-	public String getTitle() {
+	public @Nullable String getTitle() {
 		return this.title;
 	}
 
-	public void setTitle(String user) {
-		this.title = user;
-	}
-
-	public Boolean getAutoTruncate() {
+	public @Nullable Boolean getAutoTruncate() {
 		return this.autoTruncate;
-	}
-
-	public void setAutoTruncate(Boolean autoTruncate) {
-		this.autoTruncate = autoTruncate;
 	}
 
 	public enum TaskType {
@@ -173,63 +150,71 @@ public class GoogleGenAiTextEmbeddingOptions implements EmbeddingOptions {
 
 	public static final class Builder {
 
-		protected GoogleGenAiTextEmbeddingOptions options;
+		private @Nullable String model;
+
+		private @Nullable TaskType taskType;
+
+		private @Nullable Integer dimensions;
+
+		private @Nullable String title;
+
+		private @Nullable Boolean autoTruncate;
 
 		public Builder() {
-			this.options = new GoogleGenAiTextEmbeddingOptions();
 		}
 
 		public Builder from(GoogleGenAiTextEmbeddingOptions fromOptions) {
 			if (fromOptions.getDimensions() != null) {
-				this.options.setDimensions(fromOptions.getDimensions());
+				this.dimensions = fromOptions.getDimensions();
 			}
 			if (StringUtils.hasText(fromOptions.getModel())) {
-				this.options.setModel(fromOptions.getModel());
+				this.model = fromOptions.getModel();
 			}
 			if (fromOptions.getTaskType() != null) {
-				this.options.setTaskType(fromOptions.getTaskType());
+				this.taskType = fromOptions.getTaskType();
 			}
 			if (fromOptions.getAutoTruncate() != null) {
-				this.options.setAutoTruncate(fromOptions.getAutoTruncate());
+				this.autoTruncate = fromOptions.getAutoTruncate();
 			}
 			if (StringUtils.hasText(fromOptions.getTitle())) {
-				this.options.setTitle(fromOptions.getTitle());
+				this.title = fromOptions.getTitle();
 			}
 			return this;
 		}
 
-		public Builder model(String model) {
-			this.options.setModel(model);
+		public Builder model(@Nullable String model) {
+			this.model = model;
 			return this;
 		}
 
 		public Builder model(GoogleGenAiTextEmbeddingModelName model) {
-			this.options.setModel(model.getName());
+			this.model = model.getName();
 			return this;
 		}
 
-		public Builder taskType(TaskType taskType) {
-			this.options.setTaskType(taskType);
+		public Builder taskType(@Nullable TaskType taskType) {
+			this.taskType = taskType;
 			return this;
 		}
 
-		public Builder dimensions(Integer dimensions) {
-			this.options.dimensions = dimensions;
+		public Builder dimensions(@Nullable Integer dimensions) {
+			this.dimensions = dimensions;
 			return this;
 		}
 
-		public Builder title(String user) {
-			this.options.setTitle(user);
+		public Builder title(@Nullable String user) {
+			this.title = user;
 			return this;
 		}
 
-		public Builder autoTruncate(Boolean autoTruncate) {
-			this.options.setAutoTruncate(autoTruncate);
+		public Builder autoTruncate(@Nullable Boolean autoTruncate) {
+			this.autoTruncate = autoTruncate;
 			return this;
 		}
 
 		public GoogleGenAiTextEmbeddingOptions build() {
-			return this.options;
+			return new GoogleGenAiTextEmbeddingOptions(this.model, this.taskType, this.dimensions, this.title,
+					this.autoTruncate);
 		}
 
 	}

@@ -58,8 +58,12 @@ public class PineconeFilterExpressionConverter extends AbstractFilterExpressionC
 
 	@Override
 	protected void doKey(Key key, StringBuilder context) {
-		var identifier = (hasOuterQuotes(key.key())) ? removeOuterQuotes(key.key()) : key.key();
-		context.append("\"").append(identifier).append("\": ");
+		var identifier = key.key();
+		// JSON-encode the key so characters such as " and \ cannot break out of the
+		// property
+		// name and inject operators (e.g. $or) into the serialized filter document.
+		emitJsonValue(identifier, context);
+		context.append(": ");
 	}
 
 	@Override

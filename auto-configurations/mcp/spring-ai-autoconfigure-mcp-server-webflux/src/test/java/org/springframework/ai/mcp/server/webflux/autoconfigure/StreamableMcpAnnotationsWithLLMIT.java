@@ -33,8 +33,6 @@ import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CreateMessageResult;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 
@@ -93,7 +91,7 @@ public class StreamableMcpAnnotationsWithLLMIT {
 				McpServerSpecificationFactoryAutoConfiguration.class));
 
 	private final ApplicationContextRunner clientApplicationContext = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.anthropic.apiKey=" + System.getenv("ANTHROPIC_API_KEY"))
+		.withPropertyValues("spring.ai.anthropic.api-key=" + System.getenv("ANTHROPIC_API_KEY"))
 		.withConfiguration(anthropicAutoConfig(McpToolCallbackAutoConfiguration.class, McpClientAutoConfiguration.class,
 				StreamableHttpWebFluxTransportAutoConfiguration.class,
 				McpClientAnnotationScannerAutoConfiguration.class, AnthropicChatAutoConfiguration.class,
@@ -150,7 +148,7 @@ public class StreamableMcpAnnotationsWithLLMIT {
 
 						assertThat(builder).isNotNull();
 
-						ChatClient chatClient = builder.defaultToolCallbacks(tcp)
+						ChatClient chatClient = builder.defaultTools(tcp)
 							.defaultToolContext(Map.of("progressToken", "test-progress-token"))
 							.build();
 
@@ -286,8 +284,6 @@ public class StreamableMcpAnnotationsWithLLMIT {
 	@ComponentScan(basePackageClasses = McpHandlerService.class)
 	public static class TestMcpClientHandlers {
 
-		private static final Logger logger = LoggerFactory.getLogger(TestMcpClientHandlers.class);
-
 		private TestMcpClientConfiguration.TestContext testContext;
 
 		public TestMcpClientHandlers(TestMcpClientConfiguration.TestContext testContext) {
@@ -296,8 +292,6 @@ public class StreamableMcpAnnotationsWithLLMIT {
 
 		@McpProgress(clients = "server1")
 		public void progressHandler(McpSchema.ProgressNotification progressNotification) {
-			logger.info("MCP PROGRESS: [{}] progress: {} total: {} message: {}", progressNotification.progressToken(),
-					progressNotification.progress(), progressNotification.total(), progressNotification.message());
 			this.testContext.progressNotifications.add(progressNotification);
 			this.testContext.progressLatch.countDown();
 		}
@@ -305,7 +299,6 @@ public class StreamableMcpAnnotationsWithLLMIT {
 		@McpLogging(clients = "server1")
 		public void loggingHandler(McpSchema.LoggingMessageNotification loggingMessage) {
 			this.testContext.loggingNotificationRef.set(loggingMessage);
-			logger.info("MCP LOGGING: [{}] {}", loggingMessage.level(), loggingMessage.data());
 		}
 
 	}

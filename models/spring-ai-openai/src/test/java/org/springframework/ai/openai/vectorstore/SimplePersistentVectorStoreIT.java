@@ -45,7 +45,7 @@ public class SimplePersistentVectorStoreIT {
 	@TempDir(cleanup = CleanupMode.ON_SUCCESS)
 	Path workingDir;
 
-	@Value("file:src/test/resources/data/acme/bikes.json")
+	@Value("classpath:/data/acme/bikes.json")
 	private Resource bikesJsonResource;
 
 	@Autowired
@@ -72,7 +72,7 @@ public class SimplePersistentVectorStoreIT {
 
 	}
 
-	public static class ProductMetadataGenerator implements JsonMetadataGenerator {
+	public class ProductMetadataGenerator implements JsonMetadataGenerator {
 
 		@Override
 		public Map<String, Object> generate(Map<String, Object> jsonMap) {

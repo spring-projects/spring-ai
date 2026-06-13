@@ -16,56 +16,155 @@
 
 package org.springframework.ai.openai;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import java.net.Proxy;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
+import com.openai.azure.AzureOpenAIServiceVersion;
+import com.openai.credential.Credential;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.moderation.ModerationOptions;
-import org.springframework.ai.openai.api.OpenAiModerationApi;
 
 /**
- * OpenAI Moderation API options. OpenAiModerationOptions.java
+ * OpenAI SDK Moderation Options.
  *
  * @author Ahmed Yousri
  * @author Ilayaperumal Gopinathan
- * @since 1.0.0
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public class OpenAiModerationOptions implements ModerationOptions {
+public class OpenAiModerationOptions extends AbstractOpenAiOptions implements ModerationOptions {
 
 	/**
-	 * The model to use for moderation generation.
+	 * Default moderation model.
 	 */
-	@JsonProperty("model")
-	private String model = OpenAiModerationApi.DEFAULT_MODERATION_MODEL;
+	public static final String DEFAULT_MODERATION_MODEL = "omni-moderation-latest";
+
+	protected OpenAiModerationOptions(@Nullable String baseUrl, @Nullable String apiKey,
+			@Nullable Credential credential, @Nullable String model, @Nullable String microsoftDeploymentName,
+			@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion, @Nullable String organizationId,
+			@Nullable Boolean isMicrosoftFoundry, @Nullable Boolean isGitHubModels, @Nullable Duration timeout,
+			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders) {
+		super(baseUrl, apiKey, credential, model != null ? model : DEFAULT_MODERATION_MODEL, microsoftDeploymentName,
+				microsoftFoundryServiceVersion, organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries,
+				proxy, customHeaders);
+	}
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
 	@Override
-	public String getModel() {
-		return this.model;
+	public boolean equals(@Nullable Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof OpenAiModerationOptions that)) {
+			return false;
+		}
+		return Objects.equals(getModel(), that.getModel()) && Objects.equals(getBaseUrl(), that.getBaseUrl())
+				&& Objects.equals(getApiKey(), that.getApiKey())
+				&& Objects.equals(getCredential(), that.getCredential())
+				&& Objects.equals(getMicrosoftDeploymentName(), that.getMicrosoftDeploymentName())
+				&& Objects.equals(getMicrosoftFoundryServiceVersion(), that.getMicrosoftFoundryServiceVersion())
+				&& Objects.equals(getOrganizationId(), that.getOrganizationId())
+				&& isMicrosoftFoundry() == that.isMicrosoftFoundry() && isGitHubModels() == that.isGitHubModels()
+				&& Objects.equals(getTimeout(), that.getTimeout()) && getMaxRetries() == that.getMaxRetries()
+				&& Objects.equals(getProxy(), that.getProxy())
+				&& Objects.equals(getCustomHeaders(), that.getCustomHeaders());
 	}
 
-	public void setModel(String model) {
-		this.model = model;
+	@Override
+	public int hashCode() {
+		return Objects.hash(getModel(), getBaseUrl(), getApiKey(), getCredential(), getMicrosoftDeploymentName(),
+				getMicrosoftFoundryServiceVersion(), getOrganizationId(), isMicrosoftFoundry(), isGitHubModels(),
+				getTimeout(), getMaxRetries(), getProxy(), getCustomHeaders());
 	}
 
-	public static final class Builder {
-
-		private final OpenAiModerationOptions options;
+	public static final class Builder extends AbstractBuilder<OpenAiModerationOptions, Builder> {
 
 		private Builder() {
-			this.options = new OpenAiModerationOptions();
 		}
 
-		public Builder model(String model) {
-			this.options.setModel(model);
+		public Builder from(OpenAiModerationOptions options) {
+			this.model = options.getModel();
+			this.baseUrl = options.getBaseUrl();
+			this.apiKey = options.getApiKey();
+			this.credential = options.getCredential();
+			this.microsoftDeploymentName = options.getMicrosoftDeploymentName();
+			this.microsoftFoundryServiceVersion = options.getMicrosoftFoundryServiceVersion();
+			this.organizationId = options.getOrganizationId();
+			this.isMicrosoftFoundry = options.isMicrosoftFoundry();
+			this.isGitHubModels = options.isGitHubModels();
+			this.timeout = options.getTimeout();
+			this.maxRetries = options.getMaxRetries();
+			this.proxy = options.getProxy();
+			if (options.getCustomHeaders() != null) {
+				this.customHeaders = options.getCustomHeaders();
+			}
 			return this;
 		}
 
+		public Builder merge(@Nullable ModerationOptions options) {
+			if (options == null) {
+				return this;
+			}
+			if (options.getModel() != null) {
+				this.model = options.getModel();
+			}
+			if (options instanceof AbstractOpenAiOptions castFrom) {
+
+				if (castFrom.getBaseUrl() != null) {
+					this.baseUrl = castFrom.getBaseUrl();
+				}
+				if (castFrom.getApiKey() != null) {
+					this.apiKey = castFrom.getApiKey();
+				}
+				if (castFrom.getCredential() != null) {
+					this.credential = castFrom.getCredential();
+				}
+				if (castFrom.getDeploymentName() != null) {
+					this.microsoftDeploymentName = castFrom.getDeploymentName();
+				}
+				if (castFrom.getMicrosoftFoundryServiceVersion() != null) {
+					this.microsoftFoundryServiceVersion = castFrom.getMicrosoftFoundryServiceVersion();
+				}
+				if (castFrom.getOrganizationId() != null) {
+					this.organizationId = castFrom.getOrganizationId();
+				}
+				this.isMicrosoftFoundry = castFrom.isMicrosoftFoundry();
+				this.isGitHubModels = castFrom.isGitHubModels();
+				if (castFrom.getTimeout() != null) {
+					this.timeout = castFrom.getTimeout();
+				}
+				this.maxRetries = castFrom.getMaxRetries();
+				if (castFrom.getProxy() != null) {
+					this.proxy = castFrom.getProxy();
+				}
+				if (castFrom.getCustomHeaders() != null) {
+					if (this.customHeaders == null) {
+						this.customHeaders = new HashMap<>(castFrom.getCustomHeaders());
+					}
+					else {
+						Map<String, String> merged = new HashMap<>(this.customHeaders);
+						merged.putAll(castFrom.getCustomHeaders());
+						this.customHeaders = merged;
+					}
+				}
+			}
+			if (options instanceof OpenAiModerationOptions castFrom) {
+				// No specific properties to merge for now
+			}
+			return this;
+		}
+
+		@Override
 		public OpenAiModerationOptions build() {
-			return this.options;
+			return new OpenAiModerationOptions(this.baseUrl, this.apiKey, this.credential, this.model,
+					this.microsoftDeploymentName, this.microsoftFoundryServiceVersion, this.organizationId,
+					this.isMicrosoftFoundry, this.isGitHubModels, this.timeout, this.maxRetries, this.proxy,
+					this.customHeaders);
 		}
 
 	}

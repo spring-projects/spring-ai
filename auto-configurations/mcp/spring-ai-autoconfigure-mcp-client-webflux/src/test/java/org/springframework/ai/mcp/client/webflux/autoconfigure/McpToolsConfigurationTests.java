@@ -21,8 +21,6 @@ import java.util.List;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
@@ -126,8 +124,6 @@ class McpToolsConfigurationTests {
 
 	static class TestMcpClientHandlers {
 
-		private static final Logger logger = LoggerFactory.getLogger(TestMcpClientHandlers.class);
-
 		private final ChatClient chatClient;
 
 		TestMcpClientHandlers(ChatClient.Builder clientBuilder) {
@@ -136,15 +132,14 @@ class McpToolsConfigurationTests {
 
 		@McpSampling(clients = "server1")
 		McpSchema.CreateMessageResult samplingHandler(McpSchema.CreateMessageRequest llmRequest) {
-			logger.info("MCP SAMPLING: {}", llmRequest);
 
 			String userPrompt = ((McpSchema.TextContent) llmRequest.messages().get(0).content()).text();
 			String modelHint = llmRequest.modelPreferences().hints().get(0).name();
 			// In a real use-case, we would use the chat client to call the LLM again
-			logger.info("MCP SAMPLING: simulating using chat client {}", this.chatClient);
 
-			return McpSchema.CreateMessageResult.builder()
-				.content(new McpSchema.TextContent("Response " + userPrompt + " with model hint " + modelHint))
+			return McpSchema.CreateMessageResult
+				.builder(McpSchema.Role.ASSISTANT, "Response " + userPrompt + " with model hint " + modelHint,
+						modelHint)
 				.build();
 		}
 

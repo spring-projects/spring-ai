@@ -244,6 +244,52 @@ public class DefaultUsageTests {
 	}
 
 	@Test
+	void testCacheFields() {
+		DefaultUsage usage = new DefaultUsage(100, 50, 150, null, 500L, 200L);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(500L);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(200L);
+	}
+
+	@Test
+	void testCacheFieldsNullByDefault() {
+		DefaultUsage usage = new DefaultUsage(100, 50, 150);
+		assertThat(usage.getCacheReadInputTokens()).isNull();
+		assertThat(usage.getCacheWriteInputTokens()).isNull();
+	}
+
+	@Test
+	void testToStringWithCacheFields() {
+		DefaultUsage usage = new DefaultUsage(100, 50, 150, null, 500L, 200L);
+		assertThat(usage).hasToString("DefaultUsage{promptTokens=100, completionTokens=50, totalTokens=150, "
+				+ "cacheReadInputTokens=500, cacheWriteInputTokens=200}");
+	}
+
+	@Test
+	void testSerializationWithCacheFields() throws Exception {
+		DefaultUsage usage = new DefaultUsage(100, 50, 150, null, 500L, 200L);
+		String json = JsonMapper.shared().writeValueAsString(usage);
+		assertThat(json).contains("\"cacheReadInputTokens\":500");
+		assertThat(json).contains("\"cacheWriteInputTokens\":200");
+	}
+
+	@Test
+	void testDeserializationWithCacheFields() throws Exception {
+		String json = "{\"promptTokens\":100,\"completionTokens\":50,\"totalTokens\":150,"
+				+ "\"cacheReadInputTokens\":500,\"cacheWriteInputTokens\":200}";
+		DefaultUsage usage = JsonMapper.shared().readValue(json, DefaultUsage.class);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(500L);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(200L);
+	}
+
+	@Test
+	void testDeserializationWithoutCacheFields() throws Exception {
+		String json = "{\"promptTokens\":100,\"completionTokens\":50,\"totalTokens\":150}";
+		DefaultUsage usage = JsonMapper.shared().readValue(json, DefaultUsage.class);
+		assertThat(usage.getCacheReadInputTokens()).isNull();
+		assertThat(usage.getCacheWriteInputTokens()).isNull();
+	}
+
+	@Test
 	void testCalculatedTotalTokens() {
 		// Test when total tokens is null and should be calculated
 		DefaultUsage usage = new DefaultUsage(Integer.valueOf(100), Integer.valueOf(50), null);

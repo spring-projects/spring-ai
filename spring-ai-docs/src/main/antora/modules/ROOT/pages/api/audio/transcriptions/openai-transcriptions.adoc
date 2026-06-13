@@ -2,6 +2,11 @@
 
 Spring AI supports https://platform.openai.com/docs/api-reference/audio/createTranscription[OpenAI's Transcription model].
 
+[NOTE]
+====
+Starting from version `2.0.0-M5`, Spring AI uses the official `openai-java` SDK under the hood for all OpenAI models. The transition is expected to be seamless and there are no breaking changes for existing users of the OpenAI API properties and builders. If you find any issues, please report them to us at https://github.com/spring-projects/spring-ai/issues[Spring AI GitHub Issues].
+====
+
 == Prerequisites
 
 
@@ -83,36 +88,19 @@ The prefix `spring.ai.openai.audio.transcription` is used as the property prefix
 | spring.ai.openai.audio.transcription.api-key    | The API Key           |  -
 | spring.ai.openai.audio.transcription.organization-id | Optionally you can specify which organization  used for an API request. |  -
 | spring.ai.openai.audio.transcription.project-id      | Optionally, you can specify which project is used for an API request. |  -
-| spring.ai.openai.audio.transcription.transcription-path | The API endpoint path for audio transcription. Useful for OpenAI-compatible APIs with different endpoint structures. | /v1/audio/transcriptions
-| spring.ai.openai.audio.transcription.options.model  | ID of the model to use for transcription. Available models: `gpt-4o-transcribe` (speech-to-text powered by GPT-4o), `gpt-4o-mini-transcribe` (speech-to-text powered by GPT-4o mini), or `whisper-1` (general-purpose speech recognition model, default). |  whisper-1
-| spring.ai.openai.audio.transcription.options.response-format | The format of the transcript output, in one of these options: json, text, srt, verbose_json, or vtt. |  json
-| spring.ai.openai.audio.transcription.options.prompt | An optional text to guide the model's style or continue a previous audio segment. The prompt should match the audio language. |
-| spring.ai.openai.audio.transcription.options.language | The language of the input audio. Supplying the input language in ISO-639-1 format will improve accuracy and latency. |
-| spring.ai.openai.audio.transcription.options.temperature | The sampling temperature, between 0 and 1. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. If set to 0, the model will use log probability to automatically increase the temperature until certain thresholds are hit. | 0
-| spring.ai.openai.audio.transcription.options.timestamp_granularities | The timestamp granularities to populate for this transcription. response_format must be set verbose_json to use timestamp granularities. Either or both of these options are supported: word, or segment. Note: There is no additional latency for segment timestamps, but generating word timestamps incurs additional latency. | segment
+| spring.ai.openai.audio.transcription.model  | ID of the model to use for transcription. Available models: `gpt-4o-transcribe` (speech-to-text powered by GPT-4o), `gpt-4o-mini-transcribe` (speech-to-text powered by GPT-4o mini), or `whisper-1` (general-purpose speech recognition model, default). |  whisper-1
+| spring.ai.openai.audio.transcription.response-format | The format of the transcript output, in one of these options: json, text, srt, verbose_json, or vtt. |  json
+| spring.ai.openai.audio.transcription.prompt | An optional text to guide the model's style or continue a previous audio segment. The prompt should match the audio language. |
+| spring.ai.openai.audio.transcription.language | The language of the input audio. Supplying the input language in ISO-639-1 format will improve accuracy and latency. |
+| spring.ai.openai.audio.transcription.temperature | The sampling temperature, between 0 and 1. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. If set to 0, the model will use log probability to automatically increase the temperature until certain thresholds are hit. | 0
+| spring.ai.openai.audio.transcription.timestamp_granularities | The timestamp granularities to populate for this transcription. response_format must be set verbose_json to use timestamp granularities. Either or both of these options are supported: word, or segment. Note: There is no additional latency for segment timestamps, but generating word timestamps incurs additional latency. | segment
 |====
 
 NOTE: You can override the common `spring.ai.openai.base-url`, `spring.ai.openai.api-key`, `spring.ai.openai.organization-id` and `spring.ai.openai.project-id` properties.
 The `spring.ai.openai.audio.transcription.base-url`, `spring.ai.openai.audio.transcription.api-key`, `spring.ai.openai.audio.transcription.organization-id` and `spring.ai.openai.audio.transcription.project-id` properties if set take precedence over the common properties.
 This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
 
-TIP: All properties prefixed with `spring.ai.openai.transcription.options` can be overridden at runtime.
-
-=== Custom API Paths
-
-For OpenAI-compatible APIs (such as LocalAI, Ollama with OpenAI compatibility, or custom proxies) that use different endpoint paths, you can configure the transcription path:
-
-[source,properties]
-----
-spring.ai.openai.audio.transcription.transcription-path=/custom/path/to/transcriptions
-----
-
-This is particularly useful when:
-
-* Using API gateways or proxies that modify standard OpenAI paths
-* Working with OpenAI-compatible services that implement different URL structures
-* Testing against mock endpoints with custom paths
-* Deploying in environments with path-based routing requirements
+TIP: All properties prefixed with `spring.ai.openai.audio.transcription` can be overridden at runtime.
 
 == Runtime Options [[transcription-options]]
 
@@ -176,6 +164,8 @@ var audioFile = new FileSystemResource("/path/to/your/resource/speech/jfk.flac")
 AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(this.audioFile, this.transcriptionOptions);
 AudioTranscriptionResponse response = openAiTranscriptionModel.call(this.transcriptionRequest);
 ----
+
+include::partial$openai/openai-http-client-customization.adoc[]
 
 == Example Code
 * The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/audio/transcription/OpenAiTranscriptionModelIT.java[OpenAiTranscriptionModelIT.java] test provides some general examples how to use the library.

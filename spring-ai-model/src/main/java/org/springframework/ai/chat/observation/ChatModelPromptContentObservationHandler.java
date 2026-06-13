@@ -20,8 +20,8 @@ import java.util.List;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.content.Content;
 import org.springframework.ai.observation.ObservabilityHelper;
@@ -36,11 +36,13 @@ import org.springframework.util.CollectionUtils;
  */
 public class ChatModelPromptContentObservationHandler implements ObservationHandler<ChatModelObservationContext> {
 
-	private static final Logger logger = LoggerFactory.getLogger(ChatModelPromptContentObservationHandler.class);
+	private static final Log logger = LogFactory.getLog(ChatModelPromptContentObservationHandler.class);
 
 	@Override
 	public void onStop(ChatModelObservationContext context) {
-		logger.info("Chat Model Prompt Content:\n{}", ObservabilityHelper.concatenateStrings(prompt(context)));
+		if (logger.isInfoEnabled()) {
+			logger.info("Chat Model Prompt Content:\n" + ObservabilityHelper.concatenateStrings(prompt(context)));
+		}
 	}
 
 	private List<String> prompt(ChatModelObservationContext context) {

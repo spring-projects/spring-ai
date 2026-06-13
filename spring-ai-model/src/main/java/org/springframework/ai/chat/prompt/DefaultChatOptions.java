@@ -16,8 +16,6 @@
 
 package org.springframework.ai.chat.prompt;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -28,35 +26,30 @@ import org.jspecify.annotations.Nullable;
  */
 public class DefaultChatOptions implements ChatOptions {
 
-	private @Nullable String model;
+	private final @Nullable String model;
 
-	private @Nullable Double frequencyPenalty;
+	private final @Nullable Double frequencyPenalty;
 
-	private @Nullable Integer maxTokens;
+	private final @Nullable Integer maxTokens;
 
-	private @Nullable Double presencePenalty;
+	private final @Nullable Double presencePenalty;
 
-	private @Nullable List<String> stopSequences;
+	private final @Nullable List<String> stopSequences;
 
-	private @Nullable Double temperature;
+	private final @Nullable Double temperature;
 
-	private @Nullable Integer topK;
+	private final @Nullable Integer topK;
 
-	private @Nullable Double topP;
+	private final @Nullable Double topP;
 
-	public DefaultChatOptions() {
-		// TODO remove
-	}
-
-	/* private */ /* TODO move builder as an inner class */ DefaultChatOptions(@Nullable String model,
-			@Nullable Double frequencyPenalty, @Nullable Integer maxTokens, @Nullable Double presencePenalty,
-			@Nullable List<String> stopSequences, @Nullable Double temperature, @Nullable Integer topK,
-			@Nullable Double topP) {
+	protected DefaultChatOptions(@Nullable String model, @Nullable Double frequencyPenalty, @Nullable Integer maxTokens,
+			@Nullable Double presencePenalty, @Nullable List<String> stopSequences, @Nullable Double temperature,
+			@Nullable Integer topK, @Nullable Double topP) {
 		this.model = model;
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
 		this.presencePenalty = presencePenalty;
-		this.stopSequences = stopSequences;
+		this.stopSequences = stopSequences != null ? List.copyOf(stopSequences) : null;
 		this.temperature = temperature;
 		this.topK = topK;
 		this.topP = topP;
@@ -67,17 +60,9 @@ public class DefaultChatOptions implements ChatOptions {
 		return this.model;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
-	}
-
 	@Override
 	public @Nullable Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
-	}
-
-	public void setFrequencyPenalty(Double frequencyPenalty) {
-		this.frequencyPenalty = frequencyPenalty;
 	}
 
 	@Override
@@ -85,26 +70,14 @@ public class DefaultChatOptions implements ChatOptions {
 		return this.maxTokens;
 	}
 
-	public void setMaxTokens(Integer maxTokens) {
-		this.maxTokens = maxTokens;
-	}
-
 	@Override
 	public @Nullable Double getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
-	public void setPresencePenalty(Double presencePenalty) {
-		this.presencePenalty = presencePenalty;
-	}
-
 	@Override
 	public @Nullable List<String> getStopSequences() {
-		return this.stopSequences != null ? Collections.unmodifiableList(this.stopSequences) : null;
-	}
-
-	public void setStopSequences(List<String> stopSequences) {
-		this.stopSequences = stopSequences;
+		return this.stopSequences;
 	}
 
 	@Override
@@ -112,32 +85,14 @@ public class DefaultChatOptions implements ChatOptions {
 		return this.temperature;
 	}
 
-	public void setTemperature(Double temperature) {
-		this.temperature = temperature;
-	}
-
 	@Override
 	public @Nullable Integer getTopK() {
 		return this.topK;
 	}
 
-	public void setTopK(Integer topK) {
-		this.topK = topK;
-	}
-
 	@Override
 	public @Nullable Double getTopP() {
 		return this.topP;
-	}
-
-	public void setTopP(Double topP) {
-		this.topP = topP;
-	}
-
-	@Override
-	@SuppressWarnings("unchecked")
-	public <T extends ChatOptions> T copy() {
-		return (T) mutate().build();
 	}
 
 	@Override
@@ -147,14 +102,17 @@ public class DefaultChatOptions implements ChatOptions {
 			.frequencyPenalty(this.frequencyPenalty)
 			.maxTokens(this.maxTokens)
 			.presencePenalty(this.presencePenalty)
-			.stopSequences(this.stopSequences != null ? new ArrayList<>(this.stopSequences) : null)
+			.stopSequences(this.stopSequences)
 			.temperature(this.temperature)
 			.topK(this.topK)
 			.topP(this.topP);
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
+		if (this == o) {
+			return true;
+		}
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}

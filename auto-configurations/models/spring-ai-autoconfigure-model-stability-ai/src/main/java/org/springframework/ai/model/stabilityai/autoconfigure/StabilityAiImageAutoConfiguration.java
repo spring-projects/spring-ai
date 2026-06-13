@@ -37,6 +37,7 @@ import org.springframework.web.client.RestClient;
  * @author Mark Pollack
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  * @since 0.8.0
  */
 @AutoConfiguration
@@ -60,7 +61,7 @@ public class StabilityAiImageAutoConfiguration {
 		Assert.hasText(apiKey, "StabilityAI API key must be set");
 		Assert.hasText(baseUrl, "StabilityAI base URL must be set");
 
-		return new StabilityAiApi(apiKey, imageProperties.getOptions().getModel(), baseUrl,
+		return new StabilityAiApi(apiKey, imageProperties.toOptions().getModel(), baseUrl,
 				restClientBuilderProvider.getIfAvailable(RestClient::builder));
 	}
 
@@ -68,7 +69,7 @@ public class StabilityAiImageAutoConfiguration {
 	@ConditionalOnMissingBean
 	public StabilityAiImageModel stabilityAiImageModel(StabilityAiApi stabilityAiApi,
 			StabilityAiImageProperties stabilityAiImageProperties) {
-		return new StabilityAiImageModel(stabilityAiApi, stabilityAiImageProperties.getOptions());
+		return new StabilityAiImageModel(stabilityAiApi, stabilityAiImageProperties.toOptions());
 	}
 
 }

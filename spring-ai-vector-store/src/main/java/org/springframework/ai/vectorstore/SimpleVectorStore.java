@@ -33,9 +33,9 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectWriter;
@@ -89,7 +89,7 @@ import org.springframework.core.io.Resource;
  */
 public class SimpleVectorStore extends AbstractObservationVectorStore {
 
-	private static final Logger logger = LoggerFactory.getLogger(SimpleVectorStore.class);
+	private static final Log logger = LogFactory.getLog(SimpleVectorStore.class);
 
 	private final JsonMapper jsonMapper;
 
@@ -119,7 +119,9 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		}
 
 		for (Document document : documents) {
-			logger.info("Calling EmbeddingModel for document id = {}", document.getId());
+			if (logger.isInfoEnabled()) {
+				logger.info("Calling EmbeddingModel for document id = " + document.getId());
+			}
 			float[] embedding = this.embeddingModel.embed(document);
 			SimpleVectorStoreContent storeContent = new SimpleVectorStoreContent(document.getId(),
 					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(), embedding);
@@ -173,7 +175,9 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		String json = getVectorDbAsJson();
 		try {
 			if (!file.exists()) {
-				logger.info("Creating new vector store file: {}", file);
+				if (logger.isInfoEnabled()) {
+					logger.info("Creating new vector store file: " + file);
+				}
 				try {
 					Files.createFile(file.toPath());
 				}
@@ -184,8 +188,8 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 					throw new RuntimeException("Failed to create new file: " + file + ". Reason: " + e.getMessage(), e);
 				}
 			}
-			else {
-				logger.info("Overwriting existing vector store file: {}", file);
+			else if (logger.isInfoEnabled()) {
+				logger.info("Overwriting existing vector store file: " + file);
 			}
 			try (OutputStream stream = new FileOutputStream(file);
 					Writer writer = new OutputStreamWriter(stream, StandardCharsets.UTF_8)) {

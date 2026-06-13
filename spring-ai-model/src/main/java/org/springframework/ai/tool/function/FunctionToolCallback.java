@@ -22,9 +22,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
@@ -35,7 +35,7 @@ import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.tool.support.ToolUtils;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.Assert;
@@ -50,7 +50,9 @@ import org.springframework.util.StringUtils;
  */
 public class FunctionToolCallback<I, O> implements ToolCallback {
 
-	private static final Logger logger = LoggerFactory.getLogger(FunctionToolCallback.class);
+	private static final JsonHelper jsonHelper = new JsonHelper();
+
+	private static final Log logger = LogFactory.getLog(FunctionToolCallback.class);
 
 	private static final ToolCallResultConverter DEFAULT_RESULT_CONVERTER = new DefaultToolCallResultConverter();
 
@@ -62,12 +64,12 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 
 	private final Type toolInputType;
 
-	private final BiFunction<I, @Nullable ToolContext, O> toolFunction;
+	private final BiFunction<@Nullable I, @Nullable ToolContext, O> toolFunction;
 
 	private final ToolCallResultConverter toolCallResultConverter;
 
 	public FunctionToolCallback(ToolDefinition toolDefinition, @Nullable ToolMetadata toolMetadata, Type toolInputType,
-			BiFunction<I, @Nullable ToolContext, O> toolFunction,
+			BiFunction<@Nullable I, @Nullable ToolContext, O> toolFunction,
 			@Nullable ToolCallResultConverter toolCallResultConverter) {
 		Assert.notNull(toolDefinition, "toolDefinition cannot be null");
 		Assert.notNull(toolInputType, "toolInputType cannot be null");
@@ -99,17 +101,21 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 	public String call(String toolInput, @Nullable ToolContext toolContext) {
 		Assert.hasText(toolInput, "toolInput cannot be null or empty");
 
-		logger.debug("Starting execution of tool: {}", this.toolDefinition.name());
+		if (logger.isDebugEnabled()) {
+			logger.debug("Starting execution of tool: " + this.toolDefinition.name());
+		}
 
-		I request = JsonParser.fromJson(toolInput, this.toolInputType);
+		I request = jsonHelper.fromJson(toolInput, this.toolInputType);
 		O response = callMethod(request, toolContext);
 
-		logger.debug("Successful execution of tool: {}", this.toolDefinition.name());
+		if (logger.isDebugEnabled()) {
+			logger.debug("Successful execution of tool: " + this.toolDefinition.name());
+		}
 
 		return this.toolCallResultConverter.convert(response, null);
 	}
 
-	private O callMethod(I request, @Nullable ToolContext toolContext) {
+	private O callMethod(@Nullable I request, @Nullable ToolContext toolContext) {
 		try {
 			return this.toolFunction.apply(request, toolContext);
 		}
@@ -130,7 +136,8 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 	/**
 	 * Build a {@link FunctionToolCallback} from a {@link BiFunction}.
 	 */
-	public static <I, O> Builder<I, O> builder(String name, BiFunction<I, @Nullable ToolContext, O> function) {
+	public static <I, O> Builder<I, O> builder(String name,
+			BiFunction<@Nullable I, @Nullable ToolContext, O> function) {
 		return new Builder<>(name, function);
 	}
 
@@ -176,11 +183,11 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 
 		private @Nullable ToolMetadata toolMetadata;
 
-		private final BiFunction<I, @Nullable ToolContext, O> toolFunction;
+		private final BiFunction<@Nullable I, @Nullable ToolContext, O> toolFunction;
 
 		private @Nullable ToolCallResultConverter toolCallResultConverter;
 
-		private Builder(String name, BiFunction<I, @Nullable ToolContext, O> toolFunction) {
+		private Builder(String name, BiFunction<@Nullable I, @Nullable ToolContext, O> toolFunction) {
 			Assert.hasText(name, "name cannot be null or empty");
 			Assert.notNull(toolFunction, "toolFunction cannot be null");
 			this.name = name;

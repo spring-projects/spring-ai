@@ -24,7 +24,7 @@ import io.modelcontextprotocol.spec.McpSchema.ElicitResult;
 
 import org.springframework.ai.mcp.annotation.McpElicitation;
 import org.springframework.ai.mcp.annotation.context.StructuredElicitResult;
-import org.springframework.ai.mcp.annotation.method.tool.utils.McpJsonParser;
+import org.springframework.ai.util.JsonHelper;
 
 /**
  * Class for creating Function callbacks around elicitation methods.
@@ -37,6 +37,8 @@ import org.springframework.ai.mcp.annotation.method.tool.utils.McpJsonParser;
  */
 public final class SyncMcpElicitationMethodCallback extends AbstractMcpElicitationMethodCallback
 		implements Function<ElicitRequest, ElicitResult> {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private SyncMcpElicitationMethodCallback(Builder builder) {
 		super(builder.method, builder.bean);
@@ -70,7 +72,7 @@ public final class SyncMcpElicitationMethodCallback extends AbstractMcpElicitati
 			if (this.method.getReturnType().isAssignableFrom(StructuredElicitResult.class)) {
 				StructuredElicitResult<?> structuredElicitResult = (StructuredElicitResult<?>) result;
 				var content = structuredElicitResult.structuredContent() != null
-						? McpJsonParser.toMap(structuredElicitResult.structuredContent()) : null;
+						? jsonHelper.convertToMap(structuredElicitResult.structuredContent()) : null;
 
 				return ElicitResult.builder()
 					.message(structuredElicitResult.action())

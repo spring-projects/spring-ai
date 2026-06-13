@@ -46,7 +46,7 @@ For Spring Boot applications, you can use the starter:
 
 ```java
 // Create Redis client
-JedisPooled jedisClient = new JedisPooled("localhost", 6379);
+RedisClient jedisClient = RedisClient.builder().hostAndPort("localhost", 6379).build();
 
 // Create the embedding model
 EmbeddingModel embeddingModel = new OpenAiEmbeddingModel(apiKey);

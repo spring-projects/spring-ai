@@ -19,9 +19,6 @@ package org.springframework.ai.openai.testutils;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -43,8 +40,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 public abstract class AbstractIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(AbstractIT.class);
 
 	@Autowired
 	protected ChatModel chatModel;
@@ -85,8 +80,6 @@ public abstract class AbstractIT {
 	protected void evaluateQuestionAndAnswer(String question, ChatResponse response, boolean factBased) {
 		assertThat(response).isNotNull();
 		String answer = response.getResult().getOutput().getText();
-		logger.info("Question: " + question);
-		logger.info("Answer:" + answer);
 		PromptTemplate userPromptTemplate = PromptTemplate.builder()
 			.resource(this.userEvaluatorResource)
 			.variables(Map.of("question", question, "answer", answer))
@@ -101,7 +94,6 @@ public abstract class AbstractIT {
 		Message userMessage = userPromptTemplate.createMessage();
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 		String yesOrNo = this.chatModel.call(prompt).getResult().getOutput().getText();
-		logger.info("Is Answer related to question: " + yesOrNo);
 		if (yesOrNo.equalsIgnoreCase("no")) {
 			SystemMessage notRelatedSystemMessage = new SystemMessage(this.qaEvaluatorNotRelatedResource);
 			prompt = new Prompt(List.of(userMessage, notRelatedSystemMessage));
@@ -109,7 +101,6 @@ public abstract class AbstractIT {
 			fail(reasonForFailure);
 		}
 		else {
-			logger.info("Answer is related to question.");
 			assertThat(yesOrNo).isEqualTo("YES");
 		}
 	}

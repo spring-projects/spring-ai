@@ -160,14 +160,4 @@ public class ImageGeneration implements ModelResult<Image> {
 `ImageModel` implementations are provided for the following Model providers:
 
 * xref:api/image/openai-image.adoc[OpenAI Image Generation]
-* xref:api/image/azure-openai-image.adoc[Azure OpenAI Image Generation]
-* xref:api/image/qianfan-image.adoc[QianFan Image Generation]
 * xref:api/image/stabilityai-image.adoc[StabilityAI Image Generation]
-
-== API Docs
-
-You can find the Javadoc https://docs.spring.io/spring-ai/docs/current-SNAPSHOT/[here].
-
-== Feedback and Contributions
-
-The project's https://github.com/spring-projects/spring-ai/discussions[GitHub discussions] is a great place to send feedback.

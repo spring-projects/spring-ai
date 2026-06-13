@@ -53,15 +53,12 @@ public final class AsyncMcpPromptMethodCallbackExample {
 		AsyncPromptProvider provider = new AsyncPromptProvider();
 
 		// Example 1: Using a method that returns Mono<GetPromptResult>
-		System.out.println("Example 1: Method returning Mono<GetPromptResult>");
 		demonstrateAsyncGreetingPrompt(provider);
 
 		// Example 2: Using a method that returns Mono<String>
-		System.out.println("\nExample 2: Method returning Mono<String>");
 		demonstrateAsyncStringPrompt(provider);
 
 		// Example 3: Using a method that returns Mono<List<String>>
-		System.out.println("\nExample 3: Method returning Mono<List<String>>");
 		demonstrateAsyncStringListPrompt(provider);
 	}
 
@@ -95,14 +92,6 @@ public final class AsyncMcpPromptMethodCallbackExample {
 
 		// Subscribe to the result
 		resultMono.subscribe(result -> {
-			System.out.println("Description: " + result.description());
-			System.out.println("Messages:");
-			for (PromptMessage message : result.messages()) {
-				System.out.println("  Role: " + message.role());
-				if (message.content() instanceof TextContent) {
-					System.out.println("  Content: " + ((TextContent) message.content()).text());
-				}
-			}
 		});
 
 		// Wait a bit for the subscription to complete
@@ -139,13 +128,6 @@ public final class AsyncMcpPromptMethodCallbackExample {
 
 		// Subscribe to the result
 		resultMono.subscribe(result -> {
-			System.out.println("Messages:");
-			for (PromptMessage message : result.messages()) {
-				System.out.println("  Role: " + message.role());
-				if (message.content() instanceof TextContent) {
-					System.out.println("  Content: " + ((TextContent) message.content()).text());
-				}
-			}
 		});
 
 		// Wait a bit for the subscription to complete
@@ -182,13 +164,6 @@ public final class AsyncMcpPromptMethodCallbackExample {
 
 		// Subscribe to the result
 		resultMono.subscribe(result -> {
-			System.out.println("Messages:");
-			for (PromptMessage message : result.messages()) {
-				System.out.println("  Role: " + message.role());
-				if (message.content() instanceof TextContent) {
-					System.out.println("  Content: " + ((TextContent) message.content()).text());
-				}
-			}
 		});
 
 		// Wait a bit for the subscription to complete

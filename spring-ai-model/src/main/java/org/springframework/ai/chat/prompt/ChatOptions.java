@@ -77,30 +77,13 @@ public interface ChatOptions extends ModelOptions {
 	@Nullable Double getTopP();
 
 	/**
-	 * Returns a copy of this {@link ChatOptions}.
-	 * @return a copy of this {@link ChatOptions}
-	 */
-	// TODO: can become default mutate().build()
-	<T extends ChatOptions> T copy();
-
-	/**
 	 * Returns a new {@link Builder} initialized with the values of this
 	 * {@link ChatOptions}.
 	 *
-	 * Concrete ChatOptions classes must override this to return the most concrete builder
-	 * implementation.
+	 * Concrete ChatOptions classes must implement this and return the most concrete
+	 * builder implementation.
 	 */
-	// TODO: change from default() to abstract once all models use customizers
-	default ChatOptions.Builder<?> mutate() {
-		throw new UnsupportedOperationException("mutate() must be overridden to return most concrete Builder");
-	}
-	/*
-	 * default ChatOptions.Builder<?> mutate() { return ChatOptions.builder()
-	 * .model(this.getModel()) .frequencyPenalty(this.getFrequencyPenalty())
-	 * .maxTokens(this.getMaxTokens()) .presencePenalty(this.getPresencePenalty())
-	 * .stopSequences(this.getStopSequences()) .temperature(this.getTemperature())
-	 * .topK(this.getTopK()) .topP(this.getTopP()); }
-	 */
+	ChatOptions.Builder<?> mutate();
 
 	/**
 	 * Creates a new {@link Builder} to create the default {@link ChatOptions}.

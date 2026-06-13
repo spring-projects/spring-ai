@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -30,8 +28,9 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
@@ -47,8 +46,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = OllamaChatModelFunctionCallingIT.Config.class)
 class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(OllamaChatModelFunctionCallingIT.class);
 
 	private static final String MODEL = OllamaModel.QWEN_2_5_3B.getName();
 
@@ -71,11 +68,36 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 				.build()))
 			.build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+		ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+		Prompt prompt = new Prompt(messages, promptOptions);
+		ChatResponse response = this.chatModel.call(prompt);
 
-		logger.info("Response: {}", response);
-
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			response = this.chatModel.call(prompt);
+		}
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
+	}
+
+	@Test
+	void toolCallIdIsPopulated() {
+		UserMessage userMessage = new UserMessage("What are the weather conditions in San Francisco?");
+
+		var promptOptions = OllamaChatOptions.builder()
+			.model(MODEL)
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description(
+						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), promptOptions));
+
+		AssistantMessage assistantMessage = response.getResult().getOutput();
+		assertThat(assistantMessage.getToolCalls()).isNotNull().hasSize(1);
+		assertThat(assistantMessage.getToolCalls().get(0).id()).isNotBlank();
 	}
 
 	@Test
@@ -94,18 +116,20 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
+		ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+		Prompt prompt = new Prompt(messages, promptOptions);
 
-		String content = response.collectList()
-			.block()
-			.stream()
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getText)
-			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
-
+		String content = this.chatModel.stream(prompt).flatMap(response -> {
+			if (response.hasToolCalls()) {
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+				return this.chatModel.stream(new Prompt(toolExecutionResult.conversationHistory(), promptOptions));
+			}
+			return Flux.just(response);
+		})
+			.mapNotNull(r -> (r.getResult() == null || r.getResult().getOutput() == null) ? null
+					: r.getResult().getOutput().getText())
+			.collect(Collectors.joining())
+			.block();
 		assertThat(content).contains("30", "10", "15");
 	}
 
@@ -121,7 +145,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 		public OllamaChatModel ollamaChat(OllamaApi ollamaApi) {
 			return OllamaChatModel.builder()
 				.ollamaApi(ollamaApi)
-				.defaultOptions(OllamaChatOptions.builder().model(MODEL).temperature(0.9).build())
+				.options(OllamaChatOptions.builder().model(MODEL).temperature(0.9).build())
 				.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 				.build();
 		}

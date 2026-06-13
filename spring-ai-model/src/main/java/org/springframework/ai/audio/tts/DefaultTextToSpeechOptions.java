@@ -18,16 +18,15 @@ package org.springframework.ai.audio.tts;
 
 import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import org.jspecify.annotations.Nullable;
 
 /**
  * Default implementation of the {@link TextToSpeechOptions} interface.
  *
  * @author Alexandros Pappas
+ * @author Sebastien Deleuze
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public final class DefaultTextToSpeechOptions implements TextToSpeechOptions {
+public class DefaultTextToSpeechOptions implements TextToSpeechOptions {
 
 	private final @Nullable String model;
 
@@ -37,7 +36,7 @@ public final class DefaultTextToSpeechOptions implements TextToSpeechOptions {
 
 	private final @Nullable Double speed;
 
-	private DefaultTextToSpeechOptions(@Nullable String model, @Nullable String voice, @Nullable String format,
+	protected DefaultTextToSpeechOptions(@Nullable String model, @Nullable String voice, @Nullable String format,
 			@Nullable Double speed) {
 		this.model = model;
 		this.voice = voice;
@@ -70,7 +69,7 @@ public final class DefaultTextToSpeechOptions implements TextToSpeechOptions {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -84,18 +83,6 @@ public final class DefaultTextToSpeechOptions implements TextToSpeechOptions {
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.voice, this.format, this.speed);
-	}
-
-	@Override
-	public String toString() {
-		return "DefaultTextToSpeechOptions{" + "model='" + this.model + '\'' + ", voice='" + this.voice + '\''
-				+ ", format='" + this.format + '\'' + ", speed=" + this.speed + '}';
-	}
-
-	@Override
-	@SuppressWarnings("unchecked")
-	public DefaultTextToSpeechOptions copy() {
-		return new Builder(this).build();
 	}
 
 	public static final class Builder implements TextToSpeechOptions.Builder {

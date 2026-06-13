@@ -20,8 +20,8 @@ import java.util.List;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.observation.ObservabilityHelper;
@@ -36,11 +36,13 @@ import org.springframework.util.CollectionUtils;
  */
 public class VectorStoreQueryResponseObservationHandler implements ObservationHandler<VectorStoreObservationContext> {
 
-	private static final Logger logger = LoggerFactory.getLogger(VectorStoreQueryResponseObservationHandler.class);
+	private static final Log logger = LogFactory.getLog(VectorStoreQueryResponseObservationHandler.class);
 
 	@Override
 	public void onStop(VectorStoreObservationContext context) {
-		logger.info("Vector Store Query Response:\n{}", ObservabilityHelper.concatenateStrings(documents(context)));
+		if (logger.isInfoEnabled()) {
+			logger.info("Vector Store Query Response:\n" + ObservabilityHelper.concatenateStrings(documents(context)));
+		}
 	}
 
 	private List<String> documents(VectorStoreObservationContext context) {

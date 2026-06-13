@@ -16,6 +16,8 @@
 
 package org.springframework.ai.google.genai.common;
 
+import org.jspecify.annotations.Nullable;
+
 public class GoogleGenAiSafetySetting {
 
 	/**
@@ -129,7 +131,7 @@ public class GoogleGenAiSafetySetting {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}

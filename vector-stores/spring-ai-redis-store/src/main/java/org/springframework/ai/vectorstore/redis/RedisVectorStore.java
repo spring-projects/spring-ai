@@ -29,11 +29,11 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.Pipeline;
+import redis.clients.jedis.RedisClient;
 import redis.clients.jedis.json.Path2;
 import redis.clients.jedis.search.FTCreateParams;
 import redis.clients.jedis.search.IndexDataType;
@@ -104,7 +104,7 @@ import org.springframework.util.StringUtils;
  * Basic usage example:
  * </p>
  * <pre>{@code
- * RedisVectorStore vectorStore = RedisVectorStore.builder(jedisPooled, embeddingModel)
+ * RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
  *     .indexName("custom-index")     // Optional: defaults to "spring-ai-index"
  *     .prefix("custom-prefix")       // Optional: defaults to "embedding:"
  *     .vectorAlgorithm(Algorithm.HNSW)
@@ -133,7 +133,7 @@ import org.springframework.util.StringUtils;
  * </p>
  * <pre>{@code
  * RedisVectorStore vectorStore = RedisVectorStore.builder()
- *     .jedis(jedisPooled)
+ *     .jedisClient(jedisClient)
  *     .embeddingModel(embeddingModel)
  *     .indexName("custom-index")
  *     .prefix("custom-prefix")
@@ -236,7 +236,8 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Soby Chacko
  * @author Jihoon Kim
- * @see VectorStore
+ * @author chabinhwang
+ * @author Yanming Zhou
  * @see EmbeddingModel
  * @since 1.0.0
  */
@@ -262,7 +263,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	private static final String JSON_PATH_PREFIX = "$.";
 
-	private static final Logger logger = LoggerFactory.getLogger(RedisVectorStore.class);
+	private static final Log logger = LogFactory.getLog(RedisVectorStore.class);
 
 	private static final Predicate<Object> RESPONSE_OK = Predicate.isEqual("OK");
 
@@ -276,7 +277,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	private static final TextScorer DEFAULT_TEXT_SCORER = TextScorer.BM25;
 
-	private final JedisPooled jedis;
+	private final RedisClient jedisClient;
 
 	private final boolean initializeSchema;
 
@@ -316,9 +317,9 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	protected RedisVectorStore(Builder builder) {
 		super(builder);
 
-		Assert.notNull(builder.jedis, "JedisPooled must not be null");
+		Assert.notNull(builder.jedisClient, "RedisClient must not be null");
 
-		this.jedis = builder.jedis;
+		this.jedisClient = builder.jedisClient;
 		this.indexName = builder.indexName;
 		this.prefix = builder.prefix;
 		this.contentFieldName = builder.contentFieldName;
@@ -342,8 +343,8 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		this.filterExpressionConverter = new RedisFilterExpressionConverter(this.metadataFields);
 	}
 
-	public JedisPooled getJedis() {
-		return this.jedis;
+	public RedisClient getJedisClient() {
+		return this.jedisClient;
 	}
 
 	public DistanceMetric getDistanceMetric() {
@@ -352,14 +353,15 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		try (Pipeline pipeline = this.jedis.pipelined()) {
+		try (Pipeline pipeline = this.jedisClient.pipelined()) {
 
 			List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 					this.batchingStrategy);
 
-			for (Document document : documents) {
+			for (int i = 0; i < documents.size(); i++) {
+				Document document = documents.get(i);
 				var fields = new HashMap<String, Object>();
-				float[] embedding = embeddings.get(documents.indexOf(document));
+				float[] embedding = embeddings.get(i);
 
 				// Normalize embeddings for COSINE distance metric
 				if (this.distanceMetric == DistanceMetric.COSINE) {
@@ -375,9 +377,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			Optional<Object> errResponse = responses.stream().filter(Predicate.not(RESPONSE_OK)).findAny();
 			if (errResponse.isPresent()) {
 				String message = MessageFormat.format("Could not add document: {0}", errResponse.get());
-				if (logger.isErrorEnabled()) {
-					logger.error(message);
-				}
+				logger.error(message);
 				throw new RuntimeException(message);
 			}
 		}
@@ -389,7 +389,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	@Override
 	public void doDelete(List<String> idList) {
-		try (Pipeline pipeline = this.jedis.pipelined()) {
+		try (Pipeline pipeline = this.jedisClient.pipelined()) {
 			for (String id : idList) {
 				pipeline.jsonDel(key(id));
 			}
@@ -397,7 +397,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			Optional<Object> errResponse = responses.stream().filter(Predicate.not(RESPONSE_DEL_OK)).findAny();
 			if (errResponse.isPresent()) {
 				if (logger.isErrorEnabled()) {
-					logger.error("Could not delete document: {}", errResponse.get());
+					logger.error("Could not delete document: " + errResponse.get());
 				}
 			}
 		}
@@ -409,31 +409,41 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		try {
 			String filterStr = this.filterExpressionConverter.convertExpression(filterExpression);
+			// To avoid deleting only the first page, we paginate through all matches.
+			final int pageSize = 1000;
+			int deletedCount = 0;
 
-			List<String> matchingIds = new ArrayList<>();
-			SearchResult searchResult = this.jedis.ftSearch(this.indexName, filterStr);
+			while (true) {
+				SearchResult searchResult = this.jedisClient.ftSearch(this.indexName,
+						new Query(filterStr).limit(0, pageSize));
+				var docs = searchResult.getDocuments();
+				if (docs == null || docs.isEmpty()) {
+					break;
+				}
 
-			for (redis.clients.jedis.search.Document doc : searchResult.getDocuments()) {
-				String docId = doc.getId();
-				matchingIds.add(docId.replace(key(""), "")); // Remove the key prefix to
-																// get original ID
-			}
-
-			if (!matchingIds.isEmpty()) {
-				try (Pipeline pipeline = this.jedis.pipelined()) {
-					for (String id : matchingIds) {
+				try (Pipeline pipeline = this.jedisClient.pipelined()) {
+					for (redis.clients.jedis.search.Document doc : docs) {
+						String redisKey = doc.getId();
+						String id = redisKey.startsWith(this.prefix) ? redisKey.substring(this.prefix.length())
+								: redisKey;
 						pipeline.jsonDel(key(id));
 					}
 					List<Object> responses = pipeline.syncAndReturnAll();
 					Optional<Object> errResponse = responses.stream().filter(Predicate.not(RESPONSE_DEL_OK)).findAny();
 
 					if (errResponse.isPresent()) {
-						logger.error("Could not delete document: {}", errResponse.get());
+						if (logger.isErrorEnabled()) {
+							logger.error("Could not delete document: " + errResponse.get());
+						}
 						throw new IllegalStateException("Failed to delete some documents");
 					}
 				}
 
-				logger.debug("Deleted {} documents matching filter expression", matchingIds.size());
+				deletedCount += docs.size();
+			}
+
+			if (logger.isDebugEnabled()) {
+				logger.debug("Deleted " + deletedCount + " documents matching filter expression");
 			}
 		}
 		catch (Exception e) {
@@ -481,12 +491,12 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			.limit(0, request.getTopK())
 			.dialect(2);
 
-		SearchResult result = this.jedis.ftSearch(this.indexName, query);
+		SearchResult result = this.jedisClient.ftSearch(this.indexName, query);
 
 		// Add more detailed logging to understand thresholding
 		if (logger.isDebugEnabled()) {
-			logger.debug("Applying filtering with effectiveThreshold: {}", effectiveThreshold);
-			logger.debug("Redis search returned {} documents", result.getTotalResults());
+			logger.debug("Applying filtering with effectiveThreshold: " + effectiveThreshold);
+			logger.debug("Redis search returned " + result.getTotalResults() + " documents");
 		}
 
 		// Apply filtering based on effective threshold (may be different for IP metric)
@@ -494,15 +504,15 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			float score = similarityScore(d);
 			boolean isAboveThreshold = score >= effectiveThreshold;
 			if (logger.isDebugEnabled()) {
-				logger.debug("Document raw_score: {}, normalized_score: {}, above_threshold: {}",
-						d.hasProperty(DISTANCE_FIELD_NAME) ? d.getString(DISTANCE_FIELD_NAME) : "N/A", score,
-						isAboveThreshold);
+				String rawScore = d.hasProperty(DISTANCE_FIELD_NAME) ? d.getString(DISTANCE_FIELD_NAME) : "N/A";
+				logger.debug("Document raw_score: " + rawScore + ", normalized_score: " + score + ", above_threshold: "
+						+ isAboveThreshold);
 			}
 			return isAboveThreshold;
 		}).map(this::toDocument).toList();
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("After filtering, returning {} documents", documents.size());
+			logger.debug("After filtering, returning " + documents.size() + " documents");
 		}
 
 		return documents;
@@ -544,14 +554,16 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				float normalizedTextScore = Math.min(textScore / 10.0f, 1.0f);
 
 				if (logger.isDebugEnabled()) {
-					logger.debug("Text search raw score: {}, normalized: {}", textScore, normalizedTextScore);
+					logger.debug("Text search raw score: " + textScore + ", normalized: " + normalizedTextScore);
 				}
 
 				return normalizedTextScore;
 			}
 			catch (NumberFormatException e) {
 				// If we can't parse the score, fall back to default
-				logger.warn("Could not parse text search score: {}", doc.getString("$score"));
+				if (logger.isWarnEnabled()) {
+					logger.warn("Could not parse text search score: " + doc.getString("$score"));
+				}
 				return 0.9f; // Default high similarity
 			}
 		}
@@ -561,9 +573,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		if (!doc.hasProperty(DISTANCE_FIELD_NAME)) {
 			// For text search, we don't have a vector distance, so use a default high
 			// similarity
-			if (logger.isDebugEnabled()) {
-				logger.debug("No vector distance score found. Using default similarity.");
-			}
+			logger.debug("No vector distance score found. Using default similarity.");
 			return 0.9f; // Default high similarity
 		}
 
@@ -571,7 +581,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		// Different distance metrics need different score transformations
 		if (logger.isDebugEnabled()) {
-			logger.debug("Distance metric: {}, Raw score: {}", this.distanceMetric, rawScore);
+			logger.debug("Distance metric: " + this.distanceMetric + ", Raw score: " + rawScore);
 		}
 
 		// If using IP (inner product), higher is better (it's a dot product)
@@ -587,7 +597,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				// 1 (higher is better)
 				normalizedScore = Math.max((2 - rawScore) / 2, 0);
 				if (logger.isDebugEnabled()) {
-					logger.debug("COSINE raw score: {}, normalized score: {}", rawScore, normalizedScore);
+					logger.debug("COSINE raw score: " + rawScore + ", normalized score: " + normalizedScore);
 				}
 				break;
 
@@ -596,7 +606,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				// For L2, convert to similarity score 0-1 where higher is better
 				normalizedScore = 1.0f / (1.0f + rawScore);
 				if (logger.isDebugEnabled()) {
-					logger.debug("L2 raw score: {}, normalized score: {}", rawScore, normalizedScore);
+					logger.debug("L2 raw score: " + rawScore + ", normalized score: " + normalizedScore);
 				}
 				break;
 
@@ -612,7 +622,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				normalizedScore = Math.min(Math.max(normalizedScore, 0.0f), 1.0f);
 
 				if (logger.isDebugEnabled()) {
-					logger.debug("IP raw score: {}, normalized score: {}", rawScore, normalizedScore);
+					logger.debug("IP raw score: " + rawScore + ", normalized score: " + normalizedScore);
 				}
 				break;
 
@@ -639,11 +649,11 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		}
 
 		// If index already exists don't do anything
-		if (this.jedis.ftList().contains(this.indexName)) {
+		if (this.jedisClient.ftList().contains(this.indexName)) {
 			return;
 		}
 
-		String response = this.jedis.ftCreate(this.indexName,
+		String response = this.jedisClient.ftCreate(this.indexName,
 				FTCreateParams.createParams().on(IndexDataType.JSON).addPrefix(this.prefix), schemaFields());
 		if (!RESPONSE_OK.test(response)) {
 			String message = MessageFormat.format("Could not create index: {0}", response);
@@ -735,7 +745,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	@Override
 	public <T> Optional<T> getNativeClient() {
 		@SuppressWarnings("unchecked")
-		T client = (T) this.jedis;
+		T client = (T) this.jedisClient;
 		return Optional.of(client);
 	}
 
@@ -773,13 +783,12 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		if (!isTextField) {
 			// Log detailed metadata fields for debugging
 			if (logger.isDebugEnabled()) {
-				logger.debug("Field not found as TEXT: '{}'", normalizedFieldName);
-				logger.debug("Content field name: '{}'", this.contentFieldName);
-				logger.debug("Available TEXT fields: {}",
-						this.metadataFields.stream()
-							.filter(field -> field.fieldType() == FieldType.TEXT)
-							.map(MetadataField::name)
-							.collect(Collectors.toList()));
+				logger.debug("Field not found as TEXT: '" + normalizedFieldName + "'");
+				logger.debug("Content field name: '" + this.contentFieldName + "'");
+				logger.debug("Available TEXT fields: " + this.metadataFields.stream()
+					.filter(field -> field.fieldType() == FieldType.TEXT)
+					.map(MetadataField::name)
+					.toList());
 			}
 			throw new IllegalArgumentException(String.format("Field '%s' is not a TEXT field", normalizedFieldName));
 		}
@@ -853,7 +862,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		validateTextField(textField);
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Searching text: '{}' in field: '{}'", query, textField);
+			logger.debug("Searching text: '" + query + "' in field: '" + textField + "'");
 		}
 
 		// Special case handling for test cases
@@ -868,7 +877,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				.limit(0, limit)
 				.dialect(2);
 
-			SearchResult result = this.jedis.ftSearch(this.indexName, redisQuery);
+			SearchResult result = this.jedisClient.ftSearch(this.indexName, redisQuery);
 			return result.getDocuments().stream().map(this::toDocument).toList();
 		}
 
@@ -880,7 +889,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				.limit(0, limit)
 				.dialect(2);
 
-			SearchResult result = this.jedis.ftSearch(this.indexName, redisQuery);
+			SearchResult result = this.jedisClient.ftSearch(this.indexName, redisQuery);
 			return result.getDocuments().stream().map(this::toDocument).toList();
 		}
 
@@ -953,7 +962,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		String finalQuery = queryBuilder.toString();
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Final Redis search query: {}", finalQuery);
+			logger.debug("Final Redis search query: " + finalQuery);
 		}
 
 		// Create and execute the query
@@ -967,11 +976,13 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		}
 
 		try {
-			SearchResult result = this.jedis.ftSearch(this.indexName, redisQuery);
+			SearchResult result = this.jedisClient.ftSearch(this.indexName, redisQuery);
 			return result.getDocuments().stream().map(this::toDocument).toList();
 		}
 		catch (Exception e) {
-			logger.error("Error executing text search query: {}", e.getMessage(), e);
+			if (logger.isErrorEnabled()) {
+				logger.error("Error executing text search query: " + e.getMessage(), e);
+			}
 			throw e;
 		}
 	}
@@ -1050,8 +1061,8 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				// Convert similarity score (0.0-1.0) to distance value (0.0-2.0)
 				effectiveRadius = (float) Math.max(2 - (2 * radius), 0);
 				if (logger.isDebugEnabled()) {
-					logger.debug("COSINE similarity threshold: {}, converted distance threshold: {}", radius,
-							effectiveRadius);
+					logger.debug("COSINE similarity threshold: " + radius + ", converted distance threshold: "
+							+ effectiveRadius);
 				}
 				break;
 
@@ -1061,8 +1072,8 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				// Solving for distance: distance = (1/similarity) - 1
 				effectiveRadius = (float) ((1.0 / radius) - 1.0);
 				if (logger.isDebugEnabled()) {
-					logger.debug("L2 similarity threshold: {}, converted distance threshold: {}", radius,
-							effectiveRadius);
+					logger.debug("L2 similarity threshold: " + radius + ", converted distance threshold: "
+							+ effectiveRadius);
 				}
 				break;
 
@@ -1072,8 +1083,8 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				// If similarity = (score+1)/2, then score = 2*similarity - 1
 				effectiveRadius = (float) ((2 * radius) - 1.0);
 				if (logger.isDebugEnabled()) {
-					logger.debug("IP similarity threshold: {}, converted distance threshold: {}", radius,
-							effectiveRadius);
+					logger.debug("IP similarity threshold: " + radius + ", converted distance threshold: "
+							+ effectiveRadius);
 				}
 				break;
 
@@ -1085,7 +1096,9 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		// With our proper handling of IP, we can use the native Redis VECTOR_RANGE query
 		// but we still need to handle very small radius values specially
 		if (this.distanceMetric == DistanceMetric.IP && radius < 0.1) {
-			logger.debug("Using client-side filtering for IP with small radius ({})", radius);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Using client-side filtering for IP with small radius (" + radius + ")");
+			}
 			// For very small similarity thresholds, we'll do filtering in memory to be
 			// extra safe
 			SearchRequest.Builder requestBuilder = SearchRequest.builder()
@@ -1121,8 +1134,8 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		// Log query information for debugging
 		if (logger.isDebugEnabled()) {
-			logger.debug("Range query string: {}", queryString);
-			logger.debug("Effective radius (distance): {}", effectiveRadius);
+			logger.debug("Range query string: " + queryString);
+			logger.debug("Effective radius (distance): " + effectiveRadius);
 		}
 
 		Query query1 = new Query(queryString).addParam("radius", effectiveRadius)
@@ -1130,26 +1143,27 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			.returnFields(returnFields.toArray(new String[0]))
 			.dialect(2);
 
-		SearchResult result = this.jedis.ftSearch(this.indexName, query1);
+		SearchResult result = this.jedisClient.ftSearch(this.indexName, query1);
 
 		// Add more detailed logging to understand thresholding
 		if (logger.isDebugEnabled()) {
-			logger.debug("Vector Range search returned {} documents, applying final radius filter: {}",
-					result.getTotalResults(), radius);
+			logger.debug("Vector Range search returned " + result.getTotalResults()
+					+ " documents, applying final radius filter: " + radius);
 		}
 
 		// Process the results and ensure they match the specified similarity threshold
 		List<Document> documents = result.getDocuments().stream().map(this::toDocument).filter(doc -> {
 			boolean isAboveThreshold = doc.getScore() != null && doc.getScore() >= radius;
 			if (logger.isDebugEnabled()) {
-				logger.debug("Document score: {}, raw distance: {}, above_threshold: {}", doc.getScore(),
-						doc.getMetadata().getOrDefault(DISTANCE_FIELD_NAME, "N/A"), isAboveThreshold);
+				logger.debug("Document score: " + doc.getScore() + ", raw distance: "
+						+ doc.getMetadata().getOrDefault(DISTANCE_FIELD_NAME, "N/A") + ", above_threshold: "
+						+ isAboveThreshold);
 			}
 			return isAboveThreshold;
 		}).toList();
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("After filtering, returning {} documents", documents.size());
+			logger.debug("After filtering, returning " + documents.size() + " documents");
 		}
 
 		return documents;
@@ -1198,11 +1212,13 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			.dialect(2); // Use dialect 2 for advanced query features
 
 		try {
-			SearchResult result = this.jedis.ftSearch(this.indexName, query);
+			SearchResult result = this.jedisClient.ftSearch(this.indexName, query);
 			return result.getTotalResults();
 		}
 		catch (Exception e) {
-			logger.error("Error executing count query: {}", e.getMessage(), e);
+			if (logger.isErrorEnabled()) {
+				logger.error("Error executing count query: " + e.getMessage(), e);
+			}
 			throw new IllegalStateException("Failed to execute count query", e);
 		}
 	}
@@ -1228,7 +1244,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		return normalized;
 	}
 
-	public static Builder builder(JedisPooled jedis, EmbeddingModel embeddingModel) {
+	public static Builder builder(RedisClient jedis, EmbeddingModel embeddingModel) {
 		return new Builder(jedis, embeddingModel);
 	}
 
@@ -1294,7 +1310,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
-		private final JedisPooled jedis;
+		private final RedisClient jedisClient;
 
 		private String indexName = DEFAULT_INDEX_NAME;
 
@@ -1328,10 +1344,10 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		private Set<String> stopwords = new HashSet<>();
 
-		private Builder(JedisPooled jedis, EmbeddingModel embeddingModel) {
+		private Builder(RedisClient jedisClient, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
-			Assert.notNull(jedis, "JedisPooled must not be null");
-			this.jedis = jedis;
+			Assert.notNull(jedisClient, "RedisClient must not be null");
+			this.jedisClient = jedisClient;
 		}
 
 		/**

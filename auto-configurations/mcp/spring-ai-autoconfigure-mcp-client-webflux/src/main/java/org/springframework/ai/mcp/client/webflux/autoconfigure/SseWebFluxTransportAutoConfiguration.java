@@ -69,6 +69,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 @EnableConfigurationProperties({ McpSseClientProperties.class, McpClientCommonProperties.class })
 @ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
+@Deprecated(since = "2.0.0", forRemoval = true)
 public class SseWebFluxTransportAutoConfiguration {
 
 	@Bean

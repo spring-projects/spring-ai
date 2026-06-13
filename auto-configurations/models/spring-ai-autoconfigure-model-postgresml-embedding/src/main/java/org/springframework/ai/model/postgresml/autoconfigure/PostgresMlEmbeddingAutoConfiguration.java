@@ -32,6 +32,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
  *
  * @author Utkarsh Srivastava
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 @AutoConfiguration
 @ConditionalOnClass(PostgresMlEmbeddingModel.class)
@@ -45,7 +46,7 @@ public class PostgresMlEmbeddingAutoConfiguration {
 	public PostgresMlEmbeddingModel postgresMlEmbeddingModel(JdbcTemplate jdbcTemplate,
 			PostgresMlEmbeddingProperties embeddingProperties) {
 
-		return new PostgresMlEmbeddingModel(jdbcTemplate, embeddingProperties.getOptions(),
+		return new PostgresMlEmbeddingModel(jdbcTemplate, embeddingProperties.toOptions(),
 				embeddingProperties.isCreateExtension());
 	}
 

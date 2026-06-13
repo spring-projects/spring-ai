@@ -19,7 +19,7 @@ package org.springframework.ai.model.google.genai.autoconfigure.embedding;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
-import org.springframework.ai.google.genai.GoogleGenAiEmbeddingConnectionDetails;
+import org.springframework.ai.google.genai.embedding.GoogleGenAiEmbeddingConnectionDetails;
 import org.springframework.ai.google.genai.text.GoogleGenAiTextEmbeddingModel;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
@@ -40,6 +40,7 @@ import org.springframework.core.retry.RetryTemplate;
  * @author Mark Pollack
  * @author Ilayaperumal Gopinathan
  * @author Yanming Zhou
+ * @author Sebastien Deleuze
  * @since 1.1.0
  */
 @AutoConfiguration
@@ -57,7 +58,7 @@ public class GoogleGenAiTextEmbeddingAutoConfiguration {
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
-		var embeddingModel = new GoogleGenAiTextEmbeddingModel(connectionDetails, textEmbeddingProperties.getOptions(),
+		var embeddingModel = new GoogleGenAiTextEmbeddingModel(connectionDetails, textEmbeddingProperties.toOptions(),
 				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE),
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 

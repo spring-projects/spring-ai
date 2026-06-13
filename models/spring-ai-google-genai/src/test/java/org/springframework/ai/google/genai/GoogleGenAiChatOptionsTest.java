@@ -16,11 +16,14 @@
 
 package org.springframework.ai.google.genai;
 
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions.Builder;
+import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
+import org.springframework.ai.google.genai.common.GoogleGenAiServiceTier;
 import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
 
@@ -45,19 +48,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
-	public void testThinkingBudgetGetterSetter() {
-		GoogleGenAiChatOptions options = new GoogleGenAiChatOptions();
-
-		assertThat(options.getThinkingBudget()).isNull();
-
-		options.setThinkingBudget(12853);
-		assertThat(options.getThinkingBudget()).isEqualTo(12853);
-
-		options.setThinkingBudget(null);
-		assertThat(options.getThinkingBudget()).isNull();
-	}
-
-	@Test
 	public void testThinkingBudgetWithBuilder() {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
 			.model("test-model")
@@ -66,36 +56,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 
 		assertThat(options.getModel()).isEqualTo("test-model");
 		assertThat(options.getThinkingBudget()).isEqualTo(15000);
-	}
-
-	@Test
-	public void testFromOptionsWithThinkingBudget() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.temperature(0.8)
-			.thinkingBudget(20000)
-			.build();
-
-		GoogleGenAiChatOptions copy = GoogleGenAiChatOptions.fromOptions(original);
-
-		assertThat(copy.getModel()).isEqualTo("test-model");
-		assertThat(copy.getTemperature()).isEqualTo(0.8);
-		assertThat(copy.getThinkingBudget()).isEqualTo(20000);
-		assertThat(copy).isNotSameAs(original);
-	}
-
-	@Test
-	public void testCopyWithThinkingBudget() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.thinkingBudget(30000)
-			.build();
-
-		GoogleGenAiChatOptions copy = original.copy();
-
-		assertThat(copy.getModel()).isEqualTo("test-model");
-		assertThat(copy.getThinkingBudget()).isEqualTo(30000);
-		assertThat(copy).isNotSameAs(original);
 	}
 
 	@Test
@@ -145,30 +105,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
-	public void testToStringWithThinkingBudget() {
-		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.thinkingBudget(12853)
-			.build();
-
-		String toString = options.toString();
-		assertThat(toString).contains("thinkingBudget=12853");
-		assertThat(toString).contains("test-model");
-	}
-
-	@Test
-	public void testToStringWithLabels() {
-		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.labels(Map.of("org", "my-org"))
-			.build();
-
-		String toString = options.toString();
-		assertThat(toString).contains("labels={org=my-org}");
-		assertThat(toString).contains("test-model");
-	}
-
-	@Test
 	public void testThinkingBudgetWithZeroValue() {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().thinkingBudget(0).build();
 
@@ -183,22 +119,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
-	public void testThinkingLevelGetterSetter() {
-		GoogleGenAiChatOptions options = new GoogleGenAiChatOptions();
-
-		assertThat(options.getThinkingLevel()).isNull();
-
-		options.setThinkingLevel(GoogleGenAiThinkingLevel.HIGH);
-		assertThat(options.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.HIGH);
-
-		options.setThinkingLevel(GoogleGenAiThinkingLevel.LOW);
-		assertThat(options.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.LOW);
-
-		options.setThinkingLevel(null);
-		assertThat(options.getThinkingLevel()).isNull();
-	}
-
-	@Test
 	public void testThinkingLevelWithBuilder() {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
 			.model("test-model")
@@ -207,32 +127,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 
 		assertThat(options.getModel()).isEqualTo("test-model");
 		assertThat(options.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.HIGH);
-	}
-
-	@Test
-	public void testFromOptionsWithThinkingLevel() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
-			.build();
-
-		GoogleGenAiChatOptions copy = GoogleGenAiChatOptions.fromOptions(original);
-
-		assertThat(copy.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.LOW);
-		assertThat(copy).isNotSameAs(original);
-	}
-
-	@Test
-	public void testCopyWithThinkingLevel() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
-			.build();
-
-		GoogleGenAiChatOptions copy = original.copy();
-
-		assertThat(copy.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.HIGH);
-		assertThat(copy).isNotSameAs(original);
 	}
 
 	@Test
@@ -255,17 +149,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 		assertThat(options1).isEqualTo(options2);
 		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
 		assertThat(options1).isNotEqualTo(options3);
-	}
-
-	@Test
-	public void testToStringWithThinkingLevel() {
-		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
-			.build();
-
-		String toString = options.toString();
-		assertThat(toString).contains("thinkingLevel=HIGH");
 	}
 
 	@Test
@@ -295,19 +178,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
-	public void testIncludeServerSideToolInvocationsGetterSetter() {
-		GoogleGenAiChatOptions options = new GoogleGenAiChatOptions();
-
-		assertThat(options.getIncludeServerSideToolInvocations()).isFalse();
-
-		options.setIncludeServerSideToolInvocations(true);
-		assertThat(options.getIncludeServerSideToolInvocations()).isTrue();
-
-		options.setIncludeServerSideToolInvocations(false);
-		assertThat(options.getIncludeServerSideToolInvocations()).isFalse();
-	}
-
-	@Test
 	public void testIncludeServerSideToolInvocationsWithBuilder() {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
 			.model("test-model")
@@ -316,32 +186,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 
 		assertThat(options.getModel()).isEqualTo("test-model");
 		assertThat(options.getIncludeServerSideToolInvocations()).isTrue();
-	}
-
-	@Test
-	public void testFromOptionsWithIncludeServerSideToolInvocations() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.includeServerSideToolInvocations(true)
-			.build();
-
-		GoogleGenAiChatOptions copy = GoogleGenAiChatOptions.fromOptions(original);
-
-		assertThat(copy.getIncludeServerSideToolInvocations()).isTrue();
-		assertThat(copy).isNotSameAs(original);
-	}
-
-	@Test
-	public void testCopyWithIncludeServerSideToolInvocations() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.includeServerSideToolInvocations(true)
-			.build();
-
-		GoogleGenAiChatOptions copy = original.copy();
-
-		assertThat(copy.getIncludeServerSideToolInvocations()).isTrue();
-		assertThat(copy).isNotSameAs(original);
 	}
 
 	@Test
@@ -367,14 +211,63 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
-	public void testToStringWithIncludeServerSideToolInvocations() {
+	public void testServiceTierWithBuilder() {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
 			.model("test-model")
-			.includeServerSideToolInvocations(true)
+			.serviceTier(GoogleGenAiServiceTier.PRIORITY)
 			.build();
 
-		String toString = options.toString();
-		assertThat(toString).contains("includeServerSideToolInvocations=true");
+		assertThat(options.getModel()).isEqualTo("test-model");
+		assertThat(options.getServiceTier()).isEqualTo(GoogleGenAiServiceTier.PRIORITY);
+	}
+
+	@Test
+	public void testEqualsAndHashCodeWithServiceTier() {
+		GoogleGenAiChatOptions options1 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier(GoogleGenAiServiceTier.PRIORITY)
+			.build();
+
+		GoogleGenAiChatOptions options2 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier(GoogleGenAiServiceTier.PRIORITY)
+			.build();
+
+		GoogleGenAiChatOptions options3 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.serviceTier(GoogleGenAiServiceTier.STANDARD)
+			.build();
+
+		assertThat(options1).isEqualTo(options2);
+		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
+		assertThat(options1).isNotEqualTo(options3);
+	}
+
+	@Test
+	public void testCombineWithCollections() {
+		GoogleGenAiSafetySetting baseSafetySetting = new GoogleGenAiSafetySetting.Builder()
+			.withCategory(GoogleGenAiSafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT)
+			.withThreshold(GoogleGenAiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
+			.build();
+		GoogleGenAiChatOptions base = GoogleGenAiChatOptions.builder()
+			.labels(Map.of("base-key", "base-value"))
+			.safetySettings(List.of(baseSafetySetting))
+			.build();
+
+		GoogleGenAiSafetySetting overrideSafetySetting = new GoogleGenAiSafetySetting.Builder()
+			.withCategory(GoogleGenAiSafetySetting.HarmCategory.HARM_CATEGORY_HARASSMENT)
+			.withThreshold(GoogleGenAiSafetySetting.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE)
+			.build();
+		GoogleGenAiChatOptions override = GoogleGenAiChatOptions.builder()
+			.labels(Map.of("override-key", "override-value"))
+			.safetySettings(List.of(overrideSafetySetting))
+			.build();
+
+		GoogleGenAiChatOptions merged = base.mutate().combineWith(override.mutate()).build();
+
+		assertThat(merged.getLabels()).containsEntry("base-key", "base-value");
+		assertThat(merged.getLabels()).containsEntry("override-key", "override-value");
+		assertThat(merged.getSafetySettings()).containsExactlyInAnyOrder(baseSafetySetting, overrideSafetySetting);
 	}
 
 }

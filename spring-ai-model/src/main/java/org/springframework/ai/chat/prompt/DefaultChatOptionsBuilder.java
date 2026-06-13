@@ -131,7 +131,14 @@ public class DefaultChatOptionsBuilder<B extends DefaultChatOptionsBuilder<B>> i
 				this.presencePenalty = that.presencePenalty;
 			}
 			if (that.stopSequences != null) {
-				this.stopSequences = that.stopSequences;
+				if (this.stopSequences == null) {
+					this.stopSequences = new ArrayList<>(that.stopSequences);
+				}
+				else {
+					List<String> merged = new ArrayList<>(this.stopSequences);
+					merged.addAll(that.stopSequences);
+					this.stopSequences = merged;
+				}
 			}
 			if (that.temperature != null) {
 				this.temperature = that.temperature;
@@ -147,7 +154,6 @@ public class DefaultChatOptionsBuilder<B extends DefaultChatOptionsBuilder<B>> i
 	}
 
 	public ChatOptions build() {
-		// TODO: Assert.notNull() as required
 		return new DefaultChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 				this.stopSequences, this.temperature, this.topK, this.topP);
 	}

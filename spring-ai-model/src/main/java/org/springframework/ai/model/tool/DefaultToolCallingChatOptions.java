@@ -17,16 +17,15 @@
 package org.springframework.ai.model.tool;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.DefaultChatOptions;
 import org.springframework.ai.chat.prompt.DefaultChatOptionsBuilder;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.Assert;
@@ -35,157 +34,33 @@ import org.springframework.util.Assert;
  * Default implementation of {@link ToolCallingChatOptions}.
  *
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
+ * @author Christian Tzolov
  * @since 1.0.0
  */
-public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
+public class DefaultToolCallingChatOptions extends DefaultChatOptions implements ToolCallingChatOptions {
 
-	private List<ToolCallback> toolCallbacks = new ArrayList<>();
+	private final @Nullable List<ToolCallback> toolCallbacks;
 
-	private Set<String> toolNames = new HashSet<>();
+	private final @Nullable Map<String, Object> toolContext;
 
-	private Map<String, Object> toolContext = new HashMap<>();
-
-	private @Nullable Boolean internalToolExecutionEnabled;
-
-	private @Nullable String model;
-
-	private @Nullable Double frequencyPenalty;
-
-	private @Nullable Integer maxTokens;
-
-	private @Nullable Double presencePenalty;
-
-	private @Nullable List<String> stopSequences;
-
-	private @Nullable Double temperature;
-
-	private @Nullable Integer topK;
-
-	private @Nullable Double topP;
-
-	@Override
-	public List<ToolCallback> getToolCallbacks() {
-		return List.copyOf(this.toolCallbacks);
+	protected DefaultToolCallingChatOptions(@Nullable List<ToolCallback> toolCallbacks,
+			@Nullable Map<String, Object> toolContext, @Nullable String model, @Nullable Double frequencyPenalty,
+			@Nullable Integer maxTokens, @Nullable Double presencePenalty, @Nullable List<String> stopSequences,
+			@Nullable Double temperature, @Nullable Integer topK, @Nullable Double topP) {
+		super(model, frequencyPenalty, maxTokens, presencePenalty, stopSequences, temperature, topK, topP);
+		this.toolCallbacks = (toolCallbacks != null ? List.copyOf(toolCallbacks) : null);
+		this.toolContext = (toolContext != null ? Map.copyOf(toolContext) : null);
 	}
 
 	@Override
-	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
-		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-		this.toolCallbacks = new ArrayList<>(toolCallbacks);
+	public @Nullable List<ToolCallback> getToolCallbacks() {
+		return this.toolCallbacks;
 	}
 
 	@Override
-	public Set<String> getToolNames() {
-		return Set.copyOf(this.toolNames);
-	}
-
-	@Override
-	public void setToolNames(Set<String> toolNames) {
-		Assert.notNull(toolNames, "toolNames cannot be null");
-		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
-		toolNames.forEach(toolName -> Assert.hasText(toolName, "toolNames cannot contain empty elements"));
-		this.toolNames = new HashSet<>(toolNames);
-	}
-
-	@Override
-	public Map<String, Object> getToolContext() {
-		return Map.copyOf(this.toolContext);
-	}
-
-	@Override
-	public void setToolContext(Map<String, Object> toolContext) {
-		Assert.notNull(toolContext, "toolContext cannot be null");
-		Assert.noNullElements(toolContext.keySet(), "toolContext cannot contain null keys");
-		this.toolContext = new HashMap<>(toolContext);
-	}
-
-	@Override
-	public @Nullable Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	@Override
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
-	@Override
-	public @Nullable String getModel() {
-		return this.model;
-	}
-
-	public void setModel(@Nullable String model) {
-		this.model = model;
-	}
-
-	@Override
-	public @Nullable Double getFrequencyPenalty() {
-		return this.frequencyPenalty;
-	}
-
-	public void setFrequencyPenalty(@Nullable Double frequencyPenalty) {
-		this.frequencyPenalty = frequencyPenalty;
-	}
-
-	@Override
-	public @Nullable Integer getMaxTokens() {
-		return this.maxTokens;
-	}
-
-	public void setMaxTokens(@Nullable Integer maxTokens) {
-		this.maxTokens = maxTokens;
-	}
-
-	@Override
-	public @Nullable Double getPresencePenalty() {
-		return this.presencePenalty;
-	}
-
-	public void setPresencePenalty(@Nullable Double presencePenalty) {
-		this.presencePenalty = presencePenalty;
-	}
-
-	@Override
-	public @Nullable List<String> getStopSequences() {
-		return this.stopSequences;
-	}
-
-	public void setStopSequences(@Nullable List<String> stopSequences) {
-		this.stopSequences = stopSequences;
-	}
-
-	@Override
-	public @Nullable Double getTemperature() {
-		return this.temperature;
-	}
-
-	public void setTemperature(@Nullable Double temperature) {
-		this.temperature = temperature;
-	}
-
-	@Override
-	public @Nullable Integer getTopK() {
-		return this.topK;
-	}
-
-	public void setTopK(@Nullable Integer topK) {
-		this.topK = topK;
-	}
-
-	@Override
-	public @Nullable Double getTopP() {
-		return this.topP;
-	}
-
-	public void setTopP(@Nullable Double topP) {
-		this.topP = topP;
-	}
-
-	@Override
-	@SuppressWarnings("unchecked")
-	public <T extends ChatOptions> T copy() {
-		return (T) mutate().build();
+	public @Nullable Map<String, Object> getToolContext() {
+		return this.toolContext;
 	}
 
 	@Override
@@ -200,9 +75,28 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 			.topK(getTopK())
 			.topP(getTopP())
 			.toolCallbacks(getToolCallbacks())
-			.toolNames(getToolNames())
-			.toolContext(getToolContext())
-			.internalToolExecutionEnabled(getInternalToolExecutionEnabled());
+			.toolContext(getToolContext());
+	}
+
+	@Override
+	public boolean equals(@Nullable Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		if (!super.equals(o)) {
+			return false;
+		}
+		DefaultToolCallingChatOptions that = (DefaultToolCallingChatOptions) o;
+		return Objects.equals(this.toolCallbacks, that.toolCallbacks)
+				&& Objects.equals(this.toolContext, that.toolContext);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), this.toolCallbacks, this.toolContext);
 	}
 
 	public static Builder<?> builder() {
@@ -217,17 +111,12 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 
 		protected @Nullable List<ToolCallback> toolCallbacks;
 
-		protected @Nullable Set<String> toolNames;
-
 		protected @Nullable Map<String, Object> toolContext;
-
-		protected @Nullable Boolean internalToolExecutionEnabled;
 
 		@Override
 		public B clone() {
 			B copy = super.clone();
 			copy.toolCallbacks = this.toolCallbacks == null ? null : new ArrayList<>(this.toolCallbacks);
-			copy.toolNames = this.toolNames == null ? null : new HashSet<>(this.toolNames);
 			copy.toolContext = this.toolContext == null ? null : new HashMap<>(this.toolContext);
 			return copy;
 		}
@@ -249,28 +138,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 			if (this.toolCallbacks == null) {
 				this.toolCallbacks = new ArrayList<>();
 			}
-			this.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
-			return self();
-		}
-
-		@Override
-		public B toolNames(@Nullable Set<String> toolNames) {
-			if (toolNames != null) {
-				this.toolNames = new HashSet<>(toolNames);
-			}
-			else {
-				this.toolNames = null;
-			}
-			return self();
-		}
-
-		@Override
-		public B toolNames(String... toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			if (this.toolNames == null) {
-				this.toolNames = new HashSet<>();
-			}
-			this.toolNames.addAll(Set.of(toolNames));
+			this.toolCallbacks.addAll(List.of(toolCallbacks));
 			return self();
 		}
 
@@ -300,34 +168,10 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		}
 
 		@Override
-		public B internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-			return self();
-		}
-
-		@Override
 		public ToolCallingChatOptions build() {
-			DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
-			if (this.toolCallbacks != null) {
-				options.setToolCallbacks(this.toolCallbacks);
-			}
-			if (this.toolNames != null) {
-				options.setToolNames(this.toolNames);
-			}
-			if (this.toolContext != null) {
-				options.setToolContext(this.toolContext);
-			}
-			options.setInternalToolExecutionEnabled(this.internalToolExecutionEnabled);
-
-			options.setModel(this.model);
-			options.setFrequencyPenalty(this.frequencyPenalty);
-			options.setMaxTokens(this.maxTokens);
-			options.setPresencePenalty(this.presencePenalty);
-			options.setStopSequences(this.stopSequences);
-			options.setTemperature(this.temperature);
-			options.setTopK(this.topK);
-			options.setTopP(this.topP);
-			return options;
+			return new DefaultToolCallingChatOptions(this.toolCallbacks, this.toolContext, this.model,
+					this.frequencyPenalty, this.maxTokens, this.presencePenalty, this.stopSequences, this.temperature,
+					this.topK, this.topP);
 		}
 
 		@Override
@@ -335,20 +179,24 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 			super.combineWith(other);
 			if (other instanceof Builder<?> that) {
 				if (that.toolCallbacks != null) {
-					this.toolCallbacks = new ArrayList<>(that.toolCallbacks);
-				}
-				if (that.toolNames != null) {
-					this.toolNames = new HashSet<>(that.toolNames);
+					if (this.toolCallbacks == null) {
+						this.toolCallbacks = new ArrayList<>(that.toolCallbacks);
+					}
+					else {
+						List<ToolCallback> merged = new ArrayList<>(this.toolCallbacks);
+						merged.addAll(that.toolCallbacks);
+						this.toolCallbacks = merged;
+					}
 				}
 				if (that.toolContext != null) {
 					if (this.toolContext == null) {
-						this.toolContext = new HashMap<>();
+						this.toolContext = new HashMap<>(that.toolContext);
 					}
-					this.toolContext.putAll(that.toolContext); // TODO:replace instead of
-																// merge?
-				}
-				if (that.internalToolExecutionEnabled != null) {
-					this.internalToolExecutionEnabled = that.internalToolExecutionEnabled;
+					else {
+						Map<String, Object> merged = new HashMap<>(this.toolContext);
+						merged.putAll(that.toolContext);
+						this.toolContext = merged;
+					}
 				}
 			}
 			return self();

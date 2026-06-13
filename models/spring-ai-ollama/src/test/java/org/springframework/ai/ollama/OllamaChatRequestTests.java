@@ -31,9 +31,6 @@ import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.definition.DefaultToolDefinition;
-import org.springframework.ai.tool.definition.ToolDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,18 +39,20 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  * @author Alexandros Pappas
  * @author Nicolas Krier
+ * @author Sebastien Deleuze
  */
 class OllamaChatRequestTests {
 
 	private final OllamaChatModel chatModel = OllamaChatModel.builder()
 		.ollamaApi(OllamaApi.builder().build())
-		.defaultOptions(OllamaChatOptions.builder().model("MODEL_NAME").topK(99).temperature(66.6).numGPU(1).build())
+		.options(OllamaChatOptions.builder().model("MODEL_NAME").topK(99).temperature(66.6).numGPU(1).build())
 		.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 		.build();
 
 	@Test
-	void createRequestWithDefaultOptions() {
-		var prompt = this.chatModel.buildRequestPrompt(new Prompt("Test message content"));
+	void createRequestWithOptions() {
+		var options = OllamaChatOptions.builder().model("MODEL_NAME").topK(99).temperature(66.6).numGPU(1).build();
+		var prompt = new Prompt("Test message content", options);
 
 		var request = this.chatModel.ollamaChatRequest(prompt, false);
 
@@ -61,10 +60,10 @@ class OllamaChatRequestTests {
 		assertThat(request.stream()).isFalse();
 
 		assertThat(request.model()).isEqualTo("MODEL_NAME");
-		assertThat(request.options().get("temperature")).isEqualTo(66.6);
-		assertThat(request.options().get("top_k")).isEqualTo(99);
-		assertThat(request.options().get("num_gpu")).isEqualTo(1);
-		assertThat(request.options().get("top_p")).isNull();
+		assertThat(request.options()).containsEntry("temperature", 66.6);
+		assertThat(request.options()).containsEntry("top_k", 99);
+		assertThat(request.options()).containsEntry("num_gpu", 1);
+		assertThat(request.options()).doesNotContainKey("top_p");
 	}
 
 	@Test
@@ -76,7 +75,7 @@ class OllamaChatRequestTests {
 			.topP(0.5)
 			.numGPU(2)
 			.build();
-		var prompt = this.chatModel.buildRequestPrompt(new Prompt("Test message content", promptOptions));
+		var prompt = new Prompt("Test message content", promptOptions);
 
 		var request = this.chatModel.ollamaChatRequest(prompt, true);
 
@@ -84,17 +83,17 @@ class OllamaChatRequestTests {
 		assertThat(request.stream()).isTrue();
 
 		assertThat(request.model()).isEqualTo(OllamaModel.QWEN_2_5_3B.id());
-		assertThat(request.options().get("temperature")).isEqualTo(0.8);
+		assertThat(request.options()).containsEntry("temperature", 0.8);
 		assertThat(request.options()).doesNotContainKey("top_k");
-		assertThat(request.options().get("num_gpu")).isEqualTo(2);
-		assertThat(request.options().get("top_p")).isEqualTo(0.5);
+		assertThat(request.options()).containsEntry("num_gpu", 2);
+		assertThat(request.options()).containsEntry("top_p", 0.5);
 	}
 
 	@Test
 	public void createRequestWithPromptOptionsModelOverride() {
 		// Ollama runtime options.
 		OllamaChatOptions promptOptions = OllamaChatOptions.builder().model("PROMPT_MODEL").build();
-		var prompt = this.chatModel.buildRequestPrompt(new Prompt("Test message content", promptOptions));
+		var prompt = new Prompt("Test message content", promptOptions);
 
 		var request = this.chatModel.ollamaChatRequest(prompt, true);
 
@@ -102,54 +101,9 @@ class OllamaChatRequestTests {
 	}
 
 	@Test
-	public void createRequestWithDefaultOptionsModelOverride() {
-		OllamaChatModel chatModel = OllamaChatModel.builder()
-			.ollamaApi(OllamaApi.builder().build())
-			.defaultOptions(OllamaChatOptions.builder().model("DEFAULT_OPTIONS_MODEL").build())
-			.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
-			.build();
-
-		var prompt1 = chatModel.buildRequestPrompt(new Prompt("Test message content"));
-
-		var request = chatModel.ollamaChatRequest(prompt1, true);
-
-		assertThat(request.model()).isEqualTo("DEFAULT_OPTIONS_MODEL");
-
-		// Prompt options should override the default options.
-		OllamaChatOptions promptOptions = OllamaChatOptions.builder().model("PROMPT_MODEL").build();
-		var prompt2 = chatModel.buildRequestPrompt(new Prompt("Test message content", promptOptions));
-
-		request = chatModel.ollamaChatRequest(prompt2, true);
-
-		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
-	}
-
-	@Test
-	public void createRequestWithDefaultOptionsModelChatOptionsOverride() {
-		OllamaChatModel chatModel = OllamaChatModel.builder()
-			.ollamaApi(OllamaApi.builder().build())
-			.defaultOptions(OllamaChatOptions.builder().model("DEFAULT_OPTIONS_MODEL").build())
-			.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
-			.build();
-
-		var prompt1 = chatModel.buildRequestPrompt(new Prompt("Test message content"));
-
-		var request = chatModel.ollamaChatRequest(prompt1, true);
-
-		assertThat(request.model()).isEqualTo("DEFAULT_OPTIONS_MODEL");
-
-		// Prompt options should override the default options.
-		OllamaChatOptions promptOptions = OllamaChatOptions.builder().model("PROMPT_MODEL").build();
-		var prompt2 = chatModel.buildRequestPrompt(new Prompt("Test message content", promptOptions));
-
-		request = chatModel.ollamaChatRequest(prompt2, true);
-
-		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
-	}
-
-	@Test
 	void createRequestWithAllMessageTypes() {
-		var prompt = this.chatModel.buildRequestPrompt(new Prompt(createMessagesWithAllMessageTypes()));
+		var prompt = new Prompt(createMessagesWithAllMessageTypes(),
+				OllamaChatOptions.builder().model("PROMPT_MODEL").build());
 
 		var request = this.chatModel.ollamaChatRequest(prompt, false);
 
@@ -192,26 +146,6 @@ class OllamaChatRequestTests {
 		var assistantMessage = new AssistantMessage("Test assistant message");
 
 		return List.of(systemMessage, userMessage, toolResponseMessage, assistantMessage);
-	}
-
-	static class TestToolCallback implements ToolCallback {
-
-		private final ToolDefinition toolDefinition;
-
-		TestToolCallback(String name) {
-			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
-		}
-
-		@Override
-		public ToolDefinition getToolDefinition() {
-			return this.toolDefinition;
-		}
-
-		@Override
-		public String call(String toolInput) {
-			return "Mission accomplished!";
-		}
-
 	}
 
 }

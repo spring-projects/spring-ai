@@ -23,9 +23,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Default implementation of {@link McpToolNamePrefixGenerator} that ensures unique tool
@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
  */
 public class DefaultMcpToolNamePrefixGenerator implements McpToolNamePrefixGenerator {
 
-	private static final Logger logger = LoggerFactory.getLogger(DefaultMcpToolNamePrefixGenerator.class);
+	private static final Log logger = LogFactory.getLog(DefaultMcpToolNamePrefixGenerator.class);
 
 	// Idempotency tracking. For a given combination of (client, server, tool) we will
 	// generate a unique tool name only once.
@@ -69,7 +69,10 @@ public class DefaultMcpToolNamePrefixGenerator implements McpToolNamePrefixGener
 			if (!this.allUsedToolNames.add(uniqueToolName)) {
 				uniqueToolName = "alt_" + this.counter.getAndIncrement() + "_" + uniqueToolName;
 				this.allUsedToolNames.add(uniqueToolName);
-				logger.warn("Tool name '{}' already exists. Using unique tool name '{}'", tool.name(), uniqueToolName);
+				if (logger.isWarnEnabled()) {
+					logger.warn("Tool name '" + tool.name() + "' already exists. Using unique tool name '"
+							+ uniqueToolName + "'");
+				}
 			}
 		}
 

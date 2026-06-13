@@ -18,20 +18,15 @@ package org.springframework.ai.model.openai.autoconfigure;
 
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.ChatClientCustomizer;
+import org.springframework.ai.chat.client.ChatClientBuilderCustomizer;
 import org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -39,19 +34,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
- * @author Issam El-atif
+ * @author Sebastien Deleuze
  */
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class ChatClientAutoConfigurationIT {
 
-	private static final Log logger = LogFactory.getLog(ChatClientAutoConfigurationIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
-				"spring.ai.openai.chat.options.model=gpt-4o")
+		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"),
+				"spring.ai.openai.chat.model=gpt-4o")
 		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ChatClientAutoConfiguration.class,
-				RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
-				ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class));
+				ToolCallingAutoConfiguration.class));
 
 	@Test
 	void implicitlyEnabled() {
@@ -82,12 +74,11 @@ public class ChatClientAutoConfigurationIT {
 			String response = chatClient.prompt().user("Hello").call().content();
 
 			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
 		});
 	}
 
 	@Test
-	void testChatClientCustomizers() {
+	void testChatClientBuilderCustomizers() {
 		this.contextRunner.withUserConfiguration(Config.class).run(context -> {
 
 			ChatClient.Builder builder = context.getBean(ChatClient.Builder.class);
@@ -100,8 +91,6 @@ public class ChatClientAutoConfigurationIT {
 				.user(u -> u.param("actor", "Tom Hanks"))
 				.call()
 				.entity(ActorsFilms.class);
-
-			logger.info("" + actorsFilms);
 			assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 			assertThat(actorsFilms.movies()).hasSize(5);
 		});
@@ -115,7 +104,7 @@ public class ChatClientAutoConfigurationIT {
 	static class Config {
 
 		@Bean
-		public ChatClientCustomizer chatClientCustomizer() {
+		public ChatClientBuilderCustomizer chatClientCustomizer() {
 			return b -> b.defaultSystem("You are a movie expert.")
 				.defaultUser("Generate the filmography of 5 movies for {actor}.");
 		}

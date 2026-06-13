@@ -18,7 +18,6 @@ package org.springframework.ai.google.genai.tool;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.google.genai.Client;
@@ -26,28 +25,22 @@ import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
-import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
-import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
-import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
-import org.springframework.ai.tool.resolution.ToolCallbackResolver;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Description;
-import org.springframework.context.support.GenericApplicationContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -55,13 +48,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Dan Dobrin
+ * @author Sebastien Deleuze
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".+")
 public class GoogleGenAiPaymentTransactionIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiPaymentTransactionIT.class);
 
 	private static final Map<Transaction, Status> DATASET = Map.of(new Transaction("001"), new Status("pending"),
 			new Transaction("002"), new Status("approved"), new Transaction("003"), new Status("rejected"));
@@ -69,18 +61,22 @@ public class GoogleGenAiPaymentTransactionIT {
 	@Autowired
 	ChatClient chatClient;
 
+	@Autowired
+	List<ToolCallback> toolCallbacks;
+
 	@Test
 	public void paymentStatuses() {
+		ToolCallback paymentStatus = findToolCallback("paymentStatus");
+
 		// @formatter:off
 		String content = this.chatClient.prompt()
 				.advisors(new SimpleLoggerAdvisor())
-				.toolNames("paymentStatus")
+				.tools(paymentStatus)
 				.user("""
 				What is the status of my payment transactions 001, 002 and 003?
 				If required invoke the function per transaction.
 				""").call().content();
 		// @formatter:on
-		logger.info("" + content);
 
 		assertThat(content).contains("001", "002", "003");
 		assertThat(content).contains("pending", "approved", "rejected");
@@ -88,10 +84,11 @@ public class GoogleGenAiPaymentTransactionIT {
 
 	@RepeatedTest(5)
 	public void streamingPaymentStatuses() {
+		ToolCallback paymentStatus = findToolCallback("paymentStatus");
 
 		Flux<String> streamContent = this.chatClient.prompt()
 			.advisors(new SimpleLoggerAdvisor())
-			.toolNames("paymentStatus")
+			.tools(paymentStatus)
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
 					If required invoke the function per transaction.
@@ -100,8 +97,6 @@ public class GoogleGenAiPaymentTransactionIT {
 			.content();
 
 		String content = streamContent.collectList().block().stream().collect(Collectors.joining());
-
-		logger.info(content);
 
 		assertThat(content).contains("001", "002", "003");
 		assertThat(content).contains("pending", "approved", "rejected");
@@ -112,6 +107,13 @@ public class GoogleGenAiPaymentTransactionIT {
 		}
 		catch (InterruptedException e) {
 		}
+	}
+
+	private ToolCallback findToolCallback(String name) {
+		return this.toolCallbacks.stream()
+			.filter(tc -> tc.getToolDefinition().name().equals(name))
+			.findFirst()
+			.orElseThrow(() -> new IllegalArgumentException("No ToolCallback found for name: " + name));
 	}
 
 	record TransactionStatusResponse(String id, String status) {
@@ -134,65 +136,54 @@ public class GoogleGenAiPaymentTransactionIT {
 	public static class TestConfiguration {
 
 		@Bean
-		@Description("Get the status of a single payment transaction")
-		public Function<Transaction, Status> paymentStatus() {
-			return transaction -> {
-				logger.info("Single Transaction: " + transaction);
-				return DATASET.get(transaction);
-			};
+		ToolCallback paymentStatus() {
+			return FunctionToolCallback.builder("paymentStatus", (Transaction transaction) -> DATASET.get(transaction))
+				.description("Get the status of a single payment transaction")
+				.inputType(Transaction.class)
+				.build();
 		}
 
 		@Bean
-		@Description("Get the list statuses of a list of payment transactions")
-		public Function<Transactions, Statuses> paymentStatuses() {
-			return transactions -> {
-				logger.info("Transactions: " + transactions);
-				return new Statuses(transactions.transactions().stream().map(t -> DATASET.get(t)).toList());
-			};
+		ToolCallback paymentStatuses() {
+			return FunctionToolCallback
+				.builder("paymentStatuses",
+						(Transactions transactions) -> new Statuses(
+								transactions.transactions().stream().map(t -> DATASET.get(t)).toList()))
+				.description("Get the list statuses of a list of payment transactions")
+				.inputType(Transactions.class)
+				.build();
 		}
 
 		@Bean
-		public ChatClient chatClient(GoogleGenAiChatModel chatModel) {
-			return ChatClient.builder(chatModel).build();
+		public ChatClient chatClient(GoogleGenAiChatModel chatModel, ToolCallingManager toolCallingManager) {
+			return ChatClient
+				.builder(chatModel, ObservationRegistry.NOOP, null, null,
+						ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
+				.build();
 		}
 
 		@Bean
 		public Client genAiClient() {
-
 			String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
 			String location = System.getenv("GOOGLE_CLOUD_LOCATION");
-
 			return Client.builder().project(projectId).location(location).vertexAI(true).build();
 		}
 
 		@Bean
-		public GoogleGenAiChatModel vertexAiChatModel(Client genAiClient, ToolCallingManager toolCallingManager) {
-
+		public GoogleGenAiChatModel vertexAiChatModel(Client genAiClient) {
 			return GoogleGenAiChatModel.builder()
 				.genAiClient(genAiClient)
-				.toolCallingManager(toolCallingManager)
-				.defaultOptions(GoogleGenAiChatOptions.builder()
-					.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
+				.options(GoogleGenAiChatOptions.builder()
+					.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
 					.temperature(0.1)
 					.build())
 				.build();
 		}
 
 		@Bean
-		ToolCallingManager toolCallingManager(GenericApplicationContext applicationContext,
-				List<ToolCallback> toolCallbacks, ObjectProvider<ObservationRegistry> observationRegistry) {
-
-			var staticToolCallbackResolver = new StaticToolCallbackResolver(toolCallbacks);
-			var springBeanToolCallbackResolver = SpringBeanToolCallbackResolver.builder()
-				.applicationContext(applicationContext)
-				.build();
-
-			ToolCallbackResolver toolCallbackResolver = new DelegatingToolCallbackResolver(
-					List.of(staticToolCallbackResolver, springBeanToolCallbackResolver));
-
+		ToolCallingManager toolCallingManager(ObjectProvider<ObservationRegistry> observationRegistry) {
 			return ToolCallingManager.builder()
 				.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-				.toolCallbackResolver(toolCallbackResolver)
 				.toolExecutionExceptionProcessor(new DefaultToolExecutionExceptionProcessor(false))
 				.build();
 		}

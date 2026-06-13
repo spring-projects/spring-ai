@@ -45,6 +45,7 @@ import static org.springframework.ai.embedding.observation.EmbeddingModelObserva
  *
  * @author Thomas Vitale
  * @author Jason Smith
+ * @author Sebastien Deleuze
  */
 @SpringBootTest(classes = MistralAiEmbeddingModelObservationIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
@@ -59,8 +60,8 @@ public class MistralAiEmbeddingModelObservationIT {
 	@Test
 	void observationForEmbeddingOperation() {
 		var options = MistralAiEmbeddingOptions.builder()
-			.withModel(MistralAiApi.EmbeddingModel.EMBED.getValue())
-			.withEncodingFormat("float")
+			.model(MistralAiApi.EmbeddingModel.EMBED.getValue())
+			.encodingFormat("float")
 			.build();
 
 		EmbeddingRequest embeddingRequest = new EmbeddingRequest(List.of("Here comes the sun"), options);

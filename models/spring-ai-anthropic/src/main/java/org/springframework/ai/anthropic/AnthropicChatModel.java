@@ -23,11 +23,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.core.JsonValue;
+import com.anthropic.core.http.HttpResponseFor;
+import com.anthropic.core.http.StreamResponse;
 import com.anthropic.models.messages.Base64ImageSource;
 import com.anthropic.models.messages.Base64PdfSource;
 import com.anthropic.models.messages.CacheControlEphemeral;
@@ -62,14 +65,19 @@ import com.anthropic.models.messages.UserLocation;
 import com.anthropic.models.messages.WebSearchResultBlock;
 import com.anthropic.models.messages.WebSearchTool20260209;
 import com.anthropic.models.messages.WebSearchToolResultBlock;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
+import org.springframework.ai.anthropic.http.okhttp.AnthropicHttpClientBuilderCustomizer;
+import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.messages.MessageType;
@@ -78,7 +86,9 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -92,11 +102,7 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -113,6 +119,17 @@ import org.springframework.util.MimeType;
  * observability. API credentials are auto-detected from {@code ANTHROPIC_API_KEY} if not
  * configured.
  *
+ * <p>
+ * <b>Observability.</b> Two layers of Micrometer observations are emitted: a
+ * {@code gen_ai.client.operation} span per chat-model call (with token usage, model
+ * metadata, and request parameters), and an {@code okhttp.requests} span per outbound
+ * HTTP attempt (with HTTP method, URI, status code, and {@code traceparent} propagation).
+ * Optional OkHttp connection-pool gauges are bound to the
+ * {@link io.micrometer.core.instrument.MeterRegistry} when supplied. For synchronous
+ * calls the HTTP span nests under the chat-model span; for streaming calls the HTTP span
+ * fires but is not parented under the chat-model span due to an SDK-internal thread
+ * boundary — see {@link #stream(org.springframework.ai.chat.prompt.Prompt)}.
+ *
  * @author Christian Tzolov
  * @author luocongqiu
  * @author Mariusz Bernacki
@@ -122,17 +139,15 @@ import org.springframework.util.MimeType;
  * @author Jonghoon Park
  * @author Soby Chacko
  * @author Austin Dase
+ * @author Sebastien Deleuze
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  * @see AnthropicChatOptions
  * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
  */
 public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatModel.class);
-
-	private static final String DEFAULT_MODEL = AnthropicChatOptions.DEFAULT_MODEL;
-
-	private static final Integer DEFAULT_MAX_TOKENS = AnthropicChatOptions.DEFAULT_MAX_TOKENS;
+	private static final Log logger = LogFactory.getLog(AnthropicChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
@@ -152,9 +167,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 	private final ObservationRegistry observationRegistry;
 
-	private final ToolCallingManager toolCallingManager;
+	private final @Nullable MeterRegistry meterRegistry;
 
-	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+	private final @Nullable ExecutorService dispatcherExecutor;
+
+	private final ToolCallingManager toolCallingManager;
 
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
@@ -172,35 +189,43 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	private AnthropicChatModel(@Nullable AnthropicClient anthropicClient,
 			@Nullable AnthropicClientAsync anthropicClientAsync, @Nullable AnthropicChatOptions options,
 			@Nullable ToolCallingManager toolCallingManager, @Nullable ObservationRegistry observationRegistry,
-			@Nullable ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
+			@Nullable MeterRegistry meterRegistry, @Nullable ExecutorService dispatcherExecutor,
+			List<AnthropicHttpClientBuilderCustomizer> httpClientCustomizers) {
 
 		if (options == null) {
-			this.options = AnthropicChatOptions.builder().model(DEFAULT_MODEL).maxTokens(DEFAULT_MAX_TOKENS).build();
+			this.options = AnthropicChatOptions.builder().build();
 		}
 		else {
 			this.options = options;
 		}
 
+		// Must precede the AnthropicSetup calls below so the HTTP client gets the user's
+		// registries and dispatcher.
+		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
+		this.meterRegistry = meterRegistry;
+		this.dispatcherExecutor = dispatcherExecutor;
+
 		this.anthropicClient = Objects.requireNonNullElseGet(anthropicClient,
 				() -> AnthropicSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders()));
+						this.options.getCustomHeaders(), this.observationRegistry, this.meterRegistry,
+						this.dispatcherExecutor, httpClientCustomizers));
 
 		this.anthropicClientAsync = Objects.requireNonNullElseGet(anthropicClientAsync,
 				() -> AnthropicSetup.setupAsyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders()));
+						this.options.getCustomHeaders(), this.observationRegistry, this.meterRegistry,
+						this.dispatcherExecutor, httpClientCustomizers));
 
-		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
 		this.toolCallingManager = Objects.requireNonNullElse(toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER);
-		this.toolExecutionEligibilityPredicate = Objects.requireNonNullElse(toolExecutionEligibilityPredicate,
-				new DefaultToolExecutionEligibilityPredicate());
 	}
 
 	/**
 	 * Gets the chat options for this model.
 	 * @return the chat options
+	 * @since 2.0.0
 	 */
+	@Override
 	public AnthropicChatOptions getOptions() {
 		return this.options;
 	}
@@ -229,6 +254,21 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		return this.internalCall(requestPrompt, null);
 	}
 
+	/**
+	 * Streams the chat completion as a {@link Flux} of {@link ChatResponse} events.
+	 *
+	 * <p>
+	 * <b>Observability note.</b> The outbound HTTP attempt is observed as
+	 * {@code okhttp.requests} with timer + {@code traceparent}, but for streaming calls
+	 * the HTTP span is not parented under the chat-model's
+	 * {@code gen_ai.client.operation} span. The SDK's async path internally schedules the
+	 * HTTP call on {@code ForkJoinPool.commonPool()} before Spring AI's HTTP client runs,
+	 * which drops the calling thread's observation context. Filter by
+	 * {@code okhttp.requests} + host {@code api.anthropic.com} and correlate by trace ID
+	 * or timestamp if you need to join the spans in your tracing UI.
+	 * @param prompt the prompt
+	 * @return a {@link Flux} of streamed {@link ChatResponse} events
+	 */
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 		Prompt requestPrompt = buildRequestPrompt(prompt);
@@ -238,6 +278,14 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	/**
 	 * Internal method to handle streaming chat completion calls with tool execution
 	 * support. This method is called recursively to support multi-turn tool calling.
+	 *
+	 * <p>
+	 * Rate-limit headers are read from the streaming response via
+	 * {@code withRawResponse().createStreaming(...)} and attached to the aggregated
+	 * {@link ChatResponse}. Because that SDK call exposes the stream as a blocking
+	 * {@link StreamResponse}, the events are pulled on
+	 * {@link Schedulers#boundedElastic()}; a streaming call therefore holds a worker
+	 * thread for the duration of the stream.
 	 * @param prompt The prompt for the chat completion. In a recursive tool-call
 	 * scenario, this prompt will contain the full conversation history including the tool
 	 * results.
@@ -256,39 +304,43 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(AiProvider.ANTHROPIC.value())
+				.streaming(true)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
 					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry);
 
-			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
+			Observation parentObservation = contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
+			observation.parentObservation(parentObservation);
+			try (Observation.Scope ignored = parentObservation != null ? parentObservation.openScope()
+					: Observation.Scope.NOOP) {
+				observation.start();
+			}
 
 			// Track streaming state for usage accumulation and tool calls
 			StreamingState streamingState = new StreamingState();
 
-			Flux<ChatResponse> chatResponseFlux = Flux.create(sink -> {
-				this.anthropicClientAsync.messages().createStreaming(request).subscribe(event -> {
-					try {
-						ChatResponse chatResponse = convertStreamEventToChatResponse(event, previousChatResponse,
-								streamingState);
-						if (chatResponse != null) {
-							sink.next(chatResponse);
-						}
+			// Use the raw streaming response so rate-limit headers (available once at
+			// stream start) can be captured. The SDK exposes this as a blocking
+			// StreamResponse, so events are pulled on a boundedElastic worker.
+			Flux<ChatResponse> chatResponseFlux = Mono
+				.fromFuture(() -> this.anthropicClientAsync.messages().withRawResponse().createStreaming(request))
+				.flatMapMany(rawResponse -> {
+					streamingState.setRateLimit(AnthropicRateLimit.from(rawResponse.headers()));
+					StreamResponse<RawMessageStreamEvent> streamResponse = rawResponse.parse();
+					return Flux.fromStream(streamResponse.stream())
+						.doFinally(signal -> streamResponse.close())
+						.subscribeOn(Schedulers.boundedElastic());
+				})
+				.<ChatResponse>handle((event, sink) -> {
+					ChatResponse chatResponse = convertStreamEventToChatResponse(event, previousChatResponse,
+							streamingState);
+					if (chatResponse != null) {
+						sink.next(chatResponse);
 					}
-					catch (Exception e) {
-						logger.error("Error processing streaming event", e);
-						sink.error(e);
-					}
-				}).onCompleteFuture().whenComplete((result, throwable) -> {
-					if (throwable != null) {
-						sink.error(throwable);
-					}
-					else {
-						sink.complete();
-					}
-				});
-			});
+				})
+				.doOnError(e -> logger.error("Error processing streaming response", e));
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponseFlux
@@ -298,72 +350,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			// @formatter:on
 
 			// Aggregate streaming responses and handle tool execution on final response
-			return new MessageAggregator().aggregate(flux, observationContext::setResponse)
-				.flatMap(chatResponse -> handleStreamingToolExecution(prompt, chatResponse));
+			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
 		});
-	}
-
-	/**
-	 * Handles the pivot from receiving a tool-call request to executing the tools and
-	 * starting the recursive streaming call with the results. This method is triggered
-	 * via {@code .flatMap()} after the initial stream from the model is fully consumed by
-	 * the {@link MessageAggregator}.
-	 * @param prompt The original prompt containing tool definitions.
-	 * @param chatResponse The aggregated response from the first API call, which contains
-	 * the tool call requests.
-	 * @return A new {@link Flux} of {@link ChatResponse} events. If tools were executed,
-	 * this Flux is the stream of the model's final answer. Otherwise, it's the original
-	 * response.
-	 */
-	private Flux<ChatResponse> handleStreamingToolExecution(Prompt prompt, ChatResponse chatResponse) {
-		ChatOptions promptOptions = prompt.getOptions();
-		if (promptOptions != null
-				&& this.toolExecutionEligibilityPredicate.isToolExecutionRequired(promptOptions, chatResponse)) {
-			// Only execute tools when the model's turn is complete and its stated reason
-			// for stopping is that it wants to use a tool.
-			if (chatResponse.hasFinishReasons(java.util.Set.of("tool_use"))) {
-				return Flux.deferContextual(ctx -> {
-					ToolExecutionResult toolExecutionResult;
-					try {
-						org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder.setContext(ctx);
-						toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
-					}
-					finally {
-						org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder.clearContext();
-					}
-					if (toolExecutionResult.returnDirect()) {
-						// Return tool execution result directly to the client
-						return Flux.just(ChatResponse.builder()
-							.from(chatResponse)
-							.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-							.build());
-					}
-					else {
-						// RECURSIVE CALL: Return a *new stream* by calling internalStream
-						// again.
-						// The new prompt contains the full history, including the tool
-						// results.
-						return this.internalStream(
-								new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-								chatResponse); // Pass previous response for usage
-												// accumulation
-					}
-				}).subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic()); // Run
-																					// blocking
-																					// tool
-																					// execution
-																					// on
-																					// a
-																					// different
-																					// thread
-			}
-			else {
-				// Tool execution required but not at tool_use finish - skip this response
-				return Flux.empty();
-			}
-		}
-		// No tool execution needed - pass through the response
-		return Flux.just(chatResponse);
 	}
 
 	/**
@@ -497,8 +485,12 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			// message_delta
 			long inputTokens = streamingState.getInputTokens();
 			long outputTokens = deltaEvent.usage().outputTokens();
-			Usage usage = new DefaultUsage(Math.toIntExact(inputTokens), Math.toIntExact(outputTokens),
-					Math.toIntExact(inputTokens + outputTokens), deltaEvent.usage());
+			Long cacheRead = deltaEvent.usage().cacheReadInputTokens().orElse(null);
+			Long cacheWrite = deltaEvent.usage().cacheCreationInputTokens().orElse(null);
+			Usage usage = new DefaultUsage(Integer.valueOf(Math.toIntExact(inputTokens)),
+					Integer.valueOf(Math.toIntExact(outputTokens)),
+					Integer.valueOf(Math.toIntExact(inputTokens + outputTokens)), deltaEvent.usage(), cacheRead,
+					cacheWrite);
 
 			Usage accumulatedUsage = previousChatResponse != null
 					? UsageCalculator.getCumulativeUsage(usage, previousChatResponse) : usage;
@@ -506,6 +498,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder()
 				.id(streamingState.getMessageId())
 				.model(streamingState.getModel())
+				.rateLimit(streamingState.getRateLimit())
 				.usage(accumulatedUsage);
 
 			List<Citation> citations = streamingState.getCitations();
@@ -549,11 +542,17 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 					this.observationRegistry)
 			.observe(() -> {
 
-				Message message = this.anthropicClient.messages().create(request);
+				HttpResponseFor<Message> rawResponse = this.anthropicClient.messages()
+					.withRawResponse()
+					.create(request);
+				Message message = rawResponse.parse();
+				RateLimit rateLimit = AnthropicRateLimit.from(rawResponse.headers());
 
 				List<ContentBlock> contentBlocks = message.content();
 				if (contentBlocks.isEmpty()) {
-					logger.warn("No content blocks returned for prompt: {}", prompt);
+					if (logger.isWarnEnabled()) {
+						logger.warn("No content blocks returned for prompt: " + prompt);
+					}
 					return new ChatResponse(List.of());
 				}
 
@@ -569,41 +568,14 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 						: currentChatResponseUsage;
 
 				ChatResponse chatResponse = new ChatResponse(generations,
-						from(message, accumulatedUsage, citations, webSearchResults));
+						from(message, accumulatedUsage, citations, webSearchResults, rateLimit));
 
 				observationContext.setResponse(chatResponse);
 
 				return chatResponse;
 			});
 
-		ChatOptions promptOptions = prompt.getOptions();
-		if (promptOptions != null
-				&& this.toolExecutionEligibilityPredicate.isToolExecutionRequired(promptOptions, response)) {
-			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-			if (toolExecutionResult.returnDirect()) {
-				// Return tool execution result directly to the client.
-				return ChatResponse.builder()
-					.from(response)
-					.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-					.build();
-			}
-			else {
-				// Send the tool execution result back to the model.
-				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						response);
-			}
-		}
-
 		return response;
-	}
-
-	Prompt buildRequestPrompt(Prompt prompt) {
-		var requestOptions = (AnthropicChatOptions) prompt.getOptions();
-		requestOptions = requestOptions == null ? this.options : requestOptions;
-
-		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
-
-		return prompt.mutate().chatOptions(requestOptions).build();
 	}
 
 	/**
@@ -624,18 +596,13 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				? anthropicOptions : AnthropicChatOptions.builder().build();
 
 		// Set required fields
-		String model = requestOptions.getModel() != null ? requestOptions.getModel() : DEFAULT_MODEL;
-		builder.model(model);
-
-		long maxTokens = requestOptions.getMaxTokens() != null ? requestOptions.getMaxTokens() : DEFAULT_MAX_TOKENS;
-		builder.maxTokens(maxTokens);
+		builder.model(requestOptions.getModel()).maxTokens(requestOptions.getMaxTokens());
 
 		// Create cache resolver
 		CacheEligibilityResolver cacheResolver = CacheEligibilityResolver.from(requestOptions.getCacheOptions());
 
 		// Prepare citation documents for inclusion in the first user message
 		List<AnthropicCitationDocument> citationDocuments = requestOptions.getCitationDocuments();
-		boolean citationDocsAdded = false;
 
 		// Collect system messages and non-system messages separately
 		List<String> systemTexts = new ArrayList<>();
@@ -703,13 +670,26 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 		}
 
+		// Pre-compute last tool result message index for tool result caching. A
+		// breakpoint on the final tool result of the request caches the prior tool
+		// outputs so they are read from cache on subsequent tool-calling rounds.
+		int lastToolIndex = -1;
+		if (cacheResolver.isCachingEnabled() && requestOptions.getCacheOptions().isCacheToolResults()) {
+			for (int i = nonSystemMessages.size() - 1; i >= 0; i--) {
+				if (nonSystemMessages.get(i).getMessageType() == MessageType.TOOL) {
+					lastToolIndex = i;
+					break;
+				}
+			}
+		}
+
 		// Process non-system messages
 		for (int i = 0; i < nonSystemMessages.size(); i++) {
 			org.springframework.ai.chat.messages.Message message = nonSystemMessages.get(i);
 
 			if (message.getMessageType() == MessageType.USER) {
 				UserMessage userMessage = (UserMessage) message;
-				boolean hasCitationDocs = !citationDocsAdded && !citationDocuments.isEmpty();
+				boolean hasCitationDocs = !CollectionUtils.isEmpty(citationDocuments);
 				boolean hasMedia = !CollectionUtils.isEmpty(userMessage.getMedia());
 				boolean isLastUserMessage = (i == lastUserIndex);
 				boolean applyCacheToUser = isLastUserMessage && cacheResolver.isCachingEnabled();
@@ -726,10 +706,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 					// Prepend citation document blocks to the first user message
 					if (hasCitationDocs) {
-						for (AnthropicCitationDocument doc : citationDocuments) {
+						for (AnthropicCitationDocument doc : Objects.requireNonNull(citationDocuments)) {
 							contentBlocks.add(ContentBlockParam.ofDocument(doc.toDocumentBlockParam()));
 						}
-						citationDocsAdded = true;
 					}
 
 					String text = userMessage.getText();
@@ -779,13 +758,31 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolResponseMessage = (ToolResponseMessage) message;
-				List<ContentBlockParam> toolResultBlocks = toolResponseMessage.getResponses()
-					.stream()
-					.map(response -> ContentBlockParam.ofToolResult(ToolResultBlockParam.builder()
+				List<ToolResponseMessage.ToolResponse> responses = toolResponseMessage.getResponses();
+
+				// Compute cache control for the last tool result message of the request.
+				// The breakpoint is placed on its final block, caching everything before
+				// it (tools + system + prior messages + earlier tool results).
+				CacheControlEphemeral toolCacheControl = null;
+				if (i == lastToolIndex) {
+					String combinedText = combineToolResponsesText(responses);
+					toolCacheControl = cacheResolver.resolve(MessageType.TOOL, combinedText);
+				}
+
+				List<ContentBlockParam> toolResultBlocks = new ArrayList<>();
+				for (int r = 0; r < responses.size(); r++) {
+					ToolResponseMessage.ToolResponse response = responses.get(r);
+					ToolResultBlockParam.Builder toolResultBuilder = ToolResultBlockParam.builder()
 						.toolUseId(response.id())
-						.content(response.responseData())
-						.build()))
-					.toList();
+						.content(response.responseData());
+					if (toolCacheControl != null && r == responses.size() - 1) {
+						toolResultBuilder.cacheControl(toolCacheControl);
+					}
+					toolResultBlocks.add(ContentBlockParam.ofToolResult(toolResultBuilder.build()));
+				}
+				if (toolCacheControl != null) {
+					cacheResolver.useCacheBlock();
+				}
 				builder.addUserMessageOfBlockParams(toolResultBlocks);
 			}
 		}
@@ -869,8 +866,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		// Per-request HTTP headers
-		if (!requestOptions.getHttpHeaders().isEmpty()) {
-			requestOptions.getHttpHeaders().forEach((key, value) -> builder.putAdditionalHeader(key, value));
+		Map<String, String> httpHeaders = requestOptions.getHttpHeaders();
+		if (!CollectionUtils.isEmpty(httpHeaders)) {
+			httpHeaders.forEach(builder::putAdditionalHeader);
 		}
 
 		// Skills support
@@ -891,7 +889,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 
 			// Add beta headers, merging with any existing anthropic-beta value
-			String existingBeta = requestOptions.getHttpHeaders().get("anthropic-beta");
+			String existingBeta = httpHeaders != null ? httpHeaders.get("anthropic-beta") : null;
 			if (existingBeta != null) {
 				StringBuilder merged = new StringBuilder(existingBeta);
 				if (!existingBeta.contains(BETA_SKILLS)) {
@@ -928,6 +926,17 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			String text = messages.get(i).getText();
 			if (text != null) {
 				combined.append(text);
+			}
+		}
+		return combined.toString();
+	}
+
+	private String combineToolResponsesText(List<ToolResponseMessage.ToolResponse> responses) {
+		StringBuilder combined = new StringBuilder();
+		for (ToolResponseMessage.ToolResponse response : responses) {
+			String data = response.responseData();
+			if (data != null) {
+				combined.append(data);
 			}
 		}
 		return combined.toString();
@@ -1005,7 +1014,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 			else if (block.isContainerUpload() || block.isServerToolUse() || block.isBashCodeExecutionToolResult()
 					|| block.isTextEditorCodeExecutionToolResult() || block.isCodeExecutionToolResult()) {
-				logger.warn("Unsupported content block type: {}", block);
+				if (logger.isWarnEnabled()) {
+					logger.warn("Unsupported content block type: " + block);
+				}
 			}
 		}
 
@@ -1027,12 +1038,13 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @return the chat response metadata
 	 */
 	private ChatResponseMetadata from(Message message, Usage usage, List<Citation> citations,
-			List<AnthropicWebSearchResult> webSearchResults) {
+			List<AnthropicWebSearchResult> webSearchResults, RateLimit rateLimit) {
 		Assert.notNull(message, "Anthropic Message must not be null");
 		ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder()
 			.id(message.id())
 			.usage(usage)
 			.model(message.model().asString())
+			.rateLimit(rateLimit)
 			.keyValue("anthropic-response", message);
 		if (!citations.isEmpty()) {
 			metadataBuilder.keyValue("citations", citations).keyValue("citationCount", citations.size());
@@ -1054,8 +1066,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 		long inputTokens = usage.inputTokens();
 		long outputTokens = usage.outputTokens();
-		return new DefaultUsage(Math.toIntExact(inputTokens), Math.toIntExact(outputTokens),
-				Math.toIntExact(inputTokens + outputTokens), usage);
+		Long cacheRead = usage.cacheReadInputTokens().orElse(null);
+		Long cacheWrite = usage.cacheCreationInputTokens().orElse(null);
+		return new DefaultUsage(Integer.valueOf(Math.toIntExact(inputTokens)),
+				Integer.valueOf(Math.toIntExact(outputTokens)),
+				Integer.valueOf(Math.toIntExact(inputTokens + outputTokens)), usage, cacheRead, cacheWrite);
 	}
 
 	private @Nullable Citation convertTextCitation(TextCitation textCitation) {
@@ -1200,7 +1215,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				}
 			}
 			catch (Exception e) {
-				logger.warn("Failed to parse tool arguments JSON: {}", argumentsJson, e);
+				if (logger.isWarnEnabled()) {
+					logger.warn("Failed to parse tool arguments JSON: " + argumentsJson, e);
+				}
 			}
 		}
 		return inputBuilder.build();
@@ -1427,11 +1444,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		return toolChoice;
 	}
 
-	@Override
-	public ChatOptions getDefaultOptions() {
-		return this.options.copy();
-	}
-
 	/**
 	 * Use the provided convention for reporting observation data.
 	 * @param observationConvention the provided convention
@@ -1439,6 +1451,20 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	public void setObservationConvention(ChatModelObservationConvention observationConvention) {
 		Assert.notNull(observationConvention, "observationConvention cannot be null");
 		this.observationConvention = observationConvention;
+	}
+
+	/**
+	 * Look at the options of the provided prompt. If none are provided, return a new
+	 * prompt using this model {@link ChatModel#getOptions() options}. Otherwise, use the
+	 * prompt as is.
+	 */
+	private Prompt buildRequestPrompt(Prompt prompt) {
+		if (prompt.getOptions() == null) {
+			return prompt.mutate().chatOptions(this.getOptions()).build();
+		}
+		else {
+			return prompt;
+		}
 	}
 
 	/**
@@ -1467,6 +1493,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		private final List<AnthropicWebSearchResult> accumulatedWebSearchResults = new ArrayList<>();
 
+		private final AtomicReference<RateLimit> rateLimit = new AtomicReference<>(new EmptyRateLimit());
+
 		void setMessageInfo(String id, String modelName, long tokens) {
 			this.messageId.set(id);
 			this.model.set(modelName);
@@ -1483,6 +1511,14 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		long getInputTokens() {
 			return this.inputTokens.get();
+		}
+
+		void setRateLimit(RateLimit rateLimit) {
+			this.rateLimit.set(rateLimit);
+		}
+
+		RateLimit getRateLimit() {
+			return this.rateLimit.get();
 		}
 
 		/**
@@ -1567,7 +1603,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		private @Nullable ObservationRegistry observationRegistry;
 
-		private @Nullable ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+		private @Nullable MeterRegistry meterRegistry;
+
+		private @Nullable ExecutorService dispatcherExecutor;
+
+		private List<AnthropicHttpClientBuilderCustomizer> httpClientCustomizers = new ArrayList<>();
 
 		private Builder() {
 		}
@@ -1603,10 +1643,14 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		/**
-		 * Sets the tool calling manager.
+		 * Sets the tool calling manager used for internal tool execution.
 		 * @param toolCallingManager the tool calling manager
 		 * @return this builder
+		 * @deprecated since 2.0.0 for removal in 3.0.0 — internal tool execution in
+		 * {@link AnthropicChatModel} is superseded by {@code ToolCallingAdvisor} used via
+		 * {@code ChatClient}.
 		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
 			this.toolCallingManager = toolCallingManager;
 			return this;
@@ -1623,13 +1667,63 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		/**
-		 * Sets the predicate to determine tool execution eligibility.
-		 * @param toolExecutionEligibilityPredicate the predicate
+		 * Sets the meter registry used to bind OkHttp connection-pool gauges (active/idle
+		 * connections). Optional; when omitted, no pool gauges are registered.
+		 * Auto-configuration wires the application's {@link MeterRegistry} bean here
+		 * automatically.
+		 * @param meterRegistry the meter registry
 		 * @return this builder
+		 * @since 2.0.0
 		 */
-		public Builder toolExecutionEligibilityPredicate(
-				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
-			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
+		public Builder meterRegistry(@Nullable MeterRegistry meterRegistry) {
+			this.meterRegistry = meterRegistry;
+			return this;
+		}
+
+		/**
+		 * Sets the executor used by the underlying OkHttp dispatcher for both the sync
+		 * and async clients. The caller owns the executor's lifecycle — Spring AI will
+		 * not shut it down. Typical use: pass
+		 * {@code Executors.newVirtualThreadPerTaskExecutor()} on Java 21+ to back HTTP
+		 * dispatch with virtual threads. When omitted, an internal platform-thread
+		 * executor is created and managed by the HTTP client.
+		 * @param dispatcherExecutor the dispatcher executor; null restores the default
+		 * @return this builder
+		 * @since 2.0.0
+		 */
+		public Builder dispatcherExecutor(@Nullable ExecutorService dispatcherExecutor) {
+			this.dispatcherExecutor = dispatcherExecutor;
+			return this;
+		}
+
+		/**
+		 * Registers an {@link AnthropicHttpClientBuilderCustomizer} that mutates the
+		 * underlying OkHttp client builder before the Anthropic clients are constructed.
+		 * Use this to attach OkHttp interceptors (e.g. OAuth2 bearer-token injection),
+		 * swap the dispatcher executor, or tweak any other OkHttp setting. Customizers
+		 * are applied in the order they are registered, after Spring AI's own defaults,
+		 * so user code wins.
+		 * @param customizer the customizer to add
+		 * @return this builder
+		 * @since 2.0.0
+		 */
+		public Builder httpClientBuilderCustomizer(AnthropicHttpClientBuilderCustomizer customizer) {
+			Assert.notNull(customizer, "customizer cannot be null");
+			this.httpClientCustomizers.add(customizer);
+			return this;
+		}
+
+		/**
+		 * Sets the full list of {@link AnthropicHttpClientBuilderCustomizer customizers}
+		 * to apply, replacing any customizers registered earlier on this builder. The
+		 * order of the list is preserved when invoking the customizers.
+		 * @param customizers the list of customizers
+		 * @return this builder
+		 * @since 2.0.0
+		 */
+		public Builder httpClientBuilderCustomizers(List<AnthropicHttpClientBuilderCustomizer> customizers) {
+			Assert.notNull(customizers, "customizers cannot be null");
+			this.httpClientCustomizers = new ArrayList<>(customizers);
 			return this;
 		}
 
@@ -1638,8 +1732,19 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		 * @return the configured chat model
 		 */
 		public AnthropicChatModel build() {
+			if (!this.httpClientCustomizers.isEmpty() && this.anthropicClient != null) {
+				throw new IllegalArgumentException(
+						"httpClientBuilderCustomizers cannot be combined with a pre-built anthropicClient "
+								+ "because the HTTP layer is already constructed");
+			}
+			if (!this.httpClientCustomizers.isEmpty() && this.anthropicClientAsync != null) {
+				throw new IllegalArgumentException(
+						"httpClientBuilderCustomizers cannot be combined with a pre-built anthropicClientAsync "
+								+ "because the HTTP layer is already constructed");
+			}
 			return new AnthropicChatModel(this.anthropicClient, this.anthropicClientAsync, this.options,
-					this.toolCallingManager, this.observationRegistry, this.toolExecutionEligibilityPredicate);
+					this.toolCallingManager, this.observationRegistry, this.meterRegistry, this.dispatcherExecutor,
+					this.httpClientCustomizers);
 		}
 
 	}

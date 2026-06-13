@@ -16,64 +16,76 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
-import org.springframework.ai.model.SimpleApiKey;
+import java.util.List;
+
+import com.openai.client.OpenAIClient;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.observation.ObservationRegistry;
+
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.openai.OpenAiModerationModel;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.OpenAiModerationApi;
-import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
+import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.retry.RetryTemplate;
-import org.springframework.web.client.ResponseErrorHandler;
-import org.springframework.web.client.RestClient;
-
-import static org.springframework.ai.model.openai.autoconfigure.OpenAIAutoConfigurationUtil.resolveConnectionProperties;
 
 /**
- * Moderation {@link AutoConfiguration Auto-configuration} for OpenAI.
+ * Moderation {@link AutoConfiguration Auto-configuration} for OpenAI SDK.
  *
- * @author Christian Tzolov
- * @author Stefan Vassilev
  * @author Thomas Vitale
- * @author Ilayaperumal Gopinathan
- * @author Issam El-atif
+ * @author Stefan Vassilev
+ * @author Christian Tzolov
  * @author Yanming Zhou
+ * @author Issam El-atif
+ * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 @AutoConfiguration
-@ConditionalOnClass(OpenAiApi.class)
+@EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiModerationProperties.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.MODERATION_MODEL, havingValue = SpringAIModels.OPENAI,
 		matchIfMissing = true)
-@EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiModerationProperties.class })
 public class OpenAiModerationAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiModerationModel openAiModerationModel(OpenAiConnectionProperties commonProperties,
-			OpenAiModerationProperties moderationProperties, ObjectProvider<RetryTemplate> retryTemplate,
-			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
+	public OpenAiModerationModel openAiSdkModerationModel(OpenAiCommonProperties commonProperties,
+			OpenAiModerationProperties moderationProperties, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<MeterRegistry> meterRegistry,
+			ObjectProvider<OpenAiHttpClientBuilderCustomizer> httpClientBuilderCustomizers) {
 
-		OpenAIAutoConfigurationUtil.ResolvedConnectionProperties resolved = resolveConnectionProperties(
-				commonProperties, moderationProperties, "moderation");
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
+				moderationProperties);
 
-		var openAiModerationApi = OpenAiModerationApi.builder()
-			.baseUrl(resolved.baseUrl())
-			.apiKey(new SimpleApiKey(resolved.apiKey()))
-			.moderationPath(moderationProperties.getModerationPath())
-			.headers(resolved.headers())
-			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
-			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
+		List<OpenAiHttpClientBuilderCustomizer> customizers = httpClientBuilderCustomizers.orderedStream().toList();
+
+		OpenAIClient openAIClient = this.openAiClient(resolvedProperties, observationRegistry, meterRegistry,
+				customizers);
+
+		return OpenAiModerationModel.builder()
+			.openAiClient(openAIClient)
+			.options(moderationProperties.toOptions())
 			.build();
-		return new OpenAiModerationModel(openAiModerationApi,
-				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))
-			.withDefaultOptions(moderationProperties.getOptions());
+	}
+
+	private OpenAIClient openAiClient(OpenAiCommonProperties commonProperties,
+			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
+			List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
+
+		MeterRegistry meterRegistryToUse = commonProperties.isConnectionPoolMetricsEnabled()
+				? meterRegistry.getIfAvailable() : null;
+
+		return OpenAiSetup.setupSyncClient(commonProperties.getBaseUrl(), commonProperties.getApiKey(),
+				commonProperties.getCredential(), commonProperties.getMicrosoftDeploymentName(),
+				commonProperties.getMicrosoftFoundryServiceVersion(), commonProperties.getOrganizationId(),
+				commonProperties.isMicrosoftFoundry(), commonProperties.isGitHubModels(), commonProperties.getModel(),
+				commonProperties.getTimeout(), commonProperties.getMaxRetries(), commonProperties.getProxy(),
+				commonProperties.getCustomHeaders(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				meterRegistryToUse, httpClientCustomizers);
 	}
 
 }

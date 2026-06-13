@@ -57,7 +57,9 @@ class OpenAiChatClientMemoryAdvisorReproIT {
 			.build();
 		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
 
-		ChatClient chatClient = ChatClient.builder(this.chatModel).defaultAdvisors(advisor).build();
+		ChatClient chatClient = ChatClient.builder(this.chatModel)
+			.defaultAdvisors(a -> a.advisors(advisor).param(ChatMemory.CONVERSATION_ID, "666"))
+			.build();
 
 		// Act: call should succeed without exception (issue #2339 is fixed)
 		chatClient.prompt(prompt).call().chatResponse(); // Should not throw

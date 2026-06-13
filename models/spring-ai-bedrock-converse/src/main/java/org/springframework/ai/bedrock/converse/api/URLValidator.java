@@ -23,6 +23,8 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.regex.Pattern;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Utility class for detecting and normalizing URLs. Intended for use with multimodal user
  * inputs.
@@ -155,7 +157,7 @@ public final class URLValidator {
 	/**
 	 * Attempts to fix common URL issues Adds protocol if missing, removes extra spaces
 	 */
-	public static String normalizeURL(String urlString) {
+	public static @Nullable String normalizeURL(@Nullable String urlString) {
 		if (urlString == null || urlString.trim().isEmpty()) {
 			return null;
 		}

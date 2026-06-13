@@ -23,7 +23,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.integration.tests.TestApplication;
-import org.springframework.ai.openaisdk.OpenAiSdkChatModel;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter;
 import org.springframework.ai.rag.generation.augmentation.QueryAugmenter;
@@ -42,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ContextualQueryAugmenterIT {
 
 	@Autowired
-	OpenAiSdkChatModel openAiChatModel;
+	OpenAiChatModel openAiChatModel;
 
 	@Test
 	void whenContextIsProvided() {
@@ -56,7 +56,6 @@ class ContextualQueryAugmenterIT {
 		String response = this.openAiChatModel.call(augmentedQuery.text());
 
 		assertThat(response).isNotEmpty();
-		System.out.println(response);
 		assertThat(response).containsIgnoringCase("North Pole");
 		assertThat(response).doesNotContainIgnoringCase("context");
 		assertThat(response).doesNotContainIgnoringCase("information");
@@ -71,7 +70,6 @@ class ContextualQueryAugmenterIT {
 		String response = this.openAiChatModel.call(augmentedQuery.text());
 
 		assertThat(response).isNotEmpty();
-		System.out.println(response);
 		assertThat(response).containsIgnoringCase("Iorek");
 	}
 
@@ -84,7 +82,6 @@ class ContextualQueryAugmenterIT {
 		String response = this.openAiChatModel.call(augmentedQuery.text());
 
 		assertThat(response).isNotEmpty();
-		System.out.println(response);
 		assertThat(response).doesNotContainIgnoringCase("Iorek");
 	}
 

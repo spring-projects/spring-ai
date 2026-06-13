@@ -34,9 +34,9 @@ import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.ollama.api.common.OllamaApiConstants;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -57,6 +57,8 @@ import org.springframework.web.reactive.function.client.WebClient;
  */
 // @formatter:off
 public final class OllamaApi {
+	private static final JsonHelper jsonHelper = new JsonHelper();
+
 
 	public static Builder builder() {
 		return new Builder();
@@ -109,13 +111,12 @@ public final class OllamaApi {
 		Assert.notNull(chatRequest, REQUEST_BODY_NULL_ERROR);
 		Assert.isTrue(!chatRequest.stream(), "Stream mode must be disabled.");
 
-		// TODO Leverage https://github.com/spring-projects/spring-framework/issues/36173 once available
-		ChatResponse chatResponse = this.restClient.post()
+		// No usage of requiredBody to retain compatibility with Spring Framework < 7.0.4
+		return Objects.requireNonNull(this.restClient.post()
 				.uri("/api/chat")
 				.body(chatRequest)
 				.retrieve()
-				.body(ChatResponse.class);
-		return Objects.requireNonNull(chatResponse);
+				.body(ChatResponse.class));
 	}
 
 	/**
@@ -175,25 +176,23 @@ public final class OllamaApi {
 	public EmbeddingsResponse embed(EmbeddingsRequest embeddingsRequest) {
 		Assert.notNull(embeddingsRequest, REQUEST_BODY_NULL_ERROR);
 
-		// TODO Leverage https://github.com/spring-projects/spring-framework/issues/36173 once available
-		EmbeddingsResponse embeddingsResponse = this.restClient.post()
+		// No usage of requiredBody to retain compatibility with Spring Framework < 7.0.4
+		return Objects.requireNonNull(this.restClient.post()
 				.uri("/api/embed")
 				.body(embeddingsRequest)
 				.retrieve()
-				.body(EmbeddingsResponse.class);
-		return Objects.requireNonNull(embeddingsResponse);
+				.body(EmbeddingsResponse.class));
 	}
 
 	/**
 	 * List models that are available locally on the machine where Ollama is running.
 	 */
 	public ListModelResponse listModels() {
-		// TODO Leverage https://github.com/spring-projects/spring-framework/issues/36173 once available
-		ListModelResponse listModelResponse = this.restClient.get()
+		// No usage of requiredBody to retain compatibility with Spring Framework < 7.0.4
+		return Objects.requireNonNull(this.restClient.get()
 				.uri("/api/tags")
 				.retrieve()
-				.body(ListModelResponse.class);
-		return Objects.requireNonNull(listModelResponse);
+				.body(ListModelResponse.class));
 	}
 
 	/**
@@ -201,13 +200,13 @@ public final class OllamaApi {
 	 */
 	public ShowModelResponse showModel(ShowModelRequest showModelRequest) {
 		Assert.notNull(showModelRequest, "showModelRequest must not be null");
-		// TODO Leverage https://github.com/spring-projects/spring-framework/issues/36173 once available
-		ShowModelResponse showModelResponse = this.restClient.post()
+
+		// No usage of requiredBody to retain compatibility with Spring Framework < 7.0.4
+		return Objects.requireNonNull(this.restClient.post()
 				.uri("/api/show")
 				.body(showModelRequest)
 				.retrieve()
-				.body(ShowModelResponse.class);
-		return Objects.requireNonNull(showModelResponse);
+				.body(ShowModelResponse.class));
 	}
 
 	/**
@@ -310,10 +309,12 @@ public final class OllamaApi {
 		/**
 		 * The relevant tool call.
 		 *
+		 * @param id The id of the tool call.
 		 * @param function The function definition.
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record ToolCall(
+			@JsonProperty("id") String id,
 			@JsonProperty("function") ToolCallFunction function) {
 		}
 
@@ -468,7 +469,7 @@ public final class OllamaApi {
 				 * @param jsonSchema tool function schema as json.
 				 */
 				public Function(String description, String name, String jsonSchema) {
-					this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
+					this(description, name, jsonHelper.fromJsonToMap(jsonSchema));
 				}
 			}
 		}

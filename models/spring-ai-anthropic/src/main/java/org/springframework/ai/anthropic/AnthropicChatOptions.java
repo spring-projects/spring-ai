@@ -20,12 +20,10 @@ import java.net.Proxy;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import com.anthropic.core.JsonValue;
 import com.anthropic.models.messages.JsonOutputFormat;
@@ -47,6 +45,7 @@ import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 /**
  * Chat options for {@link AnthropicChatModel}. Supports model selection, sampling
@@ -63,12 +62,12 @@ import org.springframework.util.Assert;
  * @author Ilayaperumal Gopinathan
  * @author Soby Chacko
  * @author Austin Dase
+ * @author Sebastien Deleuze
  * @since 1.0.0
  * @see AnthropicChatModel
  * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
  */
-public class AnthropicChatOptions extends AbstractAnthropicOptions
-		implements ToolCallingChatOptions, StructuredOutputChatOptions {
+public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
 	/**
 	 * Default model to use for chat completions.
@@ -80,120 +79,187 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	 */
 	public static final Integer DEFAULT_MAX_TOKENS = 4096;
 
+	private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
+
+	/**
+	 * The base URL to connect to the Anthropic API. Defaults to
+	 * "https://api.anthropic.com" if not specified.
+	 */
+	private final @Nullable String baseUrl;
+
+	/**
+	 * The API key to authenticate with the Anthropic API. Can also be set via the
+	 * ANTHROPIC_API_KEY environment variable.
+	 */
+	private final @Nullable String apiKey;
+
+	/**
+	 * The model name to use for requests.
+	 */
+	private final String model;
+
+	/**
+	 * Request timeout for the Anthropic client. Defaults to 60 seconds if not specified.
+	 */
+	private final @Nullable Duration timeout;
+
+	/**
+	 * Maximum number of retries for failed requests. Defaults to 2 if not specified.
+	 */
+	private final @Nullable Integer maxRetries;
+
+	/**
+	 * Proxy settings for the Anthropic client.
+	 */
+	private final @Nullable Proxy proxy;
+
+	/**
+	 * Custom HTTP headers to add to Anthropic client requests.
+	 */
+	private final @Nullable Map<String, String> customHeaders;
+
 	/**
 	 * Maximum number of tokens to generate in the response.
 	 */
-	private @Nullable Integer maxTokens;
+	private final Integer maxTokens;
 
 	/**
 	 * Request metadata containing user ID for abuse detection.
 	 */
-	private @Nullable Metadata metadata;
+	private final @Nullable Metadata metadata;
 
 	/**
 	 * Sequences that will cause the model to stop generating.
 	 */
-	private @Nullable List<String> stopSequences;
+	private final @Nullable List<String> stopSequences;
 
 	/**
 	 * Sampling temperature between 0 and 1. Higher values make output more random.
 	 */
-	private @Nullable Double temperature;
+	private final @Nullable Double temperature;
 
 	/**
 	 * Nucleus sampling parameter. The model considers tokens with top_p probability mass.
 	 */
-	private @Nullable Double topP;
+	private final @Nullable Double topP;
 
 	/**
 	 * Only sample from the top K options for each subsequent token.
 	 */
-	private @Nullable Integer topK;
+	private final @Nullable Integer topK;
 
 	/**
 	 * Tool choice configuration for controlling tool usage behavior.
 	 */
-	private @Nullable ToolChoice toolChoice;
+	private final @Nullable ToolChoice toolChoice;
 
 	/**
 	 * Extended thinking configuration for Claude's reasoning capabilities.
 	 */
-	private @Nullable ThinkingConfigParam thinking;
+	private final @Nullable ThinkingConfigParam thinking;
 
 	/**
 	 * Whether to disable parallel tool use. When true, the model will use at most one
 	 * tool per response.
 	 */
-	private @Nullable Boolean disableParallelToolUse;
+	private final @Nullable Boolean disableParallelToolUse;
 
 	/**
 	 * Collection of tool callbacks for tool calling.
 	 */
-	private List<ToolCallback> toolCallbacks = new ArrayList<>();
-
-	/**
-	 * Collection of tool names to be resolved at runtime.
-	 */
-	private Set<String> toolNames = new java.util.HashSet<>();
-
-	/**
-	 * Whether to enable internal tool execution in the chat model.
-	 */
-	private @Nullable Boolean internalToolExecutionEnabled;
+	private final @Nullable List<ToolCallback> toolCallbacks;
 
 	/**
 	 * Context to be passed to tools during execution.
 	 */
-	private Map<String, Object> toolContext = new HashMap<>();
+	private final @Nullable Map<String, Object> toolContext;
 
 	/**
 	 * Citation documents to include in the request for citation-enabled responses.
 	 */
-	private List<AnthropicCitationDocument> citationDocuments = new ArrayList<>();
+	private final @Nullable List<AnthropicCitationDocument> citationDocuments;
 
 	/**
 	 * Cache options for configuring prompt caching behavior.
 	 */
-	private AnthropicCacheOptions cacheOptions = AnthropicCacheOptions.disabled();
+	private final AnthropicCacheOptions cacheOptions;
 
 	/**
 	 * Output configuration for controlling response format and effort level. Includes
 	 * structured output (JSON schema) and effort control (LOW, MEDIUM, HIGH, MAX).
 	 */
-	private @Nullable OutputConfig outputConfig;
+	private final @Nullable OutputConfig outputConfig;
 
 	/**
 	 * Per-request HTTP headers to include in the API call. Merged with model-level
 	 * defaults (runtime headers take precedence). Used for beta feature headers, custom
 	 * tracking, etc.
 	 */
-	private Map<String, String> httpHeaders = new HashMap<>();
+	private final @Nullable Map<String, String> httpHeaders;
 
 	/**
 	 * Skills container for configuring Claude Skills in the request.
 	 */
-	private @Nullable AnthropicSkillContainer skillContainer;
+	private final @Nullable AnthropicSkillContainer skillContainer;
 
 	/**
 	 * Controls the geographic region for inference processing. Supported values: "us",
 	 * "eu". Used for data residency compliance.
 	 */
-	private @Nullable String inferenceGeo;
+	private final @Nullable String inferenceGeo;
 
 	/**
 	 * Configuration for Anthropic's built-in web search tool. When set, Claude can search
 	 * the web during the conversation.
 	 */
-	private @Nullable AnthropicWebSearchTool webSearchTool;
+	private final @Nullable AnthropicWebSearchTool webSearchTool;
 
 	/**
 	 * Determines whether to use priority capacity (if available) or standard capacity for
 	 * this request. See <a href="https://docs.claude.com/en/api/service-tiers">Service
 	 * Tiers</a>.
 	 */
-	private @Nullable AnthropicServiceTier serviceTier;
+	private final @Nullable AnthropicServiceTier serviceTier;
 
-	private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
+	protected AnthropicChatOptions(@Nullable String baseUrl, @Nullable String apiKey, @Nullable String model,
+			@Nullable Duration timeout, @Nullable Integer maxRetries, @Nullable Proxy proxy,
+			@Nullable Map<String, String> customHeaders, @Nullable Integer maxTokens, @Nullable Metadata metadata,
+			@Nullable List<String> stopSequences, @Nullable Double temperature, @Nullable Double topP,
+			@Nullable Integer topK, @Nullable ToolChoice toolChoice, @Nullable ThinkingConfigParam thinking,
+			@Nullable Boolean disableParallelToolUse, @Nullable List<ToolCallback> toolCallbacks,
+			@Nullable Map<String, Object> toolContext, @Nullable List<AnthropicCitationDocument> citationDocuments,
+			@Nullable AnthropicCacheOptions cacheOptions, @Nullable OutputConfig outputConfig,
+			@Nullable Map<String, String> httpHeaders, @Nullable AnthropicSkillContainer skillContainer,
+			@Nullable String inferenceGeo, @Nullable AnthropicWebSearchTool webSearchTool,
+			@Nullable AnthropicServiceTier serviceTier) {
+		this.baseUrl = baseUrl;
+		this.apiKey = apiKey;
+		this.model = model != null ? model : DEFAULT_MODEL;
+		this.timeout = timeout;
+		this.maxRetries = maxRetries;
+		this.proxy = proxy;
+		this.customHeaders = (customHeaders != null ? Map.copyOf(customHeaders) : null);
+		this.maxTokens = maxTokens != null ? maxTokens : DEFAULT_MAX_TOKENS;
+		this.metadata = metadata;
+		this.stopSequences = (stopSequences != null ? List.copyOf(stopSequences) : null);
+		this.temperature = temperature;
+		this.topP = topP;
+		this.topK = topK;
+		this.toolChoice = toolChoice;
+		this.thinking = thinking;
+		this.disableParallelToolUse = disableParallelToolUse;
+		this.toolCallbacks = (toolCallbacks != null ? List.copyOf(toolCallbacks) : null);
+		this.toolContext = (toolContext != null ? Map.copyOf(toolContext) : null);
+		this.citationDocuments = (citationDocuments != null ? List.copyOf(citationDocuments) : null);
+		this.cacheOptions = cacheOptions != null ? cacheOptions : AnthropicCacheOptions.disabled();
+		this.outputConfig = outputConfig;
+		this.httpHeaders = (httpHeaders != null ? Map.copyOf(httpHeaders) : null);
+		this.skillContainer = skillContainer;
+		this.inferenceGeo = inferenceGeo;
+		this.webSearchTool = webSearchTool;
+		this.serviceTier = serviceTier;
+		validateCitationConsistency();
+	}
 
 	/**
 	 * Creates a new builder for AnthropicChatOptions.
@@ -203,21 +269,42 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		return new Builder();
 	}
 
-	@Override
-	public @Nullable Integer getMaxTokens() {
-		return this.maxTokens;
+	public @Nullable String getBaseUrl() {
+		return this.baseUrl;
 	}
 
-	public void setMaxTokens(@Nullable Integer maxTokens) {
-		this.maxTokens = maxTokens;
+	public @Nullable String getApiKey() {
+		return this.apiKey;
+	}
+
+	@Override
+	public String getModel() {
+		return this.model;
+	}
+
+	public @Nullable Duration getTimeout() {
+		return this.timeout;
+	}
+
+	public @Nullable Integer getMaxRetries() {
+		return this.maxRetries;
+	}
+
+	public @Nullable Proxy getProxy() {
+		return this.proxy;
+	}
+
+	public @Nullable Map<String, String> getCustomHeaders() {
+		return this.customHeaders;
+	}
+
+	@Override
+	public Integer getMaxTokens() {
+		return this.maxTokens;
 	}
 
 	public @Nullable Metadata getMetadata() {
 		return this.metadata;
-	}
-
-	public void setMetadata(@Nullable Metadata metadata) {
-		this.metadata = metadata;
 	}
 
 	@Override
@@ -225,17 +312,9 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		return this.stopSequences;
 	}
 
-	public void setStopSequences(@Nullable List<String> stopSequences) {
-		this.stopSequences = stopSequences;
-	}
-
 	@Override
 	public @Nullable Double getTemperature() {
 		return this.temperature;
-	}
-
-	public void setTemperature(@Nullable Double temperature) {
-		this.temperature = temperature;
 	}
 
 	@Override
@@ -243,95 +322,35 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		return this.topP;
 	}
 
-	public void setTopP(@Nullable Double topP) {
-		this.topP = topP;
-	}
-
 	@Override
 	public @Nullable Integer getTopK() {
 		return this.topK;
-	}
-
-	public void setTopK(@Nullable Integer topK) {
-		this.topK = topK;
 	}
 
 	public @Nullable ToolChoice getToolChoice() {
 		return this.toolChoice;
 	}
 
-	public void setToolChoice(@Nullable ToolChoice toolChoice) {
-		this.toolChoice = toolChoice;
-	}
-
 	public @Nullable ThinkingConfigParam getThinking() {
 		return this.thinking;
-	}
-
-	public void setThinking(@Nullable ThinkingConfigParam thinking) {
-		this.thinking = thinking;
 	}
 
 	public @Nullable Boolean getDisableParallelToolUse() {
 		return this.disableParallelToolUse;
 	}
 
-	public void setDisableParallelToolUse(@Nullable Boolean disableParallelToolUse) {
-		this.disableParallelToolUse = disableParallelToolUse;
-	}
-
 	@Override
-	public List<ToolCallback> getToolCallbacks() {
+	public @Nullable List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
 	}
 
 	@Override
-	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
-		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-		this.toolCallbacks = toolCallbacks;
-	}
-
-	@Override
-	public Set<String> getToolNames() {
-		return this.toolNames;
-	}
-
-	@Override
-	public void setToolNames(Set<String> toolNames) {
-		Assert.notNull(toolNames, "toolNames cannot be null");
-		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
-		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
-		this.toolNames = toolNames;
-	}
-
-	@Override
-	public @Nullable Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	@Override
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
-	@Override
-	public Map<String, Object> getToolContext() {
+	public @Nullable Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
 
-	@Override
-	public void setToolContext(Map<String, Object> toolContext) {
-		this.toolContext = toolContext;
-	}
-
-	public List<AnthropicCitationDocument> getCitationDocuments() {
+	public @Nullable List<AnthropicCitationDocument> getCitationDocuments() {
 		return this.citationDocuments;
-	}
-
-	public void setCitationDocuments(List<AnthropicCitationDocument> citationDocuments) {
-		Assert.notNull(citationDocuments, "citationDocuments cannot be null");
-		this.citationDocuments = citationDocuments;
 	}
 
 	/**
@@ -339,7 +358,7 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	 * requires all documents to have citations enabled if any do.
 	 */
 	public void validateCitationConsistency() {
-		if (this.citationDocuments.isEmpty()) {
+		if (CollectionUtils.isEmpty(this.citationDocuments)) {
 			return;
 		}
 
@@ -358,57 +377,28 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		return this.cacheOptions;
 	}
 
-	public void setCacheOptions(AnthropicCacheOptions cacheOptions) {
-		Assert.notNull(cacheOptions, "cacheOptions cannot be null");
-		this.cacheOptions = cacheOptions;
-	}
-
 	public @Nullable OutputConfig getOutputConfig() {
 		return this.outputConfig;
 	}
 
-	public void setOutputConfig(@Nullable OutputConfig outputConfig) {
-		this.outputConfig = outputConfig;
-	}
-
-	public Map<String, String> getHttpHeaders() {
+	public @Nullable Map<String, String> getHttpHeaders() {
 		return this.httpHeaders;
-	}
-
-	public void setHttpHeaders(Map<String, String> httpHeaders) {
-		this.httpHeaders = httpHeaders;
 	}
 
 	public @Nullable AnthropicSkillContainer getSkillContainer() {
 		return this.skillContainer;
 	}
 
-	public void setSkillContainer(@Nullable AnthropicSkillContainer skillContainer) {
-		this.skillContainer = skillContainer;
-	}
-
 	public @Nullable String getInferenceGeo() {
 		return this.inferenceGeo;
-	}
-
-	public void setInferenceGeo(@Nullable String inferenceGeo) {
-		this.inferenceGeo = inferenceGeo;
 	}
 
 	public @Nullable AnthropicWebSearchTool getWebSearchTool() {
 		return this.webSearchTool;
 	}
 
-	public void setWebSearchTool(@Nullable AnthropicWebSearchTool webSearchTool) {
-		this.webSearchTool = webSearchTool;
-	}
-
 	public @Nullable AnthropicServiceTier getServiceTier() {
 		return this.serviceTier;
-	}
-
-	public void setServiceTier(@Nullable AnthropicServiceTier serviceTier) {
-		this.serviceTier = serviceTier;
 	}
 
 	@Override
@@ -424,30 +414,6 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 			}
 			return JSON_MAPPER.writeValueAsString(nativeMap);
 		}).orElse(null);
-	}
-
-	@Override
-	public void setOutputSchema(@Nullable String outputSchema) {
-		if (outputSchema == null) {
-			this.outputConfig = null;
-			return;
-		}
-		Map<String, Object> schemaMap = JSON_MAPPER.readValue(outputSchema, new TypeReference<Map<String, Object>>() {
-		});
-		JsonOutputFormat.Schema.Builder schemaBuilder = JsonOutputFormat.Schema.builder();
-		for (Map.Entry<String, Object> entry : schemaMap.entrySet()) {
-			// Strip JSON Schema meta-fields not supported by the Anthropic API
-			if ("$schema".equals(entry.getKey()) || "$defs".equals(entry.getKey())) {
-				continue;
-			}
-			schemaBuilder.putAdditionalProperty(entry.getKey(), JsonValue.from(entry.getValue()));
-		}
-		JsonOutputFormat jsonOutputFormat = JsonOutputFormat.builder().schema(schemaBuilder.build()).build();
-		OutputConfig.Builder configBuilder = OutputConfig.builder().format(jsonOutputFormat);
-		if (this.outputConfig != null) {
-			this.outputConfig.effort().ifPresent(configBuilder::effort);
-		}
-		this.outputConfig = configBuilder.build();
 	}
 
 	/**
@@ -510,11 +476,6 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	}
 
 	@Override
-	public AnthropicChatOptions copy() {
-		return mutate().build();
-	}
-
-	@Override
 	public Builder mutate() {
 		return builder()
 			// AbstractAnthropicOptions
@@ -535,9 +496,7 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 			.topP(this.topP)
 			// ToolCallingChatOptions
 			.toolCallbacks(this.getToolCallbacks())
-			.toolNames(this.getToolNames())
 			.toolContext(this.getToolContext())
-			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
 			// Anthropic Specific
 			.metadata(this.metadata)
 			.toolChoice(this.toolChoice)
@@ -554,7 +513,7 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -569,8 +528,6 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 				&& Objects.equals(this.thinking, that.thinking)
 				&& Objects.equals(this.disableParallelToolUse, that.disableParallelToolUse)
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
-				&& Objects.equals(this.toolNames, that.toolNames)
-				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolContext, that.toolContext)
 				&& Objects.equals(this.citationDocuments, that.citationDocuments)
 				&& Objects.equals(this.cacheOptions, that.cacheOptions)
@@ -586,23 +543,8 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	public int hashCode() {
 		return Objects.hash(this.getModel(), this.maxTokens, this.metadata, this.stopSequences, this.temperature,
 				this.topP, this.topK, this.toolChoice, this.thinking, this.disableParallelToolUse, this.toolCallbacks,
-				this.toolNames, this.internalToolExecutionEnabled, this.toolContext, this.citationDocuments,
-				this.cacheOptions, this.outputConfig, this.httpHeaders, this.skillContainer, this.inferenceGeo,
-				this.webSearchTool, this.serviceTier);
-	}
-
-	@Override
-	public String toString() {
-		return "AnthropicChatOptions{" + "model='" + this.getModel() + '\'' + ", maxTokens=" + this.maxTokens
-				+ ", metadata=" + this.metadata + ", stopSequences=" + this.stopSequences + ", temperature="
-				+ this.temperature + ", topP=" + this.topP + ", topK=" + this.topK + ", toolChoice=" + this.toolChoice
-				+ ", thinking=" + this.thinking + ", disableParallelToolUse=" + this.disableParallelToolUse
-				+ ", toolCallbacks=" + this.toolCallbacks + ", toolNames=" + this.toolNames
-				+ ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled + ", toolContext="
-				+ this.toolContext + ", citationDocuments=" + this.citationDocuments + ", cacheOptions="
-				+ this.cacheOptions + ", outputConfig=" + this.outputConfig + ", httpHeaders=" + this.httpHeaders
-				+ ", skillContainer=" + this.skillContainer + ", inferenceGeo=" + this.inferenceGeo + ", webSearchTool="
-				+ this.webSearchTool + ", serviceTier=" + this.serviceTier + '}';
+				this.toolContext, this.citationDocuments, this.cacheOptions, this.outputConfig, this.httpHeaders,
+				this.skillContainer, this.inferenceGeo, this.webSearchTool, this.serviceTier);
 	}
 
 	/**
@@ -620,14 +562,14 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		@Override
 		public B clone() {
 			AbstractBuilder<B> copy = super.clone();
-			if (!this.customHeaders.isEmpty()) {
-				copy.customHeaders = new HashMap<>(this.customHeaders);
+			if (this.customHeaders != null && !this.customHeaders.isEmpty()) {
+				copy.customHeaders = this.customHeaders;
 			}
-			if (!this.citationDocuments.isEmpty()) {
-				copy.citationDocuments = new ArrayList<>(this.citationDocuments);
+			if (this.citationDocuments != null && !this.citationDocuments.isEmpty()) {
+				copy.citationDocuments = this.citationDocuments;
 			}
-			if (!this.httpHeaders.isEmpty()) {
-				copy.httpHeaders = new HashMap<>(this.httpHeaders);
+			if (this.httpHeaders != null && !this.httpHeaders.isEmpty()) {
+				copy.httpHeaders = this.httpHeaders;
 			}
 			return (B) copy;
 		}
@@ -643,7 +585,7 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 
 		private @Nullable Proxy proxy;
 
-		private Map<String, String> customHeaders = new HashMap<>();
+		private @Nullable Map<String, String> customHeaders;
 
 		// Anthropic-specific fields
 		private @Nullable Metadata metadata;
@@ -654,13 +596,13 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 
 		private @Nullable Boolean disableParallelToolUse;
 
-		private List<AnthropicCitationDocument> citationDocuments = new ArrayList<>();
+		private @Nullable List<AnthropicCitationDocument> citationDocuments;
 
-		private AnthropicCacheOptions cacheOptions = AnthropicCacheOptions.disabled();
+		private @Nullable AnthropicCacheOptions cacheOptions;
 
 		private @Nullable OutputConfig outputConfig;
 
-		private Map<String, String> httpHeaders = new HashMap<>();
+		private @Nullable Map<String, String> httpHeaders;
 
 		private @Nullable AnthropicSkillContainer skillContainer;
 
@@ -723,7 +665,7 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 			return self();
 		}
 
-		public B customHeaders(Map<String, String> customHeaders) {
+		public B customHeaders(@Nullable Map<String, String> customHeaders) {
 			this.customHeaders = customHeaders;
 			return self();
 		}
@@ -755,7 +697,7 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 
 		/**
 		 * Convenience method to enable thinking with a specific budget in tokens.
-		 * @param budgetTokens the thinking budget (must be >= 1024 and < maxTokens)
+		 * @param budgetTokens the thinking budget (must be &gt;= 1024 and &lt; maxTokens)
 		 */
 		public B thinkingEnabled(long budgetTokens) {
 			return thinking(
@@ -765,7 +707,7 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		/**
 		 * Convenience method to enable thinking with a specific budget and display
 		 * setting.
-		 * @param budgetTokens the thinking budget (must be >= 1024 and < maxTokens)
+		 * @param budgetTokens the thinking budget (must be &gt;= 1024 and &lt; maxTokens)
 		 * @param display controls how thinking content appears in the response
 		 * (SUMMARIZED or OMITTED)
 		 */
@@ -803,26 +745,29 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 			return self();
 		}
 
-		public B citationDocuments(List<AnthropicCitationDocument> citationDocuments) {
-			Assert.notNull(citationDocuments, "citationDocuments cannot be null");
-			this.citationDocuments = new ArrayList<>(citationDocuments);
+		public B citationDocuments(@Nullable List<AnthropicCitationDocument> citationDocuments) {
+			this.citationDocuments = citationDocuments;
 			return self();
 		}
 
 		public B citationDocuments(AnthropicCitationDocument... citationDocuments) {
-			Assert.notNull(citationDocuments, "citationDocuments cannot be null");
+			if (this.citationDocuments == null) {
+				this.citationDocuments = new ArrayList<>();
+			}
 			this.citationDocuments.addAll(java.util.Arrays.asList(citationDocuments));
 			return self();
 		}
 
 		public B addCitationDocument(AnthropicCitationDocument citationDocument) {
 			Assert.notNull(citationDocument, "citationDocument cannot be null");
+			if (this.citationDocuments == null) {
+				this.citationDocuments = new ArrayList<>();
+			}
 			this.citationDocuments.add(citationDocument);
 			return self();
 		}
 
-		public B cacheOptions(AnthropicCacheOptions cacheOptions) {
-			Assert.notNull(cacheOptions, "cacheOptions cannot be null");
+		public B cacheOptions(@Nullable AnthropicCacheOptions cacheOptions) {
 			this.cacheOptions = cacheOptions;
 			return self();
 		}
@@ -851,8 +796,8 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 			return self();
 		}
 
-		public B httpHeaders(Map<String, String> httpHeaders) {
-			this.httpHeaders = new HashMap<>(httpHeaders);
+		public B httpHeaders(@Nullable Map<String, String> httpHeaders) {
+			this.httpHeaders = httpHeaders;
 			return self();
 		}
 
@@ -967,8 +912,15 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 				if (options.proxy != null) {
 					this.proxy = options.proxy;
 				}
-				if (!options.customHeaders.isEmpty()) {
-					this.customHeaders = options.customHeaders;
+				if (options.customHeaders != null) {
+					if (this.customHeaders == null) {
+						this.customHeaders = new HashMap<>(options.customHeaders);
+					}
+					else {
+						Map<String, String> merged = new HashMap<>(this.customHeaders);
+						merged.putAll(options.customHeaders);
+						this.customHeaders = merged;
+					}
 				}
 				if (options.metadata != null) {
 					this.metadata = options.metadata;
@@ -982,8 +934,15 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 				if (options.disableParallelToolUse != null) {
 					this.disableParallelToolUse = options.disableParallelToolUse;
 				}
-				if (!options.citationDocuments.isEmpty()) {
-					this.citationDocuments = options.citationDocuments;
+				if (options.citationDocuments != null) {
+					if (this.citationDocuments == null) {
+						this.citationDocuments = new ArrayList<>(options.citationDocuments);
+					}
+					else {
+						List<AnthropicCitationDocument> merged = new ArrayList<>(this.citationDocuments);
+						merged.addAll(options.citationDocuments);
+						this.citationDocuments = merged;
+					}
 				}
 				if (options.cacheOptions != null && options.cacheOptions.getStrategy() != AnthropicCacheStrategy.NONE) {
 					this.cacheOptions = options.cacheOptions;
@@ -991,8 +950,15 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 				if (options.outputConfig != null) {
 					this.outputConfig = options.outputConfig;
 				}
-				if (!options.httpHeaders.isEmpty()) {
-					this.httpHeaders = options.httpHeaders;
+				if (options.httpHeaders != null) {
+					if (this.httpHeaders == null) {
+						this.httpHeaders = new HashMap<>(options.httpHeaders);
+					}
+					else {
+						Map<String, String> merged = new HashMap<>(this.httpHeaders);
+						merged.putAll(options.httpHeaders);
+						this.httpHeaders = merged;
+					}
 				}
 				if (options.skillContainer != null) {
 					this.skillContainer = options.skillContainer;
@@ -1012,42 +978,11 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 
 		@SuppressWarnings("NullAway")
 		public AnthropicChatOptions build() {
-			AnthropicChatOptions options = new AnthropicChatOptions();
-			// AbstractAnthropicOptions fields
-			options.setModel(this.model);
-			options.setBaseUrl(this.baseUrl);
-			options.setApiKey(this.apiKey);
-			options.setTimeout(this.timeout);
-			options.setMaxRetries(this.maxRetries);
-			options.setProxy(this.proxy);
-			options.setCustomHeaders(this.customHeaders);
-			// ChatOptions fields
-			options.maxTokens = this.maxTokens;
-			options.stopSequences = this.stopSequences;
-			options.temperature = this.temperature;
-			options.topP = this.topP;
-			options.topK = this.topK;
-			// ToolCallingChatOptions fields
-			options.toolCallbacks = this.toolCallbacks == null ? new ArrayList<>()
-					: new ArrayList<>(this.toolCallbacks);
-			options.toolNames = this.toolNames == null ? new HashSet<>() : new HashSet<>(this.toolNames);
-			options.internalToolExecutionEnabled = this.internalToolExecutionEnabled;
-			options.toolContext = this.toolContext == null ? new HashMap<>() : new HashMap<>(this.toolContext);
-			// Anthropic-specific fields
-			options.metadata = this.metadata;
-			options.toolChoice = this.toolChoice;
-			options.thinking = this.thinking;
-			options.disableParallelToolUse = this.disableParallelToolUse;
-			options.citationDocuments = this.citationDocuments;
-			options.cacheOptions = this.cacheOptions;
-			options.outputConfig = this.outputConfig;
-			options.httpHeaders = this.httpHeaders;
-			options.skillContainer = this.skillContainer;
-			options.inferenceGeo = this.inferenceGeo;
-			options.webSearchTool = this.webSearchTool;
-			options.serviceTier = this.serviceTier;
-			options.validateCitationConsistency();
-			return options;
+			return new AnthropicChatOptions(this.baseUrl, this.apiKey, this.model, this.timeout, this.maxRetries,
+					this.proxy, this.customHeaders, this.maxTokens, this.metadata, this.stopSequences, this.temperature,
+					this.topP, this.topK, this.toolChoice, this.thinking, this.disableParallelToolUse,
+					this.toolCallbacks, this.toolContext, this.citationDocuments, this.cacheOptions, this.outputConfig,
+					this.httpHeaders, this.skillContainer, this.inferenceGeo, this.webSearchTool, this.serviceTier);
 		}
 
 	}

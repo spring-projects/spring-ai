@@ -193,7 +193,7 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 		this.disableCaching = disableCaching;
 	}
 
-	public void setResourceCacheDirectory(String resourceCacheDir) {
+	public void setResourceCacheDirectory(@Nullable String resourceCacheDir) {
 		this.resourceCacheDirectory = resourceCacheDir;
 	}
 
@@ -263,7 +263,7 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	}
 
 	@Override
-	public String getEmbeddingContent(Document document) {
+	public @Nullable String getEmbeddingContent(Document document) {
 		Assert.notNull(document, "Document must not be null");
 		return document.getFormattedContent(this.metadataMode);
 	}

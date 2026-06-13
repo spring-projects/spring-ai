@@ -67,7 +67,7 @@ The prefix `spring.ai.vertex.ai.embedding` is used as the property prefix that l
 
 | spring.ai.vertex.ai.embedding.project-id   |  Google Cloud Platform project ID |  -
 | spring.ai.vertex.ai.embedding.location   | Region |  -
-| spring.ai.vertex.ai.embedding.apiEndpoint   | Vertex AI Embedding API endpoint. |  -
+| spring.ai.vertex.ai.embedding.api-endpoint   | Vertex AI Embedding API endpoint. |  -
 
 |====
 
@@ -90,11 +90,11 @@ The prefix `spring.ai.vertex.ai.embedding.text` is the property prefix that lets
 
 | spring.ai.vertex.ai.embedding.text.enabled (Removed and no longer valid) | Enable Vertex AI Embedding API model. | true
 | spring.ai.model.embedding.text | Enable Vertex AI Embedding API model. | vertexai
-| spring.ai.vertex.ai.embedding.text.options.model | This is the link:https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings#supported-models[Vertex Text Embedding model] to use | text-embedding-004
-| spring.ai.vertex.ai.embedding.text.options.task-type | The intended downstream application to help the model produce better quality embeddings. Available link:https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/text-embeddings-api#request_body[task-types]  | `RETRIEVAL_DOCUMENT`
-| spring.ai.vertex.ai.embedding.text.options.title | Optional title, only valid with task_type=RETRIEVAL_DOCUMENT.  | -
-| spring.ai.vertex.ai.embedding.text.options.dimensions | The number of dimensions the resulting output embeddings should have. Supported for model version 004 and later. You can use this parameter to reduce the embedding size, for example, for storage optimization.  | -
-| spring.ai.vertex.ai.embedding.text.options.auto-truncate | When set to true, input text will be truncated. When set to false, an error is returned if the input text is longer than the maximum length supported by the model.  | true
+| spring.ai.vertex.ai.embedding.text.model | This is the link:https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings#supported-models[Vertex Text Embedding model] to use | text-embedding-004
+| spring.ai.vertex.ai.embedding.text.task-type | The intended downstream application to help the model produce better quality embeddings. Available link:https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/text-embeddings-api#request_body[task-types]  | `RETRIEVAL_DOCUMENT`
+| spring.ai.vertex.ai.embedding.text.title | Optional title, only valid with task_type=RETRIEVAL_DOCUMENT.  | -
+| spring.ai.vertex.ai.embedding.text.dimensions | The number of dimensions the resulting output embeddings should have. Supported for model version 004 and later. You can use this parameter to reduce the embedding size, for example, for storage optimization.  | -
+| spring.ai.vertex.ai.embedding.text.auto-truncate | When set to true, input text will be truncated. When set to false, an error is returned if the input text is longer than the maximum length supported by the model.  | true
 |====
 
 == Sample Controller
@@ -107,7 +107,7 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 ----
 spring.ai.vertex.ai.embedding.project-id=<YOUR_PROJECT_ID>
 spring.ai.vertex.ai.embedding.location=<YOUR_PROJECT_LOCATION>
-spring.ai.vertex.ai.embedding.text.options.model=text-embedding-004
+spring.ai.vertex.ai.embedding.text.model=text-embedding-004
 ----
 
 

@@ -30,8 +30,8 @@ import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.ReadResourceRequest;
 import io.modelcontextprotocol.spec.McpSchema.ReadResourceResult;
 import io.modelcontextprotocol.util.Assert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.annotation.McpResource;
@@ -53,7 +53,7 @@ import org.springframework.ai.mcp.annotation.method.resource.AsyncMcpResourceMet
  */
 public class AsyncMcpResourceProvider {
 
-	private static final Logger logger = LoggerFactory.getLogger(AsyncMcpResourceProvider.class);
+	private static final Log logger = LogFactory.getLog(AsyncMcpResourceProvider.class);
 
 	private final List<Object> resourceObjects;
 
@@ -93,9 +93,7 @@ public class AsyncMcpResourceProvider {
 					var mimeType = resourceAnnotation.mimeType();
 					var meta = MetaUtils.getMeta(resourceAnnotation.metaProvider());
 
-					var mcpResource = McpSchema.Resource.builder()
-						.uri(uri)
-						.name(name)
+					var mcpResource = McpSchema.Resource.builder(uri, name)
 						.description(description)
 						.mimeType(mimeType)
 						.meta(meta)
@@ -118,7 +116,9 @@ public class AsyncMcpResourceProvider {
 			.toList();
 
 		if (resourceSpecs.isEmpty()) {
-			logger.warn("No resource methods found in the provided resource objects: {}", this.resourceObjects);
+			if (logger.isWarnEnabled()) {
+				logger.warn("No resource methods found in the provided resource objects: " + this.resourceObjects);
+			}
 		}
 
 		return resourceSpecs;
@@ -146,9 +146,7 @@ public class AsyncMcpResourceProvider {
 					var mimeType = resourceAnnotation.mimeType();
 					var meta = MetaUtils.getMeta(resourceAnnotation.metaProvider());
 
-					var mcpResourceTemplate = McpSchema.ResourceTemplate.builder()
-						.uriTemplate(uri)
-						.name(name)
+					var mcpResourceTemplate = McpSchema.ResourceTemplate.builder(uri, name)
 						.description(description)
 						.mimeType(mimeType)
 						.meta(meta)
@@ -171,7 +169,9 @@ public class AsyncMcpResourceProvider {
 			.toList();
 
 		if (resourceSpecs.isEmpty()) {
-			logger.warn("No resource methods found in the provided resource objects: {}", this.resourceObjects);
+			if (logger.isWarnEnabled()) {
+				logger.warn("No resource methods found in the provided resource objects: " + this.resourceObjects);
+			}
 		}
 
 		return resourceSpecs;

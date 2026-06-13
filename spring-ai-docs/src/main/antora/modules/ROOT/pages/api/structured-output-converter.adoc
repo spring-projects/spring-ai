@@ -295,14 +295,78 @@ The following models currently support native structured output:
 * **Anthropic**: Claude 3.5 Sonnet and later models
 * **Google GenAI**: Gemini 1.5 Pro and later models
 * **Mistral AI**: Mistral Small and later models with JSON Schema support
+* **Ollama**: Models with JSON Schema support (model-specific; see <<_ollama_model_specific_instability,Ollama limitations>> below)
 
-NOTE: Some AI models, such as OpenAI, don't support arrays of objects natively at the top level. In such cases, you can use the Spring AI default structured output conversion (without the native structured output advisor).
+WARNING: Native structured output is *not enabled by default* because support varies significantly across models and providers.
+The prompt-based approach (default) works consistently across all models.
+Enable native structured output only when you need the stronger API-level schema enforcement it provides, and always test with your specific model version.
+
+[[_known_limitations]]
+==== Known Limitations
+
+[[_ollama_model_specific_instability]]
+===== Ollama: Model-Specific Instability
+
+Not all Ollama models reliably honor the structured output schema constraint.
+In particular, models with a built-in reasoning or "thinking" mode (for example `qwen3:8b`, `qwen3.5:9b`, and other newer Qwen variants) may return their internal reasoning trace as plain text rather than structured JSON, causing a deserialization error in `BeanOutputConverter` such as:
+
+----
+StreamReadException: Unrecognized token 'The': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')
+----
+
+If you encounter this with Ollama, try a different model (for example `llama3.1:latest`) or fall back to the default prompt-based approach.
+You can also combine `useProviderStructuredOutput()` with `validateSchema()` so that malformed responses are automatically retried:
+
+[source,java]
+----
+ActorFilms actorFilms = chatClient.prompt()
+    .user("Generate the filmography for a random actor.")
+    .call()
+    .entity(ActorFilms.class, spec -> spec
+        .useProviderStructuredOutput()
+        .validateSchema());
+----
+
+[[_openai_no_top_level_array_support]]
+===== OpenAI: No Top-Level Array Support
+
+The OpenAI Structured Outputs API does not accept a top-level JSON array as the response schema (see the https://community.openai.com/t/support-top-level-array-in-json-schema/896048[OpenAI community discussion]).
+Requesting a `List<T>` with native structured output enabled will result in an API error.
+
+[source,java]
+----
+// Does NOT work with OpenAI native structured output:
+List<ActorsFilms> films = chatClient.prompt()
+    .user("Generate filmographies for Tom Hanks and Bill Murray.")
+    .call()
+    .entity(new ParameterizedTypeReference<List<ActorsFilms>>() {},
+            spec -> spec.useProviderStructuredOutput()); // fails with OpenAI
+----
+
+Use one of these alternatives instead:
+
+[source,java]
+----
+// Option 1: wrap the list in a container record
+record FilmographyList(List<ActorsFilms> films) {}
+
+FilmographyList result = chatClient.prompt()
+    .user("Generate filmographies for Tom Hanks and Bill Murray.")
+    .call()
+    .entity(FilmographyList.class, spec -> spec.useProviderStructuredOutput());
+List<ActorsFilms> films = result.films();
+
+// Option 2: use the default prompt-based approach (no native output required)
+List<ActorsFilms> films = chatClient.prompt()
+    .user("Generate filmographies for Tom Hanks and Bill Murray.")
+    .call()
+    .entity(new ParameterizedTypeReference<List<ActorsFilms>>() {});
+----
 
 === Built-in JSON mode
 
 Some AI Models provide dedicated configuration options to generate structured (usually JSON) output.
 
-* xref:api/chat/openai-chat.adoc#_structured_outputs[OpenAI Structured Outputs] can ensure your model generates responses conforming strictly to your provided JSON Schema. You can choose between the `JSON_OBJECT` that guarantees the message the model generates is valid JSON or `JSON_SCHEMA` with a supplied schema that guarantees the model will generate a response that matches your supplied schema (`spring.ai.openai.chat.options.responseFormat` option).
-* xref:api/chat/azure-openai-chat.adoc[Azure OpenAI] - provides a `spring.ai.azure.openai.chat.options.responseFormat` options specifying the format that the model must output. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON.
-* xref:api/chat/ollama-chat.adoc[Ollama] - provides a `spring.ai.ollama.chat.options.format` option to specify the format to return a response in. Currently, the only accepted value is `json`.
-* xref:api/chat/mistralai-chat.adoc[Mistral AI] - provides a `spring.ai.mistralai.chat.options.responseFormat` option to specify the format to return a response in. Setting it to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON. Additionally, setting it to `{ "type": "json_schema" }` with a supplied schema enables native structured output support, which guarantees the model will generate a response that matches your supplied schema.
+* xref:api/chat/openai-chat.adoc#_structured_outputs[OpenAI Structured Outputs] can ensure your model generates responses conforming strictly to your provided JSON Schema. You can choose between the `JSON_OBJECT` that guarantees the message the model generates is valid JSON or `JSON_SCHEMA` with a supplied schema that guarantees the model will generate a response that matches your supplied schema (`spring.ai.openai.chat.response-format` option).
+* xref:api/chat/ollama-chat.adoc[Ollama] - provides a `spring.ai.ollama.chat.format` option to specify the format to return a response in. Currently, the only accepted value is `json`.
+* xref:api/chat/mistralai-chat.adoc[Mistral AI] - provides a `spring.ai.mistralai.chat.response-format` option to specify the format to return a response in. Setting it to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON. Additionally, setting it to `{ "type": "json_schema" }` with a supplied schema enables native structured output support, which guarantees the model will generate a response that matches your supplied schema.

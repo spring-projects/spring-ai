@@ -17,14 +17,13 @@
 package org.springframework.ai.observation.conventions;
 
 /**
- * Collection of attribute keys used in AI observations (spans, metrics, events). Based on
- * the OpenTelemetry Semantic Conventions for AI Systems.
+ * Collection of attribute keys used in AI observations (spans, metrics, events). Inspired
+ * by the OpenTelemetry Semantic Conventions for Generative AI.
  *
  * @author Thomas Vitale
  * @since 1.0.0
- * @see <a href=
- * "https://github.com/open-telemetry/semantic-conventions/tree/main/docs/gen-ai">OTel
- * Semantic Conventions</a>.
+ * @see <a href="https://opentelemetry.io/docs/specs/semconv/gen-ai">OpenTelemetry
+ * Semantic Conventions for Generative AI</a>.
  */
 public enum AiObservationAttributes {
 
@@ -63,6 +62,10 @@ public enum AiObservationAttributes {
 	 * List of sequences that the model will use to stop generating further tokens.
 	 */
 	REQUEST_STOP_SEQUENCES("gen_ai.request.stop_sequences"),
+	/**
+	 * Indicates whether the GenAI request was made in streaming mode.
+	 */
+	REQUEST_STREAM("gen_ai.request.stream"),
 	/**
 	 * The temperature setting for the model request.
 	 */
@@ -115,6 +118,14 @@ public enum AiObservationAttributes {
 
 	// GenAI Usage
 
+	/**
+	 * The number of input tokens written to a provider-managed cache.
+	 */
+	USAGE_CACHE_WRITE_INPUT_TOKENS("gen_ai.usage.cache_creation.input_tokens"),
+	/**
+	 * The number of input tokens served from a provider-managed cache.
+	 */
+	USAGE_CACHE_READ_INPUT_TOKENS("gen_ai.usage.cache_read.input_tokens"),
 	/**
 	 * The number of tokens used in the model input.
 	 */
