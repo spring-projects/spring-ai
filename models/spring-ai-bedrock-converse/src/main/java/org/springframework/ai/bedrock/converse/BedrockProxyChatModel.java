@@ -137,6 +137,7 @@ import org.springframework.web.client.RestClientException;
  * @author Sun Yuhan
  * @author Thomas Vitale
  * @author Sebastien Deleuze
+ * @author Jewoo Shin
  * @since 1.0.0
  */
 public class BedrockProxyChatModel implements ChatModel {
@@ -312,6 +313,15 @@ public class BedrockProxyChatModel implements ChatModel {
 				List<ContentBlock> contentBlocks = new ArrayList<>();
 				if (StringUtils.hasText(message.getText())) {
 					contentBlocks.add(ContentBlock.fromText(message.getText()));
+				}
+				// Replay the signed Bedrock reasoning blocks, unmodified, before the
+				// tool-use blocks. Bedrock validates that reasoning comes before its
+				// tool use when the matching tool result is sent back (gh-6413).
+				if (assistantMessage instanceof BedrockAssistantMessage bedrockAssistantMessage
+						&& bedrockAssistantMessage.hasReasoningContents()) {
+					for (BedrockReasoningContent reasoningContent : bedrockAssistantMessage.getReasoningContents()) {
+						contentBlocks.add(reasoningContent.toContentBlock());
+					}
 				}
 				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 					for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
@@ -595,29 +605,55 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		Message message = response.output().message();
 
-		List<Generation> generations = message.content()
+		// Preserve Bedrock reasoning blocks (signed reasoning text or redacted content)
+		// so the tool-calling loop can replay them, unmodified, on the next request. See
+		// gh-6413.
+		List<BedrockReasoningContent> reasoningContents = message.content()
 			.stream()
-			.filter(content -> content.type() != ContentBlock.Type.TOOL_USE)
-			.filter(content -> content.text() != null)
-			.map(content -> new Generation(
-					AssistantMessage.builder().content(content.text()).properties(Map.of()).build(),
-					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build()))
+			.filter(content -> content.type() == ContentBlock.Type.REASONING_CONTENT)
+			.map(content -> BedrockReasoningContent.from(content.reasoningContent()))
 			.toList();
-
-		List<Generation> allGenerations = new ArrayList<>(generations);
-
-		if (response.stopReasonAsString() != null && generations.isEmpty()) {
-			Generation generation = new Generation(AssistantMessage.builder().properties(Map.of()).build(),
-					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build());
-			allGenerations.add(generation);
-		}
 
 		List<ContentBlock> toolUseContentBlocks = message.content()
 			.stream()
 			.filter(c -> c.type() == ContentBlock.Type.TOOL_USE)
 			.toList();
+		boolean hasToolUse = !CollectionUtils.isEmpty(toolUseContentBlocks);
 
-		if (!CollectionUtils.isEmpty(toolUseContentBlocks)) {
+		// When the response carries reasoning but no tool use, surface the reasoning on
+		// the final-text assistant message without displacing the text returned by
+		// ChatResponse.getResult().
+		boolean attachReasoningToText = !hasToolUse && !CollectionUtils.isEmpty(reasoningContents);
+
+		List<Generation> generations = new ArrayList<>();
+		for (ContentBlock content : message.content()) {
+			if (content.type() == ContentBlock.Type.TOOL_USE || content.text() == null) {
+				continue;
+			}
+			AssistantMessage assistantMessage = (attachReasoningToText && generations.isEmpty())
+					? BedrockAssistantMessage.builder()
+						.content(content.text())
+						.properties(Map.of())
+						.reasoningContents(reasoningContents)
+						.build()
+					: AssistantMessage.builder().content(content.text()).properties(Map.of()).build();
+			generations.add(new Generation(assistantMessage,
+					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build()));
+		}
+
+		List<Generation> allGenerations = new ArrayList<>(generations);
+
+		if (response.stopReasonAsString() != null && generations.isEmpty()) {
+			AssistantMessage assistantMessage = attachReasoningToText ? BedrockAssistantMessage.builder()
+				.properties(Map.of())
+				.reasoningContents(reasoningContents)
+				.build() : AssistantMessage.builder().properties(Map.of()).build();
+			Generation generation = new Generation(assistantMessage,
+					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build());
+			allGenerations.add(generation);
+		}
+
+		if (hasToolUse) {
 
 			List<AssistantMessage.ToolCall> toolCalls = new ArrayList<>();
 
@@ -631,11 +667,17 @@ public class BedrockProxyChatModel implements ChatModel {
 					.add(new AssistantMessage.ToolCall(functionCallId, "function", functionName, functionArguments));
 			}
 
-			AssistantMessage assistantMessage = AssistantMessage.builder()
-				.content("")
-				.properties(Map.of())
-				.toolCalls(toolCalls)
-				.build();
+			// Attach the signed reasoning to the same assistant turn as the tool calls so
+			// DefaultToolCallingManager carries it into the next request history
+			// (gh-6413).
+			AssistantMessage assistantMessage = CollectionUtils.isEmpty(reasoningContents)
+					? AssistantMessage.builder().content("").properties(Map.of()).toolCalls(toolCalls).build()
+					: BedrockAssistantMessage.builder()
+						.content("")
+						.properties(Map.of())
+						.toolCalls(toolCalls)
+						.reasoningContents(reasoningContents)
+						.build();
 			Generation toolCallGeneration = new Generation(assistantMessage,
 					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build());
 			allGenerations.add(toolCallGeneration);
