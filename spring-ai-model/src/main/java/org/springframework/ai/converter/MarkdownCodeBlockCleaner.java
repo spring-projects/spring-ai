@@ -42,14 +42,19 @@ public class MarkdownCodeBlockCleaner implements ResponseTextCleaner {
 
 		// Check for and remove triple backticks
 		if (text.startsWith("```") && text.endsWith("```")) {
-			// Remove the first line if it contains "```json" or similar
 			String[] lines = text.split("\n", 2);
 			if (lines[0].trim().toLowerCase().startsWith("```")) {
 				// Extract language identifier if present
 				String firstLine = lines[0].trim();
-				if (firstLine.length() > 3) {
-					// Has language identifier like ```json
-					text = lines.length > 1 ? lines[1] : "";
+				if (firstLine.length() > 3 && lines.length > 1) {
+					// Has language identifier like ```json and content on following lines
+					text = lines[1];
+				}
+				else if (firstLine.length() > 3 && lines.length == 1) {
+					// Single-line fenced block without line break, e.g.
+					// ```{"key": "value"}```
+					// Strip the opening fence only; the trailing fence is removed below
+					text = firstLine.substring(3);
 				}
 				else {
 					// Just ``` without language
