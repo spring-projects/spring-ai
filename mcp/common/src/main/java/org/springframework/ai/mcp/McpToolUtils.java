@@ -24,9 +24,11 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.common.util.StringUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
@@ -73,6 +75,8 @@ public final class McpToolUtils {
 	 * The name of tool context key used to store the MCP exchange object.
 	 */
 	public static final String TOOL_CONTEXT_MCP_EXCHANGE_KEY = "exchange";
+
+	private static final JacksonMcpJsonMapper objectMapper = new JacksonMcpJsonMapper(new ObjectMapper());
 
 	private McpToolUtils() {
 	}
@@ -253,6 +257,7 @@ public final class McpToolUtils {
 			.description(toolCallback.getToolDefinition().description())
 			.inputSchema(ModelOptionsUtils.jsonToObject(toolCallback.getToolDefinition().inputSchema(),
 					McpSchema.JsonSchema.class))
+			.outputSchema(objectMapper, toolCallback.getToolDefinition().outputSchema())
 			.build();
 
 		return new SharedSyncToolSpecification(tool, (exchangeOrContext, request) -> {
