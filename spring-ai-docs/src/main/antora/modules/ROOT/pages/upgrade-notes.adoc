@@ -12,23 +12,6 @@ This section covers all breaking changes and migration steps when upgrading from
 
 The `spring-ai-advisors-vector-store` module has been renamed to `spring-ai-vector-store-advisor` to better align with the naming conventions of other Spring AI modules.
 
-==== `ToolSearchToolCallingAdvisor` moved to `spring-ai-tool-search-advisor`
-
-The `ToolSearchToolCallingAdvisor` class has been moved to a dedicated module and package:
-
-* *Artifact:* `spring-ai-tool-search-advisor` (previously bundled in `spring-ai-tool-search-tool`)
-* *Package:* `org.springframework.ai.chat.client.advisor.toolsearch` (previously `org.springframework.ai.tool.toolsearch.advisor`)
-
-Update your dependency and import statements accordingly:
-
-[source,xml]
-----
-<dependency>
-    <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-tool-search-advisor</artifactId>
-</dependency>
-----
-
 ==== New: `ToolSearchToolCallingAdvisor` Auto-Configuration and Starter
 
 A Spring Boot auto-configuration (`spring-ai-autoconfigure-tool-search-advisor`) and matching starter (`spring-ai-starter-tool-search-advisor`) are now available.
