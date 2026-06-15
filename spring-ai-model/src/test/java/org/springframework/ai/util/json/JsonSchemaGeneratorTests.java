@@ -21,13 +21,22 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 
@@ -36,7 +45,6 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.util.JsonHelper;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
-import org.springframework.lang.Nullable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -763,9 +771,9 @@ class JsonSchemaGeneratorTests {
 		assertThat(schemaNode.at("/properties/request").has("$defs"))
 			.as("$defs must not remain nested inside the parameter sub-schema")
 			.isFalse();
-		assertThat(schemaNode.at("/properties/request/properties/filters/items/$ref").asText())
+		assertThat(schemaNode.at("/properties/request/properties/filters/items/$ref").asString())
 			.isEqualTo("#/$defs/RecursiveFilter");
-		assertThat(schemaNode.at("/$defs/RecursiveFilter/properties/filters/items/$ref").asText())
+		assertThat(schemaNode.at("/$defs/RecursiveFilter/properties/filters/items/$ref").asString())
 			.isEqualTo("#/$defs/RecursiveFilter");
 	}
 
@@ -783,9 +791,9 @@ class JsonSchemaGeneratorTests {
 
 		assertThat(schemaNode.at("/$defs").size()).isEqualTo(1);
 		assertThat(schemaNode.at("/$defs").has("RecursiveFilter")).isTrue();
-		assertThat(schemaNode.at("/properties/a/properties/filters/items/$ref").asText())
+		assertThat(schemaNode.at("/properties/a/properties/filters/items/$ref").asString())
 			.isEqualTo("#/$defs/RecursiveFilter");
-		assertThat(schemaNode.at("/properties/b/properties/filters/items/$ref").asText())
+		assertThat(schemaNode.at("/properties/b/properties/filters/items/$ref").asString())
 			.isEqualTo("#/$defs/RecursiveFilter");
 	}
 
@@ -811,12 +819,13 @@ class JsonSchemaGeneratorTests {
 		assertThat(schemaNode.at("/$defs/Filter_2/properties").has("code"))
 			.as("second colliding entry retains OuterB.Filter shape (code field)")
 			.isTrue();
-		assertThat(schemaNode.at("/properties/a/properties/filters/items/$ref").asText()).isEqualTo("#/$defs/Filter");
-		assertThat(schemaNode.at("/properties/b/properties/filters/items/$ref").asText())
+		assertThat(schemaNode.at("/properties/a/properties/filters/items/$ref").asString()).isEqualTo("#/$defs/Filter");
+		assertThat(schemaNode.at("/properties/b/properties/filters/items/$ref").asString())
 			.as("second parameter's $ref must be rewritten to the renamed entry")
 			.isEqualTo("#/$defs/Filter_2");
-		assertThat(schemaNode.at("/$defs/Filter/properties/children/items/$ref").asText()).isEqualTo("#/$defs/Filter");
-		assertThat(schemaNode.at("/$defs/Filter_2/properties/children/items/$ref").asText())
+		assertThat(schemaNode.at("/$defs/Filter/properties/children/items/$ref").asString())
+			.isEqualTo("#/$defs/Filter");
+		assertThat(schemaNode.at("/$defs/Filter_2/properties/children/items/$ref").asString())
 			.as("self-reference inside the renamed entry must follow the rename")
 			.isEqualTo("#/$defs/Filter_2");
 	}
@@ -839,13 +848,13 @@ class JsonSchemaGeneratorTests {
 			.as("colliding definition is renamed with PeerB shape")
 			.isTrue();
 		assertThat(schemaNode.at("/$defs/Wrapper").has("properties")).isTrue();
-		assertThat(schemaNode.at("/$defs/Wrapper/properties/filters/items/$ref").asText())
+		assertThat(schemaNode.at("/$defs/Wrapper/properties/filters/items/$ref").asString())
 			.as("peer Wrapper's $ref to the colliding name must be rewritten to the renamed entry")
 			.isEqualTo("#/$defs/Filter_2");
-		assertThat(schemaNode.at("/$defs/Wrapper/properties/nested/items/$ref").asText())
+		assertThat(schemaNode.at("/$defs/Wrapper/properties/nested/items/$ref").asString())
 			.as("peer Wrapper's self-reference must be left alone")
 			.isEqualTo("#/$defs/Wrapper");
-		assertThat(schemaNode.at("/$defs/Filter_2/properties/children/items/$ref").asText())
+		assertThat(schemaNode.at("/$defs/Filter_2/properties/children/items/$ref").asString())
 			.as("renamed entry's self-reference must follow the rename")
 			.isEqualTo("#/$defs/Filter_2");
 	}
@@ -885,9 +894,52 @@ class JsonSchemaGeneratorTests {
 	}
 
 	@Test
+	void generateSchemaForTypeCanRunConcurrently() throws Exception {
+		List<String> schemas = generateConcurrently(() -> JsonSchemaGenerator.generateForType(OrderedStatement.class));
+
+		assertThat(schemas).hasSize(240);
+		assertThat(schemas).allSatisfy(schema -> assertThat(schema).contains("\"properties\""));
+	}
+
+	@Test
+	void generateSchemaForMethodInputCanRunConcurrently() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("searchBooksMethod", SearchRequest.class);
+
+		List<String> schemas = generateConcurrently(() -> JsonSchemaGenerator.generateForMethodInput(method));
+
+		assertThat(schemas).hasSize(240);
+		assertThat(schemas).allSatisfy(schema -> assertThat(schema).contains("\"$defs\""));
+	}
+
+	@Test
 	void throwExceptionWhenTypeIsNull() {
 		assertThatThrownBy(() -> JsonSchemaGenerator.generateForType(null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("type cannot be null");
+	}
+
+	private static List<String> generateConcurrently(Callable<String> generator) throws Exception {
+		int threadCount = 12;
+		int callCount = 240;
+		ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+		CountDownLatch start = new CountDownLatch(1);
+		try {
+			List<Future<String>> futures = new ArrayList<>();
+			for (int i = 0; i < callCount; i++) {
+				futures.add(executor.submit(() -> {
+					start.await();
+					return generator.call();
+				}));
+			}
+			start.countDown();
+			List<String> schemas = new ArrayList<>();
+			for (Future<String> future : futures) {
+				schemas.add(future.get(30, TimeUnit.SECONDS));
+			}
+			return schemas;
+		}
+		finally {
+			executor.shutdownNow();
+		}
 	}
 
 	static class TestMethods {
@@ -1022,12 +1074,17 @@ class JsonSchemaGeneratorTests {
 
 	}
 
-	record JSpecifyNullablePerson(int id, String name, @org.jspecify.annotations.Nullable String email) {
+	record JSpecifyNullablePerson(int id, String name, @Nullable String email) {
 
 	}
 
 	record WithMapField(String name, Map<String, Integer> scores) {
 
+	}
+
+	@JsonPropertyOrder({ "accountId", "accountName", "currency", "totals" })
+	record OrderedStatement(@JsonProperty(required = true) String accountId,
+			@JsonProperty(required = true) String accountName, String currency, Map<String, Double> totals) {
 	}
 
 	static class Person {

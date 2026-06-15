@@ -17,9 +17,12 @@
 package org.springframework.ai.openai.setup;
 
 import java.time.Duration;
+import java.util.List;
 
 import com.openai.client.OpenAIClient;
+import com.openai.models.ChatModel;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
+import io.micrometer.observation.ObservationRegistry;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -35,13 +38,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * header being sent to the server.
  *
  * @author Ilayaperumal Gopinathan
+ * @author Thomas Vitale
  */
 public class OpenAiSetupEmptyApiKeyTests {
 
-	private static final String CHAT_COMPLETION_RESPONSE = "{\"id\":\"chatcmpl-test\",\"object\":\"chat.completion\","
-			+ "\"created\":1700000000,\"model\":\"gpt-4\",\"choices\":[{\"index\":0,"
-			+ "\"message\":{\"role\":\"assistant\",\"content\":\"Hello\"},\"finish_reason\":\"stop\"}],"
-			+ "\"usage\":{\"prompt_tokens\":5,\"completion_tokens\":1,\"total_tokens\":6}}";
+	private static final String CHAT_COMPLETION_RESPONSE = """
+			{"id":"chatcmpl-test","object":"chat.completion","created":1700000000,"model":"gpt-4","choices":[{"index":0,"message":{"role":"assistant","content":"Hello"},"finish_reason":"stop"}],"usage":{"prompt_tokens":5,"completion_tokens":1,"total_tokens":6}}
+			""";
 
 	@Test
 	void emptyApiKeyDoesNotSendAuthorizationHeader() throws Exception {
@@ -52,17 +55,15 @@ public class OpenAiSetupEmptyApiKeyTests {
 			server.start();
 
 			OpenAIClient client = OpenAiSetup.setupSyncClient(server.url("/v1").toString(), "", null, null, null, null,
-					false, false, "gpt-4", Duration.ofSeconds(10), 0, null, null);
+					false, false, "gpt-4", Duration.ofSeconds(10), 0, null, null, ObservationRegistry.NOOP, null,
+					List.of());
 
 			assertThat(client).isNotNull();
 
 			// Trigger an actual HTTP request so we can inspect received headers.
 			client.chat()
 				.completions()
-				.create(ChatCompletionCreateParams.builder()
-					.model(com.openai.models.ChatModel.GPT_4)
-					.addUserMessage("Hi")
-					.build());
+				.create(ChatCompletionCreateParams.builder().model(ChatModel.GPT_4).addUserMessage("Hi").build());
 
 			RecordedRequest request = server.takeRequest();
 			assertThat(request.getHeader("Authorization")).as("Authorization header must be absent in no-auth mode")
@@ -89,14 +90,12 @@ public class OpenAiSetupEmptyApiKeyTests {
 			assertThat(options.getApiKey()).as("NoopApiKey.getValue() should return empty string").isEmpty();
 
 			OpenAIClient client = OpenAiSetup.setupSyncClient(options.getBaseUrl(), options.getApiKey(), null, null,
-					null, null, false, false, "gpt-4", Duration.ofSeconds(10), 0, null, null);
+					null, null, false, false, "gpt-4", Duration.ofSeconds(10), 0, null, null, ObservationRegistry.NOOP,
+					null, List.of());
 
 			client.chat()
 				.completions()
-				.create(ChatCompletionCreateParams.builder()
-					.model(com.openai.models.ChatModel.GPT_4)
-					.addUserMessage("Hi")
-					.build());
+				.create(ChatCompletionCreateParams.builder().model(ChatModel.GPT_4).addUserMessage("Hi").build());
 
 			RecordedRequest request = server.takeRequest();
 			assertThat(request.getHeader("Authorization"))

@@ -16,7 +16,7 @@
 
 package org.springframework.ai.vectorstore.redis.cache.semantic;
 
-import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.RedisClient;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore;
@@ -27,6 +27,7 @@ import org.springframework.ai.vectorstore.redis.RedisVectorStore.MetadataField;
  * caching.
  *
  * @author Brian Sam-Bodden
+ * @author Yanming Zhou
  */
 public final class RedisVectorStoreHelper {
 
@@ -40,25 +41,25 @@ public final class RedisVectorStoreHelper {
 
 	/**
 	 * Creates a pre-configured RedisVectorStore suitable for semantic caching.
-	 * @param jedis The Redis client to use
+	 * @param jedisClient The Redis client to use
 	 * @param embeddingModel The embedding model to use for vectorization
 	 * @return A configured RedisVectorStore instance
 	 */
-	public static RedisVectorStore createVectorStore(JedisPooled jedis, EmbeddingModel embeddingModel) {
-		return createVectorStore(jedis, embeddingModel, DEFAULT_INDEX_NAME, DEFAULT_PREFIX);
+	public static RedisVectorStore createVectorStore(RedisClient jedisClient, EmbeddingModel embeddingModel) {
+		return createVectorStore(jedisClient, embeddingModel, DEFAULT_INDEX_NAME, DEFAULT_PREFIX);
 	}
 
 	/**
 	 * Creates a pre-configured RedisVectorStore with custom index name and prefix.
-	 * @param jedis The Redis client to use
+	 * @param jedisClient The Redis client to use
 	 * @param embeddingModel The embedding model to use for vectorization
 	 * @param indexName The name of the search index to create
 	 * @param prefix The key prefix to use for Redis documents
 	 * @return A configured RedisVectorStore instance
 	 */
-	public static RedisVectorStore createVectorStore(JedisPooled jedis, EmbeddingModel embeddingModel, String indexName,
-			String prefix) {
-		RedisVectorStore vectorStore = RedisVectorStore.builder(jedis, embeddingModel)
+	public static RedisVectorStore createVectorStore(RedisClient jedisClient, EmbeddingModel embeddingModel,
+			String indexName, String prefix) {
+		RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
 			.indexName(indexName)
 			.prefix(prefix)
 			.metadataFields(MetadataField.text("response"), MetadataField.text("response_text"),

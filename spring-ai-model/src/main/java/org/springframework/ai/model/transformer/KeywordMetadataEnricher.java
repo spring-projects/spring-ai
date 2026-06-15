@@ -20,9 +20,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.Generation;
@@ -40,7 +40,7 @@ import org.springframework.util.Assert;
  */
 public class KeywordMetadataEnricher implements DocumentTransformer {
 
-	private static final Logger logger = LoggerFactory.getLogger(KeywordMetadataEnricher.class);
+	private static final Log logger = LogFactory.getLog(KeywordMetadataEnricher.class);
 
 	public static final String CONTEXT_STR_PLACEHOLDER = "context_str";
 

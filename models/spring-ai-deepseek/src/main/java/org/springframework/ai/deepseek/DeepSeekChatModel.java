@@ -19,16 +19,14 @@ package org.springframework.ai.deepseek;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
@@ -47,7 +45,6 @@ import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletion;
@@ -59,10 +56,6 @@ import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest;
 import org.springframework.ai.deepseek.api.common.DeepSeekConstants;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolExecutionResult;
-import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -77,10 +70,11 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Geng Rong
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  */
 public class DeepSeekChatModel implements ChatModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(DeepSeekChatModel.class);
+	private static final Log logger = LogFactory.getLog(DeepSeekChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
@@ -89,7 +83,7 @@ public class DeepSeekChatModel implements ChatModel {
 	/**
 	 * The default options used for the chat completion requests.
 	 */
-	private final DeepSeekChatOptions defaultOptions;
+	private final DeepSeekChatOptions options;
 
 	/**
 	 * The retry template used to retry the DeepSeek API calls.
@@ -107,67 +101,28 @@ public class DeepSeekChatModel implements ChatModel {
 	private final ObservationRegistry observationRegistry;
 
 	/**
-	 * The tool calling manager used to execute tools.
+	 * The tool calling manager used to resolve the tool definitions sent to the model.
 	 */
 	private final ToolCallingManager toolCallingManager;
-
-	/**
-	 * The tool execution eligibility checker used to determine if a tool can be executed.
-	 */
-	private final ToolExecutionEligibilityChecker toolExecutionEligibilityChecker;
-
-	private final AtomicBoolean internalToolExecutionWarned = new AtomicBoolean(false);
 
 	/**
 	 * Conventions to use for generating observations.
 	 */
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
-	public DeepSeekChatModel(DeepSeekApi deepSeekApi, DeepSeekChatOptions defaultOptions,
+	public DeepSeekChatModel(DeepSeekApi deepSeekApi, DeepSeekChatOptions options,
 			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
 			ObservationRegistry observationRegistry) {
-		this(deepSeekApi, defaultOptions, toolCallingManager, retryTemplate, observationRegistry,
-				chatResponse -> chatResponse != null && chatResponse.hasToolCalls());
-	}
-
-	public DeepSeekChatModel(DeepSeekApi deepSeekApi, DeepSeekChatOptions defaultOptions,
-			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
-			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
 		Assert.notNull(deepSeekApi, "deepSeekApi cannot be null");
-		Assert.notNull(defaultOptions, "defaultOptions cannot be null");
+		Assert.notNull(options, "options cannot be null");
 		Assert.notNull(toolCallingManager, "toolCallingManager cannot be null");
 		Assert.notNull(retryTemplate, "retryTemplate cannot be null");
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
-		Assert.notNull(toolExecutionEligibilityChecker, "toolExecutionEligibilityChecker cannot be null");
 		this.deepSeekApi = deepSeekApi;
-		this.defaultOptions = defaultOptions;
+		this.options = options;
 		this.toolCallingManager = toolCallingManager;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
-		this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
-	}
-
-	/**
-	 * @deprecated since 2.0.0 for removal in 3.0.0 — replaced by
-	 * {@link #DeepSeekChatModel(DeepSeekApi, DeepSeekChatOptions, ToolCallingManager, RetryTemplate, ObservationRegistry, ToolExecutionEligibilityChecker)}.
-	 */
-	@Deprecated(since = "2.0.0", forRemoval = true)
-	@SuppressWarnings({ "deprecation", "removal" })
-	public DeepSeekChatModel(DeepSeekApi deepSeekApi, DeepSeekChatOptions defaultOptions,
-			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
-			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
-		this(deepSeekApi, defaultOptions, toolCallingManager, retryTemplate, observationRegistry,
-				new ToolExecutionEligibilityChecker() {
-					@Override
-					public Boolean apply(ChatResponse chatResponse) {
-						return chatResponse != null && chatResponse.hasToolCalls();
-					}
-
-					@Override
-					public boolean isToolExecutionRequired(ChatOptions promptOptions, ChatResponse chatResponse) {
-						return toolExecutionEligibilityPredicate.test(promptOptions, chatResponse);
-					}
-				});
 	}
 
 	@Override
@@ -196,13 +151,17 @@ public class DeepSeekChatModel implements ChatModel {
 				var chatCompletion = completionEntity.getBody();
 
 				if (chatCompletion == null) {
-					logger.warn("No chat completion returned for prompt: {}", prompt);
+					if (logger.isWarnEnabled()) {
+						logger.warn("No chat completion returned for prompt: " + prompt);
+					}
 					return new ChatResponse(List.of());
 				}
 
 				List<Choice> choices = chatCompletion.choices();
 				if (choices == null) {
-					logger.warn("No choices returned for prompt: {}", prompt);
+					if (logger.isWarnEnabled()) {
+						logger.warn("No choices returned for prompt: " + prompt);
+					}
 					return new ChatResponse(List.of());
 				}
 
@@ -231,28 +190,6 @@ public class DeepSeekChatModel implements ChatModel {
 				return chatResponse;
 
 			});
-		ChatOptions options = prompt.getOptions();
-		Assert.state(options != null, "options must not be null");
-		if (this.toolExecutionEligibilityChecker.isToolExecutionRequired(options, response)) {
-			if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
-				logger.warn(
-						"Internal tool execution in DeepSeekChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
-								+ "Use ChatClient with ToolCallAdvisor instead.");
-			}
-			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-			if (toolExecutionResult.returnDirect()) {
-				// Return tool execution result directly to the client.
-				return ChatResponse.builder()
-					.from(response)
-					.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-					.build();
-			}
-			else {
-				// Send the tool execution result back to the model.
-				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						response);
-			}
-		}
 
 		return response;
 	}
@@ -283,7 +220,12 @@ public class DeepSeekChatModel implements ChatModel {
 					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry);
 
-			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
+			Observation parentObservation = contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
+			observation.parentObservation(parentObservation);
+			try (Observation.Scope ignored = parentObservation != null ? parentObservation.openScope()
+					: Observation.Scope.NOOP) {
+				observation.start();
+			}
 
 			// @formatter:off
 			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
@@ -319,46 +261,10 @@ public class DeepSeekChatModel implements ChatModel {
 				});
 
 			// @formatter:off
-			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
-				ChatOptions options = prompt.getOptions();
-				Assert.state(options != null, "options must not be null");
-				if (this.toolExecutionEligibilityChecker.isToolExecutionRequired(options, response)) {
-					// FIXME: bounded elastic needs to be used since tool calling
-					//  is currently only synchronous
-					return Flux.deferContextual(ctx -> {
-						ToolExecutionResult toolExecutionResult;
-						try {
-							if (this.internalToolExecutionWarned.compareAndSet(false, true)) {
-								logger.warn(
-										"Internal tool execution in DeepSeekChatModel is deprecated since 2.0.0 and will be removed in 3.0.0. "
-												+ "Use ChatClient with ToolCallAdvisor instead.");
-							}
-							ToolCallReactiveContextHolder.setContext(ctx);
-							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-						}
-						finally {
-							ToolCallReactiveContextHolder.clearContext();
-						}
-						if (toolExecutionResult.returnDirect()) {
-							// Return tool execution result directly to the client.
-							return Flux.just(ChatResponse.builder().from(response)
-									.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-									.build());
-						}
-						else {
-							// Send the tool execution result back to the model.
-							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-									response);
-						}
-					}).subscribeOn(Schedulers.boundedElastic());
-				}
-				else {
-					return Flux.just(response);
-				}
-			})
-			.doOnError(observation::error)
-			.doFinally(s -> observation.stop())
-			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+			Flux<ChatResponse> flux = chatResponse
+				.doOnError(observation::error)
+				.doFinally(s -> observation.stop())
+				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 
 			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
@@ -452,14 +358,17 @@ public class DeepSeekChatModel implements ChatModel {
 					}).toList();
 				}
 				Boolean isPrefixAssistantMessage = null;
-				if (message instanceof DeepSeekAssistantMessage
-						&& Boolean.TRUE.equals(((DeepSeekAssistantMessage) message).getPrefix())) {
-					isPrefixAssistantMessage = true;
+				String reasoningContent = null;
+				if (message instanceof DeepSeekAssistantMessage deepSeekAssistantMessage) {
+					reasoningContent = deepSeekAssistantMessage.getReasoningContent();
+					if (Boolean.TRUE.equals(deepSeekAssistantMessage.getPrefix())) {
+						isPrefixAssistantMessage = true;
+					}
 				}
 				String text = assistantMessage.getText();
 				Assert.state(text != null, "text must not be null");
 				return List.of(new ChatCompletionMessage(text, ChatCompletionMessage.Role.ASSISTANT, null, null,
-						toolCalls, isPrefixAssistantMessage, null));
+						toolCalls, isPrefixAssistantMessage, reasoningContent));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
@@ -515,14 +424,17 @@ public class DeepSeekChatModel implements ChatModel {
 		}).toList();
 	}
 
+	/**
+	 * @since 2.0.0
+	 */
 	@Override
-	public ChatOptions getDefaultOptions() {
-		return DeepSeekChatOptions.fromOptions(this.defaultOptions);
+	public DeepSeekChatOptions getOptions() {
+		return this.options;
 	}
 
 	@Override
 	public String toString() {
-		return "DeepSeekChatModel [defaultOptions=" + this.defaultOptions + "]";
+		return "DeepSeekChatModel [options=" + this.options + "]";
 	}
 
 	/**
@@ -538,19 +450,27 @@ public class DeepSeekChatModel implements ChatModel {
 		return new Builder();
 	}
 
+	/**
+	 * Look at the options of the provided prompt. If none are provided, return a new
+	 * prompt using this model {@link ChatModel#getOptions() options}. Otherwise, use the
+	 * prompt as is.
+	 */
+	private Prompt buildRequestPrompt(Prompt prompt) {
+		if (prompt.getOptions() == null) {
+			return prompt.mutate().chatOptions(this.getOptions()).build();
+		}
+		else {
+			return prompt;
+		}
+	}
+
 	public static final class Builder {
 
 		private @Nullable DeepSeekApi deepSeekApi;
 
-		private DeepSeekChatOptions defaultOptions = DeepSeekChatOptions.builder()
-			.model(DeepSeekApi.DEFAULT_CHAT_MODEL)
-			.temperature(0.7)
-			.build();
+		private DeepSeekChatOptions options = DeepSeekChatOptions.builder().build();
 
 		private @Nullable ToolCallingManager toolCallingManager;
-
-		private ToolExecutionEligibilityChecker toolExecutionEligibilityChecker = chatResponse -> chatResponse != null
-				&& chatResponse.hasToolCalls();
 
 		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
 
@@ -564,61 +484,19 @@ public class DeepSeekChatModel implements ChatModel {
 			return this;
 		}
 
-		public Builder defaultOptions(DeepSeekChatOptions defaultOptions) {
-			this.defaultOptions = defaultOptions;
+		public Builder options(DeepSeekChatOptions options) {
+			this.options = options;
 			return this;
 		}
 
 		/**
-		 * Sets the tool calling manager used for internal tool execution.
+		 * Sets the tool calling manager used to resolve the tool definitions sent to the
+		 * model.
 		 * @param toolCallingManager the tool calling manager
 		 * @return this builder
-		 * @deprecated since 2.0.0 for removal in 3.0.0 — internal tool execution in
-		 * {@link DeepSeekChatModel} is superseded by {@code ToolCallAdvisor} used via
-		 * {@code ChatClient}.
 		 */
-		@Deprecated(since = "2.0.0", forRemoval = true)
 		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
 			this.toolCallingManager = toolCallingManager;
-			return this;
-		}
-
-		/**
-		 * Sets the predicate to determine tool execution eligibility.
-		 * @param toolExecutionEligibilityPredicate the predicate
-		 * @return this builder
-		 * @deprecated since 2.0.0 for removal in 3.0.0 — replaced by
-		 * {@link #toolExecutionEligibilityChecker(ToolExecutionEligibilityChecker)}. For
-		 * the recommended long-term approach, internal tool execution in
-		 * {@link DeepSeekChatModel} is superseded by {@code ToolCallAdvisor} used via
-		 * {@code ChatClient}.
-		 */
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		@SuppressWarnings({ "deprecation", "removal" })
-		public Builder toolExecutionEligibilityPredicate(
-				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
-			this.toolExecutionEligibilityChecker = new ToolExecutionEligibilityChecker() {
-				@Override
-				public Boolean apply(ChatResponse chatResponse) {
-					return chatResponse != null && chatResponse.hasToolCalls();
-				}
-
-				@Override
-				public boolean isToolExecutionRequired(ChatOptions promptOptions, ChatResponse chatResponse) {
-					return toolExecutionEligibilityPredicate.test(promptOptions, chatResponse);
-				}
-			};
-			return this;
-		}
-
-		/**
-		 * Sets the checker to determine tool execution eligibility.
-		 * @param toolExecutionEligibilityChecker the checker
-		 * @return this builder
-		 */
-		public Builder toolExecutionEligibilityChecker(
-				ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
-			this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
 			return this;
 		}
 
@@ -635,11 +513,11 @@ public class DeepSeekChatModel implements ChatModel {
 		public DeepSeekChatModel build() {
 			Assert.state(this.deepSeekApi != null, "DeepSeekApi must not be null");
 			if (this.toolCallingManager != null) {
-				return new DeepSeekChatModel(this.deepSeekApi, this.defaultOptions, this.toolCallingManager,
-						this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityChecker);
+				return new DeepSeekChatModel(this.deepSeekApi, this.options, this.toolCallingManager,
+						this.retryTemplate, this.observationRegistry);
 			}
-			return new DeepSeekChatModel(this.deepSeekApi, this.defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
-					this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityChecker);
+			return new DeepSeekChatModel(this.deepSeekApi, this.options, DEFAULT_TOOL_CALLING_MANAGER,
+					this.retryTemplate, this.observationRegistry);
 		}
 
 	}

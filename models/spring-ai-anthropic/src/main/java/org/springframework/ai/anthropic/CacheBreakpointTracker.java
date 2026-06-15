@@ -16,8 +16,8 @@
 
 package org.springframework.ai.anthropic;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * Tracks cache breakpoints used (max 4 allowed by Anthropic). Non-static to ensure each
@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
  */
 class CacheBreakpointTracker {
 
-	private static final Logger logger = LoggerFactory.getLogger(CacheBreakpointTracker.class);
+	private static final Log logger = LogFactory.getLog(CacheBreakpointTracker.class);
 
 	private int count = 0;
 

@@ -42,6 +42,7 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Sebastien Deleuze
  * @since 0.8.0
  */
 public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
@@ -50,7 +51,7 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 
 	private final CohereEmbeddingBedrockApi embeddingApi;
 
-	private final BedrockCohereEmbeddingOptions defaultOptions;
+	private final BedrockCohereEmbeddingOptions options;
 
 	// private CohereEmbeddingRequest.InputType inputType =
 	// CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT;
@@ -59,11 +60,7 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 	// CohereEmbeddingRequest.Truncate.NONE;
 
 	public BedrockCohereEmbeddingModel(CohereEmbeddingBedrockApi cohereEmbeddingBedrockApi) {
-		this(cohereEmbeddingBedrockApi,
-				BedrockCohereEmbeddingOptions.builder()
-					.inputType(CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT)
-					.truncate(CohereEmbeddingRequest.Truncate.NONE)
-					.build());
+		this(cohereEmbeddingBedrockApi, BedrockCohereEmbeddingOptions.builder().build());
 	}
 
 	public BedrockCohereEmbeddingModel(CohereEmbeddingBedrockApi cohereEmbeddingBedrockApi,
@@ -71,7 +68,7 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 		Assert.notNull(cohereEmbeddingBedrockApi, "CohereEmbeddingBedrockApi must not be null");
 		Assert.notNull(options, "BedrockCohereEmbeddingOptions must not be null");
 		this.embeddingApi = cohereEmbeddingBedrockApi;
-		this.defaultOptions = options;
+		this.options = options;
 	}
 
 	@Override
@@ -133,7 +130,7 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 	 */
 	BedrockCohereEmbeddingOptions mergeOptions(@Nullable EmbeddingOptions requestOptions) {
 
-		BedrockCohereEmbeddingOptions options = this.defaultOptions;
+		BedrockCohereEmbeddingOptions options = this.options;
 		// BedrockCohereEmbeddingOptions disregards options from EmbeddingOptions, so only
 		// specific options make sense here
 		if (requestOptions instanceof BedrockCohereEmbeddingOptions ro) {

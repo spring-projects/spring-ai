@@ -52,8 +52,8 @@ public class OpenAiEmbeddingPropertiesTests {
 				assertThat(commonProperties.getApiKey()).isEqualTo("abc123");
 				assertThat(commonProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
 
-				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(embeddingProperties.getOptions().getDimensions()).isEqualTo(512);
+				assertThat(embeddingProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.getDimensions()).isEqualTo(512);
 			});
 	}
 
@@ -79,9 +79,9 @@ public class OpenAiEmbeddingPropertiesTests {
 				assertThat(commonProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
 				assertThat(commonProperties.getApiKey()).isEqualTo("API_KEY");
 
-				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(embeddingProperties.getOptions().getUser()).isEqualTo("userXYZ");
-				assertThat(embeddingProperties.getOptions().getDimensions()).isEqualTo(1024);
+				assertThat(embeddingProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.getUser()).isEqualTo("userXYZ");
+				assertThat(embeddingProperties.getDimensions()).isEqualTo(1024);
 				assertThat(embeddingProperties.getMetadataMode()).isEqualTo(MetadataMode.NONE);
 			});
 	}

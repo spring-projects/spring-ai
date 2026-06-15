@@ -17,33 +17,30 @@
 package org.springframework.ai.model.deepseek.autoconfigure.tool;
 
 import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.model.deepseek.autoconfigure.DeepSeekChatAutoConfiguration;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Description;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,8 +54,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 // https://api-docs.deepseek.com/guides/function_calling")
 class FunctionCallbackWithPlainFunctionBeanIT {
 
-	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackWithPlainFunctionBeanIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.deepseek.api-key=" + System.getenv("DEEPSEEK_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(DeepSeekChatAutoConfiguration.class, RestClientAutoConfiguration.class,
@@ -71,23 +66,37 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 		this.contextRunner.run(context -> {
 
 			DeepSeekChatModel chatModel = context.getBean(DeepSeekChatModel.class);
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 
 			// Test weatherFunction
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-					DeepSeekChatOptions.builder().toolNames("weatherFunction").build()));
+			ToolCallback weatherFunction = context.getBean("weatherFunction", ToolCallback.class);
+			ToolCallback weatherFunctionTwo = context.getBean("weatherFunctionTwo", ToolCallback.class);
 
-			logger.info("Response: {}", response);
+			DeepSeekChatOptions options = DeepSeekChatOptions.builder().toolCallbacks(weatherFunction).build();
+			Prompt prompt = new Prompt(List.of(userMessage), options);
+			ChatResponse response = chatModel.call(prompt);
+
+			while (response.hasToolCalls()) {
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+				prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+				response = chatModel.call(prompt);
+			}
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 			// Test weatherFunctionTwo
-			response = chatModel.call(new Prompt(List.of(userMessage),
-					DeepSeekChatOptions.builder().toolNames("weatherFunctionTwo").build()));
+			options = DeepSeekChatOptions.builder().toolCallbacks(weatherFunctionTwo).build();
+			prompt = new Prompt(List.of(userMessage), options);
+			response = chatModel.call(prompt);
 
-			logger.info("Response: {}", response);
+			while (response.hasToolCalls()) {
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+				prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+				response = chatModel.call(prompt);
+			}
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
@@ -99,18 +108,24 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 		this.contextRunner.run(context -> {
 
 			DeepSeekChatModel chatModel = context.getBean(DeepSeekChatModel.class);
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 
 			// Test weatherFunction
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
-			ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder()
-				.toolNames("weatherFunction")
-				.build();
+			ToolCallback weatherFunction = context.getBean("weatherFunction", ToolCallback.class);
 
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
+			DeepSeekChatOptions functionOptions = DeepSeekChatOptions.builder().toolCallbacks(weatherFunction).build();
+			Prompt prompt = new Prompt(List.of(userMessage), functionOptions);
 
-			logger.info("Response: {}", response);
+			ChatResponse response = chatModel.call(prompt);
+
+			while (response.hasToolCalls()) {
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+				prompt = new Prompt(toolExecutionResult.conversationHistory(), functionOptions);
+				response = chatModel.call(prompt);
+			}
 		});
 	}
 
@@ -119,41 +134,51 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 		this.contextRunner.run(context -> {
 
 			DeepSeekChatModel chatModel = context.getBean(DeepSeekChatModel.class);
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
 
 			// Test weatherFunction
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
-			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage),
-					DeepSeekChatOptions.builder().toolNames("weatherFunction").build()));
+			ToolCallback weatherFunction = context.getBean("weatherFunction", ToolCallback.class);
+			ToolCallback weatherFunctionTwo = context.getBean("weatherFunctionTwo", ToolCallback.class);
 
-			String content = response.collectList()
-				.block()
-				.stream()
-				.map(ChatResponse::getResults)
-				.flatMap(List::stream)
-				.map(Generation::getOutput)
-				.map(AssistantMessage::getText)
-				.collect(Collectors.joining());
-			logger.info("Response: {}", content);
+			DeepSeekChatOptions options = DeepSeekChatOptions.builder().toolCallbacks(weatherFunction).build();
+			Prompt prompt = new Prompt(List.of(userMessage), options);
+
+			AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+			new MessageAggregator().aggregate(chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+
+			while (aggregatedRef.get().hasToolCalls()) {
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt,
+						aggregatedRef.get());
+				prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+				aggregatedRef.set(null);
+				new MessageAggregator().aggregate(chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+			}
+
+			String content = aggregatedRef.get().getResult().getOutput().getText();
 
 			assertThat(content).containsAnyOf("30.0", "30");
 			assertThat(content).containsAnyOf("10.0", "10");
 			assertThat(content).containsAnyOf("15.0", "15");
 
 			// Test weatherFunctionTwo
-			response = chatModel.stream(new Prompt(List.of(userMessage),
-					DeepSeekChatOptions.builder().toolNames("weatherFunctionTwo").build()));
+			options = DeepSeekChatOptions.builder().toolCallbacks(weatherFunctionTwo).build();
+			prompt = new Prompt(List.of(userMessage), options);
 
-			content = response.collectList()
-				.block()
-				.stream()
-				.map(ChatResponse::getResults)
-				.flatMap(List::stream)
-				.map(Generation::getOutput)
-				.map(AssistantMessage::getText)
-				.collect(Collectors.joining());
-			logger.info("Response: {}", content);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+
+			while (aggregatedRef.get().hasToolCalls()) {
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt,
+						aggregatedRef.get());
+				prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+				aggregatedRef.set(null);
+				new MessageAggregator().aggregate(chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+			}
+
+			content = aggregatedRef.get().getResult().getOutput().getText();
 
 			assertThat(content).containsAnyOf("30.0", "30");
 			assertThat(content).containsAnyOf("10.0", "10");
@@ -165,17 +190,20 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 	static class Config {
 
 		@Bean
-		@Description("Get the weather in location")
-		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunction() {
-			return new MockWeatherService();
+		public ToolCallback weatherFunction() {
+			return FunctionToolCallback.builder("weatherFunction", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build();
 		}
 
-		// Relies on the Request's JsonClassDescription annotation to provide the
-		// function description.
 		@Bean
-		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunctionTwo() {
+		public ToolCallback weatherFunctionTwo() {
 			MockWeatherService weatherService = new MockWeatherService();
-			return (weatherService::apply);
+			return FunctionToolCallback.builder("weatherFunctionTwo", weatherService::apply)
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build();
 		}
 
 	}

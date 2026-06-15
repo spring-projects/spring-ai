@@ -31,7 +31,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.RedisClient;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -56,6 +56,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Eddú Meléndez
  * @author Thomas Vitale
  * @author Soby Chacko
+ * @author Yanming Zhou
  */
 @Testcontainers
 class RedisVectorStoreIT extends BaseVectorStoreTests {
@@ -88,7 +89,7 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 
 	@BeforeEach
 	void cleanDatabase() {
-		this.contextRunner.run(context -> context.getBean(RedisVectorStore.class).getJedis().flushAll());
+		this.contextRunner.run(context -> context.getBean(RedisVectorStore.class).getJedisClient().flushAll());
 	}
 
 	@Override
@@ -101,7 +102,7 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 
 	@Test
 	void ensureIndexGetsCreated() {
-		this.contextRunner.run(context -> assertThat(context.getBean(RedisVectorStore.class).getJedis().ftList())
+		this.contextRunner.run(context -> assertThat(context.getBean(RedisVectorStore.class).getJedisClient().ftList())
 			.contains(RedisVectorStore.DEFAULT_INDEX_NAME));
 	}
 
@@ -333,7 +334,7 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 	void getNativeClientTest() {
 		this.contextRunner.run(context -> {
 			RedisVectorStore vectorStore = context.getBean(RedisVectorStore.class);
-			Optional<JedisPooled> nativeClient = vectorStore.getNativeClient();
+			Optional<RedisClient> nativeClient = vectorStore.getNativeClient();
 			assertThat(nativeClient).isPresent();
 		});
 	}
@@ -343,10 +344,12 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 
 		@Bean
 		public RedisVectorStore vectorStore(EmbeddingModel embeddingModel) {
-			// Create JedisPooled directly with container properties for more reliable
+			// Create RedisClient directly with container properties for more reliable
 			// connection
 			return RedisVectorStore
-				.builder(new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort()), embeddingModel)
+				.builder(RedisClient.builder()
+					.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
+					.build(), embeddingModel)
 				.metadataFields(MetadataField.tag("meta1"), MetadataField.tag("meta2"), MetadataField.tag("country"),
 						MetadataField.numeric("year"), MetadataField.numeric("priority"), MetadataField.tag("type"))
 				.initializeSchema(true)

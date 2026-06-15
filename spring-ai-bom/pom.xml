@@ -21,7 +21,7 @@
 
 	<groupId>org.springframework.ai</groupId>
 	<artifactId>spring-ai-bom</artifactId>
-	<version>2.0.0-SNAPSHOT</version>
+	<version>2.0.1-SNAPSHOT</version>
 
 	<packaging>pom</packaging>
 
@@ -64,6 +64,12 @@
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
+
+	<scm>
+		<url>https://github.com/spring-projects/spring-ai</url>
+		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
+		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
+	</scm>
 
 	<properties>
 		<flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
@@ -115,10 +121,44 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-advisors-vector-store</artifactId>
+				<artifactId>spring-ai-vector-store-advisor</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
+			<!-- Spring AI Tool Search Advisor -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-tool-search-advisor</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI Tool SearchTool -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-tool-search-tool-advisor</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-tool-search-tool</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-tool-search-tool-lucene</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-tool-search-tool-vectorstore</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			
 			<!-- Spring AI retry -->
 
 			<dependency>
@@ -255,12 +295,6 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-google-genai-embedding</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-minimax</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -601,12 +635,6 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-autoconfigure-model-minimax</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-model-mistral-ai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -941,12 +969,6 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-starter-model-minimax</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-mistral-ai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -1154,11 +1176,8 @@
 		<developer>
 			<id>mpollack</id>
 			<name>Mark Pollack</name>
-			<email>mpollack at vmware.com</email>
-			<organization>VMware</organization>
-			<organizationUrl>http://www.spring.io</organizationUrl>
 			<roles>
-				<role>lead</role>
+				<role>founder</role>
 			</roles>
 		</developer>
 		<developer>
@@ -1170,6 +1189,30 @@
 			<roles>
 				<role>lead</role>
 			</roles>
+		</developer>
+		<developer>
+			<id>ilayaperumalg</id>
+			<name>Ilayaperumal Gopinathan</name>
+			<organization>Broadcom</organization>
+			<organizationUrl>http://www.spring.io</organizationUrl>
+		</developer>
+		<developer>
+			<id>sobychacko</id>
+			<name>Soby Chacko</name>
+			<organization>Broadcom</organization>
+			<organizationUrl>http://www.spring.io</organizationUrl>
+		</developer>
+		<developer>
+			<id>ericbottard</id>
+			<name>Eric Bottard</name>
+			<organization>Broadcom</organization>
+			<organizationUrl>http://www.spring.io</organizationUrl>
+		</developer>
+		<developer>
+			<id>sdeleuze</id>
+			<name>Sébastien Deleuze</name>
+			<organization>Broadcom</organization>
+			<organizationUrl>http://www.spring.io</organizationUrl>
 		</developer>
 	</developers>
 

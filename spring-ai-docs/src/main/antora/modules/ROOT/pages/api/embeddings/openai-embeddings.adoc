@@ -142,17 +142,16 @@ The prefix `spring.ai.openai.embedding` is property prefix that configures the `
 |====
 | Property | Description | Default
 
-| spring.ai.openai.embedding.enabled (Required and no longer valid) | Enable OpenAI embedding model.  | true
 | spring.ai.model.embedding | Enable OpenAI embedding model.  | openai
 | spring.ai.openai.embedding.base-url   | Optional overrides the spring.ai.openai.base-url to provide embedding specific url | -
 | spring.ai.openai.embedding.api-key    | Optional overrides the spring.ai.openai.api-key to provide embedding specific api-key  | -
 | spring.ai.openai.embedding.organization-id | Optionally you can specify which organization  used for an API request. |  -
 | spring.ai.openai.embedding.project-id      | Optionally, you can specify which project is used for an API request. |  -
 | spring.ai.openai.embedding.metadata-mode      | Document content extraction mode.      | EMBED
-| spring.ai.openai.embedding.options.model      | The model to use      | text-embedding-ada-002 (other options: text-embedding-3-large, text-embedding-3-small)
-| spring.ai.openai.embedding.options.encoding-format   | The format to return the embeddings in. Can be either float or base64.  | -
-| spring.ai.openai.embedding.options.user   | A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.  | -
-| spring.ai.openai.embedding.options.dimensions   | The number of dimensions the resulting output embeddings should have. Only supported in `text-embedding-3` and later models.  | -
+| spring.ai.openai.embedding.model      | The model to use      | text-embedding-ada-002 (other options: text-embedding-3-large, text-embedding-3-small)
+| spring.ai.openai.embedding.encoding-format   | The format to return the embeddings in. Can be either float or base64.  | -
+| spring.ai.openai.embedding.user   | A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.  | -
+| spring.ai.openai.embedding.dimensions   | The number of dimensions the resulting output embeddings should have. Only supported in `text-embedding-3` and later models.  | -
 |====
 
 NOTE: You can override the common `spring.ai.openai.base-url` and `spring.ai.openai.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
@@ -160,7 +159,7 @@ The `spring.ai.openai.embedding.base-url` and `spring.ai.openai.embedding.api-ke
 Similarly, the `spring.ai.openai.chat.base-url` and `spring.ai.openai.chat.api-key` properties if set take precedence over the common properties.
 This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
 
-TIP: All properties prefixed with `spring.ai.openai.embedding.options` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.
+TIP: All properties prefixed with `spring.ai.openai.embedding` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.
 
 == Runtime Options [[embedding-options]]
 
@@ -190,7 +189,7 @@ Here is an example of a simple `@Controller` class that uses the `EmbeddingModel
 [source,application.properties]
 ----
 spring.ai.openai.api-key=YOUR_API_KEY
-spring.ai.openai.embedding.options.model=text-embedding-ada-002
+spring.ai.openai.embedding.model=text-embedding-ada-002
 ----
 
 [source,java]
@@ -258,4 +257,4 @@ EmbeddingResponse embeddingResponse = this.embeddingModel
 The `OpenAiEmbeddingOptions` provides the configuration information for the embedding requests.
 The api and options class offers a `builder()` for easy options creation.
 
-
+include::partial$openai/openai-http-client-customization.adoc[]

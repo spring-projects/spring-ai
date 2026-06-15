@@ -40,6 +40,7 @@ import org.springframework.core.retry.RetryTemplate;
  * @author Mark Pollack
  * @author Ilayaperumal Gopinathan
  * @author Yanming Zhou
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 @AutoConfiguration
@@ -56,7 +57,7 @@ public class VertexAiTextEmbeddingAutoConfiguration {
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
-		var embeddingModel = new VertexAiTextEmbeddingModel(connectionDetails, textEmbeddingProperties.getOptions(),
+		var embeddingModel = new VertexAiTextEmbeddingModel(connectionDetails, textEmbeddingProperties.toOptions(),
 				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE),
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 

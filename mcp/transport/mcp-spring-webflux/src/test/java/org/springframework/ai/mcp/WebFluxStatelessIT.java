@@ -39,7 +39,7 @@ import org.springframework.http.server.reactive.ReactorHttpHandlerAdapter;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 
-@Timeout(15)
+@Timeout(60)
 class WebFluxStatelessIT extends AbstractStatelessIntegrationTests {
 
 	private static final String CUSTOM_MESSAGE_ENDPOINT = "/otherPath/mcp/message";
@@ -58,14 +58,14 @@ class WebFluxStatelessIT extends AbstractStatelessIntegrationTests {
 			.put("httpclient",
 					McpClient.sync(HttpClientStreamableHttpTransport.builder("http://127.0.0.1:" + port)
 						.endpoint(CUSTOM_MESSAGE_ENDPOINT)
-						.build()).initializationTimeout(Duration.ofHours(10)).requestTimeout(Duration.ofHours(10)));
-		clientBuilders
-			.put("webflux", McpClient
-				.sync(WebClientStreamableHttpTransport.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + port))
-					.endpoint(CUSTOM_MESSAGE_ENDPOINT)
-					.build())
-				.initializationTimeout(Duration.ofHours(10))
-				.requestTimeout(Duration.ofHours(10)));
+						.build()).initializationTimeout(Duration.ofSeconds(10)));
+		clientBuilders.put("webflux",
+				McpClient
+					.sync(WebClientStreamableHttpTransport
+						.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + port))
+						.endpoint(CUSTOM_MESSAGE_ENDPOINT)
+						.build())
+					.initializationTimeout(Duration.ofSeconds(10)));
 	}
 
 	@Override

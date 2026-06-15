@@ -43,8 +43,6 @@ shell.log
 .profiler
 nbproject/
 
-CLAUDE.md
-AGENTS.md
 **/.claude/settings.local.json
 .devcontainer
 

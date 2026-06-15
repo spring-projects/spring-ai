@@ -21,7 +21,6 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.mistralai.MistralAiChatOptions;
-import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ReasoningEffort;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
@@ -44,21 +43,15 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.mistralai.chat";
 
-	public static final String DEFAULT_CHAT_MODEL = MistralAiApi.ChatModel.MISTRAL_SMALL.getValue();
-
-	private static final Double DEFAULT_TOP_P = 1.0;
-
-	private static final Boolean IS_ENABLED = false;
-
-	private String model = DEFAULT_CHAT_MODEL;
+	private @Nullable String model;
 
 	private @Nullable Double temperature;
 
-	private Double topP = DEFAULT_TOP_P;
+	private @Nullable Double topP;
 
 	private @Nullable Integer maxTokens;
 
-	private Boolean safePrompt = !IS_ENABLED;
+	private @Nullable Boolean safePrompt;
 
 	private @Nullable Integer randomSeed;
 
@@ -66,9 +59,9 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 	private @Nullable List<String> stop;
 
-	private Double frequencyPenalty = 0.0;
+	private @Nullable Double frequencyPenalty;
 
-	private Double presencePenalty = 0.0;
+	private @Nullable Double presencePenalty;
 
 	private @Nullable Integer n;
 
@@ -78,13 +71,11 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 	private @Nullable ReasoningEffort reasoningEffort;
 
-	private @Nullable Boolean internalToolExecutionEnabled;
-
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
+	public void setModel(@Nullable String model) {
 		this.model = model;
 	}
 
@@ -96,11 +87,11 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 		this.temperature = temperature;
 	}
 
-	public Double getTopP() {
+	public @Nullable Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(Double topP) {
+	public void setTopP(@Nullable Double topP) {
 		this.topP = topP;
 	}
 
@@ -112,11 +103,11 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 		this.maxTokens = maxTokens;
 	}
 
-	public Boolean getSafePrompt() {
+	public @Nullable Boolean getSafePrompt() {
 		return this.safePrompt;
 	}
 
-	public void setSafePrompt(Boolean safePrompt) {
+	public void setSafePrompt(@Nullable Boolean safePrompt) {
 		this.safePrompt = safePrompt;
 	}
 
@@ -144,19 +135,19 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 		this.stop = stop;
 	}
 
-	public Double getFrequencyPenalty() {
+	public @Nullable Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
 
-	public void setFrequencyPenalty(Double frequencyPenalty) {
+	public void setFrequencyPenalty(@Nullable Double frequencyPenalty) {
 		this.frequencyPenalty = frequencyPenalty;
 	}
 
-	public Double getPresencePenalty() {
+	public @Nullable Double getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
-	public void setPresencePenalty(Double presencePenalty) {
+	public void setPresencePenalty(@Nullable Double presencePenalty) {
 		this.presencePenalty = presencePenalty;
 	}
 
@@ -192,52 +183,23 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 		this.reasoningEffort = reasoningEffort;
 	}
 
-	public @Nullable Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
 	public MistralAiChatOptions toOptions() {
-		MistralAiChatOptions.Builder builder = MistralAiChatOptions.builder();
-		builder.model(this.model);
-		if (this.temperature != null) {
-			builder.temperature(this.temperature);
-		}
-		builder.topP(this.topP);
-		if (this.maxTokens != null) {
-			builder.maxTokens(this.maxTokens);
-		}
-		builder.safePrompt(this.safePrompt);
-		if (this.randomSeed != null) {
-			builder.randomSeed(this.randomSeed);
-		}
-		if (this.responseFormat != null) {
-			builder.responseFormat(this.responseFormat);
-		}
-		if (this.stop != null) {
-			builder.stop(this.stop);
-		}
-		builder.frequencyPenalty(this.frequencyPenalty);
-		builder.presencePenalty(this.presencePenalty);
-		if (this.n != null) {
-			builder.n(this.n);
-		}
-		if (this.tools != null) {
-			builder.tools(this.tools);
-		}
-		if (this.toolChoice != null) {
-			builder.toolChoice(this.toolChoice);
-		}
-		if (this.reasoningEffort != null) {
-			builder.reasoningEffort(this.reasoningEffort);
-		}
-		if (this.internalToolExecutionEnabled != null) {
-			builder.internalToolExecutionEnabled(this.internalToolExecutionEnabled);
-		}
-		return builder.build();
+		return MistralAiChatOptions.builder()
+			.model(this.model)
+			.temperature(this.temperature)
+			.topP(this.topP)
+			.maxTokens(this.maxTokens)
+			.safePrompt(this.safePrompt)
+			.randomSeed(this.randomSeed)
+			.responseFormat(this.responseFormat)
+			.stop(this.stop)
+			.frequencyPenalty(this.frequencyPenalty)
+			.presencePenalty(this.presencePenalty)
+			.n(this.n)
+			.tools(this.tools)
+			.toolChoice(this.toolChoice)
+			.reasoningEffort(this.reasoningEffort)
+			.build();
 	}
 
 	public MistralAiChatProperties() {
@@ -260,11 +222,11 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.chat.model")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public String getModel() {
+		public @Nullable String getModel() {
 			return MistralAiChatProperties.this.getModel();
 		}
 
-		public void setModel(String model) {
+		public void setModel(@Nullable String model) {
 			MistralAiChatProperties.this.setModel(model);
 		}
 
@@ -280,11 +242,11 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.chat.top-p")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public Double getTopP() {
+		public @Nullable Double getTopP() {
 			return MistralAiChatProperties.this.getTopP();
 		}
 
-		public void setTopP(Double topP) {
+		public void setTopP(@Nullable Double topP) {
 			MistralAiChatProperties.this.setTopP(topP);
 		}
 
@@ -300,11 +262,11 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.chat.safe-prompt")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public Boolean getSafePrompt() {
+		public @Nullable Boolean getSafePrompt() {
 			return MistralAiChatProperties.this.getSafePrompt();
 		}
 
-		public void setSafePrompt(Boolean safePrompt) {
+		public void setSafePrompt(@Nullable Boolean safePrompt) {
 			MistralAiChatProperties.this.setSafePrompt(safePrompt);
 		}
 
@@ -340,21 +302,21 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.chat.frequency-penalty")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public Double getFrequencyPenalty() {
+		public @Nullable Double getFrequencyPenalty() {
 			return MistralAiChatProperties.this.getFrequencyPenalty();
 		}
 
-		public void setFrequencyPenalty(Double frequencyPenalty) {
+		public void setFrequencyPenalty(@Nullable Double frequencyPenalty) {
 			MistralAiChatProperties.this.setFrequencyPenalty(frequencyPenalty);
 		}
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.chat.presence-penalty")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public Double getPresencePenalty() {
+		public @Nullable Double getPresencePenalty() {
 			return MistralAiChatProperties.this.getPresencePenalty();
 		}
 
-		public void setPresencePenalty(Double presencePenalty) {
+		public void setPresencePenalty(@Nullable Double presencePenalty) {
 			MistralAiChatProperties.this.setPresencePenalty(presencePenalty);
 		}
 
@@ -386,16 +348,6 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 		public void setToolChoice(@Nullable ToolChoice toolChoice) {
 			MistralAiChatProperties.this.setToolChoice(toolChoice);
-		}
-
-		@DeprecatedConfigurationProperty(replacement = "spring.ai.mistralai.chat.internal-tool-execution-enabled")
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		public @Nullable Boolean getInternalToolExecutionEnabled() {
-			return MistralAiChatProperties.this.getInternalToolExecutionEnabled();
-		}
-
-		public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			MistralAiChatProperties.this.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
 		}
 
 	}

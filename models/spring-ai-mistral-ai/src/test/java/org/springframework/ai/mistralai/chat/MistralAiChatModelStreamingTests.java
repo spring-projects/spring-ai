@@ -123,7 +123,7 @@ public class MistralAiChatModelStreamingTests {
 		ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 		this.chatModel = MistralAiChatModel.builder()
 			.mistralAiApi(this.api)
-			.defaultOptions(MistralAiChatOptions.builder().build())
+			.options(MistralAiChatOptions.builder().build())
 			.toolCallingManager(toolCallingManager)
 			.retryTemplate(retryTemplate)
 			.observationRegistry(ObservationRegistry.NOOP)

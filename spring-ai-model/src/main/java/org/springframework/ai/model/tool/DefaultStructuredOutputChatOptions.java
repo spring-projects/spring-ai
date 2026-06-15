@@ -17,6 +17,7 @@
 package org.springframework.ai.model.tool;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.jspecify.annotations.Nullable;
 
@@ -31,10 +32,11 @@ import org.springframework.ai.chat.prompt.DefaultChatOptionsBuilder;
  * use dedicated sub implementations specific to the model.
  *
  * @author Eric Bottard
+ * @author Sebastien Deleuze
  */
 public class DefaultStructuredOutputChatOptions extends DefaultChatOptions implements StructuredOutputChatOptions {
 
-	private @Nullable String outputSchema;
+	private final @Nullable String outputSchema;
 
 	protected DefaultStructuredOutputChatOptions(@Nullable String model, @Nullable Double frequencyPenalty,
 			@Nullable Integer maxTokens, @Nullable Double presencePenalty, @Nullable List<String> stopSequences,
@@ -61,6 +63,26 @@ public class DefaultStructuredOutputChatOptions extends DefaultChatOptions imple
 			.topK(this.getTopK())
 			.topP(this.getTopP())
 			.outputSchema(this.getOutputSchema());
+	}
+
+	@Override
+	public boolean equals(@Nullable Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		if (!super.equals(o)) {
+			return false;
+		}
+		DefaultStructuredOutputChatOptions that = (DefaultStructuredOutputChatOptions) o;
+		return Objects.equals(this.outputSchema, that.outputSchema);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), this.outputSchema);
 	}
 
 	public static class Builder<B extends DefaultStructuredOutputChatOptions.Builder<B>>

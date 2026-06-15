@@ -19,8 +19,6 @@ package org.springframework.ai.model.deepseek.autoconfigure;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
@@ -46,8 +44,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".+")
 public class DeepSeekAutoConfigurationIT {
 
-	private static final Log logger = LogFactory.getLog(DeepSeekAutoConfigurationIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.deepseek.api-key=" + System.getenv("DEEPSEEK_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(DeepSeekChatAutoConfiguration.class, RestClientAutoConfiguration.class,
@@ -60,7 +56,6 @@ public class DeepSeekAutoConfigurationIT {
 			DeepSeekChatModel client = context.getBean(DeepSeekChatModel.class);
 			String response = client.call("Hello");
 			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
 		});
 	}
 
@@ -75,7 +70,6 @@ public class DeepSeekAutoConfigurationIT {
 				.collect(Collectors.joining());
 
 			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
 		});
 	}
 

@@ -28,8 +28,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.AdvisorParams;
@@ -68,8 +66,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 @SuppressWarnings("null")
 class OpenAiChatClientIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatClientIT.class);
-
 	@Autowired
 	protected ChatModel chatModel;
 
@@ -95,8 +91,6 @@ class OpenAiChatClientIT {
 				.call()
 				.chatResponse();
 		// @formatter:on
-
-		logger.info("" + response);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
@@ -111,8 +105,6 @@ class OpenAiChatClientIT {
 				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
-
-		logger.info(collection.toString());
 		assertThat(collection).hasSize(5);
 	}
 
@@ -126,8 +118,6 @@ class OpenAiChatClientIT {
 				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms).hasSize(2);
 	}
 
@@ -143,8 +133,6 @@ class OpenAiChatClientIT {
 				.call()
 				.entity(toStringListConverter);
 		// @formatter:on
-
-		logger.info("ice cream flavors" + flavors);
 		assertThat(flavors).hasSize(5);
 		assertThat(flavors).containsAnyOf("Vanilla", "vanilla");
 	}
@@ -173,8 +161,6 @@ class OpenAiChatClientIT {
 				.call()
 				.entity(ActorsFilms.class);
 		// @formatter:on
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isNotBlank();
 	}
 
@@ -188,8 +174,6 @@ class OpenAiChatClientIT {
 				.call()
 				.entity(ActorsFilms.class);
 		// @formatter:on
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isNotBlank();
 	}
 
@@ -202,8 +186,6 @@ class OpenAiChatClientIT {
 				.call()
 				.entity(ActorsFilms.class);
 		// @formatter:on
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -218,8 +200,6 @@ class OpenAiChatClientIT {
 				.call()
 				.entity(ActorsFilms.class);
 		// @formatter:on
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -255,7 +235,6 @@ class OpenAiChatClientIT {
 		// @formatter:on
 
 		// Add debugging to understand what text we're trying to parse
-		logger.debug("Aggregated streaming text: {}", generationTextFromStream);
 
 		// Ensure we have valid JSON before attempting conversion
 		if (generationTextFromStream.trim().isEmpty()) {
@@ -263,8 +242,6 @@ class OpenAiChatClientIT {
 		}
 
 		ActorsFilms actorsFilms = outputConverter.convert(generationTextFromStream);
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -275,15 +252,13 @@ class OpenAiChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?"))
-				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()))
+					.build())
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -293,16 +268,14 @@ class OpenAiChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultTools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.defaultTools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()))
+					.build())
 				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?"))
 			.build()
 			.prompt().call().content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -313,16 +286,15 @@ class OpenAiChatClientIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
-				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()))
+					.build())
 				.stream()
 				.content();
 		// @formatter:on
 
 		String content = response.collectList().block().stream().collect(Collectors.joining());
-		logger.info("Response: {}", content);
 
 		assertThat(content).contains("30", "10", "15");
 	}
@@ -339,8 +311,6 @@ class OpenAiChatClientIT {
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info(response);
 		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
@@ -358,8 +328,6 @@ class OpenAiChatClientIT {
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info(response);
 		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
@@ -378,8 +346,6 @@ class OpenAiChatClientIT {
 		// @formatter:on
 
 		String content = response.collectList().block().stream().collect(Collectors.joining());
-
-		logger.info("Response: {}", content);
 		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
@@ -397,7 +363,6 @@ class OpenAiChatClientIT {
 
 		assertThat(response).isNotNull();
 		assertThat(response.getResult().getOutput().getMedia().get(0).getDataAsByteArray()).isNotEmpty();
-		logger.info("Response: " + response);
 	}
 
 	@Test
@@ -417,8 +382,6 @@ class OpenAiChatClientIT {
 
 		assertThat(result).isNotEmpty();
 		ActorsFilms actorsFilms = outputConverter.convert(result);
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -441,8 +404,6 @@ class OpenAiChatClientIT {
 
 		assertThat(result).isNotEmpty();
 		ActorsFilms actorsFilms = outputConverter.convert(result);
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -476,8 +437,6 @@ class OpenAiChatClientIT {
 		// @formatter:on
 
 		ActorsFilms actorsFilms = outputConverter.convert(generationTextFromStream);
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -512,8 +471,6 @@ class OpenAiChatClientIT {
 		// @formatter:on
 
 		ActorsFilms actorsFilms = outputConverter.convert(generationTextFromStream);
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}

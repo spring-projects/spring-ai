@@ -31,12 +31,12 @@ import org.springframework.core.Ordered;
 public interface Advisor extends Ordered {
 
 	/**
-	 * Useful constant for the default Chat Memory precedence order. Ensures this order
-	 * has lower priority (e.g. precedences) than the Spring AI internal advisors. It
-	 * leaves room (1000 slots) for the user to plug in their own advisors with higher
-	 * priority.
+	 * Default order for chat-memory advisors. Placed before (outside)
+	 * {@link org.springframework.ai.chat.client.advisor.ToolCallingAdvisor#DEFAULT_ORDER}
+	 * so the memory advisor wraps the tool-call loop, and the {@code ToolCallingAdvisor}
+	 * manages its own intermediate conversation history.
 	 */
-	int DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER = Ordered.HIGHEST_PRECEDENCE + 1000;
+	int DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER = Ordered.HIGHEST_PRECEDENCE + 200;
 
 	/**
 	 * Return the name of the advisor.

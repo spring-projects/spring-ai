@@ -23,7 +23,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import com.github.victools.jsonschema.generator.Option;
 import com.github.victools.jsonschema.generator.OptionPreset;
@@ -55,7 +54,26 @@ public final class JsonSchemaUtils {
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
 
-	private static final AtomicReference<@Nullable SchemaGenerator> SCHEMA_GENERATOR_CACHE = new AtomicReference<>();
+	private static final SchemaGenerator schemaGenerator;
+
+	static {
+		JacksonSchemaModule jacksonModule = new JacksonSchemaModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
+		Swagger2Module swaggerModule = new Swagger2Module();
+
+		SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12,
+				OptionPreset.PLAIN_JSON)
+			.with(Option.EXTRA_OPEN_API_FORMAT_VALUES)
+			.with(Option.PLAIN_DEFINITION_KEYS)
+			.with(swaggerModule)
+			.with(jacksonModule);
+
+		if (KotlinDetector.isKotlinReflectPresent()) {
+			configBuilder.with(new KotlinModule());
+		}
+
+		SchemaGeneratorConfig config = configBuilder.build();
+		schemaGenerator = new SchemaGenerator(config);
+	}
 
 	private JsonSchemaUtils() {
 	}
@@ -199,29 +217,10 @@ public final class JsonSchemaUtils {
 	 */
 	public static ObjectNode getJsonSchema(Type inputType) {
 
-		if (SCHEMA_GENERATOR_CACHE.get() == null) {
-
-			JacksonSchemaModule jacksonModule = new JacksonSchemaModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
-			Swagger2Module swaggerModule = new Swagger2Module();
-
-			SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12,
-					OptionPreset.PLAIN_JSON)
-				.with(Option.EXTRA_OPEN_API_FORMAT_VALUES)
-				.with(Option.PLAIN_DEFINITION_KEYS)
-				.with(swaggerModule)
-				.with(jacksonModule);
-
-			if (KotlinDetector.isKotlinReflectPresent()) {
-				configBuilder.with(new KotlinModule());
-			}
-
-			SchemaGeneratorConfig config = configBuilder.build();
-			SchemaGenerator generator = new SchemaGenerator(config);
-			SCHEMA_GENERATOR_CACHE.compareAndSet(null, generator);
+		ObjectNode node;
+		synchronized (schemaGenerator) {
+			node = schemaGenerator.generateSchema(inputType);
 		}
-
-		@SuppressWarnings("NullAway")
-		ObjectNode node = SCHEMA_GENERATOR_CACHE.get().generateSchema(inputType);
 
 		if ((inputType == Void.class) && !node.has("properties")) {
 			node.putObject("properties");

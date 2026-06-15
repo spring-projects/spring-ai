@@ -121,7 +121,9 @@ var chatOptions = AnthropicChatOptions.builder()
     .apiKey(System.getenv("ANTHROPIC_API_KEY"))
     .build();
 
-var chatModel = new AnthropicChatModel(chatOptions);
+var chatModel = AnthropicChatModel.builder()
+    .options(chatOptions)
+    .build();
 ----
 
 Or set the environment variable and let the SDK auto-detect it:
@@ -134,11 +136,12 @@ export ANTHROPIC_API_KEY=<your-api-key>
 [source,java]
 ----
 // API key will be detected from ANTHROPIC_API_KEY environment variable
-var chatModel = new AnthropicChatModel(
-    AnthropicChatOptions.builder()
+var chatModel = AnthropicChatModel.builder()
+    .options(AnthropicChatOptions.builder()
         .model("claude-sonnet-4-20250514")
         .maxTokens(1024)
-        .build());
+        .build())
+    .build();
 ----
 
 === Basic Usage
@@ -157,7 +160,7 @@ Flux<ChatResponse> stream = chatModel.stream(
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/AnthropicChatOptions.java[AnthropicChatOptions.java] class provides model configurations such as the model to use, temperature, max tokens, etc.
 
-On start-up, configure default options with the `AnthropicChatModel(options)` constructor.
+On start-up, configure default options with the `AnthropicChatModel.builder().defaultOptions(options).build()` constructor.
 
 At run-time, you can override the default options by adding new, request-specific options to the `Prompt` call.
 For example, to override the default model and temperature for a specific request:
@@ -208,8 +211,6 @@ ChatResponse response = chatModel.call(
 
 | toolChoice | Controls which tool (if any) is called by the model. Use `ToolChoiceAuto`, `ToolChoiceAny`, `ToolChoiceTool`, or `ToolChoiceNone`. | AUTO
 | toolCallbacks | List of tool callbacks to register with the model. | -
-| toolNames | Set of tool names to be resolved at runtime. | -
-| internalToolExecutionEnabled | If false, tool calls are proxied to the client for manual handling. If true, Spring AI handles tool calls internally. | true
 | disableParallelToolUse | When true, the model will use at most one tool per response. | false
 |====
 
@@ -254,9 +255,10 @@ if (response.getMetadata().getRateLimit() instanceof AnthropicRateLimit anthropi
 
 If Anthropic does not return any rate-limit headers on a given response, `getRateLimit()` returns an `EmptyRateLimit` instance instead, matching the convention used by other Spring AI providers.
 
-NOTE: Rate-limit metadata is currently only populated on the synchronous `call(Prompt)` path.
-The streaming `stream(Prompt)` path does not yet read rate-limit headers off the response; `getRateLimit()` returns an `EmptyRateLimit` for streamed responses.
-Streaming support is planned as a follow-up.
+Rate-limit metadata is populated on both the synchronous `call(Prompt)` and the streaming `stream(Prompt)` paths.
+For streaming responses the headers are read once at stream start and attached to the response chunk that carries the final usage, so `getRateLimit()` resolves to a populated `AnthropicRateLimit` there.
+
+NOTE: To read the response headers, the streaming path consumes the Anthropic SDK's blocking stream on a `Schedulers.boundedElastic()` worker, so a streaming call holds a worker thread for the duration of the stream.
 
 == Tool Calling
 
@@ -264,28 +266,88 @@ You can register custom Java functions or methods with the `AnthropicChatModel` 
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
 Read more about xref:api/tools.adoc[Tool Calling].
 
-=== Basic Tool Calling
+`AnthropicChatModel` does not execute tool calls internally.
+Tool execution must be handled externally using one of two supported approaches:
+
+* **xref:api/tools.adoc#_chatclient_tool_execution[ChatClient with ToolCallingAdvisor]** — the recommended approach for most use cases. `ToolCallingAdvisor` is automatically registered and manages the tool-call loop transparently.
+* **xref:api/tools.adoc#_user_controlled_tool_execution[User-controlled tool execution]** — use `DefaultToolCallingManager` directly when you need full control over the loop (for example, when combining tool calling with prompt caching).
+
+=== Tool Calling via ChatClient (Recommended)
+
+Use `ChatClient` with `ToolCallingAdvisor` for both synchronous and streaming tool execution.
+`ToolCallingAdvisor` is auto-registered when tools are present, so no explicit advisor configuration is required.
 
 [source,java]
 ----
-var chatOptions = AnthropicChatOptions.builder()
-    .model("claude-sonnet-4-20250514")
-    .toolCallbacks(List.of(
-        FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
-            .description("Get the weather in location")
-            .inputType(WeatherService.Request.class)
-            .build()))
+ToolCallback weatherCallback = FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
+    .description("Get the weather in location")
+    .inputType(WeatherService.Request.class)
     .build();
 
-var chatModel = new AnthropicChatModel(chatOptions);
+// Synchronous
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .user("What's the weather in Paris, Tokyo, and New York?")
+    .tools(weatherCallback)
+    .call()
+    .content();
 
-ChatResponse response = chatModel.call(
-    new Prompt("What's the weather like in San Francisco?", chatOptions));
+// Streaming
+Flux<String> stream = ChatClient.create(chatModel)
+    .prompt()
+    .user("What's the weather in Paris, Tokyo, and New York?")
+    .tools(weatherCallback)
+    .stream()
+    .content();
+----
+
+=== User-Controlled Tool Execution
+
+Use this pattern when you need direct access to the `ChatModel` API — for example, when combining tool calling with xref:api/chat/anthropic-chat.adoc#_prompt_caching[prompt caching].
+Invoke `ChatModel` directly without `ToolCallingAdvisor`; check for tool calls yourself and drive the loop using `ToolCallingManager`.
+
+[source,java]
+----
+ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+
+AnthropicChatOptions options = AnthropicChatOptions.builder()
+    .toolCallbacks(ToolCallbacks.from(new WeatherService()))
+    .build();
+
+Prompt prompt = new Prompt("What's the weather in Paris, Tokyo, and New York?", options);
+ChatResponse response = chatModel.call(prompt);
+
+while (response.hasToolCalls()) {
+    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, response);
+    prompt = new Prompt(result.conversationHistory(), options);
+    response = chatModel.call(prompt);
+}
+----
+
+For streaming, aggregate each streaming response with `MessageAggregator` to detect tool calls across chunks:
+
+[source,java]
+----
+AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+new MessageAggregator()
+    .aggregate(chatModel.stream(prompt), aggregatedRef::set)
+    .collectList().block();
+
+while (aggregatedRef.get().hasToolCalls()) {
+    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+    prompt = new Prompt(result.conversationHistory(), options);
+    aggregatedRef.set(null);
+    new MessageAggregator()
+        .aggregate(chatModel.stream(prompt), aggregatedRef::set)
+        .collectList().block();
+}
+
+String content = aggregatedRef.get().getResult().getOutput().getText();
 ----
 
 === Tool Choice Options
 
-Control how Claude uses tools with the `toolChoice` option:
+Control which tool Claude selects with the `toolChoice` option:
 
 [source,java]
 ----
@@ -320,29 +382,6 @@ The Anthropic Java SDK provides convenient static factory methods for common too
 * `ToolChoice.any()` can be used instead of `ToolChoice.ofAny(...)`.
 * `ToolChoice.none()` can be used instead of `ToolChoice.ofNone(...)`.
 ====
-
-=== Streaming Tool Calling
-
-The Anthropic SDK module fully supports tool calling in streaming mode. When Claude decides to call a tool during streaming:
-
-1. Tool call arguments are accumulated from partial JSON deltas
-2. Tools are executed when the content block completes
-3. Results are sent back to Claude
-4. The conversation continues recursively until Claude provides a final response
-
-[source,java]
-----
-Flux<ChatResponse> stream = chatModel.stream(
-    new Prompt("What's the weather in Paris, Tokyo, and New York?", chatOptions));
-
-String response = stream
-    .collectList()
-    .block()
-    .stream()
-    .map(r -> r.getResult().getOutput().getContent())
-    .filter(Objects::nonNull)
-    .collect(Collectors.joining());
-----
 
 == Streaming
 
@@ -971,7 +1010,24 @@ var cacheOptions = AnthropicCacheOptions.builder()
 | `messageTypeMinContentLength` | Minimum content length required before caching a message type. | `1`
 | `contentLengthFunction` | Custom function to compute content length (e.g., token counting). | `String::length`
 | `multiBlockSystemCaching` | When `true`, each system message becomes a separate cacheable block; cache control is applied to the second-to-last block (static prefix pattern). When `false`, all system messages are joined into one block. | `false`
+| `cacheToolResults` | When `true`, a cache breakpoint is placed on the last tool result message of a request so tool outputs are cached across tool-calling rounds. Takes effect with `CONVERSATION_HISTORY`. | `false`
 |====
+
+=== Caching Tool Results
+
+When a turn triggers tool calls, each round appends an assistant `tool_use` message and a user `tool_result` message, and the growing history is sent back to Anthropic on every round. By default the `CONVERSATION_HISTORY` breakpoint lands on the last user message, so tool results — which are appended after it — fall outside every breakpoint and are billed as uncached input on each round. This is wasteful when tool outputs are large.
+
+Enable `cacheToolResults` to place a breakpoint on the last tool result block of the request. On the next round Anthropic reads the previous round's tool results from cache instead of reprocessing them:
+
+[source,java]
+----
+var cacheOptions = AnthropicCacheOptions.builder()
+    .strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+    .cacheToolResults(true)
+    .build();
+----
+
+The breakpoint moves to the latest tool result on each round, so the previous rounds' tool outputs are read from cache while the newest is written. This consumes one additional cache breakpoint (Anthropic allows up to four per request), leaving room for the tool, system, and last-user breakpoints under `CONVERSATION_HISTORY`. The TTL and minimum content length are configurable via `messageTypeTtl(MessageType.TOOL, ...)` and `messageTypeMinContentLength(MessageType.TOOL, ...)`.
 
 === Multi-Block System Caching
 
@@ -1243,7 +1299,9 @@ public class ChatController {
             .maxTokens(1024)
             .apiKey(System.getenv("ANTHROPIC_API_KEY"))
             .build();
-        this.chatModel = new AnthropicChatModel(options);
+        this.chatModel = AnthropicChatModel.builder()
+            .options(options)
+            .build();
     }
 
     @GetMapping("/ai/generate")
@@ -1737,6 +1795,8 @@ The following features are not yet supported:
 * Google Vertex AI backend
 
 These features are planned for future releases.
+
+include::partial$anthropic/anthropic-http-client-customization.adoc[]
 
 == Additional Resources
 

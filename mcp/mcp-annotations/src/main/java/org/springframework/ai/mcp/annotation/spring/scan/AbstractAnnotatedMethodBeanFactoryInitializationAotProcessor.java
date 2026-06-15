@@ -58,7 +58,9 @@ public class AbstractAnnotatedMethodBeanFactoryInitializationAotProcessor extend
 			RuntimeHints runtimeHints = generationContext.getRuntimeHints();
 			for (Class<?> typeReference : types) {
 				runtimeHints.reflection().registerType(typeReference, MemberCategory.values());
-				logger.info("registering " + typeReference.getName() + " for reflection");
+				if (logger.isInfoEnabled()) {
+					logger.info("registering " + typeReference.getName() + " for reflection");
+				}
 			}
 		};
 	}

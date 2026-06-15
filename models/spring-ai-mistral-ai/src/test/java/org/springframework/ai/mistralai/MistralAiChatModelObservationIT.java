@@ -51,6 +51,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  * @author Thomas Vitale
  * @author Alexandros Pappas
  * @author Jason Smith
+ * @author Sebastien Deleuze
  */
 @SpringBootTest(classes = MistralAiChatModelObservationIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
@@ -195,7 +196,7 @@ public class MistralAiChatModelObservationIT {
 				TestObservationRegistry observationRegistry) {
 			return MistralAiChatModel.builder()
 				.mistralAiApi(mistralAiApi)
-				.defaultOptions(MistralAiChatOptions.builder().build())
+				.options(MistralAiChatOptions.builder().build())
 				.retryTemplate(new RetryTemplate())
 				.observationRegistry(observationRegistry)
 				.build();

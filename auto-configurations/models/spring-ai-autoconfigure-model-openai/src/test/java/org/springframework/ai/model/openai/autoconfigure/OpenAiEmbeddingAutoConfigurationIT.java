@@ -107,9 +107,9 @@ public class OpenAiEmbeddingAutoConfigurationIT {
 				assertThat(commonProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
 				assertThat(commonProperties.getApiKey()).isEqualTo("API_KEY");
 
-				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(embeddingProperties.getOptions().getUser()).isEqualTo("userXYZ");
-				assertThat(embeddingProperties.getOptions().getEncodingFormat())
+				assertThat(embeddingProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.getUser()).isEqualTo("userXYZ");
+				assertThat(embeddingProperties.getEncodingFormat())
 					.isEqualTo(OpenAiEmbeddingOptions.EncodingFormat.FLOAT);
 			});
 	}

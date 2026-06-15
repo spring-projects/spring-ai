@@ -35,8 +35,8 @@ import io.modelcontextprotocol.spec.McpSchema.LoggingMessageNotification;
 import io.modelcontextprotocol.spec.McpSchema.ProgressNotification;
 import io.modelcontextprotocol.util.Assert;
 import io.modelcontextprotocol.util.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.mcp.annotation.method.tool.utils.McpJsonSchemaGenerator;
 import org.springframework.ai.util.JsonHelper;
@@ -51,7 +51,7 @@ public final class DefaultMcpSyncRequestContext implements McpSyncRequestContext
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
 
-	private static final Logger logger = LoggerFactory.getLogger(DefaultMcpSyncRequestContext.class);
+	private static final Log logger = LogFactory.getLog(DefaultMcpSyncRequestContext.class);
 
 	private static final Map<Type, Map<String, Object>> typeSchemaCache = new ConcurrentReferenceHashMap<>(256);
 

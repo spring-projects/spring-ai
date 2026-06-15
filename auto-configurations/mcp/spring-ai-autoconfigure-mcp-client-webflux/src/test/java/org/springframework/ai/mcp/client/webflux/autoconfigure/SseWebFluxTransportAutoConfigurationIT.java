@@ -24,8 +24,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
@@ -39,8 +37,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Timeout(15)
 public class SseWebFluxTransportAutoConfigurationIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(SseWebFluxTransportAutoConfigurationIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.client.initialized=false",
 				"spring.ai.mcp.client.sse.connections.server1.url=" + host)
@@ -49,11 +45,9 @@ public class SseWebFluxTransportAutoConfigurationIT {
 
 	static String host = "http://localhost:3001";
 
-	// Uses the https://github.com/tzolov/mcp-everything-server-docker-image
 	@SuppressWarnings("resource")
-	static GenericContainer<?> container = new GenericContainer<>("docker.io/tzolov/mcp-everything-server:v2")
-		.withCommand("node dist/index.js sse")
-		.withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
+	static GenericContainer<?> container = new GenericContainer<>("docker.io/node:lts-alpine3.23")
+		.withCommand("npx -y @modelcontextprotocol/server-everything@2025.12.18 sse")
 		.withExposedPorts(3001)
 		.waitingFor(Wait.forHttp("/").forStatusCode(404));
 
@@ -62,7 +56,6 @@ public class SseWebFluxTransportAutoConfigurationIT {
 		container.start();
 		int port = container.getMappedPort(3001);
 		host = "http://" + container.getHost() + ":" + port;
-		logger.info("Container started at host: {}", host);
 	}
 
 	@AfterAll
@@ -86,9 +79,7 @@ public class SseWebFluxTransportAutoConfigurationIT {
 
 			assertThat(toolsResult).isNotNull();
 			assertThat(toolsResult.tools()).isNotEmpty();
-			assertThat(toolsResult.tools()).hasSize(8);
-
-			logger.info("tools = {}", toolsResult);
+			assertThat(toolsResult.tools()).hasSize(11);
 
 		});
 	}

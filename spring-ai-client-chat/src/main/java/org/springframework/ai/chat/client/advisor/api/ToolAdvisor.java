@@ -24,11 +24,11 @@ package org.springframework.ai.chat.client.advisor.api;
  * <p>
  * {@link org.springframework.ai.chat.client.DefaultChatClient} uses this marker to detect
  * whether a tool-call handling advisor is already present in the chain, and to avoid
- * auto-registering a duplicate when tools are configured on the {@code ChatClient}.
+ * auto-registering a duplicate.
  *
  * @author Christian Tzolov
  * @since 2.0.0
- * @see org.springframework.ai.chat.client.advisor.ToolCallAdvisor
+ * @see org.springframework.ai.chat.client.advisor.ToolCallingAdvisor
  */
 public interface ToolAdvisor extends Advisor {
 

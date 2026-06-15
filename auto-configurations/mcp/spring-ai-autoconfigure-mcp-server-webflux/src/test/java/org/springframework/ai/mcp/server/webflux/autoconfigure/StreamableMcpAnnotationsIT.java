@@ -51,8 +51,6 @@ import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import net.javacrumbs.jsonunit.assertj.JsonAssertions;
 import net.javacrumbs.jsonunit.core.Option;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 import tools.jackson.databind.json.JsonMapper;
@@ -458,8 +456,6 @@ public class StreamableMcpAnnotationsIT {
 
 		public static class TestMcpClientHandlers {
 
-			private static final Logger logger = LoggerFactory.getLogger(TestMcpClientHandlers.class);
-
 			private TestContext testContext;
 
 			public TestMcpClientHandlers(TestContext testContext) {
@@ -468,9 +464,6 @@ public class StreamableMcpAnnotationsIT {
 
 			@McpProgress(clients = "server1")
 			public void progressHandler(ProgressNotification progressNotification) {
-				logger.info("MCP PROGRESS: [{}] progress: {} total: {} message: {}",
-						progressNotification.progressToken(), progressNotification.progress(),
-						progressNotification.total(), progressNotification.message());
 				this.testContext.progressNotifications.add(progressNotification);
 				this.testContext.progressLatch.countDown();
 			}
@@ -478,12 +471,10 @@ public class StreamableMcpAnnotationsIT {
 			@McpLogging(clients = "server1")
 			public void loggingHandler(LoggingMessageNotification loggingMessage) {
 				this.testContext.loggingNotificationRef.set(loggingMessage);
-				logger.info("MCP LOGGING: [{}] {}", loggingMessage.level(), loggingMessage.data());
 			}
 
 			@McpSampling(clients = "server1")
 			public CreateMessageResult samplingHandler(CreateMessageRequest llmRequest) {
-				logger.info("MCP SAMPLING: {}", llmRequest);
 
 				String userPrompt = ((McpSchema.TextContent) llmRequest.messages().get(0).content()).text();
 				String modelHint = llmRequest.modelPreferences().hints().get(0).name();
@@ -495,7 +486,6 @@ public class StreamableMcpAnnotationsIT {
 
 			@McpElicitation(clients = "server1")
 			public ElicitResult elicitationHandler(McpSchema.ElicitRequest request) {
-				logger.info("MCP ELICITATION: {}", request);
 				return new ElicitResult(ElicitResult.Action.ACCEPT, Map.of("message", request.message()));
 			}
 

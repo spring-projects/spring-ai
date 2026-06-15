@@ -23,6 +23,7 @@ import org.springframework.ai.model.ModelResult;
  * Interface for the text to speech model.
  *
  * @author Alexandros Pappas
+ * @author Sebastien Deleuze
  */
 public interface TextToSpeechModel extends Model<TextToSpeechPrompt, TextToSpeechResponse>, StreamingTextToSpeechModel {
 
@@ -39,8 +40,21 @@ public interface TextToSpeechModel extends Model<TextToSpeechPrompt, TextToSpeec
 	@Override
 	TextToSpeechResponse call(TextToSpeechPrompt prompt);
 
-	default TextToSpeechOptions getDefaultOptions() {
+	/**
+	 * Gets the options for this model.
+	 * @return the options
+	 * @since 2.0.0
+	 */
+	default TextToSpeechOptions getOptions() {
 		return TextToSpeechOptions.builder().build();
+	}
+
+	/**
+	 * @deprecated use {@link #getOptions()} instead.
+	 */
+	@Deprecated(forRemoval = true)
+	default TextToSpeechOptions getDefaultOptions() {
+		return getOptions();
 	}
 
 }

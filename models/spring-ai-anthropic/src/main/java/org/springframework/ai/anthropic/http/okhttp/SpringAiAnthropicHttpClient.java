@@ -21,7 +21,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Proxy;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
@@ -60,6 +62,7 @@ import okhttp3.Callback;
 import okhttp3.ConnectionPool;
 import okhttp3.Dispatcher;
 import okhttp3.HttpUrl;
+import okhttp3.Interceptor;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -105,6 +108,11 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	/** Test-only accessor */
+	OkHttpClient getOkHttpClient() {
+		return this.okHttpClient;
 	}
 
 	@Override
@@ -471,6 +479,8 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 
 		private Iterable<Tag> meterTags = Collections.emptyList();
 
+		private final List<Interceptor> interceptors = new ArrayList<>();
+
 		private Builder() {
 		}
 
@@ -564,12 +574,27 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 			return this;
 		}
 
+		/**
+		 * Adds an OkHttp application interceptor. The observation interceptor is
+		 * outermost (added first); user interceptors are nested inside it. Consequently,
+		 * on the <em>request</em> path user interceptors execute after the observation
+		 * interceptor, and on the <em>response</em> path they execute before it — the
+		 * observation span is open for the full duration of the user interceptor's
+		 * execution. Use this to attach cross-cutting concerns such as OAuth2
+		 * bearer-token injection, custom logging, or tenant-propagation headers.
+		 */
+		public Builder interceptor(Interceptor interceptor) {
+			this.interceptors.add(Objects.requireNonNull(interceptor, "interceptor"));
+			return this;
+		}
+
 		public SpringAiAnthropicHttpClient build() {
 			Backend resolvedBackend = Objects.requireNonNull(this.backend, "backend");
 
 			OkHttpClient.Builder okBuilder = new OkHttpClient.Builder()
-				// SDK's RetryingHttpClient owns retries; disable here to avoid doubling.
-				.retryOnConnectionFailure(false)
+				// Recover from stale pooled connections (OkHttp's default); distinct from
+				// the SDK's status-code/backoff retries, so no duplication. See gh-6318.
+				.retryOnConnectionFailure(true)
 				.pingInterval(Duration.ofMinutes(1))
 				.connectTimeout(this.timeout.connect())
 				.readTimeout(this.timeout.read())
@@ -581,6 +606,10 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 				.builder(this.observationRegistry, OBSERVATION_NAME)
 				.build();
 			okBuilder.addInterceptor(observationInterceptor);
+
+			for (Interceptor interceptor : this.interceptors) {
+				okBuilder.addInterceptor(interceptor);
+			}
 
 			if (this.proxyAuthenticator != null) {
 				final ProxyAuthenticator pa = this.proxyAuthenticator;

@@ -19,8 +19,6 @@ package org.springframework.ai.model.chat.memory.redis.autoconfigure;
 import com.redis.testcontainers.RedisStackContainer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -35,8 +33,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 class RedisChatMemoryAutoConfigurationIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(RedisChatMemoryAutoConfigurationIT.class);
-
 	@Container
 	static RedisStackContainer redisContainer = new RedisStackContainer(
 			RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG))
@@ -44,8 +40,6 @@ class RedisChatMemoryAutoConfigurationIT {
 
 	@BeforeAll
 	static void setup() {
-		logger.info("Redis container running on host: {} and port: {}", redisContainer.getHost(),
-				redisContainer.getFirstMappedPort());
 	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()

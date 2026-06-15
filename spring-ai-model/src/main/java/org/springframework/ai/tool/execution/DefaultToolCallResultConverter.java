@@ -25,9 +25,9 @@ import java.util.Map;
 
 import javax.imageio.ImageIO;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.util.JsonHelper;
 
@@ -41,7 +41,7 @@ public final class DefaultToolCallResultConverter implements ToolCallResultConve
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
 
-	private static final Logger logger = LoggerFactory.getLogger(DefaultToolCallResultConverter.class);
+	private static final Log logger = LogFactory.getLog(DefaultToolCallResultConverter.class);
 
 	@Override
 	public String convert(@Nullable Object result, @Nullable Type returnType) {

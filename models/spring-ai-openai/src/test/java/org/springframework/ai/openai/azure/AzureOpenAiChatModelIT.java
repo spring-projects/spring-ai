@@ -28,8 +28,6 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -61,8 +59,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+"),
 		@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+") })
 class AzureOpenAiChatModelIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiChatModelIT.class);
 
 	@Autowired
 	private OpenAiChatModel chatModel;
@@ -105,7 +101,6 @@ class AzureOpenAiChatModelIT {
 				new UserMessage("Repeat the last assistant message.")));
 		response = this.chatModel.call(promptWithMessageHistory);
 
-		System.out.println(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard");
 	}
 
@@ -122,8 +117,6 @@ class AzureOpenAiChatModelIT {
 			.block()
 			.stream()
 			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
-
 		assertThat(counter.get()).withFailMessage("More than 8 chunks because there are 8 planets").isGreaterThan(8);
 
 		assertThat(content).contains("Earth", "Mars", "Jupiter");
@@ -212,7 +205,6 @@ class AzureOpenAiChatModelIT {
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -245,7 +237,6 @@ class AzureOpenAiChatModelIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = converter.convert(generationTextFromStream);
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -263,8 +254,6 @@ class AzureOpenAiChatModelIT {
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info(response);
 		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
@@ -304,7 +293,6 @@ class AzureOpenAiChatModelIT {
 		// @formatter:on
 
 		String content = response.getResult().getOutput().getText();
-		logger.info("Response with maxCompletionTokens=50: {}", content);
 
 		// Verify the response is limited and not empty
 		assertThat(content).isNotEmpty();
@@ -317,8 +305,6 @@ class AzureOpenAiChatModelIT {
 		// Verify usage metadata if available
 		if (response.getMetadata() != null && response.getMetadata().getUsage() != null) {
 			var usage = response.getMetadata().getUsage();
-			logger.info("Token usage - Total: {}, Prompt: {}, Completion: {}", usage.getTotalTokens(),
-					usage.getPromptTokens(), usage.getCompletionTokens());
 
 			// The completion tokens should be limited by maxCompletionTokens
 			if (usage.getCompletionTokens() != null) {
@@ -348,8 +334,6 @@ class AzureOpenAiChatModelIT {
 				.stream()
 				.collect(Collectors.joining());
 		// @formatter:on
-
-		logger.info("Streaming response with maxCompletionTokens=30: {}", content);
 
 		// Verify the response is limited and not empty
 		assertThat(content).isNotEmpty();
@@ -389,15 +373,12 @@ class AzureOpenAiChatModelIT {
 		// @formatter:on
 
 		String content = response.getResult().getOutput().getText();
-		logger.info("Response with maxTokens=100: {}", content);
 
 		assertThat(content).isNotEmpty();
 
 		// Verify usage metadata if available
 		if (response.getMetadata() != null && response.getMetadata().getUsage() != null) {
 			var usage = response.getMetadata().getUsage();
-			logger.info("Token usage - Total: {}, Prompt: {}, Completion: {}", usage.getTotalTokens(),
-					usage.getPromptTokens(), usage.getCompletionTokens());
 
 			// Total tokens should be close to maxTokens (Azure may slightly exceed the
 			// limit)
@@ -432,7 +413,6 @@ class AzureOpenAiChatModelIT {
 		assertThat(lastResponse.getMetadata().getModel()).as("Last response metadata should contain model").isNotNull();
 
 		String model = lastResponse.getMetadata().getModel();
-		logger.info("Final merged response model: {}", model);
 		assertThat(model).isNotEmpty();
 		// Azure OpenAI models typically contain "gpt" in their name
 		assertThat(model).containsIgnoringCase("gpt");
@@ -445,7 +425,6 @@ class AzureOpenAiChatModelIT {
 			.collect(Collectors.joining());
 
 		assertThat(content).isNotEmpty();
-		logger.info("Generated content: {}", content);
 	}
 
 	record ActorsFilms(String actor, List<String> movies) {

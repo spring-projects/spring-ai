@@ -22,8 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
@@ -44,9 +42,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 @ActiveProfiles("logging-test")
 class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 
-	private static final Logger logger = LoggerFactory
-		.getLogger(OpenAiChatClientMethodInvokingFunctionCallbackIT.class);
-
 	public static Map<String, Object> arguments = new ConcurrentHashMap<>();
 
 	@Autowired
@@ -66,17 +61,15 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(t -> t.callbacks(MethodToolCallback.builder()
+				.tools(MethodToolCallback.builder()
 					.toolDefinition(ToolDefinitions.builder(toolMethod)
 						.description("Get the weather in location")
 						.build())
 					.toolMethod(toolMethod)
-					.build()))
+					.build())
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -91,18 +84,16 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("Turn light on in the living room.")
-				.tools(t -> t.callbacks(MethodToolCallback.builder()
+				.tools(MethodToolCallback.builder()
 					.toolDefinition(ToolDefinitions.builder(toolMethod)
 						.description("Can turn lights on or off by room name")
 						.build())
 					.toolMethod(toolMethod)
 					.toolObject(targetObject)
-					.build()))
+					.build())
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
 
 		assertThat(arguments).containsEntry("roomName", "living room");
 		assertThat(arguments).containsEntry("on", true);
@@ -119,18 +110,16 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(t -> t.callbacks(MethodToolCallback.builder()
+				.tools(MethodToolCallback.builder()
 					.toolDefinition(ToolDefinitions.builder(toolMethod)
 						.description("Get the weather in location")
 						.build())
 					.toolMethod(toolMethod)
 					.toolObject(targetObject)
-					.build()))
+					.build())
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -146,19 +135,17 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(t -> t.callbacks(MethodToolCallback.builder()
+				.tools(MethodToolCallback.builder()
 								.toolDefinition(ToolDefinitions.builder(toolMethod)
 									.description("Get the weather in location")
 									.build())
 								.toolMethod(toolMethod)
 								.toolObject(targetObject)
 								.build())
-							.context(Map.of("tool", "value")))
+				.toolContext(Map.of("tool", "value"))
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
 
 		assertThat(response).contains("30", "10", "15");
 		assertThat(arguments).containsEntry("tool", "value");
@@ -175,13 +162,13 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 		// @formatter:off
 		assertThatThrownBy(() -> ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(t -> t.callbacks(MethodToolCallback.builder()
+				.tools(MethodToolCallback.builder()
 					.toolDefinition(ToolDefinitions.builder(toolMethod)
 						.description("Get the weather in location")
 						.build())
 					.toolMethod(toolMethod)
 					.toolObject(targetObject)
-					.build()))
+					.build())
 				.call()
 				.content())
 				.isInstanceOf(IllegalArgumentException.class)
@@ -199,18 +186,16 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("Turn light on in the living room.")
-				.tools(t -> t.callbacks(MethodToolCallback.builder()
+				.tools(MethodToolCallback.builder()
 					.toolDefinition(ToolDefinitions.builder(toolMethod)
 						.description("Can turn lights on in the Living Room")
 						.build())
 					.toolMethod(toolMethod)
 					.toolObject(targetObject)
-					.build()))
+					.build())
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
 
 		assertThat(arguments).containsEntry("turnLivingRoomLightOn", true);
 	}
@@ -231,8 +216,6 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 		}
 
 		public static String getWeatherStatic(String city, Unit unit) {
-
-			logger.info("City: " + city + " Unit: " + unit);
 
 			arguments.put("city", city);
 			arguments.put("unit", unit);
@@ -263,7 +246,6 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 		public void turnLight(String roomName, boolean on) {
 			arguments.put("roomName", roomName);
 			arguments.put("on", on);
-			logger.info("Turn light in room: {} to: {}", roomName, on);
 		}
 
 		public void turnLivingRoomLightOn() {

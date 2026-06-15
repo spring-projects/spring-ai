@@ -56,6 +56,7 @@ import static org.mockito.BDDMockito.mock;
  * @author Thomas Vitale
  * @author Alexandros Pappas
  * @author Jason Smith
+ * @author Sebastien Deleuze
  */
 @SuppressWarnings("unchecked")
 class MistralAiRetryTests {
@@ -77,7 +78,7 @@ class MistralAiRetryTests {
 
 		this.chatModel = MistralAiChatModel.builder()
 			.mistralAiApi(this.mistralAiApi)
-			.defaultOptions(MistralAiChatOptions.builder()
+			.options(MistralAiChatOptions.builder()
 				.temperature(0.7)
 				.topP(1.0)
 				.safePrompt(false)

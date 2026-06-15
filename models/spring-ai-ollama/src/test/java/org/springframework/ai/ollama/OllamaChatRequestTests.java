@@ -39,18 +39,20 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  * @author Alexandros Pappas
  * @author Nicolas Krier
+ * @author Sebastien Deleuze
  */
 class OllamaChatRequestTests {
 
 	private final OllamaChatModel chatModel = OllamaChatModel.builder()
 		.ollamaApi(OllamaApi.builder().build())
-		.defaultOptions(OllamaChatOptions.builder().model("MODEL_NAME").topK(99).temperature(66.6).numGPU(1).build())
+		.options(OllamaChatOptions.builder().model("MODEL_NAME").topK(99).temperature(66.6).numGPU(1).build())
 		.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 		.build();
 
 	@Test
-	void createRequestWithDefaultOptions() {
-		var prompt = this.chatModel.buildRequestPrompt(new Prompt("Test message content"));
+	void createRequestWithOptions() {
+		var options = OllamaChatOptions.builder().model("MODEL_NAME").topK(99).temperature(66.6).numGPU(1).build();
+		var prompt = new Prompt("Test message content", options);
 
 		var request = this.chatModel.ollamaChatRequest(prompt, false);
 
@@ -73,7 +75,7 @@ class OllamaChatRequestTests {
 			.topP(0.5)
 			.numGPU(2)
 			.build();
-		var prompt = this.chatModel.buildRequestPrompt(new Prompt("Test message content", promptOptions));
+		var prompt = new Prompt("Test message content", promptOptions);
 
 		var request = this.chatModel.ollamaChatRequest(prompt, true);
 
@@ -82,7 +84,7 @@ class OllamaChatRequestTests {
 
 		assertThat(request.model()).isEqualTo(OllamaModel.QWEN_2_5_3B.id());
 		assertThat(request.options()).containsEntry("temperature", 0.8);
-		assertThat(request.options()).containsEntry("top_k", 99);
+		assertThat(request.options()).doesNotContainKey("top_k");
 		assertThat(request.options()).containsEntry("num_gpu", 2);
 		assertThat(request.options()).containsEntry("top_p", 0.5);
 	}
@@ -91,7 +93,7 @@ class OllamaChatRequestTests {
 	public void createRequestWithPromptOptionsModelOverride() {
 		// Ollama runtime options.
 		OllamaChatOptions promptOptions = OllamaChatOptions.builder().model("PROMPT_MODEL").build();
-		var prompt = this.chatModel.buildRequestPrompt(new Prompt("Test message content", promptOptions));
+		var prompt = new Prompt("Test message content", promptOptions);
 
 		var request = this.chatModel.ollamaChatRequest(prompt, true);
 
@@ -99,54 +101,9 @@ class OllamaChatRequestTests {
 	}
 
 	@Test
-	public void createRequestWithDefaultOptionsModelOverride() {
-		OllamaChatModel chatModel = OllamaChatModel.builder()
-			.ollamaApi(OllamaApi.builder().build())
-			.defaultOptions(OllamaChatOptions.builder().model("DEFAULT_OPTIONS_MODEL").build())
-			.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
-			.build();
-
-		var prompt1 = chatModel.buildRequestPrompt(new Prompt("Test message content"));
-
-		var request = chatModel.ollamaChatRequest(prompt1, true);
-
-		assertThat(request.model()).isEqualTo("DEFAULT_OPTIONS_MODEL");
-
-		// Prompt options should override the default options.
-		OllamaChatOptions promptOptions = OllamaChatOptions.builder().model("PROMPT_MODEL").build();
-		var prompt2 = chatModel.buildRequestPrompt(new Prompt("Test message content", promptOptions));
-
-		request = chatModel.ollamaChatRequest(prompt2, true);
-
-		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
-	}
-
-	@Test
-	public void createRequestWithDefaultOptionsModelChatOptionsOverride() {
-		OllamaChatModel chatModel = OllamaChatModel.builder()
-			.ollamaApi(OllamaApi.builder().build())
-			.defaultOptions(OllamaChatOptions.builder().model("DEFAULT_OPTIONS_MODEL").build())
-			.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
-			.build();
-
-		var prompt1 = chatModel.buildRequestPrompt(new Prompt("Test message content"));
-
-		var request = chatModel.ollamaChatRequest(prompt1, true);
-
-		assertThat(request.model()).isEqualTo("DEFAULT_OPTIONS_MODEL");
-
-		// Prompt options should override the default options.
-		OllamaChatOptions promptOptions = OllamaChatOptions.builder().model("PROMPT_MODEL").build();
-		var prompt2 = chatModel.buildRequestPrompt(new Prompt("Test message content", promptOptions));
-
-		request = chatModel.ollamaChatRequest(prompt2, true);
-
-		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
-	}
-
-	@Test
 	void createRequestWithAllMessageTypes() {
-		var prompt = this.chatModel.buildRequestPrompt(new Prompt(createMessagesWithAllMessageTypes()));
+		var prompt = new Prompt(createMessagesWithAllMessageTypes(),
+				OllamaChatOptions.builder().model("PROMPT_MODEL").build());
 
 		var request = this.chatModel.ollamaChatRequest(prompt, false);
 

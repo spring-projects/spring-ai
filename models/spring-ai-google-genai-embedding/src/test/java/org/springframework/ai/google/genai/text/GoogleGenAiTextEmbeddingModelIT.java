@@ -29,7 +29,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.ai.google.genai.GoogleGenAiEmbeddingConnectionDetails;
+import org.springframework.ai.google.genai.embedding.GoogleGenAiEmbeddingConnectionDetails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;

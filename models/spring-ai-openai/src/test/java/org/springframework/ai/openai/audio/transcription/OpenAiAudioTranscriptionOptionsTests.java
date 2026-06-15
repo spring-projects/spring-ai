@@ -16,6 +16,10 @@
 
 package org.springframework.ai.openai.audio.transcription;
 
+import java.util.List;
+import java.util.Map;
+
+import com.openai.models.audio.transcriptions.TranscriptionCreateParams;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.audio.transcription.AudioTranscriptionOptions;
@@ -23,6 +27,11 @@ import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Unit tests for {@link OpenAiAudioTranscriptionOptions}.
+ *
+ * @author guan xu
+ */
 class OpenAiAudioTranscriptionOptionsTests {
 
 	@Test
@@ -37,6 +46,30 @@ class OpenAiAudioTranscriptionOptionsTests {
 		OpenAiAudioTranscriptionOptions merged = OpenAiAudioTranscriptionOptions.builder().merge(source).build();
 
 		assertThat(merged.getModel()).isEqualTo("generic-model");
+	}
+
+	@Test
+	void testOptionsBuilderMergeCustomHeadersAndTimestampGranularities() {
+		OpenAiAudioTranscriptionOptions defaultOptions = OpenAiAudioTranscriptionOptions.builder()
+			.customHeaders(Map.of("default-header", "default-value"))
+			.timestampGranularities(List.of(TranscriptionCreateParams.TimestampGranularity.WORD))
+			.build();
+
+		OpenAiAudioTranscriptionOptions requestOptions = OpenAiAudioTranscriptionOptions.builder()
+			.customHeaders(Map.of("merged-header1", "merged-value1", "merged-header2", "merged-value2"))
+			.timestampGranularities(List.of(TranscriptionCreateParams.TimestampGranularity.SEGMENT))
+			.build();
+
+		OpenAiAudioTranscriptionOptions merged = OpenAiAudioTranscriptionOptions.builder()
+			.from(defaultOptions)
+			.merge(requestOptions)
+			.build();
+
+		assertThat(merged.getCustomHeaders()).containsExactlyInAnyOrderEntriesOf(Map.of("default-header",
+				"default-value", "merged-header1", "merged-value1", "merged-header2", "merged-value2"));
+		assertThat(merged.getTimestampGranularities()).containsExactly(
+				TranscriptionCreateParams.TimestampGranularity.WORD,
+				TranscriptionCreateParams.TimestampGranularity.SEGMENT);
 	}
 
 }

@@ -21,7 +21,6 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.ollama.api.OllamaChatOptions;
-import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.ThinkOption;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
@@ -37,7 +36,7 @@ public class OllamaChatProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.ollama.chat";
 
-	private String model = OllamaModel.MISTRAL.id();
+	private @Nullable String model;
 
 	private @Nullable Object format;
 
@@ -45,7 +44,7 @@ public class OllamaChatProperties {
 
 	private @Nullable Boolean truncate;
 
-	private @Nullable ThinkOption thinkOption;
+	private @Nullable OllamaThinkProperties think;
 
 	private @Nullable Boolean useNUMA;
 
@@ -107,13 +106,11 @@ public class OllamaChatProperties {
 
 	private @Nullable List<String> stop;
 
-	private @Nullable Boolean internalToolExecutionEnabled;
-
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
+	public void setModel(@Nullable String model) {
 		this.model = model;
 	}
 
@@ -141,12 +138,12 @@ public class OllamaChatProperties {
 		this.truncate = truncate;
 	}
 
-	public @Nullable ThinkOption getThinkOption() {
-		return this.thinkOption;
+	public @Nullable OllamaThinkProperties getThink() {
+		return this.think;
 	}
 
-	public void setThinkOption(@Nullable ThinkOption thinkOption) {
-		this.thinkOption = thinkOption;
+	public void setThink(@Nullable OllamaThinkProperties think) {
+		this.think = think;
 	}
 
 	public @Nullable Boolean getUseNUMA() {
@@ -389,123 +386,57 @@ public class OllamaChatProperties {
 		this.stop = stop;
 	}
 
-	public @Nullable Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
 	public OllamaChatOptions toOptions() {
-		OllamaChatOptions.Builder builder = OllamaChatOptions.builder();
-		builder.model(this.model);
-		if (this.format != null) {
-			builder.format(this.format);
+		return OllamaChatOptions.builder()
+			.model(this.model)
+			.format(this.format)
+			.keepAlive(this.keepAlive)
+			.truncate(this.truncate)
+			.thinkOption(toThinkOption(this.think))
+			.useNUMA(this.useNUMA)
+			.numCtx(this.numCtx)
+			.numBatch(this.numBatch)
+			.numGPU(this.numGPU)
+			.mainGPU(this.mainGPU)
+			.lowVRAM(this.lowVRAM)
+			.f16KV(this.f16KV)
+			.logitsAll(this.logitsAll)
+			.vocabOnly(this.vocabOnly)
+			.useMMap(this.useMMap)
+			.useMLock(this.useMLock)
+			.numThread(this.numThread)
+			.numKeep(this.numKeep)
+			.seed(this.seed)
+			.numPredict(this.numPredict)
+			.topK(this.topK)
+			.topP(this.topP)
+			.minP(this.minP)
+			.tfsZ(this.tfsZ)
+			.typicalP(this.typicalP)
+			.repeatLastN(this.repeatLastN)
+			.temperature(this.temperature)
+			.repeatPenalty(this.repeatPenalty)
+			.presencePenalty(this.presencePenalty)
+			.frequencyPenalty(this.frequencyPenalty)
+			.mirostat(this.mirostat)
+			.mirostatTau(this.mirostatTau)
+			.mirostatEta(this.mirostatEta)
+			.penalizeNewline(this.penalizeNewline)
+			.stop(this.stop)
+			.build();
+	}
+
+	private @Nullable ThinkOption toThinkOption(@Nullable OllamaThinkProperties thinkOption) {
+		if (thinkOption == null) {
+			return null;
 		}
-		if (this.keepAlive != null) {
-			builder.keepAlive(this.keepAlive);
-		}
-		if (this.truncate != null) {
-			builder.truncate(this.truncate);
-		}
-		if (this.thinkOption != null) {
-			builder.thinkOption(this.thinkOption);
-		}
-		if (this.useNUMA != null) {
-			builder.useNUMA(this.useNUMA);
-		}
-		if (this.numCtx != null) {
-			builder.numCtx(this.numCtx);
-		}
-		if (this.numBatch != null) {
-			builder.numBatch(this.numBatch);
-		}
-		if (this.numGPU != null) {
-			builder.numGPU(this.numGPU);
-		}
-		if (this.mainGPU != null) {
-			builder.mainGPU(this.mainGPU);
-		}
-		if (this.lowVRAM != null) {
-			builder.lowVRAM(this.lowVRAM);
-		}
-		if (this.f16KV != null) {
-			builder.f16KV(this.f16KV);
-		}
-		if (this.logitsAll != null) {
-			builder.logitsAll(this.logitsAll);
-		}
-		if (this.vocabOnly != null) {
-			builder.vocabOnly(this.vocabOnly);
-		}
-		if (this.useMMap != null) {
-			builder.useMMap(this.useMMap);
-		}
-		if (this.useMLock != null) {
-			builder.useMLock(this.useMLock);
-		}
-		if (this.numThread != null) {
-			builder.numThread(this.numThread);
-		}
-		if (this.numKeep != null) {
-			builder.numKeep(this.numKeep);
-		}
-		if (this.seed != null) {
-			builder.seed(this.seed);
-		}
-		if (this.numPredict != null) {
-			builder.numPredict(this.numPredict);
-		}
-		if (this.topK != null) {
-			builder.topK(this.topK);
-		}
-		if (this.topP != null) {
-			builder.topP(this.topP);
-		}
-		if (this.minP != null) {
-			builder.minP(this.minP);
-		}
-		if (this.tfsZ != null) {
-			builder.tfsZ(this.tfsZ);
-		}
-		if (this.typicalP != null) {
-			builder.typicalP(this.typicalP);
-		}
-		if (this.repeatLastN != null) {
-			builder.repeatLastN(this.repeatLastN);
-		}
-		if (this.temperature != null) {
-			builder.temperature(this.temperature);
-		}
-		if (this.repeatPenalty != null) {
-			builder.repeatPenalty(this.repeatPenalty);
-		}
-		if (this.presencePenalty != null) {
-			builder.presencePenalty(this.presencePenalty);
-		}
-		if (this.frequencyPenalty != null) {
-			builder.frequencyPenalty(this.frequencyPenalty);
-		}
-		if (this.mirostat != null) {
-			builder.mirostat(this.mirostat);
-		}
-		if (this.mirostatTau != null) {
-			builder.mirostatTau(this.mirostatTau);
-		}
-		if (this.mirostatEta != null) {
-			builder.mirostatEta(this.mirostatEta);
-		}
-		if (this.penalizeNewline != null) {
-			builder.penalizeNewline(this.penalizeNewline);
-		}
-		if (this.stop != null) {
-			builder.stop(this.stop);
-		}
-		if (this.internalToolExecutionEnabled != null) {
-			builder.internalToolExecutionEnabled(this.internalToolExecutionEnabled);
-		}
-		return builder.build();
+		return switch (thinkOption) {
+			case TRUE -> ThinkOption.ThinkBoolean.ENABLED;
+			case FALSE -> ThinkOption.ThinkBoolean.DISABLED;
+			case HIGH -> ThinkOption.ThinkLevel.HIGH;
+			case MEDIUM -> ThinkOption.ThinkLevel.MEDIUM;
+			case LOW -> ThinkOption.ThinkLevel.LOW;
+		};
 	}
 
 	private Options options = new Options();
@@ -524,11 +455,11 @@ public class OllamaChatProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.ollama.chat.model")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public String getModel() {
+		public @Nullable String getModel() {
 			return OllamaChatProperties.this.getModel();
 		}
 
-		public void setModel(String model) {
+		public void setModel(@Nullable String model) {
 			OllamaChatProperties.this.setModel(model);
 		}
 
@@ -562,14 +493,15 @@ public class OllamaChatProperties {
 			OllamaChatProperties.this.setTruncate(truncate);
 		}
 
-		@DeprecatedConfigurationProperty(replacement = "spring.ai.ollama.chat.think-option")
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.ollama.chat.think")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public @Nullable ThinkOption getThinkOption() {
-			return OllamaChatProperties.this.getThinkOption();
+		public @Nullable OllamaThinkProperties getThinkOption() {
+			return OllamaChatProperties.this.getThink();
 		}
 
-		public void setThinkOption(@Nullable ThinkOption thinkOption) {
-			OllamaChatProperties.this.setThinkOption(thinkOption);
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public void setThinkOption(@Nullable OllamaThinkProperties think) {
+			OllamaChatProperties.this.setThink(think);
 		}
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.ollama.chat.use-numa")
@@ -870,16 +802,6 @@ public class OllamaChatProperties {
 
 		public void setStop(@Nullable List<String> stop) {
 			OllamaChatProperties.this.setStop(stop);
-		}
-
-		@DeprecatedConfigurationProperty(replacement = "spring.ai.ollama.chat.internal-tool-execution-enabled")
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		public @Nullable Boolean getInternalToolExecutionEnabled() {
-			return OllamaChatProperties.this.getInternalToolExecutionEnabled();
-		}
-
-		public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			OllamaChatProperties.this.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
 		}
 
 	}

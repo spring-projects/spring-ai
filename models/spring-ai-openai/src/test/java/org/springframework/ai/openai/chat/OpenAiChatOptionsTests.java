@@ -17,10 +17,8 @@
 package org.springframework.ai.openai.chat;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -40,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Julien Dubois
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatOptions, Builder> {
 
@@ -74,7 +73,7 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 			.topLogprobs(5)
 			.maxTokens(100)
 			.maxCompletionTokens(50)
-			.N(2)
+			.n(2)
 			.presencePenalty(0.8)
 			.streamOptions(StreamOptions.builder().includeUsage(true).build())
 			.seed(12345)
@@ -88,7 +87,7 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 			.reasoningEffort("medium")
 			.verbosity("low")
 			.serviceTier("auto")
-			.internalToolExecutionEnabled(false)
+			.promptCacheKey("test-cache-key")
 			.customHeaders(customHeaders)
 			.toolContext(toolContext)
 			.extraBody(extraBody)
@@ -117,55 +116,10 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 		assertThat(options.getReasoningEffort()).isEqualTo("medium");
 		assertThat(options.getVerbosity()).isEqualTo("low");
 		assertThat(options.getServiceTier()).isEqualTo("auto");
-		assertThat(options.getInternalToolExecutionEnabled()).isFalse();
+		assertThat(options.getPromptCacheKey()).isEqualTo("test-cache-key");
 		assertThat(options.getCustomHeaders()).isEqualTo(customHeaders);
 		assertThat(options.getToolContext()).isEqualTo(toolContext);
 		assertThat(options.getExtraBody()).isEqualTo(extraBody);
-	}
-
-	@Test
-	void testCopy() {
-		Map<String, Integer> logitBias = new HashMap<>();
-		logitBias.put("token1", 1);
-
-		List<String> stop = List.of("stop1");
-		Map<String, String> metadata = Map.of("key1", "value1");
-
-		OpenAiChatOptions originalOptions = OpenAiChatOptions.builder()
-			.model("test-model")
-			.deploymentName("test-deployment")
-			.frequencyPenalty(0.5)
-			.logitBias(logitBias)
-			.logprobs(true)
-			.topLogprobs(5)
-			.maxCompletionTokens(50)
-			.N(2)
-			.presencePenalty(0.8)
-			.streamOptions(StreamOptions.builder().includeUsage(false).build())
-			.seed(12345)
-			.stop(stop)
-			.temperature(0.7)
-			.topP(0.9)
-			.user("test-user")
-			.parallelToolCalls(false)
-			.store(true)
-			.metadata(metadata)
-			.reasoningEffort("low")
-			.verbosity("high")
-			.serviceTier("default")
-			.internalToolExecutionEnabled(true)
-			.customHeaders(Map.of("header1", "value1"))
-			.build();
-
-		OpenAiChatOptions copiedOptions = originalOptions.copy();
-
-		assertThat(copiedOptions).isNotSameAs(originalOptions).isEqualTo(originalOptions);
-		// Verify collections are copied
-		assertThat(copiedOptions.getStop()).isNotSameAs(originalOptions.getStop());
-		assertThat(copiedOptions.getCustomHeaders()).isNotSameAs(originalOptions.getCustomHeaders());
-		assertThat(copiedOptions.getToolCallbacks()).isNotSameAs(originalOptions.getToolCallbacks());
-		assertThat(copiedOptions.getToolNames()).isNotSameAs(originalOptions.getToolNames());
-		assertThat(copiedOptions.getToolContext()).isNotSameAs(originalOptions.getToolContext());
 	}
 
 	@Test
@@ -198,7 +152,6 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 			.reasoningEffort("high")
 			.verbosity("medium")
 			.serviceTier("auto")
-			.internalToolExecutionEnabled(false)
 			.customHeaders(Map.of("header2", "value2"))
 			.build();
 
@@ -223,7 +176,6 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 		assertThat(options.getReasoningEffort()).isEqualTo("high");
 		assertThat(options.getVerbosity()).isEqualTo("medium");
 		assertThat(options.getServiceTier()).isEqualTo("auto");
-		assertThat(options.getInternalToolExecutionEnabled()).isFalse();
 		assertThat(options.getCustomHeaders()).isEqualTo(Map.of("header2", "value2"));
 	}
 
@@ -231,7 +183,7 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 	void testDefaultValues() {
 		OpenAiChatOptions options = OpenAiChatOptions.builder().build();
 
-		assertThat(options.getModel()).isNull();
+		assertThat(options.getModel()).isEqualTo(OpenAiChatOptions.DEFAULT_CHAT_MODEL);
 		assertThat(options.getDeploymentName()).isNull();
 		assertThat(options.getFrequencyPenalty()).isNull();
 		assertThat(options.getLogitBias()).isNull();
@@ -259,11 +211,9 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 		assertThat(options.getReasoningEffort()).isNull();
 		assertThat(options.getVerbosity()).isNull();
 		assertThat(options.getServiceTier()).isNull();
-		assertThat(options.getToolCallbacks()).isNotNull().isEmpty();
-		assertThat(options.getToolNames()).isNotNull().isEmpty();
-		assertThat(options.getInternalToolExecutionEnabled()).isNull();
-		assertThat(options.getCustomHeaders()).isNotNull().isEmpty();
-		assertThat(options.getToolContext()).isNotNull().isEmpty();
+		assertThat(options.getToolCallbacks()).isNull();
+		assertThat(options.getCustomHeaders()).isNull();
+		assertThat(options.getToolContext()).isNull();
 		assertThat(options.getOutputSchema()).isNull();
 	}
 
@@ -309,7 +259,7 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 			.extraBody(null)
 			.build();
 
-		assertThat(options.getModel()).isNull();
+		assertThat(options.getModel()).isEqualTo(OpenAiChatOptions.DEFAULT_CHAT_MODEL);
 		assertThat(options.getTemperature()).isNull();
 		assertThat(options.getLogitBias()).isNull();
 		assertThat(options.getStop()).isNull();
@@ -371,20 +321,6 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 		options = options.mutate().stopSequences(newStop).build();
 		assertThat(options.getStop()).isEqualTo(newStop);
 		assertThat(options.getStopSequences()).isEqualTo(newStop);
-	}
-
-	@Test
-	void testCopyChangeIndependence() {
-		OpenAiChatOptions original = OpenAiChatOptions.builder().model("original-model").temperature(0.5).build();
-
-		OpenAiChatOptions copied = original.copy();
-
-		// Modify original
-		original = original.mutate().model("modified-model").temperature(0.9).build();
-
-		// Verify copy is unchanged
-		assertThat(copied.getModel()).isEqualTo("original-model");
-		assertThat(copied.getTemperature()).isEqualTo(0.5);
 	}
 
 	@Test
@@ -473,13 +409,9 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 			}
 		};
 
-		OpenAiChatOptions options = OpenAiChatOptions.builder()
-			.toolCallbacks(callback1, callback2)
-			.toolNames("tool1", "tool2")
-			.build();
+		OpenAiChatOptions options = OpenAiChatOptions.builder().toolCallbacks(callback1, callback2).build();
 
 		assertThat(options.getToolCallbacks()).hasSize(2).containsExactly(callback1, callback2);
-		assertThat(options.getToolNames()).hasSize(2).contains("tool1", "tool2");
 	}
 
 	@Test
@@ -507,26 +439,10 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 	}
 
 	@Test
-	void testToolNamesSet() {
-		Set<String> toolNames = new HashSet<>(Set.of("tool1", "tool2", "tool3"));
-
-		OpenAiChatOptions options = OpenAiChatOptions.builder().toolNames(toolNames).build();
-
-		assertThat(options.getToolNames()).hasSize(3).containsExactlyInAnyOrder("tool1", "tool2", "tool3");
-	}
-
-	@Test
 	void testToolCallbacksBuilderValidation() {
 		// Test null validation
 		OpenAiChatOptions options1 = OpenAiChatOptions.builder().toolCallbacks((List<ToolCallback>) null).build();
-		assertThat(options1.getToolCallbacks()).isEmpty();
-	}
-
-	@Test
-	void testToolNamesBuilderValidation() {
-		// Test null validation
-		OpenAiChatOptions options1 = OpenAiChatOptions.builder().toolNames((Set<String>) null).build();
-		assertThat(options1.getToolNames()).isEmpty();
+		assertThat(options1.getToolCallbacks()).isNull();
 	}
 
 	@Test
@@ -543,17 +459,12 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 	@Test
 	void testCombineWithToolCallingChatOptions() {
 		OpenAiChatOptions merged = OpenAiChatOptions.builder()
-			.combineWith(ToolCallingChatOptions.builder()
-				.model("override-model")
-				.temperature(0.9)
-				.toolNames("tool1")
-				.internalToolExecutionEnabled(true))
+			.combineWith(ToolCallingChatOptions.builder().model("override-model").temperature(0.9))
 			.build();
 
 		assertThat(merged.getModel()).isEqualTo("override-model");
 		assertThat(merged.getTemperature()).isEqualTo(0.9);
-		assertThat(merged.getToolNames()).containsExactly("tool1");
-		assertThat(merged.getInternalToolExecutionEnabled()).isTrue();
+
 	}
 
 	@Test

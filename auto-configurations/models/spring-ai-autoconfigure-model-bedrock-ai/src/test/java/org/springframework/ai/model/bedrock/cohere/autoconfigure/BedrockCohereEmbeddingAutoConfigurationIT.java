@@ -99,8 +99,8 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 				assertThat(awsProperties.getRegion()).isEqualTo(Region.US_EAST_1.id());
 				assertThat(properties.getModel()).isEqualTo("MODEL_XYZ");
 
-				assertThat(properties.getOptions().getInputType()).isEqualTo(InputType.CLASSIFICATION);
-				assertThat(properties.getOptions().getTruncate()).isEqualTo(CohereEmbeddingRequest.Truncate.START);
+				assertThat(properties.getInputType()).isEqualTo(InputType.CLASSIFICATION);
+				assertThat(properties.getTruncate()).isEqualTo(CohereEmbeddingRequest.Truncate.START);
 
 				assertThat(awsProperties.getAccessKey()).isEqualTo("ACCESS_KEY");
 				assertThat(awsProperties.getSecretKey()).isEqualTo("SECRET_KEY");

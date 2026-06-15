@@ -108,18 +108,30 @@ The prefix `spring.ai.deepseek` is used as the property prefix that lets you con
 
 ==== Configuration Properties
 
+[NOTE]
+====
+Enabling and disabling of the chat auto-configurations are now configured via top level properties with the prefix `spring.ai.model.chat`.
+
+To enable, spring.ai.model.chat=deepseek (It is enabled by default)
+
+To disable, spring.ai.model.chat=none (or any value which doesn't match deepseek)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.deepseek.chat` is the property prefix that lets you configure the chat model implementation for DeepSeek.
 
 [cols="3,5,1"]
 |====
 | Property | Description | Default
 
-| spring.ai.deepseek.chat.enabled | Enables the DeepSeek chat model.  | true
+| spring.ai.deepseek.chat.enabled (Removed and no longer valid) | Enables the DeepSeek chat model.  | true
+| spring.ai.model.chat | Enable DeepSeek chat model.  | deepseek
 | spring.ai.deepseek.chat.base-url | Optionally overrides the spring.ai.deepseek.base-url to provide a chat-specific URL | `+https://api.deepseek.com/+`
 | spring.ai.deepseek.chat.api-key | Optionally overrides the spring.ai.deepseek.api-key to provide a chat-specific API key | -
 | spring.ai.deepseek.chat.completions-path | The path to the chat completions endpoint | `/chat/completions`
 | spring.ai.deepseek.chat.beta-prefix-path | The prefix path to the beta feature endpoint | `/beta`
-| spring.ai.deepseek.chat.model | ID of the model to use. You can use either deepseek-reasoner or deepseek-chat. | deepseek-chat
+| spring.ai.deepseek.chat.model | ID of the model to use. You can use deepseek-v4-flash, deepseek-v4-pro, deepseek-chat or deepseek-reasoner. | deepseek-v4-flash
 | spring.ai.deepseek.chat.frequency-penalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | 0.0f
 | spring.ai.deepseek.chat.max-tokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
 | spring.ai.deepseek.chat.presence-penalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. |  0.0f
@@ -128,9 +140,7 @@ The prefix `spring.ai.deepseek.chat` is the property prefix that lets you config
 | spring.ai.deepseek.chat.top-p | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or temperature, but not both. | 1.0F
 | spring.ai.deepseek.chat.logprobs | Whether to return log probabilities of the output tokens or not. If true, returns the log probabilities of each output token returned in the content of the message. | -
 | spring.ai.deepseek.chat.top-logprobs | An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability. logprobs must be set to true if this parameter is used. | -
-| spring.ai.deepseek.chat.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
 | spring.ai.deepseek.chat.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
-| spring.ai.deepseek.chat.internal-tool-execution-enabled | If false, the Spring AI will not handle the tool calls internally, but will proxy them to the client. Then it is the client's responsibility to handle the tool calls, dispatch them to the appropriate function, and return the results. If true (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | true
 |====
 
 NOTE: You can override the common `spring.ai.deepseek.base-url` and `spring.ai.deepseek.api-key` for the `ChatModel` implementations.
@@ -154,7 +164,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates. Please provide the JSON response without any code block markers such as ```json```.",
         DeepSeekChatOptions.builder()
-            .withModel(DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue())
+            .withModel(DeepSeekApi.ChatModel.DEEPSEEK_V4_PRO.getValue())
             .withTemperature(0.8f)
         .build()
     ));
@@ -171,7 +181,7 @@ Add an `application.properties` file under the `src/main/resources` directory to
 [source,application.properties]
 ----
 spring.ai.deepseek.api-key=YOUR_API_KEY
-spring.ai.deepseek.chat.model=deepseek-chat
+spring.ai.deepseek.chat.model=deepseek-v4-pro
 spring.ai.deepseek.chat.temperature=0.8
 ----
 
@@ -205,6 +215,91 @@ public class ChatController {
 }
 ----
 
+== Tool Calling
+
+You can register custom Java functions with the `DeepSeekChatModel` and have the DeepSeek model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
+This is a powerful technique to connect the LLM capabilities with external tools and APIs.
+Read more about xref:api/tools.adoc[Tool Calling].
+
+`DeepSeekChatModel` does not execute tool calls internally.
+Tool execution must be handled externally using one of two supported approaches:
+
+* **xref:api/tools.adoc#_advisor_controlled_tool_execution_with_toolcallingadvisor[ChatClient with ToolCallingAdvisor]** — the recommended approach for most use cases. `ToolCallingAdvisor` is automatically registered when tools are present and manages the tool-call loop transparently.
+* **xref:api/tools.adoc#_user_controlled_tool_execution[User-controlled tool execution]** — use `DefaultToolCallingManager` directly when you need full control over the loop (for example, when combining tool calling with direct `ChatModel` access).
+
+=== Tool Calling via ChatClient (Recommended)
+
+Use `ChatClient` for both synchronous and streaming tool execution.
+`ToolCallingAdvisor` is auto-registered when tools are present, so no explicit advisor configuration is required.
+
+[source,java]
+----
+ToolCallback weatherCallback = FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
+    .description("Get the weather in location")
+    .inputType(WeatherService.Request.class)
+    .build();
+
+// Synchronous
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .user("What's the weather in Paris, Tokyo, and New York?")
+    .tools(weatherCallback)
+    .call()
+    .content();
+
+// Streaming
+Flux<String> stream = ChatClient.create(chatModel)
+    .prompt()
+    .user("What's the weather in Paris, Tokyo, and New York?")
+    .tools(weatherCallback)
+    .stream()
+    .content();
+----
+
+=== User-Controlled Tool Execution
+
+Use this pattern when you need direct access to the `ChatModel` API and want full control over the tool-call loop.
+Invoke `ChatModel` directly without `ToolCallingAdvisor`; check for tool calls yourself and drive the loop using `ToolCallingManager`.
+
+[source,java]
+----
+ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+
+DeepSeekChatOptions options = DeepSeekChatOptions.builder()
+    .toolCallbacks(ToolCallbacks.from(new WeatherService()))
+    .build();
+
+Prompt prompt = new Prompt("What's the weather in Paris, Tokyo, and New York?", options);
+ChatResponse response = chatModel.call(prompt);
+
+while (response.hasToolCalls()) {
+    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, response);
+    prompt = new Prompt(result.conversationHistory(), options);
+    response = chatModel.call(prompt);
+}
+----
+
+For streaming, aggregate each streaming response with `MessageAggregator` to detect tool calls across chunks:
+
+[source,java]
+----
+AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+new MessageAggregator()
+    .aggregate(chatModel.stream(prompt), aggregatedRef::set)
+    .collectList().block();
+
+while (aggregatedRef.get().hasToolCalls()) {
+    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+    prompt = new Prompt(result.conversationHistory(), options);
+    aggregatedRef.set(null);
+    new MessageAggregator()
+        .aggregate(chatModel.stream(prompt), aggregatedRef::set)
+        .collectList().block();
+}
+
+String content = aggregatedRef.get().getResult().getOutput().getText();
+----
+
 == Chat Prefix Completion
 The chat prefix completion follows the Chat Completion API, where users provide an assistant's prefix message for the model to complete the rest of the message.
 
@@ -235,57 +330,27 @@ public class CodeGenerateController {
 }
 ----
 
-== Reasoning Model (deepseek-reasoner)
-The `deepseek-reasoner` is a reasoning model developed by DeepSeek. Before delivering the final answer, the model first generates a Chain of Thought (CoT) to enhance the accuracy of its responses. Our API provides users with access to the CoT content generated by `deepseek-reasoner`, enabling them to view, display, and distill it.
+== Reasoning support
 
-You can use the `DeepSeekAssistantMessage` to get the CoT content generated by `deepseek-reasoner`.
+You can use the `DeepSeekAssistantMessage` to get the CoT content generated by models supporting that feature.
 [source,java]
 ----
-public void deepSeekReasonerExample() {
+public void deepSeekReasoningExample() {
     DeepSeekChatOptions promptOptions = DeepSeekChatOptions.builder()
-            .model(DeepSeekApi.ChatModel.DEEPSEEK_REASONER.getValue())
             .build();
     Prompt prompt = new Prompt("9.11 and 9.8, which is greater?", promptOptions);
     ChatResponse response = chatModel.call(prompt);
 
-    // Get the CoT content generated by deepseek-reasoner, only available when using deepseek-reasoner model
+    // Get the CoT content generated by the model
     DeepSeekAssistantMessage deepSeekAssistantMessage = (DeepSeekAssistantMessage) response.getResult().getOutput();
     String reasoningContent = deepSeekAssistantMessage.getReasoningContent();
     String text = deepSeekAssistantMessage.getText();
 }
 ----
 == Reasoning Model Multi-round Conversation
-In each round of the conversation, the model outputs the CoT (reasoning_content) and the final answer (content). In the next round of the conversation, the CoT from previous rounds is not concatenated into the context, as illustrated in the following diagram:
+In each round of the conversation, the model outputs the CoT (`reasoning_content`) and the final answer (`content`). In the next round of the conversation, the CoT from previous rounds is not concatenated into the context, as illustrated in the following diagram:
 
 image::deepseek_r1_multiround_example.png[Multimodal Test Image, align="center"]
-
-Please note that if the reasoning_content field is included in the sequence of input messages, the API will return a 400 error. Therefore, you should remove the reasoning_content field from the API response before making the API request, as demonstrated in the API example.
-[source,java]
-----
-public String deepSeekReasonerMultiRoundExample() {
-    List<Message> messages = new ArrayList<>();
-    messages.add(new UserMessage("9.11 and 9.8, which is greater?"));
-    DeepSeekChatOptions promptOptions = DeepSeekChatOptions.builder()
-            .model(DeepSeekApi.ChatModel.DEEPSEEK_REASONER.getValue())
-            .build();
-
-    Prompt prompt = new Prompt(messages, promptOptions);
-    ChatResponse response = chatModel.call(prompt);
-
-    DeepSeekAssistantMessage deepSeekAssistantMessage = (DeepSeekAssistantMessage) response.getResult().getOutput();
-    String reasoningContent = deepSeekAssistantMessage.getReasoningContent();
-    String text = deepSeekAssistantMessage.getText();
-
-    messages.add(AssistantMessage.builder().content(Objects.requireNonNull(text)).build());
-    messages.add(new UserMessage("How many Rs are there in the word 'strawberry'?"));
-    Prompt prompt2 = new Prompt(messages, promptOptions);
-    ChatResponse response2 = chatModel.call(prompt2);
-
-    DeepSeekAssistantMessage deepSeekAssistantMessage2 = (DeepSeekAssistantMessage) response2.getResult().getOutput();
-    String reasoningContent2 = deepSeekAssistantMessage2.getReasoningContent();
-    return deepSeekAssistantMessage2.getText();
-}
-----
 
 == Manual Configuration
 
@@ -320,13 +385,13 @@ DeepSeekApi deepSeekApi = DeepSeekApi.builder()
         .apiKey(System.getenv("DEEPSEEK_API_KEY"))
         .build();
 DeepSeekChatOptions options = DeepSeekChatOptions.builder()
-        .model(DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue())
+        .model(DeepSeekApi.ChatModel.DEEPSEEK_V4_PRO.getValue())
         .temperature(0.4)
         .maxTokens(200)
         .build();
 DeepSeekChatModel chatModel = DeepSeekChatModel.builder()
         .deepSeekApi(deepSeekApi)
-        .defaultOptions(options)
+        .options(options)
         .build();
 ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
@@ -355,11 +420,11 @@ ChatCompletionMessage chatCompletionMessage =
 
 // Sync request
 ResponseEntity<ChatCompletion> response = deepSeekApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(chatCompletionMessage), DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue(), 0.7, false));
+    new ChatCompletionRequest(List.of(chatCompletionMessage), DeepSeekApi.ChatModel.DEEPSEEK_V4_FLASH.getValue(), 0.7, false));
 
 // Streaming request
 Flux<ChatCompletionChunk> streamResponse = deepSeekApi.chatCompletionStream(
-    new ChatCompletionRequest(List.of(chatCompletionMessage), DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue(), 0.7, true));
+    new ChatCompletionRequest(List.of(chatCompletionMessage), DeepSeekApi.ChatModel.DEEPSEEK_V4_FLASH.getValue(), 0.7, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-deepseek/src/main/java/org/springframework/ai/deepseek/api/DeepSeekApi.java[DeepSeekApi.java]'s JavaDoc for further information.

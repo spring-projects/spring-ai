@@ -19,21 +19,25 @@ package org.springframework.ai.openai;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import com.openai.client.OpenAIClient;
 import com.openai.core.MultipartField;
 import com.openai.models.audio.transcriptions.TranscriptionCreateParams;
 import com.openai.models.audio.transcriptions.TranscriptionCreateResponse;
+import io.micrometer.observation.ObservationRegistry;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.audio.transcription.AudioTranscription;
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponseMetadata;
 import org.springframework.ai.audio.transcription.TranscriptionModel;
+import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
@@ -47,14 +51,15 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiAudioTranscriptionModel.class);
+	private static final Log logger = LogFactory.getLog(OpenAiAudioTranscriptionModel.class);
 
 	private final OpenAIClient openAiClient;
 
-	private final OpenAiAudioTranscriptionOptions defaultOptions;
+	private final OpenAiAudioTranscriptionOptions options;
 
 	/**
 	 * Creates a new builder for {@link OpenAiAudioTranscriptionModel}.
@@ -73,16 +78,15 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 	}
 
 	private OpenAiAudioTranscriptionModel(Builder builder) {
-		this.defaultOptions = builder.options != null ? builder.options
-				: OpenAiAudioTranscriptionOptions.builder().build();
+		this.options = builder.options != null ? builder.options : OpenAiAudioTranscriptionOptions.builder().build();
 		this.openAiClient = Objects.requireNonNullElseGet(builder.openAiClient,
-				() -> OpenAiSetup.setupSyncClient(this.defaultOptions.getBaseUrl(), this.defaultOptions.getApiKey(),
-						this.defaultOptions.getCredential(), this.defaultOptions.getMicrosoftDeploymentName(),
-						this.defaultOptions.getMicrosoftFoundryServiceVersion(),
-						this.defaultOptions.getOrganizationId(), this.defaultOptions.isMicrosoftFoundry(),
-						this.defaultOptions.isGitHubModels(), this.defaultOptions.getModel(),
-						this.defaultOptions.getTimeout(), this.defaultOptions.getMaxRetries(),
-						this.defaultOptions.getProxy(), this.defaultOptions.getCustomHeaders()));
+				() -> OpenAiSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
+						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
+						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
+						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
+						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
+						this.options.getCustomHeaders(), ObservationRegistry.NOOP, null,
+						builder.httpClientCustomizers));
 	}
 
 	/**
@@ -90,12 +94,12 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 	 * @return the transcription options
 	 */
 	public OpenAiAudioTranscriptionOptions getOptions() {
-		return this.defaultOptions;
+		return this.options;
 	}
 
 	@Override
 	public AudioTranscriptionResponse call(AudioTranscriptionPrompt transcriptionPrompt) {
-		OpenAiAudioTranscriptionOptions options = this.defaultOptions;
+		OpenAiAudioTranscriptionOptions options = this.options;
 		if (transcriptionPrompt.getOptions() != null) {
 			if (transcriptionPrompt.getOptions() instanceof OpenAiAudioTranscriptionOptions runtimeOptions) {
 				options = merge(runtimeOptions, options);
@@ -115,7 +119,9 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 
 		TranscriptionCreateParams params = buildParams(options, audioBytes, filename);
 		if (logger.isTraceEnabled()) {
-			logger.trace("OpenAiAudioTranscriptionModel call with model: {}", options.getModel());
+			if (logger.isTraceEnabled()) {
+				logger.trace("OpenAiAudioTranscriptionModel call with model: " + options.getModel());
+			}
 		}
 
 		TranscriptionCreateResponse response = this.openAiClient.audio().transcriptions().create(params);
@@ -195,12 +201,14 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 
 		private @Nullable OpenAiAudioTranscriptionOptions options;
 
+		private List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers = new ArrayList<>();
+
 		private Builder() {
 		}
 
 		private Builder(OpenAiAudioTranscriptionModel model) {
 			this.openAiClient = model.openAiClient;
-			this.options = model.defaultOptions;
+			this.options = model.options;
 		}
 
 		/**
@@ -220,6 +228,31 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 		 */
 		public Builder options(OpenAiAudioTranscriptionOptions options) {
 			this.options = options;
+			return this;
+		}
+
+		/**
+		 * Registers an {@link OpenAiHttpClientBuilderCustomizer} that mutates the
+		 * underlying OkHttp client builder before the OpenAI clients are constructed. Use
+		 * this to attach OkHttp interceptors (e.g. OAuth2 bearer-token injection), swap
+		 * the dispatcher executor, or tweak any other OkHttp setting. Customizers are
+		 * applied in the order they are registered, after Spring AI's own defaults, so
+		 * user code wins.
+		 */
+		public Builder httpClientBuilderCustomizer(OpenAiHttpClientBuilderCustomizer customizer) {
+			Assert.notNull(customizer, "customizer cannot be null");
+			this.httpClientCustomizers.add(customizer);
+			return this;
+		}
+
+		/**
+		 * Sets the full list of {@link OpenAiHttpClientBuilderCustomizer customizers} to
+		 * apply, replacing any customizers registered earlier on this builder. The order
+		 * of the list is preserved when invoking the customizers.
+		 */
+		public Builder httpClientBuilderCustomizers(List<OpenAiHttpClientBuilderCustomizer> customizers) {
+			Assert.notNull(customizers, "customizers cannot be null");
+			this.httpClientCustomizers = new ArrayList<>(customizers);
 			return this;
 		}
 

@@ -26,8 +26,6 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.converse.BedrockChatOptions;
@@ -59,8 +57,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RequiresAwsCredentials
 class BedrockConverseChatClientIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(BedrockConverseChatClientIT.class);
-
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemTextResource;
 
@@ -82,8 +78,6 @@ class BedrockConverseChatClientIT {
 				.call()
 				.chatResponse();
 		// @formatter:on
-
-		logger.info("" + response);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
@@ -97,8 +91,6 @@ class BedrockConverseChatClientIT {
 				.call()
 				.entity(new ParameterizedTypeReference<>() { });
 		// @formatter:on
-
-		logger.info(collection.toString());
 		assertThat(collection).hasSize(5);
 	}
 
@@ -112,8 +104,6 @@ class BedrockConverseChatClientIT {
 				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms).hasSize(2);
 	}
 
@@ -129,8 +119,6 @@ class BedrockConverseChatClientIT {
 				.call()
 				.entity(toStringListConverter);
 		// @formatter:on
-
-		logger.info("ice cream flavors" + flavors);
 		assertThat(flavors).hasSize(5);
 		assertThat(flavors).containsAnyOf("Vanilla", "vanilla");
 	}
@@ -158,8 +146,6 @@ class BedrockConverseChatClientIT {
 		.call()
 		.entity(ActorsFilms.class);
 		// @formatter:on
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isNotBlank();
 	}
 
@@ -172,8 +158,6 @@ class BedrockConverseChatClientIT {
 		.call()
 		.entity(ActorsFilms.class);
 		// @formatter:on
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -207,8 +191,6 @@ class BedrockConverseChatClientIT {
 		// @formatter:on
 
 		ActorsFilms actorsFilms = outputConverter.convert(generationTextFromStream);
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -224,8 +206,6 @@ class BedrockConverseChatClientIT {
 				.call()
 				.entity(ActorsFilms.class);
 		// @formatter:on
-
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isNotBlank();
 	}
 
@@ -235,16 +215,13 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel)
 				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()))
+					.build())
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
-
 		assertThat(response).contains("30", "10", "15");
 	}
 
@@ -254,10 +231,10 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel)
 				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()))
+					.build())
 				.call()
 				.chatResponse();
 		// @formatter:on
@@ -265,8 +242,6 @@ class BedrockConverseChatClientIT {
 		var metadata = response.getMetadata();
 
 		assertThat(metadata.getUsage()).isNotNull();
-
-		logger.info(metadata.getUsage().toString());
 
 		assertThat(metadata.getUsage().getPromptTokens()).isGreaterThan(500);
 		assertThat(metadata.getUsage().getPromptTokens()).isLessThan(3500);
@@ -276,9 +251,6 @@ class BedrockConverseChatClientIT {
 
 		assertThat(metadata.getUsage().getTotalTokens())
 			.isEqualTo(metadata.getUsage().getPromptTokens() + metadata.getUsage().getCompletionTokens());
-
-		logger.info("Response: {}", response);
-
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
@@ -288,17 +260,14 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel)
 				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()))
+					.build())
 				.advisors(new SimpleLoggerAdvisor())
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
-
 		assertThat(response).contains("30", "10", "15");
 	}
 
@@ -307,19 +276,16 @@ class BedrockConverseChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-			.defaultTools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+			.defaultTools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
-				.build()))
+				.build())
 			.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius."))
 			.build()
 			.prompt()
 			.call()
 			.content();
 		// @formatter:on
-
-		logger.info("Response: {}", response);
-
 		assertThat(response).contains("30", "10", "15");
 	}
 
@@ -329,22 +295,19 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		Flux<ChatResponse> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()))
+					.build())
 				.stream()
 				.chatResponse();
 		// @formatter:on
 
 		List<ChatResponse> chatResponses = response.collectList().block();
 
-		// chatResponses.forEach(cr -> logger.info("Response: {}", cr));
 		var lastChatResponse = chatResponses.get(chatResponses.size() - 1);
 		var metadata = lastChatResponse.getMetadata();
 		assertThat(metadata.getUsage()).isNotNull();
-
-		logger.info(metadata.getUsage().toString());
 
 		assertThat(metadata.getUsage().getPromptTokens()).isGreaterThan(900);
 		assertThat(metadata.getUsage().getPromptTokens()).isLessThan(2000);
@@ -359,8 +322,6 @@ class BedrockConverseChatClientIT {
 			.filter(cr -> cr.getResult() != null)
 			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
-
 		assertThat(content).contains("30", "10", "15");
 	}
 
@@ -370,17 +331,15 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in Paris? Return the temperature in Celsius.")
-				.tools(t -> t.callbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
-					.build()))
+					.build())
 				.stream()
 				.content();
 		// @formatter:on
 
 		String content = response.collectList().block().stream().collect(Collectors.joining());
-		logger.info("Response: {}", content);
-
 		assertThat(content).contains("15");
 	}
 
@@ -396,8 +355,6 @@ class BedrockConverseChatClientIT {
 				.call()
 				.content();
 		// @formatter:on
-
-		logger.info(response);
 		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
@@ -416,8 +373,6 @@ class BedrockConverseChatClientIT {
 		.call()
 		.content();
 		// @formatter:on
-
-		logger.info(response);
 		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
@@ -436,8 +391,6 @@ class BedrockConverseChatClientIT {
 		.call()
 		.content();
 		// @formatter:on
-
-		logger.info(response);
 		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
@@ -456,8 +409,6 @@ class BedrockConverseChatClientIT {
 		// @formatter:on
 
 		String content = response.collectList().block().stream().collect(Collectors.joining());
-
-		logger.info("Response: {}", content);
 		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 

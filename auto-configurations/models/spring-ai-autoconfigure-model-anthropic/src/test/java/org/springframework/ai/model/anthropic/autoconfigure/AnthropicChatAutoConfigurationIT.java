@@ -21,8 +21,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
@@ -46,8 +44,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 class AnthropicChatAutoConfigurationIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatAutoConfigurationIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.anthropic.api-key=" + System.getenv("ANTHROPIC_API_KEY"))
 		.withConfiguration(
@@ -59,7 +55,6 @@ class AnthropicChatAutoConfigurationIT {
 			AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
 			String response = chatModel.call("Hello");
 			assertThat(response).isNotEmpty();
-			logger.info("Response: {}", response);
 		});
 	}
 
@@ -70,7 +65,6 @@ class AnthropicChatAutoConfigurationIT {
 			var options = AnthropicChatOptions.builder().maxTokens(100).build();
 			var response = chatModel.call(new Prompt("Tell me a joke", options));
 			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
-			logger.info("Response: {}", response);
 		});
 	}
 
@@ -90,7 +84,6 @@ class AnthropicChatAutoConfigurationIT {
 				.collect(Collectors.joining());
 
 			assertThat(response).isNotEmpty();
-			logger.info("Response: {}", response);
 		});
 	}
 

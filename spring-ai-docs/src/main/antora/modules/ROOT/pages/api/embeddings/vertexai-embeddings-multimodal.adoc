@@ -98,11 +98,11 @@ The prefix `spring.ai.vertex.ai.embedding.multimodal` is the property prefix tha
 
 | spring.ai.vertex.ai.embedding.multimodal.enabled (Removed and no longer valid) | Enable Vertex AI Embedding API model. | true
 | spring.ai.model.embedding.multimodal=vertexai | Enable Vertex AI Embedding API model. | vertexai
-| spring.ai.vertex.ai.embedding.multimodal.options.model | You can get multimodal embeddings by using the following model: | multimodalembedding@001
-| spring.ai.vertex.ai.embedding.multimodal.options.dimensions | Specify lower-dimension embeddings. By default, an embedding request returns a 1408 float vector for a data type. You can also specify lower-dimension embeddings (128, 256, or 512 float vectors) for text and image data.  | 1408
-| spring.ai.vertex.ai.embedding.multimodal.options.video-start-offset-sec | The start offset of the video segment in seconds. If not specified, it's calculated with max(0, endOffsetSec - 120).  | -
-| spring.ai.vertex.ai.embedding.multimodal.options.video-end-offset-sec | The end offset of the video segment in seconds. If not specified, it's calculated with min(video length, startOffSec + 120). If both startOffSec and endOffSec are specified, endOffsetSec is adjusted to min(startOffsetSec+120, endOffsetSec).  | -
-| spring.ai.vertex.ai.embedding.multimodal.options.video-interval-sec | The interval of the video the embedding will be generated. The minimum value for interval_sec is 4.
+| spring.ai.vertex.ai.embedding.multimodal.model | You can get multimodal embeddings by using the following model: | multimodalembedding@001
+| spring.ai.vertex.ai.embedding.multimodal.dimensions | Specify lower-dimension embeddings. By default, an embedding request returns a 1408 float vector for a data type. You can also specify lower-dimension embeddings (128, 256, or 512 float vectors) for text and image data.  | 1408
+| spring.ai.vertex.ai.embedding.multimodal.video-start-offset-sec | The start offset of the video segment in seconds. If not specified, it's calculated with max(0, endOffsetSec - 120).  | -
+| spring.ai.vertex.ai.embedding.multimodal.video-end-offset-sec | The end offset of the video segment in seconds. If not specified, it's calculated with min(video length, startOffSec + 120). If both startOffSec and endOffSec are specified, endOffsetSec is adjusted to min(startOffsetSec+120, endOffsetSec).  | -
+| spring.ai.vertex.ai.embedding.multimodal.video-interval-sec | The interval of the video the embedding will be generated. The minimum value for interval_sec is 4.
 If the interval is less than 4, an InvalidArgumentError is returned. There are no limitations on the maximum value
 of the interval. However, if the interval is larger than min(video length, 120s), it impacts the quality of the generated embeddings. Default value: 16.  | -
 |====

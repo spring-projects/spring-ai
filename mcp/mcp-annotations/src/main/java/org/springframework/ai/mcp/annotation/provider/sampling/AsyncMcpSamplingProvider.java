@@ -24,8 +24,8 @@ import java.util.stream.Stream;
 import io.modelcontextprotocol.spec.McpSchema.CreateMessageRequest;
 import io.modelcontextprotocol.spec.McpSchema.CreateMessageResult;
 import io.modelcontextprotocol.util.Assert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.annotation.McpSampling;
@@ -64,7 +64,7 @@ import org.springframework.ai.mcp.annotation.method.sampling.AsyncSamplingSpecif
  */
 public class AsyncMcpSamplingProvider {
 
-	private static final Logger logger = LoggerFactory.getLogger(AsyncMcpSamplingProvider.class);
+	private static final Log logger = LogFactory.getLog(AsyncMcpSamplingProvider.class);
 
 	private final List<Object> samplingObjects;
 
@@ -112,7 +112,9 @@ public class AsyncMcpSamplingProvider {
 			logger.warn("No sampling methods found");
 		}
 		if (samplingHandlers.size() > 1) {
-			logger.warn("Multiple sampling methods found: {}", samplingHandlers.size());
+			if (logger.isWarnEnabled()) {
+				logger.warn("Multiple sampling methods found: " + samplingHandlers.size());
+			}
 		}
 
 		return samplingHandlers;

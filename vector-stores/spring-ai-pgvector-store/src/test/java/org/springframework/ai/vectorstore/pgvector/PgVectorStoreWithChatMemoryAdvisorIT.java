@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -45,7 +46,6 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.lang.NonNull;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -57,6 +57,7 @@ import static org.mockito.Mockito.verify;
  * @author Fabian Krüger
  * @author Soby Chacko
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  */
 @Testcontainers
 class PgVectorStoreWithChatMemoryAdvisorIT {
@@ -71,7 +72,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 
 	private static @NonNull ChatModel chatModelAlwaysReturnsTheSameReply() {
 		ChatModel chatModel = mock(ChatModel.class);
-		given(chatModel.getDefaultOptions()).willReturn(ChatOptions.builder().build());
+		given(chatModel.getOptions()).willReturn(ChatOptions.builder().build());
 		ArgumentCaptor<Prompt> argumentCaptor = ArgumentCaptor.forClass(Prompt.class);
 		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("""
 				Why don't scientists trust atoms?
@@ -128,7 +129,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 	 */
 	private static @NonNull ChatModel chatModelWithStreamingSupport() {
 		ChatModel chatModel = mock(ChatModel.class);
-		given(chatModel.getDefaultOptions()).willReturn(ChatOptions.builder().build());
+		given(chatModel.getOptions()).willReturn(ChatOptions.builder().build());
 
 		// Mock the regular call method
 		ArgumentCaptor<Prompt> argumentCaptor = ArgumentCaptor.forClass(Prompt.class);
@@ -164,7 +165,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 	 */
 	private static @NonNull ChatModel chatModelWithProblematicStreamingBehavior() {
 		ChatModel chatModel = mock(ChatModel.class);
-		given(chatModel.getDefaultOptions()).willReturn(ChatOptions.builder().build());
+		given(chatModel.getOptions()).willReturn(ChatOptions.builder().build());
 
 		// Mock the regular call method
 		ArgumentCaptor<Prompt> argumentCaptor = ArgumentCaptor.forClass(Prompt.class);

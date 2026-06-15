@@ -29,11 +29,9 @@ public class OpenAiEmbeddingProperties extends AbstractOpenAiProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.embedding";
 
-	public static final String DEFAULT_EMBEDDING_MODEL = OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL;
-
 	private MetadataMode metadataMode = MetadataMode.EMBED;
 
-	private @Nullable String model = DEFAULT_EMBEDDING_MODEL;
+	private @Nullable String model;
 
 	private @Nullable String user;
 
@@ -82,20 +80,12 @@ public class OpenAiEmbeddingProperties extends AbstractOpenAiProperties {
 	}
 
 	public OpenAiEmbeddingOptions toOptions() {
-		OpenAiEmbeddingOptions.Builder builder = OpenAiEmbeddingOptions.builder();
-		if (this.getModel() != null) {
-			builder.model(this.getModel());
-		}
-		if (this.user != null) {
-			builder.user(this.user);
-		}
-		if (this.encodingFormat != null) {
-			builder.encodingFormat(this.encodingFormat);
-		}
-		if (this.dimensions != null) {
-			builder.dimensions(this.dimensions);
-		}
-		return builder.build();
+		return OpenAiEmbeddingOptions.builder()
+			.model(this.model)
+			.user(this.user)
+			.encodingFormat(this.encodingFormat)
+			.dimensions(this.dimensions)
+			.build();
 	}
 
 	private Options options = new Options();

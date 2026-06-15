@@ -69,32 +69,8 @@ class BedrockChatOptionsTests extends AbstractChatOptionsTests<BedrockChatOption
 	}
 
 	@Test
-	void testCopy() {
-		BedrockChatOptions original = BedrockChatOptions.builder()
-			.model("test-model")
-			.frequencyPenalty(0.0)
-			.maxTokens(100)
-			.presencePenalty(0.0)
-			.stopSequences(List.of("stop1", "stop2"))
-			.temperature(0.7)
-			.topP(0.8)
-			.topK(50)
-			.toolContext(Map.of("key1", "value1"))
-			.outputSchema("{\"type\":\"object\"}")
-			.build();
-
-		BedrockChatOptions copied = original.copy();
-
-		assertThat(copied).isNotSameAs(original).isEqualTo(original);
-		// Ensure deep copy
-		assertThat(copied.getStopSequences()).isNotSameAs(original.getStopSequences());
-		assertThat(copied.getToolContext()).isNotSameAs(original.getToolContext());
-		assertThat(copied.getOutputSchema()).isEqualTo(original.getOutputSchema());
-	}
-
-	@Test
 	void testDefaultValues() {
-		BedrockChatOptions options = new BedrockChatOptions();
+		BedrockChatOptions options = BedrockChatOptions.builder().build();
 		assertThat(options.getModel()).isNull();
 		assertThat(options.getFrequencyPenalty()).isNull();
 		assertThat(options.getMaxTokens()).isNull();
@@ -108,9 +84,25 @@ class BedrockChatOptionsTests extends AbstractChatOptionsTests<BedrockChatOption
 
 	@Test
 	void testImplementsStructuredOutputChatOptions() {
-		BedrockChatOptions options = new BedrockChatOptions();
+		BedrockChatOptions options = BedrockChatOptions.builder().build();
 
 		assertThat(options).isInstanceOf(StructuredOutputChatOptions.class);
+	}
+
+	@Test
+	void testCombineWithCollections() {
+		BedrockChatOptions base = BedrockChatOptions.builder()
+			.requestParameters(Map.of("base-key", "base-value"))
+			.build();
+
+		BedrockChatOptions override = BedrockChatOptions.builder()
+			.requestParameters(Map.of("override-key", "override-value"))
+			.build();
+
+		BedrockChatOptions merged = base.mutate().combineWith(override.mutate()).build();
+
+		assertThat(merged.getRequestParameters()).containsEntry("base-key", "base-value");
+		assertThat(merged.getRequestParameters()).containsEntry("override-key", "override-value");
 	}
 
 }

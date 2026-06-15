@@ -26,8 +26,8 @@ import io.modelcontextprotocol.server.McpStatelessServerFeatures.AsyncCompletion
 import io.modelcontextprotocol.spec.McpSchema.CompleteRequest;
 import io.modelcontextprotocol.spec.McpSchema.CompleteResult;
 import io.modelcontextprotocol.util.Assert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.annotation.McpComplete;
@@ -46,7 +46,7 @@ import org.springframework.ai.mcp.annotation.method.complete.AsyncStatelessMcpCo
  */
 public class AsyncStatelessMcpCompleteProvider {
 
-	private static final Logger logger = LoggerFactory.getLogger(AsyncStatelessMcpCompleteProvider.class);
+	private static final Log logger = LogFactory.getLog(AsyncStatelessMcpCompleteProvider.class);
 
 	private final List<Object> completeObjects;
 
@@ -90,7 +90,9 @@ public class AsyncStatelessMcpCompleteProvider {
 			.toList();
 
 		if (completeSpecs.isEmpty()) {
-			logger.warn("No complete methods found in the provided complete objects: {}", this.completeObjects);
+			if (logger.isWarnEnabled()) {
+				logger.warn("No complete methods found in the provided complete objects: " + this.completeObjects);
+			}
 		}
 
 		return completeSpecs;

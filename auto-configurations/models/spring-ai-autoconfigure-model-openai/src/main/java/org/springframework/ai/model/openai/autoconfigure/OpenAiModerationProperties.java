@@ -33,7 +33,7 @@ public class OpenAiModerationProperties extends AbstractOpenAiProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.moderation";
 
-	private @Nullable String model = OpenAiModerationOptions.DEFAULT_MODERATION_MODEL;
+	private @Nullable String model;
 
 	public @Nullable String getModel() {
 		return this.model;

@@ -26,8 +26,8 @@ import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncPromptSpeci
 import io.modelcontextprotocol.spec.McpSchema.GetPromptRequest;
 import io.modelcontextprotocol.spec.McpSchema.GetPromptResult;
 import io.modelcontextprotocol.util.Assert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.adapter.PromptAdapter;
@@ -45,7 +45,7 @@ import org.springframework.ai.mcp.annotation.method.prompt.SyncStatelessMcpPromp
  */
 public class SyncStatelessMcpPromptProvider {
 
-	private static final Logger logger = LoggerFactory.getLogger(SyncStatelessMcpPromptProvider.class);
+	private static final Log logger = LogFactory.getLog(SyncStatelessMcpPromptProvider.class);
 
 	private final List<Object> promptObjects;
 
@@ -89,7 +89,9 @@ public class SyncStatelessMcpPromptProvider {
 			.toList();
 
 		if (promptSpecs.isEmpty()) {
-			logger.warn("No prompt methods found in the provided prompt objects: {}", this.promptObjects);
+			if (logger.isWarnEnabled()) {
+				logger.warn("No prompt methods found in the provided prompt objects: " + this.promptObjects);
+			}
 		}
 
 		return promptSpecs;

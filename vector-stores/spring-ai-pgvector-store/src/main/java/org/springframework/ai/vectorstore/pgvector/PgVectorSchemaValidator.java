@@ -20,9 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -37,7 +37,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
  */
 class PgVectorSchemaValidator {
 
-	private static final Logger logger = LoggerFactory.getLogger(PgVectorSchemaValidator.class);
+	private static final Log logger = LogFactory.getLog(PgVectorSchemaValidator.class);
 
 	private final JdbcTemplate jdbcTemplate;
 
@@ -94,7 +94,9 @@ class PgVectorSchemaValidator {
 		}
 
 		try {
-			logger.info("Validating PGVectorStore schema for table: {} in schema: {}", tableName, schemaName);
+			if (logger.isInfoEnabled()) {
+				logger.info("Validating PGVectorStore schema for table: " + tableName + " in schema: " + schemaName);
+			}
 
 			List<String> expectedColumns = new ArrayList<>();
 			expectedColumns.add("id");
@@ -156,7 +158,9 @@ class PgVectorSchemaValidator {
 			}
 		}
 		catch (DataAccessException | IllegalStateException e) {
-			logger.error("Error while validating table schema: {}", e.getMessage());
+			if (logger.isErrorEnabled()) {
+				logger.error("Error while validating table schema: " + e.getMessage());
+			}
 			logger
 				.error("Failed to operate with the specified table in the database. To resolve this issue, please ensure the following steps are completed:\n"
 						+ "1. Ensure the necessary PostgreSQL extensions are enabled. Run the following SQL commands:\n"

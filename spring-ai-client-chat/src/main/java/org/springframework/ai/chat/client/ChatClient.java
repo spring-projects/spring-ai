@@ -27,9 +27,8 @@ import io.micrometer.observation.ObservationRegistry;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
-import org.springframework.ai.chat.client.advisor.api.ToolAdvisor;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.messages.Message;
@@ -89,15 +88,41 @@ public interface ChatClient {
 				null);
 	}
 
+	/**
+	 * Creates a {@link Builder} for constructing a {@link ChatClient}.
+	 * <p>
+	 * When {@code toolCallingAdvisorBuilder} is {@code null}, a default
+	 * {@link org.springframework.ai.chat.client.advisor.ToolCallingAdvisor} is created
+	 * with a {@link org.springframework.ai.model.tool.ToolCallingManager} backed by the
+	 * supplied {@code observationRegistry}.
+	 * <p>
+	 * When {@code toolCallingAdvisorBuilder} is non-null it is used as-is. The caller is
+	 * then responsible for configuring the builder's
+	 * {@link org.springframework.ai.model.tool.ToolCallingManager}, including any
+	 * {@link io.micrometer.observation.ObservationRegistry}, since the supplied
+	 * {@code observationRegistry} will not be automatically applied to it.
+	 * @param chatModel the chat model to use
+	 * @param observationRegistry the observation registry for client-level observations;
+	 * also used to configure the default {@code ToolCallingManager} when
+	 * {@code toolCallingAdvisorBuilder} is {@code null}
+	 * @param chatClientObservationConvention optional custom observation convention for
+	 * the chat client
+	 * @param advisorObservationConvention optional custom observation convention for
+	 * advisors
+	 * @param toolCallingAdvisorBuilder optional builder for the
+	 * {@link org.springframework.ai.chat.client.advisor.ToolCallingAdvisor}; when
+	 * {@code null} a default is created
+	 * @return a new {@link Builder}
+	 */
 	static Builder builder(ChatModel chatModel, ObservationRegistry observationRegistry,
 			@Nullable ChatClientObservationConvention chatClientObservationConvention,
 			@Nullable AdvisorObservationConvention advisorObservationConvention,
-			ToolCallAdvisor.@Nullable Builder<?> toolCallAdvisorBuilder) {
+			ToolCallingAdvisor.@Nullable Builder<?> toolCallingAdvisorBuilder) {
 		Assert.notNull(chatModel, "chatModel cannot be null");
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
 
 		return new DefaultChatClientBuilder(chatModel, observationRegistry, chatClientObservationConvention,
-				advisorObservationConvention, toolCallAdvisorBuilder);
+				advisorObservationConvention, toolCallingAdvisorBuilder);
 	}
 
 	ChatClientRequestSpec prompt();
@@ -181,6 +206,21 @@ public interface ChatClient {
 		 * than appending it as prompt text. Has no effect if the underlying
 		 * {@link org.springframework.ai.chat.model.ChatModel} does not support
 		 * {@link org.springframework.ai.model.tool.StructuredOutputChatOptions}.
+		 *
+		 * <p>
+		 * <b>Not enabled by default</b> because native structured output support varies
+		 * across models and providers. Known limitations:
+		 * <ul>
+		 * <li><b>Ollama</b>: models with a built-in reasoning/thinking mode (e.g.
+		 * {@code qwen3:8b}, {@code qwen3.5:9b}) may return plain text instead of JSON,
+		 * causing deserialization failures. Use {@link #validateSchema()} alongside this
+		 * option for automatic retry, or switch to a non-reasoning model such as
+		 * {@code llama3.1:latest}.</li>
+		 * <li><b>OpenAI</b>: the Structured Outputs API does not accept a top-level JSON
+		 * array schema. Requesting a {@code List<T>} with this option enabled will fail.
+		 * Wrap the list in a container record or use the default prompt-based approach
+		 * instead.</li>
+		 * </ul>
 		 */
 		EntityParamSpec useProviderStructuredOutput();
 
@@ -363,43 +403,70 @@ public interface ChatClient {
 
 		<B extends ChatOptions.Builder<?>> ChatClientRequestSpec options(B customizer);
 
-		ChatClientRequestSpec tools(Consumer<ToolSpec> consumer);
-
-		ChatClientRequestSpec tools(Object... toolObjects);
-
 		/**
-		 * @deprecated as of 2.0.0, in favor of {@link #tools(Consumer)}. To be removed in
-		 * 3.0.0.
+		 * Register one or more tools for this chat request. The method accepts a
+		 * heterogeneous mix of tool representations and routes each element to the
+		 * appropriate internal list automatically:
+		 *
+		 * <ul>
+		 * <li>{@link org.springframework.ai.tool.ToolCallback} — registered directly as a
+		 * callback.</li>
+		 * <li>{@link org.springframework.ai.tool.ToolCallbackProvider} — registered
+		 * directly as a provider; its callbacks are resolved lazily at request time.</li>
+		 * <li>{@code ToolCallback[]} or {@code ToolCallbackProvider[]} — every element of
+		 * the array is registered as above.</li>
+		 * <li>{@link java.util.Collection} — iterated and each element is dispatched by
+		 * the same rules.</li>
+		 * <li>Any other object — treated as a {@code @Tool}-annotated POJO; a
+		 * {@link org.springframework.ai.tool.ToolCallback} is generated for each
+		 * {@link org.springframework.ai.tool.annotation.Tool}-annotated method it
+		 * contains.</li>
+		 * </ul>
+		 *
+		 * <p>
+		 * Mixed calls are fully supported:
+		 *
+		 * <pre>{@code
+		 * chatClient.prompt()
+		 *     .tools(new DateTimeTools(), existingCallback, myProvider)
+		 *     .toolContext(Map.of("tenantId", "acme"))
+		 *     .call().content();
+		 * }</pre>
+		 *
+		 * <p>
+		 * Tools registered here are available only for this specific request. Use
+		 * {@link Builder#defaultTools(Object...)} to register tools that apply to every
+		 * request built from the same {@link Builder}.
+		 * @param tools tool objects to register; must not be {@code null} and must not
+		 * contain {@code null} elements
+		 * @return this spec for chaining
+		 * @throws IllegalArgumentException if {@code tools} is {@code null}, contains
+		 * {@code null} elements, or if a POJO argument has no
+		 * {@link org.springframework.ai.tool.annotation.Tool}-annotated methods
 		 */
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		ChatClientRequestSpec toolNames(String... toolNames);
+		ChatClientRequestSpec tools(Object... tools);
 
 		/**
-		 * @deprecated as of 2.0.0, in favor of {@link #tools(Consumer)} and
-		 * {@link #tools(Consumer<ToolSpec>)} To be removed in 3.0.0.
+		 * @deprecated as of 2.0.0, in favor of {@link #tools(Object...)}. To be removed
+		 * in 3.0.0.
 		 */
 		@Deprecated(since = "2.0.0", forRemoval = true)
 		ChatClientRequestSpec toolCallbacks(ToolCallback... toolCallbacks);
 
 		/**
-		 * @deprecated as of 2.0.0, in favor of {@link #tools(Consumer)} and
-		 * {@link #tools(Consumer<ToolSpec>)} To be removed in 3.0.0.
+		 * @deprecated as of 2.0.0, in favor of {@link #tools(Object...)}. To be removed
+		 * in 3.0.0.
 		 */
 		@Deprecated(since = "2.0.0", forRemoval = true)
 		ChatClientRequestSpec toolCallbacks(List<ToolCallback> toolCallbacks);
 
 		/**
-		 * @deprecated as of 2.0.0, in favor of {@link #tools(Consumer)} and
-		 * {@link #tools(Consumer<ToolSpec>)} To be removed in 3.0.0.
+		 * @deprecated as of 2.0.0, in favor of {@link #tools(Object...)}. To be removed
+		 * in 3.0.0.
 		 */
 		@Deprecated(since = "2.0.0", forRemoval = true)
 		ChatClientRequestSpec toolCallbacks(ToolCallbackProvider... toolCallbackProviders);
 
-		/**
-		 * @deprecated as of 2.0.0, in favor of {@link #tools(Consumer)} and
-		 * {@link #tools(Consumer<ToolSpec>)} To be removed in 3.0.0.
-		 */
-		@Deprecated(since = "2.0.0", forRemoval = true)
 		ChatClientRequestSpec toolContext(Map<String, Object> toolContext);
 
 		ChatClientRequestSpec system(String text);
@@ -423,26 +490,6 @@ public interface ChatClient {
 		CallResponseSpec call();
 
 		StreamResponseSpec stream();
-
-	}
-
-	interface ToolSpec {
-
-		ToolSpec instances(Object... toolObjects);
-
-		ToolSpec instances(List<Object> toolObjects);
-
-		ToolSpec callbacks(ToolCallback... toolCallbacks);
-
-		ToolSpec callbacks(List<ToolCallback> toolCallbacks);
-
-		ToolSpec callbacks(ToolCallbackProvider... toolCallbackProvider);
-
-		ToolSpec context(Map<String, Object> toolContext);
-
-		ToolSpec context(String key, Object value);
-
-		ToolSpec advisor(ToolAdvisor toolAdvisor);
 
 	}
 
@@ -477,43 +524,66 @@ public interface ChatClient {
 
 		Builder defaultTemplateRenderer(TemplateRenderer templateRenderer);
 
-		Builder defaultTools(Consumer<ToolSpec> consumer);
-
-		Builder defaultTools(Object... toolObjects);
-
 		/**
-		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)}. To be
-		 * removed in 3.0.0.
+		 * Register one or more default tools that will be available to every request
+		 * built from this {@link Builder}. The method accepts the same heterogeneous mix
+		 * of tool representations as {@link ChatClientRequestSpec#tools(Object...)} and
+		 * applies the same automatic dispatch rules:
+		 *
+		 * <ul>
+		 * <li>{@link org.springframework.ai.tool.ToolCallback} — registered directly as a
+		 * callback.</li>
+		 * <li>{@link org.springframework.ai.tool.ToolCallbackProvider} — registered
+		 * directly as a provider; its callbacks are resolved lazily at request time.</li>
+		 * <li>{@code ToolCallback[]} or {@code ToolCallbackProvider[]} — every element of
+		 * the array is registered as above.</li>
+		 * <li>{@link java.util.Collection} — iterated and each element is dispatched by
+		 * the same rules.</li>
+		 * <li>Any other object — treated as a {@code @Tool}-annotated POJO; a
+		 * {@link org.springframework.ai.tool.ToolCallback} is generated for each
+		 * {@link org.springframework.ai.tool.annotation.Tool}-annotated method it
+		 * contains.</li>
+		 * </ul>
+		 *
+		 * <p>
+		 * Default tools are shared across all requests produced by {@link ChatClient}
+		 * instances built from this builder. If a request also provides its own tools via
+		 * {@link ChatClientRequestSpec#tools(Object...)}, those runtime tools completely
+		 * override the defaults for that request.
+		 *
+		 * <p>
+		 * WARNING: Because default tools are shared, be careful not to register tools
+		 * that should only be available in specific contexts.
+		 * @param tools tool objects to register; must not be {@code null} and must not
+		 * contain {@code null} elements
+		 * @return this builder for chaining
+		 * @throws IllegalArgumentException if {@code tools} is {@code null}, contains
+		 * {@code null} elements, or if a POJO argument has no
+		 * {@link org.springframework.ai.tool.annotation.Tool}-annotated methods
 		 */
-		@Deprecated(since = "2.0.0", forRemoval = true)
-		Builder defaultToolNames(String... toolNames);
+		Builder defaultTools(Object... tools);
 
 		/**
-		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)} and
-		 * {@link #defaultTools(Consumer<ToolSpec>)} To be removed in 3.0.0.
+		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Object...)}. To be
+		 * removed in 3.0.0.
 		 */
 		@Deprecated(since = "2.0.0", forRemoval = true)
 		Builder defaultToolCallbacks(ToolCallback... toolCallbacks);
 
 		/**
-		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)} and
-		 * {@link #defaultTools(Consumer<ToolSpec>)} To be removed in 3.0.0.
+		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Object...)}. To be
+		 * removed in 3.0.0.
 		 */
 		@Deprecated(since = "2.0.0", forRemoval = true)
 		Builder defaultToolCallbacks(List<ToolCallback> toolCallbacks);
 
 		/**
-		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)} and
-		 * {@link #defaultTools(Consumer<ToolSpec>)} To be removed in 3.0.0.
+		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Object...)}. To be
+		 * removed in 3.0.0.
 		 */
 		@Deprecated(since = "2.0.0", forRemoval = true)
 		Builder defaultToolCallbacks(ToolCallbackProvider... toolCallbackProviders);
 
-		/**
-		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Consumer)} and
-		 * {@link #defaultTools(Consumer<ToolSpec>)} To be removed in 3.0.0.
-		 */
-		@Deprecated(since = "2.0.0", forRemoval = true)
 		Builder defaultToolContext(Map<String, Object> toolContext);
 
 		Builder clone();

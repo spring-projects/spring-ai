@@ -51,15 +51,12 @@ public final class SyncMcpPromptMethodCallbackExample {
 		PromptProvider provider = new PromptProvider();
 
 		// Example 1: Using a method that returns GetPromptResult
-		System.out.println("Example 1: Method returning GetPromptResult");
 		demonstrateGreetingPrompt(provider);
 
 		// Example 2: Using a method that returns a single PromptMessage
-		System.out.println("\nExample 2: Method returning a single PromptMessage");
 		demonstrateSingleMessagePrompt(provider);
 
 		// Example 3: Using a method that returns a List<String>
-		System.out.println("\nExample 3: Method returning a List<String>");
 		demonstrateStringListPrompt(provider);
 	}
 
@@ -91,15 +88,6 @@ public final class SyncMcpPromptMethodCallbackExample {
 		// Apply the callback (in a real application, you would have a real exchange)
 		GetPromptResult result = callback.apply(null, request);
 
-		// Print the result
-		System.out.println("Description: " + result.description());
-		System.out.println("Messages:");
-		for (PromptMessage message : result.messages()) {
-			System.out.println("  Role: " + message.role());
-			if (message.content() instanceof TextContent) {
-				System.out.println("  Content: " + ((TextContent) message.content()).text());
-			}
-		}
 	}
 
 	/**
@@ -128,16 +116,7 @@ public final class SyncMcpPromptMethodCallbackExample {
 		GetPromptRequest request = new GetPromptRequest("single-message", requestArgs);
 
 		// Apply the callback
-		GetPromptResult result = callback.apply(null, request);
-
-		// Print the result
-		System.out.println("Messages:");
-		for (PromptMessage message : result.messages()) {
-			System.out.println("  Role: " + message.role());
-			if (message.content() instanceof TextContent) {
-				System.out.println("  Content: " + ((TextContent) message.content()).text());
-			}
-		}
+		callback.apply(null, request);
 	}
 
 	/**
@@ -167,15 +146,6 @@ public final class SyncMcpPromptMethodCallbackExample {
 
 		// Apply the callback
 		GetPromptResult result = callback.apply(null, request);
-
-		// Print the result
-		System.out.println("Messages:");
-		for (PromptMessage message : result.messages()) {
-			System.out.println("  Role: " + message.role());
-			if (message.content() instanceof TextContent) {
-				System.out.println("  Content: " + ((TextContent) message.content()).text());
-			}
-		}
 	}
 
 	/**

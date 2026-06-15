@@ -18,7 +18,6 @@ package org.springframework.ai.openai;
 
 import java.net.Proxy;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.Map;
 
 import com.openai.azure.AzureOpenAIServiceVersion;
@@ -43,73 +42,70 @@ public class AbstractOpenAiOptions {
 	/**
 	 * The deployment URL to connect to OpenAI.
 	 */
-	private @Nullable String baseUrl;
+	private final @Nullable String baseUrl;
 
 	/**
 	 * The API key to connect to OpenAI.
 	 */
-	private @Nullable String apiKey;
+	private final @Nullable String apiKey;
 
 	/**
 	 * Credentials used to connect to Microsoft Foundry.
 	 */
-	private @Nullable Credential credential;
+	private final @Nullable Credential credential;
 
 	/**
 	 * The model name used. When using Microsoft Foundry, this is also used as the default
 	 * deployment name.
 	 */
-	private @Nullable String model;
+	private final @Nullable String model;
 
 	/**
 	 * The deployment name as defined in Microsoft Foundry. On Microsoft Foundry, the
 	 * default deployment name is the same as the model name. When using OpenAI directly,
 	 * this value isn't used.
 	 */
-	private @Nullable String microsoftDeploymentName;
+	private final @Nullable String microsoftDeploymentName;
 
 	/**
 	 * The Service version to use when connecting to Microsoft Foundry.
 	 */
-	private @Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion;
+	private final @Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion;
 
 	/**
 	 * The organization ID to use when connecting to Microsoft Foundry.
 	 */
-	private @Nullable String organizationId;
+	private final @Nullable String organizationId;
 
 	/**
 	 * Whether Microsoft Foundry is detected.
 	 */
-	private boolean isMicrosoftFoundry;
+	private final boolean isMicrosoftFoundry;
 
 	/**
 	 * Whether GitHub Models is detected.
 	 */
-	private boolean isGitHubModels;
+	private final boolean isGitHubModels;
 
 	/**
 	 * Request timeout for OpenAI client.
 	 */
-	private Duration timeout = DEFAULT_TIMEOUT;
+	private final Duration timeout;
 
 	/**
 	 * Maximum number of retries for OpenAI client.
 	 */
-	private int maxRetries = DEFAULT_MAX_RETRIES;
+	private final int maxRetries;
 
 	/**
 	 * Proxy settings for OpenAI client.
 	 */
-	private @Nullable Proxy proxy;
+	private final @Nullable Proxy proxy;
 
 	/**
 	 * Custom HTTP headers to add to OpenAI client requests.
 	 */
-	private Map<String, String> customHeaders = new HashMap<>();
-
-	protected AbstractOpenAiOptions() {
-	}
+	private final @Nullable Map<String, String> customHeaders;
 
 	protected AbstractOpenAiOptions(@Nullable String baseUrl, @Nullable String apiKey, @Nullable Credential credential,
 			@Nullable String model, @Nullable String microsoftDeploymentName,
@@ -128,7 +124,7 @@ public class AbstractOpenAiOptions {
 		this.timeout = timeout != null ? timeout : DEFAULT_TIMEOUT;
 		this.maxRetries = maxRetries != null ? maxRetries : DEFAULT_MAX_RETRIES;
 		this.proxy = proxy;
-		this.customHeaders = customHeaders != null ? new HashMap<>(customHeaders) : new HashMap<>();
+		this.customHeaders = customHeaders != null ? Map.copyOf(customHeaders) : null;
 	}
 
 	public @Nullable String getBaseUrl() {
@@ -186,7 +182,7 @@ public class AbstractOpenAiOptions {
 		return this.proxy;
 	}
 
-	public Map<String, String> getCustomHeaders() {
+	public @Nullable Map<String, String> getCustomHeaders() {
 		return this.customHeaders;
 	}
 
@@ -216,7 +212,7 @@ public class AbstractOpenAiOptions {
 
 		protected @Nullable Proxy proxy;
 
-		protected Map<String, String> customHeaders = new HashMap<>();
+		protected @Nullable Map<String, String> customHeaders;
 
 		@SuppressWarnings("unchecked")
 		protected B self() {
@@ -304,8 +300,8 @@ public class AbstractOpenAiOptions {
 			return self();
 		}
 
-		public B customHeaders(Map<String, String> customHeaders) {
-			this.customHeaders = customHeaders != null ? new HashMap<>(customHeaders) : new HashMap<>();
+		public B customHeaders(@Nullable Map<String, String> customHeaders) {
+			this.customHeaders = customHeaders;
 			return self();
 		}
 

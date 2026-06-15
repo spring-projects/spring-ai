@@ -47,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration tests for observation instrumentation in {@link BedrockProxyChatModel}.
  *
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 @SpringBootTest(classes = BedrockProxyChatModelObservationIT.Config.class,
 		properties = "spring.ai.retry.on-http-codes=429")
@@ -180,7 +181,7 @@ public class BedrockProxyChatModelObservationIT {
 				.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
 				.region(Region.US_EAST_1)
 				.observationRegistry(observationRegistry)
-				.defaultOptions(BedrockChatOptions.builder().model(modelId).build())
+				.options(BedrockChatOptions.builder().model(modelId).build())
 				.build();
 		}
 

@@ -21,7 +21,6 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.document.MetadataMode;
-import org.springframework.ai.postgresml.PostgresMlEmbeddingModel;
 import org.springframework.ai.postgresml.PostgresMlEmbeddingModel.VectorType;
 import org.springframework.ai.postgresml.PostgresMlEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -44,11 +43,11 @@ public class PostgresMlEmbeddingProperties {
 	 */
 	private boolean createExtension;
 
-	private @Nullable String transformer = PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL;
+	private @Nullable String transformer;
 
-	private @Nullable VectorType vectorType = VectorType.PG_ARRAY;
+	private @Nullable VectorType vectorType;
 
-	private @Nullable Map<String, Object> kwargs = Map.of();
+	private @Nullable Map<String, Object> kwargs;
 
 	private @Nullable MetadataMode metadataMode = MetadataMode.EMBED;
 
@@ -93,20 +92,12 @@ public class PostgresMlEmbeddingProperties {
 	}
 
 	public PostgresMlEmbeddingOptions toOptions() {
-		PostgresMlEmbeddingOptions.Builder builder = PostgresMlEmbeddingOptions.builder();
-		if (this.transformer != null) {
-			builder.transformer(this.transformer);
-		}
-		if (this.vectorType != null) {
-			builder.vectorType(this.vectorType);
-		}
-		if (this.kwargs != null) {
-			builder.kwargs(this.kwargs);
-		}
-		if (this.metadataMode != null) {
-			builder.metadataMode(this.metadataMode);
-		}
-		return builder.build();
+		return PostgresMlEmbeddingOptions.builder()
+			.transformer(this.transformer)
+			.vectorType(this.vectorType)
+			.kwargs(this.kwargs)
+			.metadataMode(this.metadataMode)
+			.build();
 	}
 
 	private Options options = new Options();

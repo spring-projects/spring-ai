@@ -43,8 +43,8 @@ public class DeepSeekApiIT {
 	@Test
 	void chatCompletionEntity() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
-		ResponseEntity<ChatCompletion> response = this.deepSeekApi.chatCompletionEntity(
-				new ChatCompletionRequest(List.of(chatCompletionMessage), ChatModel.DEEPSEEK_CHAT.value, 1D, false));
+		ResponseEntity<ChatCompletion> response = this.deepSeekApi.chatCompletionEntity(new ChatCompletionRequest(
+				List.of(chatCompletionMessage), ChatModel.DEEPSEEK_V4_FLASH.value, 1D, false));
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
@@ -54,7 +54,7 @@ public class DeepSeekApiIT {
 	void chatCompletionStream() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
 		Flux<ChatCompletionChunk> response = this.deepSeekApi.chatCompletionStream(
-				new ChatCompletionRequest(List.of(chatCompletionMessage), ChatModel.DEEPSEEK_CHAT.value, 1D, true));
+				new ChatCompletionRequest(List.of(chatCompletionMessage), ChatModel.DEEPSEEK_V4_FLASH.value, 1D, true));
 
 		assertThat(response).isNotNull();
 		assertThat(response.collectList().block()).isNotNull();

@@ -22,11 +22,12 @@ import java.util.function.Function;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -38,6 +39,7 @@ import org.springframework.ai.model.mistralai.autoconfigure.MistralAiChatAutoCon
 import org.springframework.ai.model.mistralai.autoconfigure.tool.WeatherServicePromptIT.MyWeatherService.Request;
 import org.springframework.ai.model.mistralai.autoconfigure.tool.WeatherServicePromptIT.MyWeatherService.Response;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -57,8 +59,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 public class WeatherServicePromptIT {
 
-	private final Logger logger = LoggerFactory.getLogger(WeatherServicePromptIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(MistralAiChatAutoConfiguration.class,
@@ -72,11 +72,14 @@ public class WeatherServicePromptIT {
 			.run(context -> {
 
 				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
+				ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+
+				var chatClient = ChatClient
+					.builder(chatModel, ObservationRegistry.NOOP, null, null,
+							ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
+					.build();
 
 				UserMessage userMessage = new UserMessage("What's the weather like in Paris? Use Celsius.");
-				// UserMessage userMessage = new UserMessage("What's the weather like in
-				// San Francisco, Tokyo, and
-				// Paris?");
 
 				var promptOptions = MistralAiChatOptions.builder()
 					.toolChoice(ToolChoice.AUTO)
@@ -86,9 +89,9 @@ public class WeatherServicePromptIT {
 						.build()))
 					.build();
 
-				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
-
-				logger.info("Response: {}", response);
+				ChatResponse response = chatClient.prompt(new Prompt(List.of(userMessage), promptOptions))
+					.call()
+					.chatResponse();
 
 				assertThat(response.getResult().getOutput().getText()).containsAnyOf("15", "15.0");
 			});
@@ -101,6 +104,12 @@ public class WeatherServicePromptIT {
 			.run(context -> {
 
 				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
+				ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+
+				var chatClient = ChatClient
+					.builder(chatModel, ObservationRegistry.NOOP, null, null,
+							ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
+					.build();
 
 				UserMessage userMessage = new UserMessage("What's the weather like in Paris? Use Celsius.");
 
@@ -112,9 +121,9 @@ public class WeatherServicePromptIT {
 
 					.build();
 
-				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
-
-				logger.info("Response: {}", response);
+				ChatResponse response = chatClient.prompt(new Prompt(List.of(userMessage), functionOptions))
+					.call()
+					.chatResponse();
 
 				assertThat(response.getResult().getOutput().getText()).containsAnyOf("15", "15.0");
 			});

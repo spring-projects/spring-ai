@@ -24,14 +24,16 @@ import org.springframework.ai.chat.messages.UserMessage
 import org.springframework.ai.chat.prompt.Prompt
 import org.springframework.ai.model.ollama.autoconfigure.BaseOllamaIT
 import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration
-import org.springframework.ai.model.tool.ToolCallingChatOptions
+import org.springframework.ai.model.tool.ToolCallingManager
 import org.springframework.ai.ollama.OllamaChatModel
 import org.springframework.ai.ollama.api.OllamaChatOptions
+import org.springframework.ai.tool.ToolCallback
+import org.springframework.ai.tool.function.FunctionToolCallback
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Description
+import java.util.function.Function
 
 class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 
@@ -60,15 +62,28 @@ class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 
 	@Test
 	fun toolCallTest() {
-		this.contextRunner.run {context ->
+		this.contextRunner.run { context ->
 
 			val chatModel = context.getBean(OllamaChatModel::class.java)
+			val toolCallingManager = context.getBean(ToolCallingManager::class.java)
+			val weatherInfo = context.getBean("weatherInfo", ToolCallback::class.java)
 
 			val userMessage = UserMessage(
 				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.")
 
-			val response = chatModel
-					.call(Prompt(listOf(userMessage), OllamaChatOptions.builder().model(MODEL_NAME).toolNames("weatherInfo").build()))
+			val options = OllamaChatOptions.builder()
+				.model(MODEL_NAME)
+				.toolCallbacks(weatherInfo)
+				.build()
+
+			var prompt = Prompt(listOf(userMessage), options)
+			var response = chatModel.call(prompt)
+
+			while (response.hasToolCalls()) {
+				val toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response)
+				prompt = Prompt(toolExecutionResult.conversationHistory(), options)
+				response = chatModel.call(prompt)
+			}
 
 			logger.info("Response: $response")
 
@@ -81,22 +96,29 @@ class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 		this.contextRunner.run { context ->
 
 			val chatModel = context.getBean(OllamaChatModel::class.java)
+			val toolCallingManager = context.getBean(ToolCallingManager::class.java)
+			val weatherInfo = context.getBean("weatherInfo", ToolCallback::class.java)
 
-			// Test weatherFunction
 			val userMessage = UserMessage(
 				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.")
 
-			val functionOptions = OllamaChatOptions.builder()
+			val options = OllamaChatOptions.builder()
 				.model(MODEL_NAME)
-				.toolNames("weatherInfo")
+				.toolCallbacks(weatherInfo)
 				.build()
 
-			val response = chatModel.call(Prompt(listOf(userMessage), functionOptions));
-			val output = response.getResult()!!.output.text
+			var prompt = Prompt(listOf(userMessage), options)
+			var response = chatModel.call(prompt)
 
-			logger.info("Response: $output");
+			while (response.hasToolCalls()) {
+				val toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response)
+				prompt = Prompt(toolExecutionResult.conversationHistory(), options)
+				response = chatModel.call(prompt)
+			}
 
-			assertThat(output).contains("30", "10", "15");
+			logger.info("Response: ${response.getResult()!!.output.text}")
+
+			assertThat(response.getResult()!!.output.text).contains("30", "10", "15")
 		}
 	}
 
@@ -104,15 +126,20 @@ class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 	open class Config {
 
 		@Bean
-		@Description("Find the weather conditions, forecasts, and temperatures for a location, like a city or state, represented by its geographical coordinates.")
-		open fun weatherInfo(): (KotlinRequest) -> KotlinResponse = { request ->
-			val temperature = when {
-				request.location.contains("Paris") -> 15.0
-				request.location.contains("Tokyo") -> 10.0
-				request.location.contains("San Francisco") -> 30.0
-				else -> 10.0
+		open fun weatherInfo(): ToolCallback {
+			val function = Function<KotlinRequest, KotlinResponse> { request ->
+				val temperature = when {
+					request.location.contains("Paris") -> 15.0
+					request.location.contains("Tokyo") -> 10.0
+					request.location.contains("San Francisco") -> 30.0
+					else -> 10.0
+				}
+				KotlinResponse(temperature, 15.0, 20.0, 2.0, 53, 45, Unit.C)
 			}
-			KotlinResponse(temperature, 15.0, 20.0, 2.0, 53, 45, Unit.C)
+			return FunctionToolCallback.builder("weatherInfo", function)
+				.description("Find the weather conditions, forecasts, and temperatures for a location, like a city or state, represented by its geographical coordinates.")
+				.inputType(KotlinRequest::class.java)
+				.build()
 		}
 	}
 }

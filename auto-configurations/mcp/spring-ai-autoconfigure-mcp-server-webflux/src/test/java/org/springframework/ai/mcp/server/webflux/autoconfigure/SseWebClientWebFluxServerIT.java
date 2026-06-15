@@ -36,7 +36,7 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.CompleteRequest;
 import io.modelcontextprotocol.spec.McpSchema.CompleteResult;
 import io.modelcontextprotocol.spec.McpSchema.CreateMessageResult;
-import io.modelcontextprotocol.spec.McpSchema.ElicitRequest;
+import io.modelcontextprotocol.spec.McpSchema.ElicitFormRequest;
 import io.modelcontextprotocol.spec.McpSchema.ElicitResult;
 import io.modelcontextprotocol.spec.McpSchema.GetPromptRequest;
 import io.modelcontextprotocol.spec.McpSchema.GetPromptResult;
@@ -54,8 +54,6 @@ import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import net.javacrumbs.jsonunit.core.Option;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 import tools.jackson.databind.json.JsonMapper;
@@ -86,8 +84,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.map;
 
 public class SseWebClientWebFluxServerIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(SseWebClientWebFluxServerIT.class);
 
 	private static final JacksonMcpJsonMapper jsonMapper = new JacksonMcpJsonMapper(new JsonMapper());
 
@@ -327,7 +323,7 @@ public class SseWebClientWebFluxServerIT {
 					exchange.ping(); // call client ping
 
 					// call elicitation
-					var elicitationRequest = McpSchema.ElicitRequest
+					var elicitationRequest = ElicitFormRequest
 						.builder("Test message",
 								Map.of("type", "object", "properties", Map.of("message", Map.of("type", "string"))))
 						.build();
@@ -500,10 +496,7 @@ public class SseWebClientWebFluxServerIT {
 			return (name, mcpClientSpec) -> {
 
 				// Add logging handler
-				mcpClientSpec = mcpClientSpec.loggingConsumer(logingMessage -> {
-					testContext.loggingNotificationRef.set(logingMessage);
-					logger.info("MCP LOGGING: [{}] {}", logingMessage.level(), logingMessage.data());
-				});
+				mcpClientSpec = mcpClientSpec.loggingConsumer(testContext.loggingNotificationRef::set);
 
 				// Add sampling handler
 				Function<McpSchema.CreateMessageRequest, CreateMessageResult> samplingHandler = llmRequest -> {
@@ -517,7 +510,7 @@ public class SseWebClientWebFluxServerIT {
 				mcpClientSpec.sampling(samplingHandler);
 
 				// Add elicitation handler
-				Function<ElicitRequest, ElicitResult> elicitationHandler = request -> {
+				Function<ElicitFormRequest, ElicitResult> elicitationHandler = request -> {
 					assertThat(request.message()).isNotEmpty();
 					assertThat(request.requestedSchema()).isNotNull();
 					return new ElicitResult(ElicitResult.Action.ACCEPT, Map.of("message", request.message()));

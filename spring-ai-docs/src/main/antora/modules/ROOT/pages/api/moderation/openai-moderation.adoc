@@ -84,14 +84,14 @@ The prefix spring.ai.openai.moderation is used as the property prefix for config
 | spring.ai.openai.moderation.api-key    | The API Key           |  -
 | spring.ai.openai.moderation.organization-id | Optionally you can specify which organization is used for an API request. |  -
 | spring.ai.openai.moderation.project-id      | Optionally, you can specify which project is used for an API request. |  -
-| spring.ai.openai.moderation.options.model  | ID of the model to use for moderation. | omni-moderation-latest
+| spring.ai.openai.moderation.model  | ID of the model to use for moderation. | omni-moderation-latest
 |====
 
 NOTE: You can override the common `spring.ai.openai.base-url`, `spring.ai.openai.api-key`, `spring.ai.openai.organization-id` and `spring.ai.openai.project-id` properties.
 The `spring.ai.openai.moderation.base-url`, `spring.ai.openai.moderation.api-key`, `spring.ai.openai.moderation.organization-id` and `spring.ai.openai.moderation.project-id` properties, if set, take precedence over the common properties.
 This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
 
-TIP: All properties prefixed with `spring.ai.openai.moderation.options` can be overridden at runtime.
+TIP: All properties prefixed with `spring.ai.openai.moderation` can be overridden at runtime.
 
 == Runtime Options
 The OpenAiModerationOptions class provides the options to use when making a moderation request.
@@ -191,6 +191,8 @@ OpenAiModerationOptions moderationOptions = OpenAiModerationOptions.builder()
 ModerationPrompt moderationPrompt = new ModerationPrompt("Text to be moderated", this.moderationOptions);
 ModerationResponse response = this.openAiModerationModel.call(this.moderationPrompt);
 ----
+
+include::partial$openai/openai-http-client-customization.adoc[]
 
 == Example Code
 The `OpenAiModerationModelIT` test provides some general examples of how to use the library. You can refer to this test for more detailed usage examples.

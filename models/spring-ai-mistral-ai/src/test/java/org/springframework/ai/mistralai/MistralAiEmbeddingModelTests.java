@@ -34,6 +34,7 @@ import static org.mockito.Mockito.when;
  * Unit tests for {@link MistralAiEmbeddingModel}.
  *
  * @author Nicolas Krier
+ * @author Sebastien Deleuze
  */
 class MistralAiEmbeddingModelTests {
 
@@ -42,7 +43,7 @@ class MistralAiEmbeddingModelTests {
 		MistralAiApi mockApi = createMockApiWithEmbeddingResponse(1024);
 
 		MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder()
-			.withModel(MistralAiApi.EmbeddingModel.EMBED.getValue())
+			.model(MistralAiApi.EmbeddingModel.EMBED.getValue())
 			.build();
 
 		MistralAiEmbeddingModel model = MistralAiEmbeddingModel.builder()
@@ -60,7 +61,7 @@ class MistralAiEmbeddingModelTests {
 		MistralAiApi mockApi = createMockApiWithEmbeddingResponse(1536);
 
 		MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder()
-			.withModel(MistralAiApi.EmbeddingModel.CODESTRAL_EMBED.getValue())
+			.model(MistralAiApi.EmbeddingModel.CODESTRAL_EMBED.getValue())
 			.build();
 
 		MistralAiEmbeddingModel model = MistralAiEmbeddingModel.builder()
@@ -78,7 +79,7 @@ class MistralAiEmbeddingModelTests {
 		MistralAiApi mockApi = createMockApiWithEmbeddingResponse(512);
 
 		// Use a model name that doesn't exist in KNOWN_EMBEDDING_DIMENSIONS
-		MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder().withModel("unknown-model").build();
+		MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder().model("unknown-model").build();
 
 		MistralAiEmbeddingModel model = MistralAiEmbeddingModel.builder()
 			.mistralAiApi(mockApi)
@@ -102,7 +103,7 @@ class MistralAiEmbeddingModelTests {
 		for (MistralAiApi.EmbeddingModel embeddingModel : MistralAiApi.EmbeddingModel.values()) {
 			MistralAiApi mockApi = createMockApiWithEmbeddingResponse(1024);
 			MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder()
-				.withModel(embeddingModel.getValue())
+				.model(embeddingModel.getValue())
 				.build();
 
 			MistralAiEmbeddingModel model = MistralAiEmbeddingModel.builder()
@@ -125,7 +126,7 @@ class MistralAiEmbeddingModelTests {
 		MistralAiEmbeddingModel model = MistralAiEmbeddingModel.builder()
 			.mistralAiApi(mockApi)
 			.options(MistralAiEmbeddingOptions.builder()
-				.withModel(MistralAiApi.EmbeddingModel.CODESTRAL_EMBED.getValue())
+				.model(MistralAiApi.EmbeddingModel.CODESTRAL_EMBED.getValue())
 				.build())
 			.build();
 

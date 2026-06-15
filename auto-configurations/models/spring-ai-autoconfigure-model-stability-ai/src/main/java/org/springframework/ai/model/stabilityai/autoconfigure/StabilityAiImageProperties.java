@@ -18,7 +18,6 @@ package org.springframework.ai.model.stabilityai.autoconfigure;
 
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.ai.stabilityai.api.StabilityAiApi;
 import org.springframework.ai.stabilityai.api.StabilityAiImageOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
@@ -38,7 +37,7 @@ public class StabilityAiImageProperties extends StabilityAiParentProperties {
 
 	private @Nullable Integer n;
 
-	private String model = StabilityAiApi.DEFAULT_IMAGE_MODEL;
+	private @Nullable String model;
 
 	private @Nullable Integer width;
 
@@ -66,11 +65,11 @@ public class StabilityAiImageProperties extends StabilityAiParentProperties {
 		this.n = n;
 	}
 
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
+	public void setModel(@Nullable String model) {
 		this.model = model;
 	}
 
@@ -147,39 +146,19 @@ public class StabilityAiImageProperties extends StabilityAiParentProperties {
 	}
 
 	public StabilityAiImageOptions toOptions() {
-		StabilityAiImageOptions.Builder builder = StabilityAiImageOptions.builder();
-		builder.model(this.model);
-		if (this.n != null) {
-			builder.N(this.n);
-		}
-		if (this.width != null) {
-			builder.width(this.width);
-		}
-		if (this.height != null) {
-			builder.height(this.height);
-		}
-		if (this.responseFormat != null) {
-			builder.responseFormat(this.responseFormat);
-		}
-		if (this.cfgScale != null) {
-			builder.cfgScale(this.cfgScale);
-		}
-		if (this.clipGuidancePreset != null) {
-			builder.clipGuidancePreset(this.clipGuidancePreset);
-		}
-		if (this.sampler != null) {
-			builder.sampler(this.sampler);
-		}
-		if (this.seed != null) {
-			builder.seed(this.seed);
-		}
-		if (this.steps != null) {
-			builder.steps(this.steps);
-		}
-		if (this.stylePreset != null) {
-			builder.stylePreset(this.stylePreset);
-		}
-		return builder.build();
+		return StabilityAiImageOptions.builder()
+			.model(this.model)
+			.n(this.n)
+			.width(this.width)
+			.height(this.height)
+			.responseFormat(this.responseFormat)
+			.cfgScale(this.cfgScale)
+			.clipGuidancePreset(this.clipGuidancePreset)
+			.sampler(this.sampler)
+			.seed(this.seed)
+			.steps(this.steps)
+			.stylePreset(this.stylePreset)
+			.build();
 	}
 
 	private Options options = new Options();
@@ -208,11 +187,11 @@ public class StabilityAiImageProperties extends StabilityAiParentProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.stabilityai.image.model")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public String getModel() {
+		public @Nullable String getModel() {
 			return StabilityAiImageProperties.this.getModel();
 		}
 
-		public void setModel(String model) {
+		public void setModel(@Nullable String model) {
 			StabilityAiImageProperties.this.setModel(model);
 		}
 

@@ -21,8 +21,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.model.MessageAggregator;
@@ -37,8 +35,6 @@ import org.springframework.ai.chat.model.MessageAggregator;
  * @since 1.0.0
  */
 public class ChatClientMessageAggregator {
-
-	private static final Logger logger = LoggerFactory.getLogger(ChatClientMessageAggregator.class);
 
 	@SuppressWarnings("NullAway") // https://github.com/uber/NullAway/issues/1350
 	public Flux<ChatClientResponse> aggregateChatClientResponse(Flux<ChatClientResponse> chatClientResponses,

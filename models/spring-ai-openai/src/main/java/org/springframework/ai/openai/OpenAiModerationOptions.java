@@ -18,6 +18,7 @@ package org.springframework.ai.openai;
 
 import java.net.Proxy;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -52,10 +53,6 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 
 	public static Builder builder() {
 		return new Builder();
-	}
-
-	public OpenAiModerationOptions copy() {
-		return builder().from(this).build();
 	}
 
 	@Override
@@ -146,7 +143,14 @@ public class OpenAiModerationOptions extends AbstractOpenAiOptions implements Mo
 					this.proxy = castFrom.getProxy();
 				}
 				if (castFrom.getCustomHeaders() != null) {
-					this.customHeaders = castFrom.getCustomHeaders();
+					if (this.customHeaders == null) {
+						this.customHeaders = new HashMap<>(castFrom.getCustomHeaders());
+					}
+					else {
+						Map<String, String> merged = new HashMap<>(this.customHeaders);
+						merged.putAll(castFrom.getCustomHeaders());
+						this.customHeaders = merged;
+					}
 				}
 			}
 			if (options instanceof OpenAiModerationOptions castFrom) {

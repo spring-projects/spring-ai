@@ -37,7 +37,8 @@ public class OllamaChatAutoConfigurationTests {
 				"spring.ai.ollama.chat.model=MODEL_XYZ",
 				"spring.ai.ollama.chat.temperature=0.55",
 				"spring.ai.ollama.chat.top-p=0.56",
-				"spring.ai.ollama.chat.top-k=123")
+				"spring.ai.ollama.chat.top-k=123",
+				"spring.ai.ollama.chat.think=high")
 			// @formatter:on
 
 			.withConfiguration(BaseOllamaIT.ollamaAutoConfig(OllamaChatAutoConfiguration.class))
@@ -53,6 +54,10 @@ public class OllamaChatAutoConfigurationTests {
 				assertThat(chatProperties.toOptions().getTopP()).isEqualTo(0.56);
 
 				assertThat(chatProperties.toOptions().getTopK()).isEqualTo(123);
+
+				assertThat(chatProperties.getThink()).isEqualTo(OllamaThinkProperties.HIGH);
+				assertThat(chatProperties.toOptions().getThinkOption())
+					.isEqualTo(org.springframework.ai.ollama.api.ThinkOption.ThinkLevel.HIGH);
 			});
 	}
 

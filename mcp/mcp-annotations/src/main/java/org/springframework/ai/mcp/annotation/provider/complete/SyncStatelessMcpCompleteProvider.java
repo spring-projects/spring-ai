@@ -26,8 +26,8 @@ import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncCompletionS
 import io.modelcontextprotocol.spec.McpSchema.CompleteRequest;
 import io.modelcontextprotocol.spec.McpSchema.CompleteResult;
 import io.modelcontextprotocol.util.Assert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.mcp.annotation.McpComplete;
 import org.springframework.ai.mcp.annotation.adapter.CompleteAdapter;
@@ -45,7 +45,7 @@ import org.springframework.ai.mcp.annotation.method.complete.SyncStatelessMcpCom
  */
 public class SyncStatelessMcpCompleteProvider {
 
-	private static final Logger logger = LoggerFactory.getLogger(SyncStatelessMcpCompleteProvider.class);
+	private static final Log logger = LogFactory.getLog(SyncStatelessMcpCompleteProvider.class);
 
 	private final List<Object> completeObjects;
 
@@ -89,7 +89,9 @@ public class SyncStatelessMcpCompleteProvider {
 			.toList();
 
 		if (completeSpecs.isEmpty()) {
-			logger.warn("No complete methods found in the provided complete objects: {}", this.completeObjects);
+			if (logger.isWarnEnabled()) {
+				logger.warn("No complete methods found in the provided complete objects: " + this.completeObjects);
+			}
 		}
 
 		return completeSpecs;

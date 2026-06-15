@@ -16,12 +16,18 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import java.util.List;
+
 import com.openai.client.OpenAIClient;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.openai.OpenAiModerationModel;
+import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.openai.setup.OpenAiSetup;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -48,12 +54,17 @@ public class OpenAiModerationAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public OpenAiModerationModel openAiSdkModerationModel(OpenAiCommonProperties commonProperties,
-			OpenAiModerationProperties moderationProperties) {
+			OpenAiModerationProperties moderationProperties, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<MeterRegistry> meterRegistry,
+			ObjectProvider<OpenAiHttpClientBuilderCustomizer> httpClientBuilderCustomizers) {
 
 		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
 				moderationProperties);
 
-		OpenAIClient openAIClient = this.openAiClient(resolvedProperties);
+		List<OpenAiHttpClientBuilderCustomizer> customizers = httpClientBuilderCustomizers.orderedStream().toList();
+
+		OpenAIClient openAIClient = this.openAiClient(resolvedProperties, observationRegistry, meterRegistry,
+				customizers);
 
 		return OpenAiModerationModel.builder()
 			.openAiClient(openAIClient)
@@ -61,13 +72,20 @@ public class OpenAiModerationAutoConfiguration {
 			.build();
 	}
 
-	private OpenAIClient openAiClient(OpenAiCommonProperties commonProperties) {
+	private OpenAIClient openAiClient(OpenAiCommonProperties commonProperties,
+			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
+			List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
+
+		MeterRegistry meterRegistryToUse = commonProperties.isConnectionPoolMetricsEnabled()
+				? meterRegistry.getIfAvailable() : null;
+
 		return OpenAiSetup.setupSyncClient(commonProperties.getBaseUrl(), commonProperties.getApiKey(),
 				commonProperties.getCredential(), commonProperties.getMicrosoftDeploymentName(),
 				commonProperties.getMicrosoftFoundryServiceVersion(), commonProperties.getOrganizationId(),
 				commonProperties.isMicrosoftFoundry(), commonProperties.isGitHubModels(), commonProperties.getModel(),
 				commonProperties.getTimeout(), commonProperties.getMaxRetries(), commonProperties.getProxy(),
-				commonProperties.getCustomHeaders());
+				commonProperties.getCustomHeaders(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				meterRegistryToUse, httpClientCustomizers);
 	}
 
 }

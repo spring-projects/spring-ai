@@ -21,8 +21,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.google.genai.common.GoogleGenAiServiceTier;
@@ -34,8 +32,6 @@ import static org.assertj.core.api.Assertions.fail;
  * Integration test for Google GenAI with serviceTier priority.
  */
 class GoogleGenAiChatPriorityIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiChatPriorityIT.class);
 
 	@ParameterizedTest
 	@ValueSource(strings = { "flex", "standard", "priority" })
@@ -64,7 +60,7 @@ class GoogleGenAiChatPriorityIT {
 
 		var chatModel = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient)
-			.defaultOptions(GoogleGenAiChatOptions.builder()
+			.options(GoogleGenAiChatOptions.builder()
 				.model(GoogleGenAiChatModel.ChatModel.GEMINI_3_5_FLASH)
 				.serviceTier(tier)
 				.build())
@@ -76,8 +72,6 @@ class GoogleGenAiChatPriorityIT {
 			assertThat(response).isNotNull();
 			assertThat(response.getResult()).isNotNull();
 			assertThat(response.getResult().getOutput().getText()).isNotBlank();
-			logger.info("Successfully used ServiceTier.{}. Response: {}", serviceTier,
-					response.getResult().getOutput().getText());
 		}
 		catch (Exception e) {
 			fail("Unexpected failure: " + e.getMessage());

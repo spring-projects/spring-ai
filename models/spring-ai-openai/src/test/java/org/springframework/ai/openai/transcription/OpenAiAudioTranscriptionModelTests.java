@@ -43,6 +43,7 @@ import static org.mockito.Mockito.when;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 class OpenAiAudioTranscriptionModelTests {
 
@@ -71,7 +72,7 @@ class OpenAiAudioTranscriptionModelTests {
 	}
 
 	@Test
-	void callWithDefaultOptions() {
+	void callWithOptions() {
 		TranscriptionCreateResponse mockResponse = TranscriptionCreateResponse
 			.ofTranscription(Transcription.builder().text("Hello, this is a test transcription.").build());
 
@@ -186,20 +187,6 @@ class OpenAiAudioTranscriptionModelTests {
 		assertThat(merged.getLanguage()).isEqualTo("de");
 		assertThat(merged.getPrompt()).isEqualTo("new prompt");
 		assertThat(merged.getTemperature()).isEqualTo(0.5f);
-	}
-
-	@Test
-	void optionsCopyCreatesIndependentInstance() {
-		OpenAiAudioTranscriptionOptions original = OpenAiAudioTranscriptionOptions.builder()
-			.model("whisper-1")
-			.language("en")
-			.build();
-
-		OpenAiAudioTranscriptionOptions copy = original.copy();
-
-		assertThat(copy).isNotSameAs(original);
-		assertThat(copy.getModel()).isEqualTo(original.getModel());
-		assertThat(copy.getLanguage()).isEqualTo(original.getLanguage());
 	}
 
 	@Test

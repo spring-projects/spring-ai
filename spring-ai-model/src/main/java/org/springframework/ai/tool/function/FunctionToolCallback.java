@@ -22,9 +22,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
@@ -52,7 +52,7 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
 
-	private static final Logger logger = LoggerFactory.getLogger(FunctionToolCallback.class);
+	private static final Log logger = LogFactory.getLog(FunctionToolCallback.class);
 
 	private static final ToolCallResultConverter DEFAULT_RESULT_CONVERTER = new DefaultToolCallResultConverter();
 
@@ -101,12 +101,16 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 	public String call(String toolInput, @Nullable ToolContext toolContext) {
 		Assert.hasText(toolInput, "toolInput cannot be null or empty");
 
-		logger.debug("Starting execution of tool: {}", this.toolDefinition.name());
+		if (logger.isDebugEnabled()) {
+			logger.debug("Starting execution of tool: " + this.toolDefinition.name());
+		}
 
 		I request = jsonHelper.fromJson(toolInput, this.toolInputType);
 		O response = callMethod(request, toolContext);
 
-		logger.debug("Successful execution of tool: {}", this.toolDefinition.name());
+		if (logger.isDebugEnabled()) {
+			logger.debug("Successful execution of tool: " + this.toolDefinition.name());
+		}
 
 		return this.toolCallResultConverter.convert(response, null);
 	}

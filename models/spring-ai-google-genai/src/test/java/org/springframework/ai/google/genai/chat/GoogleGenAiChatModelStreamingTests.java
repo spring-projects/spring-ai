@@ -134,8 +134,7 @@ public class GoogleGenAiChatModelStreamingTests {
 		ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 		this.chatModel = GoogleGenAiChatModel.builder()
 			.genAiClient(this.client)
-			.defaultOptions(
-					GoogleGenAiChatOptions.builder().model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH).build())
+			.options(GoogleGenAiChatOptions.builder().model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH).build())
 			.toolCallingManager(toolCallingManager)
 			.observationRegistry(ObservationRegistry.NOOP)
 			.build();

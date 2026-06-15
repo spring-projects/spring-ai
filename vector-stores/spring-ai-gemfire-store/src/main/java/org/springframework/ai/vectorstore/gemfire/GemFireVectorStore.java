@@ -25,9 +25,9 @@ import java.util.stream.IntStream;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
@@ -66,7 +66,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  */
 public class GemFireVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final Logger logger = LoggerFactory.getLogger(GemFireVectorStore.class);
+	private static final Log logger = LogFactory.getLog(GemFireVectorStore.class);
 
 	private static final String DEFAULT_URI = "http{ssl}://{host}:{port}/gemfire-vectordb/v1/indexes";
 
@@ -258,7 +258,9 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 				.block();
 		}
 		catch (RuntimeException e) {
-			logger.warn("Error removing embedding: {}", e.getMessage(), e);
+			if (logger.isWarnEnabled()) {
+				logger.warn("Error removing embedding: " + e.getMessage(), e);
+			}
 		}
 	}
 

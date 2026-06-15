@@ -25,6 +25,7 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.ClientCapabilities;
 import io.modelcontextprotocol.spec.McpSchema.CreateMessageRequest;
 import io.modelcontextprotocol.spec.McpSchema.CreateMessageResult;
+import io.modelcontextprotocol.spec.McpSchema.ElicitFormRequest;
 import io.modelcontextprotocol.spec.McpSchema.ElicitRequest;
 import io.modelcontextprotocol.spec.McpSchema.ElicitResult;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
@@ -215,10 +216,10 @@ public class DefaultMcpSyncRequestContextTests {
 		assertThat(result.structuredContent()).containsEntry("name", "John");
 		assertThat(result.structuredContent()).containsEntry("age", 30);
 
-		ArgumentCaptor<ElicitRequest> captor = ArgumentCaptor.forClass(ElicitRequest.class);
+		ArgumentCaptor<ElicitFormRequest> captor = ArgumentCaptor.forClass(ElicitFormRequest.class);
 		verify(this.exchange).createElicitation(captor.capture());
 
-		ElicitRequest capturedRequest = captor.getValue();
+		ElicitFormRequest capturedRequest = captor.getValue();
 		assertThat(capturedRequest.message()).isEqualTo("Test message");
 		assertThat(capturedRequest.requestedSchema()).isNotNull();
 	}

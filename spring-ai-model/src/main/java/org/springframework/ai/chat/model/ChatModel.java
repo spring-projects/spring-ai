@@ -26,7 +26,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.Model;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 
 public interface ChatModel extends Model<Prompt, ChatResponse>, StreamingChatModel {
 
@@ -45,30 +44,25 @@ public interface ChatModel extends Model<Prompt, ChatResponse>, StreamingChatMod
 	@Override
 	ChatResponse call(Prompt prompt);
 
-	default ChatOptions getDefaultOptions() {
+	/**
+	 * Gets the chat options for this model.
+	 * @return the chat options
+	 * @since 2.0.0
+	 */
+	default ChatOptions getOptions() {
 		return ChatOptions.builder().build();
+	}
+
+	/**
+	 * @deprecated use {@link #getOptions()} instead.
+	 */
+	@Deprecated(forRemoval = true)
+	default ChatOptions getDefaultOptions() {
+		return getOptions();
 	}
 
 	default Flux<ChatResponse> stream(Prompt prompt) {
 		throw new UnsupportedOperationException("streaming is not supported");
-	}
-
-	default Prompt buildRequestPrompt(Prompt prompt) {
-		var chatOptionsBuilder = getDefaultOptions().mutate();
-		var chatOptions = prompt.getOptions();
-
-		if (chatOptions != null) {
-			chatOptionsBuilder.combineWith(chatOptions.mutate());
-		}
-
-		chatOptions = chatOptionsBuilder.build();
-
-		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions) {
-			ToolCallingChatOptions.validateToolCallbacks(toolCallingChatOptions.getToolCallbacks());
-		}
-
-		return new Prompt(prompt.getInstructions(), chatOptions);
-
 	}
 
 }

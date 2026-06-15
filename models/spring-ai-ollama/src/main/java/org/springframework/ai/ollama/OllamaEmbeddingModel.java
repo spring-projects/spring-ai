@@ -27,7 +27,6 @@ import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
@@ -40,7 +39,6 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
 import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
-import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.common.OllamaApiConstants;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
@@ -59,6 +57,7 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author Jonghoon Park
+ * @author Sebastien Deleuze
  * @since 0.8.0
  */
 public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
@@ -67,7 +66,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	private final OllamaApi ollamaApi;
 
-	private final OllamaEmbeddingOptions defaultOptions;
+	private final OllamaEmbeddingOptions options;
 
 	private final ObservationRegistry observationRegistry;
 
@@ -75,19 +74,19 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
-	public OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaEmbeddingOptions defaultOptions,
+	public OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaEmbeddingOptions options,
 			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
 		Assert.notNull(ollamaApi, "ollamaApi must not be null");
-		Assert.notNull(defaultOptions, "options must not be null");
+		Assert.notNull(options, "options must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
 		Assert.notNull(modelManagementOptions, "modelManagementOptions must not be null");
 
 		this.ollamaApi = ollamaApi;
-		this.defaultOptions = defaultOptions;
+		this.options = options;
 		this.observationRegistry = observationRegistry;
 		this.modelManager = new OllamaModelManager(ollamaApi, modelManagementOptions);
 
-		String model = defaultOptions.getModel();
+		String model = options.getModel();
 		Assert.state(model != null, "model must not be null");
 		initializeModel(model, modelManagementOptions.pullModelStrategy());
 	}
@@ -158,7 +157,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	private OllamaEmbeddingOptions mergeOptions(@Nullable EmbeddingOptions requestOptions) {
-		OllamaEmbeddingOptions options = this.defaultOptions;
+		OllamaEmbeddingOptions options = this.options;
 
 		if (requestOptions == null) {
 			return options;
@@ -221,9 +220,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 		private @Nullable OllamaApi ollamaApi;
 
-		private OllamaEmbeddingOptions defaultOptions = OllamaEmbeddingOptions.builder()
-			.model(OllamaModel.MXBAI_EMBED_LARGE.id())
-			.build();
+		private OllamaEmbeddingOptions options = OllamaEmbeddingOptions.builder().build();
 
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
@@ -237,8 +234,8 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 			return this;
 		}
 
-		public Builder defaultOptions(OllamaEmbeddingOptions defaultOptions) {
-			this.defaultOptions = defaultOptions;
+		public Builder options(OllamaEmbeddingOptions options) {
+			this.options = options;
 			return this;
 		}
 
@@ -254,7 +251,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 		public OllamaEmbeddingModel build() {
 			Assert.state(this.ollamaApi != null, "OllamaApi must not be null");
-			return new OllamaEmbeddingModel(this.ollamaApi, this.defaultOptions, this.observationRegistry,
+			return new OllamaEmbeddingModel(this.ollamaApi, this.options, this.observationRegistry,
 					this.modelManagementOptions);
 		}
 

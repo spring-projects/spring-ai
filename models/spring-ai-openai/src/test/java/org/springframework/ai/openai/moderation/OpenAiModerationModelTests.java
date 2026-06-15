@@ -17,6 +17,7 @@
 package org.springframework.ai.openai.moderation;
 
 import java.time.Duration;
+import java.util.Map;
 
 import com.openai.client.OpenAIClient;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit tests for OpenAiModerationModel.
  *
  * @author Ilayaperumal Gopinathan
+ * @author guan xu
  */
 @ExtendWith(MockitoExtension.class)
 class OpenAiModerationModelTests {
@@ -179,20 +181,6 @@ class OpenAiModerationModelTests {
 	}
 
 	@Test
-	void testOptionsCopy() {
-		OpenAiModerationOptions original = OpenAiModerationOptions.builder()
-			.model("omni-moderation-latest")
-			.baseUrl("https://api.example.com")
-			.build();
-
-		OpenAiModerationOptions copy = original.copy();
-
-		assertThat(copy).isNotSameAs(original);
-		assertThat(copy.getModel()).isEqualTo(original.getModel());
-		assertThat(copy.getBaseUrl()).isEqualTo(original.getBaseUrl());
-	}
-
-	@Test
 	void testOptionsEqualsAndHashCode() {
 		OpenAiModerationOptions options1 = OpenAiModerationOptions.builder()
 			.model("omni-moderation-latest")
@@ -226,6 +214,26 @@ class OpenAiModerationModelTests {
 	void testOptionsGetModelWithNullInternalValue() {
 		OpenAiModerationOptions options = OpenAiModerationOptions.builder().build();
 		assertThat(options.getModel()).isEqualTo(OpenAiModerationOptions.DEFAULT_MODERATION_MODEL);
+	}
+
+	@Test
+	void testOptionsBuilderMergeCustomHeaders() {
+		OpenAiModerationOptions defaultOptions = OpenAiModerationOptions.builder()
+			.customHeaders(Map.of("default-header", "default-value"))
+			.build();
+
+		OpenAiModerationOptions requestOptions = OpenAiModerationOptions.builder()
+			.customHeaders(Map.of("merged-header1", "merged-value1", "merged-header2", "merged-value2"))
+			.build();
+
+		OpenAiModerationOptions mergedOptions = OpenAiModerationOptions.builder()
+			.from(defaultOptions)
+			.merge(requestOptions)
+			.build();
+
+		assertThat(mergedOptions.getCustomHeaders()).containsEntry("default-header", "default-value")
+			.containsEntry("merged-header1", "merged-value1")
+			.containsEntry("merged-header2", "merged-value2");
 	}
 
 }

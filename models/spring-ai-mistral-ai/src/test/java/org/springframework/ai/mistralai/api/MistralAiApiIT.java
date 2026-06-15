@@ -26,8 +26,6 @@ import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.mistralai.ThinkingModelSource;
@@ -64,8 +62,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 class MistralAiApiIT {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(MistralAiApiIT.class);
 
 	private final MistralAiApi mistralAiApi = MistralAiApi.builder()
 		.apiKey(System.getenv("MISTRAL_AI_API_KEY"))
@@ -211,17 +207,11 @@ class MistralAiApiIT {
 	}
 
 	private static String extractTextContent(ChatCompletionMessage chatCompletionMessage) {
-		var content = chatCompletionMessage.extractTextContent();
-		LOGGER.info("Extracted text content: {}", content);
-
-		return content;
+		return chatCompletionMessage.extractTextContent();
 	}
 
 	private static String extractThinkingTextContent(ChatCompletionMessage chatCompletionMessage) {
-		var thinkingContent = chatCompletionMessage.extractThinkingTextContent();
-		LOGGER.info("Extracted thinking text content: {}", thinkingContent);
-
-		return thinkingContent;
+		return chatCompletionMessage.extractThinkingTextContent();
 	}
 
 	private static ChatCompletionRequest createChatCompletionRequest() {

@@ -197,7 +197,9 @@
 		<module name="com.puppycrawl.tools.checkstyle.checks.whitespace.NoWhitespaceAfterCheck" >
 			<property name="tokens" value="BNOT, DEC, DOT, INC, LNOT, UNARY_MINUS, UNARY_PLUS, ARRAY_DECLARATOR"/>
 		</module>
-		<module name="com.puppycrawl.tools.checkstyle.checks.whitespace.NoWhitespaceBeforeCheck" />
+		<module name="com.puppycrawl.tools.checkstyle.checks.whitespace.NoWhitespaceBeforeCheck">
+			<property name="tokens" value="COMMA, SEMI, POST_INC, POST_DEC, LABELED_STAT"/>
+		</module>
 		<module name="com.puppycrawl.tools.checkstyle.checks.whitespace.ParenPadCheck" />
 		<module name="com.puppycrawl.tools.checkstyle.checks.whitespace.TypecastParenPadCheck" />
 		<module name="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAfterCheck" />

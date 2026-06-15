@@ -29,8 +29,8 @@ import com.google.cloud.aiplatform.v1.PredictResponse;
 import com.google.cloud.aiplatform.v1.PredictionServiceClient;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
@@ -62,13 +62,14 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author Mark Pollack
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel {
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
 
-	private static final Logger logger = LoggerFactory.getLogger(VertexAiMultimodalEmbeddingModel.class);
+	private static final Log logger = LogFactory.getLog(VertexAiMultimodalEmbeddingModel.class);
 
 	private static final MimeType TEXT_MIME_TYPE = MimeTypeUtils.parseMimeType("text/*");
 
@@ -84,7 +85,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 		.collect(Collectors.toMap(VertexAiMultimodalEmbeddingModelName::getName,
 				VertexAiMultimodalEmbeddingModelName::getDimensions));
 
-	public final VertexAiMultimodalEmbeddingOptions defaultOptions;
+	public final VertexAiMultimodalEmbeddingOptions options;
 
 	private final VertexAiEmbeddingConnectionDetails connectionDetails;
 
@@ -92,7 +93,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 			VertexAiMultimodalEmbeddingOptions defaultEmbeddingOptions) {
 
 		Assert.notNull(defaultEmbeddingOptions, "VertexAiMultimodalEmbeddingOptions must not be null");
-		this.defaultOptions = defaultEmbeddingOptions;
+		this.options = defaultEmbeddingOptions;
 		this.connectionDetails = connectionDetails;
 	}
 
@@ -102,27 +103,27 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 		EmbeddingResponse finalResponse = new EmbeddingResponse(List.of());
 
 		EmbeddingOptions requestOptions = request.getOptions();
-		VertexAiMultimodalEmbeddingOptions mergedOptions = this.defaultOptions;
+		VertexAiMultimodalEmbeddingOptions mergedOptions = this.options;
 
 		if (requestOptions != null) {
 			VertexAiMultimodalEmbeddingOptions.Builder builder = VertexAiMultimodalEmbeddingOptions.builder()
-				.model(ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.defaultOptions.getModel()))
-				.dimensions(ModelOptionsUtils.mergeOption(requestOptions.getDimensions(),
-						this.defaultOptions.getDimensions()));
+				.model(ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.options.getModel()))
+				.dimensions(
+						ModelOptionsUtils.mergeOption(requestOptions.getDimensions(), this.options.getDimensions()));
 
 			if (requestOptions instanceof VertexAiMultimodalEmbeddingOptions vertexOptions) {
 				builder
 					.videoStartOffsetSec(ModelOptionsUtils.mergeOption(vertexOptions.getVideoStartOffsetSec(),
-							this.defaultOptions.getVideoStartOffsetSec()))
+							this.options.getVideoStartOffsetSec()))
 					.videoEndOffsetSec(ModelOptionsUtils.mergeOption(vertexOptions.getVideoEndOffsetSec(),
-							this.defaultOptions.getVideoEndOffsetSec()))
+							this.options.getVideoEndOffsetSec()))
 					.videoIntervalSec(ModelOptionsUtils.mergeOption(vertexOptions.getVideoIntervalSec(),
-							this.defaultOptions.getVideoIntervalSec()));
+							this.options.getVideoIntervalSec()));
 			}
 			else {
-				builder.videoStartOffsetSec(this.defaultOptions.getVideoStartOffsetSec())
-					.videoEndOffsetSec(this.defaultOptions.getVideoEndOffsetSec())
-					.videoIntervalSec(this.defaultOptions.getVideoIntervalSec());
+				builder.videoStartOffsetSec(this.options.getVideoStartOffsetSec())
+					.videoEndOffsetSec(this.options.getVideoEndOffsetSec())
+					.videoIntervalSec(this.options.getVideoIntervalSec());
 			}
 			mergedOptions = builder.build();
 		}
@@ -178,7 +179,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 				instanceBuilder.text(media.getData().toString());
 				documentMetadata.put(ModalityType.TEXT,
 						new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, media.getData()));
-				if (StringUtils.hasText(documentText)) {
+				if (logger.isWarnEnabled() && StringUtils.hasText(documentText)) {
 					logger.warn("Media type String overrides the Document text content!");
 				}
 			}
@@ -188,8 +189,8 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 					documentMetadata.put(ModalityType.IMAGE,
 							new DocumentMetadata(document.getId(), media.getMimeType(), media.getData()));
 				}
-				else {
-					logger.warn("Unsupported image mime type: {}", media.getMimeType());
+				else if (logger.isWarnEnabled()) {
+					logger.warn("Unsupported image mime type: " + media.getMimeType());
 					throw new IllegalArgumentException("Unsupported image mime type: " + media.getMimeType());
 				}
 			}
@@ -204,7 +205,9 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 						new DocumentMetadata(document.getId(), media.getMimeType(), media.getData()));
 			}
 			else {
-				logger.warn("Unsupported media type: {}", media.getMimeType());
+				if (logger.isWarnEnabled()) {
+					logger.warn("Unsupported media type: " + media.getMimeType());
+				}
 				throw new IllegalArgumentException("Unsupported media type: " + media.getMimeType());
 			}
 		}
@@ -281,7 +284,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 
 	@Override
 	public int dimensions() {
-		return KNOWN_EMBEDDING_DIMENSIONS.getOrDefault(this.defaultOptions.getModel(), 768);
+		return KNOWN_EMBEDDING_DIMENSIONS.getOrDefault(this.options.getModel(), 768);
 	}
 
 	record DocumentMetadata(String documentId, MimeType mimeType, Object data) {

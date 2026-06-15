@@ -16,11 +16,13 @@
 
 package org.springframework.ai.google.genai;
 
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions.Builder;
+import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
 import org.springframework.ai.google.genai.common.GoogleGenAiServiceTier;
 import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
@@ -54,36 +56,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 
 		assertThat(options.getModel()).isEqualTo("test-model");
 		assertThat(options.getThinkingBudget()).isEqualTo(15000);
-	}
-
-	@Test
-	public void testFromOptionsWithThinkingBudget() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.temperature(0.8)
-			.thinkingBudget(20000)
-			.build();
-
-		GoogleGenAiChatOptions copy = GoogleGenAiChatOptions.fromOptions(original);
-
-		assertThat(copy.getModel()).isEqualTo("test-model");
-		assertThat(copy.getTemperature()).isEqualTo(0.8);
-		assertThat(copy.getThinkingBudget()).isEqualTo(20000);
-		assertThat(copy).isNotSameAs(original);
-	}
-
-	@Test
-	public void testCopyWithThinkingBudget() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.thinkingBudget(30000)
-			.build();
-
-		GoogleGenAiChatOptions copy = original.copy();
-
-		assertThat(copy.getModel()).isEqualTo("test-model");
-		assertThat(copy.getThinkingBudget()).isEqualTo(30000);
-		assertThat(copy).isNotSameAs(original);
 	}
 
 	@Test
@@ -158,32 +130,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
-	public void testFromOptionsWithThinkingLevel() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
-			.build();
-
-		GoogleGenAiChatOptions copy = GoogleGenAiChatOptions.fromOptions(original);
-
-		assertThat(copy.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.LOW);
-		assertThat(copy).isNotSameAs(original);
-	}
-
-	@Test
-	public void testCopyWithThinkingLevel() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
-			.build();
-
-		GoogleGenAiChatOptions copy = original.copy();
-
-		assertThat(copy.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.HIGH);
-		assertThat(copy).isNotSameAs(original);
-	}
-
-	@Test
 	public void testEqualsAndHashCodeWithThinkingLevel() {
 		GoogleGenAiChatOptions options1 = GoogleGenAiChatOptions.builder()
 			.model("test-model")
@@ -243,32 +189,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
-	public void testFromOptionsWithIncludeServerSideToolInvocations() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.includeServerSideToolInvocations(true)
-			.build();
-
-		GoogleGenAiChatOptions copy = GoogleGenAiChatOptions.fromOptions(original);
-
-		assertThat(copy.getIncludeServerSideToolInvocations()).isTrue();
-		assertThat(copy).isNotSameAs(original);
-	}
-
-	@Test
-	public void testCopyWithIncludeServerSideToolInvocations() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.includeServerSideToolInvocations(true)
-			.build();
-
-		GoogleGenAiChatOptions copy = original.copy();
-
-		assertThat(copy.getIncludeServerSideToolInvocations()).isTrue();
-		assertThat(copy).isNotSameAs(original);
-	}
-
-	@Test
 	public void testEqualsAndHashCodeWithIncludeServerSideToolInvocations() {
 		GoogleGenAiChatOptions options1 = GoogleGenAiChatOptions.builder()
 			.model("test-model")
@@ -302,32 +222,6 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
-	public void testFromOptionsWithServiceTier() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.serviceTier(GoogleGenAiServiceTier.STANDARD)
-			.build();
-
-		GoogleGenAiChatOptions copy = GoogleGenAiChatOptions.fromOptions(original);
-
-		assertThat(copy.getServiceTier()).isEqualTo(GoogleGenAiServiceTier.STANDARD);
-		assertThat(copy).isNotSameAs(original);
-	}
-
-	@Test
-	public void testCopyWithServiceTier() {
-		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.serviceTier(GoogleGenAiServiceTier.FLEX)
-			.build();
-
-		GoogleGenAiChatOptions copy = original.copy();
-
-		assertThat(copy.getServiceTier()).isEqualTo(GoogleGenAiServiceTier.FLEX);
-		assertThat(copy).isNotSameAs(original);
-	}
-
-	@Test
 	public void testEqualsAndHashCodeWithServiceTier() {
 		GoogleGenAiChatOptions options1 = GoogleGenAiChatOptions.builder()
 			.model("test-model")
@@ -347,6 +241,33 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 		assertThat(options1).isEqualTo(options2);
 		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
 		assertThat(options1).isNotEqualTo(options3);
+	}
+
+	@Test
+	public void testCombineWithCollections() {
+		GoogleGenAiSafetySetting baseSafetySetting = new GoogleGenAiSafetySetting.Builder()
+			.withCategory(GoogleGenAiSafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT)
+			.withThreshold(GoogleGenAiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
+			.build();
+		GoogleGenAiChatOptions base = GoogleGenAiChatOptions.builder()
+			.labels(Map.of("base-key", "base-value"))
+			.safetySettings(List.of(baseSafetySetting))
+			.build();
+
+		GoogleGenAiSafetySetting overrideSafetySetting = new GoogleGenAiSafetySetting.Builder()
+			.withCategory(GoogleGenAiSafetySetting.HarmCategory.HARM_CATEGORY_HARASSMENT)
+			.withThreshold(GoogleGenAiSafetySetting.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE)
+			.build();
+		GoogleGenAiChatOptions override = GoogleGenAiChatOptions.builder()
+			.labels(Map.of("override-key", "override-value"))
+			.safetySettings(List.of(overrideSafetySetting))
+			.build();
+
+		GoogleGenAiChatOptions merged = base.mutate().combineWith(override.mutate()).build();
+
+		assertThat(merged.getLabels()).containsEntry("base-key", "base-value");
+		assertThat(merged.getLabels()).containsEntry("override-key", "override-value");
+		assertThat(merged.getSafetySettings()).containsExactlyInAnyOrder(baseSafetySetting, overrideSafetySetting);
 	}
 
 }

@@ -19,8 +19,6 @@ package org.springframework.ai.model.google.genai.autoconfigure.chat;
 import java.util.stream.Collectors;
 
 import com.google.genai.Client;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
@@ -44,8 +42,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * variables (Vertex AI mode)
  */
 public class GoogleGenAiChatAutoConfigurationIT {
-
-	private static final Log logger = LogFactory.getLog(GoogleGenAiChatAutoConfigurationIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class,
@@ -100,7 +96,6 @@ public class GoogleGenAiChatAutoConfigurationIT {
 			GoogleGenAiChatModel chatModel = context.getBean(GoogleGenAiChatModel.class);
 			String response = chatModel.call("Hello");
 			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
 		});
 	}
 
@@ -122,7 +117,6 @@ public class GoogleGenAiChatAutoConfigurationIT {
 				.collect(Collectors.joining());
 
 			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
 		});
 	}
 
@@ -140,7 +134,6 @@ public class GoogleGenAiChatAutoConfigurationIT {
 			GoogleGenAiChatModel chatModel = context.getBean(GoogleGenAiChatModel.class);
 			String response = chatModel.call("Hello");
 			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
 		});
 	}
 
@@ -164,7 +157,6 @@ public class GoogleGenAiChatAutoConfigurationIT {
 				.collect(Collectors.joining());
 
 			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
 		});
 	}
 

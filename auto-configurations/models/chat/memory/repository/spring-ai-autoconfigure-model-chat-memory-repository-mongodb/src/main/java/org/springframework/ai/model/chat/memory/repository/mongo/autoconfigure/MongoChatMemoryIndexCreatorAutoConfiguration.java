@@ -18,8 +18,8 @@ package org.springframework.ai.model.chat.memory.repository.mongo.autoconfigure;
 
 import java.lang.reflect.Method;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.chat.memory.repository.mongo.Conversation;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -45,7 +45,7 @@ import org.springframework.data.mongodb.core.index.IndexOperations;
 @ConditionalOnProperty(value = "spring.ai.chat.memory.repository.mongo.create-indices", havingValue = "true")
 public class MongoChatMemoryIndexCreatorAutoConfiguration {
 
-	private static final Logger logger = LoggerFactory.getLogger(MongoChatMemoryIndexCreatorAutoConfiguration.class);
+	private static final Log logger = LogFactory.getLog(MongoChatMemoryIndexCreatorAutoConfiguration.class);
 
 	private final MongoTemplate mongoTemplate;
 

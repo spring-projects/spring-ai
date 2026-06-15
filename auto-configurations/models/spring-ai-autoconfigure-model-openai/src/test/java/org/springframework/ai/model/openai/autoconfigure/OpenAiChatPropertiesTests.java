@@ -32,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Christian Tzolov
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 public class OpenAiChatPropertiesTests {
 
@@ -84,7 +85,8 @@ public class OpenAiChatPropertiesTests {
 				"spring.ai.openai.chat.tool-choice={\"type\":\"function\",\"function\":{\"name\":\"toolChoiceFunctionName\"}}",
 				"spring.ai.openai.chat.stream-options.include-usage=true",
 				"spring.ai.openai.chat.stream-options.include-obfuscation=true",
-				"spring.ai.openai.chat.stream-options.additional-properties.foo=bar"
+				"spring.ai.openai.chat.stream-options.additional-properties.foo=bar",
+				"spring.ai.openai.chat.prompt-cache-key=test-cache-key"
 
 			)
 			// @formatter:on
@@ -117,6 +119,8 @@ public class OpenAiChatPropertiesTests {
 				assertThat(options.getStreamOptions()).isNotNull();
 				assertThat(options.getStreamOptions().includeObfuscation()).isTrue();
 				assertThat(options.getStreamOptions().additionalProperties().get("foo")).isEqualTo("bar");
+
+				assertThat(options.getPromptCacheKey()).isEqualTo("test-cache-key");
 			});
 	}
 

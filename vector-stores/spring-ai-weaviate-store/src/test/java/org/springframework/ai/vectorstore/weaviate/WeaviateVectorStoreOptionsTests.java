@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Tests for {@link WeaviateVectorStoreOptions}.
  *
  * @author Jonghoon Park
+ * @author Sebastien Deleuze
  */
 class WeaviateVectorStoreOptionsTests {
 
@@ -108,14 +109,14 @@ class WeaviateVectorStoreOptionsTests {
 	@Test
 	void shouldHandleDefaultValues() {
 		// Test that default constructor sets appropriate defaults
-		WeaviateVectorStoreOptions defaultOptions = new WeaviateVectorStoreOptions();
+		WeaviateVectorStoreOptions options = new WeaviateVectorStoreOptions();
 
 		// Verify getters don't throw exceptions with default state
 		// Note: Adjust these assertions based on actual default values in your
 		// implementation
-		assertThat(defaultOptions.getObjectClass()).isNotNull();
-		assertThat(defaultOptions.getContentFieldName()).isNotNull();
-		assertThat(defaultOptions.getMetaFieldPrefix()).isNotNull();
+		assertThat(options.getObjectClass()).isNotNull();
+		assertThat(options.getContentFieldName()).isNotNull();
+		assertThat(options.getMetaFieldPrefix()).isNotNull();
 	}
 
 	@Test

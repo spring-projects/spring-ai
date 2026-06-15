@@ -78,8 +78,12 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		List<Message> memoryMessages = this.chatMemory.get(conversationId);
 
 		// 2. Advise the request messages list.
-		List<Message> processedMessages = new ArrayList<>(memoryMessages);
-		processedMessages.addAll(chatClientRequest.prompt().getInstructions());
+		List<Message> promptMessages = chatClientRequest.prompt().getInstructions();
+		List<Message> processedMessages = new ArrayList<>();
+		if (!isMemoryAlreadyInPrompt(promptMessages, memoryMessages)) {
+			processedMessages.addAll(memoryMessages);
+		}
+		processedMessages.addAll(promptMessages);
 
 		// 2.1. Ensure system message, if present, appears first in the list.
 		for (int i = 0; i < processedMessages.size(); i++) {
@@ -100,6 +104,33 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		this.chatMemory.add(conversationId, userMessage);
 
 		return processedChatClientRequest;
+	}
+
+	private static boolean isMemoryAlreadyInPrompt(List<Message> promptMessages, List<Message> memoryMessages) {
+		if (memoryMessages.isEmpty()) {
+			return true;
+		}
+		if (promptMessages.size() < memoryMessages.size()) {
+			return false;
+		}
+		for (int offset = 0; offset <= promptMessages.size() - memoryMessages.size(); offset++) {
+			if (startsWith(promptMessages, memoryMessages, offset)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean startsWith(List<Message> messages, List<Message> prefix, int offset) {
+		if (messages.size() - offset < prefix.size()) {
+			return false;
+		}
+		for (int i = 0; i < prefix.size(); i++) {
+			if (!messages.get(i + offset).equals(prefix.get(i))) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	@Override

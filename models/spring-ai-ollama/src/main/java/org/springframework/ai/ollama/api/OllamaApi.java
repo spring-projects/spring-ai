@@ -111,11 +111,12 @@ public final class OllamaApi {
 		Assert.notNull(chatRequest, REQUEST_BODY_NULL_ERROR);
 		Assert.isTrue(!chatRequest.stream(), "Stream mode must be disabled.");
 
-		return this.restClient.post()
+		// No usage of requiredBody to retain compatibility with Spring Framework < 7.0.4
+		return Objects.requireNonNull(this.restClient.post()
 				.uri("/api/chat")
 				.body(chatRequest)
 				.retrieve()
-				.requiredBody(ChatResponse.class);
+				.body(ChatResponse.class));
 	}
 
 	/**
@@ -175,21 +176,23 @@ public final class OllamaApi {
 	public EmbeddingsResponse embed(EmbeddingsRequest embeddingsRequest) {
 		Assert.notNull(embeddingsRequest, REQUEST_BODY_NULL_ERROR);
 
-		return this.restClient.post()
+		// No usage of requiredBody to retain compatibility with Spring Framework < 7.0.4
+		return Objects.requireNonNull(this.restClient.post()
 				.uri("/api/embed")
 				.body(embeddingsRequest)
 				.retrieve()
-				.requiredBody(EmbeddingsResponse.class);
+				.body(EmbeddingsResponse.class));
 	}
 
 	/**
 	 * List models that are available locally on the machine where Ollama is running.
 	 */
 	public ListModelResponse listModels() {
-		return this.restClient.get()
+		// No usage of requiredBody to retain compatibility with Spring Framework < 7.0.4
+		return Objects.requireNonNull(this.restClient.get()
 				.uri("/api/tags")
 				.retrieve()
-				.requiredBody(ListModelResponse.class);
+				.body(ListModelResponse.class));
 	}
 
 	/**
@@ -198,11 +201,12 @@ public final class OllamaApi {
 	public ShowModelResponse showModel(ShowModelRequest showModelRequest) {
 		Assert.notNull(showModelRequest, "showModelRequest must not be null");
 
-		return this.restClient.post()
+		// No usage of requiredBody to retain compatibility with Spring Framework < 7.0.4
+		return Objects.requireNonNull(this.restClient.post()
 				.uri("/api/show")
 				.body(showModelRequest)
 				.retrieve()
-				.requiredBody(ShowModelResponse.class);
+				.body(ShowModelResponse.class));
 	}
 
 	/**

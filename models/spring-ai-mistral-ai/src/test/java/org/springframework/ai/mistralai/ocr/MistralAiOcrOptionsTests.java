@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for {@link MistralAiOcrOptions}.
  *
  * @author Alexandros Pappas
+ * @author Sebastien Deleuze
  * @since 1.1.0
  */
 class MistralAiOcrOptionsTests {
@@ -71,7 +72,7 @@ class MistralAiOcrOptionsTests {
 
 	@Test
 	void testDefaultValues() {
-		MistralAiOcrOptions options = new MistralAiOcrOptions();
+		MistralAiOcrOptions options = MistralAiOcrOptions.builder().build();
 		assertThat(options.getModel()).isEqualTo("mistral-ocr-latest");
 		assertThat(options.getId()).isNull();
 		assertThat(options.getPages()).isNull();

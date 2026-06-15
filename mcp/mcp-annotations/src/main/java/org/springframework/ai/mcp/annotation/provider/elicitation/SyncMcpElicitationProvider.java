@@ -24,8 +24,8 @@ import java.util.stream.Stream;
 import io.modelcontextprotocol.spec.McpSchema.ElicitRequest;
 import io.modelcontextprotocol.spec.McpSchema.ElicitResult;
 import io.modelcontextprotocol.util.Assert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.mcp.annotation.McpElicitation;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
@@ -64,7 +64,7 @@ import org.springframework.ai.mcp.annotation.method.elicitation.SyncMcpElicitati
  */
 public class SyncMcpElicitationProvider {
 
-	private static final Logger logger = LoggerFactory.getLogger(SyncMcpElicitationProvider.class);
+	private static final Log logger = LogFactory.getLog(SyncMcpElicitationProvider.class);
 
 	private final List<Object> elicitationObjects;
 
@@ -113,7 +113,9 @@ public class SyncMcpElicitationProvider {
 			logger.warn("No elicitation methods found");
 		}
 		if (elicitationHandlers.size() > 1) {
-			logger.warn("Multiple elicitation methods found: {}", elicitationHandlers.size());
+			if (logger.isWarnEnabled()) {
+				logger.warn("Multiple elicitation methods found: " + elicitationHandlers.size());
+			}
 		}
 
 		return elicitationHandlers;

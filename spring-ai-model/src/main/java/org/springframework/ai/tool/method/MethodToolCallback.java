@@ -23,9 +23,9 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import tools.jackson.core.JacksonException;
 
 import org.springframework.ai.chat.model.ToolContext;
@@ -51,7 +51,7 @@ public final class MethodToolCallback implements ToolCallback {
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
 
-	private static final Logger logger = LoggerFactory.getLogger(MethodToolCallback.class);
+	private static final Log logger = LogFactory.getLog(MethodToolCallback.class);
 
 	private static final ToolCallResultConverter DEFAULT_RESULT_CONVERTER = new DefaultToolCallResultConverter();
 
@@ -100,7 +100,9 @@ public final class MethodToolCallback implements ToolCallback {
 	public String call(String toolInput, @Nullable ToolContext toolContext) {
 		Assert.hasText(toolInput, "toolInput cannot be null or empty");
 
-		logger.debug("Starting execution of tool: {}", this.toolDefinition.name());
+		if (logger.isDebugEnabled()) {
+			logger.debug("Starting execution of tool: " + this.toolDefinition.name());
+		}
 
 		this.validateToolContextSupport(toolContext);
 
@@ -111,7 +113,9 @@ public final class MethodToolCallback implements ToolCallback {
 
 		Object result = this.callMethod(methodArguments);
 
-		logger.debug("Successful execution of tool: {}", this.toolDefinition.name());
+		if (logger.isDebugEnabled()) {
+			logger.debug("Successful execution of tool: " + this.toolDefinition.name());
+		}
 
 		Type returnType = this.toolMethod.getGenericReturnType();
 

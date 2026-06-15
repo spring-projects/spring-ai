@@ -154,8 +154,6 @@ public class McpToolInputSchemaIT {
 
 				assertThat(tools).hasSize(1);
 				assertThat(tools.get(0).tool().name()).isEqualTo("create_jira_issue");
-
-				System.out.println("create_jira_issue inputSchema:\n" + tools.get(0).tool().inputSchema());
 			});
 	}
 

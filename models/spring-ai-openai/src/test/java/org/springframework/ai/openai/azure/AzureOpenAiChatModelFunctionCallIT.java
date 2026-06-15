@@ -18,24 +18,21 @@ package org.springframework.ai.openai.azure;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.chat.MockWeatherService;
@@ -53,8 +50,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 		@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+") })
 class AzureOpenAiChatModelFunctionCallIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiChatModelFunctionCallIT.class);
-
 	@Autowired
 	private String selectedModel;
 
@@ -68,7 +63,9 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-		var promptOptions = OpenAiChatOptions.builder()
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
 			.deploymentName(this.selectedModel)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the current weather in a given location")
@@ -76,10 +73,15 @@ class AzureOpenAiChatModelFunctionCallIT {
 				.build()))
 			.build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+		Prompt prompt = new Prompt(messages, options);
 
-		logger.info("Response: {}", response);
+		ChatResponse response = this.chatModel.call(prompt);
 
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			response = this.chatModel.call(prompt);
+		}
 		assertThat(response.getResult()).isNotNull();
 		assertThat(response.getResult().getOutput()).isNotNull();
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
@@ -96,7 +98,9 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-		var promptOptions = OpenAiChatOptions.builder()
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
 			.deploymentName(this.selectedModel)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the current weather in a given location")
@@ -104,10 +108,15 @@ class AzureOpenAiChatModelFunctionCallIT {
 				.build()))
 			.build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+		Prompt prompt = new Prompt(messages, options);
 
-		logger.info("Response: {}", response);
+		ChatResponse response = this.chatModel.call(prompt);
 
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			response = this.chatModel.call(prompt);
+		}
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
@@ -117,7 +126,9 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-		var promptOptions = OpenAiChatOptions.builder()
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
 			.deploymentName(this.selectedModel)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the current weather in a given location")
@@ -125,23 +136,19 @@ class AzureOpenAiChatModelFunctionCallIT {
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
+		Prompt prompt = new Prompt(messages, options);
 
-		final var counter = new AtomicInteger();
-		String content = response.doOnEach(listSignal -> counter.getAndIncrement())
-			.collectList()
-			.block()
-			.stream()
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getText)
-			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
 
-		assertThat(counter.get()).withFailMessage("The response should be chunked in more than 30 messages")
-			.isGreaterThan(30);
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
 
+		String content = aggregatedRef.get().getResult().getOutput().getText();
 		assertThat(content).contains("30", "10", "15");
 
 	}
@@ -166,9 +173,6 @@ class AzureOpenAiChatModelFunctionCallIT {
 		assertThat(responses).isNotEmpty();
 
 		ChatResponse finalResponse = responses.get(responses.size() - 2);
-
-		logger.info("Final Response: {}", finalResponse);
-
 		assertThat(finalResponse.getMetadata()).isNotNull();
 		assertThat(finalResponse.getMetadata().getUsage()).isNotNull();
 
@@ -184,7 +188,9 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-		var promptOptions = OpenAiChatOptions.builder()
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
 			.deploymentName(this.selectedModel)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the current weather in a given location")
@@ -192,22 +198,19 @@ class AzureOpenAiChatModelFunctionCallIT {
 				.build()))
 			.build();
 
-		var response = this.chatModel.stream(new Prompt(messages, promptOptions));
+		Prompt prompt = new Prompt(messages, options);
 
-		final var counter = new AtomicInteger();
-		String content = response.doOnEach(listSignal -> counter.getAndIncrement())
-			.collectList()
-			.block()
-			.stream()
-			.map(ChatResponse::getResults)
-			.flatMap(List::stream)
-			.map(Generation::getOutput)
-			.map(AssistantMessage::getText)
-			.filter(Objects::nonNull)
-			.collect(Collectors.joining());
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
 
-		logger.info("Response: {}", response);
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
 
+		String content = aggregatedRef.get().getResult().getOutput().getText();
 		assertThat(content).contains("30", "10", "15");
 	}
 

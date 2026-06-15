@@ -138,7 +138,7 @@ AnthropicChatOptions anthropicOptions = AnthropicChatOptions.builder()
         .model("claude-sonnet-4-6")
         .temperature(0.2)
         .topK(40)                   // Anthropic-specific parameter
-        .thinking(AnthropicApi.ThinkingType.ENABLED, 1000)  // Anthropic-specific thinking configuration
+        .thinkingEnabled(1000)                              // Anthropic-specific thinking configuration
         .build();
 
 String result = chatClient.prompt("...")

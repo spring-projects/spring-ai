@@ -24,9 +24,7 @@ import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -67,8 +65,7 @@ public class MistralAiChatAutoConfiguration {
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ToolCallingManager toolCallingManager,
 			ObjectProvider<RetryTemplate> retryTemplate, ObjectProvider<ResponseErrorHandler> responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<ChatModelObservationConvention> observationConvention,
-			ObjectProvider<ToolExecutionEligibilityPredicate> mistralAiToolExecutionEligibilityPredicate) {
+			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
 		var mistralAiApi = mistralAiApi(chatProperties.getApiKey(), commonProperties.getApiKey(),
 				chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
@@ -77,10 +74,8 @@ public class MistralAiChatAutoConfiguration {
 
 		var chatModel = MistralAiChatModel.builder()
 			.mistralAiApi(mistralAiApi)
-			.defaultOptions(chatProperties.toOptions())
+			.options(chatProperties.toOptions())
 			.toolCallingManager(toolCallingManager)
-			.toolExecutionEligibilityPredicate(mistralAiToolExecutionEligibilityPredicate
-				.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
 			.retryTemplate(retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.build();

@@ -19,7 +19,6 @@ package org.springframework.ai.mcp.server.webflux.transport;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.modelcontextprotocol.common.McpTransportContext;
@@ -38,9 +37,9 @@ import io.modelcontextprotocol.spec.McpStreamableServerTransportProvider;
 import io.modelcontextprotocol.spec.ProtocolVersions;
 import io.modelcontextprotocol.util.Assert;
 import io.modelcontextprotocol.util.KeepAliveScheduler;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
@@ -63,7 +62,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
  */
 public final class WebFluxStreamableServerTransportProvider implements McpStreamableServerTransportProvider {
 
-	private static final Logger logger = LoggerFactory.getLogger(WebFluxStreamableServerTransportProvider.class);
+	private static final Log logger = LogFactory.getLog(WebFluxStreamableServerTransportProvider.class);
 
 	public static final String MESSAGE_EVENT_TYPE = "message";
 
@@ -138,13 +137,16 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 			return Mono.empty();
 		}
 
-		logger.debug("Attempting to broadcast message to {} active sessions", this.sessions.size());
+		if (logger.isDebugEnabled()) {
+			logger.debug("Attempting to broadcast message to " + this.sessions.size() + " active sessions");
+		}
 
 		return Flux.fromIterable(this.sessions.values())
-			.flatMap(session -> session.sendNotification(method, params)
-				.doOnError(
-						e -> logger.error("Failed to send message to session {}: {}", session.getId(), e.getMessage()))
-				.onErrorComplete())
+			.flatMap(session -> session.sendNotification(method, params).doOnError(e -> {
+				if (logger.isErrorEnabled()) {
+					logger.error("Failed to send message to session " + session.getId() + ": " + e.getMessage());
+				}
+			}).onErrorComplete())
 			.then();
 	}
 
@@ -153,7 +155,9 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 		return Mono.defer(() -> {
 			McpStreamableServerSession session = this.sessions.get(sessionId);
 			if (session == null) {
-				logger.debug("Session {} not found", sessionId);
+				if (logger.isDebugEnabled()) {
+					logger.debug("Session " + sessionId + " not found");
+				}
 				return Mono.empty();
 			}
 			return session.sendNotification(method, params);
@@ -164,11 +168,11 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 	public Mono<Void> closeGracefully() {
 		return Mono.defer(() -> {
 			this.isClosing = true;
-			return Flux.fromIterable(this.sessions.values())
-				.doFirst(() -> logger.debug("Initiating graceful shutdown with {} active sessions",
-						this.sessions.size()))
-				.flatMap(McpStreamableServerSession::closeGracefully)
-				.then();
+			return Flux.fromIterable(this.sessions.values()).doFirst(() -> {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Initiating graceful shutdown with " + this.sessions.size() + " active sessions");
+				}
+			}).flatMap(McpStreamableServerSession::closeGracefully).then();
 		}).then().doOnSuccess(v -> {
 			this.sessions.clear();
 			if (this.keepAliveScheduler != null) {
@@ -205,7 +209,7 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 		}
 
 		try {
-			Map<String, List<String>> headers = request.headers().asHttpHeaders().asMultiValueMap();
+			var headers = HeaderUtils.collectHeaders(request);
 			this.securityValidator.validateHeaders(headers);
 		}
 		catch (ServerTransportSecurityException e) {
@@ -269,7 +273,7 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 		}
 
 		try {
-			Map<String, List<String>> headers = request.headers().asHttpHeaders().asMultiValueMap();
+			var headers = HeaderUtils.collectHeaders(request);
 			this.securityValidator.validateHeaders(headers);
 		}
 		catch (ServerTransportSecurityException e) {
@@ -367,7 +371,9 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 				}
 			}
 			catch (IllegalArgumentException | IOException e) {
-				logger.error("Failed to deserialize message: {}", e.getMessage());
+				if (logger.isErrorEnabled()) {
+					logger.error("Failed to deserialize message: " + e.getMessage());
+				}
 				return ServerResponse.badRequest()
 					.bodyValue(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
 						.message("Invalid message format")
@@ -384,7 +390,7 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 		}
 
 		try {
-			Map<String, List<String>> headers = request.headers().asHttpHeaders().asMultiValueMap();
+			var headers = HeaderUtils.collectHeaders(request);
 			this.securityValidator.validateHeaders(headers);
 		}
 		catch (ServerTransportSecurityException e) {

@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * level of the JSON request.
  *
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 class OpenAiExtraBodySerializationTests {
 
@@ -79,7 +80,7 @@ class OpenAiExtraBodySerializationTests {
 	@Test
 	void testMergeWithExtraBody() {
 		// Arrange: Create options with extraBody
-		OpenAiChatOptions defaultOptions = OpenAiChatOptions.builder()
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
 			.model("test-model")
 			.extraBody(Map.of("enable_thinking", true, "max_depth", 10))
 			.build();
@@ -90,7 +91,7 @@ class OpenAiExtraBodySerializationTests {
 
 		// Act: Merge options using the builder's combineWith method, which is the actual
 		// mechanism used by OpenAiChatModel
-		OpenAiChatOptions merged = defaultOptions.mutate().combineWith(runtimeOptions).build();
+		OpenAiChatOptions merged = options.mutate().combineWith(runtimeOptions).build();
 
 		// Assert: Verify extraBody was successfully merged
 		assertThat(merged.getExtraBody()).isNotNull();
