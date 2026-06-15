@@ -23,10 +23,12 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Tests for {@link MethodToolCallback} with generic types.
@@ -90,7 +92,7 @@ class MethodToolCallbackGenericTypesTest {
 		// Create a JSON input with a map of string to integer
 		String toolInput = """
 				{
-					"map": {"one": 1, "two": 2, "three": 3}
+					"named_map": {"one": 1, "two": 2, "three": 3}
 				}
 				""";
 
@@ -173,6 +175,48 @@ class MethodToolCallbackGenericTypesTest {
 		assertThat(result).isEqualTo("1 entries processed {foo=bar}");
 	}
 
+	@Test
+	void testExplicitToolParamNameForSimpleString() throws Exception {
+		TestGenericClass testObject = new TestGenericClass();
+		Method method = TestGenericClass.class.getMethod("processCustomer", String.class);
+
+		MethodToolCallback callback = MethodToolCallback.builder()
+			.toolDefinition(DefaultToolDefinition.builder()
+				.name("processCustomer")
+				.description("Process customer")
+				.inputSchema("{}")
+				.build())
+			.toolMethod(method)
+			.toolObject(testObject)
+			.build();
+
+		String result = callback.call("""
+				{
+					"customer_id": "abc-123"
+				}
+				""");
+
+		assertThat(result).contains("Customer: abc-123");
+	}
+
+	@Test
+	void testDuplicateEffectiveToolParamNamesThrowException() throws Exception {
+		TestGenericClass testObject = new TestGenericClass();
+		Method method = TestGenericClass.class.getMethod("duplicateEffectiveNames", String.class, String.class);
+
+		assertThatThrownBy(() -> MethodToolCallback.builder()
+			.toolDefinition(DefaultToolDefinition.builder()
+				.name("duplicateEffectiveNames")
+				.description("Duplicate names")
+				.inputSchema("{}")
+				.build())
+			.toolMethod(method)
+			.toolObject(testObject)
+			.build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Duplicate tool parameter name 'input'")
+			.hasMessageContaining("duplicateEffectiveNames");
+	}
+
 	/**
 	 * Test class with methods that use generic types.
 	 */
@@ -182,7 +226,7 @@ class MethodToolCallbackGenericTypesTest {
 			return strings.size() + " strings processed: " + strings;
 		}
 
-		public String processStringIntMap(Map<String, Integer> map) {
+		public String processStringIntMap(@ToolParam(name = "named_map") Map<String, Integer> map) {
 			return map.size() + " entries processed: " + map;
 		}
 
@@ -193,6 +237,14 @@ class MethodToolCallbackGenericTypesTest {
 		public String processStringListInToolContext(ToolContext toolContext) {
 			Map<String, Object> context = toolContext.getContext();
 			return context.size() + " entries processed " + context;
+		}
+
+		public String processCustomer(@ToolParam(name = "customer_id") String customerId) {
+			return "Customer: " + customerId;
+		}
+
+		public String duplicateEffectiveNames(@ToolParam(name = "input") String first, String input) {
+			return first + input;
 		}
 
 	}

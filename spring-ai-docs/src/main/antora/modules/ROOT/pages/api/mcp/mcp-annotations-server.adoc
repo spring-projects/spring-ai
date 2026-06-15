@@ -18,12 +18,15 @@ public class CalculatorTools {
 
     @McpTool(name = "add", description = "Add two numbers together")
     public int add(
-            @McpToolParam(description = "First number", required = true) int a,
-            @McpToolParam(description = "Second number", required = true) int b) {
+            @McpToolParam(name = "first_number", description = "First number", required = true) int a,
+            @McpToolParam(name = "second_number", description = "Second number", required = true) int b) {
         return a + b;
     }
 }
 ----
+
+The `@McpToolParam` annotation supports `name`, `description`, and `required`.
+Use `name` to expose a tool argument name that differs from the Java parameter name, or when compiled Java parameter names may be unavailable.
 
 ==== Annotation Attributes
 

@@ -34,6 +34,13 @@ import java.lang.annotation.Target;
 public @interface ToolParam {
 
 	/**
+	 * The name of the tool argument. Only effective on method parameters. For fields or
+	 * record components, use {@code @JsonProperty} or {@code @Schema} to customize schema
+	 * property names.
+	 */
+	String name() default "";
+
+	/**
 	 * Whether the tool argument is required.
 	 */
 	boolean required() default true;

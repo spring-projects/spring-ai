@@ -43,6 +43,7 @@ import tools.jackson.databind.node.ObjectNode;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.KotlinModule;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.ai.tool.support.ToolMethodParameterUtils;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.core.KotlinDetector;
 import org.springframework.core.Nullness;
@@ -59,7 +60,7 @@ import org.springframework.util.StringUtils;
  * following supported annotations:
  * <p>
  * <ul>
- * <li>{@code @ToolParam(required = ..., description = ...)}</li>
+ * <li>{@code @ToolParam(name = ..., required = ..., description = ...)}</li>
  * <li>{@code @JsonProperty(required = ...)}</li>
  * <li>{@code @JsonClassDescription(...)}</li>
  * <li>{@code @JsonPropertyDescription(...)}</li>
@@ -140,18 +141,19 @@ public final class JsonSchemaGenerator {
 
 		ObjectNode properties = schema.putObject("properties");
 		List<String> required = new ArrayList<>();
+		ToolMethodParameterUtils.validateUniqueParameterNames(method, JsonSchemaGenerator::isInfrastructureParameter);
 
 		for (int i = 0; i < method.getParameterCount(); i++) {
-			String parameterName = method.getParameters()[i].getName();
+			Parameter parameter = method.getParameters()[i];
 			Type parameterType = method.getGenericParameterTypes()[i];
-			if (parameterType instanceof Class<?> parameterClass
-					&& ClassUtils.isAssignable(ToolContext.class, parameterClass)) {
+			if (isInfrastructureParameter(parameter)) {
 				// A ToolContext method parameter is not included in the JSON Schema
 				// generation.
 				// It's a special type used by Spring AI to pass contextual data to tools
 				// outside the model interaction flow.
 				continue;
 			}
+			String parameterName = ToolMethodParameterUtils.getParameterName(parameter);
 			if (isMethodParameterRequired(method, i)) {
 				required.add(parameterName);
 			}
@@ -181,6 +183,11 @@ public final class JsonSchemaGenerator {
 		processSchemaOptions(schemaOptions, schema);
 
 		return schema.toPrettyString();
+	}
+
+	private static boolean isInfrastructureParameter(Parameter parameter) {
+		return parameter.getParameterizedType() instanceof Class<?> parameterClass
+				&& ClassUtils.isAssignable(ToolContext.class, parameterClass);
 	}
 
 	/**

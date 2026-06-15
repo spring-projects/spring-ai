@@ -104,8 +104,8 @@ public class CalculatorTools {
 
     @McpTool(name = "add", description = "Add two numbers together")
     public int add(
-            @McpToolParam(description = "First number", required = true) int a,
-            @McpToolParam(description = "Second number", required = true) int b) {
+            @McpToolParam(name = "first_number", description = "First number", required = true) int a,
+            @McpToolParam(name = "second_number", description = "Second number", required = true) int b) {
         return a + b;
     }
 
@@ -117,6 +117,8 @@ public class CalculatorTools {
     }
 }
 ----
+
+Use `@McpToolParam(name = "...")` to expose a tool argument name that differs from the Java parameter name, or when publishing libraries or building without Java parameter metadata.
 
 And a simple client handler for logging:
 

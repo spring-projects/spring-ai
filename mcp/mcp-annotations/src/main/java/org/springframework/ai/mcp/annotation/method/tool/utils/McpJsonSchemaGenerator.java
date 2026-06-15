@@ -51,13 +51,13 @@ import org.springframework.ai.mcp.annotation.McpProgressToken;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
+import org.springframework.ai.mcp.annotation.method.tool.McpToolMethodParameterUtils;
 import org.springframework.ai.model.KotlinModule;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator.SchemaOption;
 import org.springframework.ai.util.json.schema.JsonSchemaUtils;
 import org.springframework.core.KotlinDetector;
 import org.springframework.core.Nullness;
-import org.springframework.util.ClassUtils;
 import org.springframework.util.ConcurrentReferenceHashMap;
 
 public final class McpJsonSchemaGenerator {
@@ -150,33 +150,18 @@ public final class McpJsonSchemaGenerator {
 
 		ObjectNode properties = schema.putObject("properties");
 		List<String> required = new ArrayList<>();
+		McpToolMethodParameterUtils.validateUniqueParameterNames(method,
+				McpJsonSchemaGenerator::isInfrastructureParameter);
 
 		for (int i = 0; i < method.getParameterCount(); i++) {
 			Parameter parameter = method.getParameters()[i];
-			String parameterName = parameter.getName();
 			Type parameterType = method.getGenericParameterTypes()[i];
 
-			// Skip parameters annotated with @McpProgressToken
-			if (parameter.isAnnotationPresent(McpProgressToken.class)) {
+			if (isInfrastructureParameter(parameter)) {
 				continue;
 			}
 
-			// Skip McpMeta parameters
-			if (parameterType instanceof Class<?> parameterClass && McpMeta.class.isAssignableFrom(parameterClass)) {
-				continue;
-			}
-
-			// Skip MCP infrastructure parameter types
-			if (parameterType instanceof Class<?> parameterClass
-					&& (ClassUtils.isAssignable(McpSyncRequestContext.class, parameterClass)
-							|| ClassUtils.isAssignable(McpAsyncRequestContext.class, parameterClass)
-							|| ClassUtils.isAssignable(McpSyncServerExchange.class, parameterClass)
-							|| ClassUtils.isAssignable(McpAsyncServerExchange.class, parameterClass)
-							|| ClassUtils.isAssignable(McpTransportContext.class, parameterClass)
-							|| ClassUtils.isAssignable(CallToolRequest.class, parameterClass))) {
-				continue;
-			}
-
+			String parameterName = McpToolMethodParameterUtils.getParameterName(parameter);
 			if (isMethodParameterRequired(method, i)) {
 				required.add(parameterName);
 			}
@@ -202,6 +187,17 @@ public final class McpJsonSchemaGenerator {
 		required.forEach(requiredArray::add);
 
 		return schema.toPrettyString();
+	}
+
+	private static boolean isInfrastructureParameter(Parameter parameter) {
+		// Check if parameter is a common MCP infrastructure parameter
+		if (McpToolMethodParameterUtils.isInfrastructureParameter(parameter)) {
+			return true;
+		}
+
+		// Check if parameter is an MCP server exchange type
+		return McpSyncServerExchange.class.isAssignableFrom(parameter.getType())
+				|| McpAsyncServerExchange.class.isAssignableFrom(parameter.getType());
 	}
 
 	/**

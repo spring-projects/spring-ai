@@ -18,6 +18,7 @@ package org.springframework.ai.mcp.annotation.method.tool;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.Objects;
@@ -61,6 +62,9 @@ public abstract class AbstractMcpToolMethodCallback<T, RC extends McpRequestCont
 		this.toolMethod = toolMethod;
 		this.toolObject = toolObject;
 		this.returnMode = returnMode;
+		// MCP callbacks can be built independently from schema generation, so runtime
+		// argument binding must validate duplicate effective names independently.
+		McpToolMethodParameterUtils.validateUniqueParameterNames(toolMethod, this::isInfrastructureParameter);
 	}
 
 	/**
@@ -131,9 +135,20 @@ public abstract class AbstractMcpToolMethodCallback<T, RC extends McpRequestCont
 				return exchangeOrContext;
 			}
 
-			Object rawArgument = toolInputArguments.get(parameter.getName());
+			Object rawArgument = toolInputArguments.get(McpToolMethodParameterUtils.getParameterName(parameter));
 			return buildTypedArgument(rawArgument, parameter.getParameterizedType());
 		}).toArray();
+	}
+
+	private boolean isInfrastructureParameter(Parameter parameter) {
+		// Check if parameter is a common MCP infrastructure parameter
+		if (McpToolMethodParameterUtils.isInfrastructureParameter(parameter)) {
+			return true;
+		}
+
+		// Check if parameter is an injectable exchange or context type for this
+		// callback
+		return isExchangeOrContextType(parameter.getType());
 	}
 
 	/**
@@ -142,7 +157,7 @@ public abstract class AbstractMcpToolMethodCallback<T, RC extends McpRequestCont
 	 * @param type The target type
 	 * @return The typed argument
 	 */
-	protected Object buildTypedArgument(@Nullable Object value, Type type) {
+	protected @Nullable Object buildTypedArgument(@Nullable Object value, Type type) {
 		if (value == null) {
 			return null;
 		}

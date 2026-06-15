@@ -99,7 +99,7 @@ class JsonSchemaGeneratorTests {
 				    "$schema": "https://json-schema.org/draft/2020-12/schema",
 				    "type": "object",
 				    "properties": {
-				        "username": {
+				        "customer_id": {
 				            "type": "string",
 				            "description": "The username of the customer"
 				        },
@@ -423,6 +423,17 @@ class JsonSchemaGeneratorTests {
 				""";
 
 		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForMethodWithDuplicateEffectiveToolParamNamesThrowsException() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("duplicateEffectiveToolParamNamesMethod", String.class,
+				String.class);
+
+		assertThatThrownBy(() -> JsonSchemaGenerator.generateForMethodInput(method))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Duplicate tool parameter name 'name'")
+			.hasMessageContaining("duplicateEffectiveToolParamNamesMethod");
 	}
 
 	// TYPES
@@ -950,11 +961,12 @@ class JsonSchemaGeneratorTests {
 		}
 
 		public void annotatedMethod(
-				@ToolParam(required = false, description = "The username of the customer") String username,
+				@ToolParam(name = "customer_id", required = false,
+						description = "The username of the customer") String username,
 				@ToolParam(required = true) String password) {
 		}
 
-		public void anotherAnnotatedMethod(String username, @ToolParam String password) {
+		public void anotherAnnotatedMethod(String username, @ToolParam(name = " ") String password) {
 		}
 
 		public void openApiMethod(
@@ -978,6 +990,9 @@ class JsonSchemaGeneratorTests {
 		}
 
 		public void contextMethod(String deliveryStatus, LocalDateTime expectedDelivery, ToolContext toolContext) {
+		}
+
+		public void duplicateEffectiveToolParamNamesMethod(@ToolParam(name = "name") String first, String name) {
 		}
 
 		public void searchBooksMethod(SearchRequest request) {
