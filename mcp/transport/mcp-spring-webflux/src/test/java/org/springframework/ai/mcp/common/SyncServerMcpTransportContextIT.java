@@ -185,7 +185,7 @@ public class SyncServerMcpTransportContextIT {
 			.extracting(McpSchema.TextContent::text)
 			.isEqualTo("some important value");
 
-		mcpServer.close();
+		mcpServer.closeGracefully();
 	}
 
 	@Test
@@ -212,7 +212,7 @@ public class SyncServerMcpTransportContextIT {
 			.extracting(McpSchema.TextContent::text)
 			.isEqualTo("some important value");
 
-		mcpServer.close();
+		mcpServer.closeGracefully();
 	}
 
 	@Test
@@ -238,7 +238,7 @@ public class SyncServerMcpTransportContextIT {
 			.extracting(McpSchema.TextContent::text)
 			.isEqualTo("some important value");
 
-		mcpServer.close();
+		mcpServer.closeGracefully();
 	}
 
 	private void startHttpServer(RouterFunction<?> routerFunction) {

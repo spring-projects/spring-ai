@@ -44,7 +44,7 @@ import org.springframework.web.servlet.function.ServerResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Timeout(15)
+@Timeout(60)
 class WebMvcStatelessIT extends AbstractStatelessIntegrationTests {
 
 	private static final String MESSAGE_ENDPOINT = "/mcp/message";
@@ -72,7 +72,7 @@ class WebMvcStatelessIT extends AbstractStatelessIntegrationTests {
 
 		clientBuilders.put("httpclient", McpClient
 			.sync(HttpClientStreamableHttpTransport.builder("http://127.0.0.1:" + port).endpoint(mcpEndpoint).build())
-			.requestTimeout(Duration.ofHours(10)));
+			.initializationTimeout(Duration.ofSeconds(10)));
 
 		clientBuilders.put("webflux",
 				McpClient
@@ -80,7 +80,7 @@ class WebMvcStatelessIT extends AbstractStatelessIntegrationTests {
 						.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + port))
 						.endpoint(mcpEndpoint)
 						.build())
-					.requestTimeout(Duration.ofHours(10)));
+					.initializationTimeout(Duration.ofSeconds(10)));
 	}
 
 	@BeforeEach

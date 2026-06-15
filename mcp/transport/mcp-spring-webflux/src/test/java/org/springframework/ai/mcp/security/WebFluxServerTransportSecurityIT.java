@@ -98,7 +98,7 @@ public class WebFluxServerTransportSecurityIT {
 
 	@AfterEach
 	void tearDown() {
-		this.mcpClient.close();
+		this.mcpClient.closeGracefully();
 	}
 
 	@Test
