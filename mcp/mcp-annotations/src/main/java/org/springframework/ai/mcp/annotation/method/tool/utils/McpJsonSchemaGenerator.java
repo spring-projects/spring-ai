@@ -177,6 +177,13 @@ public final class McpJsonSchemaGenerator {
 				continue;
 			}
 
+			// A Kotlin suspend function carries a synthetic trailing Continuation
+			// parameter that is not part of the tool contract and must not appear in
+			// the generated schema.
+			if (KotlinDetector.isSuspendingFunction(method) && i == method.getParameterCount() - 1) {
+				continue;
+			}
+
 			if (isMethodParameterRequired(method, i)) {
 				required.add(parameterName);
 			}

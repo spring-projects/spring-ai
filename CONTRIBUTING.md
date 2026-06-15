@@ -108,7 +108,7 @@ If the commit has both an issue and a PR associated, the Spring AI committer mer
 
 ## Source code style
 
-Spring AI source code style follows the checkstyle guidelines used by the [core Spring Framework project](https://github.com/spring-framework/wiki/Code-Style) with some exceptions.
+Spring AI source code style follows the checkstyle guidelines used by the [core Spring Framework project](https://github.com/spring-projects/spring-framework/wiki/Code-Style) with some exceptions.
 See also related [IntelliJ IDEA Editor Settings](https://github.com/spring-projects/spring-framework/blob/main/src/idea/spring-framework.xml).
 
 The code is formatted using the [java-format plugin](https://github.com/spring-io/spring-javaformat) as part of the build.

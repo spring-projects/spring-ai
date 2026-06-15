@@ -152,6 +152,12 @@ public final class JsonSchemaGenerator {
 				// outside the model interaction flow.
 				continue;
 			}
+			// A Kotlin suspend function carries a synthetic trailing Continuation
+			// parameter that is not part of the tool contract and must not appear in
+			// the generated schema.
+			if (KotlinDetector.isSuspendingFunction(method) && i == method.getParameterCount() - 1) {
+				continue;
+			}
 			if (isMethodParameterRequired(method, i)) {
 				required.add(parameterName);
 			}
@@ -320,8 +326,8 @@ public final class JsonSchemaGenerator {
 						}
 					});
 				}
-				else if (value.isTextual() && entry.getKey().equals("type")) {
-					String oldValue = node.get("type").asText();
+				else if (value.isString() && entry.getKey().equals("type")) {
+					String oldValue = node.get("type").asString();
 					node.put("type", oldValue.toUpperCase());
 				}
 			});

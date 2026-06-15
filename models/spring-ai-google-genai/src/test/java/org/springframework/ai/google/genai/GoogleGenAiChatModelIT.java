@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 
 import com.google.genai.Client;
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -60,7 +61,6 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.lang.NonNull;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 
@@ -131,8 +131,7 @@ class GoogleGenAiChatModelIT {
 		assertThat(response.getResult().getMetadata().getFinishReason()).isEqualTo("SAFETY");
 	}
 
-	@NonNull
-	private Prompt createPrompt(GoogleGenAiChatOptions chatOptions) {
+	private @NonNull Prompt createPrompt(GoogleGenAiChatOptions chatOptions) {
 		String request = "Name 3 famous pirates from the Golden Age of Piracy and tell me what they did.";
 		String name = "Bob";
 		String voice = "pirate";
