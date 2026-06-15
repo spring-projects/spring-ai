@@ -1,6 +1,37 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-2-0-1]]
+== Upgrading to 2.0.1
+
+=== Redis Chat Memory Repository Auto-Configuration Module Renaming
+
+The Redis chat memory auto-configurations module renamed to `spring-ai-autoconfigure-model-chat-memory-repository-redis`.
+
+* *Artifact:* `spring-ai-autoconfigure-model-chat-memory-redis` → `spring-ai-autoconfigure-model-chat-memory-repository-redis`
+* *Package:* `org.springframework.ai.model.chat.memory.redis.autoconfigure` → `org.springframework.ai.model.chat.memory.redis.repository.autoconfigure`
+
+==== Migration
+
+- Update your Maven/Gradle dependencies to use the new artifact ID:
+
+[source,xml]
+----
+<!-- Before -->
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-autoconfigure-model-chat-memory-redis</artifactId>
+</dependency>
+
+<!-- After -->
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-autoconfigure-model-chat-memory-repository-redis</artifactId>
+</dependency>
+----
+
+- Update any imports, class references, or configuration that used the old package or class names.
+
 [[upgrading-to-2-0-0]]
 == Upgrading to 2.0.0
 
