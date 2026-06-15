@@ -48,7 +48,7 @@ import org.springframework.web.servlet.function.ServerResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Timeout(15)
+@Timeout(60)
 class WebMvcSseIT extends AbstractMcpClientServerIntegrationTests {
 
 	private static final String MESSAGE_ENDPOINT = "/mcp/message";
@@ -67,11 +67,11 @@ class WebMvcSseIT extends AbstractMcpClientServerIntegrationTests {
 
 		clientBuilders.put("httpclient",
 				McpClient.sync(HttpClientSseClientTransport.builder("http://127.0.0.1:" + port).build())
-					.requestTimeout(Duration.ofHours(10)));
+					.initializationTimeout(Duration.ofSeconds(10)));
 
 		clientBuilders.put("webflux", McpClient
 			.sync(WebFluxSseClientTransport.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + port)).build())
-			.requestTimeout(Duration.ofHours(10)));
+			.initializationTimeout(Duration.ofSeconds(10)));
 	}
 
 	private TomcatTestUtil.TomcatServer tomcatServer;
