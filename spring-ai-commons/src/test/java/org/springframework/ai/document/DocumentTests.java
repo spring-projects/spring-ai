@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.content.Media;
 import org.springframework.ai.document.id.IdGenerator;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -207,6 +208,22 @@ public class DocumentTests {
 			.build();
 
 		assertThat(document.getMetadata()).containsEntry("key1", "value1").containsEntry("key2", "value2");
+	}
+
+	@Test
+	void serializesAndDeserializesTextDocument() throws Exception {
+		Document document = Document.builder()
+			.id("customId")
+			.text("Test content")
+			.metadata("key", "value")
+			.score(0.95)
+			.build();
+
+		var jsonMapper = JacksonUtils.getDefaultJsonMapper();
+		String json = jsonMapper.writeValueAsString(document);
+		Document restored = jsonMapper.readValue(json, Document.class);
+
+		assertThat(restored).usingRecursiveComparison().isEqualTo(document);
 	}
 
 	private static Media getMedia() {

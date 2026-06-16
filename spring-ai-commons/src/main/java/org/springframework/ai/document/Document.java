@@ -126,39 +126,50 @@ public class Document {
 	@JsonIgnore
 	private ContentFormatter contentFormatter = DEFAULT_CONTENT_FORMATTER;
 
-	@JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-	public Document(@JsonProperty("content") @Nullable String content) {
-		this(content, new HashMap<>());
+	public Document(@Nullable String text) {
+		this(text, new HashMap<>());
 	}
 
 	public Document(@Nullable String text, Map<String, Object> metadata) {
-		this(new RandomIdGenerator().generateId(), text, null, metadata, null);
+		this(new RandomIdGenerator().generateId(), text, null, metadata, null, false);
 	}
 
 	public Document(String id, @Nullable String text, Map<String, Object> metadata) {
-		this(id, text, null, metadata, null);
+		this(id, text, null, metadata, null, false);
 	}
 
 	public Document(@Nullable Media media, Map<String, Object> metadata) {
-		this(new RandomIdGenerator().generateId(), null, media, metadata, null);
+		this(new RandomIdGenerator().generateId(), null, media, metadata, null, false);
 	}
 
 	public Document(String id, @Nullable Media media, Map<String, Object> metadata) {
-		this(id, null, media, metadata, null);
+		this(id, null, media, metadata, null, false);
 	}
 
-	private Document(String id, @Nullable String text, @Nullable Media media, Map<String, Object> metadata,
-			@Nullable Double score) {
-		Assert.hasText(id, "id cannot be null or empty");
-		Assert.notNull(metadata, "metadata cannot be null");
-		Assert.noNullElements(metadata.keySet(), "metadata cannot have null keys");
-		Assert.noNullElements(metadata.values(), "metadata cannot have null values");
+	@JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+	private Document(@JsonProperty("id") @Nullable String id, @JsonProperty("text") @Nullable String text,
+			@JsonProperty("media") @Nullable Media media,
+			@JsonProperty("metadata") @Nullable Map<String, Object> metadata,
+			@JsonProperty("score") @Nullable Double score) {
+		this(id, text, media, metadata, score, true);
+	}
+
+	private Document(@Nullable String id, @Nullable String text, @Nullable Media media,
+			@Nullable Map<String, Object> metadata, @Nullable Double score, boolean applyJacksonDefaults) {
+		String documentId = applyJacksonDefaults && !StringUtils.hasText(id) ? new RandomIdGenerator().generateId()
+				: id;
+		Map<String, Object> documentMetadata = applyJacksonDefaults && metadata == null ? new HashMap<>() : metadata;
+
+		Assert.hasText(documentId, "id cannot be null or empty");
+		Assert.notNull(documentMetadata, "metadata cannot be null");
+		Assert.noNullElements(documentMetadata.keySet(), "metadata cannot have null keys");
+		Assert.noNullElements(documentMetadata.values(), "metadata cannot have null values");
 		Assert.isTrue(text != null ^ media != null, "exactly one of text or media must be specified");
 
-		this.id = id;
+		this.id = documentId;
 		this.text = text;
 		this.media = media;
-		this.metadata = new HashMap<>(metadata);
+		this.metadata = new HashMap<>(documentMetadata);
 		this.score = score;
 	}
 
