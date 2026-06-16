@@ -38,6 +38,7 @@ Highlights:
 * Uses `callAdvisorChain.copy(this)` to create a sub-chain for recursive calls — other advisors can observe and intercept every iteration.
 * Supports return-direct: when a tool's result has `returnDirect = true`, the advisor breaks the loop and returns the tool result to the caller without sending it back to the LLM.
 * Implements the `ToolAdvisor` marker interface, which `DefaultChatClient` uses to enforce the single-tool-advisor invariant — custom subclasses register transparently as replacements.
+* Accumulates token usage across every iteration of the loop, so the final `ChatResponse` reports the cumulative usage of all model calls rather than only the last one (see xref:api/usage-handling.adoc#_cumulative_usage_across_multi_step_flows[Cumulative Usage Across Multi-Step Flows]).
 
 Short example:
 
@@ -107,3 +108,24 @@ ActorFilms actorFilms = chatClient.prompt()
     .call()
     .entity(ActorFilms.class, spec -> spec.schemaValidation());
 ----
+
+== Accumulating Token Usage in Custom Recursive Advisors
+
+A recursive advisor performs more than one model call per invocation, so it must accumulate the token usage of every call to report a correct cumulative total; otherwise only the last call's usage is visible to the caller.
+Spring AI provides `org.springframework.ai.chat.client.advisor.UsageAccumulator` to make this straightforward.
+Create one instance per `adviseCall` invocation (or per stream subscription, inside a `Flux.defer`, to keep it subscription-local), fold each round's response in with `add(...)`, and stamp the cumulative total onto the final response with `applyTotalUsage(...)`:
+
+[source,java]
+----
+UsageAccumulator usage = new UsageAccumulator();
+ChatClientResponse response;
+do {
+    response = callAdvisorChain.copy(this).nextCall(request);
+    usage.add(response.chatResponse());
+    // ... decide whether to loop again ...
+}
+while (loopAgain);
+return usage.applyTotalUsage(response);
+----
+
+The underlying token math lives in `org.springframework.ai.support.UsageCalculator` (`accumulate` and `withUsage`), which `UsageAccumulator` wraps.

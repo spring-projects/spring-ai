@@ -139,6 +139,29 @@ The following table shows prompt cache metrics availability by provider:
 
 NOTE: For detailed provider-specific cache metrics (such as per-modality cache breakdowns in Gemini), use `getNativeUsage()` to access the provider's native usage object.
 
+== Cumulative Usage Across Multi-Step Flows
+
+When a response is produced through a multi-step flow such as a tool-calling loop, `getUsage()` reports the *cumulative* token usage across every model call in that exchange, not just the last call.
+For example, a `ChatClient` conversation that triggers one tool call performs at least two model calls, and the returned `getUsage()` reflects the sum of both.
+
+[source,java]
+----
+ChatResponse response = chatClient.prompt("What is the weather in Paris?")
+        .tools(new WeatherTools())
+        .call()
+        .chatResponse();
+
+// Cumulative across all model calls in the tool-calling loop
+Usage usage = response.getMetadata().getUsage();
+int totalTokens = usage.getTotalTokens();
+----
+
+The cumulative total is computed via `org.springframework.ai.support.UsageCalculator`, which sums the standard token counts and the unified cache metrics (`getCacheReadInputTokens()` / `getCacheWriteInputTokens()`).
+
+WARNING: Provider-specific native usage objects cannot be merged across responses.
+As a result, `getNativeUsage()` returns `null` once usage has been aggregated across more than one model call (for example after a tool-calling loop); it is preserved only for single-call responses.
+If you need the provider's native usage object, read it from an individual `ChatModel` call rather than from a multi-step `ChatClient` exchange.
+
 == Benefits
 
 **Standardization**: Provides a consistent way to handle usage across different AI models

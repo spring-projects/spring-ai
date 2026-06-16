@@ -17,10 +17,8 @@
 package org.springframework.ai.chat.client.advisor;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -34,8 +32,6 @@ import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.ToolAdvisor;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.metadata.ChatResponseMetadata;
-import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -44,7 +40,6 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
-import org.springframework.ai.support.UsageCalculator;
 import org.springframework.core.Ordered;
 import org.springframework.util.Assert;
 
@@ -139,7 +134,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		var instructions = chatClientRequest.prompt().getInstructions();
 
 		ChatClientResponse chatClientResponse = null;
-		ChatResponse accumulatedChatResponse = null;
+		UsageAccumulator usageAccumulator = new UsageAccumulator();
 
 		boolean isToolCall = false;
 
@@ -160,7 +155,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 			// After Call
 			ChatResponse chatResponse = chatClientResponse.chatResponse();
-			accumulatedChatResponse = accumulateUsage(chatResponse, accumulatedChatResponse);
+			usageAccumulator.add(chatResponse);
 			isToolCall = this.toolExecutionEligibilityChecker.isToolCallResponse(chatResponse);
 
 			if (isToolCall) {
@@ -191,84 +186,8 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		}
 		while (isToolCall); // loop until no tool calls are present
 
-		chatClientResponse = withAccumulatedUsage(chatClientResponse, accumulatedChatResponse);
+		chatClientResponse = usageAccumulator.applyTotalUsage(chatClientResponse);
 		return this.doFinalizeLoop(chatClientResponse, callAdvisorChain);
-	}
-
-	private @Nullable ChatResponse accumulateUsage(@Nullable ChatResponse currentChatResponse,
-			@Nullable ChatResponse accumulatedChatResponse) {
-		if (currentChatResponse == null) {
-			return accumulatedChatResponse;
-		}
-
-		Usage currentUsage = currentChatResponse.getMetadata().getUsage();
-		ChatResponse previousChatResponse = UsageCalculator.isEmpty(getUsage(accumulatedChatResponse)) ? null
-				: accumulatedChatResponse;
-		Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
-		if (UsageCalculator.isEmpty(cumulativeUsage)) {
-			return null;
-		}
-
-		return withUsage(currentChatResponse, cumulativeUsage);
-	}
-
-	private ChatClientResponse withAccumulatedUsage(ChatClientResponse chatClientResponse,
-			@Nullable ChatResponse accumulatedChatResponse) {
-		ChatResponse currentChatResponse = chatClientResponse.chatResponse();
-		if (currentChatResponse == null || accumulatedChatResponse == null) {
-			return chatClientResponse;
-		}
-
-		Usage accumulatedUsage = accumulatedChatResponse.getMetadata().getUsage();
-		if (UsageCalculator.isEmpty(accumulatedUsage)
-				|| Objects.equals(currentChatResponse.getMetadata().getUsage(), accumulatedUsage)) {
-			return chatClientResponse;
-		}
-
-		return chatClientResponse.mutate().chatResponse(withUsage(currentChatResponse, accumulatedUsage)).build();
-	}
-
-	private ChatClientResponse withPreviousAccumulatedUsage(ChatClientResponse chatClientResponse,
-			@Nullable ChatResponse accumulatedChatResponse) {
-		ChatResponse currentChatResponse = chatClientResponse.chatResponse();
-		if (currentChatResponse == null || accumulatedChatResponse == null) {
-			return chatClientResponse;
-		}
-
-		Usage currentUsage = currentChatResponse.getMetadata().getUsage();
-		if (UsageCalculator.isEmpty(currentUsage)
-				|| UsageCalculator.isEmpty(accumulatedChatResponse.getMetadata().getUsage())) {
-			return chatClientResponse;
-		}
-
-		Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, accumulatedChatResponse);
-		if (Objects.equals(currentUsage, cumulativeUsage)) {
-			return chatClientResponse;
-		}
-
-		return chatClientResponse.mutate().chatResponse(withUsage(currentChatResponse, cumulativeUsage)).build();
-	}
-
-	private ChatResponse withUsage(ChatResponse chatResponse, Usage usage) {
-		return ChatResponse.builder()
-			.from(chatResponse)
-			.metadata(chatResponseMetadataWithUsage(chatResponse.getMetadata(), usage))
-			.build();
-	}
-
-	private ChatResponseMetadata chatResponseMetadataWithUsage(ChatResponseMetadata metadata, Usage usage) {
-		ChatResponseMetadata.Builder builder = ChatResponseMetadata.builder()
-			.id(metadata.getId())
-			.model(metadata.getModel())
-			.rateLimit(metadata.getRateLimit())
-			.usage(usage)
-			.promptMetadata(metadata.getPromptMetadata());
-		metadata.entrySet().forEach(entry -> builder.keyValue(entry.getKey(), entry.getValue()));
-		return builder.build();
-	}
-
-	private @Nullable Usage getUsage(@Nullable ChatResponse chatResponse) {
-		return chatResponse != null ? chatResponse.getMetadata().getUsage() : null;
 	}
 
 	protected List<Message> doGetNextInstructionsForToolCall(ChatClientRequest chatClientRequest,
@@ -320,15 +239,16 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 		return Flux.defer(() -> {
 			ChatClientRequest initializedRequest = this.doInitializeLoopStream(chatClientRequest, streamAdvisorChain);
-			AtomicReference<@Nullable ChatResponse> accumulatedChatResponseRef = new AtomicReference<>();
+			// Subscription-local accumulator so usage is not shared across subscriptions.
+			UsageAccumulator usageAccumulator = new UsageAccumulator();
 			return this.internalStream(streamAdvisorChain, initializedRequest, toolCallingChatOptions,
-					initializedRequest.prompt().getInstructions(), accumulatedChatResponseRef);
+					initializedRequest.prompt().getInstructions(), usageAccumulator);
 		});
 	}
 
 	private Flux<ChatClientResponse> internalStream(StreamAdvisorChain streamAdvisorChain,
 			ChatClientRequest originalRequest, ToolCallingChatOptions toolCallingChatOptions,
-			List<Message> instructions, AtomicReference<@Nullable ChatResponse> accumulatedChatResponseRef) {
+			List<Message> instructions, UsageAccumulator usageAccumulator) {
 
 		return Flux.deferContextual(contextView -> {
 			// Build request with current instructions
@@ -347,21 +267,22 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 			Flux<ChatClientResponse> responseFlux = chainCopy.nextStream(processedRequest);
 
 			return streamWithToolCallResponses(responseFlux, finalRequest, streamAdvisorChain, originalRequest,
-					toolCallingChatOptions, accumulatedChatResponseRef);
+					toolCallingChatOptions, usageAccumulator);
 		});
 	}
 
 	private Flux<ChatClientResponse> streamWithToolCallResponses(Flux<ChatClientResponse> responseFlux,
 			ChatClientRequest finalRequest, StreamAdvisorChain streamAdvisorChain, ChatClientRequest originalRequest,
-			ToolCallingChatOptions optionsCopy, AtomicReference<@Nullable ChatResponse> accumulatedChatResponseRef) {
+			ToolCallingChatOptions optionsCopy, UsageAccumulator usageAccumulator) {
 
 		AtomicReference<ChatClientResponse> aggregatedResponseRef = new AtomicReference<>();
-		ChatResponse accumulatedChatResponse = accumulatedChatResponseRef.get();
+		// Snapshot of the usage accumulated from previous rounds (before this round).
+		ChatResponse previousTotal = usageAccumulator.total();
 
 		return CHAT_CLIENT_MESSAGE_AGGREGATOR.aggregateChatClientResponse(responseFlux, aggregatedResponseRef::set)
-			.map(chatClientResponse -> withPreviousAccumulatedUsage(chatClientResponse, accumulatedChatResponse))
+			.map(chatClientResponse -> UsageAccumulator.applyPreviousTotalToChunk(chatClientResponse, previousTotal))
 			.concatWith(Flux.defer(() -> this.handleToolCallRecursion(aggregatedResponseRef.get(), finalRequest,
-					streamAdvisorChain, originalRequest, optionsCopy, accumulatedChatResponseRef)))
+					streamAdvisorChain, originalRequest, optionsCopy, usageAccumulator)))
 			.filter(ccr -> !this.toolExecutionEligibilityChecker.isToolCallResponse(ccr.chatResponse()));
 	}
 
@@ -371,7 +292,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 	 */
 	private Flux<ChatClientResponse> handleToolCallRecursion(ChatClientResponse aggregatedResponse,
 			ChatClientRequest finalRequest, StreamAdvisorChain streamAdvisorChain, ChatClientRequest originalRequest,
-			ToolCallingChatOptions optionsCopy, AtomicReference<@Nullable ChatResponse> accumulatedChatResponseRef) {
+			ToolCallingChatOptions optionsCopy, UsageAccumulator usageAccumulator) {
 
 		if (aggregatedResponse == null) {
 			return Flux.empty();
@@ -380,13 +301,18 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		aggregatedResponse = this.doAfterStream(aggregatedResponse, streamAdvisorChain);
 
 		ChatResponse chatResponse = aggregatedResponse.chatResponse();
-		ChatResponse accumulatedChatResponse = accumulateUsage(chatResponse, accumulatedChatResponseRef.get());
-		accumulatedChatResponseRef.set(accumulatedChatResponse);
+		ChatResponse accumulatedChatResponse = usageAccumulator.add(chatResponse);
 		boolean isToolCall = this.toolExecutionEligibilityChecker.isToolCallResponse(chatResponse);
 
 		if (!isToolCall) {
-			// No tool call - streaming already happened, nothing more to emit
-			return this.doFinalizeLoopStream(Flux.empty(), streamAdvisorChain);
+			// No tool call: the final round's chunks have already been streamed. If that
+			// round carried no usage of its own, the usage accumulated from previous
+			// rounds was never stamped onto any emitted chunk, so emit a trailing
+			// usage-only response to keep the aggregated stream usage correct. Otherwise
+			// nothing more needs to be emitted.
+			Flux<ChatClientResponse> finalEmissions = UsageAccumulator.usageCorrection(aggregatedResponse, chatResponse,
+					accumulatedChatResponse);
+			return this.doFinalizeLoopStream(finalEmissions, streamAdvisorChain);
 		}
 
 		Assert.notNull(chatResponse, "redundant check that should never fail, but here to help NullAway");
@@ -411,14 +337,14 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 						.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
 						.build())
 					.build();
-				return Flux.just(withAccumulatedUsage(directResponse, accumulatedChatResponseRef.get()));
+				return Flux.just(usageAccumulator.applyTotalUsage(directResponse));
 			}
 			else {
 				// Recursive call with updated conversation history
 				List<Message> nextInstructions = this.doGetNextInstructionsForToolCallStream(finalRequest,
 						finalAggregatedResponse, toolExecutionResult);
 				return this.internalStream(streamAdvisorChain, originalRequest, optionsCopy, nextInstructions,
-						accumulatedChatResponseRef);
+						usageAccumulator);
 			}
 		});
 		return toolCallFlux.subscribeOn(Schedulers.boundedElastic());

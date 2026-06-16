@@ -370,6 +370,40 @@ public class ToolCallingAdvisorTests {
 	}
 
 	@Test
+	void adviseCallAccumulatesCacheMetricsAndDropsNativeUsage() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createResponse(true,
+				new DefaultUsage(10, 20, 30, new Object(), 100L, 5L));
+		ChatClientResponse finalResponse = createResponse(false, new DefaultUsage(1, 2, 3, new Object(), 200L, 0L));
+
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			callCount[0]++;
+			return callCount[0] == 1 ? responseWithToolCall : finalResponse;
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(createToolExecutionResult(false));
+
+		ChatClientResponse result = advisor.adviseCall(request, realChain);
+
+		Usage usage = result.chatResponse().getMetadata().getUsage();
+		assertUsage(usage, 11, 22, 33);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(300L);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(5L);
+		// Provider-specific native usage cannot be merged across rounds, so it is dropped
+		// once usage is accumulated.
+		assertThat(usage.getNativeUsage()).isNull();
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
+	@Test
 	void adviseCallKeepsSingleCallUsageWhenNoToolCall() {
 		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
 
@@ -630,6 +664,42 @@ public class ToolCallingAdvisorTests {
 		assertThat(results.get(0).chatResponse().getResult().getOutput().getText()).isEqualTo("Hello ");
 		assertThat(results.get(1).chatResponse().getResult().getOutput().getText()).isEqualTo("world");
 		assertThat(results.get(2).chatResponse().getResult().getOutput().getText()).isEqualTo("!");
+		assertThat(callCount[0]).isEqualTo(2);
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
+	@Test
+	void adviseStreamEmitsAccumulatedUsageWhenFinalRoundReportsNoUsage() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createResponse(true, new DefaultUsage(10, 20, 30));
+		// The final round streams content but reports no usage of its own.
+		ChatClientResponse finalResponse = createResponse(false, new DefaultUsage(0, 0, 0));
+
+		int[] callCount = { 0 };
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			callCount[0]++;
+			return Flux.just(callCount[0] == 1 ? responseWithToolCall : finalResponse);
+		});
+
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(createToolExecutionResult(false));
+
+		List<ChatClientResponse> results = advisor.adviseStream(request, realChain).collectList().block();
+
+		// The final round's content chunk is emitted unchanged (no usage), followed by a
+		// trailing usage-only response carrying the accumulated total from previous
+		// rounds.
+		assertThat(results).isNotNull().hasSize(2);
+		assertUsage(results.get(0).chatResponse().getMetadata().getUsage(), 0, 0, 0);
+		assertThat(results.get(0).chatResponse().getResult().getOutput().getText()).isEqualTo("response");
+		assertUsage(results.get(1).chatResponse().getMetadata().getUsage(), 10, 20, 30);
+		assertThat(results.get(1).chatResponse().getResults()).isEmpty();
 		assertThat(callCount[0]).isEqualTo(2);
 		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
 	}
