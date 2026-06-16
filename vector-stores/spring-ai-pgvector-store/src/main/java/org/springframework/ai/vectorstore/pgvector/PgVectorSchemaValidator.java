@@ -33,6 +33,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * @author Muthukumaran Navaneethakrishnan
  * @author Christian Tzolov
  * @author Yanming Zhou
+ * @author Siarhei Dudzin
  * @since 1.0.0
  */
 class PgVectorSchemaValidator {
@@ -78,8 +79,7 @@ class PgVectorSchemaValidator {
 		}
 	}
 
-	void validateTableSchema(String schemaName, String tableName, int dimensions) {
-
+	void validateNames(String schemaName, String tableName) {
 		if (!isValidNameForDatabaseObject(schemaName)) {
 			throw new IllegalArgumentException(
 					"Schema name should only contain alphanumeric characters and underscores");
@@ -88,6 +88,11 @@ class PgVectorSchemaValidator {
 			throw new IllegalArgumentException(
 					"Table name should only contain alphanumeric characters and underscores");
 		}
+	}
+
+	void validateTableSchema(String schemaName, String tableName, int dimensions) {
+
+		validateNames(schemaName, tableName);
 
 		if (!isTableExists(schemaName, tableName)) {
 			throw new IllegalStateException("Table " + tableName + " does not exist in schema " + schemaName);
