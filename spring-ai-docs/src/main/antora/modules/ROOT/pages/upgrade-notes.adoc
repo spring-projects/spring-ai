@@ -8,8 +8,13 @@
 
 The Redis chat memory auto-configurations module renamed to `spring-ai-autoconfigure-model-chat-memory-repository-redis`.
 
+==== Impact
+
+The artifact ID, package, and configuration properties of the Redis chat memory auto-configurations module has changed:
+
 * *Artifact:* `spring-ai-autoconfigure-model-chat-memory-redis` → `spring-ai-autoconfigure-model-chat-memory-repository-redis`
 * *Package:* `org.springframework.ai.model.chat.memory.redis.autoconfigure` → `org.springframework.ai.model.chat.memory.redis.repository.autoconfigure`
+* *Configuration properties:* `spring.ai.chat.memory.redis.*` → `spring.ai.chat.memory.repository.redis.*`
 
 ==== Migration
 
@@ -30,7 +35,38 @@ The Redis chat memory auto-configurations module renamed to `spring-ai-autoconfi
 </dependency>
 ----
 
-- Update any imports, class references, or configuration that used the old package or class names.
+- Update your configuration properties to use the new prefix:
+
+[source,properties]
+----
+# Before
+spring.ai.chat.memory.redis.*=xxx
+
+# After
+spring.ai.chat.memory.repository.redis.*=xxx
+----
+
+- Update your imports and class references to use the new package:
+
+[source,java]
+----
+// Before
+import org.springframework.ai.model.chat.memory.redis.autoconfigure.RedisChatMemoryAutoConfiguration;
+import org.springframework.ai.model.chat.memory.redis.autoconfigure.RedisChatMemoryProperties;
+
+// After
+import org.springframework.ai.model.chat.memory.repository.redis.autoconfigure.RedisChatMemoryRepositoryAutoConfiguration;
+import org.springframework.ai.model.chat.memory.repository.redis.autoconfigure.RedisChatMemoryRepositoryProperties;
+----
+
+==== Smooth Transition
+
+The new module provides a smooth transition from the deprecated module:
+
+- The deprecated `spring-ai-autoconfigure-model-chat-memory-redis` module still exists and delegates to the new module via transitive dependency, so existing dependencies continue to work without changes.
+- The `RedisChatMemoryRepositoryAutoConfiguration` binds configuration properties from the new prefix (`spring.ai.chat.memory.repository.redis`) and falls back to the legacy prefix (`spring.ai.chat.memory.redis`) if the new prefix is not bound, so existing property configurations continue to work.
+
+NOTE: Both the deprecated module and the legacy configuration prefix fallback will be removed in a future release.
 
 [[upgrading-to-2-0-0]]
 == Upgrading to 2.0.0

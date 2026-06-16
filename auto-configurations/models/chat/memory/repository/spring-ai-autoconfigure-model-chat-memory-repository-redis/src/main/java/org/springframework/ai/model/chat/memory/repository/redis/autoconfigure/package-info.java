@@ -14,20 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.chat.memory.redis.autoconfigure;
+@NullMarked
+package org.springframework.ai.model.chat.memory.repository.redis.autoconfigure;
 
-import org.springframework.ai.model.chat.memory.repository.redis.autoconfigure.RedisChatMemoryRepositoryAutoConfiguration;
-import org.springframework.context.annotation.Import;
-
-/**
- * Auto-configuration for Redis-based chat memory implementation.
- *
- * @author Brian Sam-Bodden
- * @author Yanming Zhou
- * @deprecated Use {@link RedisChatMemoryRepositoryAutoConfiguration} instead.
- */
-@Deprecated(since = "2.0.1", forRemoval = true)
-@Import(RedisChatMemoryRepositoryAutoConfiguration.class)
-public class RedisChatMemoryAutoConfiguration {
-
-}
+import org.jspecify.annotations.NullMarked;
