@@ -29,6 +29,7 @@ import org.springframework.ai.chat.memory.repository.redis.RedisChatMemoryConfig
  * Configuration properties for Redis-based chat memory.
  *
  * @author Brian Sam-Bodden
+ * @author guan xu
  */
 public class RedisChatMemoryRepositoryProperties {
 
@@ -77,10 +78,10 @@ public class RedisChatMemoryRepositoryProperties {
 	/**
 	 * Metadata field definitions for proper indexing. Compatible with RedisVL schema
 	 * format. Example: <pre>
-	 * spring.ai.chat.memory.redis.metadata-fields[0].name=priority
-	 * spring.ai.chat.memory.redis.metadata-fields[0].type=tag
-	 * spring.ai.chat.memory.redis.metadata-fields[1].name=score
-	 * spring.ai.chat.memory.redis.metadata-fields[1].type=numeric
+	 * spring.ai.chat.memory.repository.redis.metadata-fields[0].name=priority
+	 * spring.ai.chat.memory.repository.redis.metadata-fields[0].type=tag
+	 * spring.ai.chat.memory.repository.redis.metadata-fields[1].name=score
+	 * spring.ai.chat.memory.repository.redis.metadata-fields[1].type=numeric
 	 * </pre>
 	 */
 	private List<Map<String, String>> metadataFields = new ArrayList<>();
