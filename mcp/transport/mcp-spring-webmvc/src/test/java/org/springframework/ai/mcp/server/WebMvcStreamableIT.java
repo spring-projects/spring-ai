@@ -34,7 +34,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.provider.Arguments;
-import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHttpTransport;
 import org.springframework.ai.mcp.server.webmvc.transport.WebMvcStreamableServerTransportProvider;
@@ -109,11 +108,9 @@ class WebMvcStreamableIT extends AbstractMcpClientServerIntegrationTests {
 
 	@AfterEach
 	public void after() {
-		reactor.netty.http.HttpResources.disposeLoopsAndConnections();
 		if (this.mcpServerTransportProvider != null) {
 			this.mcpServerTransportProvider.closeGracefully().block();
 		}
-		Schedulers.shutdownNow();
 		if (this.tomcatServer.appContext() != null) {
 			this.tomcatServer.appContext().close();
 		}
