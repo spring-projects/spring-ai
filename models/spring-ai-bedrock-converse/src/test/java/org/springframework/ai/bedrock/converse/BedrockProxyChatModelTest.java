@@ -35,6 +35,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
 
 import org.springframework.ai.bedrock.converse.api.BedrockCacheOptions;
 import org.springframework.ai.bedrock.converse.api.BedrockCacheStrategy;
+import org.springframework.ai.bedrock.converse.api.BedrockCacheTtl;
 import org.springframework.ai.bedrock.converse.api.MediaFetcher;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -327,6 +328,30 @@ class BedrockProxyChatModelTest {
 		assertThat(system).hasSize(2);
 		assertThat(system.get(0).cachePoint()).isNull();
 		assertThat(system.get(1).cachePoint()).isNull();
+	}
+
+	@Test
+	void shouldApplyCacheTtlOnCachePointBlock() {
+		BedrockProxyChatModel model = newModel();
+
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.cacheOptions(BedrockCacheOptions.builder()
+				.strategy(BedrockCacheStrategy.SYSTEM_ONLY)
+				.ttl(BedrockCacheTtl.ONE_HOUR)
+				.build())
+			.build();
+
+		Prompt prompt = new Prompt(List.of(new SystemMessage("Only system message."), new UserMessage("Question?")),
+				options);
+
+		ConverseRequest request = model.createRequest(prompt);
+		List<SystemContentBlock> system = request.system();
+
+		assertThat(system).hasSize(2);
+		assertThat(system.get(0).text()).isEqualTo("Only system message.");
+		assertThat(system.get(1).cachePoint()).isNotNull();
+		assertThat(system.get(1).cachePoint().typeAsString()).isEqualTo("default");
+		assertThat(system.get(1).cachePoint().ttlAsString()).isEqualTo("1h");
 	}
 
 }

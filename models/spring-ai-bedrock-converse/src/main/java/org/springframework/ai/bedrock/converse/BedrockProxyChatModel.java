@@ -300,7 +300,11 @@ public class BedrockProxyChatModel implements ChatModel {
 
 				// Apply cache point if this is the last user message
 				if (shouldApplyCachePoint) {
-					CachePointBlock cachePoint = CachePointBlock.builder().type("default").build();
+					CachePointBlock.Builder cachePointBuilder = CachePointBlock.builder().type("default");
+					if (cacheOptions != null && cacheOptions.getTtl() != null) {
+						cachePointBuilder.ttl(cacheOptions.getTtl().getValue());
+					}
+					CachePointBlock cachePoint = cachePointBuilder.build();
 					contents.add(ContentBlock.fromCachePoint(cachePoint));
 					logger.debug("Applied cache point on last user message (conversation history caching)");
 				}
@@ -378,7 +382,11 @@ public class BedrockProxyChatModel implements ChatModel {
 
 			// SystemContentBlock is a union: text and cachePoint must be separate blocks.
 			if (i == cacheBoundaryIndex && shouldCacheSystem) {
-				CachePointBlock cachePoint = CachePointBlock.builder().type("default").build();
+				CachePointBlock.Builder cachePointBuilder = CachePointBlock.builder().type("default");
+				if (cacheOptions != null && cacheOptions.getTtl() != null) {
+					cachePointBuilder.ttl(cacheOptions.getTtl().getValue());
+				}
+				CachePointBlock cachePoint = cachePointBuilder.build();
 				SystemContentBlock cachePointBlock = SystemContentBlock.builder().cachePoint(cachePoint).build();
 				systemMessages.add(cachePointBlock);
 			}
@@ -418,7 +426,11 @@ public class BedrockProxyChatModel implements ChatModel {
 				// Tool is a UNION type - toolSpec and cachePoint must be separate objects
 				boolean isLastTool = (i == toolDefinitions.size() - 1);
 				if (isLastTool && shouldCacheTools) {
-					CachePointBlock cachePoint = CachePointBlock.builder().type("default").build();
+					CachePointBlock.Builder cachePointBuilder = CachePointBlock.builder().type("default");
+					if (cacheOptions != null && cacheOptions.getTtl() != null) {
+						cachePointBuilder.ttl(cacheOptions.getTtl().getValue());
+					}
+					CachePointBlock cachePoint = cachePointBuilder.build();
 					Tool cachePointTool = Tool.builder().cachePoint(cachePoint).build();
 					bedrockTools.add(cachePointTool);
 					logger.debug("Applied cache point after tool definitions");
