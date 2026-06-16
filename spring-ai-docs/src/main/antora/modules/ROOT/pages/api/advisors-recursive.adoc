@@ -39,7 +39,7 @@ Highlights:
 * Supports return-direct: when a tool's result has `returnDirect = true`, the advisor breaks the loop and returns the tool result to the caller without sending it back to the LLM.
 * Implements the `ToolAdvisor` marker interface, which `DefaultChatClient` uses to enforce the single-tool-advisor invariant — custom subclasses register transparently as replacements.
 
-Quick example:
+Short example:
 
 [source,java]
 ----

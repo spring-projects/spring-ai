@@ -16,16 +16,12 @@ For most applications, xref:api/tools.adoc[`ChatClient`] is the recommended entr
 
 For everything else — chat applications, RAG, agentic workflows, tool-heavy assistants — use `ChatClient`.
 
-[[the-2-0-change]]
-== The 2.0 Change: No Internal Tool Execution Loop
+[[no-internal-tool-execution]]
+== No Internal Tool Execution
 
-In Spring AI 1.x, each `ChatModel` implementation contained its own internal tool execution loop. When a model returned a tool call request, the implementation would execute the tool and re-call the model automatically, looping until a non-tool-call response was produced.
+`ChatModel` does not execute tool calls. `ChatModel.call(prompt)` and `ChatModel.stream(prompt)` return the model's raw response, including any tool call requests, without executing them. Executing the requested tools and re-calling the model is the caller's responsibility — see xref:#driving-the-loop-manually[Driving the Loop Manually].
 
-In Spring AI 2.0, this internal loop has been removed from every `ChatModel` implementation (OpenAI, Anthropic, Ollama, DeepSeek, Bedrock, MiniMax, Mistral, Google GenAI). `ChatModel.call(prompt)` and `ChatModel.stream(prompt)` now return the model's raw response, including any tool call requests, without executing them.
-
-This is a behavior-breaking change for code that called `ChatModel` directly with tools and relied on automatic execution. The new path is to drive the loop yourself — see xref:#driving-the-loop-manually[Driving the Loop Manually].
-
-NOTE: The `ToolCallingChatOptions.internalToolExecutionEnabled` option has been removed in 2.0. Code that set this option will fail to compile. See xref:upgrade-notes.adoc#tool-calling-1x-to-2x[Upgrading Tool Calling from 1.x to 2.0].
+NOTE: If you are coming from Spring AI 1.x, where each `ChatModel` ran its own internal tool-execution loop, see xref:upgrade-notes.adoc#tool-calling-1x-to-2x[Upgrading Tool Calling from 1.x to 2.0] for what changed and how to migrate.
 
 [[passing-tools]]
 == Passing Tools to `ChatModel`
@@ -224,32 +220,6 @@ if (result.returnDirect()) {
 ----
 
 If the model requested multiple tool calls in a single iteration, `returnDirect()` is `true` only if **all** the called tools have `returnDirect = true`. See xref:api/tools.adoc#_return_direct[Return Direct] for declaring the flag on a tool.
-
-[[migrating-from-1x]]
-== Migrating from Spring AI 1.x
-
-If you used `ChatModel` directly with tools in Spring AI 1.x, your code expected the internal loop to handle tool execution. In 2.0, that loop is gone and you need to drive it yourself.
-
-[source,java]
-----
-// Before (1.x) — internal loop handled tool execution automatically
-ChatResponse response = chatModel.call(new Prompt("...", chatOptions));
-String finalAnswer = response.getResult().getOutput().getText();
-
-// After (2.0) — drive the loop manually
-ChatResponse response = chatModel.call(new Prompt("...", chatOptions));
-while (response.hasToolCalls()) {
-    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, response);
-    if (result.returnDirect()) { break; }
-    prompt = new Prompt(result.conversationHistory(), chatOptions);
-    response = chatModel.call(prompt);
-}
-String finalAnswer = response.getResult().getOutput().getText();
-----
-
-Alternatively, switch to `ChatClient` — `ToolCallingAdvisor` runs this loop for you. See xref:upgrade-notes.adoc#tool-calling-1x-to-2x[Upgrading Tool Calling from 1.x to 2.0].
-
-The `internalToolExecutionEnabled` option on `ToolCallingChatOptions` has been removed entirely. Remove all calls to `.internalToolExecutionEnabled(true|false)`.
 
 [[see-also]]
 == See Also
