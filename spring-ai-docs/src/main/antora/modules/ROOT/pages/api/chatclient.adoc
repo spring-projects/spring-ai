@@ -989,7 +989,7 @@ chatClient.prompt("What day is tomorrow?")
 
 `ToolAdvisor` is a marker interface that signals to the `ChatClient` that the advisor chain already handles tool execution. Implementing this interface on a custom advisor prevents the auto-registration of a second `ToolCallingAdvisor`.
 
-For more details see xref:api/tools.adoc#_advisor_controlled_tool_execution_with_toolcallingadvisor[Advisor-Controlled Tool Execution].
+For more details see xref:api/tools.adoc#extending-the-loop[Extending the Loop: Custom ToolAdvisor].
 
 == Chat Memory
 

@@ -105,7 +105,7 @@ public class ServerTransportSecurityIT {
 
 	@AfterEach
 	void tearDown() {
-		this.mcpClient.close();
+		this.mcpClient.closeGracefully();
 	}
 
 	@Test

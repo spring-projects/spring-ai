@@ -156,73 +156,11 @@ TIP: In addition to the model specific `GoogleGenAiChatOptions` you can use a po
 
 == Tool Calling
 
-`GoogleGenAiChatModel` does not execute tool calls internally.
-Tool execution must be handled externally using one of the two supported approaches below.
+`GoogleGenAiChatModel` supports tool calling. The model can request tool execution but does not run tools itself — Spring AI handles execution.
 
-=== Tool Calling via ChatClient (Recommended)
+For most applications, use `ChatClient` with the auto-registered `ToolCallingAdvisor` — see xref:api/tools.adoc[Tool Calling]. For low-level control where you drive the loop yourself, see xref:api/tools/chatmodel-tool-calling.adoc[ChatModel Tool Calling].
 
-The recommended approach is to use `ChatClient` with the `ToolCallingAdvisor`, which is automatically registered and manages the tool-call loop transparently for both synchronous and streaming scenarios.
-
-[source,java]
-----
-public class WeatherService {
-
-    @Tool(description = "Get the weather in location")
-    public String weatherByLocation(@ToolParam(description= "City or state name") String location) {
-        ...
-    }
-}
-
-String response = ChatClient.create(this.chatModel)
-        .prompt("What's the weather like in Boston?")
-        .tools(new WeatherService())
-        .call()
-        .content();
-----
-
-You can also register a `ToolCallback` bean and pass it directly:
-
-[source,java]
-----
-@Bean
-ToolCallback weatherFunction() {
-    return FunctionToolCallback.builder("weatherFunction", new MockWeatherService())
-        .description("Get the weather in location. Return temperature in 36°F or 36°C format.")
-        .inputType(Request.class)
-        .build();
-}
-
-String response = ChatClient.create(this.chatModel)
-        .prompt("What's the weather like in Boston?")
-        .tools(weatherFunction)
-        .call()
-        .content();
-----
-
-=== User-Controlled Tool Execution
-
-Use this pattern when you need direct access to the `ChatModel` API and want full control over the tool-call loop.
-Invoke `ChatModel` directly without `ToolCallingAdvisor`; check for tool calls yourself and drive the loop using `ToolCallingManager`.
-
-[source,java]
-----
-ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
-
-GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-        .toolCallbacks(ToolCallbacks.from(new WeatherService()))
-        .build();
-
-Prompt prompt = new Prompt("What's the weather like in Boston?", options);
-ChatResponse response = chatModel.call(prompt);
-
-while (response.hasToolCalls()) {
-    ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
-    prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
-    response = chatModel.call(prompt);
-}
-----
-
-Find more in xref:api/tools.adoc[Tools] documentation.
+See xref:#server-side-tool-invocations[Server-Side Tool Invocations] below for Google's built-in tools (Search, Maps, URL Context) and how to combine them with client-side function calling.
 
 == Server-Side Tool Invocations [[server-side-tool-invocations]]
 
@@ -302,9 +240,9 @@ Each entry in the list contains:
 | `response` | (toolResponse only) The results returned by the tool
 |====
 
-=== Combined with Function Calling
+=== Combined with Client-Side Tool Calling
 
-Server-side tool invocations work alongside client-side function calling. You can enable both Google Search (server-side) and custom functions (client-side) in the same request:
+Server-side tool invocations work alongside client-side tool calling. You can enable both Google Search (server-side) and custom tools (client-side) in the same request:
 
 [source,java]
 ----
