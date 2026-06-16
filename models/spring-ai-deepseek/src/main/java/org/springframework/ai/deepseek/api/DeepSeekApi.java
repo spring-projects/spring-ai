@@ -500,7 +500,7 @@ public class DeepSeekApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(// @formatter:off
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
-			@JsonProperty("model") String model,
+			@JsonProperty("model") @Nullable String model,
 			@JsonProperty("frequency_penalty") @Nullable Double frequencyPenalty,
 			@JsonProperty("max_tokens") @Nullable Integer maxTokens, // Use maxCompletionTokens instead
 			@JsonProperty("presence_penalty") @Nullable Double presencePenalty,
@@ -582,7 +582,7 @@ public class DeepSeekApi {
 	/**
 	 * Message comprising the conversation.
 	 *
-	 * @param rawContent The contents of the message. The message content is always a
+	 * @param content The contents of the message. The message content is always a
 	 * {@link String}.
 	 * @param role The role of the messages author. Could be one of the {@link Role}
 	 * types.
