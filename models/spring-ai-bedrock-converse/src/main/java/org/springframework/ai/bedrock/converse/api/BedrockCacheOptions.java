@@ -56,9 +56,18 @@ public class BedrockCacheOptions {
 
 	private final boolean multiBlockSystemCaching;
 
+	private final @Nullable BedrockCacheTtl ttl;
+
+	@Deprecated
 	protected BedrockCacheOptions(@Nullable BedrockCacheStrategy strategy, boolean multiBlockSystemCaching) {
+		this(strategy, multiBlockSystemCaching, null);
+	}
+
+	protected BedrockCacheOptions(@Nullable BedrockCacheStrategy strategy, boolean multiBlockSystemCaching,
+			@Nullable BedrockCacheTtl ttl) {
 		this.strategy = (strategy != null ? strategy : BedrockCacheStrategy.NONE);
 		this.multiBlockSystemCaching = multiBlockSystemCaching;
+		this.ttl = ttl;
 	}
 
 	/**
@@ -94,6 +103,14 @@ public class BedrockCacheOptions {
 	}
 
 	/**
+	 * Gets the cache TTL.
+	 * @return the configured BedrockCacheTtl
+	 */
+	public @Nullable BedrockCacheTtl getTtl() {
+		return this.ttl;
+	}
+
+	/**
 	 * Builder for constructing BedrockCacheOptions instances.
 	 */
 	public static class Builder {
@@ -101,6 +118,8 @@ public class BedrockCacheOptions {
 		private @Nullable BedrockCacheStrategy strategy;
 
 		private boolean multiBlockSystemCaching = false;
+
+		private @Nullable BedrockCacheTtl ttl;
 
 		/**
 		 * Sets the caching strategy.
@@ -128,11 +147,21 @@ public class BedrockCacheOptions {
 		}
 
 		/**
+		 * Sets the cache TTL (Time To Live).
+		 * @param ttl the BedrockCacheTtl to use
+		 * @return this Builder instance
+		 */
+		public Builder ttl(@Nullable BedrockCacheTtl ttl) {
+			this.ttl = ttl;
+			return this;
+		}
+
+		/**
 		 * Builds the BedrockCacheOptions instance.
 		 * @return the configured BedrockCacheOptions
 		 */
 		public BedrockCacheOptions build() {
-			return new BedrockCacheOptions(this.strategy, this.multiBlockSystemCaching);
+			return new BedrockCacheOptions(this.strategy, this.multiBlockSystemCaching, this.ttl);
 		}
 
 	}
