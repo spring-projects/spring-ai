@@ -242,89 +242,13 @@ spring:
 
 This configuration will apply the pulling strategy to all models except chat models.
 
-== Function Calling
+== Tool Calling
 
-You can register custom Java functions with the `OllamaChatModel` and have the Ollama model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
-This is a powerful technique to connect the LLM capabilities with external tools and APIs.
-Read more about xref:api/tools.adoc[Tool Calling].
+`OllamaChatModel` supports tool calling. The model can request tool execution but does not run tools itself — Spring AI handles execution.
 
-TIP: You need Ollama 0.2.8 or newer to use the functional calling capabilities and Ollama 0.4.6 or newer to use them in streaming mode.
+TIP: You need Ollama 0.2.8 or newer to use tool calling, and Ollama 0.4.6 or newer to use it in streaming mode.
 
-`OllamaChatModel` does not execute tool calls internally.
-Tool execution must be handled externally using one of two supported approaches:
-
-* **xref:api/tools.adoc#_chatclient_tool_execution[ChatClient with ToolCallingAdvisor]** — the recommended approach for most use cases. `ToolCallingAdvisor` manages the tool-call loop transparently.
-* **xref:api/tools.adoc#_user_controlled_tool_execution[User-controlled tool execution]** — use `ToolCallingManager` directly when you need full control over the loop.
-
-=== Tool Calling via ChatClient (Recommended)
-
-Use `ChatClient` with `ToolCallingAdvisor` for both synchronous and streaming tool execution.
-
-[source,java]
-----
-ToolCallback weatherCallback = FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
-    .description("Get the weather in location")
-    .inputType(WeatherService.Request.class)
-    .build();
-
-// Synchronous
-String response = ChatClient.create(chatModel)
-    .prompt()
-    .user("What's the weather in Paris, Tokyo, and New York?")
-    .tools(weatherCallback)
-    .call()
-    .content();
-
-// Streaming
-Flux<String> stream = ChatClient.create(chatModel)
-    .prompt()
-    .user("What's the weather in Paris, Tokyo, and New York?")
-    .tools(weatherCallback)
-    .stream()
-    .content();
-----
-
-=== User-Controlled Tool Execution
-
-Use this pattern when you need direct access to the `ChatModel` API and want full control over the tool-call loop.
-Invoke `ChatModel` directly without `ToolCallingAdvisor`; check for tool calls yourself and drive the loop using `ToolCallingManager`.
-
-[source,java]
-----
-ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
-
-OllamaChatOptions options = OllamaChatOptions.builder()
-    .toolCallbacks(ToolCallbacks.from(new WeatherService()))
-    .build();
-
-Prompt prompt = new Prompt("What's the weather in Paris, Tokyo, and New York?", options);
-ChatResponse response = chatModel.call(prompt);
-
-while (response.hasToolCalls()) {
-    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, response);
-    prompt = new Prompt(result.conversationHistory(), options);
-    response = chatModel.call(prompt);
-}
-----
-
-For streaming, use `flatMap` to detect tool calls and re-stream with the updated conversation history:
-
-[source,java]
-----
-ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
-Prompt prompt = new Prompt("What's the weather in Paris, Tokyo, and New York?", options);
-
-String content = chatModel.stream(prompt).flatMap(response -> {
-    if (response.hasToolCalls()) {
-        ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, response);
-        return chatModel.stream(new Prompt(result.conversationHistory(), options));
-    }
-    return Flux.just(response);
-})
-.mapNotNull(r -> r.getResult() != null ? r.getResult().getOutput().getText() : null)
-.collect(Collectors.joining())
-.block();
-----
+For most applications, use `ChatClient` with the auto-registered `ToolCallingAdvisor` — see xref:api/tools.adoc[Tool Calling]. For low-level control where you drive the loop yourself, see xref:api/tools/chatmodel-tool-calling.adoc[ChatModel Tool Calling].
 
 == Thinking Mode (Reasoning)
 
