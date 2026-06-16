@@ -169,7 +169,7 @@ TIP: You can disable the automatic detection and registration of all tool callba
 
 ==== Tool Context Support
 
-The xref:api/tools.adoc#_tool_context[ToolContext] is supported, allowing contextual information to be passed to tool calls. It contains an `McpSyncServerExchange` instance under the `exchange` key, accessible via `McpToolUtils.getMcpExchange(toolContext)`. See this https://github.com/spring-projects/spring-ai-examples/blob/3fab8483b8deddc241b1e16b8b049616604b7767/model-context-protocol/sampling/mcp-weather-webmvc-server/src/main/java/org/springframework/ai/mcp/sample/server/WeatherService.java#L59-L126[example] demonstrating `exchange.loggingNotification(...)` and `exchange.createMessage(...)`.
+The xref:api/tools.adoc#tool-context[ToolContext] is supported, allowing contextual information to be passed to tool calls. It contains an `McpSyncServerExchange` instance under the `exchange` key, accessible via `McpToolUtils.getMcpExchange(toolContext)`. See this https://github.com/spring-projects/spring-ai-examples/blob/3fab8483b8deddc241b1e16b8b049616604b7767/model-context-protocol/sampling/mcp-weather-webmvc-server/src/main/java/org/springframework/ai/mcp/sample/server/WeatherService.java#L59-L126[example] demonstrating `exchange.loggingNotification(...)` and `exchange.createMessage(...)`.
 
 === link:https://spec.modelcontextprotocol.io/specification/2024-11-05/server/resources/[Resources]
 

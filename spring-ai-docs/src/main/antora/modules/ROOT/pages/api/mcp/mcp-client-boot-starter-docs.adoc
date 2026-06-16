@@ -707,7 +707,7 @@ WARNING: When using `McpToolNamePrefixGenerator.noPrefix()` with multiple MCP se
 
 === Tool Context to MCP Meta Converter
 
-The MCP Client Boot Starter supports customizable conversion of Spring AI's xref:api/tools.adoc#_tool_context[ToolContext] to MCP tool-call metadata through the `ToolContextToMcpMetaConverter` interface.
+The MCP Client Boot Starter supports customizable conversion of Spring AI's xref:api/tools.adoc#tool-context[ToolContext] to MCP tool-call metadata through the `ToolContextToMcpMetaConverter` interface.
 This feature allows you to pass additional contextual information (e.g. user id, secrets token) as metadata along with the LLM's generated call arguments.
 
 For example you can pass the MCP `progressToken` to your link:https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress#progress-flow[MCP Progress Flow] in the tool context to track the progress of long-running operations:

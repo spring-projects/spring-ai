@@ -5,7 +5,7 @@ As AI agents connect to more services — Slack, GitHub, Jira, MCP servers — t
 
 `ToolSearchToolCallingAdvisor` solves this by replacing the default `ToolCallingAdvisor` with an implementation of the *progressive tool disclosure* pattern: tool definitions are exposed to the model incrementally, on demand, rather than sent upfront. Benchmarks across OpenAI, Anthropic, and Gemini show **34–64% token reduction** while maintaining access to large tool catalogs — see the link:https://spring.io/blog/2025/12/11/spring-ai-tool-search-tools-tzolov[Smart Tool Selection blog post] for measurements and methodology.
 
-This page is the reference for the advisor, its `ToolIndex` strategies, configuration, and Spring Boot auto-configuration. For the conceptual placement of this advisor in the broader tool calling architecture, see xref:api/tools.adoc#_scaling_to_hundreds_of_tools[Scaling to Hundreds of Tools].
+This page is the reference for the advisor, its `ToolIndex` strategies, configuration, and Spring Boot auto-configuration. For the conceptual placement of this advisor in the broader tool calling architecture, see xref:api/tools.adoc#scaling-to-hundreds-of-tools[Scaling to Hundreds of Tools].
 
 [[how-it-works]]
 == How It Works
@@ -69,6 +69,10 @@ dependencies {
 
 Or use the library directly for manual configuration:
 
+[tabs]
+======
+Maven::
++
 [source,xml]
 ----
 <dependency>
@@ -76,6 +80,16 @@ Or use the library directly for manual configuration:
     <artifactId>spring-ai-tool-search-advisor</artifactId>
 </dependency>
 ----
+
+Gradle::
++
+[source,gradle]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-tool-search-advisor'
+}
+----
+======
 
 [[quick-start]]
 == Quick Start
@@ -208,7 +222,7 @@ The default index when no explicit `tool-index-type` is configured.
 [[configuration]]
 == Configuration
 
-`ToolSearchToolCallingAdvisor.Builder` extends `ToolCallingAdvisor.Builder` and adds search-specific options. See xref:api/tools/tool-calling-advisor.adoc#_builder_options[ToolCallingAdvisor Builder Options] for inherited settings.
+`ToolSearchToolCallingAdvisor.Builder` extends `ToolCallingAdvisor.Builder` and adds search-specific options. See xref:api/tools/tool-calling-advisor.adoc#builder-options[ToolCallingAdvisor Builder Options] for inherited settings.
 
 [cols="2,4,1", options="header"]
 |====
@@ -352,7 +366,7 @@ spring.ai.chat.client.tool-search-advisor.enabled=true
 
 When enabled, the auto-configuration:
 
-* Registers a `ToolSearchToolCallingAdvisor.Builder` bean typed as `ToolCallingAdvisor.Builder<?>`. This transparently replaces the default `ToolCallingAdvisor` thanks to the `@ConditionalOnMissingBean` guard on the default builder — no code changes to your `ChatClient` are needed. See xref:api/tools.adoc#_auto_configuration_integration[Custom ToolAdvisor: Auto-Configuration Integration] for the underlying mechanism.
+* Registers a `ToolSearchToolCallingAdvisor.Builder` bean typed as `ToolCallingAdvisor.Builder<?>`. This transparently replaces the default `ToolCallingAdvisor` thanks to the `@ConditionalOnMissingBean` guard on the default builder — no code changes to your `ChatClient` are needed. See xref:api/tools.adoc#custom-tool-advisor-autoconfig[Custom ToolAdvisor: Auto-Configuration Integration] for the underlying mechanism.
 * Auto-registers a `ToolIndex` bean unless your application declares one explicitly.
 
 [[tool-index-auto-selection]]
@@ -460,7 +474,7 @@ spring.ai.chat.client.tool-search-advisor.session-id-key-name=tenantId
 [[see-also]]
 == See Also
 
-* xref:api/tools.adoc#_scaling_to_hundreds_of_tools[Tool Calling: Scaling to Hundreds of Tools] — conceptual overview
+* xref:api/tools.adoc#scaling-to-hundreds-of-tools[Tool Calling: Scaling to Hundreds of Tools] — conceptual overview
 * xref:api/tools/tool-calling-advisor.adoc[ToolCallingAdvisor] — the base class and inherited builder options
 * link:https://spring.io/blog/2025/12/11/spring-ai-tool-search-tools-tzolov[Smart Tool Selection: 34–64% Token Savings] (Dec 2025) — benchmarks and methodology
 * xref:guides/dynamic-tool-search.adoc[Dynamic Tool Discovery guide] — worked example

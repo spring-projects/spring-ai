@@ -3,14 +3,14 @@
 
 `ToolCallingAdvisor` is the recursive advisor that owns the tool execution lifecycle in Spring AI 2.0. It is auto-registered by `DefaultChatClient` and drives the request/response loop until the model produces a response without tool calls.
 
-This page is the reference for the builder API, configuration options, hook methods, and extension patterns. For the conceptual overview of the loop, see xref:api/tools.adoc#_the_tool_calling_loop[The Tool Calling Loop]. For the broader recursive-advisor pattern, see xref:api/advisors-recursive.adoc[Recursive Advisors].
+This page is the reference for the builder API, configuration options, hook methods, and extension patterns. For the conceptual overview of the loop, see xref:api/tools.adoc#the-tool-calling-loop[The Tool Calling Loop]. For the broader recursive-advisor pattern, see xref:api/advisors-recursive.adoc[Recursive Advisors].
 
 [[overview]]
 == Overview
 
 `ToolCallingAdvisor` implements both `CallAdvisor` and `StreamAdvisor`, plus the `ToolAdvisor` marker interface. The marker interface is what `DefaultChatClient` uses to enforce that exactly one tool advisor is present in the chain — see xref:#single-tooladvisor-invariant[Single-ToolAdvisor Invariant].
 
-The default `ToolCallingAdvisor.DEFAULT_ORDER` is `Ordered.HIGHEST_PRECEDENCE + 300`. This is higher than the default `MessageChatMemoryAdvisor` order (`HIGHEST_PRECEDENCE + 200`), which places memory advisors **outside** the tool loop by default. See xref:api/tools.adoc#_memory_and_the_tool_loop[Memory and the Tool Loop].
+The default `ToolCallingAdvisor.DEFAULT_ORDER` is `Ordered.HIGHEST_PRECEDENCE + 300`. This is higher than the default `MessageChatMemoryAdvisor` order (`HIGHEST_PRECEDENCE + 200`), which places memory advisors **outside** the tool loop by default. See xref:api/tools.adoc#memory-and-the-tool-loop[Memory and the Tool Loop].
 
 [[builder]]
 == Builder
@@ -114,7 +114,7 @@ var chatClient = ChatClient.builder(chatModel)
     .build();
 ----
 
-TIP: With the auto-registered `ToolCallingAdvisor`, `DefaultChatClient` detects any `MemoryAdvisor` placed inside the loop and disables internal history automatically — you don't need to call `disableInternalConversationHistory()` yourself. The manual call is only needed when constructing `ToolCallingAdvisor` directly. See xref:api/tools.adoc#_inside_the_loop[Memory: Inside the Loop].
+TIP: With the auto-registered `ToolCallingAdvisor`, `DefaultChatClient` detects any `MemoryAdvisor` placed inside the loop and disables internal history automatically — you don't need to call `disableInternalConversationHistory()` yourself. The manual call is only needed when constructing `ToolCallingAdvisor` directly. See xref:api/tools.adoc#inside-the-loop[Memory: Inside the Loop].
 
 [[hooks]]
 == Hook Methods
@@ -252,12 +252,12 @@ Practically:
 * If you register a second `ToolAdvisor`-implementing advisor (for example, a custom subclass), `DefaultChatClient` skips the default registration and uses yours — the invariant is preserved.
 * If you register two custom `ToolAdvisor`-implementing advisors at the same time, the chain construction fails fast with a clear error.
 
-To replace the default in a Spring Boot application, register your subclass via auto-configuration — see xref:api/tools.adoc#_auto_configuration_integration[Custom ToolAdvisor: Auto-Configuration Integration].
+To replace the default in a Spring Boot application, register your subclass via auto-configuration — see xref:api/tools.adoc#custom-tool-advisor-autoconfig[Custom ToolAdvisor: Auto-Configuration Integration].
 
 [[user-controlled-streaming]]
 == User-Controlled Streaming
 
-xref:api/tools.adoc#_user_controlled_tool_execution[User-controlled tool execution] covers the blocking variant; this section covers streaming.
+xref:api/tools.adoc#user-controlled-tool-execution[User-controlled tool execution] covers the blocking variant; this section covers streaming.
 
 When driving the loop manually with `.stream()`, each iteration produces a chunk `Flux`. You aggregate the chunks for tool-call detection using `ChatClientMessageAggregator`, while still forwarding the raw stream to your downstream subscriber (e.g. an SSE endpoint):
 
@@ -371,7 +371,7 @@ When a tool's `ToolMetadata` has `returnDirect = true`, `ToolCallingAdvisor`:
 
 The model never sees the tool result — the round-trip is skipped. This is useful when the tool's output is the final answer (e.g. a RAG retrieval) or when the tool should terminate the agent's reasoning loop.
 
-NOTE: If the model requests multiple tool calls in a single iteration, `returnDirect` is only honored if **all** the called tools have `returnDirect = true`. Otherwise the results are sent back to the model and the loop continues. See xref:api/tools.adoc#_return_direct[Return Direct] for declaring the flag on tool definitions.
+NOTE: If the model requests multiple tool calls in a single iteration, `returnDirect` is only honored if **all** the called tools have `returnDirect = true`. Otherwise the results are sent back to the model and the loop continues. See xref:api/tools.adoc#return-direct[Return Direct] for declaring the flag on tool definitions.
 
 [[opting-out]]
 == Opting Out of Auto-Registration
@@ -394,14 +394,14 @@ chatClient.prompt("What day is tomorrow?")
     .content();
 ----
 
-With auto-registration off, tools passed via `.tools(...)` are sent to the model but tool calls in the response are **not** executed automatically. You're then in xref:api/tools.adoc#_user_controlled_tool_execution[user-controlled mode].
+With auto-registration off, tools passed via `.tools(...)` are sent to the model but tool calls in the response are **not** executed automatically. You're then in xref:api/tools.adoc#user-controlled-tool-execution[user-controlled mode].
 
 [[see-also]]
 == See Also
 
-* xref:api/tools.adoc#_the_tool_calling_loop[Tool Calling: The Tool Calling Loop] — conceptual overview
-* xref:api/tools.adoc#_memory_and_the_tool_loop[Tool Calling: Memory and the Tool Loop] — inside/outside ordering
-* xref:api/tools.adoc#_extending_the_loop[Tool Calling: Extending the Loop] — auto-configuration extension point for custom subclasses
+* xref:api/tools.adoc#the-tool-calling-loop[Tool Calling: The Tool Calling Loop] — conceptual overview
+* xref:api/tools.adoc#memory-and-the-tool-loop[Tool Calling: Memory and the Tool Loop] — inside/outside ordering
+* xref:api/tools.adoc#extending-the-loop[Tool Calling: Extending the Loop] — auto-configuration extension point for custom subclasses
 * xref:api/tools/tool-search-tool.adoc[Tool Search Tool] — `ToolSearchToolCallingAdvisor`, a concrete subclass implementing progressive tool disclosure
 * xref:api/advisors-recursive.adoc[Recursive Advisors] — the underlying recursive advisor pattern
 * xref:api/advisors.adoc[Advisors] — the broader advisor system

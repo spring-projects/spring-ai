@@ -55,7 +55,7 @@ var chatClient = ChatClient.builder(chatModel)
 
 For the full builder API, hook methods, configuration options, memory-advisor ordering interactions, user-controlled execution patterns, and the custom-subclass extension pattern, see xref:api/tools/tool-calling-advisor.adoc[`ToolCallingAdvisor`].
 
-For the conceptual overview of how the tool loop fits into the broader tool calling architecture, see xref:api/tools.adoc#_the_tool_calling_loop[Tool Calling: The Tool Calling Loop].
+For the conceptual overview of how the tool loop fits into the broader tool calling architecture, see xref:api/tools.adoc#the-tool-calling-loop[Tool Calling: The Tool Calling Loop].
 
 For a concrete subclass that uses `ToolCallingAdvisor`'s extension hooks to implement progressive tool disclosure, see xref:api/tools/tool-search-tool.adoc[Tool Search Tool].
 

@@ -889,7 +889,7 @@ spring.ai.chat.client.tool-calling.enabled=false
 ----
 
 When this property is set, tools are still sent to the AI model as definitions, but tool calls in the response are not executed automatically.
-Use xref:api/tools.adoc#_user_controlled_tool_execution[user-controlled tool execution] to drive the loop yourself.
+Use xref:api/tools.adoc#user-controlled-tool-execution[user-controlled tool execution] to drive the loop yourself.
 
 ===== Per call
 
@@ -944,7 +944,7 @@ The default is `ToolCallingAdvisor.DEFAULT_ORDER`.
 ===== Spring Boot: user-controlled tool execution
 
 To observe each iteration of the tool-calling loop — for example to forward intermediate chunks to a UI — disable the auto-registered advisor per-call and drive the loop yourself using `AdvisorParams.toolCallingAdvisorAutoRegister(false)`.
-See xref:api/tools.adoc#_with_chatclient[User-Controlled Tool Execution — With ChatClient] for a complete example.
+See xref:api/tools.adoc#user-controlled-tool-execution[User-Controlled Tool Execution — With ChatClient] for a complete example.
 
 ===== Spring Boot: custom `ToolCallingAdvisor.Builder` bean
 

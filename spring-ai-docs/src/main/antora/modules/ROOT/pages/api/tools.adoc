@@ -515,7 +515,7 @@ while (response.chatResponse() != null && response.chatResponse().hasToolCalls()
 }
 ----
 
-The same pattern applies to the streaming API, where each iteration's chunk `Flux` can be forwarded to a subscriber while being aggregated with `ChatClientMessageAggregator`. See xref:api/tools/tool-calling-advisor.adoc#_user_controlled_streaming[User-Controlled Streaming] for the full streaming variant.
+The same pattern applies to the streaming API, where each iteration's chunk `Flux` can be forwarded to a subscriber while being aggregated with `ChatClientMessageAggregator`. See xref:api/tools/tool-calling-advisor.adoc#user-controlled-streaming[User-Controlled Streaming] for the full streaming variant.
 
 To disable auto-registration globally for every call from an auto-configured `ChatClient`, set:
 
