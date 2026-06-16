@@ -209,54 +209,13 @@ ChatResponse response = chatModel.call(
 
 TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
 
-== Function Calling
+== Tool Calling
 
-Groq API endpoints support https://console.groq.com/docs/tool-use[tool/function calling] when selecting one of the Tool/Function supporting models.
+Groq supports https://console.groq.com/docs/tool-use[tool calling] when the selected model supports it. Spring AI handles the tool execution loop.
 
-TIP: Check the Tool https://console.groq.com/docs/tool-use[Supported Models].
+TIP: Check the https://console.groq.com/docs/tool-use[supported models].
 
-image::spring-ai-groq-functions-2.jpg[w=800,align="center"]
-
-You can register custom Java functions with your ChatModel and have the provided Groq model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
-This is a powerful technique to connect the LLM capabilities with external tools and APIs.
-
-=== Tool Example
-
-Here's a simple example of how to use Groq tool calling with Spring AI:
-
-[source,java]
-----
-public class WeatherService implements Function<WeatherService.Request, WeatherService.Response> {
-
-    public record Request(String location, String unit) {}
-    public record Response(double temp, String unit) {}
-
-    @Override
-    public Response apply(Request request) {
-        double temperature = request.location().contains("Amsterdam") ? 20 : 25;
-        return new Response(temperature, request.unit);
-    }
-}
-----
-
-[source,java]
-----
-ToolCallback weatherCallback = FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
-    .description("Get the weather in location")
-    .inputType(WeatherService.Request.class)
-    .build();
-
-var response = chatClient.prompt()
-    .user("What is the weather in Amsterdam and Paris?")
-    .tools(weatherCallback)
-    .call()
-    .content();
-----
-
-In this example, when the model needs weather information, it will automatically call the `WeatherService`, which can then fetch real-time weather data.
-The expected response looks like this: "The weather in Amsterdam is currently 20 degrees Celsius, and the weather in Paris is currently 25 degrees Celsius."
-
-Read more about xref:api/tools.adoc[Tool Calling].
+For most applications, use `ChatClient` with the auto-registered `ToolCallingAdvisor` — see xref:api/tools.adoc[Tool Calling]. For low-level control where you drive the loop yourself, see xref:api/tools/chatmodel-tool-calling.adoc[ChatModel Tool Calling].
 
 
 
