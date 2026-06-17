@@ -20,7 +20,6 @@ import java.awt.Rectangle;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -99,39 +98,70 @@ public class PagePdfDocumentReader implements DocumentReader {
 		try {
 			var pdfTextStripper = new PDFLayoutTextStripperByArea();
 
-			int pageNumber = 1;
-			int startPageNumber = 1;
-
 			List<String> pageTextGroupList = new ArrayList<>();
 
 			PDPageTree pages = this.document.getDocumentCatalog().getPages();
 			int totalPages = pages.getCount();
 			int logFrequency = totalPages > 10 ? totalPages / 10 : 1;
 
-			int pagesPerDocument = getPagesPerDocument(totalPages);
+			// When all pages are grouped into a single Document, never flush mid-stream;
+			// the trailing flush below emits the single Document.
+			int pagesPerDocument = this.config.pagesPerDocument == PdfDocumentReaderConfig.ALL_PAGES ? Integer.MAX_VALUE
+					: this.config.pagesPerDocument;
+
+			int pageNumber = 0;
+			int selectedPageCount = 0;
+			int processedInGroup = 0;
+			int groupStartPage = 0;
+			int groupEndPage = 0;
+			int previousSelectedPage = 0;
 			for (PDPage page : pages) {
-				if ((pageNumber - 1) % logFrequency == 0) {
+				pageNumber++;
+				// Skip pages outside the configured page ranges (if any) while keeping
+				// the
+				// sequential page-tree iteration and the physical page numbering intact.
+				if (!this.config.isPageSelected(pageNumber)) {
+					continue;
+				}
+
+				// With disjoint page ranges, flush the current group before a gap so a
+				// Document never spans excluded pages and its start/end page metadata
+				// stays accurate. As a result pagesPerDocument acts as a maximum across
+				// gaps rather than merging non-contiguous pages.
+				if (processedInGroup > 0 && pageNumber != previousSelectedPage + 1) {
+					flushGroup(readDocuments, pageTextGroupList, groupStartPage, groupEndPage);
+					groupStartPage = 0;
+					processedInGroup = 0;
+				}
+
+				if (selectedPageCount % logFrequency == 0) {
 					if (logger.isInfoEnabled()) {
 						logger.info("Processing PDF page: " + pageNumber);
 					}
 				}
 
-				handleSinglePage(page, pageNumber, pdfTextStripper, pageTextGroupList);
-
-				if (pageNumber % pagesPerDocument == 0 || pageNumber == totalPages) {
-					if (!CollectionUtils.isEmpty(pageTextGroupList)) {
-						readDocuments.add(toDocument(pageTextGroupList.stream().collect(Collectors.joining()),
-								startPageNumber, pageNumber));
-						pageTextGroupList.clear();
-					}
-					startPageNumber = pageNumber + 1;
+				if (groupStartPage == 0) {
+					groupStartPage = pageNumber;
 				}
+				handleSinglePage(page, pageNumber, pdfTextStripper, pageTextGroupList);
+				groupEndPage = pageNumber;
+				processedInGroup++;
+				selectedPageCount++;
+				previousSelectedPage = pageNumber;
 
-				pageNumber++;
+				if (processedInGroup == pagesPerDocument) {
+					flushGroup(readDocuments, pageTextGroupList, groupStartPage, groupEndPage);
+					groupStartPage = 0;
+					processedInGroup = 0;
+				}
 			}
 
+			// Emit any pages left in a partially filled group (also the single Document
+			// produced when all selected pages are grouped together).
+			flushGroup(readDocuments, pageTextGroupList, groupStartPage, groupEndPage);
+
 			if (logger.isInfoEnabled()) {
-				logger.info("Processed total " + totalPages + " pages");
+				logger.info("Processed " + selectedPageCount + " selected pages of " + totalPages + " total");
 			}
 			return readDocuments;
 		}
@@ -159,11 +189,12 @@ public class PagePdfDocumentReader implements DocumentReader {
 		pdfTextStripper.removeRegion(PDF_PAGE_REGION);
 	}
 
-	private int getPagesPerDocument(int totalPages) {
-		if (this.config.pagesPerDocument == PdfDocumentReaderConfig.ALL_PAGES) {
-			return totalPages;
+	private void flushGroup(List<Document> readDocuments, List<String> pageTextGroupList, int startPageNumber,
+			int endPageNumber) {
+		if (!CollectionUtils.isEmpty(pageTextGroupList)) {
+			readDocuments.add(toDocument(String.join("", pageTextGroupList), startPageNumber, endPageNumber));
+			pageTextGroupList.clear();
 		}
-		return this.config.pagesPerDocument;
 	}
 
 	protected Document toDocument(String docText, int startPageNumber, int endPageNumber) {
