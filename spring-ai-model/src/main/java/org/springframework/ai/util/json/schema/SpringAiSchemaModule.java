@@ -16,10 +16,20 @@
 
 package org.springframework.ai.util.json.schema;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+
 import com.github.victools.jsonschema.generator.MemberScope;
+import kotlin.jvm.JvmClassMappingKt;
+import kotlin.reflect.KClass;
+import kotlin.reflect.KFunction;
+import kotlin.reflect.KParameter;
+import kotlin.reflect.full.KClasses;
+import org.jspecify.annotations.NullUnmarked;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.core.KotlinDetector;
 import org.springframework.util.StringUtils;
 
 /**
@@ -42,8 +52,40 @@ public final class SpringAiSchemaModule extends AbstractSpringAiSchemaModule {
 	@Override
 	protected @Nullable String resolveToolParamDescription(MemberScope<?, ?> member) {
 		var annotation = member.getAnnotationConsideringFieldAndGetter(ToolParam.class);
+		if (annotation == null && KotlinDetector.isKotlinReflectPresent()) {
+			annotation = findKotlinConstructorParamAnnotation(member);
+		}
 		if (annotation != null && StringUtils.hasText(annotation.description())) {
 			return annotation.description();
+		}
+		return null;
+	}
+
+	@NullUnmarked
+	private @Nullable ToolParam findKotlinConstructorParamAnnotation(MemberScope<?, ?> member) {
+		if (!(member.getRawMember() instanceof Field field)) {
+			return null;
+		}
+		Class<?> declaringClass = member.getDeclaringType().getErasedType();
+		if (!KotlinDetector.isKotlinType(declaringClass)) {
+			return null;
+		}
+		KClass<?> kClass = JvmClassMappingKt.getKotlinClass(declaringClass);
+		KFunction<?> ctor = KClasses.getPrimaryConstructor(kClass);
+		if (ctor == null) {
+			return null;
+		}
+		String fieldName = field.getName();
+		for (KParameter param : ctor.getParameters()) {
+			String paramName = param.getName();
+			if (fieldName.equals(paramName)) {
+				for (Annotation a : param.getAnnotations()) {
+					if (a.annotationType() == ToolParam.class) {
+						return (ToolParam) a;
+					}
+				}
+				break;
+			}
 		}
 		return null;
 	}
