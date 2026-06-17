@@ -288,19 +288,15 @@ public class BedrockConverseUsageAggregationTests {
 
 		assertThat(result).isNotNull();
 
-		// With external tool calling each chatModel.call() is independent, so only the
-		// last round's usage is reported (no cross-round accumulation).
-		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(300);
-		assertThat(result.getMetadata().getUsage().getCompletionTokens()).isEqualTo(30);
-		assertThat(result.getMetadata().getUsage().getTotalTokens()).isEqualTo(330);
+		// ToolCallingAdvisor accumulates usage across framework-controlled tool
+		// calling rounds.
+		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(500);
+		assertThat(result.getMetadata().getUsage().getCompletionTokens()).isEqualTo(80);
+		assertThat(result.getMetadata().getUsage().getTotalTokens()).isEqualTo(580);
 
-		// Verify cache metrics in native usage object (last round only)
-		Object nativeUsage = result.getMetadata().getUsage().getNativeUsage();
-		assertThat(nativeUsage).isInstanceOf(TokenUsage.class);
-
-		TokenUsage tokenUsage = (TokenUsage) nativeUsage;
-		assertThat(tokenUsage.cacheReadInputTokens()).isEqualTo(150);
-		assertThat(tokenUsage.cacheWriteInputTokens()).isEqualTo(0);
+		// Verify cache metrics in the accumulated Usage abstraction.
+		assertThat(result.getMetadata().getUsage().getCacheReadInputTokens()).isEqualTo(300L);
+		assertThat(result.getMetadata().getUsage().getCacheWriteInputTokens()).isEqualTo(0L);
 	}
 
 	public record Request(String location, String unit) {
