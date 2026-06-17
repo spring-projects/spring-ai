@@ -120,7 +120,7 @@ public final class UsageCalculator {
 	 * no usage has been reported
 	 * @since 2.0.0
 	 */
-	public static @Nullable ChatResponse accumulate(@Nullable ChatResponse currentChatResponse,
+	public static @Nullable ChatResponse accumulateResponseUsage(@Nullable ChatResponse currentChatResponse,
 			@Nullable ChatResponse accumulatedChatResponse) {
 		if (currentChatResponse == null) {
 			return accumulatedChatResponse;

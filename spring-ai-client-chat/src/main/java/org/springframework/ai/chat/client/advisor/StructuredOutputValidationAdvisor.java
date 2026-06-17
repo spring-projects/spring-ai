@@ -139,7 +139,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 
 			// After Call
 			ChatResponse chatResponse = chatClientResponse.chatResponse();
-			usageAccumulator.add(chatResponse);
+			usageAccumulator.addRoundResponse(chatResponse);
 
 			// We should not validate tool call requests, only the content of the final
 			// response.
@@ -175,7 +175,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		}
 		while (!isValidationSuccess && repeatCounter <= this.maxRepeatAttempts);
 
-		return usageAccumulator.applyTotalUsage(chatClientResponse);
+		return usageAccumulator.applyAccumulatedUsage(chatClientResponse);
 	}
 
 	@SuppressWarnings("null")

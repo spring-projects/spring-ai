@@ -37,6 +37,10 @@ import org.springframework.ai.support.UsageCalculator;
  * {@code adviseCall} invocation, or one per stream subscription (inside a
  * {@link Flux#defer}) to keep the accumulated usage subscription-local.
  * <p>
+ * The token arithmetic and {@link ChatResponse} metadata copying are delegated to
+ * {@link UsageCalculator}; this class owns the recursive advisor loop state and the final
+ * response stamping.
+ * <p>
  * Typical non-streaming use:
  *
  * <pre>{@code
@@ -44,11 +48,11 @@ import org.springframework.ai.support.UsageCalculator;
  * ChatClientResponse response;
  * do {
  *     response = chain.nextCall(request);
- *     usage.add(response.chatResponse());
+ *     usage.addRoundResponse(response.chatResponse());
  *     // ... decide whether to loop again ...
  * }
  * while (loopAgain);
- * return usage.applyTotalUsage(response);
+ * return usage.applyAccumulatedUsage(response);
  * }</pre>
  *
  * @author Christian Tzolov
@@ -62,11 +66,11 @@ public final class UsageAccumulator {
 	/**
 	 * Returns the cumulative usage folded in so far, or {@code null} if none. In a
 	 * streaming loop this is the total of the <em>previous</em> rounds, since it is read
-	 * before the in-flight round is {@link #add(ChatResponse) added}.
+	 * before the in-flight round is {@link #addRoundResponse(ChatResponse) added}.
 	 * @return the accumulated chat response carrying the cumulative usage, or
 	 * {@code null}
 	 */
-	public @Nullable ChatResponse total() {
+	public @Nullable ChatResponse accumulatedResponse() {
 		return this.accumulated;
 	}
 
@@ -76,8 +80,8 @@ public final class UsageAccumulator {
 	 * {@code null}
 	 * @return the updated cumulative total, or {@code null} if still empty
 	 */
-	public @Nullable ChatResponse add(@Nullable ChatResponse roundChatResponse) {
-		this.accumulated = UsageCalculator.accumulate(roundChatResponse, this.accumulated);
+	public @Nullable ChatResponse addRoundResponse(@Nullable ChatResponse roundChatResponse) {
+		this.accumulated = UsageCalculator.accumulateResponseUsage(roundChatResponse, this.accumulated);
 		return this.accumulated;
 	}
 
@@ -89,7 +93,7 @@ public final class UsageAccumulator {
 	 * @param chatClientResponse the response to stamp the total onto
 	 * @return the response carrying the accumulated total usage
 	 */
-	public ChatClientResponse applyTotalUsage(ChatClientResponse chatClientResponse) {
+	public ChatClientResponse applyAccumulatedUsage(ChatClientResponse chatClientResponse) {
 		return stampTotalUsage(chatClientResponse, this.accumulated);
 	}
 
@@ -112,23 +116,25 @@ public final class UsageAccumulator {
 	/**
 	 * Adds the previous rounds' accumulated usage onto a single streamed chunk that
 	 * already carries its own usage. Chunks without usage (or when there is no previous
-	 * total) are returned unchanged, so the previous total is reflected only on
-	 * usage-bearing chunks.
+	 * accumulated response) are returned unchanged, so the previous rounds' usage is
+	 * reflected only on usage-bearing chunks.
 	 * @param chunk the streamed chunk
-	 * @param previousTotal the accumulated total of previous rounds, or {@code null}
-	 * @return the chunk with the previous total added to its usage, or unchanged
+	 * @param previousAccumulatedResponse the response carrying the accumulated usage of
+	 * previous rounds, or {@code null}
+	 * @return the chunk with the previous rounds' usage added to its usage, or unchanged
 	 */
-	public static ChatClientResponse applyPreviousTotalToChunk(ChatClientResponse chunk,
-			@Nullable ChatResponse previousTotal) {
+	static ChatClientResponse applyPreviousAccumulatedUsageToChunk(ChatClientResponse chunk,
+			@Nullable ChatResponse previousAccumulatedResponse) {
 		ChatResponse currentChatResponse = chunk.chatResponse();
-		if (currentChatResponse == null || previousTotal == null) {
+		if (currentChatResponse == null || previousAccumulatedResponse == null) {
 			return chunk;
 		}
 		Usage currentUsage = currentChatResponse.getMetadata().getUsage();
-		if (UsageCalculator.isEmpty(currentUsage) || UsageCalculator.isEmpty(previousTotal.getMetadata().getUsage())) {
+		if (UsageCalculator.isEmpty(currentUsage)
+				|| UsageCalculator.isEmpty(previousAccumulatedResponse.getMetadata().getUsage())) {
 			return chunk;
 		}
-		Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousTotal);
+		Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousAccumulatedResponse);
 		if (Objects.equals(currentUsage, cumulativeUsage)) {
 			return chunk;
 		}
@@ -145,10 +151,10 @@ public final class UsageAccumulator {
 	 * preserve).
 	 * @param aggregatedResponse the aggregated response of the final round
 	 * @param roundChatResponse the final round's own response (its own usage)
-	 * @param accumulatedChatResponse the accumulator carrying the cumulative total
+	 * @param accumulatedChatResponse the response carrying the cumulative usage
 	 * @return a single usage-only response, or an empty flux when no correction is needed
 	 */
-	public static Flux<ChatClientResponse> usageCorrection(ChatClientResponse aggregatedResponse,
+	static Flux<ChatClientResponse> emitFinalUsageCorrectionIfNecessary(ChatClientResponse aggregatedResponse,
 			@Nullable ChatResponse roundChatResponse, @Nullable ChatResponse accumulatedChatResponse) {
 		if (accumulatedChatResponse == null) {
 			return Flux.empty();

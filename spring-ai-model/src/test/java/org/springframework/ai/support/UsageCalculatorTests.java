@@ -140,40 +140,40 @@ class UsageCalculatorTests {
 	}
 
 	@Test
-	void accumulateReturnsAccumulatorWhenCurrentIsNull() {
+	void accumulateResponseUsageReturnsAccumulatedResponseWhenCurrentIsNull() {
 		ChatResponse accumulated = responseWith(new DefaultUsage(1, 2, 3));
 
-		ChatResponse result = UsageCalculator.accumulate(null, accumulated);
+		ChatResponse result = UsageCalculator.accumulateResponseUsage(null, accumulated);
 
 		assertThat(result).isSameAs(accumulated);
 	}
 
 	@Test
-	void accumulateReturnsCumulativeUsageOnTheCurrentResponse() {
+	void accumulateResponseUsageReturnsCumulativeUsageOnTheCurrentResponse() {
 		ChatResponse current = responseWith(new DefaultUsage(10, 20, 30));
 		ChatResponse accumulated = responseWith(new DefaultUsage(1, 2, 3));
 
-		ChatResponse result = UsageCalculator.accumulate(current, accumulated);
+		ChatResponse result = UsageCalculator.accumulateResponseUsage(current, accumulated);
 
 		assertThat(result).isNotNull();
 		assertUsage(result.getMetadata().getUsage(), 11, 22, 33);
 	}
 
 	@Test
-	void accumulateReturnsNullWhenNothingReported() {
+	void accumulateResponseUsageReturnsNullWhenNothingReported() {
 		ChatResponse current = responseWith(new DefaultUsage(0, 0, 0));
 
-		ChatResponse result = UsageCalculator.accumulate(current, null);
+		ChatResponse result = UsageCalculator.accumulateResponseUsage(current, null);
 
 		assertThat(result).isNull();
 	}
 
 	@Test
-	void accumulateKeepsNativeUsageOnFirstNonEmptyResponse() {
+	void accumulateResponseUsageKeepsNativeUsageOnFirstNonEmptyResponse() {
 		Object nativeUsage = new Object();
 		ChatResponse current = responseWith(new DefaultUsage(10, 20, 30, nativeUsage));
 
-		ChatResponse result = UsageCalculator.accumulate(current, null);
+		ChatResponse result = UsageCalculator.accumulateResponseUsage(current, null);
 
 		assertThat(result).isNotNull();
 		assertThat(result.getMetadata().getUsage().getNativeUsage()).isSameAs(nativeUsage);

@@ -39,70 +39,73 @@ import static org.assertj.core.api.Assertions.assertThat;
 class UsageAccumulatorTests {
 
 	@Test
-	void totalIsNullBeforeAnyAdd() {
-		assertThat(new UsageAccumulator().total()).isNull();
+	void accumulatedResponseIsNullBeforeAnyRoundResponse() {
+		assertThat(new UsageAccumulator().accumulatedResponse()).isNull();
 	}
 
 	@Test
-	void addFoldsUsageAcrossRounds() {
+	void addRoundResponseFoldsUsageAcrossRounds() {
 		UsageAccumulator accumulator = new UsageAccumulator();
 
-		accumulator.add(responseWith(new DefaultUsage(10, 20, 30)));
-		ChatResponse total = accumulator.add(responseWith(new DefaultUsage(1, 2, 3)));
+		accumulator.addRoundResponse(responseWith(new DefaultUsage(10, 20, 30)));
+		ChatResponse total = accumulator.addRoundResponse(responseWith(new DefaultUsage(1, 2, 3)));
 
 		assertThat(total).isNotNull();
 		assertUsage(total.getMetadata().getUsage(), 11, 22, 33);
-		assertThat(accumulator.total()).isSameAs(total);
+		assertThat(accumulator.accumulatedResponse()).isSameAs(total);
 	}
 
 	@Test
-	void applyTotalUsageStampsAccumulatedTotalOntoResponse() {
+	void applyAccumulatedUsageStampsAccumulatedTotalOntoResponse() {
 		UsageAccumulator accumulator = new UsageAccumulator();
-		accumulator.add(responseWith(new DefaultUsage(10, 20, 30)));
-		accumulator.add(responseWith(new DefaultUsage(1, 2, 3)));
+		accumulator.addRoundResponse(responseWith(new DefaultUsage(10, 20, 30)));
+		accumulator.addRoundResponse(responseWith(new DefaultUsage(1, 2, 3)));
 
 		ChatClientResponse finalResponse = clientResponseWith(new DefaultUsage(1, 2, 3));
-		ChatClientResponse result = accumulator.applyTotalUsage(finalResponse);
+		ChatClientResponse result = accumulator.applyAccumulatedUsage(finalResponse);
 
 		assertUsage(result.chatResponse().getMetadata().getUsage(), 11, 22, 33);
 	}
 
 	@Test
-	void applyTotalUsageLeavesResponseUnchangedWhenNothingAccumulated() {
+	void applyAccumulatedUsageLeavesResponseUnchangedWhenNothingAccumulated() {
 		ChatClientResponse response = clientResponseWith(new DefaultUsage(1, 2, 3));
 
-		ChatClientResponse result = new UsageAccumulator().applyTotalUsage(response);
+		ChatClientResponse result = new UsageAccumulator().applyAccumulatedUsage(response);
 
 		assertThat(result).isSameAs(response);
 	}
 
 	@Test
-	void applyPreviousTotalToChunkAddsPreviousTotalToUsageBearingChunk() {
-		ChatResponse previousTotal = responseWith(new DefaultUsage(10, 20, 30));
+	void applyPreviousAccumulatedUsageToChunkAddsPreviousUsageToUsageBearingChunk() {
+		ChatResponse previousAccumulatedResponse = responseWith(new DefaultUsage(10, 20, 30));
 		ChatClientResponse chunk = clientResponseWith(new DefaultUsage(1, 2, 3));
 
-		ChatClientResponse result = UsageAccumulator.applyPreviousTotalToChunk(chunk, previousTotal);
+		ChatClientResponse result = UsageAccumulator.applyPreviousAccumulatedUsageToChunk(chunk,
+				previousAccumulatedResponse);
 
 		assertUsage(result.chatResponse().getMetadata().getUsage(), 11, 22, 33);
 	}
 
 	@Test
-	void applyPreviousTotalToChunkLeavesUsageFreeChunkUnchanged() {
-		ChatResponse previousTotal = responseWith(new DefaultUsage(10, 20, 30));
+	void applyPreviousAccumulatedUsageToChunkLeavesUsageFreeChunkUnchanged() {
+		ChatResponse previousAccumulatedResponse = responseWith(new DefaultUsage(10, 20, 30));
 		ChatClientResponse chunk = clientResponseWith(new DefaultUsage(0, 0, 0));
 
-		ChatClientResponse result = UsageAccumulator.applyPreviousTotalToChunk(chunk, previousTotal);
+		ChatClientResponse result = UsageAccumulator.applyPreviousAccumulatedUsageToChunk(chunk,
+				previousAccumulatedResponse);
 
 		assertThat(result).isSameAs(chunk);
 	}
 
 	@Test
-	void usageCorrectionEmitsUsageOnlyResponseWhenFinalRoundHasNoUsage() {
+	void emitFinalUsageCorrectionIfNecessaryEmitsUsageOnlyResponseWhenFinalRoundHasNoUsage() {
 		ChatClientResponse aggregated = clientResponseWith(new DefaultUsage(0, 0, 0));
 		ChatResponse round = responseWith(new DefaultUsage(0, 0, 0));
 		ChatResponse accumulated = responseWith(new DefaultUsage(10, 20, 30));
 
-		List<ChatClientResponse> result = UsageAccumulator.usageCorrection(aggregated, round, accumulated)
+		List<ChatClientResponse> result = UsageAccumulator
+			.emitFinalUsageCorrectionIfNecessary(aggregated, round, accumulated)
 			.collectList()
 			.block();
 
@@ -113,22 +116,23 @@ class UsageAccumulatorTests {
 	}
 
 	@Test
-	void usageCorrectionEmitsNothingWhenFinalRoundReportsUsage() {
+	void emitFinalUsageCorrectionIfNecessaryEmitsNothingWhenFinalRoundReportsUsage() {
 		ChatClientResponse aggregated = clientResponseWith(new DefaultUsage(1, 2, 3));
 		ChatResponse round = responseWith(new DefaultUsage(1, 2, 3));
 		ChatResponse accumulated = responseWith(new DefaultUsage(11, 22, 33));
 
-		Flux<ChatClientResponse> result = UsageAccumulator.usageCorrection(aggregated, round, accumulated);
+		Flux<ChatClientResponse> result = UsageAccumulator.emitFinalUsageCorrectionIfNecessary(aggregated, round,
+				accumulated);
 
 		assertThat(result.collectList().block()).isEmpty();
 	}
 
 	@Test
-	void usageCorrectionEmitsNothingWhenNothingAccumulated() {
+	void emitFinalUsageCorrectionIfNecessaryEmitsNothingWhenNothingAccumulated() {
 		ChatClientResponse aggregated = clientResponseWith(new DefaultUsage(0, 0, 0));
 		ChatResponse round = responseWith(new DefaultUsage(0, 0, 0));
 
-		Flux<ChatClientResponse> result = UsageAccumulator.usageCorrection(aggregated, round, null);
+		Flux<ChatClientResponse> result = UsageAccumulator.emitFinalUsageCorrectionIfNecessary(aggregated, round, null);
 
 		assertThat(result.collectList().block()).isEmpty();
 	}

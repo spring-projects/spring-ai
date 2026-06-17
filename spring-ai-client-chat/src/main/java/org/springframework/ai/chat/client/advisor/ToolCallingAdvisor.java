@@ -155,7 +155,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 			// After Call
 			ChatResponse chatResponse = chatClientResponse.chatResponse();
-			usageAccumulator.add(chatResponse);
+			usageAccumulator.addRoundResponse(chatResponse);
 			isToolCall = this.toolExecutionEligibilityChecker.isToolCallResponse(chatResponse);
 
 			if (isToolCall) {
@@ -186,7 +186,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		}
 		while (isToolCall); // loop until no tool calls are present
 
-		chatClientResponse = usageAccumulator.applyTotalUsage(chatClientResponse);
+		chatClientResponse = usageAccumulator.applyAccumulatedUsage(chatClientResponse);
 		return this.doFinalizeLoop(chatClientResponse, callAdvisorChain);
 	}
 
@@ -277,10 +277,11 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 		AtomicReference<ChatClientResponse> aggregatedResponseRef = new AtomicReference<>();
 		// Snapshot of the usage accumulated from previous rounds (before this round).
-		ChatResponse previousTotal = usageAccumulator.total();
+		ChatResponse previousAccumulatedResponse = usageAccumulator.accumulatedResponse();
 
 		return CHAT_CLIENT_MESSAGE_AGGREGATOR.aggregateChatClientResponse(responseFlux, aggregatedResponseRef::set)
-			.map(chatClientResponse -> UsageAccumulator.applyPreviousTotalToChunk(chatClientResponse, previousTotal))
+			.map(chatClientResponse -> UsageAccumulator.applyPreviousAccumulatedUsageToChunk(chatClientResponse,
+					previousAccumulatedResponse))
 			.concatWith(Flux.defer(() -> this.handleToolCallRecursion(aggregatedResponseRef.get(), finalRequest,
 					streamAdvisorChain, originalRequest, optionsCopy, usageAccumulator)))
 			.filter(ccr -> !this.toolExecutionEligibilityChecker.isToolCallResponse(ccr.chatResponse()));
@@ -301,7 +302,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		aggregatedResponse = this.doAfterStream(aggregatedResponse, streamAdvisorChain);
 
 		ChatResponse chatResponse = aggregatedResponse.chatResponse();
-		ChatResponse accumulatedChatResponse = usageAccumulator.add(chatResponse);
+		ChatResponse accumulatedChatResponse = usageAccumulator.addRoundResponse(chatResponse);
 		boolean isToolCall = this.toolExecutionEligibilityChecker.isToolCallResponse(chatResponse);
 
 		if (!isToolCall) {
@@ -310,8 +311,8 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 			// rounds was never stamped onto any emitted chunk, so emit a trailing
 			// usage-only response to keep the aggregated stream usage correct. Otherwise
 			// nothing more needs to be emitted.
-			Flux<ChatClientResponse> finalEmissions = UsageAccumulator.usageCorrection(aggregatedResponse, chatResponse,
-					accumulatedChatResponse);
+			Flux<ChatClientResponse> finalEmissions = UsageAccumulator
+				.emitFinalUsageCorrectionIfNecessary(aggregatedResponse, chatResponse, accumulatedChatResponse);
 			return this.doFinalizeLoopStream(finalEmissions, streamAdvisorChain);
 		}
 
@@ -337,7 +338,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 						.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
 						.build())
 					.build();
-				return Flux.just(usageAccumulator.applyTotalUsage(directResponse));
+				return Flux.just(usageAccumulator.applyAccumulatedUsage(directResponse));
 			}
 			else {
 				// Recursive call with updated conversation history

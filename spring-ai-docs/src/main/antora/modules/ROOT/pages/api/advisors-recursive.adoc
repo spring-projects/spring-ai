@@ -113,7 +113,7 @@ ActorFilms actorFilms = chatClient.prompt()
 
 A recursive advisor performs more than one model call per invocation, so it must accumulate the token usage of every call to report a correct cumulative total; otherwise only the last call's usage is visible to the caller.
 Spring AI provides `org.springframework.ai.chat.client.advisor.UsageAccumulator` to make this straightforward.
-Create one instance per `adviseCall` invocation (or per stream subscription, inside a `Flux.defer`, to keep it subscription-local), fold each round's response in with `add(...)`, and stamp the cumulative total onto the final response with `applyTotalUsage(...)`:
+Create one instance per `adviseCall` invocation (or per stream subscription, inside a `Flux.defer`, to keep it subscription-local), fold each round's response in with `addRoundResponse(...)`, and stamp the cumulative total onto the final response with `applyAccumulatedUsage(...)`:
 
 [source,java]
 ----
@@ -121,11 +121,11 @@ UsageAccumulator usage = new UsageAccumulator();
 ChatClientResponse response;
 do {
     response = callAdvisorChain.copy(this).nextCall(request);
-    usage.add(response.chatResponse());
+    usage.addRoundResponse(response.chatResponse());
     // ... decide whether to loop again ...
 }
 while (loopAgain);
-return usage.applyTotalUsage(response);
+return usage.applyAccumulatedUsage(response);
 ----
 
-The underlying token math lives in `org.springframework.ai.support.UsageCalculator` (`accumulate` and `withUsage`), which `UsageAccumulator` wraps.
+The underlying token math lives in `org.springframework.ai.support.UsageCalculator` (`accumulateResponseUsage` and `withUsage`), which `UsageAccumulator` wraps.
