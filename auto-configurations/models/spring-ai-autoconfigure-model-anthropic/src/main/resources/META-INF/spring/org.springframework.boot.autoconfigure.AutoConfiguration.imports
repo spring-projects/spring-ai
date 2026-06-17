@@ -14,3 +14,5 @@
 # limitations under the License.
 #
 org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration
+org.springframework.ai.model.anthropic.autoconfigure.AnthropicVertexChatAutoConfiguration
+org.springframework.ai.model.anthropic.autoconfigure.MissingAnthropicVertexDependencyConfiguration

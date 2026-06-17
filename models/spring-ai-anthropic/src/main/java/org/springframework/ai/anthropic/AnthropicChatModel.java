@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.anthropic.backends.Backend;
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.core.JsonValue;
@@ -190,7 +191,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			@Nullable AnthropicClientAsync anthropicClientAsync, @Nullable AnthropicChatOptions options,
 			@Nullable ToolCallingManager toolCallingManager, @Nullable ObservationRegistry observationRegistry,
 			@Nullable MeterRegistry meterRegistry, @Nullable ExecutorService dispatcherExecutor,
-			List<AnthropicHttpClientBuilderCustomizer> httpClientCustomizers) {
+			List<AnthropicHttpClientBuilderCustomizer> httpClientCustomizers, @Nullable Backend backend) {
 
 		if (options == null) {
 			this.options = AnthropicChatOptions.builder().build();
@@ -205,17 +206,32 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		this.meterRegistry = meterRegistry;
 		this.dispatcherExecutor = dispatcherExecutor;
 
-		this.anthropicClient = Objects.requireNonNullElseGet(anthropicClient,
-				() -> AnthropicSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
-						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders(), this.observationRegistry, this.meterRegistry,
-						this.dispatcherExecutor, httpClientCustomizers));
+		if (backend != null) {
+			this.anthropicClient = Objects.requireNonNullElseGet(anthropicClient,
+					() -> AnthropicSetup.setupSyncClient(backend, this.options.getTimeout(),
+							this.options.getMaxRetries(), this.options.getProxy(), this.options.getCustomHeaders(),
+							this.observationRegistry, this.meterRegistry, this.dispatcherExecutor,
+							httpClientCustomizers));
 
-		this.anthropicClientAsync = Objects.requireNonNullElseGet(anthropicClientAsync,
-				() -> AnthropicSetup.setupAsyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
-						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders(), this.observationRegistry, this.meterRegistry,
-						this.dispatcherExecutor, httpClientCustomizers));
+			this.anthropicClientAsync = Objects.requireNonNullElseGet(anthropicClientAsync,
+					() -> AnthropicSetup.setupAsyncClient(backend, this.options.getTimeout(),
+							this.options.getMaxRetries(), this.options.getProxy(), this.options.getCustomHeaders(),
+							this.observationRegistry, this.meterRegistry, this.dispatcherExecutor,
+							httpClientCustomizers));
+		}
+		else {
+			this.anthropicClient = Objects.requireNonNullElseGet(anthropicClient,
+					() -> AnthropicSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
+							this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
+							this.options.getCustomHeaders(), this.observationRegistry, this.meterRegistry,
+							this.dispatcherExecutor, httpClientCustomizers));
+
+			this.anthropicClientAsync = Objects.requireNonNullElseGet(anthropicClientAsync,
+					() -> AnthropicSetup.setupAsyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
+							this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
+							this.options.getCustomHeaders(), this.observationRegistry, this.meterRegistry,
+							this.dispatcherExecutor, httpClientCustomizers));
+		}
 
 		this.toolCallingManager = Objects.requireNonNullElse(toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER);
 	}
@@ -1609,6 +1625,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		private List<AnthropicHttpClientBuilderCustomizer> httpClientCustomizers = new ArrayList<>();
 
+		private @Nullable Backend backend;
+
 		private Builder() {
 		}
 
@@ -1728,6 +1746,20 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		/**
+		 * Sets the SDK {@link Backend} for client construction. When provided, clients
+		 * are created from this backend instead of the {@code baseUrl / apiKey} from
+		 * {@link AnthropicChatOptions}.
+		 * @param backend the SDK backend
+		 * @return this builder
+		 * @since 2.0.0
+		 */
+		public Builder backend(Backend backend) {
+			Assert.notNull(backend, "backend must not be null");
+			this.backend = backend;
+			return this;
+		}
+
+		/**
 		 * Builds a new {@link AnthropicChatModel} instance.
 		 * @return the configured chat model
 		 */
@@ -1744,7 +1776,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 			return new AnthropicChatModel(this.anthropicClient, this.anthropicClientAsync, this.options,
 					this.toolCallingManager, this.observationRegistry, this.meterRegistry, this.dispatcherExecutor,
-					this.httpClientCustomizers);
+					this.httpClientCustomizers, this.backend);
 		}
 
 	}

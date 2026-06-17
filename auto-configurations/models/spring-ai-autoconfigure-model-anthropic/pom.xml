@@ -40,6 +40,15 @@
 			<version>${project.parent.version}</version>
 		</dependency>
 
+		<!-- Anthropic SDK Vertex AI backend (optional, only needed for
+		     spring.ai.anthropic.backend=vertex-ai) -->
+		<dependency>
+			<groupId>com.anthropic</groupId>
+			<artifactId>anthropic-java-vertex</artifactId>
+			<version>${anthropic-sdk.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- Boot dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
