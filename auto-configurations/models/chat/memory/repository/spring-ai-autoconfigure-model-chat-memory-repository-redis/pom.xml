@@ -11,7 +11,7 @@
 	<artifactId>spring-ai-autoconfigure-model-chat-memory-repository-redis</artifactId>
 	<packaging>jar</packaging>
 	<name>Spring AI Redis Chat Memory Repository Auto Configuration</name>
-	<description>Spring AI Redis Chat Memory ARepository Auto Configuration</description>
+	<description>Spring AI Redis Chat Memory Repository Auto Configuration</description>
 
 	<url>https://github.com/spring-projects/spring-ai</url>
 
