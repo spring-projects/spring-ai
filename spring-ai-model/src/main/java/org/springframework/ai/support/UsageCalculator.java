@@ -27,6 +27,7 @@ import org.springframework.ai.chat.model.ChatResponse;
  * A utility class to provide support methods handling {@link Usage}.
  *
  * @author Ilayaperumal Gopinathan
+ * @author Jewoo Shin
  */
 public final class UsageCalculator {
 
@@ -105,18 +106,18 @@ public final class UsageCalculator {
 	}
 
 	/**
-	 * Folds the usage of the given current chat response into a running accumulator. The
-	 * returned {@link ChatResponse} carries the cumulative usage (current plus
-	 * accumulated). This is the building block for accumulating usage across the
-	 * iterations of a recursive flow (for example a tool-calling loop or a validation
-	 * retry loop).
+	 * Folds the usage of the current chat response into the previously accumulated
+	 * {@link ChatResponse}. The returned {@link ChatResponse} carries the cumulative
+	 * usage (current plus previously accumulated). This is the building block for
+	 * accumulating usage across the iterations of a recursive flow (for example a
+	 * tool-calling loop or a validation retry loop).
 	 * @param currentChatResponse the chat response produced by the current iteration, or
 	 * {@code null}
-	 * @param accumulatedChatResponse the running accumulator from previous iterations, or
-	 * {@code null} if none yet
-	 * @return a chat response carrying the cumulative usage, the accumulator unchanged
-	 * when the current response is {@code null}, or {@code null} when no usage has been
-	 * reported
+	 * @param accumulatedChatResponse the chat response carrying the cumulative usage from
+	 * previous iterations, or {@code null} if none yet
+	 * @return a chat response carrying the cumulative usage, the previously accumulated
+	 * response unchanged when the current response is {@code null}, or {@code null} when
+	 * no usage has been reported
 	 * @since 2.0.0
 	 */
 	public static @Nullable ChatResponse accumulate(@Nullable ChatResponse currentChatResponse,
