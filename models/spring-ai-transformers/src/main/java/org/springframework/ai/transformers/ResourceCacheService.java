@@ -19,6 +19,7 @@ package org.springframework.ai.transformers;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -56,7 +57,7 @@ public class ResourceCacheService {
 	private List<String> excludedUriSchemas = new ArrayList<>(List.of("file", "classpath"));
 
 	public ResourceCacheService() {
-		this(new File(System.getProperty("java.io.tmpdir"), "spring-ai-onnx-generative").getAbsolutePath());
+		this(defaultCacheDirectory());
 	}
 
 	public ResourceCacheService(String rootCacheDirectory) {
@@ -71,6 +72,15 @@ public class ResourceCacheService {
 			this.cacheDirectory.mkdirs();
 		}
 		Assert.isTrue(this.cacheDirectory.isDirectory(), "The cache folder must be a directory");
+	}
+
+	private static File defaultCacheDirectory() {
+		try {
+			return Files.createTempDirectory("spring-ai-model-cache").toFile();
+		}
+		catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	/**
