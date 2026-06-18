@@ -98,7 +98,7 @@ ChatOptions runtimeOptions = ToolCallingChatOptions.builder()
     .build();
 ----
 
-NOTE: This override behavior is specific to the `ChatModel` API. When using `ChatClient`, per-call `.tools(...)` **appends** to `.defaultTools(...)` — the two layers compose naturally. See xref:api/tools.adoc#_passing_tools_to_chatclient[Passing Tools to ChatClient].
+NOTE: This override behavior is specific to the `ChatModel` API. When using `ChatClient`, per-call `.tools(...)` **appends** to `.defaultTools(...)` — the two layers compose naturally. See xref:api/tools.adoc#passing-tools[Passing Tools to ChatClient].
 
 [[driving-the-loop-manually]]
 == Driving the Loop Manually
@@ -182,7 +182,7 @@ while (true) {
 }
 ----
 
-For `ChatClient`-driven streaming with full advisor composition, see xref:api/tools/tool-calling-advisor.adoc#_user_controlled_streaming[ToolCallingAdvisor: User-Controlled Streaming].
+For `ChatClient`-driven streaming with full advisor composition, see xref:api/tools/tool-calling-advisor.adoc#user-controlled-streaming[ToolCallingAdvisor: User-Controlled Streaming].
 
 [[tool-context]]
 == Tool Context
@@ -202,7 +202,7 @@ chatModel.call(prompt);
 
 When both default and runtime `toolContext` are set, the resulting context is the **merge** of the two (unlike `toolCallbacks`, which is replaced) — runtime entries take precedence over defaults for matching keys.
 
-See xref:api/tools.adoc#_tool_context[Tool Context] for the tool-side API.
+See xref:api/tools.adoc#tool-context[Tool Context] for the tool-side API.
 
 [[return-direct]]
 == Return Direct
@@ -219,12 +219,12 @@ if (result.returnDirect()) {
 }
 ----
 
-If the model requested multiple tool calls in a single iteration, `returnDirect()` is `true` only if **all** the called tools have `returnDirect = true`. See xref:api/tools.adoc#_return_direct[Return Direct] for declaring the flag on a tool.
+If the model requested multiple tool calls in a single iteration, `returnDirect()` is `true` only if **all** the called tools have `returnDirect = true`. See xref:api/tools.adoc#return-direct[Return Direct] for declaring the flag on a tool.
 
 [[see-also]]
 == See Also
 
 * xref:api/tools.adoc[Tool Calling] — the recommended `ChatClient`-based path
 * xref:api/tools/tool-calling-advisor.adoc[`ToolCallingAdvisor`] — the advisor that runs the loop for `ChatClient`
-* xref:api/tools/tool-calling-advisor.adoc#_user_controlled_streaming[User-Controlled Streaming with ChatClient] — analogous pattern with the advisor chain still in place
+* xref:api/tools/tool-calling-advisor.adoc#user-controlled-streaming[User-Controlled Streaming with ChatClient] — analogous pattern with the advisor chain still in place
 * xref:upgrade-notes.adoc#tool-calling-1x-to-2x[Upgrading Tool Calling from 1.x to 2.0]

@@ -41,6 +41,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
@@ -58,6 +59,7 @@ import org.springframework.util.StringUtils;
  * Streaming responses are not supported.
  *
  * @author Christian Tzolov
+ * @author Jewoo Shin
  */
 public final class StructuredOutputValidationAdvisor implements CallAdvisor, StreamAdvisor {
 
@@ -126,6 +128,8 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 
 		var processedChatClientRequest = chatClientRequest;
 
+		UsageAccumulator usageAccumulator = new UsageAccumulator();
+
 		do {
 			// Before Call
 			repeatCounter++;
@@ -134,10 +138,12 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 			chatClientResponse = callAdvisorChain.copy(this).nextCall(processedChatClientRequest);
 
 			// After Call
+			ChatResponse chatResponse = chatClientResponse.chatResponse();
+			usageAccumulator.addRoundResponse(chatResponse);
 
 			// We should not validate tool call requests, only the content of the final
 			// response.
-			if (chatClientResponse.chatResponse() == null || !chatClientResponse.chatResponse().hasToolCalls()) {
+			if (chatResponse == null || !chatResponse.hasToolCalls()) {
 
 				SchemaValidation validationResponse = validateOutputSchema(chatClientResponse);
 
@@ -169,7 +175,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		}
 		while (!isValidationSuccess && repeatCounter <= this.maxRepeatAttempts);
 
-		return chatClientResponse;
+		return usageAccumulator.applyAccumulatedUsage(chatClientResponse);
 	}
 
 	@SuppressWarnings("null")
