@@ -121,7 +121,8 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 			String systemMessageSuffix, boolean referenceToolNameAccumulation, @Nullable Integer maxResults,
 			boolean conversationHistoryEnabled, String sessionIdKeyName, ToolIndexEvictionStrategy evictionStrategy) {
 
-		super(toolCallingManager, toolExecutionEligibilityChecker, advisorOrder, conversationHistoryEnabled);
+		super(toolCallingManager, toolExecutionEligibilityChecker, advisorOrder, conversationHistoryEnabled,
+				DEFAULT_MAX_IDENTICAL_TOOL_CALL_COUNT);
 		this.toolIndex = toolIndex;
 		this.systemMessageSuffix = systemMessageSuffix;
 		this.referenceToolNameAccumulation = referenceToolNameAccumulation;

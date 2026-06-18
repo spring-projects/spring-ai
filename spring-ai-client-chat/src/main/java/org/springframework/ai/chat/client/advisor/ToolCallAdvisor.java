@@ -30,7 +30,8 @@ public class ToolCallAdvisor extends ToolCallingAdvisor {
 	protected ToolCallAdvisor(ToolCallingManager toolCallingManager,
 			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, int advisorOrder,
 			boolean conversationHistoryEnabled) {
-		super(toolCallingManager, toolExecutionEligibilityChecker, advisorOrder, conversationHistoryEnabled);
+		super(toolCallingManager, toolExecutionEligibilityChecker, advisorOrder, conversationHistoryEnabled,
+				DEFAULT_MAX_IDENTICAL_TOOL_CALL_COUNT);
 	}
 
 	/**

@@ -16,7 +16,9 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import reactor.core.publisher.Flux;
@@ -73,6 +75,15 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 	 */
 	public static final int DEFAULT_ORDER = Ordered.HIGHEST_PRECEDENCE + 300;
 
+	/**
+	 * Default maximum number of times a tool may be called with identical arguments
+	 * within a single advisor loop. Exceeding this limit throws an
+	 * {@link IllegalStateException} to prevent infinite loops. A value of 3 allows for
+	 * limited retries while still breaking pathological loops where the model never
+	 * changes the tool arguments.
+	 */
+	public static final int DEFAULT_MAX_IDENTICAL_TOOL_CALL_COUNT = 3;
+
 	protected static final ToolExecutionEligibilityChecker DEFAULT_TOOL_EXECUTION_ELIGIBILITY_CHECKER = chatResponse -> chatResponse != null
 			&& chatResponse.hasToolCalls();
 
@@ -91,18 +102,22 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 	private final boolean conversationHistoryEnabled;
 
+	private final int maxIdenticalToolCallCount;
+
 	protected ToolCallingAdvisor(ToolCallingManager toolCallingManager,
 			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, int advisorOrder,
-			boolean conversationHistoryEnabled) {
+			boolean conversationHistoryEnabled, int maxIdenticalToolCallCount) {
 		Assert.notNull(toolCallingManager, "toolCallingManager must not be null");
 		Assert.notNull(toolExecutionEligibilityChecker, "toolExecutionEligibilityChecker must not be null");
 		Assert.isTrue(advisorOrder > BaseAdvisor.HIGHEST_PRECEDENCE && advisorOrder < BaseAdvisor.LOWEST_PRECEDENCE,
 				"advisorOrder must be between HIGHEST_PRECEDENCE and LOWEST_PRECEDENCE");
+		Assert.isTrue(maxIdenticalToolCallCount > 0, "maxIdenticalToolCallCount must be positive");
 
 		this.toolCallingManager = toolCallingManager;
 		this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
 		this.advisorOrder = advisorOrder;
 		this.conversationHistoryEnabled = conversationHistoryEnabled;
+		this.maxIdenticalToolCallCount = maxIdenticalToolCallCount;
 	}
 
 	@Override
@@ -135,6 +150,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 		ChatClientResponse chatClientResponse = null;
 		UsageAccumulator usageAccumulator = new UsageAccumulator();
+		Map<String, Integer> seenToolCalls = new HashMap<>();
 
 		boolean isToolCall = false;
 
@@ -160,6 +176,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 			if (isToolCall) {
 				Assert.notNull(chatResponse, "redundant check that should never fail, but here to help NullAway");
+				this.checkForRepeatedToolCalls(chatResponse, seenToolCalls);
 				ToolExecutionResult toolExecutionResult = this.toolCallingManager
 					.executeToolCalls(processedChatClientRequest.prompt(), chatResponse);
 
@@ -241,14 +258,17 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 			ChatClientRequest initializedRequest = this.doInitializeLoopStream(chatClientRequest, streamAdvisorChain);
 			// Subscription-local accumulator so usage is not shared across subscriptions.
 			UsageAccumulator usageAccumulator = new UsageAccumulator();
+			// Subscription-local tracker so identical-call detection is not shared across
+			// subscriptions.
+			Map<String, Integer> seenToolCalls = new HashMap<>();
 			return this.internalStream(streamAdvisorChain, initializedRequest, toolCallingChatOptions,
-					initializedRequest.prompt().getInstructions(), usageAccumulator);
+					initializedRequest.prompt().getInstructions(), usageAccumulator, seenToolCalls);
 		});
 	}
 
 	private Flux<ChatClientResponse> internalStream(StreamAdvisorChain streamAdvisorChain,
 			ChatClientRequest originalRequest, ToolCallingChatOptions toolCallingChatOptions,
-			List<Message> instructions, UsageAccumulator usageAccumulator) {
+			List<Message> instructions, UsageAccumulator usageAccumulator, Map<String, Integer> seenToolCalls) {
 
 		return Flux.deferContextual(contextView -> {
 			// Build request with current instructions
@@ -267,13 +287,13 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 			Flux<ChatClientResponse> responseFlux = chainCopy.nextStream(processedRequest);
 
 			return streamWithToolCallResponses(responseFlux, finalRequest, streamAdvisorChain, originalRequest,
-					toolCallingChatOptions, usageAccumulator);
+					toolCallingChatOptions, usageAccumulator, seenToolCalls);
 		});
 	}
 
 	private Flux<ChatClientResponse> streamWithToolCallResponses(Flux<ChatClientResponse> responseFlux,
 			ChatClientRequest finalRequest, StreamAdvisorChain streamAdvisorChain, ChatClientRequest originalRequest,
-			ToolCallingChatOptions optionsCopy, UsageAccumulator usageAccumulator) {
+			ToolCallingChatOptions optionsCopy, UsageAccumulator usageAccumulator, Map<String, Integer> seenToolCalls) {
 
 		AtomicReference<ChatClientResponse> aggregatedResponseRef = new AtomicReference<>();
 		// Snapshot of the usage accumulated from previous rounds (before this round).
@@ -283,7 +303,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 			.map(chatClientResponse -> UsageAccumulator.applyPreviousAccumulatedUsageToChunk(chatClientResponse,
 					previousAccumulatedResponse))
 			.concatWith(Flux.defer(() -> this.handleToolCallRecursion(aggregatedResponseRef.get(), finalRequest,
-					streamAdvisorChain, originalRequest, optionsCopy, usageAccumulator)))
+					streamAdvisorChain, originalRequest, optionsCopy, usageAccumulator, seenToolCalls)))
 			.filter(ccr -> !this.toolExecutionEligibilityChecker.isToolCallResponse(ccr.chatResponse()));
 	}
 
@@ -293,7 +313,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 	 */
 	private Flux<ChatClientResponse> handleToolCallRecursion(ChatClientResponse aggregatedResponse,
 			ChatClientRequest finalRequest, StreamAdvisorChain streamAdvisorChain, ChatClientRequest originalRequest,
-			ToolCallingChatOptions optionsCopy, UsageAccumulator usageAccumulator) {
+			ToolCallingChatOptions optionsCopy, UsageAccumulator usageAccumulator, Map<String, Integer> seenToolCalls) {
 
 		if (aggregatedResponse == null) {
 			return Flux.empty();
@@ -317,6 +337,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		}
 
 		Assert.notNull(chatResponse, "redundant check that should never fail, but here to help NullAway");
+		this.checkForRepeatedToolCalls(chatResponse, seenToolCalls);
 		final ChatClientResponse finalAggregatedResponse = aggregatedResponse;
 
 		// Execute tool calls on bounded elastic scheduler (tool execution is blocking)
@@ -345,10 +366,28 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 				List<Message> nextInstructions = this.doGetNextInstructionsForToolCallStream(finalRequest,
 						finalAggregatedResponse, toolExecutionResult);
 				return this.internalStream(streamAdvisorChain, originalRequest, optionsCopy, nextInstructions,
-						usageAccumulator);
+						usageAccumulator, seenToolCalls);
 			}
 		});
 		return toolCallFlux.subscribeOn(Schedulers.boundedElastic());
+	}
+
+	private void checkForRepeatedToolCalls(ChatResponse chatResponse, Map<String, Integer> seenToolCalls) {
+		chatResponse.getResults()
+			.stream()
+			.filter(g -> g.getOutput().getToolCalls() != null && !g.getOutput().getToolCalls().isEmpty())
+			.flatMap(g -> g.getOutput().getToolCalls().stream())
+			.forEach(toolCall -> {
+				String args = toolCall.arguments() != null ? toolCall.arguments() : "";
+				String key = toolCall.name() + "::" + args;
+				int count = seenToolCalls.merge(key, 1, Integer::sum);
+				if (count > this.maxIdenticalToolCallCount) {
+					throw new IllegalStateException("Identical tool call detected: tool '" + toolCall.name()
+							+ "' was called " + count
+							+ " time(s) with identical arguments. This may indicate an infinite tool-call loop. "
+							+ "Adjust the tool response to guide the model, or increase maxIdenticalToolCallCount.");
+				}
+			});
 	}
 
 	/**
@@ -447,6 +486,8 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 		private boolean conversationHistoryEnabled = true;
 
+		private int maxIdenticalToolCallCount = DEFAULT_MAX_IDENTICAL_TOOL_CALL_COUNT;
+
 		protected Builder() {
 		}
 
@@ -516,6 +557,20 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		}
 
 		/**
+		 * Sets the maximum number of times a specific tool may be called with identical
+		 * arguments within a single advisor loop. When the count is exceeded, an
+		 * {@link IllegalStateException} is thrown to break potential infinite loops.
+		 * Defaults to {@link #DEFAULT_MAX_IDENTICAL_TOOL_CALL_COUNT}.
+		 * @param maxIdenticalToolCallCount the maximum count (must be positive)
+		 * @return this Builder instance for method chaining
+		 * @since 2.0.0
+		 */
+		public T maxIdenticalToolCallCount(int maxIdenticalToolCallCount) {
+			this.maxIdenticalToolCallCount = maxIdenticalToolCallCount;
+			return self();
+		}
+
+		/**
 		 * Returns the configured ToolCallingManager.
 		 * @return the ToolCallingManager instance
 		 */
@@ -554,6 +609,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 			copy.toolExecutionEligibilityChecker = this.toolExecutionEligibilityChecker;
 			copy.advisorOrder = this.advisorOrder;
 			copy.conversationHistoryEnabled = this.conversationHistoryEnabled;
+			copy.maxIdenticalToolCallCount = this.maxIdenticalToolCallCount;
 			return copy;
 		}
 
@@ -585,7 +641,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		 */
 		public ToolCallingAdvisor build() {
 			return new ToolCallingAdvisor(this.toolCallingManager, this.toolExecutionEligibilityChecker,
-					this.advisorOrder, this.conversationHistoryEnabled);
+					this.advisorOrder, this.conversationHistoryEnabled, this.maxIdenticalToolCallCount);
 		}
 
 	}
