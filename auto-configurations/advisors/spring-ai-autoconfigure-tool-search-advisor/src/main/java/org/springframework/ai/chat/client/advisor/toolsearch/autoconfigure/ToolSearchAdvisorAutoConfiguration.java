@@ -74,7 +74,8 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @since 2.0.0
  */
-@AutoConfiguration(beforeName = "org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration")
+@AutoConfiguration(afterName = "org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration",
+		beforeName = "org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration")
 @ConditionalOnClass(ToolSearchToolCallingAdvisor.class)
 @EnableConfigurationProperties(ToolSearchAdvisorProperties.class)
 @ConditionalOnProperty(prefix = ToolSearchAdvisorProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")

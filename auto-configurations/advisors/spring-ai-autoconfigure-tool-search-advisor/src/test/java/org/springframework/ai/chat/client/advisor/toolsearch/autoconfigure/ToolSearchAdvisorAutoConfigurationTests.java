@@ -21,8 +21,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.toolsearch.ToolSearchToolCallingAdvisor;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.tool.toolsearch.ToolIndex;
 import org.springframework.ai.tool.toolsearch.eviction.CompositeEvictionStrategy;
 import org.springframework.ai.tool.toolsearch.eviction.LruEvictionStrategy;
@@ -241,6 +244,56 @@ class ToolSearchAdvisorAutoConfigurationTests {
 				var builder = context.getBean(ToolCallingAdvisor.Builder.class);
 				assertThat(ReflectionTestUtils.getField(builder, "evictionStrategy"))
 					.isInstanceOf(CompositeEvictionStrategy.class);
+			});
+	}
+
+	// --- Auto-configuration ordering ---
+
+	/**
+	 * Regression test for the auto-configuration ordering: the
+	 * {@code toolCallingAdvisorBuilder} bean is guarded by
+	 * {@code @ConditionalOnBean(ToolCallingManager.class)}, and
+	 * {@link ToolCallingManager} is contributed by {@link ToolCallingAutoConfiguration}.
+	 * Unless this configuration is ordered after {@link ToolCallingAutoConfiguration},
+	 * its condition is evaluated before the manager exists, the tool-search builder backs
+	 * off, and {@link ChatClientAutoConfiguration} contributes the default
+	 * {@link ToolCallingAdvisor.Builder} instead.
+	 * <p>
+	 * All three auto-configurations are loaded together so the {@code @AutoConfiguration}
+	 * before/after metadata actually drives the evaluation order (a single auto-config
+	 * cannot exercise ordering). The runner does not pre-register a
+	 * {@link ToolCallingManager}, so the bean must come from
+	 * {@link ToolCallingAutoConfiguration} exactly as it does at runtime.
+	 */
+	@Test
+	void toolSearchBuilderReplacesDefaultWhenAllAutoConfigurationsAreLoaded() {
+		new ApplicationContextRunner()
+			.withConfiguration(AutoConfigurations.of(ToolSearchAdvisorAutoConfiguration.class,
+					ToolCallingAutoConfiguration.class, ChatClientAutoConfiguration.class))
+			.withBean(ChatModel.class, () -> mock(ChatModel.class))
+			.withPropertyValues("spring.ai.chat.client.tool-search-advisor.enabled=true")
+			.run(context -> {
+				assertThat(context).hasSingleBean(ToolCallingAdvisor.Builder.class);
+				assertThat(context.getBean(ToolCallingAdvisor.Builder.class))
+					.isInstanceOf(ToolSearchToolCallingAdvisor.Builder.class);
+			});
+	}
+
+	/**
+	 * When the tool-search advisor is not enabled, the same three-way wiring must fall
+	 * back to the default {@link ChatClientAutoConfiguration} builder (and never the
+	 * tool-search subtype).
+	 */
+	@Test
+	void defaultBuilderIsUsedWhenToolSearchAdvisorDisabled() {
+		new ApplicationContextRunner()
+			.withConfiguration(AutoConfigurations.of(ToolSearchAdvisorAutoConfiguration.class,
+					ToolCallingAutoConfiguration.class, ChatClientAutoConfiguration.class))
+			.withBean(ChatModel.class, () -> mock(ChatModel.class))
+			.run(context -> {
+				assertThat(context).hasSingleBean(ToolCallingAdvisor.Builder.class);
+				assertThat(context.getBean(ToolCallingAdvisor.Builder.class))
+					.isNotInstanceOf(ToolSearchToolCallingAdvisor.Builder.class);
 			});
 	}
 

@@ -79,6 +79,14 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- Provides ToolCallingAutoConfiguration to verify auto-configuration ordering -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-model-tool</artifactId>
+			<version>${project.parent.version}</version>
+			<scope>test</scope>
+		</dependency>
+
 		<dependency>
 			<groupId>org.apache.lucene</groupId>
 			<artifactId>lucene-core</artifactId>
