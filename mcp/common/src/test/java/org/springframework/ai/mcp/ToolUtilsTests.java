@@ -236,6 +236,37 @@ class ToolUtilsTests {
 	}
 
 	@Test
+	void toSyncToolSpecificationShouldNotDoubleEncodePlainTextStringResult() {
+		// The default ToolCallResultConverter JSON-encodes a plain String result, so a
+		// tool returning "# Header" yields the call result "\"# Header\"". It must land in
+		// content[].text as raw text, not as a quoted JSON string literal.
+		ToolCallback callback = createMockToolCallback("test", "\"# Header\"");
+
+		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
+
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpSyncServerExchange.class), new McpSchema.CallToolRequest("test", Map.of()));
+		TextContent content = (TextContent) result.content().get(0);
+		assertThat(content.text()).isEqualTo("# Header");
+		assertThat(result.isError()).isFalse();
+	}
+
+	@Test
+	void toSyncToolSpecificationShouldLeaveStructuredJsonResultUnchanged() {
+		// A tool returning a structured object serializes to a JSON object, which is not a
+		// JSON string scalar and must be passed through to content[].text unchanged.
+		ToolCallback callback = createMockToolCallback("test", "{\"name\":\"John\",\"age\":30}");
+
+		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
+
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpSyncServerExchange.class), new McpSchema.CallToolRequest("test", Map.of()));
+		TextContent content = (TextContent) result.content().get(0);
+		assertThat(content.text()).isEqualTo("{\"name\":\"John\",\"age\":30}");
+		assertThat(result.isError()).isFalse();
+	}
+
+	@Test
 	void toSyncToolSpecificationShouldHandleError() {
 		ToolCallback callback = createMockToolCallback("test", new RuntimeException("error"));
 

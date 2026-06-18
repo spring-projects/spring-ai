@@ -25,6 +25,7 @@ import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.core.ParameterizedTypeReference;
@@ -153,6 +154,32 @@ public class JsonHelper {
 		catch (JacksonException e) {
 			return false;
 		}
+	}
+
+	/**
+	 * If the given value is a JSON string scalar (e.g. {@code "\"text\""}), returns the
+	 * decoded raw text ({@code text}); otherwise returns the value unchanged.
+	 * <p>
+	 * This is the inverse of the String encoding performed by
+	 * {@link #toJson(Object, boolean)} and is used to avoid double-encoding plain-text
+	 * tool results placed into MCP {@code content[].text}. JSON objects, arrays, numbers,
+	 * booleans and non-JSON text are all returned unchanged.
+	 * @param value the (possibly JSON-encoded) value to decode
+	 * @return the raw text if {@code value} is a JSON string scalar, otherwise
+	 * {@code value} unchanged
+	 */
+	public String decodeJsonStringScalar(String value) {
+		Assert.notNull(value, "value cannot be null");
+		try {
+			JsonNode node = this.jsonMapper.readTree(value);
+			if (node != null && node.isString()) {
+				return node.asString();
+			}
+		}
+		catch (JacksonException ex) {
+			// Not JSON: return the original value unchanged.
+		}
+		return value;
 	}
 
 	/**
