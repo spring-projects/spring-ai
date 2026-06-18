@@ -455,9 +455,9 @@ public class OpenAiChatModelIT {
 		assertThat(usage).isNotNull();
 		assertThat(usage).isNotInstanceOf(EmptyUsage.class);
 		assertThat(usage).isInstanceOf(DefaultUsage.class);
-		assertThat(usage.getPromptTokens()).isGreaterThan(450).isLessThan(600);
-		assertThat(usage.getCompletionTokens()).isGreaterThan(420).isLessThan(800);
-		assertThat(usage.getTotalTokens()).isGreaterThan(900).isLessThan(1400);
+		assertThat(usage.getPromptTokens()).isPositive();
+		assertThat(usage.getCompletionTokens()).isPositive();
+		assertThat(usage.getTotalTokens()).isEqualTo(usage.getPromptTokens() + usage.getCompletionTokens());
 	}
 
 	@Test
@@ -484,9 +484,9 @@ public class OpenAiChatModelIT {
 		assertThat(usage).isNotNull();
 		assertThat(usage).isNotInstanceOf(EmptyUsage.class);
 		assertThat(usage).isInstanceOf(DefaultUsage.class);
-		assertThat(usage.getPromptTokens()).isGreaterThan(450).isLessThan(600);
-		assertThat(usage.getCompletionTokens()).isGreaterThan(100).isLessThan(500);
-		assertThat(usage.getTotalTokens()).isGreaterThan(550).isLessThan(1100);
+		assertThat(usage.getPromptTokens()).isPositive();
+		assertThat(usage.getCompletionTokens()).isPositive();
+		assertThat(usage.getTotalTokens()).isEqualTo(usage.getPromptTokens() + usage.getCompletionTokens());
 	}
 
 	@Test

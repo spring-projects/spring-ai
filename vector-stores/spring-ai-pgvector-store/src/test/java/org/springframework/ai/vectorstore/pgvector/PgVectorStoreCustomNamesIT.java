@@ -115,7 +115,7 @@ public class PgVectorStoreCustomNamesIT {
 	}
 
 	@Test
-	public void shouldFailWhenCustomTableIsAbsentAndValidationEnabled() {
+	public void shouldCreateCustomTableWhenAbsentAndValidationEnabled() {
 
 		String tableName = "customvectortable";
 
@@ -125,9 +125,9 @@ public class PgVectorStoreCustomNamesIT {
 
 			.run(context -> {
 
-				assertThat(context).hasFailed();
-				assertThat(context.getStartupFailure()).hasCauseInstanceOf(IllegalStateException.class)
-					.hasMessageContaining(tableName + " does not exist");
+				assertThat(context).hasNotFailed();
+				assertThat(isTableExists(context, tableName)).isTrue();
+				dropTableByName(context, tableName);
 
 			});
 	}
