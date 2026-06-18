@@ -19,6 +19,8 @@ package org.springframework.ai.model.tool;
 import java.util.List;
 import java.util.Map;
 
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +31,7 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.observation.conventions.SpringAiKind;
@@ -42,6 +45,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -91,6 +95,7 @@ class DefaultToolCallingManagerIT {
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultToolCallingObservationConvention.DEFAULT_NAME)
 			.that()
+			.doesNotHaveParentObservation()
 			.hasContextualNameEqualTo(
 					AiOperationType.EXECUTE_TOOL.value() + " " + toolCallback.getToolDefinition().name())
 			.hasLowCardinalityKeyValue(
@@ -111,6 +116,74 @@ class DefaultToolCallingManagerIT {
 			.hasHighCardinalityKeyValue(
 					ToolCallingObservationDocumentation.HighCardinalityKeyNames.TOOL_DEFINITION_SCHEMA.asString(),
 					toolCallback.getToolDefinition().inputSchema());
+	}
+
+	@Test
+	void observationForToolCallParentObservation() {
+		ToolCallback toolCallback = new TestToolCallback("toolA");
+		Prompt prompt = Prompt.builder()
+				.content("Why does a raven look like a desk?")
+				.chatOptions(ToolCallingChatOptions.builder().toolCallbacks(toolCallback).build())
+				.build();
+
+		ChatResponse chatResponse = ChatResponse.builder()
+				.generations(List.of(new Generation(AssistantMessage.builder()
+						.content("Answer")
+						.properties(Map.of())
+						.toolCalls(List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}")))
+						.build())))
+				.build();
+		Observation parent = Observation.createNotStarted("Parent observation", this.observationRegistry);
+
+		ToolExecutionResult toolExecutionResult = parent.observe(() -> this.toolCallingManager.executeToolCalls(prompt, chatResponse));
+
+		assertThat(toolExecutionResult).isNotNull();
+
+		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
+		assertThat(responseMetadata).isNotNull();
+
+		TestObservationRegistryAssert.assertThat(this.observationRegistry)
+				.doesNotHaveAnyRemainingCurrentObservation()
+				.hasObservationWithNameEqualTo(DefaultToolCallingObservationConvention.DEFAULT_NAME)
+				.that()
+				.hasParentObservationEqualTo(parent);
+	}
+
+	@Test
+	void observationForToolCallReactiveParentObservation() {
+		ToolCallback toolCallback = new TestToolCallback("toolA");
+		Prompt prompt = Prompt.builder()
+				.content("Why does a raven look like a desk?")
+				.chatOptions(ToolCallingChatOptions.builder().toolCallbacks(toolCallback).build())
+				.build();
+
+		ChatResponse chatResponse = ChatResponse.builder()
+				.generations(List.of(new Generation(AssistantMessage.builder()
+						.content("Answer")
+						.properties(Map.of())
+						.toolCalls(List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}")))
+						.build())))
+				.build();
+		Observation parent = Observation.createNotStarted("Parent observation", this.observationRegistry);
+
+		ToolExecutionResult toolExecutionResult;
+		try {
+			ToolCallReactiveContextHolder.setContext(Context.of(ObservationThreadLocalAccessor.KEY, parent));
+			toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
+		} finally {
+			ToolCallReactiveContextHolder.clearContext();
+		}
+
+		assertThat(toolExecutionResult).isNotNull();
+
+		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
+		assertThat(responseMetadata).isNotNull();
+
+		TestObservationRegistryAssert.assertThat(this.observationRegistry)
+				.doesNotHaveAnyRemainingCurrentObservation()
+				.hasObservationWithNameEqualTo(DefaultToolCallingObservationConvention.DEFAULT_NAME)
+				.that()
+				.hasParentObservationEqualTo(parent);
 	}
 
 	@SpringBootConfiguration

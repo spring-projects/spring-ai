@@ -214,7 +214,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			}
 
 			Observation parent = ToolCallReactiveContextHolder.getContext()
-				.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
+				.getOrDefault(ObservationThreadLocalAccessor.KEY, this.observationRegistry.getCurrentObservation());
 
 			ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
 				.toolDefinition(toolCallback.getToolDefinition())
