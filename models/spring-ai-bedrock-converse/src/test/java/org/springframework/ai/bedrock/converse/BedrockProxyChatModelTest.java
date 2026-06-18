@@ -201,7 +201,9 @@ class BedrockProxyChatModelTest {
 				new MediaFetcher(java.util.Set.of("trusted-cdn.com")));
 		Media media = Media.builder().mimeType(MimeType.valueOf("image/png")).data("http://evil.com/image.png").build();
 
-		assertThatThrownBy(() -> model.mapMediaToContentBlock(media)).isInstanceOf(SecurityException.class)
+		assertThatThrownBy(() -> model.mapMediaToContentBlock(media)).isInstanceOf(RuntimeException.class)
+			.cause()
+			.isInstanceOf(SecurityException.class)
 			.hasMessageContaining("evil.com");
 	}
 
