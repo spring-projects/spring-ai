@@ -68,6 +68,16 @@ public class ParagraphPdfDocumentReaderTests {
 	}
 
 	@Test
+	void testPageRangesAreRejected() {
+		// ParagraphPdfDocumentReader does not support page ranges; it must fail fast
+		// instead of silently ignoring the configuration.
+		assertThatThrownBy(() -> new ParagraphPdfDocumentReader("classpath:/sample3.pdf",
+				PdfDocumentReaderConfig.builder().addPageRange(1, 2).build()))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Page ranges are not supported by ParagraphPdfDocumentReader");
+	}
+
+	@Test
 	void shouldSkipInvalidOutline() throws IOException {
 
 		Resource basePdfResource = new ClassPathResource("sample3.pdf");
