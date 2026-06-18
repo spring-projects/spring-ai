@@ -25,11 +25,8 @@ import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConf
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.context.properties.bind.BindResult;
-import org.springframework.boot.context.properties.bind.Bindable;
-import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.env.Environment;
 import org.springframework.util.StringUtils;
 
 /**
@@ -41,31 +38,8 @@ import org.springframework.util.StringUtils;
  */
 @AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
 @ConditionalOnClass({ RedisChatMemoryRepository.class, RedisClient.class })
+@EnableConfigurationProperties(RedisChatMemoryRepositoryProperties.class)
 public class RedisChatMemoryRepositoryAutoConfiguration {
-
-	/**
-	 * Provides Redis chat memory repository configuration properties. Binds from
-	 * {@code spring.ai.chat.memory.repository.redis} and falls back to the legacy
-	 * {@code spring.ai.chat.memory.redis} prefix for smooth transition from the
-	 * deprecated {@code spring-ai-autoconfigure-model-chat-memory-redis} module.
-	 * @param environment the Spring environment for property binding
-	 * @return the Redis chat memory repository properties
-	 */
-	@Bean
-	@ConditionalOnMissingBean
-	public RedisChatMemoryRepositoryProperties redisChatMemoryRepositoryProperties(Environment environment) {
-		RedisChatMemoryRepositoryProperties properties = new RedisChatMemoryRepositoryProperties();
-		Binder binder = Binder.get(environment);
-		BindResult<RedisChatMemoryRepositoryProperties> result = binder
-			.bind(RedisChatMemoryRepositoryProperties.CONFIG_PREFIX, Bindable.ofInstance(properties));
-
-		// Fallback to legacy prefix
-		if (!result.isBound()) {
-			binder.bind("spring.ai.chat.memory.redis", Bindable.ofInstance(properties));
-		}
-
-		return properties;
-	}
 
 	@Bean
 	@ConditionalOnMissingBean

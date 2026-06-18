@@ -24,6 +24,7 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.memory.repository.redis.RedisChatMemoryConfig;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Configuration properties for Redis-based chat memory.
@@ -31,6 +32,7 @@ import org.springframework.ai.chat.memory.repository.redis.RedisChatMemoryConfig
  * @author Brian Sam-Bodden
  * @author guan xu
  */
+@ConfigurationProperties(prefix = RedisChatMemoryRepositoryProperties.CONFIG_PREFIX)
 public class RedisChatMemoryRepositoryProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.repository.redis";

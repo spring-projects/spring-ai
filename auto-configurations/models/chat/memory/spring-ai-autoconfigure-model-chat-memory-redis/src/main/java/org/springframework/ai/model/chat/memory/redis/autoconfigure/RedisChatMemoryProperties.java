@@ -25,6 +25,7 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.memory.repository.redis.RedisChatMemoryConfig;
 import org.springframework.ai.model.chat.memory.repository.redis.autoconfigure.RedisChatMemoryRepositoryProperties;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 /**
@@ -34,7 +35,10 @@ import org.springframework.boot.context.properties.DeprecatedConfigurationProper
  * @deprecated Use {@link RedisChatMemoryRepositoryProperties} instead.
  */
 @Deprecated(since = "2.0.1", forRemoval = true)
+@ConfigurationProperties(prefix = RedisChatMemoryProperties.CONFIG_PREFIX)
 public class RedisChatMemoryProperties {
+
+	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.redis";
 
 	/**
 	 * Redis server host.

@@ -24,6 +24,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.repository.redis.RedisChatMemoryRepository;
+import org.springframework.ai.model.chat.memory.repository.redis.autoconfigure.RedisChatMemoryRepositoryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -44,8 +45,8 @@ class RedisChatMemoryAutoConfigurationIT {
 	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(
-				AutoConfigurations.of(RedisChatMemoryAutoConfiguration.class, DataRedisAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(RedisChatMemoryAutoConfiguration.class,
+				RedisChatMemoryRepositoryAutoConfiguration.class, DataRedisAutoConfiguration.class))
 		.withPropertyValues("spring.data.redis.host=" + redisContainer.getHost(),
 				"spring.data.redis.port=" + redisContainer.getFirstMappedPort(),
 				// Pass the same Redis connection properties to our chat memory properties
