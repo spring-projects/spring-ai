@@ -35,10 +35,12 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -79,6 +81,23 @@ public class PgVectorStoreTests {
 	})
 	void isValidTable(String tableName, Boolean expected) {
 		assertThat(PgVectorSchemaValidator.isValidNameForDatabaseObject(tableName)).isEqualTo(expected);
+	}
+
+	@Test
+	void invalidTableNameIsRejectedBeforeAnySqlReachesTheDatabase() {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+
+		// Names are interpolated into the initialization SQL, reject them before it runs
+		var vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+			.vectorTableName("vector_store; DROP TABLE users;")
+			.dimensions(1024)
+			.initializeSchema(true)
+			.vectorTableValidationsEnabled(true)
+			.build();
+
+		assertThatIllegalArgumentException().isThrownBy(vectorStore::afterPropertiesSet);
+		verify(jdbcTemplate, never()).execute(anyString());
 	}
 
 	@Test
