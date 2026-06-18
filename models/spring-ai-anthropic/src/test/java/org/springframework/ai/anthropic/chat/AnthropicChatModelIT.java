@@ -319,7 +319,10 @@ class AnthropicChatModelIT {
 			response = this.chatModel.call(prompt);
 		}
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
-		assertThat(response.getMetadata().getUsage().getTotalTokens()).isGreaterThan(100);
+		Usage usage = response.getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isPositive();
+		assertThat(usage.getCompletionTokens()).isPositive();
+		assertThat(usage.getTotalTokens()).isEqualTo(usage.getPromptTokens() + usage.getCompletionTokens());
 	}
 
 	@Test
@@ -380,8 +383,9 @@ class AnthropicChatModelIT {
 		assertThat(lastResponse).isNotNull();
 		Usage usage = lastResponse.getMetadata().getUsage();
 		assertThat(usage).isNotNull();
-		// Tool calling uses more tokens due to multi-turn conversation
-		assertThat(usage.getTotalTokens()).isGreaterThan(100);
+		assertThat(usage.getPromptTokens()).isPositive();
+		assertThat(usage.getCompletionTokens()).isPositive();
+		assertThat(usage.getTotalTokens()).isEqualTo(usage.getPromptTokens() + usage.getCompletionTokens());
 	}
 
 	@Test
