@@ -23,8 +23,10 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.toolsearch.ToolSearchToolCallingAdvisor;
+import org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.tool.toolsearch.ToolIndex;
 import org.springframework.ai.tool.toolsearch.eviction.CompositeEvictionStrategy;
 import org.springframework.ai.tool.toolsearch.eviction.LruEvictionStrategy;
@@ -70,12 +72,24 @@ import org.springframework.util.StringUtils;
  * <li>{@code tool-index-type=vector} — embedding-based semantic search; requires a
  * {@link VectorStore} bean and {@code spring-ai-vector-store} on the classpath.</li>
  * </ul>
+ * <p>
+ * The auto-configuration ordering is significant:
+ * <ul>
+ * <li>{@code after = ToolCallingAutoConfiguration.class} — the builder bean is guarded by
+ * {@code @ConditionalOnBean(ToolCallingManager.class)}, so this configuration must
+ * process after {@link ToolCallingAutoConfiguration} has contributed the
+ * {@link ToolCallingManager}; otherwise the condition fails and the advisor is never
+ * registered.</li>
+ * <li>{@code before = ChatClientAutoConfiguration.class} — the
+ * {@link ToolCallingAdvisor.Builder} subtype registered here must exist before
+ * {@link ChatClientAutoConfiguration} evaluates its own {@code @ConditionalOnMissingBean}
+ * builder, so the default builder is skipped in favor of this one.</li>
+ * </ul>
  *
  * @author Christian Tzolov
  * @since 2.0.0
  */
-@AutoConfiguration(afterName = "org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration",
-		beforeName = "org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration")
+@AutoConfiguration(after = ToolCallingAutoConfiguration.class, before = ChatClientAutoConfiguration.class)
 @ConditionalOnClass(ToolSearchToolCallingAdvisor.class)
 @EnableConfigurationProperties(ToolSearchAdvisorProperties.class)
 @ConditionalOnProperty(prefix = ToolSearchAdvisorProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")

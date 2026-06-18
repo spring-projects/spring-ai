@@ -46,6 +46,16 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Optional compile-time dependency so @AutoConfiguration can reference
+		     ToolCallingAutoConfiguration.class for ordering (afterName equivalent).
+		     Marked optional to avoid leaking onto consumers' classpaths. -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-model-tool</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- Optional: VectorStore support for VectorToolIndex auto-configuration -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
@@ -75,14 +85,6 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-test</artifactId>
-			<version>${project.parent.version}</version>
-			<scope>test</scope>
-		</dependency>
-
-		<!-- Provides ToolCallingAutoConfiguration to verify auto-configuration ordering -->
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-autoconfigure-model-tool</artifactId>
 			<version>${project.parent.version}</version>
 			<scope>test</scope>
 		</dependency>
