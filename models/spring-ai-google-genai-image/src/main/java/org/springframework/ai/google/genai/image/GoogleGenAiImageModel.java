@@ -16,11 +16,15 @@
 
 package org.springframework.ai.google.genai.image;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import com.google.genai.Client;
 import com.google.genai.types.Candidate;
@@ -34,6 +38,8 @@ import com.google.genai.types.SafetySetting;
 import io.micrometer.observation.ObservationRegistry;
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageGeneration;
 import org.springframework.ai.image.ImageMessage;
@@ -69,19 +75,10 @@ public class GoogleGenAiImageModel implements ImageModel {
 
 	private final RetryTemplate retryTemplate;
 
-	/**
-	 * Observation registry used for instrumentation.
-	 */
 	private final ObservationRegistry observationRegistry;
 
-	/**
-	 * Conventions to use for generating observations.
-	 */
 	private ImageModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
-	/**
-	 * The GenAI client instance.
-	 */
 	private final Client genAiClient;
 
 	public GoogleGenAiImageModel(GoogleGenAiImageConnectionDetails connectionDetails,
@@ -101,6 +98,7 @@ public class GoogleGenAiImageModel implements ImageModel {
 		Assert.notNull(defaultImageOptions, "GoogleGenAiImageOptions must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
+
 		this.options = defaultImageOptions;
 		this.connectionDetails = connectionDetails;
 		this.genAiClient = connectionDetails.getGenAiClient();
@@ -110,9 +108,9 @@ public class GoogleGenAiImageModel implements ImageModel {
 
 	@Override
 	public ImageResponse call(ImagePrompt prompt) {
-		ImagePrompt imagePrompt = buildImagePrompt(prompt);
+		final ImagePrompt imagePrompt = buildImagePrompt(prompt);
 
-		var observationContext = ImageModelObservationContext.builder()
+		final ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(imagePrompt)
 			.provider(AiProvider.GOOGLE_GENAI_AI.value())
 			.build();
@@ -121,92 +119,35 @@ public class GoogleGenAiImageModel implements ImageModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				GoogleGenAiImageOptions options = (GoogleGenAiImageOptions) imagePrompt.getOptions();
+				final GoogleGenAiImageOptions options = (GoogleGenAiImageOptions) imagePrompt.getOptions();
 				Assert.notNull(options, "Options must not be null");
-				String model = options.getModel();
+
+				final String model = options.getModel();
 				Assert.notNull(model, "Model must not be null");
-				String modelName = this.connectionDetails.getModelEndpointName(model);
 
-				// Build the GenerateContentConfig
-				GenerateContentConfig.Builder configBuilder = GenerateContentConfig.builder();
+				final String modelName = this.connectionDetails.getModelEndpointName(model);
 
-				// Request image output from the content generation endpoint.
-				configBuilder.responseModalities("TEXT", "IMAGE");
+				final GenerateContentConfig config = getGenerateContentConfig(options);
 
-				if (Objects.nonNull(options.getN())) {
-					configBuilder.candidateCount(options.getN());
-				}
-				if (Objects.nonNull(options.getSeed())) {
-					configBuilder.seed(options.getSeed());
-				}
-				if (Objects.nonNull(options.getTemperature())) {
-					configBuilder.temperature(options.getTemperature());
-				}
-				if (Objects.nonNull(options.getTopP())) {
-					configBuilder.topP(options.getTopP());
-				}
-				if (Objects.nonNull(options.getTopK())) {
-					configBuilder.topK(options.getTopK());
-				}
-				if (Objects.nonNull(options.getMaxOutputTokens())) {
-					configBuilder.maxOutputTokens(options.getMaxOutputTokens());
-				}
-				if (Objects.nonNull(options.getLabels()) && !options.getLabels().isEmpty()) {
-					configBuilder.labels(options.getLabels());
-				}
-				if (Objects.nonNull(options.getSafetyFilterLevel()) && options
-					.getSafetyFilterLevel() != GoogleGenAiImageOptions.SafetyFilterLevel.SAFETY_FILTER_LEVEL_UNSPECIFIED) {
-					configBuilder.safetySettings(buildSafetySettings(options.getSafetyFilterLevel()));
-				}
-
-				// Image specific options are carried by the nested ImageConfig.
-				ImageConfig.Builder imageConfigBuilder = ImageConfig.builder();
-				boolean hasImageConfig = false;
-				if (StringUtils.hasText(options.getAspectRatio())) {
-					imageConfigBuilder.aspectRatio(options.getAspectRatio());
-					hasImageConfig = true;
-				}
-				if (StringUtils.hasText(options.getImageSize())) {
-					imageConfigBuilder.imageSize(options.getImageSize());
-					hasImageConfig = true;
-				}
-				if (Objects.nonNull(options.getPersonGeneration())) {
-					imageConfigBuilder.personGeneration(options.getPersonGeneration().name());
-					hasImageConfig = true;
-				}
-				if (StringUtils.hasText(options.getOutputMimeType())) {
-					imageConfigBuilder.outputMimeType(options.getOutputMimeType());
-					hasImageConfig = true;
-				}
-				if (Objects.nonNull(options.getOutputCompressionQuality())) {
-					imageConfigBuilder.outputCompressionQuality(options.getOutputCompressionQuality());
-					hasImageConfig = true;
-				}
-				if (hasImageConfig) {
-					configBuilder.imageConfig(imageConfigBuilder.build());
-				}
-
-				GenerateContentConfig config = configBuilder.build();
-
-				// Convert instructions to single prompt for image
-
-				final String promptText = prompt.getInstructions()
+				final List<Content> contents = prompt.getInstructions()
 					.stream()
-					.map(ImageMessage::getText)
-					.filter(StringUtils::hasText)
-					.reduce((first, second) -> first + "\n" + second)
-					.orElseThrow(() -> new IllegalArgumentException(
-							"ImagePrompt must contain at least one non-empty message"));
+					.map(GoogleGenAiImageModel::messageToParts)
+					.filter(Predicate.not(List::isEmpty))
+					.map(parts -> Content.builder().role(MessageType.USER.getValue()).parts(parts).build())
+					.toList();
 
-				GenerateContentResponse imagesResponse = RetryUtils.execute(this.retryTemplate,
-						() -> this.genAiClient.models.generateContent(modelName, promptText, config));
+				if (contents.isEmpty()) {
+					throw new IllegalArgumentException("ImagePrompt must contain at least one non-empty message");
+				}
 
-				// Process the response: each candidate may contain multiple content
-				// parts, so add an ImageGeneration for every part that carries image
-				// data.
-				final List<ImageGeneration> generationList = imagesResponse.candidates()
+				final GenerateContentResponse imagesResponse = RetryUtils.execute(this.retryTemplate,
+						() -> this.genAiClient.models.generateContent(modelName, contents, config));
+
+				final List<ImageGeneration> generationList = Optional.ofNullable(imagesResponse)
+					.map(GenerateContentResponse::candidates)
+					.flatMap(Function.identity())
+					.orElse(List.of())
 					.stream()
-					.flatMap(List::stream)
 					.map(Candidate::content)
 					.flatMap(Optional::stream)
 					.map(Content::parts)
@@ -219,7 +160,7 @@ public class GoogleGenAiImageModel implements ImageModel {
 							.map(imageBytes -> Base64.getEncoder().encodeToString(imageBytes))
 							.orElse(null);
 
-						Image image = new Image(null, b64Json);
+						final Image image = new Image(null, b64Json);
 
 						GoogleGenAiImageGenerationMetadata metadata = new GoogleGenAiImageGenerationMetadata(null, null,
 								blob.mimeType().orElse(null), image.getUrl());
@@ -236,10 +177,17 @@ public class GoogleGenAiImageModel implements ImageModel {
 			});
 	}
 
-	ImagePrompt buildImagePrompt(ImagePrompt imagePrompt) {
-		@Nullable ImageOptions requestOptions = imagePrompt.getOptions();
+	public void setObservationConvention(@Nullable ImageModelObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
+	}
+
+	// Private methods
+
+	private ImagePrompt buildImagePrompt(ImagePrompt imagePrompt) {
 		GoogleGenAiImageOptions mergedOptions = this.options;
 
+		final ImageOptions requestOptions = imagePrompt.getOptions();
 		if (Objects.nonNull(requestOptions)) {
 			GoogleGenAiImageOptions.Builder builder = GoogleGenAiImageOptions.builder()
 				.from(this.options)
@@ -255,7 +203,6 @@ public class GoogleGenAiImageModel implements ImageModel {
 			mergedOptions = builder.build();
 		}
 
-		// Validate request options
 		if (!StringUtils.hasText(mergedOptions.getModel())) {
 			throw new IllegalArgumentException("model cannot be null or empty");
 		}
@@ -263,33 +210,119 @@ public class GoogleGenAiImageModel implements ImageModel {
 		return new ImagePrompt(imagePrompt.getInstructions(), mergedOptions);
 	}
 
-	/**
-	 * Applies the configured {@link GoogleGenAiImageOptions.SafetyFilterLevel} as a
-	 * {@link SafetySetting} threshold across the harm categories supported by the
-	 * {@code generateContent} API. The enum names of {@code SafetyFilterLevel} map
-	 * directly onto the SDK {@code HarmBlockThreshold} values.
-	 * @param safetyFilterLevel the configured safety filter level
-	 * @return the list of safety settings to apply to the request
-	 */
-	private List<SafetySetting> buildSafetySettings(GoogleGenAiImageOptions.SafetyFilterLevel safetyFilterLevel) {
-		String threshold = safetyFilterLevel.name();
-		List<HarmCategory.Known> categories = List.of(HarmCategory.Known.HARM_CATEGORY_HARASSMENT,
+	private static GenerateContentConfig getGenerateContentConfig(GoogleGenAiImageOptions options) {
+		final GenerateContentConfig.Builder configBuilder = GenerateContentConfig.builder();
+
+		configBuilder.responseModalities("TEXT", "IMAGE");
+
+		if (Objects.nonNull(options.getN())) {
+			configBuilder.candidateCount(options.getN());
+		}
+		if (Objects.nonNull(options.getSeed())) {
+			configBuilder.seed(options.getSeed());
+		}
+		if (Objects.nonNull(options.getTemperature())) {
+			configBuilder.temperature(options.getTemperature());
+		}
+		if (Objects.nonNull(options.getTopP())) {
+			configBuilder.topP(options.getTopP());
+		}
+		if (Objects.nonNull(options.getTopK())) {
+			configBuilder.topK(options.getTopK());
+		}
+		if (Objects.nonNull(options.getMaxOutputTokens())) {
+			configBuilder.maxOutputTokens(options.getMaxOutputTokens());
+		}
+		if (Objects.nonNull(options.getLabels()) && !options.getLabels().isEmpty()) {
+			configBuilder.labels(options.getLabels());
+		}
+		if (Objects.nonNull(options.getSafetyFilterLevel()) && options
+			.getSafetyFilterLevel() != GoogleGenAiImageOptions.SafetyFilterLevel.SAFETY_FILTER_LEVEL_UNSPECIFIED) {
+			configBuilder.safetySettings(buildSafetySettings(options.getSafetyFilterLevel()));
+		}
+
+		final ImageConfig.Builder imageConfigBuilder = getImageConfigBuilder(options);
+		if (Objects.nonNull(imageConfigBuilder)) {
+			configBuilder.imageConfig(imageConfigBuilder.build());
+		}
+
+		return configBuilder.build();
+	}
+
+	private static ImageConfig.@Nullable Builder getImageConfigBuilder(GoogleGenAiImageOptions options) {
+		final ImageConfig.Builder imageConfigBuilder = ImageConfig.builder();
+
+		boolean hasImageConfig = false;
+		if (StringUtils.hasText(options.getAspectRatio())) {
+			imageConfigBuilder.aspectRatio(options.getAspectRatio());
+			hasImageConfig = true;
+		}
+		if (StringUtils.hasText(options.getImageSize())) {
+			imageConfigBuilder.imageSize(options.getImageSize());
+			hasImageConfig = true;
+		}
+		if (Objects.nonNull(options.getPersonGeneration())) {
+			imageConfigBuilder.personGeneration(options.getPersonGeneration().name());
+			hasImageConfig = true;
+		}
+		if (StringUtils.hasText(options.getOutputMimeType())) {
+			imageConfigBuilder.outputMimeType(options.getOutputMimeType());
+			hasImageConfig = true;
+		}
+		if (Objects.nonNull(options.getOutputCompressionQuality())) {
+			imageConfigBuilder.outputCompressionQuality(options.getOutputCompressionQuality());
+			hasImageConfig = true;
+		}
+
+		if (!hasImageConfig) {
+			return null;
+		}
+
+		return imageConfigBuilder;
+	}
+
+	private static List<Part> messageToParts(ImageMessage message) {
+		final List<Part> parts = new ArrayList<>();
+
+		if (StringUtils.hasText(message.getText())) {
+			parts.add(Part.fromText(message.getText()));
+		}
+		if (!message.getMedia().isEmpty()) {
+			parts.addAll(mediaToParts(message.getMedia()));
+		}
+
+		return parts;
+	}
+
+	private static List<Part> mediaToParts(Collection<Media> media) {
+		return media.stream().map(mediaData -> {
+			final Object data = mediaData.getData();
+			final String mimeType = mediaData.getMimeType().toString();
+
+			if (data instanceof byte[]) {
+				return Part.fromBytes((byte[]) data, mimeType);
+			}
+			if (data instanceof URI || data instanceof String) {
+				return Part.fromUri(data.toString(), mimeType);
+			}
+
+			throw new IllegalArgumentException("Unsupported media data type: " + data.getClass());
+		}).toList();
+	}
+
+	private static List<SafetySetting> buildSafetySettings(
+			GoogleGenAiImageOptions.SafetyFilterLevel safetyFilterLevel) {
+		final String threshold = safetyFilterLevel.name();
+		final List<HarmCategory.Known> categories = List.of(HarmCategory.Known.HARM_CATEGORY_HARASSMENT,
 				HarmCategory.Known.HARM_CATEGORY_HATE_SPEECH, HarmCategory.Known.HARM_CATEGORY_SEXUALLY_EXPLICIT,
 				HarmCategory.Known.HARM_CATEGORY_DANGEROUS_CONTENT);
-		List<SafetySetting> safetySettings = new ArrayList<>();
+
+		final List<SafetySetting> safetySettings = new ArrayList<>();
 		for (HarmCategory.Known category : categories) {
 			safetySettings.add(SafetySetting.builder().category(category).threshold(threshold).build());
 		}
-		return safetySettings;
-	}
 
-	/**
-	 * Use the provided convention for reporting observation data
-	 * @param observationConvention The provided convention
-	 */
-	public void setObservationConvention(@Nullable ImageModelObservationConvention observationConvention) {
-		Assert.notNull(observationConvention, "observationConvention cannot be null");
-		this.observationConvention = observationConvention;
+		return safetySettings;
 	}
 
 }
