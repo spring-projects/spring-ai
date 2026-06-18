@@ -335,4 +335,91 @@ public class OpenAiStreamFunctionCallingHelperTest {
 		assertThat(this.helper.isStreamingToolFunctionCall(chunk)).isFalse();
 	}
 
+	/**
+	 * Test that tool call arguments are properly merged when each chunk contains the same
+	 * id field. This tests the fix for the case where some API implementations send the
+	 * id in every chunk, but they should still be merged as the same tool call based on
+	 * the index field.
+	 */
+	@Test
+	public void merge_toolCallsWithSameIndexShouldMergeArguments() {
+		// First chunk: has id, name, and empty arguments
+		var toolCall1 = new OpenAiApi.ChatCompletionMessage.ToolCall(0, "call_123", "function",
+				new OpenAiApi.ChatCompletionMessage.ChatCompletionFunction("get_weather", ""));
+		var delta1 = new OpenAiApi.ChatCompletionMessage(null, null, null, null, List.of(toolCall1), null, null, null,
+				null);
+		var choice1 = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, 0, delta1, null);
+		var chunk1 = new OpenAiApi.ChatCompletionChunk("id1", List.of(choice1), 1L, "model", null, null, null, null);
+
+		// Second chunk: same index, same id, but with partial arguments
+		var toolCall2 = new OpenAiApi.ChatCompletionMessage.ToolCall(0, "call_123", "function",
+				new OpenAiApi.ChatCompletionMessage.ChatCompletionFunction(null, "{\"city\": \""));
+		var delta2 = new OpenAiApi.ChatCompletionMessage(null, null, null, null, List.of(toolCall2), null, null, null,
+				null);
+		var choice2 = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, 0, delta2, null);
+		var chunk2 = new OpenAiApi.ChatCompletionChunk("id1", List.of(choice2), 1L, "model", null, null, null, null);
+
+		// Third chunk: same index, same id, rest of arguments
+		var toolCall3 = new OpenAiApi.ChatCompletionMessage.ToolCall(0, "call_123", "function",
+				new OpenAiApi.ChatCompletionMessage.ChatCompletionFunction(null, "Beijing\"}"));
+		var delta3 = new OpenAiApi.ChatCompletionMessage(null, null, null, null, List.of(toolCall3), null, null, null,
+				null);
+		var choice3 = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, 0, delta3, null);
+		var chunk3 = new OpenAiApi.ChatCompletionChunk("id1", List.of(choice3), 1L, "model", null, null, null, null);
+
+		// Merge chunks
+		var merged1 = this.helper.merge(null, chunk1);
+		var merged2 = this.helper.merge(merged1, chunk2);
+		var merged3 = this.helper.merge(merged2, chunk3);
+
+		// Verify the merged result
+		assertThat(merged3.choices()).hasSize(1);
+		var mergedChoice = merged3.choices().get(0);
+		assertThat(mergedChoice.delta().toolCalls()).hasSize(1);
+
+		var mergedToolCall = mergedChoice.delta().toolCalls().get(0);
+		assertThat(mergedToolCall.id()).isEqualTo("call_123");
+		assertThat(mergedToolCall.function().name()).isEqualTo("get_weather");
+		assertThat(mergedToolCall.function().arguments()).isEqualTo("{\"city\": \"Beijing\"}");
+	}
+
+	/**
+	 * Test that tool calls with different indices are treated as separate tool calls.
+	 */
+	@Test
+	public void merge_toolCallsWithDifferentIndexShouldBeSeparate() {
+		// First tool call (index 0)
+		var toolCall1 = new OpenAiApi.ChatCompletionMessage.ToolCall(0, "call_1", "function",
+				new OpenAiApi.ChatCompletionMessage.ChatCompletionFunction("func1", "{}"));
+		var delta1 = new OpenAiApi.ChatCompletionMessage(null, null, null, null, List.of(toolCall1), null, null, null,
+				null);
+		var choice1 = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, 0, delta1, null);
+		var chunk1 = new OpenAiApi.ChatCompletionChunk("id1", List.of(choice1), 1L, "model", null, null, null, null);
+
+		// Second tool call (index 1) - different index, should be treated as new tool
+		// call
+		var toolCall2 = new OpenAiApi.ChatCompletionMessage.ToolCall(1, "call_2", "function",
+				new OpenAiApi.ChatCompletionMessage.ChatCompletionFunction("func2", "[]"));
+		var delta2 = new OpenAiApi.ChatCompletionMessage(null, null, null, null, List.of(toolCall2), null, null, null,
+				null);
+		var choice2 = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, 0, delta2, null);
+		var chunk2 = new OpenAiApi.ChatCompletionChunk("id1", List.of(choice2), 1L, "model", null, null, null, null);
+
+		// Merge chunks
+		var merged = this.helper.merge(chunk1, chunk2);
+
+		// Verify - should have 2 tool calls now
+		assertThat(merged.choices()).hasSize(1);
+		var mergedChoice = merged.choices().get(0);
+		assertThat(mergedChoice.delta().toolCalls()).hasSize(2);
+
+		var firstToolCall = mergedChoice.delta().toolCalls().get(0);
+		assertThat(firstToolCall.id()).isEqualTo("call_1");
+		assertThat(firstToolCall.function().name()).isEqualTo("func1");
+
+		var secondToolCall = mergedChoice.delta().toolCalls().get(1);
+		assertThat(secondToolCall.id()).isEqualTo("call_2");
+		assertThat(secondToolCall.function().name()).isEqualTo("func2");
+	}
+
 }
