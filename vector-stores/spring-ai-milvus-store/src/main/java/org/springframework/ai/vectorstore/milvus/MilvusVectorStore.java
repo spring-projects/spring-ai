@@ -143,6 +143,7 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author chabinhwang
+ * @author Taewoong Kim
  * @see org.springframework.ai.vectorstore.VectorStore
  * @see io.milvus.client.MilvusServiceClient
  */
@@ -173,7 +174,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			MetricType.COSINE, VectorStoreSimilarityMetric.COSINE, MetricType.L2, VectorStoreSimilarityMetric.EUCLIDEAN,
 			MetricType.IP, VectorStoreSimilarityMetric.DOT);
 
-	public final FilterExpressionConverter filterExpressionConverter = new MilvusFilterExpressionConverter();
+	public final FilterExpressionConverter filterExpressionConverter;
 
 	private final MilvusServiceClient milvusClient;
 
@@ -222,6 +223,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		this.contentFieldName = builder.contentFieldName;
 		this.metadataFieldName = builder.metadataFieldName;
 		this.embeddingFieldName = builder.embeddingFieldName;
+		this.filterExpressionConverter = new MilvusFilterExpressionConverter(this.metadataFieldName);
 	}
 
 	/**

@@ -119,6 +119,31 @@ class MilvusVectorStoreTest {
 	}
 
 	@Test
+	void shouldPerformSimilaritySearchWithFilterExpressionUsingCustomMetadataFieldName() {
+		this.vectorStore = MilvusVectorStore.builder(this.milvusClient, this.embeddingModel)
+			.metadataFieldName("meta")
+			.build();
+
+		try (MockedStatic<EmbeddingUtils> mockedEmbeddingUtils = mockStatic(EmbeddingUtils.class);
+				MockedConstruction<SearchResultsWrapper> mockedSearchResultsWrapper = mockConstruction(
+						SearchResultsWrapper.class,
+						(mock, context) -> when(mock.getRowRecords(0)).thenReturn(List.of()))) {
+
+			String query = "sample query";
+			SearchRequest request = SearchRequest.builder()
+				.query(query)
+				.topK(5)
+				.similarityThreshold(0.7)
+				.filterExpression("age > 30")
+				.build();
+
+			SearchParam capturedParam = performSimilaritySearch(mockedEmbeddingUtils, request);
+
+			assertThat(capturedParam.getExpr()).isEqualTo("meta[\"age\"] > 30");
+		}
+	}
+
+	@Test
 	void shouldPerformSimilaritySearchWithOriginalSearchRequest() {
 		try (MockedStatic<EmbeddingUtils> mockedEmbeddingUtils = mockStatic(EmbeddingUtils.class);
 				MockedConstruction<SearchResultsWrapper> mockedSearchResultsWrapper = mockConstruction(
