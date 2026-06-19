@@ -337,4 +337,54 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 		assertThat(toolChoice.allowedFunctionNames()).containsExactly("functionA", "functionB");
 	}
 
+	@Test
+	public void testCodeExecutionWithBuilder() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.codeExecution(true)
+			.build();
+
+		assertThat(options.getCodeExecution()).isTrue();
+	}
+
+	@Test
+	public void testCodeExecutionDefaultsToFalse() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().model("test-model").build();
+
+		assertThat(options.getCodeExecution()).isFalse();
+	}
+
+	@Test
+	public void testEqualsAndHashCodeWithCodeExecution() {
+		GoogleGenAiChatOptions options1 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.codeExecution(true)
+			.build();
+		GoogleGenAiChatOptions options2 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.codeExecution(true)
+			.build();
+		GoogleGenAiChatOptions options3 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.codeExecution(false)
+			.build();
+
+		assertThat(options1).isEqualTo(options2);
+		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
+		assertThat(options1).isNotEqualTo(options3);
+	}
+
+	@Test
+	public void testCodeExecutionPreservedByMutate() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.codeExecution(true)
+			.build();
+
+		GoogleGenAiChatOptions mutated = options.mutate().build();
+
+		assertThat(mutated.getCodeExecution()).isTrue();
+		assertThat(mutated).isEqualTo(options);
+	}
+
 }
