@@ -490,6 +490,14 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<!-- Spring AI Tool Search Advisor autoconfiguration -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-tool-search-advisor</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Spring AI Chat memory autoconfiguration -->
 
 			<dependency>
@@ -1060,7 +1068,8 @@
 				<version>${project.version}</version>
 			</dependency>
 
-			<!-- Spring AI Spring Boot starter for Chat Memory (with the default in-memory Chat memory repository) -->
+			<!-- Spring AI Spring Boot starter for Chat Memory (with the default in-memory Chat
+			memory repository) -->
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
@@ -1097,6 +1106,13 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-chat-memory-repository-redis</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI Spring Boot starter for Advisors -->
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-tool-search-advisor</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
