@@ -30,8 +30,20 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Taewoong Kim
  */
 public class MilvusFilterExpressionConverter extends AbstractFilterExpressionConverter {
+
+	private final String metadataFieldName;
+
+	public MilvusFilterExpressionConverter() {
+		this(MilvusVectorStore.METADATA_FIELD_NAME);
+	}
+
+	public MilvusFilterExpressionConverter(String metadataFieldName) {
+		Assert.hasText(metadataFieldName, "Metadata field name must not be empty");
+		this.metadataFieldName = metadataFieldName;
+	}
 
 	@Override
 	protected void doExpression(Expression exp, StringBuilder context) {
@@ -65,7 +77,7 @@ public class MilvusFilterExpressionConverter extends AbstractFilterExpressionCon
 	@Override
 	protected void doKey(Key key, StringBuilder context) {
 		var identifier = key.key();
-		context.append("metadata[");
+		context.append(this.metadataFieldName).append("[");
 		emitJsonValue(identifier, context);
 		context.append("]");
 	}
