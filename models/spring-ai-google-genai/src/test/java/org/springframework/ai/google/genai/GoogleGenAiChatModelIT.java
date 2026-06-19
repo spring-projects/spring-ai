@@ -495,6 +495,41 @@ class GoogleGenAiChatModelIT {
 		assertThat(response).contains("2025-05-08T10:10:10+02:00");
 	}
 
+	/**
+	 * See https://github.com/spring-projects/spring-ai/pull/4599
+	 */
+	@Test
+	void testMixedPartsMessages() {
+
+		ToolCallingManager toolCallingManager = ToolCallingManager.builder()
+			.observationRegistry(ObservationRegistry.NOOP)
+			.build();
+
+		GoogleGenAiChatModel chatModelWithTools = GoogleGenAiChatModel.builder()
+			.genAiClient(genAiClient())
+			.toolCallingManager(toolCallingManager)
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
+				.temperature(0.0)
+				.build())
+			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModelWithTools).build();
+
+		// Create a prompt that will encourage gemini to explain why it is calling tools
+		// as it does.
+		AlarmTools alarmTools = new AlarmTools();
+		String response = chatClient.prompt()
+			.tools(new CurrentTimeTools(), alarmTools)
+			.system("You MUST include reasoning when you issue tool calls.")
+			.user("Set an alarm for an hour from now, and tell me what time that was for.")
+			.call()
+			.content();
+
+		assertThat(response).isEqualTo("I have set an alarm for 11:10 AM.");
+		assertThat(alarmTools.getAlarm()).isEqualTo("2025-05-08T11:10:10+02:00");
+	}
+
 	@Test
 	void testThinkingBudgetGeminiProAutomaticDecisionByModel() {
 		GoogleGenAiChatModel chatModelWithThinkingBudget = GoogleGenAiChatModel.builder()
@@ -721,6 +756,21 @@ class GoogleGenAiChatModelIT {
 		@Tool(description = "Get the current date and time in the user's timezone")
 		String getCurrentDateTime() {
 			return "2025-05-08T10:10:10+02:00[Europe/Berlin]";
+		}
+
+	}
+
+	public static class AlarmTools {
+
+		private String alarm;
+
+		@Tool(description = "Set a user alarm for the given time, provided in ISO-8601 format")
+		void setAlarm(String time) {
+			this.alarm = time;
+		}
+
+		public String getAlarm() {
+			return this.alarm;
 		}
 
 	}
