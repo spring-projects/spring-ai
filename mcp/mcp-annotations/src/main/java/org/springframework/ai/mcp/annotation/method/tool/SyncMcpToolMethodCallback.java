@@ -20,6 +20,7 @@ import java.util.function.BiFunction;
 
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
+import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 
@@ -90,7 +91,11 @@ public final class SyncMcpToolMethodCallback
 			return this.processResult(result);
 		}
 		catch (Exception e) {
-			if (this.toolCallExceptionClass.isInstance(e)) {
+			McpError mcpError = findMcpError(e);
+			if (mcpError != null) {
+				throw mcpError;
+			}
+			else if (this.toolCallExceptionClass.isInstance(e)) {
 				return this.createSyncErrorResult(e);
 			}
 			throw e;

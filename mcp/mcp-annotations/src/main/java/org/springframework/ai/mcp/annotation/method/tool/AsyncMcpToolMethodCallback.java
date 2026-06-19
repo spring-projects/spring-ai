@@ -21,6 +21,7 @@ import java.util.function.BiFunction;
 
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
+import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import reactor.core.publisher.Mono;
@@ -94,7 +95,11 @@ public final class AsyncMcpToolMethodCallback
 
 			}
 			catch (Exception e) {
-				if (this.toolCallExceptionClass.isInstance(e)) {
+				McpError mcpError = findMcpError(e);
+				if (mcpError != null) {
+					throw mcpError;
+				}
+				else if (this.toolCallExceptionClass.isInstance(e)) {
 					return this.createAsyncErrorResult(e);
 				}
 				return Mono.error(e);

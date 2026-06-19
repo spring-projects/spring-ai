@@ -18,6 +18,7 @@ package org.springframework.ai.mcp.annotation.method.tool;
 
 import java.lang.reflect.Method;
 
+import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import org.reactivestreams.Publisher;
@@ -66,21 +67,18 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 
 			// Check if the Mono contains CallToolResult
 			if (ReactiveUtils.isReactiveReturnTypeOfCallToolResult(this.toolMethod)) {
-				return (Mono<CallToolResult>) monoResult;
+				return ((Mono<CallToolResult>) monoResult).onErrorResume(this::propagateMcpError);
 			}
 
 			// Handle Mono<Void> for VOID return type
 			if (ReactiveUtils.isReactiveReturnTypeOfVoid(this.toolMethod)) {
 				return monoResult
-					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()));
+					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()))
+					.onErrorResume(this::propagateMcpError);
 			}
 
 			// Handle other Mono types - map the emitted value to CallToolResult
-			return monoResult.map(this::mapValueToCallToolResult)
-				.onErrorResume(e -> Mono.just(CallToolResult.builder()
-					.isError(true)
-					.addTextContent("Error invoking method: %s".formatted(e.getMessage()))
-					.build()));
+			return monoResult.map(this::mapValueToCallToolResult).onErrorResume(this::mapReactiveError);
 		}
 
 		// Handle Flux by taking the first element
@@ -89,22 +87,18 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 
 			// Check if the Flux contains CallToolResult
 			if (ReactiveUtils.isReactiveReturnTypeOfCallToolResult(this.toolMethod)) {
-				return ((Flux<CallToolResult>) fluxResult).next();
+				return ((Flux<CallToolResult>) fluxResult).next().onErrorResume(this::propagateMcpError);
 			}
 
 			// Handle Mono<Void> for VOID return type
 			if (ReactiveUtils.isReactiveReturnTypeOfVoid(this.toolMethod)) {
 				return fluxResult
-					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()));
+					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()))
+					.onErrorResume(this::propagateMcpError);
 			}
 
 			// Handle other Flux types by taking the first element and mapping
-			return fluxResult.next()
-				.map(this::mapValueToCallToolResult)
-				.onErrorResume(e -> Mono.just(CallToolResult.builder()
-					.isError(true)
-					.addTextContent("Error invoking method: %s".formatted(e.getMessage()))
-					.build()));
+			return fluxResult.next().map(this::mapValueToCallToolResult).onErrorResume(this::mapReactiveError);
 		}
 
 		// Handle other Publisher types
@@ -114,21 +108,18 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 
 			// Check if the Publisher contains CallToolResult
 			if (ReactiveUtils.isReactiveReturnTypeOfCallToolResult(this.toolMethod)) {
-				return (Mono<CallToolResult>) monoFromPublisher;
+				return ((Mono<CallToolResult>) monoFromPublisher).onErrorResume(this::propagateMcpError);
 			}
 
 			// Handle Mono<Void> for VOID return type
 			if (ReactiveUtils.isReactiveReturnTypeOfVoid(this.toolMethod)) {
 				return monoFromPublisher
-					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()));
+					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()))
+					.onErrorResume(this::propagateMcpError);
 			}
 
 			// Handle other Publisher types by mapping the emitted value
-			return monoFromPublisher.map(this::mapValueToCallToolResult)
-				.onErrorResume(e -> Mono.just(CallToolResult.builder()
-					.isError(true)
-					.addTextContent("Error invoking method: %s".formatted(e.getMessage()))
-					.build()));
+			return monoFromPublisher.map(this::mapValueToCallToolResult).onErrorResume(this::mapReactiveError);
 		}
 
 		// This should not happen in async context, but handle as fallback
@@ -144,6 +135,25 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 	 */
 	protected CallToolResult mapValueToCallToolResult(Object value) {
 		return convertValueToCallToolResult(value);
+	}
+
+	private Mono<CallToolResult> mapReactiveError(Throwable e) {
+		McpError mcpError = findMcpError(e);
+		if (mcpError != null) {
+			return Mono.error(mcpError);
+		}
+		return Mono.just(CallToolResult.builder()
+			.isError(true)
+			.addTextContent("Error invoking method: %s".formatted(e.getMessage()))
+			.build());
+	}
+
+	private <V> Mono<V> propagateMcpError(Throwable e) {
+		McpError mcpError = findMcpError(e);
+		if (mcpError != null) {
+			return Mono.error(mcpError);
+		}
+		return Mono.error(e);
 	}
 
 	/**

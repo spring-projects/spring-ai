@@ -19,11 +19,15 @@ package org.springframework.ai.mcp.annotation.method.tool;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import org.jspecify.annotations.Nullable;
@@ -213,6 +217,22 @@ public abstract class AbstractMcpToolMethodCallback<T, RC extends McpRequestCont
 	 * @return true if the parameter type is an exchange or context type, false otherwise
 	 */
 	protected abstract boolean isExchangeOrContextType(Class<?> paramType);
+
+	/**
+	 * Walks the cause chain to find an {@link McpError}, returning the first match. If
+	 * none is found, returns {@code null}. Used to detect whether a thrown/caught
+	 * exception should propagate as a JSON-RPC error rather than be converted to a
+	 * {@link CallToolResult}.
+	 */
+	protected static McpError findMcpError(Throwable throwable) {
+		Set<Throwable> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+		for (Throwable t = throwable; t != null && visited.add(t); t = t.getCause()) {
+			if (t instanceof McpError mcpError) {
+				return mcpError;
+			}
+		}
+		return null;
+	}
 
 	protected Throwable findCauseUsingPlainJava(Throwable throwable) {
 		Objects.requireNonNull(throwable);
