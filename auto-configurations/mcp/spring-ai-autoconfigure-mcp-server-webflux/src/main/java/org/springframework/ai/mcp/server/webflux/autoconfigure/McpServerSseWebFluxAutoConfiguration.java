@@ -67,6 +67,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 @ConditionalOnClass(WebFluxSseServerTransportProvider.class)
 @ConditionalOnMissingBean(McpServerTransportProvider.class)
 @Conditional({ McpServerStdioDisabledCondition.class, McpServerAutoConfiguration.EnabledSseServerCondition.class })
+@Deprecated(since = "2.0.0", forRemoval = true)
 public class McpServerSseWebFluxAutoConfiguration {
 
 	@Bean

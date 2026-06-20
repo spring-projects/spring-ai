@@ -28,8 +28,6 @@ import com.anthropic.models.messages.ToolChoiceAny;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.io.TempDir;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -52,8 +50,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 class AnthropicSkillsIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicSkillsIT.class);
-
 	@Autowired
 	private AnthropicChatModel chatModel;
 
@@ -71,7 +67,6 @@ class AnthropicSkillsIT {
 			.maxTokens(4096)
 			.skill(AnthropicSkill.XLSX)
 			.toolChoice(ToolChoice.ofAny(ToolChoiceAny.builder().build()))
-			.internalToolExecutionEnabled(false)
 			.build();
 
 		Prompt prompt = new Prompt(List.of(userMessage), options);
@@ -81,15 +76,11 @@ class AnthropicSkillsIT {
 		assertThat(response.getResults()).isNotEmpty();
 		String responseText = response.getResult().getOutput().getText();
 		assertThat(responseText).as("Response text should not be blank").isNotBlank();
-		logger.info("XLSX Skill Response: {}", responseText);
-
 		assertThat(responseText.toLowerCase()).as("Response should mention spreadsheet or Excel")
 			.containsAnyOf("spreadsheet", "excel", "xlsx", "created", "file");
 
 		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
 		assertThat(fileIds).as("Skills response should contain at least one file ID").isNotEmpty();
-		logger.info("Extracted {} file ID(s): {}", fileIds.size(), fileIds);
-
 		List<Path> downloadedFiles = AnthropicSkillsResponseHelper.downloadAllFiles(response, this.anthropicClient,
 				tempDir);
 		assertThat(downloadedFiles).as("Should download at least one file").isNotEmpty();
@@ -97,7 +88,6 @@ class AnthropicSkillsIT {
 		for (Path filePath : downloadedFiles) {
 			assertThat(filePath).exists();
 			assertThat(Files.size(filePath)).as("Downloaded file should not be empty").isGreaterThan(0);
-			logger.info("Downloaded file: {} ({} bytes)", filePath.getFileName(), Files.size(filePath));
 		}
 
 		boolean hasXlsxFile = downloadedFiles.stream()

@@ -78,23 +78,11 @@ public final class SyncMcpCompleteMethodCallbackExample {
 					if (!completeAnnotation.prompt().isEmpty()) {
 						String promptName = completeAnnotation.prompt();
 						promptCompletionHandlers.put(promptName + "#" + method.getName(), callback);
-						System.out.println("Registered prompt completion handler: " + promptName);
-						System.out.println("  Method: " + method.getName());
-						System.out.println();
 					}
 					else if (!completeAnnotation.uri().isEmpty()) {
 						String uriPattern = completeAnnotation.uri();
 						uriCompletionHandlers.put(uriPattern + "#" + method.getName(), callback);
 
-						// Print information about URI variables if present
-						if (uriPattern.contains("{") && uriPattern.contains("}")) {
-							System.out.println("  URI Template: " + uriPattern);
-							System.out.println("  URI Variables: " + extractUriVariables(uriPattern));
-						}
-
-						System.out.println("Registered URI completion handler: " + uriPattern);
-						System.out.println("  Method: " + method.getName());
-						System.out.println();
 					}
 				}
 				catch (IllegalArgumentException e) {
@@ -106,8 +94,6 @@ public final class SyncMcpCompleteMethodCallbackExample {
 
 		// Example of using registered prompt handlers
 		if (!promptCompletionHandlers.isEmpty()) {
-			System.out.println("\nTesting prompt completion handlers:");
-
 			// Test completeCityName handler
 			testPromptHandler(promptCompletionHandlers, "travel-planner#completeCityName", "l", "City name completion");
 
@@ -126,8 +112,6 @@ public final class SyncMcpCompleteMethodCallbackExample {
 
 		// Example of using registered URI handlers
 		if (!uriCompletionHandlers.isEmpty()) {
-			System.out.println("\nTesting URI completion handlers:");
-
 			// Test completeCity handler
 			testUriHandler(uriCompletionHandlers, "weather-api://{city}#completeCity", "s", "City completion for URI");
 		}
@@ -144,8 +128,6 @@ public final class SyncMcpCompleteMethodCallbackExample {
 
 		if (handler != null) {
 			try {
-				System.out.println("\nTesting " + description + " with input: " + input);
-
 				// Create a mock exchange
 				McpSyncServerExchange exchange = createMockExchange();
 
@@ -158,29 +140,10 @@ public final class SyncMcpCompleteMethodCallbackExample {
 
 				// Execute the handler
 				CompleteResult result = handler.apply(exchange, request);
-
-				// Print the result
-				System.out.println("Completion results:");
-				if (result.completion().values().isEmpty()) {
-					System.out.println("  No completions found");
-				}
-				else {
-					for (String value : result.completion().values()) {
-						System.out.println("  " + value);
-					}
-					System.out.println("Total: " + result.completion().values().size() + " results");
-					if (result.completion().hasMore() != null && result.completion().hasMore()) {
-						System.out.println("More results available");
-					}
-				}
 			}
 			catch (Exception e) {
-				System.out.println("Error executing handler: " + e.getMessage());
 				e.printStackTrace();
 			}
-		}
-		else {
-			System.out.println("\nNo handler found for key: " + handlerKey);
 		}
 	}
 
@@ -195,8 +158,6 @@ public final class SyncMcpCompleteMethodCallbackExample {
 
 		if (handler != null) {
 			try {
-				System.out.println("\nTesting " + description + " with input: " + input);
-
 				// Create a mock exchange
 				McpSyncServerExchange exchange = createMockExchange();
 
@@ -209,29 +170,10 @@ public final class SyncMcpCompleteMethodCallbackExample {
 
 				// Execute the handler
 				CompleteResult result = handler.apply(exchange, request);
-
-				// Print the result
-				System.out.println("Completion results:");
-				if (result.completion().values().isEmpty()) {
-					System.out.println("  No completions found");
-				}
-				else {
-					for (String value : result.completion().values()) {
-						System.out.println("  " + value);
-					}
-					System.out.println("Total: " + result.completion().values().size() + " results");
-					if (result.completion().hasMore() != null && result.completion().hasMore()) {
-						System.out.println("More results available");
-					}
-				}
 			}
 			catch (Exception e) {
-				System.out.println("Error executing handler: " + e.getMessage());
 				e.printStackTrace();
 			}
-		}
-		else {
-			System.out.println("\nNo handler found for key: " + handlerKey);
 		}
 	}
 

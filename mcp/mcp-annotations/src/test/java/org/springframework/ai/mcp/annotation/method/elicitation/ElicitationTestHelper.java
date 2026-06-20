@@ -18,6 +18,7 @@ package org.springframework.ai.mcp.annotation.method.elicitation;
 
 import java.util.Map;
 
+import io.modelcontextprotocol.spec.McpSchema.ElicitFormRequest;
 import io.modelcontextprotocol.spec.McpSchema.ElicitRequest;
 
 /**
@@ -35,8 +36,10 @@ public final class ElicitationTestHelper {
 	 * @return A sample elicit request
 	 */
 	public static ElicitRequest createSampleRequest() {
-		return new ElicitRequest("Please provide your input for the following task",
-				Map.of("taskType", "userInput", "required", true, "description", "Enter your response"));
+		return ElicitFormRequest
+			.builder("Please provide your input for the following task",
+					Map.of("taskType", "userInput", "required", true, "description", "Enter your response"))
+			.build();
 	}
 
 	/**
@@ -45,7 +48,7 @@ public final class ElicitationTestHelper {
 	 * @return A sample elicit request with custom prompt
 	 */
 	public static ElicitRequest createSampleRequest(String prompt) {
-		return new ElicitRequest(prompt, Map.of("taskType", "userInput", "required", true));
+		return ElicitFormRequest.builder(prompt, Map.of("taskType", "userInput", "required", true)).build();
 	}
 
 	/**
@@ -55,7 +58,7 @@ public final class ElicitationTestHelper {
 	 * @return A sample elicit request with custom prompt and context
 	 */
 	public static ElicitRequest createSampleRequest(String prompt, Map<String, Object> context) {
-		return new ElicitRequest(prompt, context);
+		return ElicitFormRequest.builder(prompt, context).build();
 	}
 
 }

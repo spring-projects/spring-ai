@@ -16,9 +16,9 @@
 
 package org.springframework.ai.rag.preretrieval.query.transformation;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -40,7 +40,7 @@ import org.springframework.util.StringUtils;
  */
 public class RewriteQueryTransformer implements QueryTransformer {
 
-	private static final Logger logger = LoggerFactory.getLogger(RewriteQueryTransformer.class);
+	private static final Log logger = LogFactory.getLog(RewriteQueryTransformer.class);
 
 	private static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = new PromptTemplate("""
 			Given a user query, rewrite it to provide better results when querying a {target}.
@@ -75,7 +75,9 @@ public class RewriteQueryTransformer implements QueryTransformer {
 	public Query transform(Query query) {
 		Assert.notNull(query, "query cannot be null");
 
-		logger.debug("Rewriting query to optimize for querying a {}.", this.targetSearchSystem);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Rewriting query to optimize for querying a " + this.targetSearchSystem + ".");
+		}
 
 		var rewrittenQueryText = this.chatClient.prompt()
 			.user(user -> user.text(this.promptTemplate.getTemplate())

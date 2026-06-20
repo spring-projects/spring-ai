@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -30,7 +32,6 @@ import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfigurat
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
-import org.springframework.ai.ollama.api.OllamaChatOptions.Builder;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
@@ -44,10 +45,13 @@ import org.springframework.util.Assert;
 @EnabledIfEnvironmentVariable(named = "OLLAMA_AUTOCONF_TESTS_ENABLED", matches = "true")
 public abstract class BaseOllamaIT {
 
+	private static final Log logger = LogFactory.getLog(BaseOllamaIT.class);
+
 	static {
-		System.out.println("OLLAMA_AUTOCONF_TESTS_ENABLED=" + System.getenv("OLLAMA_AUTOCONF_TESTS_ENABLED"));
-		System.out.println("System property=" + System.getProperty("OLLAMA_AUTOCONF_TESTS_ENABLED"));
+		logger.info("OLLAMA_AUTOCONF_TESTS_ENABLED=" + System.getenv("OLLAMA_AUTOCONF_TESTS_ENABLED"));
+		logger.info("System property=" + System.getProperty("OLLAMA_AUTOCONF_TESTS_ENABLED"));
 	}
+
 	private static final String OLLAMA_LOCAL_URL = "http://localhost:11434";
 
 	private static final Duration DEFAULT_TIMEOUT = Duration.ofMinutes(10);
@@ -112,8 +116,8 @@ public abstract class BaseOllamaIT {
 	/**
 	 * Merge options customizer {@code other} with the options coming from the model.
 	 */
-	protected static OllamaChatOptions mergeOptions(OllamaChatModel chatModel, Builder other) {
-		return (OllamaChatOptions) chatModel.getDefaultOptions().mutate().combineWith(other).build();
+	protected static OllamaChatOptions mergeOptions(OllamaChatModel chatModel, OllamaChatOptions.Builder other) {
+		return (OllamaChatOptions) chatModel.getOptions().mutate().combineWith(other).build();
 	}
 
 	public String getBaseUrl() {

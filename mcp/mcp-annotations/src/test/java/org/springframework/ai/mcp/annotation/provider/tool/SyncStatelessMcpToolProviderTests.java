@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.annotation.McpTool;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -45,6 +45,8 @@ import static org.mockito.Mockito.mock;
  * @author Christian Tzolov
  */
 public class SyncStatelessMcpToolProviderTests {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	@Test
 	void testConstructorWithNullToolObjects() {
@@ -607,7 +609,7 @@ public class SyncStatelessMcpToolProviderTests {
 		assertThat(toolSpec.tool().name()).isEqualTo("output-schema-tool");
 		// Output schema should be generated for complex types
 		assertThat(toolSpec.tool().outputSchema()).isNotNull();
-		String outputSchemaString = JsonParser.toJson(toolSpec.tool().outputSchema());
+		String outputSchemaString = jsonHelper.toJson(toolSpec.tool().outputSchema());
 		assertThat(outputSchemaString).contains("message");
 		assertThat(outputSchemaString).contains("count");
 		JsonAssertions.assertThatJson(outputSchemaString)

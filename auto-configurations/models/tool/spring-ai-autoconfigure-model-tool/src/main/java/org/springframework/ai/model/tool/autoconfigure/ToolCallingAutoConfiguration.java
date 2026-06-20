@@ -20,15 +20,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.SerializationFeature;
-import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -37,14 +33,9 @@ import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.observation.ToolCallingContentObservationFilter;
 import org.springframework.ai.tool.observation.ToolCallingObservationConvention;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
-import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
-import org.springframework.ai.util.JacksonUtils;
-import org.springframework.ai.util.json.JsonParser;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -68,7 +59,7 @@ import org.springframework.util.ClassUtils;
 @EnableConfigurationProperties(ToolCallingProperties.class)
 public class ToolCallingAutoConfiguration {
 
-	private static final Logger logger = LoggerFactory.getLogger(ToolCallingAutoConfiguration.class);
+	private static final Log logger = LogFactory.getLog(ToolCallingAutoConfiguration.class);
 
 	/**
 	 * The default {@link ToolCallbackResolver} resolves tools by name for methods,
@@ -102,11 +93,7 @@ public class ToolCallingAutoConfiguration {
 
 		var staticToolCallbackResolver = new StaticToolCallbackResolver(allFunctionAndToolCallbacks);
 
-		var springBeanToolCallbackResolver = SpringBeanToolCallbackResolver.builder()
-			.applicationContext(applicationContext)
-			.build();
-
-		return new DelegatingToolCallbackResolver(List.of(staticToolCallbackResolver, springBeanToolCallbackResolver));
+		return new DelegatingToolCallbackResolver(List.of(staticToolCallbackResolver));
 	}
 
 	private static boolean isMcpToolCallbackProvider(ResolvableType type) {
@@ -165,52 +152,6 @@ public class ToolCallingAutoConfiguration {
 		return new ToolCallingContentObservationFilter();
 	}
 
-	/**
-	 * {@link JsonMapper} used by {@link JsonParser} for tool-call arguments and
-	 * structured output parsing. Declare a bean with the same name to replace the default
-	 * (e.g. to enable {@code JsonReadFeature.ALLOW_UNESCAPED_CONTROL_CHARS} for models
-	 * that emit raw newlines in tool-call arguments).
-	 */
-	@Bean(name = "jsonParserJsonMapper", defaultCandidate = false)
-	@ConditionalOnMissingBean(name = "jsonParserJsonMapper")
-	JsonMapper jsonParserJsonMapper() {
-		return JsonMapper.builder()
-			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-			.disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
-			.addModules(JacksonUtils.instantiateAvailableModules())
-			.build();
-	}
-
-	/**
-	 * {@link JsonMapper} used by {@link ModelOptionsUtils} for model option and response
-	 * JSON conversions. Declare a bean with the same name to replace the default.
-	 */
-	@Bean(name = "modelOptionsJsonMapper", defaultCandidate = false)
-	@ConditionalOnMissingBean(name = "modelOptionsJsonMapper")
-	JsonMapper modelOptionsJsonMapper() {
-		return JsonMapper.builder()
-			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-			.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT)
-			.addModules(JacksonUtils.instantiateAvailableModules())
-			.build();
-	}
-
-	/**
-	 * Wires the named {@code jsonParserJsonMapper} and {@code modelOptionsJsonMapper}
-	 * beans (either the defaults above or user-supplied overrides) into the static
-	 * {@link JsonParser} and {@link ModelOptionsUtils} utilities, so the lookups done by
-	 * {@link org.springframework.ai.tool.method.MethodToolCallback MethodToolCallback}
-	 * and model-options code respect application-level Jackson configuration.
-	 */
-	@Bean
-	InitializingBean springAiJsonMapperInitializer(@Qualifier("jsonParserJsonMapper") JsonMapper jsonParserJsonMapper,
-			@Qualifier("modelOptionsJsonMapper") JsonMapper modelOptionsJsonMapper) {
-		return () -> {
-			JsonParser.setJsonMapper(jsonParserJsonMapper);
-			ModelOptionsUtils.setJsonMapper(modelOptionsJsonMapper);
-		};
-	}
-
 	private static @Nullable Class<? extends RuntimeException> getClassOrNull(String className) {
 		try {
 			Class<?> clazz = ClassUtils.forName(className, null);
@@ -218,14 +159,20 @@ public class ToolCallingAutoConfiguration {
 				return (Class<? extends RuntimeException>) clazz;
 			}
 			else {
-				logger.debug("Class {} is not a subclass of RuntimeException", className);
+				if (logger.isDebugEnabled()) {
+					logger.debug("Class " + className + " is not a subclass of RuntimeException");
+				}
 			}
 		}
 		catch (ClassNotFoundException e) {
-			logger.debug("Cannot load class: {}", className);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Cannot load class: " + className);
+			}
 		}
 		catch (Exception e) {
-			logger.debug("Error loading class: {}", className, e);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Error loading class: " + className, e);
+			}
 		}
 		return null;
 	}

@@ -23,8 +23,8 @@ import java.util.stream.Stream;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncCompletionSpecification;
 import io.modelcontextprotocol.util.Assert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.mcp.annotation.McpComplete;
 import org.springframework.ai.mcp.annotation.adapter.CompleteAdapter;
@@ -42,7 +42,7 @@ import org.springframework.ai.mcp.annotation.method.complete.AsyncMcpCompleteMet
  */
 public class AsyncMcpCompleteProvider {
 
-	private static final Logger logger = LoggerFactory.getLogger(AsyncMcpCompleteProvider.class);
+	private static final Log logger = LogFactory.getLog(AsyncMcpCompleteProvider.class);
 
 	private final List<Object> completeObjects;
 
@@ -85,7 +85,10 @@ public class AsyncMcpCompleteProvider {
 			.toList();
 
 		if (asyncCompleteSpecification.isEmpty()) {
-			logger.warn("No async complete methods found in the provided complete objects: {}", this.completeObjects);
+			if (logger.isWarnEnabled()) {
+				logger
+					.warn("No async complete methods found in the provided complete objects: " + this.completeObjects);
+			}
 		}
 
 		return asyncCompleteSpecification;

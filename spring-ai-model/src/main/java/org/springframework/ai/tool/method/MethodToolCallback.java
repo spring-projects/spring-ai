@@ -23,11 +23,10 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import tools.jackson.core.JacksonException;
-import tools.jackson.core.type.TypeReference;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
@@ -36,7 +35,8 @@ import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.metadata.ToolMetadata;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
@@ -49,7 +49,9 @@ import org.springframework.util.CollectionUtils;
  */
 public final class MethodToolCallback implements ToolCallback {
 
-	private static final Logger logger = LoggerFactory.getLogger(MethodToolCallback.class);
+	private static final JsonHelper jsonHelper = new JsonHelper();
+
+	private static final Log logger = LogFactory.getLog(MethodToolCallback.class);
 
 	private static final ToolCallResultConverter DEFAULT_RESULT_CONVERTER = new DefaultToolCallResultConverter();
 
@@ -98,17 +100,22 @@ public final class MethodToolCallback implements ToolCallback {
 	public String call(String toolInput, @Nullable ToolContext toolContext) {
 		Assert.hasText(toolInput, "toolInput cannot be null or empty");
 
-		logger.debug("Starting execution of tool: {}", this.toolDefinition.name());
+		if (logger.isDebugEnabled()) {
+			logger.debug("Starting execution of tool: " + this.toolDefinition.name());
+		}
 
 		this.validateToolContextSupport(toolContext);
 
 		Map<String, Object> toolArguments = this.extractToolArguments(toolInput);
+		Assert.state(toolArguments != null, "toolArguments must not be null");
 
 		Object[] methodArguments = this.buildMethodArguments(toolArguments, toolContext);
 
 		Object result = this.callMethod(methodArguments);
 
-		logger.debug("Successful execution of tool: {}", this.toolDefinition.name());
+		if (logger.isDebugEnabled()) {
+			logger.debug("Successful execution of tool: " + this.toolDefinition.name());
+		}
 
 		Type returnType = this.toolMethod.getGenericReturnType();
 
@@ -124,9 +131,9 @@ public final class MethodToolCallback implements ToolCallback {
 		}
 	}
 
-	private Map<String, Object> extractToolArguments(String toolInput) {
+	private @Nullable Map<String, Object> extractToolArguments(String toolInput) {
 		try {
-			return JsonParser.fromJson(toolInput, new TypeReference<>() {
+			return jsonHelper.fromJson(toolInput, new ParameterizedTypeReference<>() {
 			});
 		}
 		catch (Exception ex) {
@@ -154,13 +161,12 @@ public final class MethodToolCallback implements ToolCallback {
 		}
 		try {
 			if (type instanceof Class<?>) {
-				return JsonParser.toTypedObject(value, (Class<?>) type);
+				return jsonHelper.convertToTypedObject(value, (Class<?>) type);
 			}
 
 			// For generic types, use the fromJson method that accepts Type
-
-			String json = JsonParser.toJson(value);
-			return JsonParser.fromJson(json, type);
+			String json = jsonHelper.toJson(value, true);
+			return jsonHelper.fromJson(json, type);
 		}
 		catch (Exception ex) {
 			logger.warn("Conversion from JSON failed", ex);

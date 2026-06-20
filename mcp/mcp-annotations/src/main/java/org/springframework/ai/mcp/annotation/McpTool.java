@@ -74,7 +74,7 @@ public @interface McpTool {
 	/**
 	 * Additional properties describing a Tool to clients.
 	 *
-	 * all properties in ToolAnnotations are hints. They are not guaranteed to provide a
+	 * All properties in ToolAnnotations are hints. They are not guaranteed to provide a
 	 * faithful description of tool behavior (including descriptive properties like
 	 * title).
 	 *
@@ -105,7 +105,7 @@ public @interface McpTool {
 
 		/**
 		 * If true, calling the tool repeatedly with the same arguments will have no
-		 * additional effect on the its environment.
+		 * additional effect on its environment.
 		 *
 		 * (This property is meaningful only when readOnlyHint == false)
 		 */

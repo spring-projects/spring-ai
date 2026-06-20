@@ -102,18 +102,11 @@ public final class ONNXSample {
 
 			float[][][] tokenEmbeddings = (float[][][]) lastHiddenState.getValue();
 
-			System.out.println(tokenEmbeddings[0][0][0]);
-			System.out.println(tokenEmbeddings[0][1][0]);
-			System.out.println(tokenEmbeddings[0][2][0]);
-			System.out.println(tokenEmbeddings[0][3][0]);
-
 			try (NDManager manager = NDManager.newBaseManager()) {
 				NDArray ndTokenEmbeddings = create(tokenEmbeddings, manager);
 				NDArray ndAttentionMask = manager.create(attention_mask0);
-				System.out.println(ndTokenEmbeddings);
 
-				var embedding = meanPooling(ndTokenEmbeddings, ndAttentionMask);
-				System.out.println(embedding);
+				meanPooling(ndTokenEmbeddings, ndAttentionMask);
 			}
 
 		}

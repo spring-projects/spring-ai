@@ -16,10 +16,11 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
-import org.springframework.ai.openai.AbstractOpenAiOptions;
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.openai.OpenAiAudioSpeechOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 /**
  * OpenAI SDK Audio Speech autoconfiguration properties.
@@ -30,22 +31,134 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * @author Ilayaperumal Gopinathan
  */
 @ConfigurationProperties(OpenAiAudioSpeechProperties.CONFIG_PREFIX)
-public class OpenAiAudioSpeechProperties extends AbstractOpenAiOptions {
+public class OpenAiAudioSpeechProperties extends AbstractOpenAiProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.audio.speech";
 
-	public static final String DEFAULT_SPEECH_MODEL = OpenAiAudioSpeechOptions.DEFAULT_SPEECH_MODEL;
+	private @Nullable String model;
 
-	@NestedConfigurationProperty
-	private final OpenAiAudioSpeechOptions options = OpenAiAudioSpeechOptions.builder()
-		.model(DEFAULT_SPEECH_MODEL)
-		.voice(OpenAiAudioSpeechOptions.DEFAULT_VOICE)
-		.responseFormat(OpenAiAudioSpeechOptions.DEFAULT_RESPONSE_FORMAT)
-		.speed(OpenAiAudioSpeechOptions.DEFAULT_SPEED)
-		.build();
+	private @Nullable String input;
 
-	public OpenAiAudioSpeechOptions getOptions() {
+	private @Nullable String voice;
+
+	private @Nullable String responseFormat;
+
+	private @Nullable Double speed;
+
+	public @Nullable String getModel() {
+		return this.model;
+	}
+
+	public void setModel(@Nullable String model) {
+		this.model = model;
+	}
+
+	public @Nullable String getInput() {
+		return this.input;
+	}
+
+	public void setInput(@Nullable String input) {
+		this.input = input;
+	}
+
+	public @Nullable String getVoice() {
+		return this.voice;
+	}
+
+	public void setVoice(@Nullable String voice) {
+		this.voice = voice;
+	}
+
+	public @Nullable String getResponseFormat() {
+		return this.responseFormat;
+	}
+
+	public void setResponseFormat(@Nullable String responseFormat) {
+		this.responseFormat = responseFormat;
+	}
+
+	public @Nullable Double getSpeed() {
+		return this.speed;
+	}
+
+	public void setSpeed(@Nullable Double speed) {
+		this.speed = speed;
+	}
+
+	public OpenAiAudioSpeechOptions toOptions() {
+		return OpenAiAudioSpeechOptions.builder()
+			.model(this.getModel())
+			.input(this.input)
+			.voice(this.voice)
+			.responseFormat(this.responseFormat)
+			.speed(this.speed)
+			.build();
+	}
+
+	private Options options = new Options();
+
+	@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.audio.speech")
+	@Deprecated(since = "2.0.0", forRemoval = true)
+	public Options getOptions() {
 		return this.options;
+	}
+
+	public void setOptions(Options options) {
+		this.options = options;
+	}
+
+	public class Options {
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.audio.speech.model")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable String getModel() {
+			return OpenAiAudioSpeechProperties.this.getModel();
+		}
+
+		public void setModel(@Nullable String model) {
+			OpenAiAudioSpeechProperties.this.setModel(model);
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.audio.speech.input")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable String getInput() {
+			return OpenAiAudioSpeechProperties.this.getInput();
+		}
+
+		public void setInput(@Nullable String input) {
+			OpenAiAudioSpeechProperties.this.setInput(input);
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.audio.speech.voice")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable String getVoice() {
+			return OpenAiAudioSpeechProperties.this.getVoice();
+		}
+
+		public void setVoice(@Nullable String voice) {
+			OpenAiAudioSpeechProperties.this.setVoice(voice);
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.audio.speech.response-format")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable String getResponseFormat() {
+			return OpenAiAudioSpeechProperties.this.getResponseFormat();
+		}
+
+		public void setResponseFormat(@Nullable String responseFormat) {
+			OpenAiAudioSpeechProperties.this.setResponseFormat(responseFormat);
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.audio.speech.speed")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable Double getSpeed() {
+			return OpenAiAudioSpeechProperties.this.getSpeed();
+		}
+
+		public void setSpeed(@Nullable Double speed) {
+			OpenAiAudioSpeechProperties.this.setSpeed(speed);
+		}
+
 	}
 
 }

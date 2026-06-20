@@ -406,8 +406,6 @@ public class AsyncStatelessMcpToolProviderTests {
 
 			@McpTool(name = "void-tool", description = "Tool returning Mono<Void>")
 			public Mono<Void> voidTool(String input) {
-				// Simulate some side effect
-				System.out.println("Processing: " + input);
 				return Mono.empty();
 			}
 
@@ -832,8 +830,6 @@ public class AsyncStatelessMcpToolProviderTests {
 
 			@McpTool(name = "void-tool", description = "Tool with void return")
 			public Mono<Void> voidTool(String input) {
-				// Simulate some side effect
-				System.out.println("Processing: " + input);
 				return Mono.empty();
 			}
 

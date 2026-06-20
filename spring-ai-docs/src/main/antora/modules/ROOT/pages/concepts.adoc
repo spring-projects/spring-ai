@@ -122,7 +122,7 @@ This intricacy has led to the emergence of a specialized field involving the cre
 
 image::structured-output-architecture.jpg[Structured Output Converter Architecture, width=800, align="center"]
 
-The xref:api/structured-output-converter.adoc#_structuredoutputconverter[Structured output conversion] employs meticulously crafted prompts, often necessitating multiple interactions with the model to achieve the desired formatting.
+The xref:api/structured-output-converter.adoc#StructuredOutputConverter[Structured output conversion] employs meticulously crafted prompts, often necessitating multiple interactions with the model to achieve the desired formatting.
 
 == Bringing Your Data & APIs to the AI Model
 

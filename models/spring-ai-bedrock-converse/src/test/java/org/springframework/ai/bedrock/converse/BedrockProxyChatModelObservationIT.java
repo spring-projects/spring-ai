@@ -47,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration tests for observation instrumentation in {@link BedrockProxyChatModel}.
  *
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  */
 @SpringBootTest(classes = BedrockProxyChatModelObservationIT.Config.class,
 		properties = "spring.ai.retry.on-http-codes=429")
@@ -78,12 +79,13 @@ public class BedrockProxyChatModelObservationIT {
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
+		assertThat(chatResponse.getResult()).isNotNull();
 		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata, "[\"end_turn\"]");
+		validate(responseMetadata, "[\"end_turn\"]", false);
 	}
 
 	@Test
@@ -116,11 +118,11 @@ public class BedrockProxyChatModelObservationIT {
 		ChatResponseMetadata responseMetadata = lastChatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata, "[\"end_turn\"]");
+		validate(responseMetadata, "[\"end_turn\"]", true);
 	}
 
-	private void validate(ChatResponseMetadata responseMetadata, String finishReasons) {
-		TestObservationRegistryAssert.assertThat(this.observationRegistry)
+	private void validate(ChatResponseMetadata responseMetadata, String finishReasons, boolean streaming) {
+		var observationAssert = TestObservationRegistryAssert.assertThat(this.observationRegistry)
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
 			.that()
@@ -153,6 +155,13 @@ public class BedrockProxyChatModelObservationIT {
 					String.valueOf(responseMetadata.getUsage().getTotalTokens()))
 			.hasBeenStarted()
 			.hasBeenStopped();
+		if (streaming) {
+			observationAssert.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_STREAM.asString(), "true");
+		}
+		else {
+			observationAssert
+				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_STREAM.asString());
+		}
 	}
 
 	@SpringBootConfiguration
@@ -172,7 +181,7 @@ public class BedrockProxyChatModelObservationIT {
 				.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
 				.region(Region.US_EAST_1)
 				.observationRegistry(observationRegistry)
-				.defaultOptions(BedrockChatOptions.builder().model(modelId).build())
+				.options(BedrockChatOptions.builder().model(modelId).build())
 				.build();
 		}
 

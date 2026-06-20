@@ -23,17 +23,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class MockWeatherService implements Function<MockWeatherService.Request, MockWeatherService.Response> {
 
-	private final Logger logger = LoggerFactory.getLogger(MockWeatherService.class);
-
 	@Override
 	public Response apply(Request request) {
-		logger.info("Received weather request for location: " + request.location() + ", lat: " + request.lat()
-				+ ", lon: " + request.lon() + ", unit: " + request.unit());
 		double temperature = 0;
 		if (request.location().contains("Paris")) {
 			temperature = 15;

@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.mapping.DenseVectorSimilarity;
@@ -267,7 +266,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 						.queryString(qs -> qs.query(getElasticsearchQueryString(searchRequest.getFilterExpression())))))
 				.size(searchRequest.getTopK()), ObjectNode.class);
 
-			return res.hits().hits().stream().map(this::toDocument).collect(Collectors.toList());
+			return res.hits().hits().stream().map(this::toDocument).toList();
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);

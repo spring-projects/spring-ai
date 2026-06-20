@@ -18,6 +18,8 @@ package org.springframework.ai.moderation;
 
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * The Categories class represents a set of categories used to classify content. Each
  * category can be either true (indicating that the content belongs to the category) or
@@ -150,7 +152,7 @@ public final class Categories {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}

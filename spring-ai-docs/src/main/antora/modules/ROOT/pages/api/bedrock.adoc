@@ -98,22 +98,22 @@ NOTE: For example, using Spring-AI and https://spring.io/projects/spring-cloud-a
 
 === Enable selected Bedrock model
 
-NOTE: By default, all models are disabled. You have to enable the chosen Bedrock models explicitly using the `spring.ai.bedrock.<model>.embedding.enabled=true` property.
+NOTE: By default, all models are disabled. You have to enable the chosen Bedrock models explicitly using the `spring.ai.model.embedding=<model-name>` property.
 
-Here are the supported `<model>`s:
+Here are the supported `<model-name>`s:
 
 [cols="|,|,|,|"]
 |====
 | Model
-| cohere
-| titan (no batch support yet)
+| bedrock-cohere
+| bedrock-titan (no batch support yet)
 |====
 
-For example, to enable the Bedrock Cohere embedding model, you need to set `spring.ai.bedrock.cohere.embedding.enabled=true`.
+For example, to enable the Bedrock Cohere embedding model, you need to set `spring.ai.model.embedding=bedrock-cohere`.
 
 Next, you can use the `spring.ai.bedrock.<model>.embedding.*` properties to configure each model as provided.
 
 For more information, refer to the documentation below for each supported model.
 
-* xref:api/embeddings/bedrock-cohere-embedding.adoc[Spring AI Bedrock Cohere Embeddings]: `spring.ai.bedrock.cohere.embedding.enabled=true`
-* xref:api/embeddings/bedrock-titan-embedding.adoc[Spring AI Bedrock Titan Embeddings]: `spring.ai.bedrock.titan.embedding.enabled=true`
+* xref:api/embeddings/bedrock-cohere-embedding.adoc[Spring AI Bedrock Cohere Embeddings]: `spring.ai.model.embedding=bedrock-cohere`
+* xref:api/embeddings/bedrock-titan-embedding.adoc[Spring AI Bedrock Titan Embeddings]: `spring.ai.model.embedding=bedrock-titan`

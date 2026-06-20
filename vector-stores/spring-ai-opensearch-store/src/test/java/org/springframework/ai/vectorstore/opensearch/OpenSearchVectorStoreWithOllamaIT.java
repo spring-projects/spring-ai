@@ -201,7 +201,7 @@ class OpenSearchVectorStoreWithOllamaIT {
 		public EmbeddingModel embeddingModel() {
 			return OllamaEmbeddingModel.builder()
 				.ollamaApi(OllamaApi.builder().build())
-				.defaultOptions(OllamaEmbeddingOptions.builder().model(OllamaModel.MXBAI_EMBED_LARGE).build())
+				.options(OllamaEmbeddingOptions.builder().model(OllamaModel.MXBAI_EMBED_LARGE).build())
 				.build();
 		}
 

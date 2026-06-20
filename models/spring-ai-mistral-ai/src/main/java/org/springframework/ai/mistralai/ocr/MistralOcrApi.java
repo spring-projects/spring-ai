@@ -252,7 +252,7 @@ public class MistralOcrApi {
 			@JsonProperty("bottom_right_y") Integer bottomRightY, @JsonProperty("image_base64") String imageBase64) {
 
 		@Override
-		public boolean equals(Object o) {
+		public boolean equals(@Nullable Object o) {
 			if (this == o) {
 				return true;
 			}

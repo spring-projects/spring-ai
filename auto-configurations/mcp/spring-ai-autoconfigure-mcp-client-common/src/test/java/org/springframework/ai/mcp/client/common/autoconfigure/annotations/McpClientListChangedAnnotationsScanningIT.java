@@ -69,8 +69,8 @@ public class McpClientListChangedAnnotationsScanningIT {
 						new McpSchema.Prompt("prompt-1", "a test prompt", Collections.emptyList()),
 						new McpSchema.Prompt("prompt-2", "another test prompt", Collections.emptyList()));
 				List<McpSchema.Resource> updatedResources = List.of(
-						McpSchema.Resource.builder().name("resource-1").uri("file:///resource/1").build(),
-						McpSchema.Resource.builder().name("resource-2").uri("file:///resource/2").build());
+						McpSchema.Resource.builder("resource-1", "file:///resource/1").build(),
+						McpSchema.Resource.builder("resource-2", "file:///resource/2").build());
 
 				registry.handleToolListChanged("test-client", updatedTools);
 				registry.handleResourceListChanged("test-client", updatedResources);
@@ -100,8 +100,8 @@ public class McpClientListChangedAnnotationsScanningIT {
 						new McpSchema.Prompt("prompt-1", "a test prompt", Collections.emptyList()),
 						new McpSchema.Prompt("prompt-2", "another test prompt", Collections.emptyList()));
 				List<McpSchema.Resource> updatedResources = List.of(
-						McpSchema.Resource.builder().name("resource-1").uri("file:///resource/1").build(),
-						McpSchema.Resource.builder().name("resource-2").uri("file:///resource/2").build());
+						McpSchema.Resource.builder("resource-1", "file:///resource/1").build(),
+						McpSchema.Resource.builder("resource-2", "file:///resource/2").build());
 
 				registry.handleToolListChanged("test-client", updatedTools).block();
 				registry.handleResourceListChanged("test-client", updatedResources).block();

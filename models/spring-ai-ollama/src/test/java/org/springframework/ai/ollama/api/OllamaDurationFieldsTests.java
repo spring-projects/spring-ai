@@ -18,7 +18,7 @@ package org.springframework.ai.ollama.api;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.util.JsonHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,10 +28,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class OllamaDurationFieldsTests {
 
+	private static final JsonHelper jsonHelper = new JsonHelper();
+
 	@Test
 	public void testDurationFields() {
 
-		var value = ModelOptionsUtils.jsonToObject("""
+		var value = jsonHelper.fromJson("""
 				{
 					"model": "llama3.2",
 					"created_at": "2023-08-04T19:22:45.499127Z",

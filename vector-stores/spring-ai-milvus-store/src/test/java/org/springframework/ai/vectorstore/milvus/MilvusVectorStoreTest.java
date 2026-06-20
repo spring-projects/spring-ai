@@ -19,9 +19,11 @@ package org.springframework.ai.vectorstore.milvus;
 import java.util.List;
 
 import io.milvus.client.MilvusServiceClient;
+import io.milvus.grpc.MutationResult;
 import io.milvus.grpc.SearchResultData;
 import io.milvus.grpc.SearchResults;
 import io.milvus.param.R;
+import io.milvus.param.dml.DeleteParam;
 import io.milvus.param.dml.SearchParam;
 import io.milvus.response.SearchResultsWrapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +52,7 @@ import static org.mockito.Mockito.when;
  * Unit test class for {@link MilvusVectorStore}.
  *
  * @author waileong
+ * @author Soby Chacko
  */
 @ExtendWith(MockitoExtension.class)
 class MilvusVectorStoreTest {
@@ -136,6 +139,27 @@ class MilvusVectorStoreTest {
 			assertThat(capturedParam.getExpr()).isEqualTo("metadata[\"age\"] > 30"); // filter
 			assertThat(capturedParam.getParams()).isEqualTo("{}");
 		}
+	}
+
+	@Test
+	void shouldEscapeIdsWhenDeletingByIdList() {
+		MutationResult mutationResult = MutationResult.newBuilder().setDeleteCnt(3).build();
+		when(this.milvusClient.delete(any(DeleteParam.class))).thenReturn(R.success(mutationResult));
+
+		// Ids crafted to break out of a naive `'<id>'` quoting and inject filter syntax,
+		// plus values containing backslash, double quote and newline.
+		List<String> ids = List.of("plain-id", "x' || doc_id != 'x", "with\"dquote", "back\\slash\nnewline");
+
+		this.vectorStore.doDelete(ids);
+
+		ArgumentCaptor<DeleteParam> captor = ArgumentCaptor.forClass(DeleteParam.class);
+		verify(this.milvusClient).delete(captor.capture());
+
+		// Every id must be rendered as a JSON-escaped double-quoted literal, matching
+		// the escaping used by MilvusFilterExpressionConverter for Filter.Expression
+		// values.
+		assertThat(captor.getValue().getExpr()).isEqualTo(
+				"doc_id in [\"plain-id\",\"x' || doc_id != 'x\",\"with\\\"dquote\",\"back\\\\slash\\nnewline\"]");
 	}
 
 	private SearchParam performSimilaritySearch(MockedStatic<EmbeddingUtils> mockedEmbeddingUtils,

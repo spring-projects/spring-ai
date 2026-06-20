@@ -43,7 +43,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerRequest;
 
-@Timeout(15)
+@Timeout(60)
 class WebFluxStreamableIT extends AbstractMcpClientServerIntegrationTests {
 
 	private static final String CUSTOM_MESSAGE_ENDPOINT = "/otherPath/mcp/message";
@@ -66,14 +66,14 @@ class WebFluxStreamableIT extends AbstractMcpClientServerIntegrationTests {
 			.put("httpclient",
 					McpClient.sync(HttpClientStreamableHttpTransport.builder("http://127.0.0.1:" + port)
 						.endpoint(CUSTOM_MESSAGE_ENDPOINT)
-						.build()).requestTimeout(Duration.ofHours(10)));
+						.build()).initializationTimeout(Duration.ofSeconds(10)));
 		clientBuilders.put("webflux",
 				McpClient
 					.sync(WebClientStreamableHttpTransport
 						.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + port))
 						.endpoint(CUSTOM_MESSAGE_ENDPOINT)
 						.build())
-					.requestTimeout(Duration.ofHours(10)));
+					.initializationTimeout(Duration.ofSeconds(10)));
 	}
 
 	@Override

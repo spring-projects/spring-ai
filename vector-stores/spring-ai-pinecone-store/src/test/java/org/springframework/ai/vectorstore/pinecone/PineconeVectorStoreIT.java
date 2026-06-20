@@ -65,8 +65,8 @@ public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 
 	private static final String PINECONE_INDEX_NAME = "spring-ai-test-index";
 
-	// Use unique namespace per test run for isolation when env is not set; set
-	// PINECONE_NAMESPACE="" for free tier (no namespaces).
+	// Use a unique namespace per test run for isolation when PINECONE_NAMESPACE is not
+	// set.
 	private static String PINECONE_NAMESPACE;
 
 	private static final String CUSTOM_CONTENT_FIELD_NAME = "article";

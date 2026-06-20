@@ -198,13 +198,13 @@ dependencies {
 }
 ----
 
-Create a `JedisPooled` bean:
+Create a `RedisClient` bean:
 
 [source,java]
 ----
 @Bean
-public JedisPooled jedisPooled() {
-    return new JedisPooled("<host>", 6379);
+public RedisClient jedisClient() {
+    return RedisClient.builder().hostAndPort("<host>", 6379).build();
 }
 ----
 
@@ -213,8 +213,8 @@ Then create the `RedisVectorStore` bean using the builder pattern:
 [source,java]
 ----
 @Bean
-public VectorStore vectorStore(JedisPooled jedisPooled, EmbeddingModel embeddingModel) {
-    return RedisVectorStore.builder(jedisPooled, embeddingModel)
+public VectorStore vectorStore(RedisClient jedisClient, EmbeddingModel embeddingModel) {
+    return RedisVectorStore.builder(jedisClient, embeddingModel)
         .indexName("custom-index")                // Optional: defaults to "spring-ai-index"
         .prefix("custom-prefix")                  // Optional: defaults to "embedding:"
         .contentFieldName("content")              // Optional: field for document content
@@ -238,7 +238,7 @@ public VectorStore vectorStore(JedisPooled jedisPooled, EmbeddingModel embedding
 // This can be any EmbeddingModel implementation
 @Bean
 public EmbeddingModel embeddingModel() {
-    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+    return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
 }
 ----
 
@@ -250,15 +250,15 @@ The `metadataFields` above registers filterable metadata fields: `country` of ty
 
 == Accessing the Native Client
 
-The Redis Vector Store implementation provides access to the underlying native Redis client (`JedisPooled`) through the `getNativeClient()` method:
+The Redis Vector Store implementation provides access to the underlying native Redis client (`RedisClient`) through the `getNativeClient()` method:
 
 [source,java]
 ----
 RedisVectorStore vectorStore = context.getBean(RedisVectorStore.class);
-Optional<JedisPooled> nativeClient = vectorStore.getNativeClient();
+Optional<RedisClient> nativeClient = vectorStore.getNativeClient();
 
 if (nativeClient.isPresent()) {
-    JedisPooled jedis = nativeClient.get();
+    RedisClient jedisClient = nativeClient.get();
     // Use the native client for Redis-specific operations
 }
 ----
@@ -277,7 +277,7 @@ Each metric is automatically normalized to a 0-1 similarity score, where 1 is mo
 
 [source,java]
 ----
-RedisVectorStore vectorStore = RedisVectorStore.builder(jedisPooled, embeddingModel)
+RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
     .distanceMetric(DistanceMetric.COSINE)  // or L2, IP
     .build();
 ----
@@ -288,7 +288,7 @@ The Redis Vector Store uses the HNSW (Hierarchical Navigable Small World) algori
 
 [source,java]
 ----
-RedisVectorStore vectorStore = RedisVectorStore.builder(jedisPooled, embeddingModel)
+RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
     .vectorAlgorithm(Algorithm.HNSW)
     .hnswM(32)                    // Maximum outgoing connections per node (default: 16)
     .hnswEfConstruction(100)      // Connections during index building (default: 200)
@@ -306,7 +306,7 @@ For smaller datasets or when exact results are required, use the FLAT algorithm 
 
 [source,java]
 ----
-RedisVectorStore vectorStore = RedisVectorStore.builder(jedisPooled, embeddingModel)
+RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
     .vectorAlgorithm(Algorithm.FLAT)
     .build();
 ----
@@ -338,7 +338,7 @@ Configure text search behavior at construction time:
 
 [source,java]
 ----
-RedisVectorStore vectorStore = RedisVectorStore.builder(jedisPooled, embeddingModel)
+RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
     .textScorer(TextScorer.TFIDF)                    // Text scoring algorithm
     .inOrder(true)                                   // Match terms in order
     .stopwords(Set.of("is", "a", "the", "and"))      // Ignore common words
@@ -376,7 +376,7 @@ You can also set a default range threshold at construction time:
 
 [source,java]
 ----
-RedisVectorStore vectorStore = RedisVectorStore.builder(jedisPooled, embeddingModel)
+RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
     .defaultRangeThreshold(0.8)  // Set default threshold
     .build();
 
@@ -551,14 +551,14 @@ For more control, you can manually configure the semantic cache components:
 public class SemanticCacheConfig {
 
     @Bean
-    public JedisPooled jedisPooled() {
-        return new JedisPooled("localhost", 6379);
+    public RedisClient jedisClient() {
+        return RedisClient.builder().hostAndPort("localhost", 6379).build();
     }
 
     @Bean
-    public SemanticCache semanticCache(JedisPooled jedisPooled, EmbeddingModel embeddingModel) {
+    public SemanticCache semanticCache(RedisClient jedisClient, EmbeddingModel embeddingModel) {
         return DefaultSemanticCache.builder()
-            .jedisClient(jedisPooled)
+            .jedisClient(jedisClient)
             .embeddingModel(embeddingModel)
             .distanceThreshold(0.3)           // Lower = stricter matching
             .indexName("my-semantic-cache")
@@ -583,13 +583,13 @@ For multi-tenant applications or when you need separate cache spaces, use differ
 ----
 // Create isolated caches for different users or contexts
 SemanticCache user1Cache = DefaultSemanticCache.builder()
-    .jedisClient(jedisPooled)
+    .jedisClient(jedisClient)
     .embeddingModel(embeddingModel)
     .indexName("user-1-cache")
     .build();
 
 SemanticCache user2Cache = DefaultSemanticCache.builder()
-    .jedisClient(jedisPooled)
+    .jedisClient(jedisClient)
     .embeddingModel(embeddingModel)
     .indexName("user-2-cache")
     .build();
@@ -682,14 +682,14 @@ Increases cache hit rate but may return less relevant cached responses.
 ----
 // Strict matching - only very similar queries hit the cache
 SemanticCache strictCache = DefaultSemanticCache.builder()
-    .jedisClient(jedisPooled)
+    .jedisClient(jedisClient)
     .embeddingModel(embeddingModel)
     .distanceThreshold(0.2)  // Strict (distance-based, lower = stricter)
     .build();
 
 // Lenient matching - broader semantic similarity accepted
 SemanticCache lenientCache = DefaultSemanticCache.builder()
-    .jedisClient(jedisPooled)
+    .jedisClient(jedisClient)
     .embeddingModel(embeddingModel)
     .distanceThreshold(0.5)  // Lenient
     .build();

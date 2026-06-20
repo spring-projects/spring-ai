@@ -21,9 +21,9 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
@@ -48,7 +48,7 @@ import org.springframework.util.Assert;
  */
 public final class ContextualQueryAugmenter implements QueryAugmenter {
 
-	private static final Logger logger = LoggerFactory.getLogger(ContextualQueryAugmenter.class);
+	private static final Log logger = LogFactory.getLog(ContextualQueryAugmenter.class);
 
 	private static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = new PromptTemplate("""
 			Context information is below.

@@ -102,8 +102,9 @@ public class GemFireAiSearchFilterExpressionConverter extends AbstractFilterExpr
 
 	@Override
 	public void doKey(Key key, StringBuilder context) {
-		var identifier = hasOuterQuotes(key.key()) ? removeOuterQuotes(key.key()) : key.key();
-		context.append(identifier.trim()).append(":");
+		var identifier = key.key();
+		emitLuceneString(identifier.trim(), context);
+		context.append(":");
 	}
 
 	@Override

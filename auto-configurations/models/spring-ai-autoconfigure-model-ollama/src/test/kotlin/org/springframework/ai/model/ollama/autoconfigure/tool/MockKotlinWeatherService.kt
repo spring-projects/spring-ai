@@ -65,10 +65,10 @@ data class KotlinRequest(
 	val location: String,
 
 	@get:JsonPropertyDescription("The city latitude")
-	val lat: Double,
+	val lat: Double = 0.0,
 
 	@get:JsonPropertyDescription("The city longitude")
-	val lon: Double,
+	val lon: Double = 0.0,
 
 	@get:JsonPropertyDescription("Temperature unit")
 	val unit: Unit = Unit.C

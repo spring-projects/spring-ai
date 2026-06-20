@@ -55,19 +55,26 @@ Use the `spring.ai.anthropic.*` properties to configure the Anthropic connection
 
 | `spring.ai.anthropic.api-key` | Anthropic API key | -
 | `spring.ai.anthropic.base-url` | API base URL | `https://api.anthropic.com`
-| `spring.ai.anthropic.chat.options.model` | Model name | `claude-haiku-4-5`
-| `spring.ai.anthropic.chat.options.max-tokens` | Maximum tokens | `4096`
-| `spring.ai.anthropic.chat.options.temperature` | Sampling temperature | -
-| `spring.ai.anthropic.chat.options.top-p` | Top-p sampling | -
-| `spring.ai.anthropic.chat.options.top-k` | Top-k sampling | -
-| `spring.ai.anthropic.chat.options.web-search-tool.max-uses` | Maximum number of web searches per request | -
-| `spring.ai.anthropic.chat.options.web-search-tool.allowed-domains` | Comma-separated list of domains to restrict search results to | -
-| `spring.ai.anthropic.chat.options.web-search-tool.blocked-domains` | Comma-separated list of domains to exclude from search results | -
-| `spring.ai.anthropic.chat.options.web-search-tool.user-location.city` | City for localizing search results | -
-| `spring.ai.anthropic.chat.options.web-search-tool.user-location.country` | ISO 3166-1 alpha-2 country code | -
-| `spring.ai.anthropic.chat.options.web-search-tool.user-location.region` | Region or state | -
-| `spring.ai.anthropic.chat.options.web-search-tool.user-location.timezone` | IANA timezone identifier | -
-| `spring.ai.anthropic.chat.options.service-tier` | Capacity routing: `auto` (use priority if available) or `standard_only` (always standard). See https://docs.claude.com/en/api/service-tiers[Service Tiers]. | -
+| `spring.ai.anthropic.timeout` | Request timeout for the Anthropic client | `60s`
+| `spring.ai.anthropic.max-retries` | Maximum number of retries for failed requests | `2`
+| `spring.ai.anthropic.custom-headers.*` | Custom HTTP headers to add to all Anthropic client requests | -
+| `spring.ai.anthropic.chat.model` | Model name | `claude-haiku-4-5`
+| `spring.ai.anthropic.chat.max-tokens` | Maximum tokens | `4096`
+| `spring.ai.anthropic.chat.temperature` | Sampling temperature | -
+| `spring.ai.anthropic.chat.top-p` | Top-p sampling | -
+| `spring.ai.anthropic.chat.top-k` | Top-k sampling | -
+| `spring.ai.anthropic.chat.cache-options.strategy` | Caching strategy to use | `NONE`
+| `spring.ai.anthropic.chat.cache-options.multi-block-system-caching` | Use separate blocks for each system message | `false`
+| `spring.ai.anthropic.chat.http-headers` | Per-request HTTP headers to pass to individual API calls. | -
+| `spring.ai.anthropic.chat.inference-geo` | Geographic region where the request is processed (`us` or `eu`) | -
+| `spring.ai.anthropic.chat.web-search-tool.max-uses` | Maximum number of web searches per request | -
+| `spring.ai.anthropic.chat.web-search-tool.allowed-domains` | Comma-separated list of domains to restrict search results to | -
+| `spring.ai.anthropic.chat.web-search-tool.blocked-domains` | Comma-separated list of domains to exclude from search results | -
+| `spring.ai.anthropic.chat.web-search-tool.user-location.city` | City for localizing search results | -
+| `spring.ai.anthropic.chat.web-search-tool.user-location.country` | ISO 3166-1 alpha-2 country code | -
+| `spring.ai.anthropic.chat.web-search-tool.user-location.region` | Region or state | -
+| `spring.ai.anthropic.chat.web-search-tool.user-location.timezone` | IANA timezone identifier | -
+| `spring.ai.anthropic.chat.service-tier` | Capacity routing: `auto` (use priority if available) or `standard_only` (always standard). See https://docs.claude.com/en/api/service-tiers[Service Tiers]. | -
 |====
 
 == Manual Configuration
@@ -114,7 +121,9 @@ var chatOptions = AnthropicChatOptions.builder()
     .apiKey(System.getenv("ANTHROPIC_API_KEY"))
     .build();
 
-var chatModel = new AnthropicChatModel(chatOptions);
+var chatModel = AnthropicChatModel.builder()
+    .options(chatOptions)
+    .build();
 ----
 
 Or set the environment variable and let the SDK auto-detect it:
@@ -127,11 +136,12 @@ export ANTHROPIC_API_KEY=<your-api-key>
 [source,java]
 ----
 // API key will be detected from ANTHROPIC_API_KEY environment variable
-var chatModel = new AnthropicChatModel(
-    AnthropicChatOptions.builder()
+var chatModel = AnthropicChatModel.builder()
+    .options(AnthropicChatOptions.builder()
         .model("claude-sonnet-4-20250514")
         .maxTokens(1024)
-        .build());
+        .build())
+    .build();
 ----
 
 === Basic Usage
@@ -150,7 +160,7 @@ Flux<ChatResponse> stream = chatModel.stream(
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/AnthropicChatOptions.java[AnthropicChatOptions.java] class provides model configurations such as the model to use, temperature, max tokens, etc.
 
-On start-up, configure default options with the `AnthropicChatModel(options)` constructor.
+On start-up, configure default options with the `AnthropicChatModel.builder().defaultOptions(options).build()` constructor.
 
 At run-time, you can override the default options by adding new, request-specific options to the `Prompt` call.
 For example, to override the default model and temperature for a specific request:
@@ -176,8 +186,8 @@ ChatResponse response = chatModel.call(
 | model | Name of the Claude model to use. Models include: `claude-sonnet-4-20250514`, `claude-opus-4-20250514`, `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022`, etc. See https://docs.anthropic.com/en/docs/about-claude/models[Claude Models]. | `claude-sonnet-4-20250514`
 | maxTokens | The maximum number of tokens to generate in the response. | 4096
 | temperature | Controls randomness in the response. Higher values make output more random, lower values make it more deterministic. Range: 0.0-1.0 | 1.0
-| topP | Nucleus sampling parameter. The model considers tokens with top_p probability mass. | -
-| topK | Only sample from the top K options for each token. | -
+| topP | Nucleus sampling parameter. The model considers tokens with top_p probability mass. *Supported on Claude Opus 4.6 and earlier models only. Deprecated by Anthropic for models released after Claude Opus 4.6 (e.g. `claude-opus-4-7`); values `< 0.99` are rejected with HTTP 400, and values `>= 0.99` are accepted as a backward-compatibility no-op (no actual filtering applied).* | -
+| topK | Only sample from the top K options for each token. *Supported on Claude Opus 4.6 and earlier models only. Deprecated by Anthropic for models released after Claude Opus 4.6 (e.g. `claude-opus-4-7`); any value is rejected with HTTP 400 on those models.* | -
 | stopSequences | Custom sequences that will cause the model to stop generating. | -
 | apiKey | The API key for authentication. Auto-detects from `ANTHROPIC_API_KEY` environment variable if not set. | -
 | baseUrl | The base URL for the Anthropic API. | https://api.anthropic.com
@@ -186,9 +196,10 @@ ChatResponse response = chatModel.call(
 | proxy | Proxy settings for the HTTP client. | -
 | customHeaders | Custom HTTP headers to include on all requests (client-level). | -
 | httpHeaders | Per-request HTTP headers. These are added to individual API calls via `MessageCreateParams.putAdditionalHeader()`. Useful for request-level tracking, beta API headers, or routing. | -
+| cacheOptions | Options for configuring prompt caching behavior. Includes caching strategy, multi-block caching, TTL, and content length requirements. | -
 | thinking | Thinking configuration. Use the convenience builders `thinkingEnabled(budgetTokens)`, `thinkingEnabled(budgetTokens, display)`, `thinkingAdaptive()`, `thinkingAdaptive(display)`, or `thinkingDisabled()`, or pass a raw `ThinkingConfigParam`. The `display` parameter controls how thinking content appears in the response: `SUMMARIZED` (condensed summary) or `OMITTED` (redacted, signature only). | -
 | outputConfig | Output configuration for structured output (JSON schema) and effort control. Use `outputConfig(OutputConfig)` for full control, or the convenience methods `outputSchema(String)` and `effort(OutputConfig.Effort)`. Requires `claude-sonnet-4-6` or newer. | -
-| inferenceGeo | Controls the geographic region where the request is processed. Supported values: `us`, `eu`. Used for data residency compliance. Configurable via `spring.ai.anthropic.chat.options.inference-geo`. | -
+| inferenceGeo | Controls the geographic region where the request is processed. Supported values: `us`, `eu`. Used for data residency compliance. Configurable via `spring.ai.anthropic.chat.inference-geo`. | -
 | serviceTier | Controls capacity routing for the request. Use `MessageCreateParams.ServiceTier.AUTO` to opportunistically use priority capacity, or `STANDARD_ONLY` to always use standard capacity. See https://docs.claude.com/en/api/service-tiers[Service Tiers]. | -
 |====
 
@@ -200,41 +211,64 @@ ChatResponse response = chatModel.call(
 
 | toolChoice | Controls which tool (if any) is called by the model. Use `ToolChoiceAuto`, `ToolChoiceAny`, `ToolChoiceTool`, or `ToolChoiceNone`. | AUTO
 | toolCallbacks | List of tool callbacks to register with the model. | -
-| toolNames | Set of tool names to be resolved at runtime. | -
-| internalToolExecutionEnabled | If false, tool calls are proxied to the client for manual handling. If true, Spring AI handles tool calls internally. | true
 | disableParallelToolUse | When true, the model will use at most one tool per response. | false
 |====
 
 TIP: In addition to the model-specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/AnthropicChatOptions.java[AnthropicChatOptions], you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
 
-== Tool Calling
+== Rate Limit Metadata
 
-You can register custom Java functions or methods with the `AnthropicChatModel` and have Claude intelligently choose to output a JSON object containing arguments to call one or many of the registered functions/tools.
-This is a powerful technique to connect the LLM capabilities with external tools and APIs.
-Read more about xref:api/tools.adoc[Tool Calling].
+The Anthropic API includes https://docs.anthropic.com/en/api/rate-limits#response-headers[rate limit headers] on every response that report your current request and token budgets along with when each window resets.
+Spring AI exposes this data through the standard `ChatResponseMetadata#getRateLimit()` accessor, which returns an `AnthropicRateLimit` populated from the response headers.
 
-=== Basic Tool Calling
+The portable `RateLimit` interface exposes the request and token families:
 
 [source,java]
 ----
-var chatOptions = AnthropicChatOptions.builder()
-    .model("claude-sonnet-4-20250514")
-    .toolCallbacks(List.of(
-        FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
-            .description("Get the weather in location")
-            .inputType(WeatherService.Request.class)
-            .build()))
-    .build();
+ChatResponse response = chatModel.call(prompt);
 
-var chatModel = new AnthropicChatModel(chatOptions);
+RateLimit rateLimit = response.getMetadata().getRateLimit();
+rateLimit.getRequestsLimit();      // overall request ceiling
+rateLimit.getRequestsRemaining();  // requests left in the current window
+rateLimit.getRequestsReset();      // time until the request window resets
 
-ChatResponse response = chatModel.call(
-    new Prompt("What's the weather like in San Francisco?", chatOptions));
+rateLimit.getTokensLimit();        // overall token ceiling
+rateLimit.getTokensRemaining();    // tokens left in the current window
+rateLimit.getTokensReset();        // time until the token window resets
 ----
+
+Anthropic also reports separate buckets for input tokens and output tokens.
+These are exposed by the `AnthropicRateLimit` concrete type:
+
+[source,java]
+----
+if (response.getMetadata().getRateLimit() instanceof AnthropicRateLimit anthropic) {
+    anthropic.getInputTokensLimit();
+    anthropic.getInputTokensRemaining();
+    anthropic.getInputTokensReset();
+
+    anthropic.getOutputTokensLimit();
+    anthropic.getOutputTokensRemaining();
+    anthropic.getOutputTokensReset();
+}
+----
+
+If Anthropic does not return any rate-limit headers on a given response, `getRateLimit()` returns an `EmptyRateLimit` instance instead, matching the convention used by other Spring AI providers.
+
+Rate-limit metadata is populated on both the synchronous `call(Prompt)` and the streaming `stream(Prompt)` paths.
+For streaming responses the headers are read once at stream start and attached to the response chunk that carries the final usage, so `getRateLimit()` resolves to a populated `AnthropicRateLimit` there.
+
+NOTE: To read the response headers, the streaming path consumes the Anthropic SDK's blocking stream on a `Schedulers.boundedElastic()` worker, so a streaming call holds a worker thread for the duration of the stream.
+
+== Tool Calling
+
+`AnthropicChatModel` supports tool calling. Claude can request tool execution but does not run tools itself — Spring AI handles execution.
+
+For most applications, use `ChatClient` with the auto-registered `ToolCallingAdvisor` — see xref:api/tools.adoc[Tool Calling]. For low-level control where you drive the loop yourself (for example, when combining tool calling with xref:_prompt_caching[prompt caching]), see xref:api/tools/chatmodel-tool-calling.adoc[ChatModel Tool Calling].
 
 === Tool Choice Options
 
-Control how Claude uses tools with the `toolChoice` option:
+Control which tool Claude selects with the `toolChoice` option:
 
 [source,java]
 ----
@@ -269,29 +303,6 @@ The Anthropic Java SDK provides convenient static factory methods for common too
 * `ToolChoice.any()` can be used instead of `ToolChoice.ofAny(...)`.
 * `ToolChoice.none()` can be used instead of `ToolChoice.ofNone(...)`.
 ====
-
-=== Streaming Tool Calling
-
-The Anthropic SDK module fully supports tool calling in streaming mode. When Claude decides to call a tool during streaming:
-
-1. Tool call arguments are accumulated from partial JSON deltas
-2. Tools are executed when the content block completes
-3. Results are sent back to Claude
-4. The conversation continues recursively until Claude provides a final response
-
-[source,java]
-----
-Flux<ChatResponse> stream = chatModel.stream(
-    new Prompt("What's the weather in Paris, Tokyo, and New York?", chatOptions));
-
-String response = stream
-    .collectList()
-    .block()
-    .stream()
-    .map(r -> r.getResult().getOutput().getContent())
-    .filter(Objects::nonNull)
-    .collect(Collectors.joining());
-----
 
 == Streaming
 
@@ -920,7 +931,24 @@ var cacheOptions = AnthropicCacheOptions.builder()
 | `messageTypeMinContentLength` | Minimum content length required before caching a message type. | `1`
 | `contentLengthFunction` | Custom function to compute content length (e.g., token counting). | `String::length`
 | `multiBlockSystemCaching` | When `true`, each system message becomes a separate cacheable block; cache control is applied to the second-to-last block (static prefix pattern). When `false`, all system messages are joined into one block. | `false`
+| `cacheToolResults` | When `true`, a cache breakpoint is placed on the last tool result message of a request so tool outputs are cached across tool-calling rounds. Takes effect with `CONVERSATION_HISTORY`. | `false`
 |====
+
+=== Caching Tool Results
+
+When a turn triggers tool calls, each round appends an assistant `tool_use` message and a user `tool_result` message, and the growing history is sent back to Anthropic on every round. By default the `CONVERSATION_HISTORY` breakpoint lands on the last user message, so tool results — which are appended after it — fall outside every breakpoint and are billed as uncached input on each round. This is wasteful when tool outputs are large.
+
+Enable `cacheToolResults` to place a breakpoint on the last tool result block of the request. On the next round Anthropic reads the previous round's tool results from cache instead of reprocessing them:
+
+[source,java]
+----
+var cacheOptions = AnthropicCacheOptions.builder()
+    .strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+    .cacheToolResults(true)
+    .build();
+----
+
+The breakpoint moves to the latest tool result on each round, so the previous rounds' tool outputs are read from cache while the newest is written. This consumes one additional cache breakpoint (Anthropic allows up to four per request), leaving room for the tool, system, and last-user breakpoints under `CONVERSATION_HISTORY`. The TTL and minimum content length are configurable via `messageTypeTtl(MessageType.TOOL, ...)` and `messageTypeMinContentLength(MessageType.TOOL, ...)`.
 
 === Multi-Block System Caching
 
@@ -942,6 +970,16 @@ ChatResponse response = chatModel.call(
             .model("claude-sonnet-4-20250514")
             .cacheOptions(cacheOptions)
             .build()));
+----
+
+=== Spring Boot Configuration
+
+Configure prompt caching via `application.properties` or `application.yml`:
+
+[source,properties]
+----
+spring.ai.anthropic.chat.cache-options.strategy=SYSTEM_AND_TOOLS
+spring.ai.anthropic.chat.cache-options.multi-block-system-caching=true
 ----
 
 === Accessing Cache Token Usage
@@ -1118,7 +1156,7 @@ ChatResponse response = chatModel.call(new Prompt("Tell me about France.", optio
 
 === StructuredOutputChatOptions Interface
 
-`AnthropicChatOptions` implements the `StructuredOutputChatOptions` interface, which provides portable `getOutputSchema()` and `setOutputSchema(String)` methods. This allows structured output to work with Spring AI's generic structured output infrastructure.
+`AnthropicChatOptions` implements the `StructuredOutputChatOptions` interface, which provides portable `getOutputSchema()` method. This allows structured output to work with Spring AI's generic structured output infrastructure.
 
 == Service Tier
 
@@ -1128,7 +1166,7 @@ Via Spring Boot properties:
 
 [source,properties]
 ----
-spring.ai.anthropic.chat.options.service-tier=auto
+spring.ai.anthropic.chat.service-tier=auto
 ----
 
 Or programmatically per-request:
@@ -1182,7 +1220,9 @@ public class ChatController {
             .maxTokens(1024)
             .apiKey(System.getenv("ANTHROPIC_API_KEY"))
             .build();
-        this.chatModel = new AnthropicChatModel(options);
+        this.chatModel = AnthropicChatModel.builder()
+            .options(options)
+            .build();
     }
 
     @GetMapping("/ai/generate")
@@ -1581,16 +1621,83 @@ Configure web search via `application.properties` or `application.yml`:
 
 [source,properties]
 ----
-spring.ai.anthropic.chat.options.web-search-tool.max-uses=5
-spring.ai.anthropic.chat.options.web-search-tool.allowed-domains=docs.spring.io,github.com
-spring.ai.anthropic.chat.options.web-search-tool.user-location.city=San Francisco
-spring.ai.anthropic.chat.options.web-search-tool.user-location.country=US
+spring.ai.anthropic.chat.web-search-tool.max-uses=5
+spring.ai.anthropic.chat.web-search-tool.allowed-domains=docs.spring.io,github.com
+spring.ai.anthropic.chat.web-search-tool.user-location.city=San Francisco
+spring.ai.anthropic.chat.web-search-tool.user-location.country=US
 ----
 
 == Observability
 
-The Anthropic SDK implementation supports Spring AI's observability features through Micrometer.
-All chat model operations are instrumented for monitoring and tracing.
+Spring AI emits Micrometer observations at two layers for every Anthropic call:
+
+* **Chat-model layer.** A `gen_ai.client.operation` observation wraps every call to `AnthropicChatModel.call(...)` or `.stream(...)`, carrying request parameters, response metadata, and token usage. See the xref:observability/index.adoc[observability reference] for the full set of tags and metrics.
+* **HTTP layer.** An `okhttp.requests` observation wraps every HTTP attempt to the Anthropic API, carrying HTTP method, URI, status code, and exception tags. Each request also propagates `traceparent` on the wire to any downstream services (AI gateways, OpenAI-compatible inference servers, proxies).
+
+In a Spring Boot application with `spring-boot-starter-actuator` and a tracing bridge (`micrometer-tracing-bridge-otel` or `micrometer-tracing-bridge-brave`), both layers are wired automatically — no opt-in required.
+For non-Boot applications, pass an `ObservationRegistry` to `AnthropicChatModel.builder()`:
+
+[source,java]
+----
+AnthropicChatModel chatModel = AnthropicChatModel.builder()
+    .options(...)
+    .observationRegistry(observationRegistry)
+    .build();
+----
+
+=== Connection-pool metrics (opt-in)
+
+Spring AI can additionally bind OkHttp connection-pool gauges (`okhttp.pool.connection.count` with `state=active|idle` and `client.kind=sync|async`) to the application's `MeterRegistry`.
+These are secondary telemetry — useful for capacity tuning but not required for tracing or per-request latency — so they're disabled by default.
+
+To enable them in a Spring Boot application:
+
+[source,properties]
+----
+spring.ai.anthropic.chat.connection-pool-metrics-enabled=true
+----
+
+For non-Boot applications, pass a `MeterRegistry` directly to the builder; the gauges bind whenever a registry is supplied:
+
+[source,java]
+----
+AnthropicChatModel chatModel = AnthropicChatModel.builder()
+    .options(...)
+    .observationRegistry(observationRegistry)
+    .meterRegistry(meterRegistry)
+    .build();
+----
+
+=== HTTP dispatcher executor (advanced)
+
+By default Spring AI manages the OkHttp dispatcher's executor — an unbounded pool of platform threads, replicating the SDK's stock behavior.
+For workloads with high HTTP concurrency, or to take advantage of Java 21+ virtual threads, you can supply your own `ExecutorService`:
+
+[source,java]
+----
+AnthropicChatModel chatModel = AnthropicChatModel.builder()
+    .options(...)
+    .dispatcherExecutor(Executors.newVirtualThreadPerTaskExecutor())
+    .build();
+----
+
+The same executor backs both the sync and async (streaming) clients.
+When you supply your own executor, you own its lifecycle — Spring AI will never call `shutdown()` on it.
+When omitted, the internal executor is created and cleaned up automatically.
+
+[IMPORTANT]
+====
+**Streaming HTTP observations are not parented under the chat-model observation**
+
+For synchronous calls, the `okhttp.requests` span is correctly nested under the `gen_ai.client.operation` span — the full trace tree forms as expected.
+
+For streaming calls, the `okhttp.requests` span fires and is recorded in the registry, the timer is recorded in `MeterRegistry`, and `traceparent` is still propagated on the outbound request — but the span is **not** nested under the chat-model span.
+This is because the Anthropic SDK's async streaming implementation hops onto `ForkJoinPool.commonPool()` before invoking Spring AI's HTTP client, dropping the calling thread's observation context at that boundary.
+Spring AI cannot recover the context from within its HTTP-client wrapper.
+
+If you need to correlate streaming HTTP spans with their parent chat-model span in your tracing UI, filter by span name `okhttp.requests` with host `api.anthropic.com` and join to the corresponding `gen_ai.client.operation` span by trace ID or timestamp range.
+Built-in parent linkage for streaming is being pursued upstream in the Anthropic Java SDK.
+====
 
 == Logging
 
@@ -1609,6 +1716,8 @@ The following features are not yet supported:
 * Google Vertex AI backend
 
 These features are planned for future releases.
+
+include::partial$anthropic/anthropic-http-client-customization.adoc[]
 
 == Additional Resources
 

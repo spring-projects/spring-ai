@@ -365,9 +365,6 @@ public class AsyncCallToolRequestSupportTests {
 		 */
 		@McpTool(name = "async-void-tool", description = "Async tool that returns void")
 		public Mono<Void> asyncVoidTool(CallToolRequest request) {
-			// Perform some side effect
-			Map<String, Object> arguments = request.arguments();
-			System.out.println("Processing: " + arguments);
 			return Mono.empty();
 		}
 

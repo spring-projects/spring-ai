@@ -18,6 +18,8 @@ package org.springframework.ai.audio.tts;
 
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Implementation of the {@link TextToSpeechMessage} interface for the text to speech
  * message.
@@ -37,7 +39,7 @@ public class TextToSpeechMessage {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}

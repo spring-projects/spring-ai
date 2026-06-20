@@ -35,8 +35,8 @@ import com.couchbase.client.java.manager.query.CreatePrimaryQueryIndexOptions;
 import com.couchbase.client.java.manager.search.SearchIndex;
 import com.couchbase.client.java.query.QueryOptions;
 import com.couchbase.client.java.query.QueryResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.RetrySpec;
 
@@ -53,12 +53,13 @@ import org.springframework.util.Assert;
 
 /**
  * @author Laurent Doguin
+ * @author chabinhwang
  * @since 1.0.0
  */
 public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		implements InitializingBean, AutoCloseable {
 
-	private static final Logger logger = LoggerFactory.getLogger(CouchbaseSearchVectorStore.class);
+	private static final Log logger = LogFactory.getLog(CouchbaseSearchVectorStore.class);
 
 	private static final String DEFAULT_INDEX_NAME = "spring-ai-document-index";
 
@@ -139,10 +140,10 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		logger.info(this.scopeName);
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
-		for (Document document : documents) {
+		for (int i = 0; i < documents.size(); i++) {
+			Document document = documents.get(i);
 			CouchbaseDocument cbDoc = new CouchbaseDocument(document.getId(),
-					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(),
-					embeddings.get(documents.indexOf(document)));
+					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(), embeddings.get(i));
 			this.collection.upsert(document.getId(), cbDoc);
 		}
 	}
@@ -163,7 +164,9 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 			this.scope.query(sql, QueryOptions.queryOptions().metrics(true));
 		}
 		catch (Exception e) {
-			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
+			if (logger.isErrorEnabled()) {
+				logger.error("Failed to delete documents by filter: " + e.getMessage(), e);
+			}
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}

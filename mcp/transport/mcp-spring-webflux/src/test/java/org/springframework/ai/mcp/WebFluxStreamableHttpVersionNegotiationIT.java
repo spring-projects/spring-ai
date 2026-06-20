@@ -98,7 +98,7 @@ class WebFluxStreamableHttpVersionNegotiationIT {
 			this.httpServer.disposeNow();
 		}
 		if (this.mcpServer != null) {
-			this.mcpServer.close();
+			this.mcpServer.closeGracefully();
 		}
 	}
 
@@ -107,7 +107,7 @@ class WebFluxStreamableHttpVersionNegotiationIT {
 		var client = McpClient
 			.sync(WebClientStreamableHttpTransport.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + this.port))
 				.build())
-			.requestTimeout(Duration.ofHours(10))
+			.initializationTimeout(Duration.ofSeconds(10))
 			.build();
 
 		try {
@@ -140,7 +140,7 @@ class WebFluxStreamableHttpVersionNegotiationIT {
 				.isEqualTo(ProtocolVersions.MCP_2025_11_25);
 		}
 		finally {
-			client.close();
+			client.closeGracefully();
 		}
 	}
 
@@ -150,7 +150,7 @@ class WebFluxStreamableHttpVersionNegotiationIT {
 			.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + this.port))
 			.supportedProtocolVersions(List.of(ProtocolVersions.MCP_2025_11_25, "2263-03-18"))
 			.build();
-		var client = McpClient.sync(transport).requestTimeout(Duration.ofHours(10)).build();
+		var client = McpClient.sync(transport).initializationTimeout(Duration.ofSeconds(10)).build();
 
 		try {
 			client.initialize();
@@ -176,7 +176,7 @@ class WebFluxStreamableHttpVersionNegotiationIT {
 				.isEqualTo(ProtocolVersions.MCP_2025_11_25);
 		}
 		finally {
-			client.close();
+			client.closeGracefully();
 		}
 	}
 

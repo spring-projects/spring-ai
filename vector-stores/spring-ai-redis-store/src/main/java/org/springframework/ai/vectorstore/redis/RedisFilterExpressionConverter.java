@@ -60,7 +60,14 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 
 	@Override
 	protected void doKey(Key key, StringBuilder context) {
-		context.append("@").append(key.key()).append(":");
+		var identifier = key.key();
+		// RediSearch field names are bare identifiers in the @field: query syntax
+		// and have no escaping mechanism. Validate against the configured metadata
+		// fields to prevent query injection through crafted field names.
+		if (!this.metadataFields.containsKey(identifier)) {
+			throw new IllegalArgumentException("Not allowed filter identifier name: " + identifier);
+		}
+		context.append("@").append(identifier).append(":");
 	}
 
 	@Override
@@ -104,7 +111,9 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 	private void doField(Expression expression, StringBuilder context) {
 		Key key = (Key) expression.left();
 		doKey(key, context);
-		MetadataField field = this.metadataFields.getOrDefault(key.key(), MetadataField.tag(key.key()));
+		var identifier = key.key();
+		MetadataField field = this.metadataFields.get(identifier);
+		Assert.state(field != null, "No metadata field configured for: " + identifier);
 		Value value = (Value) expression.right();
 		Assert.state(value != null, "expected an expression with a right operand");
 		switch (field.fieldType()) {
@@ -191,10 +200,16 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 	}
 
 	private NumericBoundary inclusive(Value value) {
+		if (!(value.value() instanceof Number)) {
+			throw new IllegalArgumentException("Numeric value must be a Number");
+		}
 		return new NumericBoundary(value.value(), false);
 	}
 
 	private NumericBoundary exclusive(Value value) {
+		if (!(value.value() instanceof Number)) {
+			throw new IllegalArgumentException("Numeric value must be a Number");
+		}
 		return new NumericBoundary(value.value(), true);
 	}
 

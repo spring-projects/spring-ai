@@ -16,8 +16,6 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -29,13 +27,14 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * @author Sebastien Deleuze
+ */
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiImageAutoConfigurationIT {
 
-	private static final Log logger = LogFactory.getLog(OpenAiImageAutoConfigurationIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"));
+		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"));
 
 	@Test
 	void generateImage() {
@@ -45,24 +44,21 @@ public class OpenAiImageAutoConfigurationIT {
 				OpenAiImageModel imageModel = context.getBean(OpenAiImageModel.class);
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("forest"));
 				assertThat(imageResponse.getResults()).hasSize(1);
-				assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
-				logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
+				assertThat(imageResponse.getResult().getOutput().getB64Json()).isNotEmpty();
 			});
 	}
 
 	@Test
 	void generateImageWithModel() {
-		// The 256x256 size is supported by dall-e-2, but not by dall-e-3.
 		this.contextRunner
-			.withPropertyValues("spring.ai.openai.image.options.model=dall-e-2",
-					"spring.ai.openai.image.options.size=256x256")
+			.withPropertyValues("spring.ai.openai.image.options.model=gpt-image-1-mini",
+					"spring.ai.openai.image.options.size=1024x1024")
 			.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class))
 			.run(context -> {
 				OpenAiImageModel imageModel = context.getBean(OpenAiImageModel.class);
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("forest"));
 				assertThat(imageResponse.getResults()).hasSize(1);
-				assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
-				logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
+				assertThat(imageResponse.getResult().getOutput().getB64Json()).isNotEmpty();
 			});
 	}
 
@@ -114,20 +110,20 @@ public class OpenAiImageAutoConfigurationIT {
 			.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class))
 			.run(context -> {
 				var imageProperties = context.getBean(OpenAiImageProperties.class);
-				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+				var commonProperties = context.getBean(OpenAiCommonProperties.class);
 
-				assertThat(connectionProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
-				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
+				assertThat(commonProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
+				assertThat(commonProperties.getApiKey()).isEqualTo("API_KEY");
 
-				assertThat(imageProperties.getOptions().getN()).isEqualTo(3);
-				assertThat(imageProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(imageProperties.getOptions().getQuality()).isEqualTo("hd");
-				assertThat(imageProperties.getOptions().getResponseFormat()).isEqualTo("url");
-				assertThat(imageProperties.getOptions().getSize()).isEqualTo("1024x1024");
-				assertThat(imageProperties.getOptions().getWidth()).isEqualTo(1024);
-				assertThat(imageProperties.getOptions().getHeight()).isEqualTo(1024);
-				assertThat(imageProperties.getOptions().getStyle()).isEqualTo("vivid");
-				assertThat(imageProperties.getOptions().getUser()).isEqualTo("userXYZ");
+				assertThat(imageProperties.getN()).isEqualTo(3);
+				assertThat(imageProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(imageProperties.getQuality()).isEqualTo("hd");
+				assertThat(imageProperties.getResponseFormat()).isEqualTo("url");
+				assertThat(imageProperties.getSize()).isEqualTo("1024x1024");
+				assertThat(imageProperties.getWidth()).isEqualTo(1024);
+				assertThat(imageProperties.getHeight()).isEqualTo(1024);
+				assertThat(imageProperties.getStyle()).isEqualTo("vivid");
+				assertThat(imageProperties.getUser()).isEqualTo("userXYZ");
 			});
 	}
 

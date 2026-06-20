@@ -19,9 +19,6 @@ package org.springframework.ai.mistralai.ocr;
 import java.util.List;
 import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.model.ModelOptions;
@@ -31,49 +28,53 @@ import org.springframework.ai.model.ModelOptions;
  * OCR call.
  *
  * @author Alexandros Pappas
+ * @author Sebastien Deleuze
  * @since 1.1.0
  */
-@JsonInclude(Include.NON_NULL)
 public class MistralAiOcrOptions implements ModelOptions {
 
 	/**
 	 * The model to use for OCR. Defaults to mistral-ocr-latest.
 	 */
-	@JsonProperty("model")
-	private String model = MistralOcrApi.OCRModel.MISTRAL_OCR_LATEST.getValue();
+	private final String model;
 
 	/**
 	 * An optional string identifier for the request.
 	 */
-	@JsonProperty("id")
-	private @Nullable String id;
+	private final @Nullable String id;
 
 	/**
 	 * Specific pages to process in various formats: single number, range, or list of
 	 * both. Starts from 0.
 	 */
-	@JsonProperty("pages")
-	private @Nullable List<Integer> pages;
+	private final @Nullable List<Integer> pages;
 
 	/**
 	 * Whether to include base64 encoded image data in the response.
 	 */
-	@JsonProperty("include_image_base64")
-	private @Nullable Boolean includeImageBase64;
+	private final @Nullable Boolean includeImageBase64;
 
 	/**
 	 * Maximum number of images to extract per page.
 	 */
-	@JsonProperty("image_limit")
-	private @Nullable Integer imageLimit;
+	private final @Nullable Integer imageLimit;
 
 	/**
 	 * Minimum height and width (in pixels) of images to extract.
 	 */
-	@JsonProperty("image_min_size")
-	private @Nullable Integer imageMinSize;
+	private final @Nullable Integer imageMinSize;
 
-	public static Builder builder() {
+	protected MistralAiOcrOptions(@Nullable String model, @Nullable String id, @Nullable List<Integer> pages,
+			@Nullable Boolean includeImageBase64, @Nullable Integer imageLimit, @Nullable Integer imageMinSize) {
+		this.model = (model != null ? model : MistralOcrApi.OCRModel.MISTRAL_OCR_LATEST.getValue());
+		this.id = id;
+		this.pages = (pages != null ? List.copyOf(pages) : null);
+		this.includeImageBase64 = includeImageBase64;
+		this.imageLimit = imageLimit;
+		this.imageMinSize = imageMinSize;
+	}
+
+	public static MistralAiOcrOptions.Builder builder() {
 		return new Builder();
 	}
 
@@ -101,32 +102,8 @@ public class MistralAiOcrOptions implements ModelOptions {
 		return this.imageMinSize;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public void setPages(List<Integer> pages) {
-		this.pages = pages;
-	}
-
-	public void setIncludeImageBase64(Boolean includeImageBase64) {
-		this.includeImageBase64 = includeImageBase64;
-	}
-
-	public void setImageLimit(Integer imageLimit) {
-		this.imageLimit = imageLimit;
-	}
-
-	public void setImageMinSize(Integer imageMinSize) {
-		this.imageMinSize = imageMinSize;
-	}
-
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -149,43 +126,54 @@ public class MistralAiOcrOptions implements ModelOptions {
 
 	public static final class Builder {
 
-		private final MistralAiOcrOptions options = new MistralAiOcrOptions();
+		private @Nullable String model;
+
+		private @Nullable String id;
+
+		private @Nullable List<Integer> pages;
+
+		private @Nullable Boolean includeImageBase64;
+
+		private @Nullable Integer imageLimit;
+
+		private @Nullable Integer imageMinSize;
 
 		private Builder() {
 		}
 
-		public Builder model(String model) {
-			this.options.setModel(model);
+		public Builder model(@Nullable String model) {
+			this.model = model;
 			return this;
 		}
 
 		public Builder id(String id) {
-			this.options.setId(id);
+			this.id = id;
 			return this;
 		}
 
 		public Builder pages(List<Integer> pages) {
-			this.options.setPages(pages);
+			this.pages = pages;
 			return this;
 		}
 
-		public Builder includeImageBase64(Boolean includeImageBase64) {
-			this.options.setIncludeImageBase64(includeImageBase64);
+		public Builder includeImageBase64(@Nullable Boolean includeImageBase64) {
+			this.includeImageBase64 = includeImageBase64;
 			return this;
 		}
 
 		public Builder imageLimit(Integer imageLimit) {
-			this.options.setImageLimit(imageLimit);
+			this.imageLimit = imageLimit;
 			return this;
 		}
 
 		public Builder imageMinSize(Integer imageMinSize) {
-			this.options.setImageMinSize(imageMinSize);
+			this.imageMinSize = imageMinSize;
 			return this;
 		}
 
 		public MistralAiOcrOptions build() {
-			return this.options;
+			return new MistralAiOcrOptions(this.model, this.id, this.pages, this.includeImageBase64, this.imageLimit,
+					this.imageMinSize);
 		}
 
 	}

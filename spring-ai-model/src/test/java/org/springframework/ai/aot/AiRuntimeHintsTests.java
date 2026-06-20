@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.aot.hint.TypeReference;
@@ -38,7 +37,6 @@ class AiRuntimeHintsTests {
 			.stream()
 			.map(t -> TypeReference.of(t.getName()))
 			.collect(Collectors.toSet());
-		LogFactory.getLog(getClass()).info(classes);
 		Assert.state(classes.containsAll(included), "there should be all of the enumerated classes. ");
 	}
 

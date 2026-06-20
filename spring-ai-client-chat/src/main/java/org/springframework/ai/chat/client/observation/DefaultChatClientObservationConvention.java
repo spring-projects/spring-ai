@@ -16,8 +16,6 @@
 
 package org.springframework.ai.chat.client.observation;
 
-import java.util.ArrayList;
-
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 
@@ -128,14 +126,13 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 			return keyValues;
 		}
 
-		var toolNames = new ArrayList<>(options.getToolNames());
 		var toolCallbacks = options.getToolCallbacks();
 
-		if (CollectionUtils.isEmpty(toolNames) && CollectionUtils.isEmpty(toolCallbacks)) {
+		if (CollectionUtils.isEmpty(toolCallbacks)) {
 			return keyValues;
 		}
 
-		toolCallbacks.forEach(toolCallback -> toolNames.add(toolCallback.getToolDefinition().name()));
+		var toolNames = toolCallbacks.stream().map(toolCallback -> toolCallback.getToolDefinition().name()).toList();
 
 		return keyValues.and(
 				ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_TOOL_NAMES.asString(),

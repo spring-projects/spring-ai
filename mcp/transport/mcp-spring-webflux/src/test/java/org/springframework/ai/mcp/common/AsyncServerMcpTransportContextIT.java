@@ -188,7 +188,7 @@ public class AsyncServerMcpTransportContextIT {
 			})
 			.verifyComplete();
 
-		mcpServer.close();
+		mcpServer.closeGracefully().block();
 	}
 
 	@Test
@@ -220,7 +220,7 @@ public class AsyncServerMcpTransportContextIT {
 			})
 			.verifyComplete();
 
-		mcpServer.close();
+		mcpServer.closeGracefully().block();
 	}
 
 	@Test
@@ -252,7 +252,7 @@ public class AsyncServerMcpTransportContextIT {
 			})
 			.verifyComplete();
 
-		mcpServer.close();
+		mcpServer.closeGracefully().block();
 	}
 
 	private void startHttpServer(RouterFunction<?> routerFunction) {

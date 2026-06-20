@@ -16,8 +16,6 @@
 
 package org.springframework.ai.model.elevenlabs.autoconfigure;
 
-import java.util.Arrays;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -57,8 +55,6 @@ public class ElevenLabsAutoConfigurationIT {
 				.withFailMessage("Expected MP3 frame header to be present in the response, but it was not found.")
 				.isTrue();
 			assertThat(response).isNotEmpty();
-
-			logger.debug("Response: " + Arrays.toString(response));
 		});
 	}
 
@@ -72,8 +68,6 @@ public class ElevenLabsAutoConfigurationIT {
 				.withFailMessage("Expected MP3 frame header to be present in the response, but it was not found.")
 				.isTrue();
 			assertThat(response).isNotEmpty();
-
-			logger.debug("Response: " + Arrays.toString(response));
 		});
 	}
 

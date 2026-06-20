@@ -16,6 +16,8 @@
 
 package org.springframework.ai.docker.compose.service.connection.chroma;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.vectorstore.chroma.autoconfigure.ChromaConnectionDetails;
 import org.springframework.boot.docker.compose.core.RunningService;
 import org.springframework.boot.docker.compose.service.connection.DockerComposeConnectionDetailsFactory;
@@ -70,7 +72,7 @@ class ChromaDockerComposeConnectionDetailsFactory
 		}
 
 		@Override
-		public String getKeyToken() {
+		public @Nullable String getKeyToken() {
 			return this.environment.getKeyToken();
 		}
 

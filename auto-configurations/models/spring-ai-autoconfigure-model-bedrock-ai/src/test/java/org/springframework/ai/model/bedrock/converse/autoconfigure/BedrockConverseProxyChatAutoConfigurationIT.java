@@ -19,8 +19,6 @@ package org.springframework.ai.model.bedrock.converse.autoconfigure;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
@@ -41,12 +39,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RequiresAwsCredentials
 public class BedrockConverseProxyChatAutoConfigurationIT {
 
-	private static final Log logger = LogFactory.getLog(BedrockConverseProxyChatAutoConfigurationIT.class);
-
 	private final ApplicationContextRunner contextRunner = BedrockTestUtils.getContextRunner()
-		.withPropertyValues(
-				"spring.ai.bedrock.converse.chat.options.model=" + "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
-				"spring.ai.bedrock.converse.chat.options.temperature=0.5")
+		.withPropertyValues("spring.ai.bedrock.converse.chat.model=" + "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+				"spring.ai.bedrock.converse.chat.temperature=0.5")
 		.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class,
 				ToolCallingAutoConfiguration.class));
 
@@ -56,7 +51,6 @@ public class BedrockConverseProxyChatAutoConfigurationIT {
 			BedrockProxyChatModel chatModel = context.getBean(BedrockProxyChatModel.class);
 			String response = chatModel.call("Hello");
 			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
 		});
 	}
 
@@ -76,7 +70,6 @@ public class BedrockConverseProxyChatAutoConfigurationIT {
 				.collect(Collectors.joining());
 
 			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
 		});
 	}
 

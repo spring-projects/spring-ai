@@ -17,8 +17,6 @@
 package org.springframework.ai.mcp.server.webflux.autoconfigure.capabilities;
 
 import io.modelcontextprotocol.spec.McpSchema;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.mcp.annotation.McpElicitation;
 import org.springframework.ai.mcp.annotation.context.StructuredElicitResult;
@@ -30,8 +28,6 @@ import org.springframework.web.context.annotation.RequestScope;
 
 @Configuration
 public class McpHandlerConfiguration {
-
-	private static final Logger logger = LoggerFactory.getLogger(McpHandlerConfiguration.class);
 
 	@Bean
 	ElicitationHandler elicitationHandler() {
@@ -56,7 +52,6 @@ public class McpHandlerConfiguration {
 
 		@McpElicitation(clients = "server1")
 		public StructuredElicitResult<ElicitInput> elicitationHandler(McpSchema.ElicitRequest request) {
-			logger.info("MCP ELICITATION: {}", request);
 			ElicitInput elicitData = new ElicitInput(request.message());
 			return StructuredElicitResult.builder().structuredContent(elicitData).build();
 		}

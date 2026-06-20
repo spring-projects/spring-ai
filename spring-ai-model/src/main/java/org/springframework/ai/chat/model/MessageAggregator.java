@@ -23,8 +23,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -50,7 +50,7 @@ import org.springframework.util.StringUtils;
  */
 public class MessageAggregator {
 
-	private static final Logger logger = LoggerFactory.getLogger(MessageAggregator.class);
+	private static final Log logger = LogFactory.getLog(MessageAggregator.class);
 
 	public Flux<ChatResponse> aggregate(Flux<ChatResponse> fluxChatResponse,
 			Consumer<ChatResponse> onAggregationComplete) {
@@ -134,9 +134,9 @@ public class MessageAggregator {
 						&& chatResponse.getMetadata().getPromptMetadata().iterator().hasNext()) {
 					metadataPromptMetadataRef.set(chatResponse.getMetadata().getPromptMetadata());
 				}
-				if (chatResponse.getMetadata().getRateLimit() != null
-						&& !(metadataRateLimitRef.get() instanceof EmptyRateLimit)) {
-					metadataRateLimitRef.set(chatResponse.getMetadata().getRateLimit());
+				RateLimit incomingRateLimit = chatResponse.getMetadata().getRateLimit();
+				if (incomingRateLimit != null && !(incomingRateLimit instanceof EmptyRateLimit)) {
+					metadataRateLimitRef.set(incomingRateLimit);
 				}
 				if (StringUtils.hasText(chatResponse.getMetadata().getId())) {
 					metadataIdRef.set(chatResponse.getMetadata().getId());

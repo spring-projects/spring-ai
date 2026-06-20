@@ -94,7 +94,6 @@ public class QuestionAnswerAdvisorIT {
 		assertThat(chatResponse).isNotNull();
 
 		String response = chatResponse.getResult().getOutput().getText();
-		System.out.println(response);
 		assertThat(response).containsIgnoringCase("Highlands");
 
 		evaluateRelevancy(question, chatResponse);
@@ -118,7 +117,6 @@ public class QuestionAnswerAdvisorIT {
 		assertThat(chatResponse).isNotNull();
 
 		String response = chatResponse.getResult().getOutput().getText();
-		System.out.println(response);
 		assertThat(response).containsIgnoringCase("Highlands");
 
 		evaluateRelevancy("Where does the adventure of Anacletus and Birba take place?", chatResponse);
@@ -159,7 +157,6 @@ public class QuestionAnswerAdvisorIT {
 		assertThat(chatResponse).isNotNull();
 
 		String response = chatResponse.getResult().getOutput().getText();
-		System.out.println(response);
 		assertThat(response).containsIgnoringCase("Highlands");
 
 		evaluateRelevancy(question, chatResponse);
@@ -180,7 +177,6 @@ public class QuestionAnswerAdvisorIT {
 
 		assertThat(answer).isNotNull();
 
-		System.out.println(answer);
 		assertThat(answer.content()).containsIgnoringCase("Highlands");
 	}
 

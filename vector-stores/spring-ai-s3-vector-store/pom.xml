@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.springframework.ai</groupId>
 		<artifactId>spring-ai-parent</artifactId>
-		<version>2.0.0-SNAPSHOT</version>
+		<version>2.0.1-SNAPSHOT</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
 
@@ -13,12 +13,6 @@
 	<name>Spring AI Vector Store - S3</name>
 	<description>Spring AI Vector Store - AWS S3</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
-
-	<scm>
-		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
-	</scm>
 
 	<dependencies>
 		<dependency>
@@ -30,9 +24,8 @@
 		<dependency>
 			<groupId>software.amazon.awssdk</groupId>
 			<artifactId>s3vectors</artifactId>
-			<version>2.32.2</version>
+			<version>${awssdk.version}</version>
 		</dependency>
-
 
 		<!-- TESTING -->
 		<dependency>

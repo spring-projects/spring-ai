@@ -75,7 +75,7 @@ class ToolCallingContentObservationFilterTests {
 	}
 
 	@Test
-	void whenToolCallArgumentsIsEmptyStringThenHighCardinalityKeyValueIsEmpty() {
+	void whenToolCallArgumentsIsEmptyStringThenHighCardinalityKeyValueIsEmptyJsonString() {
 		var originalContext = ToolCallingObservationContext.builder()
 			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
 			.toolCallArguments("")
@@ -84,7 +84,7 @@ class ToolCallingContentObservationFilterTests {
 		var augmentedContext = this.observationFilter.map(originalContext);
 
 		assertThat(augmentedContext.getHighCardinalityKeyValues()).contains(KeyValue
-			.of(ToolCallingObservationDocumentation.HighCardinalityKeyNames.TOOL_CALL_ARGUMENTS.asString(), ""));
+			.of(ToolCallingObservationDocumentation.HighCardinalityKeyNames.TOOL_CALL_ARGUMENTS.asString(), "{}"));
 		assertThat(augmentedContext.getHighCardinalityKeyValues()).contains(KeyValue
 			.of(ToolCallingObservationDocumentation.HighCardinalityKeyNames.TOOL_CALL_RESULT.asString(), "result"));
 	}

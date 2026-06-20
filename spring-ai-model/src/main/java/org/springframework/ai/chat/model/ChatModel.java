@@ -44,8 +44,21 @@ public interface ChatModel extends Model<Prompt, ChatResponse>, StreamingChatMod
 	@Override
 	ChatResponse call(Prompt prompt);
 
-	default ChatOptions getDefaultOptions() {
+	/**
+	 * Gets the chat options for this model.
+	 * @return the chat options
+	 * @since 2.0.0
+	 */
+	default ChatOptions getOptions() {
 		return ChatOptions.builder().build();
+	}
+
+	/**
+	 * @deprecated use {@link #getOptions()} instead.
+	 */
+	@Deprecated(forRemoval = true)
+	default ChatOptions getDefaultOptions() {
+		return getOptions();
 	}
 
 	default Flux<ChatResponse> stream(Prompt prompt) {

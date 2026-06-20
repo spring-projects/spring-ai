@@ -85,7 +85,7 @@ public class OpenAiEmbeddingModelObservationIT {
 			.hasContextualNameEqualTo("embedding " + EmbeddingModel.TEXT_EMBEDDING_3_SMALL)
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.EMBEDDING.value())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.OPENAI_SDK.value())
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.OPENAI.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
 					EmbeddingModel.TEXT_EMBEDDING_3_SMALL.toString())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), responseMetadata.getModel())

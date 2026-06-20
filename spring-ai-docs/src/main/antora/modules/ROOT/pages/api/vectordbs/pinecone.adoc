@@ -20,7 +20,7 @@ To set up `PineconeVectorStore`, gather the following details from your Pinecone
 [NOTE]
 ====
 This information is available to you in the Pinecone UI portal.
-The namespace support is not available in the Pinecone free tier.
+Namespaces are supported on all current Pinecone plans, including the free Starter plan; the maximum number of namespaces per serverless index depends on your plan.
 ====
 
 == Auto-configuration
@@ -64,7 +64,7 @@ Here is an example of the needed bean:
 @Bean
 public EmbeddingModel embeddingModel() {
     // Can be any other EmbeddingModel implementation.
-    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+    return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
 }
 ----
 
@@ -73,7 +73,7 @@ A simple configuration can either be provided via Spring Boot's _application.pro
 
 [source,properties]
 ----
-spring.ai.vectorstore.pinecone.apiKey=<your api key>
+spring.ai.vectorstore.pinecone.api-key=<your api key>
 spring.ai.vectorstore.pinecone.index-name=<your index name>
 
 # API key if needed, e.g. OpenAI
@@ -192,7 +192,7 @@ public VectorStore pineconeVectorStore(EmbeddingModel embeddingModel) {
     return PineconeVectorStore.builder(embeddingModel)
             .apiKey(PINECONE_API_KEY)
             .indexName(PINECONE_INDEX_NAME)
-            .namespace(PINECONE_NAMESPACE) // the free tier doesn't support namespaces.
+            .namespace(PINECONE_NAMESPACE)
             .contentFieldName(CUSTOM_CONTENT_FIELD_NAME) // optional field to store the original content. Defaults to `document_content`
             .build();
 }

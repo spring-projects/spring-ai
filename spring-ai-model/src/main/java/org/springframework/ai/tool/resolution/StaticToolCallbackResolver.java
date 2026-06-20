@@ -20,9 +20,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.Assert;
@@ -35,7 +35,7 @@ import org.springframework.util.Assert;
  */
 public class StaticToolCallbackResolver implements ToolCallbackResolver {
 
-	private static final Logger logger = LoggerFactory.getLogger(StaticToolCallbackResolver.class);
+	private static final Log logger = LogFactory.getLog(StaticToolCallbackResolver.class);
 
 	private final Map<String, ToolCallback> toolCallbacks = new HashMap<>();
 

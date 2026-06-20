@@ -276,11 +276,6 @@ public class CoherenceVectorStoreIT {
 				.similarityThreshold(similarityThreshold)
 				.build());
 
-			// Debug: print all returned document IDs and metadata
-			for (Document doc : results) {
-				System.out.println("Returned doc ID: " + doc.getId() + ", metadata: " + doc.getMetadata());
-			}
-
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(1).getId());

@@ -16,32 +16,27 @@
 
 package org.springframework.ai.model.mistralai.autoconfigure.tool;
 
-import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.MistralAiChatModel;
-import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.model.mistralai.autoconfigure.MistralAiChatAutoConfiguration;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Description;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -53,10 +48,8 @@ class PaymentStatusBeanIT {
 			new StatusDate("Unpaid", "2021-10-06"), "T1003", new StatusDate("Paid", "2021-10-07"), "T1004",
 			new StatusDate("Paid", "2021-10-05"), "T1005", new StatusDate("Pending", "2021-10-08"));
 
-	private final Logger logger = LoggerFactory.getLogger(PaymentStatusBeanIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.mistralai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"))
+		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(MistralAiChatAutoConfiguration.class,
 				RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
 				ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class))
@@ -66,20 +59,19 @@ class PaymentStatusBeanIT {
 	void functionCallTest() {
 
 		this.contextRunner
-			.withPropertyValues(
-					"spring.ai.mistralai.chat.options.model=" + MistralAiApi.ChatModel.MISTRAL_LARGE.getValue())
+			.withPropertyValues("spring.ai.mistralai.chat.model=" + MistralAiApi.ChatModel.MISTRAL_LARGE.getValue())
 			.run(context -> {
 
 				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
 
-				ChatResponse response = chatModel
-					.call(new Prompt(List.of(new UserMessage("What's the status of my transaction with id T1001?")),
-							MistralAiChatOptions.builder()
-								.toolNames("retrievePaymentStatus")
-								.toolNames("retrievePaymentDate")
-								.build()));
+				ToolCallback retrievePaymentStatus = context.getBean("retrievePaymentStatus", ToolCallback.class);
+				ToolCallback retrievePaymentDate = context.getBean("retrievePaymentDate", ToolCallback.class);
 
-				logger.info("Response: {}", response);
+				ChatResponse response = ChatClient.create(chatModel)
+					.prompt("What's the status of my transaction with id T1001?")
+					.tools(retrievePaymentStatus, retrievePaymentDate)
+					.call()
+					.chatResponse();
 
 				assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("T1001");
 				assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("paid");
@@ -94,15 +86,23 @@ class PaymentStatusBeanIT {
 	static class Config {
 
 		@Bean
-		@Description("Get payment status of a transaction")
-		public Function<Transaction, Status> retrievePaymentStatus() {
-			return transaction -> new Status(DATA.get(transaction.transactionId).status());
+		public ToolCallback retrievePaymentStatus() {
+			return FunctionToolCallback
+				.builder("retrievePaymentStatus",
+						(Transaction transaction) -> new Status(DATA.get(transaction.transactionId).status()))
+				.description("Get payment status of a transaction")
+				.inputType(Transaction.class)
+				.build();
 		}
 
 		@Bean
-		@Description("Get payment date of a transaction")
-		public Function<Transaction, Date> retrievePaymentDate() {
-			return transaction -> new Date(DATA.get(transaction.transactionId).date());
+		public ToolCallback retrievePaymentDate() {
+			return FunctionToolCallback
+				.builder("retrievePaymentDate",
+						(Transaction transaction) -> new Date(DATA.get(transaction.transactionId).date()))
+				.description("Get payment date of a transaction")
+				.inputType(Transaction.class)
+				.build();
 		}
 
 		public record Transaction(@JsonProperty(required = true, value = "transaction_id") String transactionId) {

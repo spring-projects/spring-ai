@@ -60,7 +60,7 @@ class MethodToolCallbackProviderTests {
 	void whenToolObjectHasNoToolAnnotatedMethodThenThrow() {
 		assertThatThrownBy(
 				() -> MethodToolCallbackProvider.builder().toolObjects(new NoToolAnnotatedMethodObject()).build())
-			.isInstanceOf(IllegalStateException.class)
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("No @Tool annotated methods found in");
 	}
 
@@ -68,7 +68,7 @@ class MethodToolCallbackProviderTests {
 	void whenToolObjectHasOnlyFunctionalTypeToolMethodsThenThrow() {
 		assertThatThrownBy(() -> MethodToolCallbackProvider.builder()
 			.toolObjects(new OnlyFunctionalTypeToolMethodsObject())
-			.build()).isInstanceOf(IllegalStateException.class)
+			.build()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("No @Tool annotated methods found in");
 	}
 
@@ -86,7 +86,7 @@ class MethodToolCallbackProviderTests {
 	void whenMultipleToolObjectsWithSameToolNameThenThrow() {
 		assertThatThrownBy(() -> MethodToolCallbackProvider.builder()
 			.toolObjects(new ValidToolObject(), new DuplicateToolNameObject())
-			.build()).isInstanceOf(IllegalStateException.class)
+			.build()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Multiple tools with the same name (validTool) found in sources");
 	}
 
@@ -176,7 +176,8 @@ class MethodToolCallbackProviderTests {
 
 		@Tool
 		public Consumer<String> consumerTool() {
-			return input -> System.out.println("Consumer received: " + input);
+			return input -> {
+			};
 		}
 
 	}

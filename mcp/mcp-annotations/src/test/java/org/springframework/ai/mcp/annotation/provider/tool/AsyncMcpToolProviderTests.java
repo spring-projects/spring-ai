@@ -410,8 +410,6 @@ public class AsyncMcpToolProviderTests {
 
 			@McpTool(name = "void-tool", description = "Tool returning Mono<Void>")
 			public Mono<Void> voidTool(String input) {
-				// Simulate some side effect
-				System.out.println("Processing: " + input);
 				return Mono.empty();
 			}
 
@@ -754,8 +752,6 @@ public class AsyncMcpToolProviderTests {
 
 			@McpTool(name = "void-tool", description = "Tool with void return")
 			public Mono<Void> voidTool(String input) {
-				// Simulate some side effect
-				System.out.println("Processing: " + input);
 				return Mono.empty();
 			}
 
@@ -960,7 +956,6 @@ public class AsyncMcpToolProviderTests {
 		assertThat(result.content().get(0)).isInstanceOf(McpSchema.TextContent.class);
 
 		String jsonText = ((TextContent) result.content().get(0)).text();
-		System.out.println("Actual JSON output: " + jsonText);
 
 		// The Flux might be serialized differently than expected, let's check what we
 		// actually get

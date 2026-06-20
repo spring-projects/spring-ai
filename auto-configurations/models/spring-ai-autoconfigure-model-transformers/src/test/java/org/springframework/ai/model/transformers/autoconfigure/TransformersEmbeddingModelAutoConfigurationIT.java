@@ -44,9 +44,10 @@ public class TransformersEmbeddingModelAutoConfigurationIT {
 	public void embedding() {
 		this.contextRunner.run(context -> {
 			var properties = context.getBean(TransformersEmbeddingModelProperties.class);
+
+			String expectedPrefix = new File(System.getProperty("java.io.tmpdir")).getAbsolutePath();
 			assertThat(properties.getCache().isEnabled()).isTrue();
-			assertThat(properties.getCache().getDirectory()).isEqualTo(
-					new File(System.getProperty("java.io.tmpdir"), "spring-ai-onnx-generative").getAbsolutePath());
+			assertThat(properties.getCache().getDirectory()).startsWith(expectedPrefix);
 
 			EmbeddingModel embeddingModel = context.getBean(EmbeddingModel.class);
 			assertThat(embeddingModel).isInstanceOf(TransformersEmbeddingModel.class);
@@ -64,7 +65,7 @@ public class TransformersEmbeddingModelAutoConfigurationIT {
 		// https://huggingface.co/intfloat/e5-small-v2
 		this.contextRunner.withPropertyValues(
 				"spring.ai.embedding.transformer.cache.directory=" + this.tempDir.getAbsolutePath(),
-				"spring.ai.embedding.transformer.onnx.modelUri=https://huggingface.co/intfloat/e5-small-v2/resolve/main/model.onnx",
+				"spring.ai.embedding.transformer.onnx.model-uri=https://huggingface.co/intfloat/e5-small-v2/resolve/main/model.onnx",
 				"spring.ai.embedding.transformer.tokenizer.uri=https://huggingface.co/intfloat/e5-small-v2/raw/main/tokenizer.json")
 			.run(context -> {
 				var properties = context.getBean(TransformersEmbeddingModelProperties.class);

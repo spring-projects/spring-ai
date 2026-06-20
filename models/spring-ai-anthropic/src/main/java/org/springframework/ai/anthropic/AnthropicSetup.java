@@ -18,17 +18,26 @@ package org.springframework.ai.anthropic;
 
 import java.net.Proxy;
 import java.time.Duration;
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.concurrent.ExecutorService;
 
+import com.anthropic.backends.AnthropicBackend;
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
-import com.anthropic.client.okhttp.AnthropicOkHttpClient;
-import com.anthropic.client.okhttp.AnthropicOkHttpClientAsync;
+import com.anthropic.client.AnthropicClientAsyncImpl;
+import com.anthropic.client.AnthropicClientImpl;
+import com.anthropic.core.ClientOptions;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.observation.ObservationRegistry;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import org.springframework.ai.anthropic.http.okhttp.AnthropicHttpClientBuilderCustomizer;
+import org.springframework.ai.anthropic.http.okhttp.SpringAiAnthropicHttpClient;
+import org.springframework.util.Assert;
 
 /**
  * Factory class for creating and configuring Anthropic SDK client instances.
@@ -84,17 +93,26 @@ public final class AnthropicSetup {
 
 	static final String DEFAULT_USER_AGENT = "spring-ai-anthropic-sdk";
 
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicSetup.class);
+	private static final Log logger = LogFactory.getLog(AnthropicSetup.class);
 
 	private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(60);
 
 	private static final int DEFAULT_MAX_RETRIES = 2;
 
+	// Disambiguates sync/async client connection-pool gauges sharing one MeterRegistry.
+	private static final List<Tag> SYNC_CLIENT_TAGS = List.of(Tag.of("client.kind", "sync"));
+
+	private static final List<Tag> ASYNC_CLIENT_TAGS = List.of(Tag.of("client.kind", "async"));
+
 	private AnthropicSetup() {
 	}
 
 	/**
-	 * Creates a synchronous Anthropic client with the specified configuration.
+	 * Creates a synchronous Anthropic client with the specified configuration. Delegates
+	 * to
+	 * {@link #setupSyncClient(String, String, Duration, Integer, Proxy, Map, ObservationRegistry, MeterRegistry)}
+	 * with a {@link ObservationRegistry#NOOP no-op} observation registry and no meter
+	 * registry — i.e. HTTP-layer observability is disabled.
 	 * @param baseUrl the base URL for the API (null to use default or environment
 	 * variable)
 	 * @param apiKey the API key (null to detect from environment)
@@ -107,47 +125,86 @@ public final class AnthropicSetup {
 	public static AnthropicClient setupSyncClient(@Nullable String baseUrl, @Nullable String apiKey,
 			@Nullable Duration timeout, @Nullable Integer maxRetries, @Nullable Proxy proxy,
 			@Nullable Map<String, String> customHeaders) {
-
-		baseUrl = detectBaseUrlFromEnv(baseUrl);
-
-		if (timeout == null) {
-			timeout = DEFAULT_TIMEOUT;
-		}
-		if (maxRetries == null) {
-			maxRetries = DEFAULT_MAX_RETRIES;
-		}
-
-		AnthropicOkHttpClient.Builder builder = AnthropicOkHttpClient.builder();
-
-		if (baseUrl != null) {
-			builder.baseUrl(baseUrl);
-		}
-
-		String resolvedApiKey = apiKey != null ? apiKey : detectApiKey();
-		if (resolvedApiKey != null) {
-			builder.apiKey(resolvedApiKey);
-		}
-
-		if (proxy != null) {
-			builder.proxy(proxy);
-		}
-
-		builder.putHeader("User-Agent", DEFAULT_USER_AGENT);
-		if (customHeaders != null) {
-			builder.putAllHeaders(customHeaders.entrySet()
-				.stream()
-				.collect(Collectors.toMap(Map.Entry::getKey, entry -> Collections.singletonList(entry.getValue()))));
-		}
-
-		builder.timeout(timeout);
-		builder.maxRetries(maxRetries);
-
-		return builder.build();
+		return setupSyncClient(baseUrl, apiKey, timeout, maxRetries, proxy, customHeaders, ObservationRegistry.NOOP,
+				null, null, List.of());
 	}
 
 	/**
-	 * Creates an asynchronous Anthropic client with the specified configuration. The
-	 * async client is used for streaming responses.
+	 * Creates a synchronous Anthropic client whose underlying OkHttp client is
+	 * instrumented with Micrometer: each HTTP attempt emits an observation (span + metric
+	 * + {@code traceparent} propagation), and, when a {@link MeterRegistry} is supplied,
+	 * OkHttp connection-pool gauges are bound to it.
+	 * @param baseUrl the base URL for the API (null to use default or environment
+	 * variable)
+	 * @param apiKey the API key (null to detect from environment)
+	 * @param timeout the request timeout (null to use default of 60 seconds)
+	 * @param maxRetries the maximum number of retries (null to use default of 2)
+	 * @param proxy the proxy to use (null for no proxy)
+	 * @param customHeaders additional HTTP headers to include in requests
+	 * @param observationRegistry the registry the OkHttp observation interceptor reports
+	 * to; pass {@link ObservationRegistry#NOOP} to disable
+	 * @param meterRegistry optional; when supplied, OkHttp connection-pool gauges
+	 * (active/idle connections) are registered
+	 * @return a configured Anthropic client
+	 * @since 2.0.0
+	 */
+	public static AnthropicClient setupSyncClient(@Nullable String baseUrl, @Nullable String apiKey,
+			@Nullable Duration timeout, @Nullable Integer maxRetries, @Nullable Proxy proxy,
+			@Nullable Map<String, String> customHeaders, ObservationRegistry observationRegistry,
+			@Nullable MeterRegistry meterRegistry) {
+		return setupSyncClient(baseUrl, apiKey, timeout, maxRetries, proxy, customHeaders, observationRegistry,
+				meterRegistry, null, List.of());
+	}
+
+	/**
+	 * Creates a synchronous Anthropic client backed by a caller-supplied dispatcher
+	 * executor (e.g. one built around {@code Executors.newVirtualThreadPerTaskExecutor()}
+	 * on Java 21+). The caller owns the executor's lifecycle; closing the resulting
+	 * client will not shut it down. See
+	 * {@link #setupSyncClient(String, String, Duration, Integer, Proxy, Map, ObservationRegistry, MeterRegistry)}
+	 * for the remaining parameter semantics.
+	 * @param dispatcherExecutor the OkHttp dispatcher executor; null to use the
+	 * library-managed default
+	 * @return a configured Anthropic client
+	 * @since 2.0.0
+	 */
+	public static AnthropicClient setupSyncClient(@Nullable String baseUrl, @Nullable String apiKey,
+			@Nullable Duration timeout, @Nullable Integer maxRetries, @Nullable Proxy proxy,
+			@Nullable Map<String, String> customHeaders, ObservationRegistry observationRegistry,
+			@Nullable MeterRegistry meterRegistry, @Nullable ExecutorService dispatcherExecutor) {
+		return setupSyncClient(baseUrl, apiKey, timeout, maxRetries, proxy, customHeaders, observationRegistry,
+				meterRegistry, dispatcherExecutor, List.of());
+	}
+
+	/**
+	 * Creates a synchronous Anthropic client backed by a caller-supplied dispatcher
+	 * executor and with optional HTTP client customizers. See
+	 * {@link #setupSyncClient(String, String, Duration, Integer, Proxy, Map, ObservationRegistry, MeterRegistry, ExecutorService)}
+	 * for the remaining parameter semantics.
+	 * @param httpClientCustomizers customizers applied to the underlying OkHttp client
+	 * builder after Spring AI's own defaults; useful for registering interceptors (e.g.
+	 * OAuth2 bearer-token injection) or custom TLS configuration
+	 * @return a configured Anthropic client
+	 * @since 2.0.0
+	 */
+	public static AnthropicClient setupSyncClient(@Nullable String baseUrl, @Nullable String apiKey,
+			@Nullable Duration timeout, @Nullable Integer maxRetries, @Nullable Proxy proxy,
+			@Nullable Map<String, String> customHeaders, ObservationRegistry observationRegistry,
+			@Nullable MeterRegistry meterRegistry, @Nullable ExecutorService dispatcherExecutor,
+			List<AnthropicHttpClientBuilderCustomizer> httpClientCustomizers) {
+
+		Assert.notNull(httpClientCustomizers, "httpClientCustomizers must not be null");
+		ClientOptions opts = buildClientOptions(baseUrl, apiKey, timeout, maxRetries, proxy, customHeaders,
+				observationRegistry, meterRegistry, SYNC_CLIENT_TAGS, dispatcherExecutor, httpClientCustomizers);
+		return new AnthropicClientImpl(opts);
+	}
+
+	/**
+	 * Creates an asynchronous Anthropic client with the specified configuration.
+	 * Delegates to
+	 * {@link #setupAsyncClient(String, String, Duration, Integer, Proxy, Map, ObservationRegistry, MeterRegistry)}
+	 * with a {@link ObservationRegistry#NOOP no-op} observation registry and no meter
+	 * registry — i.e. HTTP-layer observability is disabled.
 	 * @param baseUrl the base URL for the API (null to use default or environment
 	 * variable)
 	 * @param apiKey the API key (null to detect from environment)
@@ -160,42 +217,141 @@ public final class AnthropicSetup {
 	public static AnthropicClientAsync setupAsyncClient(@Nullable String baseUrl, @Nullable String apiKey,
 			@Nullable Duration timeout, @Nullable Integer maxRetries, @Nullable Proxy proxy,
 			@Nullable Map<String, String> customHeaders) {
+		return setupAsyncClient(baseUrl, apiKey, timeout, maxRetries, proxy, customHeaders, ObservationRegistry.NOOP,
+				null, null, List.of());
+	}
 
-		baseUrl = detectBaseUrlFromEnv(baseUrl);
+	/**
+	 * Creates an asynchronous Anthropic client whose underlying OkHttp client is
+	 * instrumented with Micrometer. See
+	 * {@link #setupSyncClient(String, String, Duration, Integer, Proxy, Map, ObservationRegistry, MeterRegistry)}
+	 * for parameter semantics.
+	 * @param baseUrl the base URL for the API (null to use default or environment
+	 * variable)
+	 * @param apiKey the API key (null to detect from environment)
+	 * @param timeout the request timeout (null to use default of 60 seconds)
+	 * @param maxRetries the maximum number of retries (null to use default of 2)
+	 * @param proxy the proxy to use (null for no proxy)
+	 * @param customHeaders additional HTTP headers to include in requests
+	 * @param observationRegistry the registry the OkHttp observation interceptor reports
+	 * to; pass {@link ObservationRegistry#NOOP} to disable
+	 * @param meterRegistry optional; when supplied, OkHttp connection-pool gauges are
+	 * registered
+	 * @return a configured async Anthropic client
+	 * @since 2.0.0
+	 */
+	public static AnthropicClientAsync setupAsyncClient(@Nullable String baseUrl, @Nullable String apiKey,
+			@Nullable Duration timeout, @Nullable Integer maxRetries, @Nullable Proxy proxy,
+			@Nullable Map<String, String> customHeaders, ObservationRegistry observationRegistry,
+			@Nullable MeterRegistry meterRegistry) {
+		return setupAsyncClient(baseUrl, apiKey, timeout, maxRetries, proxy, customHeaders, observationRegistry,
+				meterRegistry, null, List.of());
+	}
 
-		if (timeout == null) {
-			timeout = DEFAULT_TIMEOUT;
-		}
-		if (maxRetries == null) {
-			maxRetries = DEFAULT_MAX_RETRIES;
-		}
+	/**
+	 * Creates an asynchronous Anthropic client backed by a caller-supplied dispatcher
+	 * executor. The caller owns the executor's lifecycle; closing the resulting client
+	 * will not shut it down. See
+	 * {@link #setupSyncClient(String, String, Duration, Integer, Proxy, Map, ObservationRegistry, MeterRegistry, ExecutorService)}
+	 * for the dispatcher executor's role.
+	 * @param dispatcherExecutor the OkHttp dispatcher executor; null to use the
+	 * library-managed default
+	 * @return a configured async Anthropic client
+	 * @since 2.0.0
+	 */
+	public static AnthropicClientAsync setupAsyncClient(@Nullable String baseUrl, @Nullable String apiKey,
+			@Nullable Duration timeout, @Nullable Integer maxRetries, @Nullable Proxy proxy,
+			@Nullable Map<String, String> customHeaders, ObservationRegistry observationRegistry,
+			@Nullable MeterRegistry meterRegistry, @Nullable ExecutorService dispatcherExecutor) {
+		return setupAsyncClient(baseUrl, apiKey, timeout, maxRetries, proxy, customHeaders, observationRegistry,
+				meterRegistry, dispatcherExecutor, List.of());
+	}
 
-		AnthropicOkHttpClientAsync.Builder builder = AnthropicOkHttpClientAsync.builder();
+	/**
+	 * Creates an asynchronous Anthropic client backed by a caller-supplied dispatcher
+	 * executor and with optional HTTP client customizers. See
+	 * {@link #setupAsyncClient(String, String, Duration, Integer, Proxy, Map, ObservationRegistry, MeterRegistry, ExecutorService)}
+	 * for the remaining parameter semantics.
+	 * @param httpClientCustomizers customizers applied to the underlying OkHttp client
+	 * builder after Spring AI's own defaults; useful for registering interceptors (e.g.
+	 * OAuth2 bearer-token injection) or custom TLS configuration
+	 * @return a configured async Anthropic client
+	 * @since 2.0.0
+	 */
+	public static AnthropicClientAsync setupAsyncClient(@Nullable String baseUrl, @Nullable String apiKey,
+			@Nullable Duration timeout, @Nullable Integer maxRetries, @Nullable Proxy proxy,
+			@Nullable Map<String, String> customHeaders, ObservationRegistry observationRegistry,
+			@Nullable MeterRegistry meterRegistry, @Nullable ExecutorService dispatcherExecutor,
+			List<AnthropicHttpClientBuilderCustomizer> httpClientCustomizers) {
 
-		if (baseUrl != null) {
-			builder.baseUrl(baseUrl);
-		}
+		Assert.notNull(httpClientCustomizers, "httpClientCustomizers must not be null");
+		ClientOptions opts = buildClientOptions(baseUrl, apiKey, timeout, maxRetries, proxy, customHeaders,
+				observationRegistry, meterRegistry, ASYNC_CLIENT_TAGS, dispatcherExecutor, httpClientCustomizers);
+		return new AnthropicClientAsyncImpl(opts);
+	}
 
+	private static ClientOptions buildClientOptions(@Nullable String baseUrl, @Nullable String apiKey,
+			@Nullable Duration timeout, @Nullable Integer maxRetries, @Nullable Proxy proxy,
+			@Nullable Map<String, String> customHeaders, ObservationRegistry observationRegistry,
+			@Nullable MeterRegistry meterRegistry, Iterable<Tag> connectionPoolTags,
+			@Nullable ExecutorService dispatcherExecutor,
+			List<AnthropicHttpClientBuilderCustomizer> httpClientCustomizers) {
+
+		String resolvedBaseUrl = detectBaseUrlFromEnv(baseUrl);
 		String resolvedApiKey = apiKey != null ? apiKey : detectApiKey();
-		if (resolvedApiKey != null) {
-			builder.apiKey(resolvedApiKey);
-		}
+		Duration resolvedTimeout = timeout != null ? timeout : DEFAULT_TIMEOUT;
+		int resolvedMaxRetries = maxRetries != null ? maxRetries : DEFAULT_MAX_RETRIES;
 
-		if (proxy != null) {
-			builder.proxy(proxy);
-		}
+		AnthropicBackend backend = buildBackend(resolvedBaseUrl, resolvedApiKey);
 
-		builder.putHeader("User-Agent", DEFAULT_USER_AGENT);
+		ClientOptions.Builder optsBuilder = ClientOptions.builder()
+			.timeout(resolvedTimeout)
+			.maxRetries(resolvedMaxRetries)
+			.putHeader("User-Agent", DEFAULT_USER_AGENT);
 		if (customHeaders != null) {
-			builder.putAllHeaders(customHeaders.entrySet()
-				.stream()
-				.collect(Collectors.toMap(Map.Entry::getKey, entry -> Collections.singletonList(entry.getValue()))));
+			customHeaders.forEach(optsBuilder::putHeader);
 		}
 
-		builder.timeout(timeout);
-		builder.maxRetries(maxRetries);
+		SpringAiAnthropicHttpClient.Builder rawHttpBuilder = SpringAiAnthropicHttpClient.builder()
+			.backend(backend)
+			.timeout(resolvedTimeout)
+			.proxy(proxy)
+			.observationRegistry(observationRegistry)
+			.meterRegistry(meterRegistry)
+			.dispatcherExecutorService(dispatcherExecutor);
 
-		return builder.build();
+		for (AnthropicHttpClientBuilderCustomizer customizer : httpClientCustomizers) {
+			customizer.customize(rawHttpBuilder);
+		}
+
+		// Re-apply Spring AI's resolved backend and meterTags after the customizer loop
+		// so
+		// that neither can be inadvertently overridden:
+		// - backend: applyCredentials() below relies on the same backend instance; a
+		// replacement would misalign WIF credential injection.
+		// - meterTags: SYNC_CLIENT_TAGS / ASYNC_CLIENT_TAGS discriminate the two OkHttp
+		// connection-pool metric bindings; identical tags would cause duplicate gauge
+		// registration in the MeterRegistry at startup.
+		rawHttpBuilder.backend(backend);
+		rawHttpBuilder.meterTags(connectionPoolTags);
+
+		SpringAiAnthropicHttpClient rawHttp = rawHttpBuilder.build();
+
+		// No-op when a static apiKey/authToken is set; otherwise fetches WIF credentials.
+		backend.applyCredentials(rawHttp, optsBuilder);
+
+		return optsBuilder.httpClient(rawHttp).build();
+	}
+
+	private static AnthropicBackend buildBackend(@Nullable String baseUrl, @Nullable String apiKey) {
+		AnthropicBackend.Builder b = AnthropicBackend.builder();
+		if (baseUrl != null) {
+			b.baseUrl(baseUrl);
+		}
+		if (apiKey != null) {
+			b.apiKey(apiKey);
+		}
+		return b.build();
 	}
 
 	/**
@@ -207,7 +363,9 @@ public final class AnthropicSetup {
 		if (baseUrl == null) {
 			String envBaseUrl = System.getenv(ANTHROPIC_BASE_URL);
 			if (envBaseUrl != null) {
-				logger.debug("Anthropic Base URL detected from environment variable {}.", ANTHROPIC_BASE_URL);
+				if (logger.isDebugEnabled()) {
+					logger.debug("Anthropic Base URL detected from environment variable " + ANTHROPIC_BASE_URL + ".");
+				}
 				return envBaseUrl;
 			}
 		}
@@ -221,13 +379,17 @@ public final class AnthropicSetup {
 	static @Nullable String detectApiKey() {
 		String apiKey = System.getenv(ANTHROPIC_API_KEY);
 		if (apiKey != null) {
-			logger.debug("Anthropic API key detected from environment variable {}.", ANTHROPIC_API_KEY);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Anthropic API key detected from environment variable " + ANTHROPIC_API_KEY + ".");
+			}
 			return apiKey;
 		}
 
 		String authToken = System.getenv(ANTHROPIC_AUTH_TOKEN);
 		if (authToken != null) {
-			logger.debug("Anthropic auth token detected from environment variable {}.", ANTHROPIC_AUTH_TOKEN);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Anthropic auth token detected from environment variable " + ANTHROPIC_AUTH_TOKEN + ".");
+			}
 			return authToken;
 		}
 

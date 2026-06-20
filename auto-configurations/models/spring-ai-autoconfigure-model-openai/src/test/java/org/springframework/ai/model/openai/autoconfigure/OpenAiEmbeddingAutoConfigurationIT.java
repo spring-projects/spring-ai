@@ -23,16 +23,20 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
+import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * @author Sebastien Deleuze
+ */
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiEmbeddingAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"));
+		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"));
 
 	@Test
 	void embedding() {
@@ -91,20 +95,22 @@ public class OpenAiEmbeddingAutoConfigurationIT {
 				"spring.ai.openai.base-url=http://TEST.BASE.URL",
 
 				"spring.ai.openai.embedding.options.model=MODEL_XYZ",
-				"spring.ai.openai.embedding.options.encodingFormat=MyEncodingFormat",
+				"spring.ai.openai.embedding.options.encoding-format=float",
 				"spring.ai.openai.embedding.options.user=userXYZ"
 				)
 			// @formatter:on
 			.withConfiguration(AutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
-				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+				var commonProperties = context.getBean(OpenAiCommonProperties.class);
 				var embeddingProperties = context.getBean(OpenAiEmbeddingProperties.class);
 
-				assertThat(connectionProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
-				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
+				assertThat(commonProperties.getBaseUrl()).isEqualTo("http://TEST.BASE.URL");
+				assertThat(commonProperties.getApiKey()).isEqualTo("API_KEY");
 
-				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
-				assertThat(embeddingProperties.getOptions().getUser()).isEqualTo("userXYZ");
+				assertThat(embeddingProperties.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(embeddingProperties.getUser()).isEqualTo("userXYZ");
+				assertThat(embeddingProperties.getEncodingFormat())
+					.isEqualTo(OpenAiEmbeddingOptions.EncodingFormat.FLOAT);
 			});
 	}
 

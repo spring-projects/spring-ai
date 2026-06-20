@@ -18,6 +18,8 @@ package org.springframework.ai.openai;
 
 import java.net.Proxy;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -51,17 +53,33 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 	 */
 	public static final AudioResponseFormat DEFAULT_RESPONSE_FORMAT = AudioResponseFormat.TEXT;
 
-	private @Nullable String model;
+	private final AudioResponseFormat responseFormat;
 
-	private AudioResponseFormat responseFormat = DEFAULT_RESPONSE_FORMAT;
+	private final @Nullable String prompt;
 
-	private @Nullable String prompt;
+	private final @Nullable String language;
 
-	private @Nullable String language;
+	private final @Nullable Float temperature;
 
-	private @Nullable Float temperature;
+	private final @Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities;
 
-	private @Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities;
+	protected OpenAiAudioTranscriptionOptions(@Nullable String baseUrl, @Nullable String apiKey,
+			@Nullable Credential credential, @Nullable String model, @Nullable String microsoftDeploymentName,
+			@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion, @Nullable String organizationId,
+			@Nullable Boolean isMicrosoftFoundry, @Nullable Boolean isGitHubModels, @Nullable Duration timeout,
+			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
+			@Nullable AudioResponseFormat responseFormat, @Nullable String prompt, @Nullable String language,
+			@Nullable Float temperature,
+			@Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities) {
+		super(baseUrl, apiKey, credential, model != null ? model : DEFAULT_TRANSCRIPTION_MODEL, microsoftDeploymentName,
+				microsoftFoundryServiceVersion, organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries,
+				proxy, customHeaders);
+		this.responseFormat = responseFormat != null ? responseFormat : DEFAULT_RESPONSE_FORMAT;
+		this.prompt = prompt;
+		this.language = language;
+		this.temperature = temperature;
+		this.timestampGranularities = timestampGranularities != null ? List.copyOf(timestampGranularities) : null;
+	}
 
 	public static Builder builder() {
 		return new Builder();
@@ -69,79 +87,32 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 
 	@Override
 	public String getModel() {
-		return this.model != null ? this.model : DEFAULT_TRANSCRIPTION_MODEL;
-	}
-
-	public void setModel(@Nullable String model) {
-		this.model = model;
+		String model = super.getModel();
+		return model != null ? model : DEFAULT_TRANSCRIPTION_MODEL;
 	}
 
 	public AudioResponseFormat getResponseFormat() {
 		return this.responseFormat;
 	}
 
-	public void setResponseFormat(AudioResponseFormat responseFormat) {
-		this.responseFormat = responseFormat;
-	}
-
 	public @Nullable String getPrompt() {
 		return this.prompt;
-	}
-
-	public void setPrompt(@Nullable String prompt) {
-		this.prompt = prompt;
 	}
 
 	public @Nullable String getLanguage() {
 		return this.language;
 	}
 
-	public void setLanguage(@Nullable String language) {
-		this.language = language;
-	}
-
 	public @Nullable Float getTemperature() {
 		return this.temperature;
-	}
-
-	public void setTemperature(@Nullable Float temperature) {
-		this.temperature = temperature;
 	}
 
 	public @Nullable List<TranscriptionCreateParams.TimestampGranularity> getTimestampGranularities() {
 		return this.timestampGranularities;
 	}
 
-	public void setTimestampGranularities(
-			@Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities) {
-		this.timestampGranularities = timestampGranularities;
-	}
-
-	public OpenAiAudioTranscriptionOptions copy() {
-		return OpenAiAudioTranscriptionOptions.builder()
-			.model(this.model)
-			.responseFormat(this.responseFormat)
-			.prompt(this.prompt)
-			.language(this.language)
-			.temperature(this.temperature)
-			.timestampGranularities(this.timestampGranularities)
-			.baseUrl(this.getBaseUrl())
-			.apiKey(this.getApiKey())
-			.credential(this.getCredential())
-			.deploymentName(this.getDeploymentName())
-			.microsoftFoundryServiceVersion(this.getMicrosoftFoundryServiceVersion())
-			.organizationId(this.getOrganizationId())
-			.microsoftFoundry(this.isMicrosoftFoundry())
-			.gitHubModels(this.isGitHubModels())
-			.timeout(this.getTimeout())
-			.maxRetries(this.getMaxRetries())
-			.proxy(this.getProxy())
-			.customHeaders(this.getCustomHeaders())
-			.build();
-	}
-
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -149,28 +120,19 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 			return false;
 		}
 		OpenAiAudioTranscriptionOptions that = (OpenAiAudioTranscriptionOptions) o;
-		return Objects.equals(this.model, that.model) && Objects.equals(this.responseFormat, that.responseFormat)
-				&& Objects.equals(this.prompt, that.prompt) && Objects.equals(this.language, that.language)
-				&& Objects.equals(this.temperature, that.temperature)
+		return Objects.equals(this.getModel(), that.getModel())
+				&& Objects.equals(this.responseFormat, that.responseFormat) && Objects.equals(this.prompt, that.prompt)
+				&& Objects.equals(this.language, that.language) && Objects.equals(this.temperature, that.temperature)
 				&& Objects.equals(this.timestampGranularities, that.timestampGranularities);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.model, this.responseFormat, this.prompt, this.language, this.temperature,
+		return Objects.hash(this.getModel(), this.responseFormat, this.prompt, this.language, this.temperature,
 				this.timestampGranularities);
 	}
 
-	@Override
-	public String toString() {
-		return "OpenAiAudioTranscriptionOptions{" + "model='" + this.model + '\'' + ", responseFormat="
-				+ this.responseFormat + ", prompt='" + this.prompt + '\'' + ", language='" + this.language + '\''
-				+ ", temperature=" + this.temperature + ", timestampGranularities=" + this.timestampGranularities + '}';
-	}
-
-	public static final class Builder {
-
-		private @Nullable String model;
+	public static final class Builder extends AbstractBuilder<OpenAiAudioTranscriptionOptions, Builder> {
 
 		private @Nullable AudioResponseFormat responseFormat;
 
@@ -182,30 +144,6 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 
 		private @Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities;
 
-		private @Nullable String baseUrl;
-
-		private @Nullable String apiKey;
-
-		private @Nullable Credential credential;
-
-		private @Nullable String deploymentName;
-
-		private @Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion;
-
-		private @Nullable String organizationId;
-
-		private boolean microsoftFoundry;
-
-		private boolean gitHubModels;
-
-		private @Nullable Duration timeout;
-
-		private @Nullable Integer maxRetries;
-
-		private @Nullable Proxy proxy;
-
-		private @Nullable Map<String, String> customHeaders;
-
 		private Builder() {
 		}
 
@@ -214,11 +152,11 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 			this.apiKey = fromOptions.getApiKey();
 			this.credential = fromOptions.getCredential();
 			this.model = fromOptions.getModel();
-			this.deploymentName = fromOptions.getDeploymentName();
+			this.microsoftDeploymentName = fromOptions.getDeploymentName();
 			this.microsoftFoundryServiceVersion = fromOptions.getMicrosoftFoundryServiceVersion();
 			this.organizationId = fromOptions.getOrganizationId();
-			this.microsoftFoundry = fromOptions.isMicrosoftFoundry();
-			this.gitHubModels = fromOptions.isGitHubModels();
+			this.isMicrosoftFoundry = fromOptions.isMicrosoftFoundry();
+			this.isGitHubModels = fromOptions.isGitHubModels();
 			this.timeout = fromOptions.getTimeout();
 			this.maxRetries = fromOptions.getMaxRetries();
 			this.proxy = fromOptions.getProxy();
@@ -235,10 +173,8 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 			if (from == null) {
 				return this;
 			}
-			if (from.getModel() != null) {
-				this.model = from.getModel();
-			}
-			if (from instanceof OpenAiAudioTranscriptionOptions castFrom) {
+			this.model = from.getModel();
+			if (from instanceof AbstractOpenAiOptions castFrom) {
 				if (castFrom.getBaseUrl() != null) {
 					this.baseUrl = castFrom.getBaseUrl();
 				}
@@ -249,7 +185,7 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 					this.credential = castFrom.getCredential();
 				}
 				if (castFrom.getDeploymentName() != null) {
-					this.deploymentName = castFrom.getDeploymentName();
+					this.microsoftDeploymentName = castFrom.getDeploymentName();
 				}
 				if (castFrom.getMicrosoftFoundryServiceVersion() != null) {
 					this.microsoftFoundryServiceVersion = castFrom.getMicrosoftFoundryServiceVersion();
@@ -257,19 +193,26 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 				if (castFrom.getOrganizationId() != null) {
 					this.organizationId = castFrom.getOrganizationId();
 				}
-				this.microsoftFoundry = castFrom.isMicrosoftFoundry();
-				this.gitHubModels = castFrom.isGitHubModels();
+				this.isMicrosoftFoundry = castFrom.isMicrosoftFoundry();
+				this.isGitHubModels = castFrom.isGitHubModels();
 				this.timeout = castFrom.getTimeout();
 				this.maxRetries = castFrom.getMaxRetries();
 				if (castFrom.getProxy() != null) {
 					this.proxy = castFrom.getProxy();
 				}
 				if (castFrom.getCustomHeaders() != null) {
-					this.customHeaders = castFrom.getCustomHeaders();
+					if (this.customHeaders == null) {
+						this.customHeaders = new HashMap<>(castFrom.getCustomHeaders());
+					}
+					else {
+						Map<String, String> merged = new HashMap<>(this.customHeaders);
+						merged.putAll(castFrom.getCustomHeaders());
+						this.customHeaders = merged;
+					}
 				}
-				if (castFrom.getResponseFormat() != null) {
-					this.responseFormat = castFrom.getResponseFormat();
-				}
+			}
+			if (from instanceof OpenAiAudioTranscriptionOptions castFrom) {
+				this.responseFormat = castFrom.getResponseFormat();
 				if (castFrom.getPrompt() != null) {
 					this.prompt = castFrom.getPrompt();
 				}
@@ -280,18 +223,21 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 					this.temperature = castFrom.getTemperature();
 				}
 				if (castFrom.getTimestampGranularities() != null) {
-					this.timestampGranularities = castFrom.getTimestampGranularities();
+					if (this.timestampGranularities == null) {
+						this.timestampGranularities = new ArrayList<>(castFrom.getTimestampGranularities());
+					}
+					else {
+						List<TranscriptionCreateParams.TimestampGranularity> merged = new ArrayList<>(
+								this.timestampGranularities);
+						merged.addAll(castFrom.getTimestampGranularities());
+						this.timestampGranularities = merged;
+					}
 				}
 			}
 			return this;
 		}
 
-		public Builder model(@Nullable String model) {
-			this.model = model;
-			return this;
-		}
-
-		public Builder responseFormat(AudioResponseFormat responseFormat) {
+		public Builder responseFormat(@Nullable AudioResponseFormat responseFormat) {
 			this.responseFormat = responseFormat;
 			return this;
 		}
@@ -317,96 +263,13 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 			return this;
 		}
 
-		public Builder baseUrl(@Nullable String baseUrl) {
-			this.baseUrl = baseUrl;
-			return this;
-		}
-
-		public Builder apiKey(@Nullable String apiKey) {
-			this.apiKey = apiKey;
-			return this;
-		}
-
-		public Builder credential(@Nullable Credential credential) {
-			this.credential = credential;
-			return this;
-		}
-
-		public Builder deploymentName(@Nullable String deploymentName) {
-			this.deploymentName = deploymentName;
-			return this;
-		}
-
-		public Builder microsoftFoundryServiceVersion(
-				@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion) {
-			this.microsoftFoundryServiceVersion = microsoftFoundryServiceVersion;
-			return this;
-		}
-
-		public Builder organizationId(@Nullable String organizationId) {
-			this.organizationId = organizationId;
-			return this;
-		}
-
-		public Builder microsoftFoundry(boolean microsoftFoundry) {
-			this.microsoftFoundry = microsoftFoundry;
-			return this;
-		}
-
-		public Builder gitHubModels(boolean gitHubModels) {
-			this.gitHubModels = gitHubModels;
-			return this;
-		}
-
-		public Builder timeout(Duration timeout) {
-			this.timeout = timeout;
-			return this;
-		}
-
-		public Builder maxRetries(int maxRetries) {
-			this.maxRetries = maxRetries;
-			return this;
-		}
-
-		public Builder proxy(@Nullable Proxy proxy) {
-			this.proxy = proxy;
-			return this;
-		}
-
-		public Builder customHeaders(Map<String, String> customHeaders) {
-			this.customHeaders = customHeaders;
-			return this;
-		}
-
+		@Override
 		public OpenAiAudioTranscriptionOptions build() {
-			OpenAiAudioTranscriptionOptions options = new OpenAiAudioTranscriptionOptions();
-			options.setBaseUrl(this.baseUrl);
-			options.setApiKey(this.apiKey);
-			options.setCredential(this.credential);
-			options.setModel(this.model);
-			options.setDeploymentName(this.deploymentName);
-			options.setMicrosoftFoundryServiceVersion(this.microsoftFoundryServiceVersion);
-			options.setOrganizationId(this.organizationId);
-			options.setMicrosoftFoundry(this.microsoftFoundry);
-			options.setGitHubModels(this.gitHubModels);
-			if (this.timeout != null) {
-				options.setTimeout(this.timeout);
-			}
-			if (this.maxRetries != null) {
-				options.setMaxRetries(this.maxRetries);
-			}
-			options.setProxy(this.proxy);
-			if (this.customHeaders != null) {
-				options.setCustomHeaders(this.customHeaders);
-			}
-			if (this.responseFormat != null) {
-				options.setResponseFormat(this.responseFormat);
-			}
-			options.setPrompt(this.prompt);
-			options.setLanguage(this.language);
-			options.setTemperature(this.temperature);
-			options.setTimestampGranularities(this.timestampGranularities);
-			return options;
+			return new OpenAiAudioTranscriptionOptions(this.baseUrl, this.apiKey, this.credential, this.model,
+					this.microsoftDeploymentName, this.microsoftFoundryServiceVersion, this.organizationId,
+					this.isMicrosoftFoundry, this.isGitHubModels, this.timeout, this.maxRetries, this.proxy,
+					this.customHeaders, this.responseFormat, this.prompt, this.language, this.temperature,
+					this.timestampGranularities);
 		}
 
 	}

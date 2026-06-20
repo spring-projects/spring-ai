@@ -16,11 +16,13 @@
 
 package org.springframework.ai.testcontainers.service.connection.opensearch;
 
+import org.jspecify.annotations.Nullable;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 
 import org.springframework.ai.vectorstore.opensearch.autoconfigure.AwsOpenSearchConnectionDetails;
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionDetailsFactory;
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionSource;
+import org.springframework.util.Assert;
 
 /**
  * @author Eddú Meléndez
@@ -61,7 +63,8 @@ class AwsOpenSearchContainerConnectionDetailsFactory
 		}
 
 		@Override
-		public String getHost(String domainName) {
+		public String getHost(@Nullable String domainName) {
+			Assert.notNull(domainName, "expected non null domainName");
 			return "%s.%s.opensearch.localhost.localstack.cloud:%s".formatted(domainName, getContainer().getRegion(),
 					getContainer().getMappedPort(4566));
 		}

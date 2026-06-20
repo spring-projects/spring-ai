@@ -42,10 +42,6 @@ public class BedrockTitanEmbeddingProperties {
 	 */
 	private InputType inputType = InputType.IMAGE;
 
-	public static String getConfigPrefix() {
-		return CONFIG_PREFIX;
-	}
-
 	public String getModel() {
 		return this.model;
 	}

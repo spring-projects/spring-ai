@@ -75,9 +75,9 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 
 | spring.ai.bedrock.aws.region     | AWS region to use  | us-east-1
 | spring.ai.bedrock.aws.timeout    | AWS max duration for entire API call | 5m
-| spring.ai.bedrock.aws.connectionTimeout | Max duration to wait while establishing connection | 5s
-| spring.ai.bedrock.aws.connectionAcquisitionTimeout | Max duration to wait for new connection from the pool | 30s
-| spring.ai.bedrock.aws.asyncReadTimeout | Max duration spent reading asynchronous responses | 30s
+| spring.ai.bedrock.aws.connection-timeout | Max duration to wait while establishing connection | 5s
+| spring.ai.bedrock.aws.connection-acquisition-timeout | Max duration to wait for new connection from the pool | 30s
+| spring.ai.bedrock.aws.async-read-timeout | Max duration spent reading asynchronous responses | 30s
 | spring.ai.bedrock.aws.access-key | AWS access key  | -
 | spring.ai.bedrock.aws.secret-key | AWS secret key  | -
 | spring.ai.bedrock.aws.session-token | AWS session token for temporary credentials | -
@@ -105,18 +105,18 @@ The prefix `spring.ai.bedrock.converse.chat` is the property prefix that configu
 
 | spring.ai.bedrock.converse.chat.enabled (Removed and no longer valid) | Enable Bedrock Converse chat model. | true
 | spring.ai.model.chat | Enable Bedrock Converse chat model. | bedrock-converse
-| spring.ai.bedrock.converse.chat.options.model | The model ID to use. You can use the https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-supported-models-features.html[Supported models and model features]  | None. Select your https://us-east-1.console.aws.amazon.com/bedrock/home?region=us-east-1#/models[modelId] from the AWS Bedrock console.
-| spring.ai.bedrock.converse.chat.options.temperature | Controls the randomness of the output. Values can range over [0.0,1.0] | 0.8
-| spring.ai.bedrock.converse.chat.options.top-p | The maximum cumulative probability of tokens to consider when sampling. | AWS Bedrock default
-| spring.ai.bedrock.converse.chat.options.top-k | Number of token choices for generating the next token. | AWS Bedrock default
-| spring.ai.bedrock.converse.chat.options.max-tokens | Maximum number of tokens in the generated response. | 500
+| spring.ai.bedrock.converse.chat.model | The model ID to use. You can use the https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-supported-models-features.html[Supported models and model features]  | None. Select your https://us-east-1.console.aws.amazon.com/bedrock/home?region=us-east-1#/models[modelId] from the AWS Bedrock console.
+| spring.ai.bedrock.converse.chat.temperature | Controls the randomness of the output. Values can range over [0.0,1.0] | 0.8
+| spring.ai.bedrock.converse.chat.top-p | The maximum cumulative probability of tokens to consider when sampling. | AWS Bedrock default
+| spring.ai.bedrock.converse.chat.top-k | Number of token choices for generating the next token. | AWS Bedrock default
+| spring.ai.bedrock.converse.chat.max-tokens | Maximum number of tokens in the generated response. | 500
 |====
 
 == Runtime Options [[chat-options]]
 
 Use the portable `ChatOptions` or `BedrockChatOptions` portable builders to create model configurations, such as temperature, maxToken, topP, etc.
 
-On start-up, the default options can be configured with the `BedrockConverseProxyChatModel(api, options)` constructor or the `spring.ai.bedrock.converse.chat.options.*` properties.
+On start-up, the default options can be configured with the `BedrockConverseProxyChatModel(api, options)` constructor or the `spring.ai.bedrock.converse.chat.*` properties.
 
 At run-time you can override the default options by adding new, request specific, options to the `Prompt` call:
 
@@ -270,13 +270,12 @@ Cache growing conversation history for multi-turn chatbots and assistants:
 // Cache conversation history with ChatClient and memory
 ChatClient chatClient = ChatClient.builder(chatModel)
     .defaultSystem("You are a personalized career counselor...")
-    .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory)
-        .conversationId(conversationId)
-        .build())
+    .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
     .build();
 
 String response = chatClient.prompt()
     .user("What career advice would you give me?")
+    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
     .options(BedrockChatOptions.builder()
         .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
         .cacheOptions(BedrockCacheOptions.builder()
@@ -287,6 +286,42 @@ String response = chatClient.prompt()
     .call()
     .content();
 ----
+
+==== Multi-Block System Message Caching
+
+When using advisors (e.g., RAG context injection), your system prompt may consist of multiple `SystemMessage` instances: a static prefix (your base instructions) and a dynamic suffix (advisor-injected context that changes each request).
+
+By default, when `SYSTEM_ONLY` or `SYSTEM_AND_TOOLS` caching is enabled, each `SystemMessage` is emitted as a separate `SystemContentBlock` and the cache point is placed *after the last block*.
+If any part of that content changes between requests, the entire system cache is invalidated — resulting in a 1.25x cache write cost on every request instead of the much cheaper cache read.
+
+The `multiBlockSystemCaching` option solves this by placing the cache point *after the second-to-last* system block (i.e., at the boundary between the static prefix and the dynamic suffix), so the static portion remains cached even as the last block changes freely.
+
+[source,java]
+----
+BedrockCacheOptions cacheOptions = BedrockCacheOptions.builder()
+    .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
+    .multiBlockSystemCaching(true)
+    .build();
+
+BedrockChatOptions chatOptions = BedrockChatOptions.builder()
+    .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
+    .cacheOptions(cacheOptions)
+    .build();
+
+// Static system prompt (will be cached)
+SystemMessage staticPrompt = new SystemMessage("You are an expert assistant...");
+// Dynamic RAG context (injected by advisor, changes each request)
+SystemMessage dynamicContext = new SystemMessage("Relevant context: " + ragResults);
+
+Prompt prompt = new Prompt(List.of(staticPrompt, dynamicContext, new UserMessage("...")), chatOptions);
+----
+
+This produces a Bedrock `system` array of the form `[text(static), cachePoint, text(dynamic)]` so only the static prefix participates in the cache key.
+
+NOTE: If only a single `SystemMessage` is present, the cache point is placed after that single block (same as the default behavior).
+The `multiBlockSystemCaching` option only changes placement when there are two or more system messages.
+
+IMPORTANT: Message ordering matters. The cache point is always placed after the second-to-last system block, so static content must come before dynamic content in the message list. If you register your base instructions as the first `SystemMessage` and let advisors append dynamic context after, this ordering is naturally satisfied.
 
 ==== Using ChatClient Fluent API
 
@@ -754,46 +789,9 @@ AWS Bedrock pricing for prompt caching (approximate, varies by model):
 
 == Tool Calling
 
-The Bedrock Converse API supports tool calling capabilities, allowing models to use tools during conversations.
-Here's an example of how to define and use @Tool based tools:
+`BedrockProxyChatModel` supports tool calling. The model can request tool execution but does not run tools itself — Spring AI handles execution.
 
-[source,java]
-----
-
-public class WeatherService {
-
-    @Tool(description = "Get the weather in location")
-    public String weatherByLocation(@ToolParam(description= "City or state name") String location) {
-        ...
-    }
-}
-
-String response = ChatClient.create(this.chatModel)
-        .prompt("What's the weather like in Boston?")
-        .tools(new WeatherService())
-        .call()
-        .content();
-----
-
-You can use the java.util.function beans as tools as well:
-
-[source,java]
-----
-@Bean
-@Description("Get the weather in location. Return temperature in 36°F or 36°C format.")
-public Function<Request, Response> weatherFunction() {
-    return new MockWeatherService();
-}
-
-String response = ChatClient.create(this.chatModel)
-        .prompt("What's the weather like in Boston?")
-        .toolNames("weatherFunction")
-        .inputType(Request.class)
-        .call()
-        .content();
-----
-
-Find more in xref:api/tools.adoc[Tools] documentation.
+For most applications, use `ChatClient` with the auto-registered `ToolCallingAdvisor` — see xref:api/tools.adoc[Tool Calling]. For low-level control where you drive the loop yourself (for example, when combining tool calling with prompt caching), see xref:api/tools/chatmodel-tool-calling.adoc[ChatModel Tool Calling].
 
 == Structured Output [[structured-output]]
 
@@ -989,8 +987,8 @@ spring.ai.bedrock.aws.secret-key=${AWS_SECRET_ACCESS_KEY}
 # session token is only required for temporary credentials
 spring.ai.bedrock.aws.session-token=${AWS_SESSION_TOKEN}
 
-spring.ai.bedrock.converse.chat.options.temperature=0.8
-spring.ai.bedrock.converse.chat.options.top-k=15
+spring.ai.bedrock.converse.chat.temperature=0.8
+spring.ai.bedrock.converse.chat.top-k=15
 ----
 
 Here's an example controller using the chat model:

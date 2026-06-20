@@ -21,9 +21,9 @@ import java.util.Set;
 import java.util.function.Function;
 
 import com.anthropic.models.messages.CacheControlEphemeral;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.util.Assert;
@@ -39,7 +39,7 @@ import org.springframework.util.Assert;
  */
 public class CacheEligibilityResolver {
 
-	private static final Logger logger = LoggerFactory.getLogger(CacheEligibilityResolver.class);
+	private static final Log logger = LogFactory.getLog(CacheEligibilityResolver.class);
 
 	private static final MessageType TOOL_DEFINITION_MESSAGE_TYPE = MessageType.SYSTEM;
 
@@ -87,16 +87,20 @@ public class CacheEligibilityResolver {
 		Assert.state(minLength != null, "The minimum content length of the message type must be defined");
 		if (this.cacheStrategy == AnthropicCacheStrategy.NONE || !this.cacheEligibleMessageTypes.contains(messageType)
 				|| length < minLength || this.cacheBreakpointTracker.allBreakpointsAreUsed()) {
-			logger.debug(
-					"Caching not enabled for messageType={}, contentLength={}, minContentLength={}, cacheStrategy={}, usedBreakpoints={}",
-					messageType, length, minLength, this.cacheStrategy, this.cacheBreakpointTracker.getCount());
+			if (logger.isDebugEnabled()) {
+				logger.debug("Caching not enabled for messageType=" + messageType + ", contentLength=" + length
+						+ ", minContentLength=" + minLength + ", cacheStrategy=" + this.cacheStrategy
+						+ ", usedBreakpoints=" + this.cacheBreakpointTracker.getCount());
+			}
 			return null;
 		}
 
 		AnthropicCacheTtl cacheTtl = this.messageTypeTtl.get(messageType);
 		Assert.state(cacheTtl != null, "The message type ttl of the message type must be defined");
 
-		logger.debug("Caching enabled for messageType={}, ttl={}", messageType, cacheTtl);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Caching enabled for messageType=" + messageType + ", ttl=" + cacheTtl);
+		}
 
 		return CacheControlEphemeral.builder().ttl(cacheTtl.getSdkTtl()).build();
 	}
@@ -105,20 +109,26 @@ public class CacheEligibilityResolver {
 		if (this.cacheStrategy != AnthropicCacheStrategy.TOOLS_ONLY
 				&& this.cacheStrategy != AnthropicCacheStrategy.SYSTEM_AND_TOOLS
 				&& this.cacheStrategy != AnthropicCacheStrategy.CONVERSATION_HISTORY) {
-			logger.debug("Caching not enabled for tool definition, cacheStrategy={}", this.cacheStrategy);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Caching not enabled for tool definition, cacheStrategy=" + this.cacheStrategy);
+			}
 			return null;
 		}
 
 		if (this.cacheBreakpointTracker.allBreakpointsAreUsed()) {
-			logger.debug("Caching not enabled for tool definition, usedBreakpoints={}",
-					this.cacheBreakpointTracker.getCount());
+			if (logger.isDebugEnabled()) {
+				logger.debug("Caching not enabled for tool definition, usedBreakpoints="
+						+ this.cacheBreakpointTracker.getCount());
+			}
 			return null;
 		}
 
 		AnthropicCacheTtl cacheTtl = this.messageTypeTtl.get(TOOL_DEFINITION_MESSAGE_TYPE);
 		Assert.state(cacheTtl != null, "messageTypeTtl must contain a 'system' entry");
 
-		logger.debug("Caching enabled for tool definition, ttl={}", cacheTtl);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Caching enabled for tool definition, ttl=" + cacheTtl);
+		}
 
 		return CacheControlEphemeral.builder().ttl(cacheTtl.getSdkTtl()).build();
 	}

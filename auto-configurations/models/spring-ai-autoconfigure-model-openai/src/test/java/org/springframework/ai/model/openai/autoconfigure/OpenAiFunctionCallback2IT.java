@@ -21,10 +21,10 @@ import java.util.stream.Collectors;
 import com.openai.models.ChatModel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.tool.ToolCallback;
@@ -37,27 +37,32 @@ import org.springframework.context.annotation.Configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+/**
+ * @author Sebastien Deleuze
+ */
 public class OpenAiFunctionCallback2IT {
 
-	private final Logger logger = LoggerFactory.getLogger(OpenAiFunctionCallback2IT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
+		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test
 	void functionCallTest() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.openai.chat.options.temperature=0.1",
-					"spring.ai.openai.chat.options.model=" + ChatModel.GPT_4O_MINI.asString())
+			.withPropertyValues("spring.ai.openai.chat.temperature=0.1",
+					"spring.ai.openai.chat.model=" + ChatModel.GPT_4O_MINI.asString())
 			.run(context -> {
 
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
 			// @formatter:off
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+			ToolCallback weatherFunctionInfo = context.getBean("weatherFunctionInfo", ToolCallback.class);
+
 			ChatClient chatClient = ChatClient.builder(chatModel)
-				.defaultToolNames("WeatherInfo")
+				.defaultAdvisors(ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager).build())
+				.defaultTools(weatherFunctionInfo)
 				.defaultUser(u -> u.text("What's the weather like in {cities}? Please use the provided tools to get the weather for all 3 cities."))
 				.build();
 
@@ -66,8 +71,6 @@ public class OpenAiFunctionCallback2IT {
 				.call().content();
 			// @formatter:on
 
-				logger.info("Response: {}", content);
-
 				assertThat(content).contains("30", "10", "15");
 			});
 	}
@@ -75,21 +78,23 @@ public class OpenAiFunctionCallback2IT {
 	@Test
 	void streamFunctionCallTest() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.openai.chat.options.temperature=0.2",
-					"spring.ai.openai.chat.options.model=" + ChatModel.GPT_4O_MINI.asString())
+			.withPropertyValues("spring.ai.openai.chat.temperature=0.2",
+					"spring.ai.openai.chat.model=" + ChatModel.GPT_4O_MINI.asString())
 			.run(context -> {
 
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+				ToolCallback weatherFunctionInfo = context.getBean("weatherFunctionInfo", ToolCallback.class);
 
 			// @formatter:off
-			String content = ChatClient.builder(chatModel).build().prompt()
-				.toolNames("WeatherInfo")
+			ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+			String content = ChatClient.builder(chatModel)
+				.defaultAdvisors(ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager).build())
+				.build().prompt()
+				.tools(weatherFunctionInfo)
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities.")
 				.stream().content()
 				.collectList().block().stream().collect(Collectors.joining());
 			// @formatter:on
-
-				logger.info("Response: {}", content);
 
 				assertThat(content).contains("30", "10", "15");
 			});

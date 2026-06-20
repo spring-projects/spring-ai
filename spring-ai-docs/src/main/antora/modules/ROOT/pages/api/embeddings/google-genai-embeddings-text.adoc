@@ -118,11 +118,11 @@ The prefix `spring.ai.google.genai.embedding.text` is the property prefix that l
 | Property | Description | Default
 
 | spring.ai.model.embedding.text | Enable Google GenAI Embedding API model. | google-genai
-| spring.ai.google.genai.embedding.text.options.model | The https://ai.google.dev/gemini-api/docs/models/gemini#text-embedding[Google GenAI Text Embedding model] to use. Supported models include `text-embedding-004` and `text-multilingual-embedding-002` | text-embedding-004
-| spring.ai.google.genai.embedding.text.options.task-type | The intended downstream application to help the model produce better quality embeddings. Available link:https://ai.google.dev/api/embeddings#tasktype[task-types]: `RETRIEVAL_QUERY`, `RETRIEVAL_DOCUMENT`, `SEMANTIC_SIMILARITY`, `CLASSIFICATION`, `CLUSTERING`, `QUESTION_ANSWERING`, `FACT_VERIFICATION`  | `RETRIEVAL_DOCUMENT`
-| spring.ai.google.genai.embedding.text.options.title | Optional title, only valid with task_type=RETRIEVAL_DOCUMENT.  | -
-| spring.ai.google.genai.embedding.text.options.dimensions | The number of dimensions the resulting output embeddings should have. Supported for model version 004 and later. You can use this parameter to reduce the embedding size, for example, for storage optimization.  | -
-| spring.ai.google.genai.embedding.text.options.auto-truncate | When set to true, input text will be truncated. When set to false, an error is returned if the input text is longer than the maximum length supported by the model.  | true
+| spring.ai.google.genai.embedding.text.model | The https://ai.google.dev/gemini-api/docs/models/gemini#text-embedding[Google GenAI Text Embedding model] to use. Supported models include `text-embedding-004` and `text-multilingual-embedding-002` | text-embedding-004
+| spring.ai.google.genai.embedding.text.task-type | The intended downstream application to help the model produce better quality embeddings. Available link:https://ai.google.dev/api/embeddings#tasktype[task-types]: `RETRIEVAL_QUERY`, `RETRIEVAL_DOCUMENT`, `SEMANTIC_SIMILARITY`, `CLASSIFICATION`, `CLUSTERING`, `QUESTION_ANSWERING`, `FACT_VERIFICATION`  | `RETRIEVAL_DOCUMENT`
+| spring.ai.google.genai.embedding.text.title | Optional title, only valid with task_type=RETRIEVAL_DOCUMENT.  | -
+| spring.ai.google.genai.embedding.text.dimensions | The number of dimensions the resulting output embeddings should have. Supported for model version 004 and later. You can use this parameter to reduce the embedding size, for example, for storage optimization.  | -
+| spring.ai.google.genai.embedding.text.auto-truncate | When set to true, input text will be truncated. When set to false, an error is returned if the input text is longer than the maximum length supported by the model.  | true
 |====
 
 == Sample Controller
@@ -136,7 +136,7 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 [source,application.properties]
 ----
 spring.ai.google.genai.embedding.api-key=YOUR_API_KEY
-spring.ai.google.genai.embedding.text.options.model=text-embedding-004
+spring.ai.google.genai.embedding.text.model=text-embedding-004
 ----
 
 === Using Vertex AI
@@ -145,7 +145,7 @@ spring.ai.google.genai.embedding.text.options.model=text-embedding-004
 ----
 spring.ai.google.genai.embedding.project-id=YOUR_PROJECT_ID
 spring.ai.google.genai.embedding.location=YOUR_PROJECT_LOCATION
-spring.ai.google.genai.embedding.text.options.model=text-embedding-004
+spring.ai.google.genai.embedding.text.model=text-embedding-004
 ----
 
 

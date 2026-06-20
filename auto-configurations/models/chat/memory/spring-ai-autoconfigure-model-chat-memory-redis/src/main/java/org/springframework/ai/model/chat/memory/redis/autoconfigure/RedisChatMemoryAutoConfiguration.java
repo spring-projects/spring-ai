@@ -16,7 +16,7 @@
 
 package org.springframework.ai.model.chat.memory.redis.autoconfigure;
 
-import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.RedisClient;
 
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
@@ -33,21 +33,22 @@ import org.springframework.util.StringUtils;
  * Auto-configuration for Redis-based chat memory implementation.
  *
  * @author Brian Sam-Bodden
+ * @author Yanming Zhou
  */
 @AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
-@ConditionalOnClass({ RedisChatMemoryRepository.class, JedisPooled.class })
+@ConditionalOnClass({ RedisChatMemoryRepository.class, RedisClient.class })
 @EnableConfigurationProperties(RedisChatMemoryProperties.class)
 public class RedisChatMemoryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public JedisPooled jedisClient(RedisChatMemoryProperties properties) {
-		return new JedisPooled(properties.getHost(), properties.getPort());
+	public RedisClient jedisClient(RedisChatMemoryProperties properties) {
+		return RedisClient.builder().hostAndPort(properties.getHost(), properties.getPort()).build();
 	}
 
 	@Bean
 	@ConditionalOnMissingBean({ RedisChatMemoryRepository.class, ChatMemory.class, ChatMemoryRepository.class })
-	public RedisChatMemoryRepository redisChatMemory(JedisPooled jedisClient, RedisChatMemoryProperties properties) {
+	public RedisChatMemoryRepository redisChatMemory(RedisClient jedisClient, RedisChatMemoryProperties properties) {
 		RedisChatMemoryRepository.Builder builder = RedisChatMemoryRepository.builder().jedisClient(jedisClient);
 
 		// Apply configuration if provided

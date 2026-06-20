@@ -17,16 +17,17 @@
 package org.springframework.ai.openai.chat.proxy;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.ollama.OllamaContainer;
 import reactor.core.publisher.Flux;
@@ -43,6 +44,10 @@ import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.ai.model.NoopApiKey;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -63,12 +68,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * provider.
  *
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  */
 @Testcontainers
 @SpringBootTest(classes = OllamaWithOpenAiChatModelIT.Config.class)
 class OllamaWithOpenAiChatModelIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(OllamaWithOpenAiChatModelIT.class);
+	private static final Log logger = LogFactory.getLog(OllamaWithOpenAiChatModelIT.class);
 
 	private static final String DEFAULT_OLLAMA_MODEL = "qwen2.5:3b";
 
@@ -79,7 +85,9 @@ class OllamaWithOpenAiChatModelIT {
 
 	static OllamaContainer ollamaContainer;
 
-	static String baseUrl = "http://localhost:11434/v1";
+	static String getBaseUrl() {
+		return SKIP_CONTAINER_CREATION ? "http://localhost:11434/v1" : ollamaContainer.getEndpoint() + "/v1";
+	}
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
@@ -90,7 +98,7 @@ class OllamaWithOpenAiChatModelIT {
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
 		if (!SKIP_CONTAINER_CREATION) {
-			ollamaContainer = new OllamaContainer("ollama/ollama:0.10.1").withReuse(true);
+			ollamaContainer = new OllamaContainer("ollama/ollama:0.23.1").withReuse(true);
 			ollamaContainer.start();
 			logger.info(
 					"Start pulling the '" + DEFAULT_OLLAMA_MODEL + " ' generative ... would take several minutes ...");
@@ -98,7 +106,7 @@ class OllamaWithOpenAiChatModelIT {
 			ollamaContainer.execInContainer("ollama", "pull", MULTIMODAL_MODEL);
 			logger.info(DEFAULT_OLLAMA_MODEL + " pulling competed!");
 
-			baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434) + "/v1";
+			// No need to set baseUrl here, it's evaluated dynamically
 		}
 	}
 
@@ -139,6 +147,19 @@ class OllamaWithOpenAiChatModelIT {
 			.collect(Collectors.joining());
 
 		assertThat(stitchedResponseContent).containsIgnoringCase("Copenhag");
+
+		// Validate reasoning content is populated in stream (might be empty, but
+		// shouldn't be null)
+		String stitchedReasoningContent = responses.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getMetadata)
+			.map(metadata -> metadata.get("reasoningContent") != null ? metadata.get("reasoningContent").toString()
+					: "")
+			.collect(Collectors.joining());
+
+		assertThat(stitchedReasoningContent).isNotNull();
 	}
 
 	@Test
@@ -178,6 +199,7 @@ class OllamaWithOpenAiChatModelIT {
 			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage(),
 				OpenAiChatOptions.builder()
+					.model(DEFAULT_OLLAMA_MODEL)
 					.responseFormat(OpenAiChatModel.ResponseFormat.builder()
 						.type(OpenAiChatModel.ResponseFormat.Type.JSON_OBJECT)
 						.build())
@@ -185,7 +207,6 @@ class OllamaWithOpenAiChatModelIT {
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -197,7 +218,9 @@ class OllamaWithOpenAiChatModelIT {
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-		var promptOptions = OpenAiChatOptions.builder()
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
 			.model(DEFAULT_OLLAMA_MODEL)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
@@ -206,10 +229,15 @@ class OllamaWithOpenAiChatModelIT {
 				.build()))
 			.build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+		Prompt prompt = new Prompt(messages, options);
 
-		logger.info("Response: {}", response);
+		ChatResponse response = this.chatModel.call(prompt);
 
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			response = this.chatModel.call(prompt);
+		}
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
@@ -224,8 +252,6 @@ class OllamaWithOpenAiChatModelIT {
 
 		var response = this.chatModel
 			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(MULTIMODAL_MODEL).build()));
-
-		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
 				"fruit stand");
 	}
@@ -238,13 +264,15 @@ class OllamaWithOpenAiChatModelIT {
 			.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 			.call()
 			.chatResponse();
-
-		logger.info(response.toString());
 		assertThat(response.getMetadata().getId()).isNotEmpty();
 		assertThat(response.getMetadata().getModel()).containsIgnoringCase(DEFAULT_OLLAMA_MODEL);
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
+
+		// Validate reasoning content is populated (might be empty for models that don't
+		// support it, but shouldn't be null)
+		assertThat((Object) response.getResult().getOutput().getMetadata().get("reasoningContent")).isNotNull();
 	}
 
 	@Test
@@ -304,7 +332,12 @@ class OllamaWithOpenAiChatModelIT {
 		@Bean
 		public OpenAiChatModel openAiSdkChatModel() {
 			return OpenAiChatModel.builder()
-				.options(OpenAiChatOptions.builder().baseUrl(baseUrl).model(DEFAULT_OLLAMA_MODEL).build())
+				.options(OpenAiChatOptions.builder()
+					.baseUrl(getBaseUrl())
+					.apiKey(new NoopApiKey())
+					.model(DEFAULT_OLLAMA_MODEL)
+					.timeout(Duration.ofMinutes(5))
+					.build())
 				.build();
 		}
 

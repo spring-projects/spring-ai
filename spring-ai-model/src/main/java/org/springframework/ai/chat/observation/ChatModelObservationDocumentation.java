@@ -142,6 +142,16 @@ public enum ChatModelObservationDocumentation implements ObservationDocumentatio
 		},
 
 		/**
+		 * Indicates whether the GenAI request was made in streaming mode.
+		 */
+		REQUEST_STREAM {
+			@Override
+			public String asString() {
+				return AiObservationAttributes.REQUEST_STREAM.value();
+			}
+		},
+
+		/**
 		 * The temperature setting for the model request.
 		 */
 		REQUEST_TEMPERATURE {
@@ -205,6 +215,26 @@ public enum ChatModelObservationDocumentation implements ObservationDocumentatio
 		},
 
 		// Usage
+
+		/**
+		 * The number of input tokens written to a provider-managed cache.
+		 */
+		USAGE_CACHE_WRITE_INPUT_TOKENS {
+			@Override
+			public String asString() {
+				return AiObservationAttributes.USAGE_CACHE_WRITE_INPUT_TOKENS.value();
+			}
+		},
+
+		/**
+		 * The number of input tokens served from a provider-managed cache.
+		 */
+		USAGE_CACHE_READ_INPUT_TOKENS {
+			@Override
+			public String asString() {
+				return AiObservationAttributes.USAGE_CACHE_READ_INPUT_TOKENS.value();
+			}
+		},
 
 		/**
 		 * The number of tokens used in the model input (prompt).

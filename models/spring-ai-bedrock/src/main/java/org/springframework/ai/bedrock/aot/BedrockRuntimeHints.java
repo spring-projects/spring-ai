@@ -23,8 +23,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
@@ -50,7 +51,7 @@ public class BedrockRuntimeHints implements RuntimeHintsRegistrar {
 
 	private final String rootPackage = "software.amazon.awssdk";
 
-	private final Logger log = LoggerFactory.getLogger(BedrockRuntimeHints.class);
+	private final Log log = LogFactory.getLog(BedrockRuntimeHints.class);
 
 	private final MemberCategory[] memberCategories = MemberCategory.values();
 
@@ -63,7 +64,7 @@ public class BedrockRuntimeHints implements RuntimeHintsRegistrar {
 	}
 
 	@Override
-	public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+	public void registerHints(RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		try {
 			this.registerBedrockRuntimeService(hints);
 			this.registerSerializationClasses(hints);
