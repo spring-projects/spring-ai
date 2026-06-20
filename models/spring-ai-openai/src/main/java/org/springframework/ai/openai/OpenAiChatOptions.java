@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -650,10 +651,10 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		public ChatCompletionAudioParam toChatCompletionAudioParam() {
 			ChatCompletionAudioParam.Builder builder = ChatCompletionAudioParam.builder();
 			if (this.voice() != null) {
-				builder.voice(voice().name().toLowerCase());
+				builder.voice(voice().name().toLowerCase(Locale.ROOT));
 			}
 			if (this.format() != null) {
-				builder.format(ChatCompletionAudioParam.Format.of(this.format().name().toLowerCase()));
+				builder.format(ChatCompletionAudioParam.Format.of(this.format().name().toLowerCase(Locale.ROOT)));
 			}
 			return builder.build();
 		}

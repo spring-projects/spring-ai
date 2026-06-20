@@ -21,6 +21,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -385,7 +386,8 @@ public final class OpenAiChatModel implements ChatModel {
 		if (message.audio().isPresent() && StringUtils.hasText(message.audio().get().data())
 				&& request.audio().isPresent()) {
 			var audioOutput = message.audio().get();
-			String mimeType = String.format("audio/%s", request.audio().get().format().value().name().toLowerCase());
+			String mimeType = String.format("audio/%s",
+					request.audio().get().format().value().name().toLowerCase(Locale.ROOT));
 			byte[] audioData = Base64.getDecoder().decode(audioOutput.data());
 			Resource resource = new ByteArrayResource(audioData);
 			Media.builder().mimeType(MimeTypeUtils.parseMimeType(mimeType)).data(resource).id(audioOutput.id()).build();
@@ -729,7 +731,7 @@ public final class OpenAiChatModel implements ChatModel {
 		if (requestOptions.getOutputModalities() != null) {
 			builder.modalities(requestOptions.getOutputModalities()
 				.stream()
-				.map(modality -> ChatCompletionCreateParams.Modality.of(modality.toLowerCase()))
+				.map(modality -> ChatCompletionCreateParams.Modality.of(modality.toLowerCase(Locale.ROOT)))
 				.toList());
 		}
 		if (requestOptions.getOutputAudio() != null) {
@@ -795,7 +797,7 @@ public final class OpenAiChatModel implements ChatModel {
 			builder.parallelToolCalls(requestOptions.getParallelToolCalls());
 		}
 		if (requestOptions.getReasoningEffort() != null) {
-			builder.reasoningEffort(ReasoningEffort.of(requestOptions.getReasoningEffort().toLowerCase()));
+			builder.reasoningEffort(ReasoningEffort.of(requestOptions.getReasoningEffort().toLowerCase(Locale.ROOT)));
 		}
 		if (requestOptions.getVerbosity() != null) {
 			builder.verbosity(ChatCompletionCreateParams.Verbosity.of(requestOptions.getVerbosity()));
@@ -1110,8 +1112,8 @@ public final class OpenAiChatModel implements ChatModel {
 
 				choiceBuilder.finishReason(ChatCompletion.Choice.FinishReason.of(""));
 				cccc.finishReason()
-					.ifPresent(finishReason -> choiceBuilder.finishReason(
-							ChatCompletion.Choice.FinishReason.of(finishReason.value().name().toLowerCase())));
+					.ifPresent(finishReason -> choiceBuilder.finishReason(ChatCompletion.Choice.FinishReason
+						.of(finishReason.value().name().toLowerCase(Locale.ROOT))));
 
 				if (cccc.logprobs().isPresent()) {
 					var logprobs = cccc.logprobs().get();
