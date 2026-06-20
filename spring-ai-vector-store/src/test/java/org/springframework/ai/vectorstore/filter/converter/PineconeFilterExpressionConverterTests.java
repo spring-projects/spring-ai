@@ -17,6 +17,7 @@
 package org.springframework.ai.vectorstore.filter.converter;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -295,6 +296,28 @@ public class PineconeFilterExpressionConverterTests {
 		});
 		assertThat(map).hasSize(1);
 		assertThat(map).containsKey("x\" : { \"$or\": [ {} ] }, \"y");
+	}
+
+	@Test
+	void operatorSymbolsAreSerializedLocaleIndependently() {
+		Locale defaultLocale = Locale.getDefault();
+		try {
+			// Under the Turkish locale, "IN".toLowerCase() yields "ın" (dotless 'ı'),
+			// which is not a valid Pinecone operator. Operator symbols must be converted
+			// with a fixed locale so they stay "$in" / "$nin".
+			Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+
+			String in = this.converter
+				.convertExpression(new Expression(IN, new Key("genre"), new Value(List.of("comedy", "drama"))));
+			assertThat(in).isEqualTo("{\"genre\": {\"$in\": [\"comedy\",\"drama\"]}}");
+
+			String nin = this.converter
+				.convertExpression(new Expression(NIN, new Key("city"), new Value(List.of("Sofia", "Plovdiv"))));
+			assertThat(nin).isEqualTo("{\"city\": {\"$nin\": [\"Sofia\",\"Plovdiv\"]}}");
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
 	}
 
 }
