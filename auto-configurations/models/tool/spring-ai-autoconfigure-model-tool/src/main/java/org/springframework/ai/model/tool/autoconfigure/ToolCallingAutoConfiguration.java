@@ -23,6 +23,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -35,7 +36,10 @@ import org.springframework.ai.tool.observation.ToolCallingObservationConvention;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
+import org.springframework.ai.util.JacksonUtils;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -150,6 +154,29 @@ public class ToolCallingAutoConfiguration {
 		logger.warn(
 				"You have enabled the inclusion of the tool call arguments and result in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
 		return new ToolCallingContentObservationFilter();
+	}
+
+	/**
+	 * Optional override for the {@link JsonMapper} that Spring AI uses for all JSON
+	 * parsing (tool-call arguments, structured output, model options). Declare a bean
+	 * named {@code springAiJsonMapper} to replace the default - for example to enable
+	 * {@code JsonReadFeature.ALLOW_UNESCAPED_CONTROL_CHARS} for models that emit raw
+	 * newlines in tool-call arguments.
+	 */
+	@Bean(name = "springAiJsonMapper", defaultCandidate = false)
+	@ConditionalOnMissingBean(name = "springAiJsonMapper")
+	JsonMapper springAiJsonMapper() {
+		return JacksonUtils.getDefaultJsonMapper();
+	}
+
+	/**
+	 * Installs the {@code springAiJsonMapper} bean (the default above or a user-supplied
+	 * override) as the {@link JacksonUtils} default mapper, so all Spring AI JSON parsing
+	 * respects application-level Jackson configuration.
+	 */
+	@Bean
+	InitializingBean springAiJsonMapperInitializer(@Qualifier("springAiJsonMapper") JsonMapper springAiJsonMapper) {
+		return () -> JacksonUtils.setDefaultJsonMapper(springAiJsonMapper);
 	}
 
 	private static @Nullable Class<? extends RuntimeException> getClassOrNull(String className) {

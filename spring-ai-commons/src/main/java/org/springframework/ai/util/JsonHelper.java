@@ -38,18 +38,28 @@ import org.springframework.util.Assert;
  */
 public class JsonHelper {
 
-	private final JsonMapper jsonMapper;
+	private final @Nullable JsonMapper jsonMapper;
 
 	private static final TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<>() {
 	};
 
+	/**
+	 * Creates a helper that follows the default mapper from
+	 * {@link JacksonUtils#getDefaultJsonMapper}, resolved on each call so a later
+	 * {@link JacksonUtils#setDefaultJsonMapper} override is picked up.
+	 */
 	public JsonHelper() {
-		this(JacksonUtils.getDefaultJsonMapper());
+		this.jsonMapper = null;
 	}
 
 	public JsonHelper(JsonMapper jsonMapper) {
 		Assert.notNull(jsonMapper, "jsonMapper cannot be null");
 		this.jsonMapper = jsonMapper;
+	}
+
+	private JsonMapper jsonMapper() {
+		JsonMapper mapper = this.jsonMapper;
+		return mapper != null ? mapper : JacksonUtils.getDefaultJsonMapper();
 	}
 
 	/**
@@ -63,7 +73,7 @@ public class JsonHelper {
 		Assert.notNull(type, "type cannot be null");
 
 		try {
-			return this.jsonMapper.readValue(json, type);
+			return jsonMapper().readValue(json, type);
 		}
 		catch (JacksonException ex) {
 			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getName()), ex);
@@ -81,7 +91,7 @@ public class JsonHelper {
 		Assert.notNull(type, "type cannot be null");
 
 		try {
-			return this.jsonMapper.readValue(json, this.jsonMapper.constructType(type));
+			return jsonMapper().readValue(json, jsonMapper().constructType(type));
 		}
 		catch (JacksonException ex) {
 			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getTypeName()), ex);
@@ -99,7 +109,7 @@ public class JsonHelper {
 		Assert.notNull(type, "type cannot be null");
 
 		try {
-			return this.jsonMapper.readValue(json, this.jsonMapper.constructType(type.getType()));
+			return jsonMapper().readValue(json, jsonMapper().constructType(type.getType()));
 		}
 		catch (JacksonException ex) {
 			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getType().getTypeName()),
@@ -114,7 +124,7 @@ public class JsonHelper {
 	 */
 	public Map<String, Object> fromJsonToMap(String json) {
 		try {
-			Map<String, Object> map = this.jsonMapper.readValue(json, MAP_TYPE_REF);
+			Map<String, Object> map = jsonMapper().readValue(json, MAP_TYPE_REF);
 			return map != null ? map : Collections.emptyMap();
 		}
 		catch (JacksonException ex) {
@@ -139,7 +149,7 @@ public class JsonHelper {
 		if (forwardIfValidJson && object instanceof String str && isValidJson(str)) {
 			return str;
 		}
-		return this.jsonMapper.writeValueAsString(object);
+		return jsonMapper().writeValueAsString(object);
 	}
 
 	/**
@@ -147,7 +157,7 @@ public class JsonHelper {
 	 */
 	private boolean isValidJson(String input) {
 		try {
-			this.jsonMapper.readTree(input);
+			jsonMapper().readTree(input);
 			return true;
 		}
 		catch (JacksonException e) {
@@ -162,7 +172,7 @@ public class JsonHelper {
 	 * @return the converted object
 	 */
 	public <T> T convertFromMap(Map<String, Object> map, Class<T> type) {
-		return this.jsonMapper.convertValue(map, type);
+		return jsonMapper().convertValue(map, type);
 	}
 
 	/**
@@ -172,12 +182,12 @@ public class JsonHelper {
 	 * @return the converted object
 	 */
 	public <T> T convertFromMap(Map<String, Object> map, ParameterizedTypeReference<T> type) {
-		return this.jsonMapper.convertValue(map, this.jsonMapper.constructType(type.getType()));
+		return jsonMapper().convertValue(map, jsonMapper().constructType(type.getType()));
 	}
 
 	public Map<String, Object> convertToMap(Object object) {
 		Assert.notNull(object, "object cannot be null");
-		return this.jsonMapper.convertValue(object, MAP_TYPE_REF);
+		return jsonMapper().convertValue(object, MAP_TYPE_REF);
 	}
 
 	/**
@@ -194,7 +204,7 @@ public class JsonHelper {
 		Object result = null;
 		if (value instanceof String jsonString) {
 			try {
-				result = this.jsonMapper.convertValue(jsonString, type);
+				result = jsonMapper().convertValue(jsonString, type);
 			}
 			catch (DatabindException e) {
 				// If the type is a raw string that should read as JSON String,
