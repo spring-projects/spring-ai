@@ -282,51 +282,6 @@ class JsonHelperTests {
 		assertThat(result.getYear()).isEqualTo(2026);
 	}
 
-	@Test
-	void decodeJsonStringScalarUnwrapsPlainText() {
-		// This is exactly what toJson("# Header", true) produces (not valid JSON).
-		assertThat(this.jsonHelper.decodeJsonStringScalar("\"# Header\"")).isEqualTo("# Header");
-	}
-
-	@Test
-	void decodeJsonStringScalarUnwrapsEscapedSpecialCharacters() {
-		String encoded = this.jsonHelper.toJson("Line1\nLine2\twith \"quotes\" and \\ backslash", true);
-		assertThat(this.jsonHelper.decodeJsonStringScalar(encoded))
-			.isEqualTo("Line1\nLine2\twith \"quotes\" and \\ backslash");
-	}
-
-	@Test
-	void decodeJsonStringScalarLeavesJsonObjectUnchanged() {
-		assertThat(this.jsonHelper.decodeJsonStringScalar("{\"name\":\"John\"}")).isEqualTo("{\"name\":\"John\"}");
-	}
-
-	@Test
-	void decodeJsonStringScalarLeavesJsonArrayUnchanged() {
-		assertThat(this.jsonHelper.decodeJsonStringScalar("[1,2,3]")).isEqualTo("[1,2,3]");
-	}
-
-	@Test
-	void decodeJsonStringScalarLeavesJsonScalarsUnchanged() {
-		assertThat(this.jsonHelper.decodeJsonStringScalar("42")).isEqualTo("42");
-		assertThat(this.jsonHelper.decodeJsonStringScalar("true")).isEqualTo("true");
-		assertThat(this.jsonHelper.decodeJsonStringScalar("null")).isEqualTo("null");
-	}
-
-	@Test
-	void decodeJsonStringScalarLeavesNonJsonTextUnchanged() {
-		// A custom ToolCallResultConverter that returns raw markdown produces a value
-		// that is not valid JSON; it must be passed through untouched.
-		assertThat(this.jsonHelper.decodeJsonStringScalar("# Header")).isEqualTo("# Header");
-		assertThat(this.jsonHelper.decodeJsonStringScalar("hello world")).isEqualTo("hello world");
-	}
-
-	@Test
-	void decodeJsonStringScalarThrowsWhenValueIsNull() {
-		assertThatThrownBy(() -> this.jsonHelper.decodeJsonStringScalar(null))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("value cannot be null");
-	}
-
 	record TestRecord(String name, Integer age) {
 	}
 

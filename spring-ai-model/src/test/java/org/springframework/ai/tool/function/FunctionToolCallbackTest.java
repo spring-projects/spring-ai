@@ -67,7 +67,7 @@ class FunctionToolCallbackTest {
 		String callResult = callback.call("\"test string param\"", toolContext);
 
 		assertEquals("test string param", tool.calledValue.get());
-		assertEquals("\"return value = test string param\"", callResult);
+		assertEquals("return value = test string param", callResult);
 		assertEquals(toolContext, tool.calledToolContext.get());
 	}
 
@@ -85,7 +85,7 @@ class FunctionToolCallbackTest {
 		String callResult = callback.call("\"test string param\"", toolContext);
 
 		assertEquals("test string param", tool.calledValue.get());
-		assertEquals("\"return value = test string param\"", callResult);
+		assertEquals("return value = test string param", callResult);
 	}
 
 	@Test
@@ -103,7 +103,7 @@ class FunctionToolCallbackTest {
 		String callResult = callback.call("\"test string param\"", toolContext);
 
 		assertEquals("not params", tool.calledValue.get());
-		assertEquals("\"return value = \"", callResult);
+		assertEquals("return value = ", callResult);
 	}
 
 	@Test

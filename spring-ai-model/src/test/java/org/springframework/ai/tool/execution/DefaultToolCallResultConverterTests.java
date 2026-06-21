@@ -58,9 +58,11 @@ class DefaultToolCallResultConverterTests {
 	}
 
 	@Test
-	void convertStringReturnTypeShouldReturnJson() {
+	void convertStringReturnTypeShouldReturnRawString() {
+		// String results are returned as-is, without JSON encoding, to avoid
+		// double-encoding plain text downstream (e.g. in MCP content[].text).
 		String result = this.converter.convert("test", String.class);
-		assertThat(result).isEqualTo("\"test\"");
+		assertThat(result).isEqualTo("test");
 	}
 
 	@Test
@@ -142,15 +144,12 @@ class DefaultToolCallResultConverterTests {
 	}
 
 	@Test
-	void convertSpecialCharactersInStringsShouldEscapeJson() {
+	void convertSpecialCharactersInStringsShouldNotEscape() {
 		String specialChars = "Test with \"quotes\", newlines\n, tabs\t, and backslashes\\";
 		String result = this.converter.convert(specialChars, String.class);
 
-		// Should properly escape JSON special characters
-		assertThat(result).contains("\\\"quotes\\\"");
-		assertThat(result).contains("\\n");
-		assertThat(result).contains("\\t");
-		assertThat(result).contains("\\\\");
+		// String results are returned verbatim, with no JSON escaping applied.
+		assertThat(result).isEqualTo(specialChars);
 	}
 
 	record TestRecord(String name, int value) {

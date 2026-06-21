@@ -61,6 +61,13 @@ public final class DefaultToolCallResultConverter implements ToolCallResultConve
 			return jsonHelper.toJson(Map.of("mimeType", "image/png", "data", imgB64));
 		}
 		else {
+			// Mirror AbstractMcpToolMethodCallback: return String results directly,
+			// without JSON serialization, to avoid double-encoding plain text (e.g. a
+			// tool returning "# Header" must not become the quoted literal "\"#
+			// Header\"").
+			if (result instanceof String string) {
+				return string;
+			}
 			logger.debug("Converting tool result to JSON.");
 			return jsonHelper.toJson(result, true);
 		}

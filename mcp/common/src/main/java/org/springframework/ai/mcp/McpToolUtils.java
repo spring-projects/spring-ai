@@ -266,13 +266,8 @@ public final class McpToolUtils {
 						.isError(false)
 						.build();
 				}
-				// The tool result has already been converted to a String by the
-				// ToolCallback's ToolCallResultConverter. The default converter JSON-encodes
-				// plain String results, which would double-encode them in content[].text.
-				// Decode JSON string scalars back to raw text; other JSON (objects, arrays,
-				// numbers) and non-JSON text are left unchanged.
 				return McpSchema.CallToolResult.builder()
-					.content(List.of(new McpSchema.TextContent(jsonHelper.decodeJsonStringScalar(callResult))))
+					.content(List.of(new McpSchema.TextContent(callResult)))
 					.isError(false)
 					.build();
 			}
