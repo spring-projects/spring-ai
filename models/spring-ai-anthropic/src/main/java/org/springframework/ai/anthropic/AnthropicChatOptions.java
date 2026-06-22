@@ -562,15 +562,9 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		@Override
 		public B clone() {
 			AbstractBuilder<B> copy = super.clone();
-			if (this.customHeaders != null && !this.customHeaders.isEmpty()) {
-				copy.customHeaders = this.customHeaders;
-			}
-			if (this.citationDocuments != null && !this.citationDocuments.isEmpty()) {
-				copy.citationDocuments = this.citationDocuments;
-			}
-			if (this.httpHeaders != null && !this.httpHeaders.isEmpty()) {
-				copy.httpHeaders = this.httpHeaders;
-			}
+			copy.customHeaders = this.customHeaders == null ? null : new HashMap<>(this.customHeaders);
+			copy.citationDocuments = this.citationDocuments == null ? null : new ArrayList<>(this.citationDocuments);
+			copy.httpHeaders = this.httpHeaders == null ? null : new HashMap<>(this.httpHeaders);
 			return (B) copy;
 		}
 

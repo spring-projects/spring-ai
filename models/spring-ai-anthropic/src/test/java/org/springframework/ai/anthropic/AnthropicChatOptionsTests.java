@@ -709,4 +709,48 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		assertThat(adaptive.display().get()).isEqualTo(ThinkingConfigAdaptive.Display.OMITTED);
 	}
 
+	@Test
+	void cloneDoesNotShareCitationDocuments() {
+		AnthropicCitationDocument docA = AnthropicCitationDocument.builder().plainText("doc-a").build();
+		AnthropicCitationDocument docB = AnthropicCitationDocument.builder().plainText("doc-b").build();
+
+		Builder builder = AnthropicChatOptions.builder().addCitationDocument(docA);
+		Builder clone = builder.clone();
+		clone.addCitationDocument(docB);
+
+		assertThat(builder.build().getCitationDocuments()).containsExactly(docA);
+		assertThat(clone.build().getCitationDocuments()).containsExactly(docA, docB);
+	}
+
+	@Test
+	void cloneCopiesCollectionFields() {
+		AnthropicCitationDocument doc = AnthropicCitationDocument.builder().plainText("doc").build();
+		Map<String, String> customHeaders = new HashMap<>();
+		customHeaders.put("X-Custom", "value");
+		Map<String, String> httpHeaders = new HashMap<>();
+		httpHeaders.put("anthropic-beta", "beta-feature");
+
+		Builder builder = AnthropicChatOptions.builder()
+			.customHeaders(customHeaders)
+			.httpHeaders(httpHeaders)
+			.addCitationDocument(doc);
+
+		AnthropicChatOptions cloned = builder.clone().build();
+
+		assertThat(cloned.getCustomHeaders()).containsEntry("X-Custom", "value");
+		assertThat(cloned.getHttpHeaders()).containsEntry("anthropic-beta", "beta-feature");
+		assertThat(cloned.getCitationDocuments()).containsExactly(doc);
+	}
+
+	@Test
+	void cloneHandlesNullCollections() {
+		Builder builder = AnthropicChatOptions.builder();
+
+		AnthropicChatOptions cloned = builder.clone().build();
+
+		assertThat(cloned.getCustomHeaders()).isNull();
+		assertThat(cloned.getCitationDocuments()).isNull();
+		assertThat(cloned.getHttpHeaders()).isNull();
+	}
+
 }
