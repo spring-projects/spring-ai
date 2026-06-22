@@ -112,6 +112,11 @@ public class AugmentedToolCallback<T extends Record> implements ToolCallback {
 		return this.delegate.call(this.handleAugmentedArguments(toolInput), tooContext);
 	}
 
+	@Override
+	public @Nullable Object callDirect(String toolInput, @Nullable ToolContext toolContext) {
+		return this.delegate.callDirect(this.handleAugmentedArguments(toolInput), toolContext);
+	}
+
 	/**
 	 * Handles the augmented arguments in the tool input. It extracts the augmented
 	 * arguments from the tool input, processes them using the provided consumer, and

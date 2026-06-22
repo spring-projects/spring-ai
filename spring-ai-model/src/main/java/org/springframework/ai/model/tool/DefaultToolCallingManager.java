@@ -48,6 +48,7 @@ import org.springframework.ai.tool.observation.ToolCallingObservationConvention;
 import org.springframework.ai.tool.observation.ToolCallingObservationDocumentation;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -63,6 +64,8 @@ import org.springframework.util.StringUtils;
 public final class DefaultToolCallingManager implements ToolCallingManager {
 
 	private static final Log logger = LogFactory.getLog(DefaultToolCallingManager.class);
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	// @formatter:off
 
@@ -224,24 +227,27 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				.toolCallArguments(finalToolInputArguments)
 				.build();
 
-			String toolCallResult = ToolCallingObservationDocumentation.TOOL_CALL
+			Object toolCallResultObj = ToolCallingObservationDocumentation.TOOL_CALL
 				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 						this.observationRegistry)
 				.parentObservation(parent)
 				.observe(() -> {
-					String toolResult;
+					Object toolResult;
 					try {
-						toolResult = toolCallback.call(finalToolInputArguments, toolContext);
+						toolResult = toolCallback.callDirect(finalToolInputArguments, toolContext);
 					}
 					catch (ToolExecutionException ex) {
 						toolResult = this.toolExecutionExceptionProcessor.process(ex);
 					}
-					observationContext.setToolCallResult(toolResult);
+					String toolResultStr = (toolResult instanceof String str) ? str : jsonHelper.toJson(toolResult);
+					observationContext.setToolCallResult(toolResultStr);
 					return toolResult;
 				});
 
+			String toolCallResultStr = (toolCallResultObj instanceof String str) ? str
+					: (toolCallResultObj != null ? jsonHelper.toJson(toolCallResultObj) : "");
 			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName,
-					toolCallResult != null ? toolCallResult : ""));
+					toolCallResultStr != null ? toolCallResultStr : "", toolCallResultObj));
 		}
 
 		return new InternalToolExecutionResult(ToolResponseMessage.builder().responses(toolResponses).build(),

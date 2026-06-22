@@ -67,4 +67,11 @@ public interface ToolCallback {
 		return call(toolInput);
 	}
 
+	/**
+	 * Execute tool with the given input and context, and return the raw result object.
+	 */
+	default @Nullable Object callDirect(String toolInput, @Nullable ToolContext toolContext) {
+		return call(toolInput, toolContext);
+	}
+
 }

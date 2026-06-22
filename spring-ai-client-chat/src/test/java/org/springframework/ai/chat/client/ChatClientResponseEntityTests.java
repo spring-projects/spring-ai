@@ -391,6 +391,57 @@ public class ChatClientResponseEntityTests {
 		verify(this.chatModel, times(1)).call(any(Prompt.class));
 	}
 
+	@Test
+	public void responseEntityWithDirectToolOutputTest() {
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
+
+		MyBean expectedRawObj = new MyBean("JohnDirect", 45);
+
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("serialized-string")
+			.properties(Map.of("tool-output", expectedRawObj))
+			.build();
+
+		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(assistantMessage)));
+
+		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
+
+		ResponseEntity<ChatResponse, MyBean> responseEntity = ChatClient.builder(this.chatModel)
+			.build()
+			.prompt()
+			.user("Execute direct tool")
+			.call()
+			.responseEntity(MyBean.class);
+
+		assertThat(responseEntity.getResponse()).isEqualTo(chatResponse);
+		assertThat(responseEntity.getEntity()).isSameAs(expectedRawObj);
+	}
+
+	@Test
+	public void entityWithDirectToolOutputTest() {
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
+
+		MyBean expectedRawObj = new MyBean("JohnDirect", 45);
+
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("serialized-string")
+			.properties(Map.of("tool-output", expectedRawObj))
+			.build();
+
+		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(assistantMessage)));
+
+		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
+
+		MyBean entity = ChatClient.builder(this.chatModel)
+			.build()
+			.prompt()
+			.user("Execute direct tool")
+			.call()
+			.entity(MyBean.class);
+
+		assertThat(entity).isSameAs(expectedRawObj);
+	}
+
 	record MyBean(String name, int age) {
 	}
 

@@ -517,6 +517,16 @@ public class DefaultChatClient implements ChatClient {
 			}
 
 			var chatResponse = doGetObservableChatClientResponse(this.request, advisorChain).chatResponse();
+			if (chatResponse != null && chatResponse.getResult() != null
+					&& chatResponse.getResult().getOutput() != null) {
+				var assistantMessage = chatResponse.getResult().getOutput();
+				if (assistantMessage.getMetadata().containsKey("tool-output")) {
+					Object toolOutputObj = assistantMessage.getMetadata().get("tool-output");
+					if (toolOutputObj != null) {
+						return new ResponseEntity<>(chatResponse, (T) toolOutputObj);
+					}
+				}
+			}
 			var responseContent = getContentFromChatResponse(chatResponse);
 			if (responseContent == null) {
 				return new ResponseEntity<>(chatResponse, null);
@@ -608,6 +618,17 @@ public class DefaultChatClient implements ChatClient {
 			}
 
 			var chatResponse = doGetObservableChatClientResponse(this.request, advisorChain).chatResponse();
+
+			if (chatResponse != null && chatResponse.getResult() != null
+					&& chatResponse.getResult().getOutput() != null) {
+				var assistantMessage = chatResponse.getResult().getOutput();
+				if (assistantMessage.getMetadata().containsKey("tool-output")) {
+					Object toolOutputObj = assistantMessage.getMetadata().get("tool-output");
+					if (toolOutputObj != null) {
+						return (T) toolOutputObj;
+					}
+				}
+			}
 
 			var stringResponse = getContentFromChatResponse(chatResponse);
 			if (stringResponse == null) {

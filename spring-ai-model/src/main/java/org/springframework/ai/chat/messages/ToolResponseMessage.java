@@ -72,7 +72,28 @@ public class ToolResponseMessage extends AbstractMessage {
 				+ ", metadata=" + this.metadata + '}';
 	}
 
-	public record ToolResponse(String id, String name, String responseData) {
+	public record ToolResponse(String id, String name, String responseData, @Nullable Object responseDataObj) {
+
+		public ToolResponse(String id, String name, String responseData) {
+			this(id, name, responseData, null);
+		}
+
+		@Override
+		public boolean equals(@Nullable Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (!(o instanceof ToolResponse that)) {
+				return false;
+			}
+			return Objects.equals(this.id, that.id) && Objects.equals(this.name, that.name)
+					&& Objects.equals(this.responseData, that.responseData);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(this.id, this.name, this.responseData);
+		}
 
 	}
 
