@@ -226,8 +226,8 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 			if (data instanceof String stringData) {
 				mediaBuilder.data(URI.create(stringData));
 			}
-			else if (data.getClass().isArray()) {
-				mediaBuilder.data(data);
+			else if (data instanceof byte[] bytes) {
+				mediaBuilder.data(bytes);
 			}
 			return mediaBuilder.build();
 
