@@ -95,9 +95,9 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 
 	@Test
 	void testBuilderWithModelEnum() {
-		AnthropicChatOptions options = AnthropicChatOptions.builder().model(Model.CLAUDE_SONNET_4_20250514).build();
+		AnthropicChatOptions options = AnthropicChatOptions.builder().model(Model.CLAUDE_SONNET_4_5).build();
 
-		assertThat(options.getModel()).isEqualTo("claude-sonnet-4-20250514");
+		assertThat(options.getModel()).isEqualTo("claude-sonnet-4-5");
 	}
 
 	@Test
