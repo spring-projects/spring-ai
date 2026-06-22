@@ -24,6 +24,7 @@ import org.springframework.ai.mcp.annotation.McpComplete;
 import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.method.tool.McpToolCallExceptionHandler;
 import org.springframework.ai.mcp.annotation.spring.AsyncMcpAnnotationProviders;
 import org.springframework.ai.mcp.annotation.spring.SyncMcpAnnotationProviders;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
@@ -85,9 +86,9 @@ public class McpServerSpecificationFactoryAutoConfiguration {
 
 		@Bean
 		public List<McpServerFeatures.SyncToolSpecification> toolSpecs(
-				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
+				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations, McpToolCallExceptionHandler exceptionHandler) {
 			List<Object> beansByAnnotation = beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class);
-			return SyncMcpAnnotationProviders.toolSpecifications(beansByAnnotation);
+			return SyncMcpAnnotationProviders.toolSpecifications(beansByAnnotation, exceptionHandler);
 		}
 
 	}
@@ -127,9 +128,9 @@ public class McpServerSpecificationFactoryAutoConfiguration {
 
 		@Bean
 		public List<McpServerFeatures.AsyncToolSpecification> toolSpecs(
-				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return AsyncMcpAnnotationProviders
-				.toolSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class));
+				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations, McpToolCallExceptionHandler exceptionHandler) {
+			return AsyncMcpAnnotationProviders.toolSpecifications(
+					beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class), exceptionHandler);
 		}
 
 	}

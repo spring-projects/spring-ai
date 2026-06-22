@@ -50,6 +50,11 @@ public final class AsyncMcpToolMethodCallback
 		super(returnMode, toolMethod, toolObject, toolCallExceptionClass);
 	}
 
+	public AsyncMcpToolMethodCallback(ReturnMode returnMode, Method toolMethod, Object toolObject,
+			Class<? extends Throwable> toolCallExceptionClass, McpToolCallExceptionHandler toolCallExceptionHandler) {
+		super(returnMode, toolMethod, toolObject, toolCallExceptionClass, toolCallExceptionHandler);
+	}
+
 	@Override
 	protected boolean isExchangeOrContextType(Class<?> paramType) {
 		return McpAsyncServerExchange.class.isAssignableFrom(paramType)
