@@ -811,7 +811,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		private @Nullable AwsCredentialsProvider credentialsProvider;
 
-		private Region region = Region.US_EAST_1;
+		private @Nullable Region region;
 
 		private Duration timeout = Duration.ofMinutes(5L);
 
@@ -836,12 +836,6 @@ public class BedrockProxyChatModel implements ChatModel {
 		private @Nullable BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
 
 		private Builder() {
-			try {
-				this.region = DefaultAwsRegionProviderChain.builder().build().getRegion();
-			}
-			catch (SdkClientException e) {
-				logger.warn("Failed to load region from DefaultAwsRegionProviderChain, using US_EAST_1", e);
-			}
 		}
 
 		/**
@@ -864,8 +858,7 @@ public class BedrockProxyChatModel implements ChatModel {
 			return this;
 		}
 
-		public Builder region(Region region) {
-			Assert.notNull(region, "'region' must not be null.");
+		public Builder region(@Nullable Region region) {
 			this.region = region;
 			return this;
 		}
@@ -938,7 +931,7 @@ public class BedrockProxyChatModel implements ChatModel {
 					.socketTimeout(this.socketTimeout);
 
 				this.bedrockRuntimeClient = BedrockRuntimeClient.builder()
-					.region(this.region)
+					.region(getRegion())
 					.httpClientBuilder(httpClientBuilder)
 					.credentialsProvider(this.credentialsProvider)
 					.overrideConfiguration(c -> c.apiCallTimeout(this.timeout))
@@ -954,12 +947,12 @@ public class BedrockProxyChatModel implements ChatModel {
 					.connectionAcquisitionTimeout(this.connectionAcquisitionTimeout)
 					.maxConcurrency(200);
 
-				var builder = BedrockRuntimeAsyncClient.builder()
-					.region(this.region)
+				this.bedrockRuntimeAsyncClient = BedrockRuntimeAsyncClient.builder()
+					.region(getRegion())
 					.httpClientBuilder(httpClientBuilder)
 					.credentialsProvider(this.credentialsProvider)
-					.overrideConfiguration(c -> c.apiCallTimeout(this.timeout));
-				this.bedrockRuntimeAsyncClient = builder.build();
+					.overrideConfiguration(c -> c.apiCallTimeout(this.timeout))
+					.build();
 			}
 
 			this.toolCallingManager = this.toolCallingManager != null ? this.toolCallingManager
@@ -973,6 +966,19 @@ public class BedrockProxyChatModel implements ChatModel {
 			}
 
 			return bedrockProxyChatModel;
+		}
+
+		private Region getRegion() {
+			if (this.region != null) {
+				return this.region;
+			}
+			try {
+				return DefaultAwsRegionProviderChain.builder().build().getRegion();
+			}
+			catch (SdkClientException e) {
+				logger.debug("Failed to load region from DefaultAwsRegionProviderChain, using US_EAST_1");
+				return Region.US_EAST_1;
+			}
 		}
 
 	}
