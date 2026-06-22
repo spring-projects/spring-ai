@@ -1128,6 +1128,7 @@ public final class OpenAiChatModel implements ChatModel {
 				ChatCompletionMessage.Builder msgBuilder = ChatCompletionMessage.builder()
 					.content(cccc.delta().content())
 					.refusal(cccc.delta().refusal());
+				cccc.delta()._additionalProperties().forEach(msgBuilder::putAdditionalProperty);
 				cccc.delta().toolCalls().ifPresent(ccctcs -> {
 					msgBuilder.toolCalls(ccctcs.stream().map(tc -> {
 						ChatCompletionMessageFunctionToolCall.Builder toolCallBuilder = ChatCompletionMessageFunctionToolCall
