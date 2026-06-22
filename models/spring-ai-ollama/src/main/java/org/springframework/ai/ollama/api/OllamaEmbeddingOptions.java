@@ -87,6 +87,11 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	private final @Nullable Boolean useNUMA;
 
 	/**
+	 * Sets the size of the context window used to generate the next token. (Default: 2048)
+	 */
+	private final @Nullable Integer numCtx;
+
+	/**
 	 * Prompt processing maximum batch size. (Default: 512)
 	 */
 	private final @Nullable Integer numBatch;
@@ -111,6 +116,17 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	 * (Default: false)
 	 */
 	private final @Nullable Boolean lowVRAM;
+
+	/**
+	 * (Default: true)
+	 */
+	private final @Nullable Boolean f16KV;
+
+	/**
+	 * Return logits for all the tokens, not just the last one.
+	 * To enable completions to return logprobs, this must be true.
+	 */
+	private final @Nullable Boolean logitsAll;
 
 	/**
 	 * Load only the vocabulary, not the weights.
@@ -146,8 +162,9 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 
 	protected OllamaEmbeddingOptions(
 			@Nullable String model, @Nullable String keepAlive, @Nullable Integer dimensions,
-			@Nullable Boolean truncate, @Nullable Boolean useNUMA, @Nullable Integer numBatch,
-			@Nullable Integer numGPU, @Nullable Integer mainGPU, @Nullable Boolean lowVRAM,
+			@Nullable Boolean truncate, @Nullable Boolean useNUMA, @Nullable Integer numCtx,
+			@Nullable Integer numBatch, @Nullable Integer numGPU, @Nullable Integer mainGPU,
+			@Nullable Boolean lowVRAM, @Nullable Boolean f16KV, @Nullable Boolean logitsAll,
 			@Nullable Boolean vocabOnly, @Nullable Boolean useMMap, @Nullable Boolean useMLock,
 			@Nullable Integer numThread) {
 		this.model = model != null ? model : OllamaModel.MXBAI_EMBED_LARGE.id();
@@ -155,10 +172,13 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 		this.dimensions = dimensions;
 		this.truncate = truncate;
 		this.useNUMA = useNUMA;
+		this.numCtx = numCtx;
 		this.numBatch = numBatch;
 		this.numGPU = numGPU;
 		this.mainGPU = mainGPU;
 		this.lowVRAM = lowVRAM;
+		this.f16KV = f16KV;
+		this.logitsAll = logitsAll;
 		this.vocabOnly = vocabOnly;
 		this.useMMap = useMMap;
 		this.useMLock = useMLock;
@@ -200,6 +220,10 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 		return this.useNUMA;
 	}
 
+	public @Nullable Integer getNumCtx() {
+		return this.numCtx;
+	}
+
 	public @Nullable Integer getNumBatch() {
 		return this.numBatch;
 	}
@@ -214,6 +238,14 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 
 	public @Nullable Boolean getLowVRAM() {
 		return this.lowVRAM;
+	}
+
+	public @Nullable Boolean getF16KV() {
+		return this.f16KV;
+	}
+
+	public @Nullable Boolean getLogitsAll() {
+		return this.logitsAll;
 	}
 
 	public @Nullable Boolean getVocabOnly() {
@@ -258,6 +290,9 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 		if (this.useNUMA != null) {
 			map.put("numa", this.useNUMA);
 		}
+		if (this.numCtx != null) {
+			map.put("num_ctx", this.numCtx);
+		}
 		if (this.numBatch != null) {
 			map.put("num_batch", this.numBatch);
 		}
@@ -269,6 +304,12 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 		}
 		if (this.lowVRAM != null) {
 			map.put("low_vram", this.lowVRAM);
+		}
+		if (this.f16KV != null) {
+			map.put("f16_kv", this.f16KV);
+		}
+		if (this.logitsAll != null) {
+			map.put("logits_all", this.logitsAll);
 		}
 		if (this.vocabOnly != null) {
 			map.put("vocab_only", this.vocabOnly);
@@ -316,6 +357,8 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 
 		private @Nullable Boolean useNUMA;
 
+		private @Nullable Integer numCtx;
+
 		private @Nullable Integer numBatch;
 
 		private @Nullable Integer numGPU;
@@ -323,6 +366,10 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 		private @Nullable Integer mainGPU;
 
 		private @Nullable Boolean lowVRAM;
+
+		private @Nullable Boolean f16KV;
+
+		private @Nullable Boolean logitsAll;
 
 		private @Nullable Boolean vocabOnly;
 
@@ -357,6 +404,11 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
+		public Builder numCtx(@Nullable Integer numCtx) {
+			this.numCtx = numCtx;
+			return this;
+		}
+
 		public Builder numBatch(@Nullable Integer numBatch) {
 			this.numBatch = numBatch;
 			return this;
@@ -374,6 +426,16 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 
 		public Builder lowVRAM(@Nullable Boolean lowVRAM) {
 			this.lowVRAM = lowVRAM;
+			return this;
+		}
+
+		public Builder f16KV(@Nullable Boolean f16KV) {
+			this.f16KV = f16KV;
+			return this;
+		}
+
+		public Builder logitsAll(@Nullable Boolean logitsAll) {
+			this.logitsAll = logitsAll;
 			return this;
 		}
 
@@ -404,8 +466,8 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 
 		public OllamaEmbeddingOptions build() {
 			return new OllamaEmbeddingOptions(this.model, this.keepAlive, this.dimensions, this.truncate, this.useNUMA,
-					this.numBatch, this.numGPU, this.mainGPU, this.lowVRAM, this.vocabOnly, this.useMMap, this.useMLock,
-					this.numThread);
+					this.numCtx, this.numBatch, this.numGPU, this.mainGPU, this.lowVRAM, this.f16KV, this.logitsAll,
+					this.vocabOnly, this.useMMap, this.useMLock, this.numThread);
 		}
 
 	}
