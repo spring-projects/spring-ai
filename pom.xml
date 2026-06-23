@@ -74,6 +74,7 @@
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-deepseek</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-elevenlabs</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-google-genai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-jina</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-mistral-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-ollama</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai</module>
@@ -81,6 +82,7 @@
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-stability-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-transformers</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-vertex-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-vllm</module>
 		<module>auto-configurations/models/tool/spring-ai-autoconfigure-model-tool</module>
 
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure</module>
@@ -129,6 +131,7 @@
 		<module>models/spring-ai-elevenlabs</module>
 		<module>models/spring-ai-google-genai</module>
 		<module>models/spring-ai-google-genai-embedding</module>
+		<module>models/spring-ai-jina</module>
 		<module>models/spring-ai-mistral-ai</module>
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
@@ -136,6 +139,7 @@
 		<module>models/spring-ai-stability-ai</module>
 		<module>models/spring-ai-transformers</module>
 		<module>models/spring-ai-vertex-ai-embedding</module>
+		<module>models/spring-ai-vllm</module>
 
 		<module>starters/spring-ai-starter-mcp-client</module>
 		<module>starters/spring-ai-starter-mcp-client-webflux</module>
@@ -156,6 +160,7 @@
 		<module>starters/spring-ai-starter-model-elevenlabs</module>
 		<module>starters/spring-ai-starter-model-google-genai</module>
 		<module>starters/spring-ai-starter-model-google-genai-embedding</module>
+		<module>starters/spring-ai-starter-model-jina</module>
 		<module>starters/spring-ai-starter-model-mistral-ai</module>
 		<module>starters/spring-ai-starter-model-ollama</module>
 		<module>starters/spring-ai-starter-model-openai</module>
@@ -163,6 +168,7 @@
 		<module>starters/spring-ai-starter-model-stability-ai</module>
 		<module>starters/spring-ai-starter-model-transformers</module>
 		<module>starters/spring-ai-starter-model-vertex-ai-embedding</module>
+		<module>starters/spring-ai-starter-model-vllm</module>
 
 		<module>starters/spring-ai-starter-tool-search-advisor</module>
 
