@@ -667,7 +667,140 @@ public class ToolSearchToolCallingAdvisorCallTests {
 		verify(this.toolIndex, times(1)).clearIndex(anyString());
 	}
 
+	/**
+	 * Multiple parallel toolSearchTool calls are emitted in a single assistant turn and
+	 * arrive within one ToolResponseMessage. Even with accumulation disabled, the
+	 * references from all parallel calls in that last turn must be retained — not just
+	 * the last single response.
+	 */
+	@Test
+	void testNonAccumulation_keepsAllParallelToolSearchResponsesInSameTurn() {
+		ToolSearchToolCallingAdvisor advisor = ToolSearchToolCallingAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.toolIndex(this.toolIndex)
+			.referenceToolNameAccumulation(false)
+			.build();
+
+		when(this.toolCallingManager.resolveToolDefinitions(any(ToolCallingChatOptions.class))).thenReturn(List.of());
+
+		TestToolCallingChatOptions toolOptions = new TestToolCallingChatOptions();
+		toolOptions
+			.setToolCallbacks(List.of(mockCallback("currentTime"), mockCallback("weather"), mockCallback("clothing")));
+
+		// One turn with three parallel toolSearchTool calls -> one ToolResponseMessage
+		// holding three ToolResponse entries.
+		ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(
+					new ToolResponseMessage.ToolResponse("id1", "toolSearchTool",
+							"[\"currentTime\",\"weather\",\"clothing\"]"),
+					new ToolResponseMessage.ToolResponse("id2", "toolSearchTool",
+							"[\"weather\",\"currentTime\",\"clothing\"]"),
+					new ToolResponseMessage.ToolResponse("id3", "toolSearchTool", "[\"clothing\"]")))
+			.build();
+
+		ToolCallingChatOptions captured = captureToolOptionsForPrompt(advisor,
+				List.of(new SystemMessage("System message"), new UserMessage("test"),
+						AssistantMessage.builder().content("searching").build(), toolResponseMessage),
+				toolOptions);
+
+		assertThat(captured.getToolCallbacks()).extracting(cb -> cb.getToolDefinition().name())
+			.containsExactlyInAnyOrder("toolSearchTool", "currentTime", "weather", "clothing");
+	}
+
+	/**
+	 * With accumulation disabled, only the most recent turn's tool search references are
+	 * honored — references discovered in an earlier turn are dropped.
+	 */
+	@Test
+	void testNonAccumulation_keepsOnlyLastTurnAcrossTurns() {
+		ToolSearchToolCallingAdvisor advisor = ToolSearchToolCallingAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.toolIndex(this.toolIndex)
+			.referenceToolNameAccumulation(false)
+			.build();
+
+		when(this.toolCallingManager.resolveToolDefinitions(any(ToolCallingChatOptions.class))).thenReturn(List.of());
+
+		TestToolCallingChatOptions toolOptions = new TestToolCallingChatOptions();
+		toolOptions.setToolCallbacks(List.of(mockCallback("weather"), mockCallback("clothing")));
+
+		ToolResponseMessage turn1 = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("id1", "toolSearchTool", "[\"weather\"]")))
+			.build();
+		ToolResponseMessage turn2 = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("id2", "toolSearchTool", "[\"clothing\"]")))
+			.build();
+
+		ToolCallingChatOptions captured = captureToolOptionsForPrompt(advisor,
+				List.of(new UserMessage("test"), turn1, AssistantMessage.builder().content("again").build(), turn2),
+				toolOptions);
+
+		assertThat(captured.getToolCallbacks()).extracting(cb -> cb.getToolDefinition().name())
+			.containsExactlyInAnyOrder("toolSearchTool", "clothing");
+	}
+
+	/**
+	 * With accumulation enabled, references from all turns are retained.
+	 */
+	@Test
+	void testAccumulation_keepsReferencesAcrossTurns() {
+		ToolSearchToolCallingAdvisor advisor = ToolSearchToolCallingAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.toolIndex(this.toolIndex)
+			.referenceToolNameAccumulation(true)
+			.build();
+
+		when(this.toolCallingManager.resolveToolDefinitions(any(ToolCallingChatOptions.class))).thenReturn(List.of());
+
+		TestToolCallingChatOptions toolOptions = new TestToolCallingChatOptions();
+		toolOptions.setToolCallbacks(List.of(mockCallback("weather"), mockCallback("clothing")));
+
+		ToolResponseMessage turn1 = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("id1", "toolSearchTool", "[\"weather\"]")))
+			.build();
+		ToolResponseMessage turn2 = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("id2", "toolSearchTool", "[\"clothing\"]")))
+			.build();
+
+		ToolCallingChatOptions captured = captureToolOptionsForPrompt(advisor,
+				List.of(new UserMessage("test"), turn1, AssistantMessage.builder().content("again").build(), turn2),
+				toolOptions);
+
+		assertThat(captured.getToolCallbacks()).extracting(cb -> cb.getToolDefinition().name())
+			.containsExactlyInAnyOrder("toolSearchTool", "weather", "clothing");
+	}
+
 	// Helper methods
+
+	private ToolCallback mockCallback(String name) {
+		ToolCallback callback = mock(ToolCallback.class);
+		when(callback.getToolDefinition()).thenReturn(
+				DefaultToolDefinition.builder().name(name).description(name + " desc").inputSchema("{}").build());
+		return callback;
+	}
+
+	private ToolCallingChatOptions captureToolOptionsForPrompt(ToolSearchToolCallingAdvisor advisor,
+			List<Message> instructions, ToolCallingChatOptions toolOptions) {
+		Prompt prompt = new Prompt(instructions, toolOptions);
+		Map<String, Object> context = new ConcurrentHashMap<>();
+		context.put(ChatMemory.CONVERSATION_ID, "test-session-id");
+		ChatClientRequest request = ChatClientRequest.builder()
+			.prompt(prompt)
+			.build()
+			.mutate()
+			.context(context)
+			.build();
+
+		ChatClientRequest[] captured = new ChatClientRequest[1];
+		CallAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, new TerminalCallAdvisor((req, c) -> {
+				captured[0] = req;
+				return createMockResponse(false);
+			})))
+			.build();
+		advisor.adviseCall(request, chain);
+		return (ToolCallingChatOptions) captured[0].prompt().getOptions();
+	}
 
 	private ToolCallingChatOptions captureToolOptions(ToolSearchToolCallingAdvisor advisor) {
 		ChatClientRequest[] captured = new ChatClientRequest[1];

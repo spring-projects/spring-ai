@@ -290,21 +290,30 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 
 	private List<String> extractToolNameReferences(List<Message> messages) {
 
-		List<ToolResponse> toolSearchToolResponses = messages.stream()
+		// Group toolSearchTool responses per tool-response message, i.e. per assistant
+		// turn. A single turn may contain several parallel toolSearchTool calls, all of
+		// which arrive within one ToolResponseMessage.
+		List<List<ToolResponse>> toolSearchResponsesPerTurn = messages.stream()
 			.filter(m -> m.getMessageType() == MessageType.TOOL)
-			.map(r -> ((ToolResponseMessage) r).getResponses())
-			.flatMap(List::stream)
-			.filter(r -> r.name().equalsIgnoreCase(this.toolSearchToolCallback.getToolDefinition().name()))
+			.map(m -> ((ToolResponseMessage) m).getResponses()
+				.stream()
+				.filter(r -> r.name().equalsIgnoreCase(this.toolSearchToolCallback.getToolDefinition().name()))
+				.toList())
+			.filter(responses -> !responses.isEmpty())
 			.toList();
 
-		if (CollectionUtils.isEmpty(toolSearchToolResponses)) {
+		if (toolSearchResponsesPerTurn.isEmpty()) {
 			return List.of();
 		}
 
-		toolSearchToolResponses = (this.referenceToolNameAccumulation) ? toolSearchToolResponses
-				: List.of(toolSearchToolResponses.get(toolSearchToolResponses.size() - 1));
+		// When accumulation is disabled only the most recent search turn is honored, but
+		// that turn may contain multiple parallel toolSearchTool calls that must all be
+		// kept.
+		List<List<ToolResponse>> selectedTurns = this.referenceToolNameAccumulation ? toolSearchResponsesPerTurn
+				: List.of(toolSearchResponsesPerTurn.get(toolSearchResponsesPerTurn.size() - 1));
 
-		return toolSearchToolResponses.stream()
+		return selectedTurns.stream()
+			.flatMap(List::stream)
 			.map(r -> jsonHelper.fromJson(r.responseData(), new ParameterizedTypeReference<List<String>>() {
 			}))
 			.flatMap(List::stream)
