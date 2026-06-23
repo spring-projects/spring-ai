@@ -19,7 +19,6 @@ package org.springframework.ai.vectorstore.milvus;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.param.ConnectParam;
@@ -37,11 +36,17 @@ import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
+ * Integration tests for filtered similarity search using a custom metadata field name.
+ *
  * @author Taewoong Kim
+ * @author Soby Chacko
  */
 @Testcontainers
 class MilvusVectorStoreCustomMetadataFieldFilterIT {
@@ -49,29 +54,16 @@ class MilvusVectorStoreCustomMetadataFieldFilterIT {
 	@Container
 	private static final MilvusContainer milvusContainer = new MilvusContainer(MilvusImage.DEFAULT_IMAGE);
 
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withUserConfiguration(TestApplication.class);
+
 	@Test
-	void shouldFilterWithCustomMetadataFieldName() throws Exception {
-		MilvusServiceClient milvusClient = new MilvusServiceClient(ConnectParam.newBuilder()
-			.withAuthorization("minioadmin", "minioadmin")
-			.withUri(milvusContainer.getEndpoint())
-			.build());
+	void shouldFilterWithCustomMetadataFieldName() {
+		this.contextRunner.run(context -> {
+			MilvusVectorStore vectorStore = context.getBean(MilvusVectorStore.class);
 
-		String collectionName = "test_custom_metadata_filter_" + UUID.randomUUID().toString().replace("-", "");
-		MilvusVectorStore vectorStore = MilvusVectorStore.builder(milvusClient, new TestEmbeddingModel())
-			.collectionName(collectionName)
-			.databaseName(MilvusVectorStore.DEFAULT_DATABASE_NAME)
-			.indexType(IndexType.IVF_FLAT)
-			.metricType(MetricType.COSINE)
-			.embeddingDimension(3)
-			.metadataFieldName("meta")
-			.batchingStrategy(new TokenCountBatchingStrategy())
-			.initializeSchema(true)
-			.build();
-
-		boolean collectionCreated = false;
-		try {
-			vectorStore.afterPropertiesSet();
-			collectionCreated = true;
+			vectorStore.dropCollection();
+			vectorStore.createCollection();
 
 			Document matchingDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
 					Map.of("age", 35, "country", "NL"));
@@ -88,16 +80,42 @@ class MilvusVectorStoreCustomMetadataFieldFilterIT {
 
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(matchingDocument.getId());
-		}
-		finally {
-			if (collectionCreated) {
-				vectorStore.dropCollection();
-			}
-			milvusClient.close(1);
-		}
+		});
 	}
 
-	private static final class TestEmbeddingModel implements EmbeddingModel {
+	@SpringBootConfiguration
+	static class TestApplication {
+
+		@Bean
+		MilvusServiceClient milvusClient() {
+			return new MilvusServiceClient(ConnectParam.newBuilder()
+				.withAuthorization("minioadmin", "minioadmin")
+				.withUri(milvusContainer.getEndpoint())
+				.build());
+		}
+
+		@Bean
+		EmbeddingModel embeddingModel() {
+			return new FixedVectorEmbeddingModel();
+		}
+
+		@Bean
+		MilvusVectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel) {
+			return MilvusVectorStore.builder(milvusClient, embeddingModel)
+				.collectionName("test_custom_metadata_filter")
+				.databaseName(MilvusVectorStore.DEFAULT_DATABASE_NAME)
+				.indexType(IndexType.IVF_FLAT)
+				.metricType(MetricType.COSINE)
+				.embeddingDimension(3)
+				.metadataFieldName("meta")
+				.batchingStrategy(new TokenCountBatchingStrategy())
+				.initializeSchema(true)
+				.build();
+		}
+
+	}
+
+	static final class FixedVectorEmbeddingModel implements EmbeddingModel {
 
 		@Override
 		public float[] embed(Document document) {
