@@ -856,7 +856,7 @@ String content = response.getResult().getOutput().getText();
 NOTE: AWS Bedrock structured output uses a fixed schema name `response_schema` internally when constructing the `OutputConfig`.
 The schema JSON is passed directly to the AWS SDK's `JsonSchemaDefinition`.
 
-For more information, see the xref:api/structured-output-converter.adoc[Structured Output Converter] documentation.
+For more information, see the xref:api/structured-output.adoc[Structured Output] documentation.
 
 == Multimodal
 

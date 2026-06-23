@@ -100,15 +100,17 @@ var validationAdvisor = StructuredOutputValidationAdvisor.builder()
     .build();
 ----
 
-Alternatively, enable schema validation directly on an `entity()` call without configuring the advisor manually, via xref:api/chatclient.adoc#_entityparamspec[`EntityParamSpec`]:
+Alternatively, enable schema validation directly on an `entity()` call without configuring the advisor manually, via the `EntityParamSpec` consumer:
 
 [source,java]
 ----
 ActorFilms actorFilms = chatClient.prompt()
     .user("Generate the filmography for a random actor.")
     .call()
-    .entity(ActorFilms.class, spec -> spec.schemaValidation());
+    .entity(ActorFilms.class, spec -> spec.validateSchema());
 ----
+
+See xref:api/structured-output/validation.adoc[Schema Validation & Self-Correction] for the high-level usage.
 
 == Accumulating Token Usage in Custom Recursive Advisors
 

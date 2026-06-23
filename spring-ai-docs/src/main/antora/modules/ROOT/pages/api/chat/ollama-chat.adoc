@@ -427,7 +427,7 @@ where fruits are being displayed, possibly for convenience or aesthetic purposes
 == Structured Outputs
 
 Ollama provides custom https://ollama.com/blog/structured-outputs[Structured Outputs] APIs that ensure your model generates responses conforming strictly to your provided `JSON Schema`.
-In addition to the existing Spring AI model-agnostic xref::api/structured-output-converter.adoc[Structured Output Converter], these APIs offer enhanced control and precision.
+In addition to the existing Spring AI model-agnostic xref::api/structured-output.adoc[Structured Output], these APIs offer enhanced control and precision.
 
 === Two Modes for Structured Output
 
@@ -543,7 +543,7 @@ ChatResponse response = this.ollamaChatModel.call(this.prompt);
 
 ==== Integrating with BeanOutputConverter Utilities
 
-You can leverage existing xref::api/structured-output-converter.adoc#_bean_output_converter[BeanOutputConverter] utilities to automatically generate the JSON Schema from your domain objects and later convert the structured response into domain-specific instances:
+You can leverage existing xref::api/structured-output/converters.adoc#_bean_output_converter[BeanOutputConverter] utilities to automatically generate the JSON Schema from your domain objects and later convert the structured response into domain-specific instances:
 
 [source,java]
 ----
