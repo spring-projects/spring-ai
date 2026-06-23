@@ -1069,7 +1069,10 @@ public final class OpenAiChatModel implements ChatModel {
 
 		private static Delta mergeDeltas(Delta left, Delta right) {
 			var tcs = Stream.of(left.toolCalls(), right.toolCalls()).flatMap(Optional::stream).reduce((tcs1, tcs2) -> {
-				Assert.isTrue(tcs2.size() <= 1, "no more than one tool call per message currently supported");
+				if (tcs2.isEmpty()) {
+					return tcs1;
+				}
+				Assert.isTrue(tcs2.size() == 1, "no more than one tool call per message currently supported");
 				ToolCall toolCall = tcs2.get(0);
 				if (toolCall.id().isPresent()) {
 					List<ToolCall> result = new ArrayList<>(tcs1);
