@@ -416,7 +416,7 @@ The `AudioParameters` class provides the voice and audio format for the audio ou
 == Structured Outputs
 
 OpenAI provides custom https://platform.openai.com/docs/guides/structured-outputs[Structured Outputs] APIs that ensure your model generates responses conforming strictly to your provided `JSON Schema`.
-In addition to the existing Spring AI model-agnostic xref::api/structured-output-converter.adoc[Structured Output Converter], these APIs offer enhanced control and precision.
+In addition to the existing Spring AI model-agnostic xref::api/structured-output.adoc[Structured Output], these APIs offer enhanced control and precision.
 
 NOTE: Currently, OpenAI supports a link:https://platform.openai.com/docs/guides/structured-outputs/supported-schemas[subset of the JSON Schema language] format.
 
@@ -466,7 +466,7 @@ NOTE: Adhere to the OpenAI link:https://platform.openai.com/docs/guides/structur
 
 ==== Integrating with BeanOutputConverter Utilities
 
-You can leverage existing xref::api/structured-output-converter.adoc#_bean_output_converter[BeanOutputConverter] utilities to automatically generate the JSON Schema from your domain objects and later convert the structured response into domain-specific instances:
+You can leverage existing xref::api/structured-output/converters.adoc#_bean_output_converter[BeanOutputConverter] utilities to automatically generate the JSON Schema from your domain objects and later convert the structured response into domain-specific instances:
 
 --
 [tabs]

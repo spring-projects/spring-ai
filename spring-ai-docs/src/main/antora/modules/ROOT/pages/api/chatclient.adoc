@@ -315,54 +315,12 @@ List<ActorFilms> actorFilms = chatClient.prompt()
     .entity(new ParameterizedTypeReference<List<ActorFilms>>() {});
 ----
 
-==== EntityParamSpec
+==== Reliability Switches: EntityParamSpec
 
-All three `entity()` overloads accept an optional `Consumer<EntityParamSpec>` that enables two independent behaviours:
+All `entity()` overloads accept an optional `Consumer<EntityParamSpec>` that enables two independent, composable behaviors:
 
-===== Provider-Native Structured Output
-
-By default, the JSON schema is appended to the user message as text instructions.
-When `useProviderStructuredOutput()` is set, the schema is instead passed directly to the AI provider API as a structured constraint (equivalent to setting `AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT`).
-This requires the underlying model to support `StructuredOutputChatOptions`.
-
-[source,java]
-----
-ActorFilms actorFilms = chatClient.prompt()
-    .user("Generate the filmography for a random actor.")
-    .call()
-    .entity(ActorFilms.class, spec -> spec.useProviderStructuredOutput());
-----
-
-IMPORTANT: Native structured output is *not enabled by default* because support varies significantly across models and providers.
-Notable limitations include Ollama models with reasoning/thinking mode (which may return plain text instead of JSON) and OpenAI's lack of support for top-level array schemas.
-See xref:api/structured-output-converter.adoc#_known_limitations[Known Limitations] for details and workarounds.
-
-You can still set this globally for all calls via the advisor parameter:
-
-[source,java]
-----
-ActorFilms actorFilms = chatClient.prompt()
-    .advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
-    .user("Generate the filmography for a random actor.")
-    .call()
-    .entity(ActorFilms.class);
-----
-
-===== Schema Validation with Retry
-
-`validateSchema()` validates the model's JSON response against the entity schema before returning it.
-If validation fails, the error message is appended to the user prompt and the model is retried, up to `maxRepeatAttempts` times (default: 3).
-This uses xref:api/advisors-recursive.adoc#structured-output-validation-advisor[StructuredOutputValidationAdvisor] internally.
-
-[source,java]
-----
-ActorFilms actorFilms = chatClient.prompt()
-    .user("Generate the filmography for a random actor.")
-    .call()
-    .entity(ActorFilms.class, spec -> spec.validateSchema());
-----
-
-Both options can be combined:
+* `validateSchema()` -- validate the JSON response against the entity schema and automatically retry with error feedback on failure.
+* `useProviderStructuredOutput()` -- send the schema to the provider as an API-level constraint instead of prompt text.
 
 [source,java]
 ----
@@ -374,7 +332,7 @@ ActorFilms actorFilms = chatClient.prompt()
         .validateSchema());
 ----
 
-NOTE: Streaming is not supported when `validateSchema()` is active.
+For full details on these switches, supported providers, limitations, and the lower-level converter API, see the xref:api/structured-output.adoc[Structured Output] reference.
 
 === Streaming Responses
 
@@ -392,7 +350,7 @@ Flux<String> output = chatClient.prompt()
 You can also stream the `ChatResponse` using the method `Flux<ChatResponse> chatResponse()`.
 
 In the future, we will offer a convenience method that will let you return a Java entity with the reactive `stream()` method.
-In the meantime, you should use the xref:api/structured-output-converter.adoc#StructuredOutputConverter[Structured Output Converter] to convert the aggregated response explicitly as shown below.
+In the meantime, you should use the xref:api/structured-output/converters.adoc[Structured Output Converter] to convert the aggregated response explicitly as shown below.
 This also demonstrates the use of parameters in the fluent API that will be discussed in more detail in a later section of the documentation.
 
 [source,java]

@@ -8,7 +8,10 @@
 **** xref:api/advisors-recursive.adoc[Recursive Advisors]
 
 ** xref:api/prompt.adoc[]
-** xref:api/structured-output-converter.adoc[Structured Output]
+** xref:api/structured-output.adoc[Structured Output]
+*** xref:api/structured-output/validation.adoc[Schema Validation & Self-Correction]
+*** xref:api/structured-output/native.adoc[Provider-Native Structured Output]
+*** xref:api/structured-output/converters.adoc[Output Converters]
 ** xref:api/multimodality.adoc[Multimodality]
 ** xref:api/index.adoc[Models]
 
