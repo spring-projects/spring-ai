@@ -698,6 +698,15 @@ WARNING: Defining the correct required status is critical for reducing hallucina
 
 `ToolContext` lets you pass non-model data (tenant IDs, user IDs, request scope) to tool methods. The data is **not** sent to the model — it's purely for the tool's internal use.
 
+image::tools/tool-context.jpg[Tool Context, width=700, align="center"]
+
+The chat request carries the tool definitions plus the tool context, and Spring AI sends only the tool definitions to the model (1).
+The model decides to call a tool and returns the tool call requests to Spring AI (2), which dispatches them to the matching tool (3).
+The tool context is handed directly to the tool at invocation time (3"), so it reaches the tool without ever passing through the model.
+The tool returns its result to Spring AI (4), which sends that result back to the model (5), and the model's final answer is returned as the chat response (6).
+
+In the example below, the `Map.of("tenantId", "acme")` passed to `.toolContext()` is the tool context from step (1), and `getCustomerInfo` reads it through its `ToolContext` parameter at step (3") — the `tenantId` reaches the tool without ever being exposed to the model.
+
 [source,java]
 ----
 class CustomerTools {
