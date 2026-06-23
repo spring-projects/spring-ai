@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.advisor.AdvisorLoopGuard;
 import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
@@ -119,10 +120,11 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 	protected ToolSearchToolCallingAdvisor(ToolCallingManager toolCallingManager, int advisorOrder,
 			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, ToolIndex toolIndex,
 			String systemMessageSuffix, boolean referenceToolNameAccumulation, @Nullable Integer maxResults,
-			boolean conversationHistoryEnabled, String sessionIdKeyName, ToolIndexEvictionStrategy evictionStrategy) {
+			boolean conversationHistoryEnabled, String sessionIdKeyName, ToolIndexEvictionStrategy evictionStrategy,
+			AdvisorLoopGuard advisorLoopGuard) {
 
 		super(toolCallingManager, toolExecutionEligibilityChecker, advisorOrder, conversationHistoryEnabled,
-				DEFAULT_MAX_IDENTICAL_TOOL_CALL_COUNT);
+				advisorLoopGuard);
 		this.toolIndex = toolIndex;
 		this.systemMessageSuffix = systemMessageSuffix;
 		this.referenceToolNameAccumulation = referenceToolNameAccumulation;
@@ -488,7 +490,8 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 			return new ToolSearchToolCallingAdvisor(getToolCallingManager(), getAdvisorOrder(),
 					getToolExecutionEligibilityChecker(), this.toolIndex,
 					Objects.requireNonNull(this.systemMessageSuffix), this.referenceToolNameAccumulation,
-					this.maxResults, this.isConversationHistoryEnabled(), this.sessionIdKeyName, this.evictionStrategy);
+					this.maxResults, this.isConversationHistoryEnabled(), this.sessionIdKeyName, this.evictionStrategy,
+					getAdvisorLoopGuard());
 		}
 
 		@Override

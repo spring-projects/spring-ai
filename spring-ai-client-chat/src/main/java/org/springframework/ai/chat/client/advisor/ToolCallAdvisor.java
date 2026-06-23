@@ -29,9 +29,9 @@ public class ToolCallAdvisor extends ToolCallingAdvisor {
 
 	protected ToolCallAdvisor(ToolCallingManager toolCallingManager,
 			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, int advisorOrder,
-			boolean conversationHistoryEnabled) {
+			boolean conversationHistoryEnabled, AdvisorLoopGuard advisorLoopGuard) {
 		super(toolCallingManager, toolExecutionEligibilityChecker, advisorOrder, conversationHistoryEnabled,
-				DEFAULT_MAX_IDENTICAL_TOOL_CALL_COUNT);
+				advisorLoopGuard);
 	}
 
 	/**
@@ -56,7 +56,7 @@ public class ToolCallAdvisor extends ToolCallingAdvisor {
 		@Override
 		public ToolCallAdvisor build() {
 			return new ToolCallAdvisor(getToolCallingManager(), getToolExecutionEligibilityChecker(), getAdvisorOrder(),
-					isConversationHistoryEnabled());
+					isConversationHistoryEnabled(), getAdvisorLoopGuard());
 		}
 
 	}
