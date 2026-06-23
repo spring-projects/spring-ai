@@ -289,7 +289,7 @@
 		<opensearch-testcontainers.version>4.1.0</opensearch-testcontainers.version>
 		<pdfbox.version>3.0.7</pdfbox.version>
 		<pgvector.version>0.1.6</pgvector.version>
-		<pinecone.version>4.0.1</pinecone.version>
+		<pinecone.version>6.2.0</pinecone.version>
 		<pinecone.protobuf-java-util.version>4.29.3</pinecone.protobuf-java-util.version>
 		<protobuf-java.version>3.25.8</protobuf-java.version>
 		<qdrant.version>1.18.0</qdrant.version>
