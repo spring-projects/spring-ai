@@ -25,7 +25,7 @@ import org.springframework.util.Assert;
 
 /**
  * Converts {@link Expression} into Milvus metadata filter expression format. See Milvus
- * JSON‑field & filtering docs:
+ * JSON‑field &amp; filtering docs:
  * <a href="https://milvus.io/docs/json-field-overview.md">json-field-overview</a>
  *
  * @author Christian Tzolov
