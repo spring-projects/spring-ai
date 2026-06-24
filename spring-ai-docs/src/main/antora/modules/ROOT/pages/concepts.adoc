@@ -6,7 +6,7 @@ This section describes core concepts that Spring AI uses. We recommend reading i
 == Models
 
 AI models are algorithms designed to process and generate information, often mimicking human cognitive functions.
-By learning patterns and insights from large datasets, these models can make predictions, text, images, or other outputs, enhancing various applications across industries.
+By learning patterns and insights from large datasets, these models can make predictions, generate text and images, or other outputs, enhancing various applications across industries.
 
 There are many different types of AI models, each suited for a specific use case.
 While ChatGPT and its generative AI capabilities have captivated users through text input and output, many models and companies offer diverse inputs and outputs.
@@ -122,7 +122,7 @@ This intricacy has led to the emergence of a specialized field involving the cre
 
 image::structured-output-architecture.jpg[Structured Output Converter Architecture, width=800, align="center"]
 
-The xref:api/structured-output-converter.adoc#StructuredOutputConverter[Structured output conversion] employs meticulously crafted prompts, often necessitating multiple interactions with the model to achieve the desired formatting.
+The xref:api/structured-output.adoc[Structured output conversion] employs meticulously crafted prompts, often necessitating multiple interactions with the model to achieve the desired formatting.
 
 == Bringing Your Data & APIs to the AI Model
 

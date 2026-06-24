@@ -17,10 +17,14 @@
 package org.springframework.ai.model.tool;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationHandler;
 import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.ObservationView;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -38,6 +42,7 @@ import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.tool.method.MethodToolCallback;
+import org.springframework.ai.tool.observation.ToolCallingObservationContext;
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
@@ -329,6 +334,53 @@ class DefaultToolCallingManagerTests {
 		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
 
 		assertThat(toolExecutionResult.conversationHistory()).contains(expectedToolResponse);
+	}
+
+	@Test
+	void whenBlockingExecutionThenToolCallObservationHasCurrentObservationAsParent() {
+		ToolCallback toolCallback = new TestToolCallback("toolA");
+		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(List.of(toolCallback));
+
+		ObservationRegistry observationRegistry = ObservationRegistry.create();
+		List<ObservationView> capturedParents = new ArrayList<>();
+		observationRegistry.observationConfig()
+			.observationHandler(new ObservationHandler<ToolCallingObservationContext>() {
+				@Override
+				public void onStart(ToolCallingObservationContext context) {
+					capturedParents.add(context.getParentObservation());
+				}
+
+				@Override
+				public boolean supportsContext(Observation.Context context) {
+					return context instanceof ToolCallingObservationContext;
+				}
+			});
+
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
+			.observationRegistry(observationRegistry)
+			.toolCallbackResolver(toolCallbackResolver)
+			.build();
+
+		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
+		ChatResponse chatResponse = ChatResponse.builder()
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.content("")
+				.properties(Map.of())
+				.toolCalls(List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}")))
+				.build())))
+			.build();
+
+		// Simulate the blocking ChatClient flow where an outer observation holds an open
+		// scope on the calling thread (ToolCallReactiveContextHolder is never populated).
+		Observation parentObservation = Observation.start("parent", observationRegistry);
+		try (Observation.Scope ignored = parentObservation.openScope()) {
+			toolCallingManager.executeToolCalls(prompt, chatResponse);
+		}
+		finally {
+			parentObservation.stop();
+		}
+
+		assertThat(capturedParents).containsExactly(parentObservation);
 	}
 
 	@Test

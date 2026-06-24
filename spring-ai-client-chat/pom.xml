@@ -136,6 +136,15 @@
 
 	</dependencies>
 
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.jetbrains.kotlin</groupId>
+				<artifactId>kotlin-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
 	<profiles>
 		<!-- ANTLR profile moved to spring-ai-vector-store -->
 	</profiles>

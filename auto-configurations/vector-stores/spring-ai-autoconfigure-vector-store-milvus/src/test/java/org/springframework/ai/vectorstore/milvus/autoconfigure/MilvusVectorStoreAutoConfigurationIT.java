@@ -53,7 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class MilvusVectorStoreAutoConfigurationIT {
 
 	@Container
-	private static MilvusContainer milvus = new MilvusContainer("milvusdb/milvus:v2.3.8");
+	private static MilvusContainer milvus = new MilvusContainer("milvusdb/milvus:v2.6.18");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(MilvusVectorStoreAutoConfiguration.class))

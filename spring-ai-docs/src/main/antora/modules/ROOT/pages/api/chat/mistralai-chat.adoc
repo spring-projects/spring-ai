@@ -255,7 +255,7 @@ var structuredOutput = MistralAiChatOptions.builder()
     .build();
 ----
 
-For more information about structured outputs, see the xref:api/structured-output-converter.adoc[Structured Output Converter] documentation.
+For more information about structured outputs, see the xref:api/structured-output.adoc[Structured Output] documentation.
 
 == Reasoning Models
 

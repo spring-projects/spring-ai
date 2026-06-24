@@ -37,7 +37,7 @@
  * <b>Quick Start:</b> <pre>{@code
  * AnthropicChatModel chatModel = new AnthropicChatModel(
  *     AnthropicChatOptions.builder()
- *         .model("claude-sonnet-4-20250514")
+ *         .model("claude-sonnet-4-5")
  *         .maxTokens(1024)
  *         .build());
  *

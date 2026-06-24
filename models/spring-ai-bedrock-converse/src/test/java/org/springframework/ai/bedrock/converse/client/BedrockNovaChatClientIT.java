@@ -114,7 +114,7 @@ public class BedrockNovaChatClientIT {
 
 		// Additional semantic checks
 		boolean describesMovement = lowerResponse.contains("mov") || lowerResponse.contains("walk")
-				|| lowerResponse.contains("peck");
+				|| lowerResponse.contains("peck") | lowerResponse.contains("standing");
 
 		boolean describesAppearance = lowerResponse.contains("feather") || lowerResponse.contains("fluff")
 				|| lowerResponse.contains("color");

@@ -255,12 +255,13 @@
 		<maven.compiler.source>${java.version}</maven.compiler.source>
 		<maven.compiler.target>${java.version}</maven.compiler.target>
 		<kotlin.compiler.jvmTarget>${java.version}</kotlin.compiler.jvmTarget>
+		<kotlin.compiler.daemon>false</kotlin.compiler.daemon>
 
 		<!-- production dependencies -->
 		<spring-boot.version>4.1.0</spring-boot.version>
 
 		<!-- Third-party dependencies -->
-		<anthropic-sdk.version>2.40.1</anthropic-sdk.version>
+		<anthropic-sdk.version>2.43.0</anthropic-sdk.version>
 		<azure-core.version>1.57.1</azure-core.version>
 		<azure-identity.version>1.18.2</azure-identity.version>
 		<azure-json.version>1.5.1</azure-json.version>
@@ -273,31 +274,31 @@
 		<com.google.genai.version>1.58.0</com.google.genai.version>
 		<commonmark.version>0.22.0</commonmark.version>
 		<couchbase.version>3.9.1</couchbase.version>
-		<djl.version>0.32.0</djl.version>
+		<djl.version>0.36.0</djl.version>
 		<fastjson2.version>2.0.46</fastjson2.version>
 		<gemfire.testcontainers.version>2.3.3</gemfire.testcontainers.version>
-		<grpc-netty-shaded.version>1.76.0</grpc-netty-shaded.version>
+		<grpc-netty-shaded.version>1.82.1</grpc-netty-shaded.version>
 		<jsonschema.version>5.0.0</jsonschema.version>
 		<jsoup.version>1.22.2</jsoup.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
 		<lucene.version>9.12.3</lucene.version>
 		<kotlin.version>2.3.20</kotlin.version>
-		<milvus.version>2.5.8</milvus.version>
+		<milvus.version>2.6.21</milvus.version>
 		<mockk-jvm.version>1.13.13</mockk-jvm.version>
 		<neo4j-cypher-dsl-bom.version>2024.5.1</neo4j-cypher-dsl-bom.version>
-		<openai-sdk.version>4.39.1</openai-sdk.version>
+		<openai-sdk.version>4.41.0</openai-sdk.version>
 		<opensearch-client.version>3.6.0</opensearch-client.version>
 		<opensearch-testcontainers.version>4.1.0</opensearch-testcontainers.version>
 		<pdfbox.version>3.0.7</pdfbox.version>
 		<pgvector.version>0.1.6</pgvector.version>
-		<pinecone.version>4.0.1</pinecone.version>
+		<pinecone.version>6.2.0</pinecone.version>
 		<pinecone.protobuf-java-util.version>4.29.3</pinecone.protobuf-java-util.version>
 		<protobuf-java.version>3.25.8</protobuf-java.version>
-		<qdrant.version>1.17.0</qdrant.version>
+		<qdrant.version>1.18.0</qdrant.version>
 		<swagger-annotations.version>2.2.38</swagger-annotations.version>
 		<ST4.version>4.3.4</ST4.version>
 		<typesense.version>1.3.0</typesense.version>
-		<weaviate-client.version>5.2.0</weaviate-client.version>
+		<weaviate-client.version>5.3.0</weaviate-client.version>
 
 		<!-- testing dependencies -->
 		<json-unit-assertj.version>5.1.0</json-unit-assertj.version>
@@ -344,6 +345,47 @@
 	</properties>
 
 	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.jetbrains.kotlin</groupId>
+					<artifactId>kotlin-maven-plugin</artifactId>
+					<version>${kotlin.version}</version>
+					<configuration>
+						<jvmTarget>${java.version}</jvmTarget>
+						<javaParameters>true</javaParameters>
+						<apiVersion>2.2</apiVersion>
+						<languageVersion>2.2</languageVersion>
+					</configuration>
+					<executions>
+						<execution>
+							<id>compile</id>
+							<goals>
+								<goal>compile</goal>
+							</goals>
+							<configuration>
+								<sourceDirs>
+									<sourceDir>${project.basedir}/src/main/kotlin</sourceDir>
+									<sourceDir>${project.basedir}/src/main/java</sourceDir>
+								</sourceDirs>
+							</configuration>
+						</execution>
+						<execution>
+							<id>test-compile</id>
+							<goals>
+								<goal>test-compile</goal>
+							</goals>
+							<configuration>
+								<sourceDirs>
+									<sourceDir>${project.basedir}/src/test/kotlin</sourceDir>
+									<sourceDir>${project.basedir}/src/test/java</sourceDir>
+								</sourceDirs>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -402,43 +444,6 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-site-plugin</artifactId>
 				<version>${maven-site-plugin.version}</version>
-			</plugin>
-			<plugin>
-				<groupId>org.jetbrains.kotlin</groupId>
-				<artifactId>kotlin-maven-plugin</artifactId>
-				<version>${kotlin.version}</version>
-				<configuration>
-					<jvmTarget>${java.version}</jvmTarget>
-					<javaParameters>true</javaParameters>
-					<apiVersion>2.2</apiVersion>
-					<languageVersion>2.2</languageVersion>
-				</configuration>
-				<executions>
-					<execution>
-						<id>compile</id>
-						<goals>
-							<goal>compile</goal>
-						</goals>
-						<configuration>
-							<sourceDirs>
-								<sourceDir>${project.basedir}/src/main/kotlin</sourceDir>
-								<sourceDir>${project.basedir}/src/main/java</sourceDir>
-							</sourceDirs>
-						</configuration>
-					</execution>
-					<execution>
-						<id>test-compile</id>
-						<goals>
-							<goal>test-compile</goal>
-						</goals>
-						<configuration>
-							<sourceDirs>
-								<sourceDir>${project.basedir}/src/test/kotlin</sourceDir>
-								<sourceDir>${project.basedir}/src/test/java</sourceDir>
-							</sourceDirs>
-						</configuration>
-					</execution>
-				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

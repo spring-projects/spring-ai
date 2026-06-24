@@ -24,10 +24,14 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
+import io.pinecone.clients.Pinecone;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,6 +60,7 @@ import static org.hamcrest.Matchers.hasSize;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  */
 @EnabledIfEnvironmentVariable(named = "PINECONE_API_KEY", matches = ".+")
 public class PineconeVectorStoreObservationIT {
@@ -97,6 +102,23 @@ public class PineconeVectorStoreObservationIT {
 	public void setUpNamespace() {
 		String env = System.getenv("PINECONE_NAMESPACE");
 		PINECONE_NAMESPACE = (env != null) ? env : ("spring-ai-it-" + UUID.randomUUID());
+	}
+
+	@AfterEach
+	public void tearDownNamespace() {
+		this.contextRunner.run(context -> {
+			PineconeVectorStore vectorStore = context.getBean(PineconeVectorStore.class);
+			vectorStore.<Pinecone>getNativeClient().ifPresent(pinecone -> {
+				try {
+					pinecone.getIndexConnection(PINECONE_INDEX_NAME).deleteNamespace(PINECONE_NAMESPACE);
+				}
+				catch (StatusRuntimeException e) {
+					if (e.getStatus().getCode() != Status.Code.NOT_FOUND) {
+						throw e;
+					}
+				}
+			});
+		});
 	}
 
 	@Test

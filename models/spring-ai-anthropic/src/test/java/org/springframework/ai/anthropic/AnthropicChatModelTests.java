@@ -122,7 +122,7 @@ class AnthropicChatModelTests {
 			.anthropicClient(this.anthropicClient)
 			.anthropicClientAsync(this.anthropicClientAsync)
 			.options(AnthropicChatOptions.builder()
-				.model(Model.CLAUDE_SONNET_4_20250514)
+				.model(Model.CLAUDE_SONNET_4_5)
 				.maxTokens(1024)
 				.temperature(0.7)
 				.build())
@@ -144,7 +144,7 @@ class AnthropicChatModelTests {
 		verify(this.messageService).create(captor.capture());
 
 		MessageCreateParams request = captor.getValue();
-		assertThat(request.model().asString()).isEqualTo("claude-sonnet-4-20250514");
+		assertThat(request.model().asString()).isEqualTo("claude-sonnet-4-5");
 		assertThat(request.maxTokens()).isEqualTo(1024);
 	}
 
@@ -485,7 +485,7 @@ class AnthropicChatModelTests {
 
 		Message message = mock(Message.class);
 		given(message.id()).willReturn("msg_123");
-		given(message.model()).willReturn(Model.CLAUDE_SONNET_4_20250514);
+		given(message.model()).willReturn(Model.CLAUDE_SONNET_4_5);
 		given(message.content()).willReturn(List.of(contentBlock));
 		given(message.stopReason()).willReturn(Optional.of(stopReason));
 		given(message.usage()).willReturn(usage);
@@ -511,7 +511,7 @@ class AnthropicChatModelTests {
 
 		Message message = mock(Message.class);
 		given(message.id()).willReturn("msg_456");
-		given(message.model()).willReturn(Model.CLAUDE_SONNET_4_20250514);
+		given(message.model()).willReturn(Model.CLAUDE_SONNET_4_5);
 		given(message.content()).willReturn(List.of(contentBlock));
 		given(message.stopReason()).willReturn(Optional.of(stopReason));
 		given(message.usage()).willReturn(usage);

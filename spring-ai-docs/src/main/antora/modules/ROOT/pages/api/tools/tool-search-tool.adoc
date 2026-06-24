@@ -241,7 +241,7 @@ The default index when no explicit `tool-index-type` is configured.
 | Built-in template (see `DEFAULT_SYSTEM_PROMPT_SUFFIX.md`)
 
 | `referenceToolNameAccumulation(boolean)`
-| When `true`, tool names discovered across all prior `toolSearchTool` calls in a single turn are accumulated and injected. When `false`, only the most recent search result is used.
+| When `true`, tool names discovered across all prior `toolSearchTool` calls are accumulated and injected. When `false`, only the results from the most recent turn are used (including all parallel `toolSearchTool` calls within that turn).
 | `true`
 
 | `sessionIdKeyName(String)`
@@ -417,7 +417,7 @@ A custom `ToolIndex` bean declared by the application always takes precedence â€
 | `null`
 
 | `spring.ai.chat.client.tool-search-advisor.reference-tool-name-accumulation`
-| Accumulate tool names discovered across all search calls in a single turn.
+| When `true`, accumulate tool names across all search turns; when `false`, keep only the most recent turn (all parallel calls within it included).
 | `true`
 
 | `spring.ai.chat.client.tool-search-advisor.session-id-key-name`

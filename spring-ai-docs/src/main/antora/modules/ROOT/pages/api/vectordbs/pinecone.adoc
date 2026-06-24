@@ -219,22 +219,22 @@ And finally, retrieve documents similar to a query:
 
 [source,java]
 ----
-List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").topK(5).build());
+List<Document> results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
 ----
 
 If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
 
 == Accessing the Native Client
 
-The Pinecone Vector Store implementation provides access to the underlying native Pinecone client (`PineconeConnection`) through the `getNativeClient()` method:
+The Pinecone Vector Store implementation provides access to the underlying native Pinecone client (`Pinecone`) through the `getNativeClient()` method:
 
 [source,java]
 ----
 PineconeVectorStore vectorStore = context.getBean(PineconeVectorStore.class);
-Optional<PineconeConnection> nativeClient = vectorStore.getNativeClient();
+Optional<Pinecone> nativeClient = vectorStore.getNativeClient();
 
 if (nativeClient.isPresent()) {
-    PineconeConnection client = nativeClient.get();
+    Pinecone client = nativeClient.get();
     // Use the native client for Pinecone-specific operations
 }
 ----

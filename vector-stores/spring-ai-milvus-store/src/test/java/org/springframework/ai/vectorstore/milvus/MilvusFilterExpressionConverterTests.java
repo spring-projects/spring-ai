@@ -54,6 +54,15 @@ public class MilvusFilterExpressionConverterTests {
 	}
 
 	@Test
+	public void testEQWithCustomMetadataFieldName() {
+		FilterExpressionConverter customConverter = new MilvusFilterExpressionConverter("meta");
+
+		String vectorExpr = customConverter.convertExpression(new Expression(EQ, new Key("country"), new Value("BG")));
+
+		assertThat(vectorExpr).isEqualTo("meta[\"country\"] == \"BG\"");
+	}
+
+	@Test
 	public void tesEqAndGte() {
 		// genre == "drama" AND year >= 2020
 		String vectorExpr = this.converter

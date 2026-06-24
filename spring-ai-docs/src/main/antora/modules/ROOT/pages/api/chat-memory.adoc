@@ -53,9 +53,6 @@ NOTE: If `maxMessages` is smaller than a single complete turn (for example, a mu
 
 Spring AI offers the `ChatMemoryRepository` abstraction for storing chat memory. This section describes the built-in repositories provided by Spring AI and how to use them, but you can also implement your own repository if needed.
 
-NOTE: Azure Cosmos DB chat memory repository support is available as an external module maintained by the Azure Cosmos DB team.
-See https://azurecosmosdb.github.io/spring-ai/docs/index.html for more information.
-
 === In-Memory Repository
 
 `InMemoryChatMemoryRepository` stores messages in memory using a `ConcurrentHashMap`.
@@ -370,6 +367,10 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
 ==== Index Initialization
 
 The Neo4j repository will automatically ensure that indexes are created for conversation IDs and message indices to optimize performance. If you use custom labels, indexes will be created for those labels as well. No schema initialization is required, but you should ensure your Neo4j instance is accessible to your application.
+
+=== CosmosDBChatMemoryRepository
+
+`CosmosDBChatMemoryRepository` chat memory repository support is available as an external module maintained by the Azure Cosmos DB team. See the https://azurecosmosdb.github.io/spring-ai/docs/chat-memory.html[related documentation] for more information.
 
 === MongoChatMemoryRepository
 

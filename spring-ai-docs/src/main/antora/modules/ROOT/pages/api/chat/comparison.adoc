@@ -11,7 +11,7 @@ This table compares various Chat Models supported by Spring AI, detailing their 
 - Streaming: If the model offers streaming responses.
 - Retry: Support for retry mechanisms.
 - xref:observability/index.adoc[Observability]: Features for monitoring and debugging.
-- xref:api/structured-output-converter.adoc#_built_in_json_mode[Built-in JSON]: Native support for JSON output.
+- xref:api/structured-output/native.adoc#_provider_built_in_json_mode[Built-in JSON]: Native support for JSON output.
 - Local deployment: Whether the model can be run locally.
 - OpenAI API Compatibility: If the model is compatible with OpenAI's API.
 

@@ -199,7 +199,7 @@ Spring AI's implementation of these patterns offers several benefits that align 
 </dependency>
 ----
 
-=== https://docs.spring.io/spring-ai/reference/api/structured-output-converter.html[Structured Output]
+=== https://docs.spring.io/spring-ai/reference/api/structured-output.html[Structured Output]
 
 [source,java]
 ----

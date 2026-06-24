@@ -92,7 +92,7 @@ class AnthropicPromptCachingIT {
 		String systemPrompt = loadPrompt("system-only-cache-prompt.txt");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_ONLY).build())
 			.maxTokens(150)
 			.temperature(0.3)
@@ -134,7 +134,7 @@ class AnthropicPromptCachingIT {
 		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS).build())
 			.maxTokens(200)
 			.temperature(0.3)
@@ -178,7 +178,7 @@ class AnthropicPromptCachingIT {
 		String systemPrompt = loadPrompt("system-only-cache-prompt.txt");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.cacheOptions(AnthropicCacheOptions.builder()
 				.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
 				.messageTypeMinContentLength(MessageType.USER, 0)
@@ -219,7 +219,7 @@ class AnthropicPromptCachingIT {
 		String systemPrompt = loadPrompt("system-only-cache-prompt.txt");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.cacheOptions(AnthropicCacheOptions.builder()
 				.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
 				.messageTypeMinContentLength(MessageType.SYSTEM, systemPrompt.length() + 1)
@@ -244,7 +244,7 @@ class AnthropicPromptCachingIT {
 		String systemPrompt = loadPrompt("extended-ttl-cache-prompt.txt");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.cacheOptions(AnthropicCacheOptions.builder()
 				.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
 				.messageTypeTtl(MessageType.SYSTEM, AnthropicCacheTtl.ONE_HOUR)
@@ -293,7 +293,7 @@ class AnthropicPromptCachingIT {
 		String largeSystemPrompt = loadPrompt("system-only-cache-prompt.txt");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.cacheOptions(AnthropicCacheOptions.builder()
 				.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
 				.messageTypeMinContentLength(MessageType.USER, 0)
@@ -377,7 +377,7 @@ class AnthropicPromptCachingIT {
 		String runMarker = "Session " + System.currentTimeMillis();
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.cacheOptions(AnthropicCacheOptions.builder()
 				.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
 				.cacheToolResults(true)
@@ -435,7 +435,7 @@ class AnthropicPromptCachingIT {
 		String dynamicSystemPrompt = "Current user session ID: " + System.currentTimeMillis();
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.cacheOptions(AnthropicCacheOptions.builder()
 				.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
 				.multiBlockSystemCaching(true)

@@ -74,7 +74,7 @@ List <Document> documents = List.of(
 vectorStore.add(documents);
 
 // Retrieve documents similar to a query
-List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+List<Document> results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
 ----
 
 [[couchbasevector-properties]]
