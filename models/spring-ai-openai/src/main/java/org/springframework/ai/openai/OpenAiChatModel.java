@@ -1034,7 +1034,8 @@ public final class OpenAiChatModel implements ChatModel {
 	private static final class ChunkMerger {
 
 		static boolean hasToolCall(ChatCompletionChunk chunk) {
-			return !chunk.choices().isEmpty() && chunk.choices().get(0).delta().toolCalls().isPresent();
+			return !chunk.choices().isEmpty()
+					&& chunk.choices().get(0).delta().toolCalls().filter(toolCalls -> !toolCalls.isEmpty()).isPresent();
 		}
 
 		static boolean toolCallsDone(ChatCompletionChunk chunk) {
