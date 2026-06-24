@@ -300,12 +300,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 				// Apply cache point if this is the last user message
 				if (shouldApplyCachePoint) {
-					CachePointBlock.Builder cachePointBuilder = CachePointBlock.builder().type("default");
-					if (cacheOptions != null && cacheOptions.getTtl() != null) {
-						cachePointBuilder.ttl(cacheOptions.getTtl().getValue());
-					}
-					CachePointBlock cachePoint = cachePointBuilder.build();
-					contents.add(ContentBlock.fromCachePoint(cachePoint));
+					contents.add(ContentBlock.fromCachePoint(buildCachePoint(cacheOptions)));
 					logger.debug("Applied cache point on last user message (conversation history caching)");
 				}
 
@@ -382,12 +377,9 @@ public class BedrockProxyChatModel implements ChatModel {
 
 			// SystemContentBlock is a union: text and cachePoint must be separate blocks.
 			if (i == cacheBoundaryIndex && shouldCacheSystem) {
-				CachePointBlock.Builder cachePointBuilder = CachePointBlock.builder().type("default");
-				if (cacheOptions != null && cacheOptions.getTtl() != null) {
-					cachePointBuilder.ttl(cacheOptions.getTtl().getValue());
-				}
-				CachePointBlock cachePoint = cachePointBuilder.build();
-				SystemContentBlock cachePointBlock = SystemContentBlock.builder().cachePoint(cachePoint).build();
+				SystemContentBlock cachePointBlock = SystemContentBlock.builder()
+					.cachePoint(buildCachePoint(cacheOptions))
+					.build();
 				systemMessages.add(cachePointBlock);
 			}
 		}
@@ -426,12 +418,7 @@ public class BedrockProxyChatModel implements ChatModel {
 				// Tool is a UNION type - toolSpec and cachePoint must be separate objects
 				boolean isLastTool = (i == toolDefinitions.size() - 1);
 				if (isLastTool && shouldCacheTools) {
-					CachePointBlock.Builder cachePointBuilder = CachePointBlock.builder().type("default");
-					if (cacheOptions != null && cacheOptions.getTtl() != null) {
-						cachePointBuilder.ttl(cacheOptions.getTtl().getValue());
-					}
-					CachePointBlock cachePoint = cachePointBuilder.build();
-					Tool cachePointTool = Tool.builder().cachePoint(cachePoint).build();
+					Tool cachePointTool = Tool.builder().cachePoint(buildCachePoint(cacheOptions)).build();
 					bedrockTools.add(cachePointTool);
 					logger.debug("Applied cache point after tool definitions");
 				}
@@ -468,6 +455,14 @@ public class BedrockProxyChatModel implements ChatModel {
 			.requestMetadata(requestMetadata)
 			.outputConfig(buildOutputConfig(options))
 			.build();
+	}
+
+	private static CachePointBlock buildCachePoint(@Nullable BedrockCacheOptions cacheOptions) {
+		CachePointBlock.Builder builder = CachePointBlock.builder().type("default");
+		if (cacheOptions != null && cacheOptions.getTtl() != null) {
+			builder.ttl(cacheOptions.getTtl().getValue());
+		}
+		return builder.build();
 	}
 
 	private @Nullable OutputConfig buildOutputConfig(BedrockChatOptions options) {
