@@ -151,7 +151,7 @@ This approach enables developers to easily work with different AI models and adj
 
 When using `ChatModel.call() / ChatModel/stream()`, the passed prompt needs to contain a full set of options that will completely take precedence over options set in the model (or use `null` options in the `Prompt` to use the model's defaults).
 
-The xref:api/chatclient.adoc[ChatClient] abstraction allows for an incremental approach where users can provide a "delta" customizer that
+The xref:api/chatclient.adoc[ChatClient] abstraction allows for an incremental approach where users can provide a "delta" customizer that overrides the default options on a per-request basis.
 
 Following flow diagram illustrates how Spring AI handles the configuration and execution of Chat Models:
 
