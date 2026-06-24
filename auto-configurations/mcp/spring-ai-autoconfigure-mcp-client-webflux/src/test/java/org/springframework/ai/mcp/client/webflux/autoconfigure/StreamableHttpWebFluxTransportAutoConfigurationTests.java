@@ -130,6 +130,36 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 	}
 
 	@Test
+	void fullUrlWithoutEndpointUsesPathAndQueryAsEndpoint() {
+		this.applicationContext
+			.withPropertyValues(
+					"spring.ai.mcp.client.streamable-http.connections.amap.url=https://mcp.amap.com/mcp?key=test")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpWebFluxClientTransports",
+						List.class);
+
+				assertThat(transports).hasSize(1);
+				assertThat(getStreamableHttpEndpoint((WebClientStreamableHttpTransport) transports.get(0).transport()))
+					.isEqualTo("/mcp?key=test");
+			});
+	}
+
+	@Test
+	void explicitEndpointWithQueryIsRespected() {
+		this.applicationContext
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.amap.url=https://mcp.amap.com",
+					"spring.ai.mcp.client.streamable-http.connections.amap.endpoint=/mcp?key=test")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpWebFluxClientTransports",
+						List.class);
+
+				assertThat(transports).hasSize(1);
+				assertThat(getStreamableHttpEndpoint((WebClientStreamableHttpTransport) transports.get(0).transport()))
+					.isEqualTo("/mcp?key=test");
+			});
+	}
+
+	@Test
 	void customWebClientBuilderIsUsed() {
 		this.applicationContext.withUserConfiguration(CustomWebClientConfiguration.class)
 			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080")
