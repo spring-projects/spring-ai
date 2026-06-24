@@ -18,6 +18,7 @@ package org.springframework.ai.google.genai.image;
 
 import java.lang.reflect.Field;
 import java.net.URI;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -358,10 +359,9 @@ public class GoogleGenAiImageRetryTests {
 		given(this.mockModels.generateContent(anyString(), anyList(), any(GenerateContentConfig.class)))
 			.willReturn(mockResponse);
 
-		// Cast to Object so Builder.data(Object) is chosen, preserving the URI instance
 		Media uriMedia = Media.builder()
 			.mimeType(MimeType.valueOf("image/png"))
-			.data((Object) URI.create("https://example.com/image.png"))
+			.data(URI.create("https://example.com/image.png"))
 			.build();
 
 		ImageMessage messageWithMedia = new ImageMessage("", null, List.of(uriMedia), Map.of());
@@ -414,12 +414,12 @@ public class GoogleGenAiImageRetryTests {
 	}
 
 	@Test
-	public void googleGenAiImageWithUnsupportedMediaTypeThrowsException() {
+	public void googleGenAiImageWithUnsupportedMediaTypeThrowsException() throws Exception {
 		// Covers the unsupported-type branch in mediaToParts
 		Media unsupportedMedia = Media.builder()
 			.mimeType(MimeType.valueOf("image/png"))
-			.data(new Object[] { "unsupported-type" }) // Object[] is not byte[], URI, or
-														// String
+			.data(new URL("https://example.com/image.png")) // URL is not byte[], URI, or
+															// String
 			.build();
 
 		ImageMessage messageWithUnsupportedMedia = new ImageMessage("", null, List.of(unsupportedMedia), Map.of());
