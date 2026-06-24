@@ -219,7 +219,7 @@ And finally, retrieve documents similar to a query:
 
 [source,java]
 ----
-List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").topK(5).build());
+List<Document> results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
 ----
 
 If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
