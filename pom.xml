@@ -273,7 +273,6 @@
 		<commonmark.version>0.22.0</commonmark.version>
 		<couchbase.version>3.9.1</couchbase.version>
 		<djl.version>0.36.0</djl.version>
-		<fastjson2.version>2.0.46</fastjson2.version>
 		<gemfire.testcontainers.version>2.3.3</gemfire.testcontainers.version>
 		<grpc-netty-shaded.version>1.82.1</grpc-netty-shaded.version>
 		<jsonschema.version>5.0.0</jsonschema.version>
