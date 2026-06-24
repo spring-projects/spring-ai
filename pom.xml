@@ -281,7 +281,7 @@
 		<jtokkit.version>1.1.0</jtokkit.version>
 		<lucene.version>9.12.3</lucene.version>
 		<kotlin.version>2.3.20</kotlin.version>
-		<milvus.version>2.5.8</milvus.version>
+		<milvus.version>2.6.21</milvus.version>
 		<mockk-jvm.version>1.13.13</mockk-jvm.version>
 		<neo4j-cypher-dsl-bom.version>2024.5.1</neo4j-cypher-dsl-bom.version>
 		<openai-sdk.version>4.41.0</openai-sdk.version>
