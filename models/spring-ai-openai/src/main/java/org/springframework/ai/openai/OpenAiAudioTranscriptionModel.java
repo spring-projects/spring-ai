@@ -24,13 +24,16 @@ import java.util.List;
 import java.util.Objects;
 
 import com.openai.client.OpenAIClient;
+import com.openai.client.OpenAIClientAsync;
 import com.openai.core.MultipartField;
 import com.openai.models.audio.transcriptions.TranscriptionCreateParams;
 import com.openai.models.audio.transcriptions.TranscriptionCreateResponse;
+import com.openai.models.audio.transcriptions.TranscriptionStreamEvent;
 import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.audio.transcription.AudioTranscription;
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
@@ -52,12 +55,15 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 
 	private static final Log logger = LogFactory.getLog(OpenAiAudioTranscriptionModel.class);
 
 	private final OpenAIClient openAiClient;
+
+	private final OpenAIClientAsync openAiClientAsync;
 
 	private final OpenAiAudioTranscriptionOptions options;
 
@@ -87,6 +93,14 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
 						this.options.getCustomHeaders(), ObservationRegistry.NOOP, null,
 						builder.httpClientCustomizers));
+		this.openAiClientAsync = Objects.requireNonNullElseGet(builder.openAiClientAsync,
+				() -> OpenAiSetup.setupAsyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
+						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
+						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
+						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
+						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
+						this.options.getCustomHeaders(), ObservationRegistry.NOOP, null,
+						builder.httpClientCustomizers));
 	}
 
 	/**
@@ -99,33 +113,63 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 
 	@Override
 	public AudioTranscriptionResponse call(AudioTranscriptionPrompt transcriptionPrompt) {
-		OpenAiAudioTranscriptionOptions options = this.options;
-		if (transcriptionPrompt.getOptions() != null) {
-			if (transcriptionPrompt.getOptions() instanceof OpenAiAudioTranscriptionOptions runtimeOptions) {
-				options = merge(runtimeOptions, options);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type OpenAiAudioTranscriptionOptions: "
-						+ transcriptionPrompt.getOptions().getClass().getSimpleName());
-			}
-		}
+		// Merge request options with default options
+		OpenAiAudioTranscriptionOptions mergedOptions = OpenAiAudioTranscriptionOptions.builder()
+			.from(this.options)
+			.merge(transcriptionPrompt.getOptions())
+			.build();
 
 		Resource audioResource = transcriptionPrompt.getInstructions();
 		byte[] audioBytes = toBytes(audioResource);
-		String filename = audioResource.getFilename();
-		if (filename == null) {
-			filename = "audio";
-		}
+		String filename = getFilename(audioResource);
 
-		TranscriptionCreateParams params = buildParams(options, audioBytes, filename);
+		TranscriptionCreateParams params = buildParams(mergedOptions, audioBytes, filename);
 		if (logger.isTraceEnabled()) {
-			logger.trace("OpenAiAudioTranscriptionModel call with model: " + options.getModel());
+			logger.trace("OpenAiAudioTranscriptionModel call with model: " + mergedOptions.getModel());
 		}
 
 		TranscriptionCreateResponse response = this.openAiClient.audio().transcriptions().create(params);
 		String text = extractText(response);
 		AudioTranscription transcript = new AudioTranscription(text);
 		return new AudioTranscriptionResponse(transcript, new AudioTranscriptionResponseMetadata());
+	}
+
+	@Override
+	public Flux<AudioTranscriptionResponse> stream(AudioTranscriptionPrompt transcriptionPrompt) {
+		// Merge request options with default options
+		OpenAiAudioTranscriptionOptions mergedOptions = OpenAiAudioTranscriptionOptions.builder()
+			.from(this.options)
+			.merge(transcriptionPrompt.getOptions())
+			.build();
+
+		Resource audioResource = transcriptionPrompt.getInstructions();
+		byte[] audioBytes = toBytes(audioResource);
+		String filename = getFilename(audioResource);
+
+		TranscriptionCreateParams params = buildParams(mergedOptions, audioBytes, filename);
+		if (logger.isTraceEnabled()) {
+			logger.trace("OpenAiAudioTranscriptionModel stream with model: " + mergedOptions.getModel());
+		}
+
+		Flux<TranscriptionStreamEvent> chunks = Flux.create(sink -> this.openAiClientAsync.audio()
+			.transcriptions()
+			.createStreaming(params)
+			.subscribe(sink::next)
+			.onCompleteFuture()
+			.whenComplete((unused, throwable) -> {
+				if (throwable != null) {
+					sink.error(throwable);
+				}
+				else {
+					sink.complete();
+				}
+			}));
+
+		return chunks.map(event -> {
+			String text = extractStreamEventText(event);
+			AudioTranscription transcript = new AudioTranscription(text);
+			return new AudioTranscriptionResponse(transcript, new AudioTranscriptionResponseMetadata());
+		});
 	}
 
 	private TranscriptionCreateParams buildParams(OpenAiAudioTranscriptionOptions options, byte[] audioBytes,
@@ -175,6 +219,16 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 		return "";
 	}
 
+	private static String extractStreamEventText(TranscriptionStreamEvent event) {
+		if (event.isTranscriptTextDelta()) {
+			return event.asTranscriptTextDelta().delta();
+		}
+		if (event.isTranscriptTextSegment()) {
+			return event.asTranscriptTextSegment().text();
+		}
+		return "";
+	}
+
 	private static byte[] toBytes(Resource resource) {
 		Assert.notNull(resource, "Resource must not be null");
 		try {
@@ -185,9 +239,12 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 		}
 	}
 
-	private static OpenAiAudioTranscriptionOptions merge(OpenAiAudioTranscriptionOptions source,
-			OpenAiAudioTranscriptionOptions target) {
-		return OpenAiAudioTranscriptionOptions.builder().from(target).merge(source).build();
+	private static String getFilename(Resource audioResource) {
+		String filename = audioResource.getFilename();
+		if (filename == null) {
+			filename = "audio";
+		}
+		return filename;
 	}
 
 	/**
@@ -196,6 +253,8 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 	public static final class Builder {
 
 		private @Nullable OpenAIClient openAiClient;
+
+		private @Nullable OpenAIClientAsync openAiClientAsync;
 
 		private @Nullable OpenAiAudioTranscriptionOptions options;
 
@@ -206,6 +265,7 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 
 		private Builder(OpenAiAudioTranscriptionModel model) {
 			this.openAiClient = model.openAiClient;
+			this.openAiClientAsync = model.openAiClientAsync;
 			this.options = model.options;
 		}
 
@@ -216,6 +276,16 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 		 */
 		public Builder openAiClient(OpenAIClient openAiClient) {
 			this.openAiClient = openAiClient;
+			return this;
+		}
+
+		/**
+		 * Sets the OpenAI client async.
+		 * @param openAiClientAsync the OpenAI client async
+		 * @return this builder
+		 */
+		public Builder openAiClientAsync(OpenAIClientAsync openAiClientAsync) {
+			this.openAiClientAsync = openAiClientAsync;
 			return this;
 		}
 

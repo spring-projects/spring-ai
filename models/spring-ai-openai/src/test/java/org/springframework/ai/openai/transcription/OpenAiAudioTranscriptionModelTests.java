@@ -16,10 +16,21 @@
 
 package org.springframework.ai.openai.transcription;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+
 import com.openai.client.OpenAIClient;
+import com.openai.client.OpenAIClientAsync;
+import com.openai.core.http.AsyncStreamResponse;
 import com.openai.models.audio.AudioResponseFormat;
 import com.openai.models.audio.transcriptions.Transcription;
 import com.openai.models.audio.transcriptions.TranscriptionCreateResponse;
+import com.openai.models.audio.transcriptions.TranscriptionStreamEvent;
+import com.openai.models.audio.transcriptions.TranscriptionTextDeltaEvent;
+import com.openai.services.async.AudioServiceAsync;
+import com.openai.services.async.audio.TranscriptionServiceAsync;
 import com.openai.services.blocking.AudioService;
 import com.openai.services.blocking.audio.TranscriptionService;
 import org.junit.jupiter.api.Test;
@@ -44,18 +55,9 @@ import static org.mockito.Mockito.when;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 class OpenAiAudioTranscriptionModelTests {
-
-	private OpenAIClient createMockClient(TranscriptionCreateResponse mockResponse) {
-		OpenAIClient client = mock(OpenAIClient.class);
-		AudioService audioService = mock(AudioService.class);
-		TranscriptionService transcriptionService = mock(TranscriptionService.class);
-		when(client.audio()).thenReturn(audioService);
-		when(audioService.transcriptions()).thenReturn(transcriptionService);
-		when(transcriptionService.create(any())).thenReturn(mockResponse);
-		return client;
-	}
 
 	@Test
 	void callReturnsTranscriptionText() {
@@ -64,7 +66,10 @@ class OpenAiAudioTranscriptionModelTests {
 
 		OpenAIClient client = createMockClient(mockResponse);
 
-		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder().openAiClient(client).build();
+		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder()
+			.openAiClient(client)
+			.openAiClientAsync(mock(OpenAIClientAsync.class))
+			.build();
 		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"));
 		AudioTranscriptionResponse response = model.call(prompt);
 
@@ -72,13 +77,16 @@ class OpenAiAudioTranscriptionModelTests {
 	}
 
 	@Test
-	void callWithOptions() {
+	void callWithPrompt() {
 		TranscriptionCreateResponse mockResponse = TranscriptionCreateResponse
 			.ofTranscription(Transcription.builder().text("Hello, this is a test transcription.").build());
 
 		OpenAIClient client = createMockClient(mockResponse);
 
-		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder().openAiClient(client).build();
+		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder()
+			.openAiClient(client)
+			.openAiClientAsync(mock(OpenAIClientAsync.class))
+			.build();
 
 		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"));
 		AudioTranscriptionResponse response = model.call(prompt);
@@ -99,7 +107,10 @@ class OpenAiAudioTranscriptionModelTests {
 			.responseFormat(AudioResponseFormat.JSON)
 			.build();
 
-		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder().openAiClient(client).build();
+		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder()
+			.openAiClient(client)
+			.openAiClientAsync(mock(OpenAIClientAsync.class))
+			.build();
 
 		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"), options);
 		AudioTranscriptionResponse response = model.call(prompt);
@@ -114,7 +125,10 @@ class OpenAiAudioTranscriptionModelTests {
 
 		OpenAIClient client = createMockClient(mockResponse);
 
-		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder().openAiClient(client).build();
+		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder()
+			.openAiClient(client)
+			.openAiClientAsync(mock(OpenAIClientAsync.class))
+			.build();
 		String text = model.transcribe(new ClassPathResource("/speech.flac"));
 
 		assertThat(text).isEqualTo("Simple output");
@@ -133,6 +147,7 @@ class OpenAiAudioTranscriptionModelTests {
 			.build();
 		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder()
 			.openAiClient(client)
+			.openAiClientAsync(mock(OpenAIClientAsync.class))
 			.options(options)
 			.build();
 		String text = model.transcribe(new ClassPathResource("/speech.flac"), options);
@@ -242,6 +257,7 @@ class OpenAiAudioTranscriptionModelTests {
 
 		OpenAiAudioTranscriptionModel originalModel = OpenAiAudioTranscriptionModel.builder()
 			.openAiClient(client)
+			.openAiClientAsync(mock(OpenAIClientAsync.class))
 			.options(options)
 			.build();
 
@@ -268,6 +284,7 @@ class OpenAiAudioTranscriptionModelTests {
 
 		OpenAiAudioTranscriptionModel originalModel = OpenAiAudioTranscriptionModel.builder()
 			.openAiClient(client)
+			.openAiClientAsync(mock(OpenAIClientAsync.class))
 			.options(originalOptions)
 			.build();
 
@@ -281,6 +298,165 @@ class OpenAiAudioTranscriptionModelTests {
 
 		assertThat(mutatedModel.getOptions().getLanguage()).isEqualTo("de");
 		assertThat(mutatedModel.getOptions().getTemperature()).isEqualTo(0.5f);
+	}
+
+	@Test
+	void streamReturnsTranscriptionTextChunks() {
+		AsyncStreamResponse<TranscriptionStreamEvent> mockAsyncResponse = asyncStreamResponse(
+				TranscriptionStreamEvent
+					.ofTranscriptTextDelta(TranscriptionTextDeltaEvent.builder().delta("Hello, ").build()),
+				TranscriptionStreamEvent.ofTranscriptTextDelta(
+						TranscriptionTextDeltaEvent.builder().delta("streamed transcription result").build()));
+
+		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"));
+
+		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder()
+			.openAiClient(mock(OpenAIClient.class))
+			.openAiClientAsync(createMockAsyncClient(mockAsyncResponse))
+			.build();
+
+		List<String> chunks = model.stream(prompt)
+			.map(response -> response.getResult().getOutput())
+			.collectList()
+			.block();
+
+		assertThat(chunks).isNotNull();
+		String text = String.join("", chunks);
+		assertThat(text).isEqualTo("Hello, streamed transcription result");
+	}
+
+	@Test
+	void streamWithPromptOptions() {
+		AsyncStreamResponse<TranscriptionStreamEvent> mockAsyncResponse = asyncStreamResponse(
+				TranscriptionStreamEvent
+					.ofTranscriptTextDelta(TranscriptionTextDeltaEvent.builder().delta("Hello, ").build()),
+				TranscriptionStreamEvent.ofTranscriptTextDelta(
+						TranscriptionTextDeltaEvent.builder().delta("streamed transcription result").build()));
+
+		OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
+			.temperature(0.5f)
+			.responseFormat(AudioResponseFormat.JSON)
+			.build();
+
+		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"), options);
+
+		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder()
+			.openAiClient(mock(OpenAIClient.class))
+			.openAiClientAsync(createMockAsyncClient(mockAsyncResponse))
+			.build();
+
+		List<String> chunks = model.stream(prompt)
+			.map(response -> response.getResult().getOutput())
+			.collectList()
+			.block();
+
+		assertThat(chunks).isNotNull();
+		String text = String.join("", chunks);
+		assertThat(text).isEqualTo("Hello, streamed transcription result");
+	}
+
+	@Test
+	void streamTranscribeWithResource() {
+		AsyncStreamResponse<TranscriptionStreamEvent> mockAsyncResponse = asyncStreamResponse(
+				TranscriptionStreamEvent
+					.ofTranscriptTextDelta(TranscriptionTextDeltaEvent.builder().delta("Hello, ").build()),
+				TranscriptionStreamEvent.ofTranscriptTextDelta(
+						TranscriptionTextDeltaEvent.builder().delta("streamed transcription result").build()));
+
+		OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
+			.temperature(0.5f)
+			.responseFormat(AudioResponseFormat.JSON)
+			.build();
+
+		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder()
+			.openAiClient(mock(OpenAIClient.class))
+			.openAiClientAsync(createMockAsyncClient(mockAsyncResponse))
+			.build();
+
+		List<String> chunks = model.streamTranscribe(new ClassPathResource("/speech.flac"), options)
+			.collectList()
+			.block();
+
+		assertThat(chunks).isNotNull();
+		String text = String.join("", chunks);
+		assertThat(text).isEqualTo("Hello, streamed transcription result");
+	}
+
+	@Test
+	void streamTranscribeWithResourceAndOptions() {
+		AsyncStreamResponse<TranscriptionStreamEvent> mockAsyncResponse = asyncStreamResponse(
+				TranscriptionStreamEvent
+					.ofTranscriptTextDelta(TranscriptionTextDeltaEvent.builder().delta("Hello, ").build()),
+				TranscriptionStreamEvent.ofTranscriptTextDelta(
+						TranscriptionTextDeltaEvent.builder().delta("streamed transcription result").build()));
+
+		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder()
+			.openAiClient(mock(OpenAIClient.class))
+			.openAiClientAsync(createMockAsyncClient(mockAsyncResponse))
+			.build();
+
+		List<String> chunks = model.streamTranscribe(new ClassPathResource("/speech.flac")).collectList().block();
+
+		assertThat(chunks).isNotNull();
+		String text = String.join("", chunks);
+		assertThat(text).isEqualTo("Hello, streamed transcription result");
+	}
+
+	private OpenAIClient createMockClient(TranscriptionCreateResponse mockResponse) {
+		OpenAIClient client = mock(OpenAIClient.class);
+		AudioService audioService = mock(AudioService.class);
+		TranscriptionService transcriptionService = mock(TranscriptionService.class);
+		when(client.audio()).thenReturn(audioService);
+		when(audioService.transcriptions()).thenReturn(transcriptionService);
+		when(transcriptionService.create(any())).thenReturn(mockResponse);
+		return client;
+	}
+
+	private OpenAIClientAsync createMockAsyncClient(AsyncStreamResponse<TranscriptionStreamEvent> mockAsyncResponse) {
+		OpenAIClientAsync clientAsync = mock(OpenAIClientAsync.class);
+		AudioServiceAsync audioServiceAsync = mock(AudioServiceAsync.class);
+		TranscriptionServiceAsync transcriptionServiceAsync = mock(TranscriptionServiceAsync.class);
+		when(clientAsync.audio()).thenReturn(audioServiceAsync);
+		when(audioServiceAsync.transcriptions()).thenReturn(transcriptionServiceAsync);
+		when(transcriptionServiceAsync.createStreaming(any())).thenReturn(mockAsyncResponse);
+		return clientAsync;
+	}
+
+	private <T> AsyncStreamResponse<T> asyncStreamResponse(T... chunks) {
+		return new AsyncStreamResponse<>() {
+			private final CompletableFuture<Void> completion = new CompletableFuture<>();
+
+			@Override
+			public AsyncStreamResponse<T> subscribe(AsyncStreamResponse.Handler<? super T> handler) {
+				try {
+					for (T chunk : chunks) {
+						handler.onNext(chunk);
+					}
+					handler.onComplete(Optional.empty());
+					this.completion.complete(null);
+				}
+				catch (Throwable throwable) {
+					handler.onComplete(Optional.of(throwable));
+					this.completion.completeExceptionally(throwable);
+				}
+				return this;
+			}
+
+			@Override
+			public AsyncStreamResponse<T> subscribe(AsyncStreamResponse.Handler<? super T> handler, Executor executor) {
+				executor.execute(() -> subscribe(handler));
+				return this;
+			}
+
+			@Override
+			public CompletableFuture<Void> onCompleteFuture() {
+				return this.completion;
+			}
+
+			@Override
+			public void close() {
+			}
+		};
 	}
 
 }

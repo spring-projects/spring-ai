@@ -122,6 +122,40 @@ new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider, Exception.class
 new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 ----
 
+=== TranscriptionModel Now Extends StreamingTranscriptionModel
+
+`TranscriptionModel` now extends `StreamingTranscriptionModel`, making streaming transcription a first-class capability of every transcription model.
+
+`StreamingTranscriptionModel` provides a default `stream(AudioTranscriptionPrompt)` implementation that returns `Flux.error(new UnsupportedOperationException(...))`, so existing custom implementations of `TranscriptionModel` continue to compile without changes.
+
+==== Impact
+
+Calling `stream()` on a custom implementation that does not override it will return a `Flux` that emits an `UnsupportedOperationException`.
+
+==== Migration
+
+If your custom `TranscriptionModel` needs to support streaming transcription, override the `stream(AudioTranscriptionPrompt)` method.
+You can provide a native streaming implementation, or wrap the synchronous `call()` result in a single-element `Flux`:
+
+[source,java]
+----
+public class CustomTranscriptionModel implements TranscriptionModel {
+
+    @Override
+    public AudioTranscriptionResponse call(AudioTranscriptionPrompt prompt) {
+        // ...
+    }
+
+    @Override
+    public Flux<AudioTranscriptionResponse> stream(AudioTranscriptionPrompt prompt) {
+        // Wrap the synchronous call result as a single-element Flux
+        return Flux.just(call(prompt));
+    }
+}
+----
+
+If streaming is not needed, no action is required — the default implementation is inherited automatically.
+
 [[upgrading-to-2-0-0]]
 == Upgrading to 2.0.0
 
