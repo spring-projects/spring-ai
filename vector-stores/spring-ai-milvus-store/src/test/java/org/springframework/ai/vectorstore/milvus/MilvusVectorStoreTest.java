@@ -17,7 +17,9 @@
 package org.springframework.ai.vectorstore.milvus;
 
 import java.util.List;
+import java.util.Map;
 
+import com.google.gson.JsonObject;
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.grpc.MutationResult;
 import io.milvus.grpc.SearchResultData;
@@ -25,6 +27,7 @@ import io.milvus.grpc.SearchResults;
 import io.milvus.param.R;
 import io.milvus.param.dml.DeleteParam;
 import io.milvus.param.dml.SearchParam;
+import io.milvus.response.QueryResultsWrapper.RowRecord;
 import io.milvus.response.SearchResultsWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +39,7 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -163,6 +167,44 @@ class MilvusVectorStoreTest {
 			assertThat(capturedParam.getTopK()).isEqualTo(request.getTopK());
 			assertThat(capturedParam.getExpr()).isEqualTo("metadata[\"age\"] > 30"); // filter
 			assertThat(capturedParam.getParams()).isEqualTo("{}");
+		}
+	}
+
+	@Test
+	void shouldPreserveMetadataIntegerNumberTypesInSearchResults() {
+		long externalId = 10_000_000_000_000_001L;
+		JsonObject metadata = new JsonObject();
+		metadata.addProperty("external_id", externalId);
+		metadata.addProperty("priority", 7);
+		metadata.addProperty("weight", 1.5);
+
+		RowRecord rowRecord = new RowRecord();
+		rowRecord.put(MilvusVectorStore.DOC_ID_FIELD_NAME, "doc-1");
+		rowRecord.put(MilvusVectorStore.CONTENT_FIELD_NAME, "content");
+		rowRecord.put(MilvusVectorStore.METADATA_FIELD_NAME, metadata);
+		rowRecord.put(MilvusVectorStore.SIMILARITY_FIELD_NAME, 0.75f);
+
+		try (MockedStatic<EmbeddingUtils> mockedEmbeddingUtils = mockStatic(EmbeddingUtils.class);
+				MockedConstruction<SearchResultsWrapper> mockedSearchResultsWrapper = mockConstruction(
+						SearchResultsWrapper.class,
+						(mock, context) -> when(mock.getRowRecords(0)).thenReturn(List.of(rowRecord)))) {
+
+			List<Float> mockVector = List.of(1.0f, 2.0f, 3.0f);
+			mockedEmbeddingUtils.when(() -> EmbeddingUtils.toList(any())).thenReturn(mockVector);
+
+			SearchResults mockResults = mock(SearchResults.class);
+			when(mockResults.getResults()).thenReturn(SearchResultData.getDefaultInstance());
+			when(this.milvusClient.search(any(SearchParam.class))).thenReturn(R.success(mockResults));
+
+			List<Document> results = this.vectorStore
+				.doSimilaritySearch(SearchRequest.builder().query("sample query").build());
+
+			assertThat(results).hasSize(1);
+			Map<String, Object> resultMetadata = results.get(0).getMetadata();
+			assertThat(resultMetadata.get("external_id")).isInstanceOf(Long.class).isEqualTo(externalId);
+			assertThat(resultMetadata.get("priority")).isInstanceOf(Long.class).isEqualTo(7L);
+			assertThat(resultMetadata.get("weight")).isInstanceOf(Double.class).isEqualTo(1.5);
+			assertThat(resultMetadata.get(DocumentMetadata.DISTANCE.value())).isEqualTo(0.25);
 		}
 	}
 
