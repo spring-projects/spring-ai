@@ -25,7 +25,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import com.google.gson.ToNumberPolicy;
 import com.google.gson.reflect.TypeToken;
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.common.clientenum.ConsistencyLevelEnum;
@@ -403,7 +405,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 					// skip the ParamException if metadata doesn't exist for the custom
 					// collection
 				}
-				Gson gson = new Gson();
+				Gson gson = new GsonBuilder().setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE).create();
 				Type type = new TypeToken<Map<String, Object>>() {
 				}.getType();
 				return Document.builder()
