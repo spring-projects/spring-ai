@@ -16,10 +16,16 @@
 
 package org.springframework.ai.openai.transcription;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 import com.openai.models.audio.AudioResponseFormat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import reactor.core.publisher.Flux;
 
+import org.springframework.ai.audio.transcription.AudioTranscription;
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
@@ -38,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author guan xu
  */
 @SpringBootTest(classes = OpenAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -116,6 +123,49 @@ public class OpenAiAudioTranscriptionModelIT {
 
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResult().getOutput()).isNotBlank();
+	}
+
+	@Test
+	void streamTest() {
+		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"));
+		Flux<AudioTranscriptionResponse> flux = this.transcriptionModel.stream(prompt);
+
+		List<AudioTranscriptionResponse> responses = flux.collectList().block();
+
+		assertThat(responses).isNotEmpty();
+		String text = responses.stream()
+			.map(AudioTranscriptionResponse::getResult)
+			.filter(Objects::nonNull)
+			.map(AudioTranscription::getOutput)
+			.collect(Collectors.joining());
+		assertThat(text).isNotBlank();
+	}
+
+	@Test
+	void streamWithResourceTest() {
+		Flux<String> flux = this.transcriptionModel.stream(new ClassPathResource("/speech.flac"));
+
+		List<String> chunks = flux.collectList().block();
+
+		assertThat(chunks).isNotEmpty();
+		String text = String.join("", chunks);
+		assertThat(text).isNotBlank();
+	}
+
+	@Test
+	void streamWithResourceAndOptionsTest() {
+		OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
+			.language("en")
+			.temperature(0f)
+			.build();
+
+		Flux<String> flux = this.transcriptionModel.stream(new ClassPathResource("/speech.flac"), options);
+
+		List<String> chunks = flux.collectList().block();
+
+		assertThat(chunks).isNotEmpty();
+		String text = String.join("", chunks);
+		assertThat(text).isNotBlank();
 	}
 
 }
