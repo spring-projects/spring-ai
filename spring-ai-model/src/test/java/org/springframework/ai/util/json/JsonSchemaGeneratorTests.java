@@ -35,6 +35,7 @@ import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
@@ -260,6 +261,65 @@ class JsonSchemaGeneratorTests {
 
 		JsonNode jsonNode = JacksonUtils.getDefaultJsonMapper().readTree(schema);
 		assertThat(jsonNode.has("additionalProperties")).isFalse();
+	}
+
+	@Test
+	void generateSchemaForMethodWithArraySchemaConstraints() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("arraySchemaConstraintsMethod", List.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+
+		JsonNode tags = JacksonUtils.getDefaultJsonMapper().readTree(schema).path("properties").path("tags");
+		assertThat(tags.path("type").asString()).isEqualTo("array");
+		assertThat(tags.path("items").path("type").asString()).isEqualTo("string");
+		assertThat(tags.path("minItems").asInt()).isEqualTo(1);
+		assertThat(tags.path("maxItems").asInt()).isEqualTo(50);
+		assertThat(tags.path("uniqueItems").asBoolean()).isTrue();
+	}
+
+	@Test
+	void generateSchemaForMethodWithStringSchemaConstraints() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("stringSchemaConstraintsMethod", String.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+
+		JsonNode code = JacksonUtils.getDefaultJsonMapper().readTree(schema).path("properties").path("code");
+		assertThat(code.path("type").asString()).isEqualTo("string");
+		assertThat(code.path("minLength").asInt()).isEqualTo(3);
+		assertThat(code.path("maxLength").asInt()).isEqualTo(20);
+		assertThat(code.path("pattern").asString()).isEqualTo("[a-z]+");
+	}
+
+	@Test
+	void generateSchemaForMethodWithNumberSchemaConstraints() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("numberSchemaConstraintsMethod", int.class, double.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+
+		JsonNode root = JacksonUtils.getDefaultJsonMapper().readTree(schema);
+		JsonNode score = root.path("properties").path("score");
+		assertThat(score.path("minimum").asInt()).isEqualTo(0);
+		assertThat(score.path("maximum").asInt()).isEqualTo(100);
+		assertThat(score.path("multipleOf").asInt()).isEqualTo(5);
+
+		JsonNode ratio = root.path("properties").path("ratio");
+		assertThat(ratio.path("minimum").asInt()).isEqualTo(0);
+		assertThat(ratio.has("maximum")).isFalse();
+		assertThat(ratio.path("exclusiveMaximum").asInt()).isEqualTo(1);
+	}
+
+	@Test
+	void methodParameterConstraintsMatchFieldConstraints() throws Exception {
+		String fieldSchema = JsonSchemaGenerator.generateForType(ConstrainedTags.class);
+		Method method = TestMethods.class.getDeclaredMethod("arraySchemaConstraintsMethod", List.class);
+		String parameterSchema = JsonSchemaGenerator.generateForMethodInput(method);
+
+		JsonNode fieldTags = JacksonUtils.getDefaultJsonMapper().readTree(fieldSchema).path("properties").path("tags");
+		JsonNode parameterTags = JacksonUtils.getDefaultJsonMapper()
+			.readTree(parameterSchema)
+			.path("properties")
+			.path("tags");
+		assertThat(parameterTags).isEqualTo(fieldTags);
 	}
 
 	@Test
@@ -993,6 +1053,18 @@ class JsonSchemaGeneratorTests {
 		public void peerReferenceMethod(PeerA.SearchRequest a, PeerB.SearchRequest b) {
 		}
 
+		public void arraySchemaConstraintsMethod(
+				@ArraySchema(minItems = 1, maxItems = 50, uniqueItems = true) List<String> tags) {
+		}
+
+		public void stringSchemaConstraintsMethod(
+				@Schema(minLength = 3, maxLength = 20, pattern = "[a-z]+") String code) {
+		}
+
+		public void numberSchemaConstraintsMethod(@Schema(minimum = "0", maximum = "100", multipleOf = 5) int score,
+				@Schema(minimum = "0", maximum = "1", exclusiveMaximum = true) double ratio) {
+		}
+
 	}
 
 	record RecursiveFilter(String field, String operator, List<RecursiveFilter> filters) {
@@ -1045,6 +1117,10 @@ class JsonSchemaGeneratorTests {
 	}
 
 	record TestData(int id, @ToolParam(description = "The special name") String name) {
+
+	}
+
+	record ConstrainedTags(@ArraySchema(minItems = 1, maxItems = 50, uniqueItems = true) List<String> tags) {
 
 	}
 
