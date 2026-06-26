@@ -23,25 +23,23 @@ import io.modelcontextprotocol.spec.McpTransportSessionClosedException;
 import io.modelcontextprotocol.spec.ProtocolVersions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.test.StepVerifier;
 
 import org.springframework.web.reactive.function.client.WebClient;
 
+@Testcontainers
 @Timeout(60)
 class WebClientStreamableHttpTransportIT {
 
 	private static final Log logger = LogFactory.getLog(WebClientStreamableHttpTransportIT.class);
 
-	static String host = "http://localhost:3001";
-
-	static WebClient.Builder builder;
-
+	@Container
 	@SuppressWarnings("resource")
 	static GenericContainer<?> container = new GenericContainer<>("docker.io/node:lts-alpine3.23")
 		.withCommand("npx -y @modelcontextprotocol/server-everything@2025.12.18 streamableHttp")
@@ -49,22 +47,12 @@ class WebClientStreamableHttpTransportIT {
 		.withExposedPorts(3001)
 		.waitingFor(Wait.forHttp("/").forStatusCode(404));
 
-	@BeforeAll
-	static void startContainer() {
-		container.start();
-		int port = container.getMappedPort(3001);
-		host = "http://" + container.getHost() + ":" + port;
-		builder = WebClient.builder().baseUrl(host);
-	}
-
-	@AfterAll
-	static void stopContainer() {
-		container.stop();
-	}
+	WebClient.Builder builder = WebClient.builder()
+		.baseUrl("http://" + container.getHost() + ":" + container.getMappedPort(3001));
 
 	@Test
 	void testCloseUninitialized() {
-		var transport = WebClientStreamableHttpTransport.builder(builder).build();
+		var transport = WebClientStreamableHttpTransport.builder(this.builder).build();
 
 		StepVerifier.create(transport.closeGracefully()).verifyComplete();
 
@@ -81,7 +69,7 @@ class WebClientStreamableHttpTransportIT {
 
 	@Test
 	void testCloseInitialized() {
-		var transport = WebClientStreamableHttpTransport.builder(builder).build();
+		var transport = WebClientStreamableHttpTransport.builder(this.builder).build();
 		transport.connect(Function.identity()).block();
 
 		var initializeRequest = new McpSchema.InitializeRequest(ProtocolVersions.MCP_2025_06_18,
