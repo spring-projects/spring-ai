@@ -256,7 +256,7 @@
 		<kotlin.compiler.daemon>false</kotlin.compiler.daemon>
 
 		<!-- production dependencies -->
-		<spring-boot.version>4.1.0</spring-boot.version>
+		<spring-boot.version>4.1.1-SNAPSHOT</spring-boot.version>
 
 		<!-- Third-party dependencies -->
 		<anthropic-sdk.version>2.43.0</anthropic-sdk.version>
