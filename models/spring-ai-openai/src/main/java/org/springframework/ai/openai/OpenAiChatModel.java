@@ -1075,14 +1075,20 @@ public final class OpenAiChatModel implements ChatModel {
 				}
 				Assert.isTrue(tcs2.size() == 1, "no more than one tool call per message currently supported");
 				ToolCall toolCall = tcs2.get(0);
-				if (toolCall.id().isPresent()) {
+				if (toolCall.id().filter(id -> !id.isEmpty()).isPresent()) {
 					List<ToolCall> result = new ArrayList<>(tcs1);
 					result.add(toolCall);
 					return result;
 				}
 				else {
+					if (tcs1.isEmpty()) {
+						List<ToolCall> result = new ArrayList<>();
+						result.add(toolCall);
+						return result;
+					}
 					ToolCall lastFromTc1 = tcs1.get(tcs1.size() - 1);
-					Function lastFromTc1F = lastFromTc1.function().get();
+					Function lastFromTc1F = lastFromTc1.function()
+						.orElseGet(() -> Function.builder().build());
 
 					var concatenatedArgs = Stream
 						.of(lastFromTc1F.arguments(), toolCall.function().flatMap(Function::arguments))
@@ -1131,17 +1137,21 @@ public final class OpenAiChatModel implements ChatModel {
 
 				ChatCompletionMessage.Builder msgBuilder = ChatCompletionMessage.builder()
 					.content(cccc.delta().content())
-					.refusal(cccc.delta().refusal());
+					.refusal(cccc.delta().refusal())
+					.putAllAdditionalProperties(cccc.delta()._additionalProperties());
 				cccc.delta().toolCalls().ifPresent(ccctcs -> {
 					msgBuilder.toolCalls(ccctcs.stream().map(tc -> {
 						ChatCompletionMessageFunctionToolCall.Builder toolCallBuilder = ChatCompletionMessageFunctionToolCall
 							.builder();
 						toolCallBuilder.putAllAdditionalProperties(tc._additionalProperties());
-						toolCallBuilder.id(tc.id().get());
-						toolCallBuilder.function(ChatCompletionMessageFunctionToolCall.Function.builder()
-							.name(tc.function().get().name().get())
-							.arguments(tc.function().get().arguments().get())
-							.build());
+						toolCallBuilder.id(tc.id().orElse(""));
+						ChatCompletionMessageFunctionToolCall.Function.Builder funcBuilder = ChatCompletionMessageFunctionToolCall.Function
+							.builder();
+						tc.function().ifPresent(f -> {
+							funcBuilder.name(f.name().orElse(""));
+							funcBuilder.arguments(f.arguments().orElse(""));
+						});
+						toolCallBuilder.function(funcBuilder.build());
 						return ChatCompletionMessageToolCall.ofFunction(toolCallBuilder.build());
 					}).toList());
 				});
