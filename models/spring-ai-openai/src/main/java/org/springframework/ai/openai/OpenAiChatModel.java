@@ -1069,38 +1069,57 @@ public final class OpenAiChatModel implements ChatModel {
 		}
 
 		private static Delta mergeDeltas(Delta left, Delta right) {
-			var tcs = Stream.of(left.toolCalls(), right.toolCalls()).flatMap(Optional::stream).reduce((tcs1, tcs2) -> {
-				if (tcs2.isEmpty()) {
-					return tcs1;
-				}
-				Assert.isTrue(tcs2.size() == 1, "no more than one tool call per message currently supported");
-				ToolCall toolCall = tcs2.get(0);
-				if (toolCall.id().isPresent()) {
-					List<ToolCall> result = new ArrayList<>(tcs1);
-					result.add(toolCall);
-					return result;
-				}
-				else {
-					ToolCall lastFromTc1 = tcs1.get(tcs1.size() - 1);
-					Function lastFromTc1F = lastFromTc1.function().get();
-
-					var concatenatedArgs = Stream
-						.of(lastFromTc1F.arguments(), toolCall.function().flatMap(Function::arguments))
-						.flatMap(Optional::stream)
-						.reduce((args1, args2) -> args1 + args2)
-						.orElse("");
-
-					List<ToolCall> result = new ArrayList<>(tcs1);
-					result.set(tcs1.size() - 1,
-							lastFromTc1.toBuilder()
-								.putAllAdditionalProperties(toolCall._additionalProperties())
-								.function(lastFromTc1F.toBuilder().arguments(concatenatedArgs).build())
-								.build());
-					return result;
-				}
-			}).orElse(List.of());
+			List<ToolCall> tcs = new ArrayList<>(left.toolCalls().orElse(List.of()));
+			right.toolCalls().ifPresent(toolCalls -> toolCalls.forEach(toolCall -> mergeToolCall(tcs, toolCall)));
 
 			return left.toBuilder().toolCalls(tcs).build();
+		}
+
+		private static void mergeToolCall(List<ToolCall> existingToolCalls, ToolCall toolCall) {
+			Optional<Integer> existingIndex = findExistingToolCallIndex(existingToolCalls, toolCall);
+			if (existingIndex.isEmpty()) {
+				existingToolCalls.add(toolCall);
+				return;
+			}
+
+			ToolCall existingToolCall = existingToolCalls.get(existingIndex.get());
+			ToolCall.Builder builder = existingToolCall.toBuilder()
+				.putAllAdditionalProperties(toolCall._additionalProperties())
+				.function(mergeToolCallFunctions(existingToolCall.function(), toolCall.function()));
+			if (existingToolCall.id().isEmpty()) {
+				toolCall.id().ifPresent(builder::id);
+			}
+			existingToolCalls.set(existingIndex.get(), builder.build());
+		}
+
+		private static Optional<Integer> findExistingToolCallIndex(List<ToolCall> existingToolCalls,
+				ToolCall toolCall) {
+			for (int i = existingToolCalls.size() - 1; i >= 0; i--) {
+				ToolCall existingToolCall = existingToolCalls.get(i);
+				if (existingToolCall.index() == toolCall.index() || existingToolCall.id()
+					.filter(id -> toolCall.id().filter(id::equals).isPresent())
+					.isPresent()) {
+					return Optional.of(i);
+				}
+			}
+			return Optional.empty();
+		}
+
+		private static Function mergeToolCallFunctions(Optional<Function> left, Optional<Function> right) {
+			Function.Builder builder = left.map(Function::toBuilder).orElseGet(Function::builder);
+
+			Stream.of(left.flatMap(Function::name), right.flatMap(Function::name))
+				.flatMap(Optional::stream)
+				.findFirst()
+				.ifPresent(builder::name);
+
+			var concatenatedArgs = Stream.of(left.flatMap(Function::arguments), right.flatMap(Function::arguments))
+				.flatMap(Optional::stream)
+				.reduce((args1, args2) -> args1 + args2)
+				.orElse("");
+			builder.arguments(concatenatedArgs);
+
+			return builder.build();
 		}
 
 		/**
@@ -1136,11 +1155,16 @@ public final class OpenAiChatModel implements ChatModel {
 					msgBuilder.toolCalls(ccctcs.stream().map(tc -> {
 						ChatCompletionMessageFunctionToolCall.Builder toolCallBuilder = ChatCompletionMessageFunctionToolCall
 							.builder();
+						Function function = tc.function()
+							.orElseThrow(() -> new IllegalStateException("Tool call function is missing"));
 						toolCallBuilder.putAllAdditionalProperties(tc._additionalProperties());
-						toolCallBuilder.id(tc.id().get());
+						toolCallBuilder
+							.id(tc.id().orElseThrow(() -> new IllegalStateException("Tool call id is missing")));
 						toolCallBuilder.function(ChatCompletionMessageFunctionToolCall.Function.builder()
-							.name(tc.function().get().name().get())
-							.arguments(tc.function().get().arguments().get())
+							.name(function.name()
+								.filter(StringUtils::hasText)
+								.orElseThrow(() -> new IllegalStateException("Tool call function name is missing")))
+							.arguments(function.arguments().orElse(""))
 							.build());
 						return ChatCompletionMessageToolCall.ofFunction(toolCallBuilder.build());
 					}).toList());

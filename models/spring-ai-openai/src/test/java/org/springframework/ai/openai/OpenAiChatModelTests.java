@@ -264,6 +264,172 @@ class OpenAiChatModelTests {
 	}
 
 	@Test
+	void mergeStreamToolCallWhenIdNameAndArgumentsArriveInSeparateChunks() {
+		ChatServiceAsync chatServiceAsync = mock(ChatServiceAsync.class);
+		ChatCompletionServiceAsync chatCompletionServiceAsync = mock(ChatCompletionServiceAsync.class);
+		when(this.openAiClientAsync.chat()).thenReturn(chatServiceAsync);
+		when(chatServiceAsync.completions()).thenReturn(chatCompletionServiceAsync);
+		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class)))
+			.thenReturn(asyncStreamResponse(ChatCompletionChunk.builder()
+				.id("chatcmpl-stream-test")
+				.created(1777799928)
+				.model("vllm-openai-compatible")
+				.addChoice(ChatCompletionChunk.Choice.builder()
+					.index(0)
+					.finishReason(Optional.empty())
+					.delta(ChatCompletionChunk.Choice.Delta.builder()
+						.addToolCall(ChatCompletionChunk.Choice.Delta.ToolCall.builder().index(0).id("call_1").build())
+						.build())
+					.build())
+				.build(),
+					ChatCompletionChunk.builder()
+						.id("chatcmpl-stream-test")
+						.created(1777799928)
+						.model("vllm-openai-compatible")
+						.addChoice(ChatCompletionChunk.Choice.builder()
+							.index(0)
+							.finishReason(Optional.empty())
+							.delta(ChatCompletionChunk.Choice.Delta.builder()
+								.addToolCall(ChatCompletionChunk.Choice.Delta.ToolCall.builder()
+									.index(0)
+									.function(ChatCompletionChunk.Choice.Delta.ToolCall.Function.builder()
+										.name("get_current_weather")
+										.build())
+									.build())
+								.build())
+							.build())
+						.build(),
+					ChatCompletionChunk.builder()
+						.id("chatcmpl-stream-test")
+						.created(1777799928)
+						.model("vllm-openai-compatible")
+						.addChoice(ChatCompletionChunk.Choice.builder()
+							.index(0)
+							.finishReason(Optional.empty())
+							.delta(ChatCompletionChunk.Choice.Delta.builder()
+								.addToolCall(ChatCompletionChunk.Choice.Delta.ToolCall.builder()
+									.index(0)
+									.function(ChatCompletionChunk.Choice.Delta.ToolCall.Function.builder()
+										.arguments("{\"location\":\"Seoul\"}")
+										.build())
+									.build())
+								.build())
+							.build())
+						.build(),
+					ChatCompletionChunk.builder()
+						.id("chatcmpl-stream-test")
+						.created(1777799928)
+						.model("vllm-openai-compatible")
+						.addChoice(ChatCompletionChunk.Choice.builder()
+							.index(0)
+							.finishReason(ChatCompletionChunk.Choice.FinishReason.TOOL_CALLS)
+							.delta(ChatCompletionChunk.Choice.Delta.builder().build())
+							.build())
+						.build()));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("vllm-openai-compatible").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.stream(new Prompt("hi", options)).blockLast();
+
+		assertThat(response).isNotNull();
+		AssistantMessage assistantMessage = response.getResult().getOutput();
+		assertThat(assistantMessage.getToolCalls()).singleElement().satisfies(toolCall -> {
+			assertThat(toolCall.id()).isEqualTo("call_1");
+			assertThat(toolCall.name()).isEqualTo("get_current_weather");
+			assertThat(toolCall.arguments()).isEqualTo("{\"location\":\"Seoul\"}");
+		});
+	}
+
+	@Test
+	void mergeStreamToolCallWhenProviderRepeatsIdAcrossChunks() {
+		ChatServiceAsync chatServiceAsync = mock(ChatServiceAsync.class);
+		ChatCompletionServiceAsync chatCompletionServiceAsync = mock(ChatCompletionServiceAsync.class);
+		when(this.openAiClientAsync.chat()).thenReturn(chatServiceAsync);
+		when(chatServiceAsync.completions()).thenReturn(chatCompletionServiceAsync);
+		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class)))
+			.thenReturn(asyncStreamResponse(ChatCompletionChunk.builder()
+				.id("chatcmpl-stream-test")
+				.created(1777799928)
+				.model("vllm-openai-compatible")
+				.addChoice(ChatCompletionChunk.Choice.builder()
+					.index(0)
+					.finishReason(Optional.empty())
+					.delta(ChatCompletionChunk.Choice.Delta.builder()
+						.addToolCall(ChatCompletionChunk.Choice.Delta.ToolCall.builder().index(0).id("call_1").build())
+						.build())
+					.build())
+				.build(),
+					ChatCompletionChunk.builder()
+						.id("chatcmpl-stream-test")
+						.created(1777799928)
+						.model("vllm-openai-compatible")
+						.addChoice(ChatCompletionChunk.Choice.builder()
+							.index(0)
+							.finishReason(Optional.empty())
+							.delta(ChatCompletionChunk.Choice.Delta.builder()
+								.addToolCall(ChatCompletionChunk.Choice.Delta.ToolCall.builder()
+									.index(0)
+									.id("call_1")
+									.function(ChatCompletionChunk.Choice.Delta.ToolCall.Function.builder()
+										.name("get_current_weather")
+										.build())
+									.build())
+								.build())
+							.build())
+						.build(),
+					ChatCompletionChunk.builder()
+						.id("chatcmpl-stream-test")
+						.created(1777799928)
+						.model("vllm-openai-compatible")
+						.addChoice(ChatCompletionChunk.Choice.builder()
+							.index(0)
+							.finishReason(Optional.empty())
+							.delta(ChatCompletionChunk.Choice.Delta.builder()
+								.addToolCall(ChatCompletionChunk.Choice.Delta.ToolCall.builder()
+									.index(0)
+									.id("call_1")
+									.function(ChatCompletionChunk.Choice.Delta.ToolCall.Function.builder()
+										.arguments("{\"location\":\"Seoul\"}")
+										.build())
+									.build())
+								.build())
+							.build())
+						.build(),
+					ChatCompletionChunk.builder()
+						.id("chatcmpl-stream-test")
+						.created(1777799928)
+						.model("vllm-openai-compatible")
+						.addChoice(ChatCompletionChunk.Choice.builder()
+							.index(0)
+							.finishReason(ChatCompletionChunk.Choice.FinishReason.TOOL_CALLS)
+							.delta(ChatCompletionChunk.Choice.Delta.builder().build())
+							.build())
+						.build()));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("vllm-openai-compatible").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.stream(new Prompt("hi", options)).blockLast();
+
+		assertThat(response).isNotNull();
+		AssistantMessage assistantMessage = response.getResult().getOutput();
+		assertThat(assistantMessage.getToolCalls()).singleElement().satisfies(toolCall -> {
+			assertThat(toolCall.id()).isEqualTo("call_1");
+			assertThat(toolCall.name()).isEqualTo("get_current_weather");
+			assertThat(toolCall.arguments()).isEqualTo("{\"location\":\"Seoul\"}");
+		});
+	}
+
+	@Test
 	void restoreUnmappedToolCallAdditionalProperties() {
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gemini-3.5-flash").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
