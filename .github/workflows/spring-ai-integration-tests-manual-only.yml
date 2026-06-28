@@ -1,0 +1,132 @@
+name: Spring AI Integration Tests (Manual Only)
+run-name: Spring AI Integration Tests (Manual Only)
+
+on:
+  - workflow_dispatch
+
+jobs:
+
+  test-minimax:
+    if: ${{ github.repository_owner == 'spring-projects' }}
+    runs-on: ubuntu-latest
+    env:
+      MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'liberica'
+          cache: 'maven'
+
+      - name: Build all modules
+        run: ./mvnw --batch-mode -ntp install -DskipTests
+
+      - name: Integration Test
+        uses: ./.github/actions/do-integration-test
+        with:
+          model-name: minimax
+
+  test-moonshot:
+    if: ${{ github.repository_owner == 'spring-projects' }}
+    runs-on: ubuntu-latest
+    env:
+      MOONSHOT_API_KEY: ${{ secrets.MOONSHOT_API_KEY }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'liberica'
+          cache: 'maven'
+
+      - name: Build all modules
+        run: ./mvnw --batch-mode -ntp install -DskipTests
+
+      - name: Integration Test
+        uses: ./.github/actions/do-integration-test
+        with:
+          model-name: moonshot
+
+  test-qianfan:
+    if: ${{ github.repository_owner == 'spring-projects' }}
+    runs-on: ubuntu-latest
+    env:
+      QIANFAN_API_KEY: ${{ secrets.QIANFAN_API_KEY }}
+      QIANFAN_SECRET_KEY: ${{ secrets.QIANFAN_SECRET_KEY }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'liberica'
+          cache: 'maven'
+
+      - name: Build all modules
+        run: ./mvnw --batch-mode -ntp install -DskipTests
+
+      - name: Integration Test
+        uses: ./.github/actions/do-integration-test
+        with:
+          model-name: qianfan
+
+  test-zhipu-ai:
+    if: ${{ github.repository_owner == 'spring-projects' }}
+    runs-on: ubuntu-latest
+    env:
+      ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'liberica'
+          cache: 'maven'
+
+      - name: Build all modules
+        run: ./mvnw --batch-mode -ntp install -DskipTests
+
+      - name: Integration Test
+        uses: ./.github/actions/do-integration-test
+        with:
+          model-name: zhipuai
+
+  test-autoconfigure:
+    if: ${{ github.repository_owner == 'spring-projects' }}
+    runs-on: ubuntu-latest
+    env:
+      MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
+      MOONSHOT_API_KEY: ${{ secrets.MOONSHOT_API_KEY }}
+      QIANFAN_API_KEY: ${{ secrets.QIANFAN_API_KEY }}
+      QIANFAN_SECRET_KEY: ${{ secrets.QIANFAN_SECRET_KEY }}
+      ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'liberica'
+          cache: 'maven'
+
+      - name: Build all modules
+        run: ./mvnw --batch-mode -ntp install -DskipTests
+
+      - name: Autoconfigure Test
+        uses: ./.github/actions/do-autoconfigure-test
+        with:
+          spring-ai-branch: main

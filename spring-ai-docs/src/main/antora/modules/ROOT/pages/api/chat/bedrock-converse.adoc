@@ -301,6 +301,7 @@ The `multiBlockSystemCaching` option solves this by placing the cache point *aft
 BedrockCacheOptions cacheOptions = BedrockCacheOptions.builder()
     .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
     .multiBlockSystemCaching(true)
+    .ttl(BedrockCacheTtl.ONE_HOUR)
     .build();
 
 BedrockChatOptions chatOptions = BedrockChatOptions.builder()
@@ -672,8 +673,9 @@ Even small changes will require a new cache entry.
 
 5. **Strategic Cache Placement**: The implementation automatically places cache breakpoints at optimal locations based on your chosen strategy, ensuring compliance with AWS Bedrock's 4-breakpoint limit.
 
-6. **Cache Lifetime**: AWS Bedrock caches have a fixed 5-minute TTL (Time To Live).
+6. **Cache Lifetime**: AWS Bedrock caches have a default 5-minute TTL (Time To Live), but they also support a 1-hour TTL duration.
 Each cache access resets the timer.
+This can be configured using `BedrockCacheTtl` on `BedrockCacheOptions` or via the `spring.ai.bedrock.converse.chat.cache-options.ttl` property.
 
 7. **Model Compatibility**: Be aware of model-specific limitations:
    - **Claude models**: Support all caching strategies

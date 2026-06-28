@@ -30,17 +30,23 @@ import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
+import software.amazon.awssdk.services.bedrockruntime.model.ContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest;
+import software.amazon.awssdk.services.bedrockruntime.model.Message;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.Tool;
 
 import org.springframework.ai.bedrock.converse.api.BedrockCacheOptions;
 import org.springframework.ai.bedrock.converse.api.BedrockCacheStrategy;
+import org.springframework.ai.bedrock.converse.api.BedrockCacheTtl;
 import org.springframework.ai.bedrock.converse.api.MediaFetcher;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.util.MimeType;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -327,6 +333,89 @@ class BedrockProxyChatModelTest {
 		assertThat(system).hasSize(2);
 		assertThat(system.get(0).cachePoint()).isNull();
 		assertThat(system.get(1).cachePoint()).isNull();
+	}
+
+	@Test
+	void shouldApplyCacheTtlOnCachePointBlock() {
+		BedrockProxyChatModel model = newModel();
+
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.cacheOptions(BedrockCacheOptions.builder()
+				.strategy(BedrockCacheStrategy.SYSTEM_ONLY)
+				.ttl(BedrockCacheTtl.ONE_HOUR)
+				.build())
+			.build();
+
+		Prompt prompt = new Prompt(List.of(new SystemMessage("Only system message."), new UserMessage("Question?")),
+				options);
+
+		ConverseRequest request = model.createRequest(prompt);
+		List<SystemContentBlock> system = request.system();
+
+		assertThat(system).hasSize(2);
+		assertThat(system.get(0).text()).isEqualTo("Only system message.");
+		assertThat(system.get(1).cachePoint()).isNotNull();
+		assertThat(system.get(1).cachePoint().typeAsString()).isEqualTo("default");
+		assertThat(system.get(1).cachePoint().ttlAsString()).isEqualTo("1h");
+	}
+
+	@Test
+	void shouldApplyCacheTtlOnConversationHistoryCachePoint() {
+		BedrockProxyChatModel model = newModel();
+
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.cacheOptions(BedrockCacheOptions.builder()
+				.strategy(BedrockCacheStrategy.CONVERSATION_HISTORY)
+				.ttl(BedrockCacheTtl.ONE_HOUR)
+				.build())
+			.build();
+
+		Prompt prompt = new Prompt(List.of(new UserMessage("Question?")), options);
+
+		ConverseRequest request = model.createRequest(prompt);
+		List<Message> messages = request.messages();
+
+		// Expect: single user message with [text("Question?"), cachePoint]
+		assertThat(messages).hasSize(1);
+		List<ContentBlock> contents = messages.get(0).content();
+		assertThat(contents).hasSize(2);
+		assertThat(contents.get(0).text()).isEqualTo("Question?");
+		assertThat(contents.get(1).cachePoint()).isNotNull();
+		assertThat(contents.get(1).cachePoint().typeAsString()).isEqualTo("default");
+		assertThat(contents.get(1).cachePoint().ttlAsString()).isEqualTo("1h");
+	}
+
+	@Test
+	void shouldApplyCacheTtlOnToolsCachePoint() {
+		BedrockProxyChatModel model = newModel();
+
+		ToolCallback toolCallback = FunctionToolCallback.builder("getCurrentWeather", (WeatherRequest req) -> "15.0°C")
+			.description("Gets the weather in location")
+			.inputType(WeatherRequest.class)
+			.build();
+
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.toolCallbacks(toolCallback)
+			.cacheOptions(BedrockCacheOptions.builder()
+				.strategy(BedrockCacheStrategy.TOOLS_ONLY)
+				.ttl(BedrockCacheTtl.ONE_HOUR)
+				.build())
+			.build();
+
+		Prompt prompt = new Prompt(List.of(new UserMessage("Question?")), options);
+
+		ConverseRequest request = model.createRequest(prompt);
+		List<Tool> tools = request.toolConfig().tools();
+
+		// Expect: [toolSpec, cachePoint]
+		assertThat(tools).hasSize(2);
+		assertThat(tools.get(0).toolSpec()).isNotNull();
+		assertThat(tools.get(1).cachePoint()).isNotNull();
+		assertThat(tools.get(1).cachePoint().typeAsString()).isEqualTo("default");
+		assertThat(tools.get(1).cachePoint().ttlAsString()).isEqualTo("1h");
+	}
+
+	public record WeatherRequest(String location, String unit) {
 	}
 
 }

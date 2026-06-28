@@ -20,10 +20,13 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.bedrock.converse.api.BedrockCacheOptions;
 import org.springframework.ai.bedrock.converse.api.BedrockCacheStrategy;
+import org.springframework.ai.bedrock.converse.api.BedrockCacheTtl;
 
 public class BedrockCacheProperties {
 
 	private @Nullable BedrockCacheStrategy strategy;
+
+	private @Nullable BedrockCacheTtl ttl;
 
 	public @Nullable BedrockCacheStrategy getStrategy() {
 		return this.strategy;
@@ -33,8 +36,16 @@ public class BedrockCacheProperties {
 		this.strategy = strategy;
 	}
 
+	public @Nullable BedrockCacheTtl getTtl() {
+		return this.ttl;
+	}
+
+	public void setTtl(@Nullable BedrockCacheTtl ttl) {
+		this.ttl = ttl;
+	}
+
 	public BedrockCacheOptions toOptions() {
-		return BedrockCacheOptions.builder().strategy(this.strategy).build();
+		return BedrockCacheOptions.builder().strategy(this.strategy).ttl(this.ttl).build();
 	}
 
 }
