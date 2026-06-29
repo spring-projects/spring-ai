@@ -44,6 +44,7 @@
 **** xref:api/embeddings/onnx.adoc[(ONNX) Transformers]
 **** xref:api/embeddings/openai-embeddings.adoc[OpenAI]
 **** xref:api/embeddings/postgresml-embeddings.adoc[PostgresML]
+**** xref:api/embeddings/voyageai-embeddings.adoc[Voyage AI]
 **** VertexAI
 ***** xref:api/embeddings/vertexai-embeddings-text.adoc[Text Embedding]
 ***** xref:api/embeddings/vertexai-embeddings-multimodal.adoc[Multimodal Embedding]

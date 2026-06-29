@@ -77,7 +77,12 @@ public enum AiProvider {
 	/**
 	 * AI system provided by Vertex AI.
 	 */
-	VERTEX_AI("vertex_ai");
+	VERTEX_AI("vertex_ai"),
+
+	/**
+	 * AI system provided by Voyage AI.
+	 */
+	VOYAGE_AI("voyage_ai");
 
 	private final String value;
 
