@@ -172,6 +172,9 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 	private static final Log logger = LogFactory.getLog(MilvusVectorStore.class);
 
+	private static final Gson METADATA_GSON = new GsonBuilder().setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE)
+		.create();
+
 	private static final Map<MetricType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			MetricType.COSINE, VectorStoreSimilarityMetric.COSINE, MetricType.L2, VectorStoreSimilarityMetric.EUCLIDEAN,
 			MetricType.IP, VectorStoreSimilarityMetric.DOT);
@@ -405,13 +408,12 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 					// skip the ParamException if metadata doesn't exist for the custom
 					// collection
 				}
-				Gson gson = new GsonBuilder().setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE).create();
 				Type type = new TypeToken<Map<String, Object>>() {
 				}.getType();
 				return Document.builder()
 					.id(docId)
 					.text(content)
-					.metadata((metadata != null) ? gson.fromJson(metadata, type) : Map.of())
+					.metadata((metadata != null) ? METADATA_GSON.fromJson(metadata, type) : Map.of())
 					.score((double) getResultSimilarity(rowRecord))
 					.build();
 			})
