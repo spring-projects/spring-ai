@@ -89,7 +89,7 @@ public class McpStdioClientProperties {
 			return mcpServerJsonConfig.entrySet().stream().collect(Collectors.toMap(kv -> kv.getKey(), kv -> {
 				Parameters parameters = kv.getValue();
 				return ServerParameters.builder(parameters.command())
-					.args(parameters.args())
+					.args(parameters.argsOrEmpty())
 					.env(parameters.env())
 					.build();
 			}));
@@ -130,7 +130,11 @@ public class McpStdioClientProperties {
 			@JsonProperty("env") @Nullable Map<String, String> env) {
 
 		public ServerParameters toServerParameters() {
-			return ServerParameters.builder(this.command()).args(this.args()).env(this.env()).build();
+			return ServerParameters.builder(this.command()).args(this.argsOrEmpty()).env(this.env()).build();
+		}
+
+		private List<String> argsOrEmpty() {
+			return this.args() != null ? this.args() : Collections.emptyList();
 		}
 
 	}
