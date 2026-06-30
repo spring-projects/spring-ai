@@ -23,6 +23,7 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
+import org.springframework.ai.google.genai.GoogleGenAiChatOptions.ToolChoice;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
 import org.springframework.ai.google.genai.common.GoogleGenAiServiceTier;
 import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
@@ -49,6 +50,8 @@ public class GoogleGenAiChatProperties {
 	private @Nullable Double topP;
 
 	private @Nullable Integer topK;
+
+	private @Nullable ToolChoice toolChoice;
 
 	private @Nullable Integer candidateCount;
 
@@ -116,6 +119,14 @@ public class GoogleGenAiChatProperties {
 
 	public @Nullable Integer getTopK() {
 		return this.topK;
+	}
+
+	public @Nullable ToolChoice getToolChoice() {
+		return this.toolChoice;
+	}
+
+	public void setToolChoice(@Nullable ToolChoice toolChoice) {
+		this.toolChoice = toolChoice;
 	}
 
 	public void setTopK(@Nullable Integer topK) {
@@ -295,6 +306,7 @@ public class GoogleGenAiChatProperties {
 			.temperature(this.temperature)
 			.topP(this.topP)
 			.topK(this.topK)
+			.toolChoice(this.toolChoice)
 			.candidateCount(this.candidateCount)
 			.maxOutputTokens(this.maxOutputTokens)
 			.responseMimeType(this.responseMimeType)

@@ -34,6 +34,7 @@ import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.util.Assert;
 
 /**
  * Options for the Google GenAI Chat API.
@@ -72,6 +73,11 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	 * Optional. If specified, top k sampling will be used.
 	 */
 	private final @Nullable Integer topK;
+
+	/**
+	 * Optional. The tool choice for the model to use for tool calling.
+	 */
+	private final @Nullable ToolChoice toolChoice;
 
 	/**
 	 * Optional. The maximum number of tokens to generate.
@@ -203,12 +209,12 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	protected GoogleGenAiChatOptions(@Nullable String model, @Nullable Double frequencyPenalty,
 			@Nullable Integer maxOutputTokens, @Nullable Double presencePenalty, @Nullable List<String> stopSequences,
 			@Nullable Double temperature, @Nullable Integer topK, @Nullable Double topP,
-			@Nullable List<ToolCallback> toolCallbacks, @Nullable Map<String, Object> toolContext,
-			@Nullable Integer candidateCount, @Nullable String responseMimeType, @Nullable String responseSchema,
-			@Nullable Integer thinkingBudget, @Nullable Boolean includeThoughts,
-			@Nullable GoogleGenAiThinkingLevel thinkingLevel, @Nullable Boolean includeExtendedUsageMetadata,
-			@Nullable String cachedContentName, @Nullable Boolean useCachedContent,
-			@Nullable Integer autoCacheThreshold, @Nullable Duration autoCacheTtl,
+			@Nullable ToolChoice toolChoice, @Nullable List<ToolCallback> toolCallbacks,
+			@Nullable Map<String, Object> toolContext, @Nullable Integer candidateCount,
+			@Nullable String responseMimeType, @Nullable String responseSchema, @Nullable Integer thinkingBudget,
+			@Nullable Boolean includeThoughts, @Nullable GoogleGenAiThinkingLevel thinkingLevel,
+			@Nullable Boolean includeExtendedUsageMetadata, @Nullable String cachedContentName,
+			@Nullable Boolean useCachedContent, @Nullable Integer autoCacheThreshold, @Nullable Duration autoCacheTtl,
 			@Nullable Boolean googleSearchRetrieval, @Nullable Boolean includeServerSideToolInvocations,
 			@Nullable List<GoogleGenAiSafetySetting> safetySettings, @Nullable Map<String, String> labels,
 			@Nullable GoogleGenAiServiceTier serviceTier) {
@@ -220,6 +226,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		this.temperature = temperature != null ? temperature : 0.7;
 		this.topK = topK;
 		this.topP = topP != null ? topP : 1.0;
+		this.toolChoice = toolChoice;
 		this.toolCallbacks = (toolCallbacks != null ? List.copyOf(toolCallbacks) : null);
 		this.toolContext = (toolContext != null ? Map.copyOf(toolContext) : null);
 		this.candidateCount = candidateCount;
@@ -262,6 +269,15 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	@Override
 	public @Nullable Integer getTopK() {
 		return this.topK;
+	}
+
+	/**
+	 * Returns the tool choice configuration.
+	 * @return the tool choice, or {@code null} if not set
+	 * @since 2.0.1
+	 */
+	public @Nullable ToolChoice getToolChoice() {
+		return this.toolChoice;
 	}
 
 	public @Nullable Integer getCandidateCount() {
@@ -382,7 +398,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 				&& Objects.equals(this.includeServerSideToolInvocations, that.includeServerSideToolInvocations)
 				&& Objects.equals(this.stopSequences, that.stopSequences)
 				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP)
-				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.candidateCount, that.candidateCount)
+				&& Objects.equals(this.toolChoice, that.toolChoice) && Objects.equals(this.topK, that.topK)
+				&& Objects.equals(this.candidateCount, that.candidateCount)
 				&& Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
 				&& Objects.equals(this.presencePenalty, that.presencePenalty)
 				&& Objects.equals(this.thinkingBudget, that.thinkingBudget)
@@ -399,11 +416,12 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
-				this.frequencyPenalty, this.presencePenalty, this.thinkingBudget, this.includeThoughts,
-				this.thinkingLevel, this.maxOutputTokens, this.model, this.responseMimeType, this.responseSchema,
-				this.toolCallbacks, this.googleSearchRetrieval, this.includeServerSideToolInvocations,
-				this.safetySettings, this.toolContext, this.labels, this.serviceTier);
+		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.toolChoice,
+				this.candidateCount, this.frequencyPenalty, this.presencePenalty, this.thinkingBudget,
+				this.includeThoughts, this.thinkingLevel, this.maxOutputTokens, this.model, this.responseMimeType,
+				this.responseSchema, this.toolCallbacks, this.googleSearchRetrieval,
+				this.includeServerSideToolInvocations, this.safetySettings, this.toolContext, this.labels,
+				this.serviceTier);
 	}
 
 	@Override
@@ -418,6 +436,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			.temperature(this.temperature)
 			.topK(this.topK)
 			.topP(this.topP)
+			.toolChoice(this.toolChoice)
 			// ToolCallingChatOptions
 			.toolCallbacks(this.getToolCallbacks())
 			.toolContext(this.getToolContext())
@@ -459,6 +478,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			return copy;
 		}
 
+		protected @Nullable ToolChoice toolChoice;
+
 		protected @Nullable Integer candidateCount;
 
 		protected @Nullable String responseMimeType;
@@ -490,6 +511,14 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		protected @Nullable Map<String, String> labels;
 
 		protected @Nullable GoogleGenAiServiceTier serviceTier;
+
+		/**
+		 * @since 2.0.1
+		 */
+		public B toolChoice(@Nullable ToolChoice toolChoice) {
+			this.toolChoice = toolChoice;
+			return self();
+		}
 
 		public B candidateCount(@Nullable Integer candidateCount) {
 			this.candidateCount = candidateCount;
@@ -663,6 +692,9 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 				if (that.serviceTier != null) {
 					this.serviceTier = that.serviceTier;
 				}
+				if (that.toolChoice != null) {
+					this.toolChoice = that.toolChoice;
+				}
 			}
 			return self();
 		}
@@ -670,13 +702,85 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		@Override
 		public GoogleGenAiChatOptions build() {
 			return new GoogleGenAiChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
-					this.stopSequences, this.temperature, this.topK, this.topP, this.toolCallbacks, this.toolContext,
-					this.candidateCount, this.responseMimeType, this.responseSchema, this.thinkingBudget,
-					this.includeThoughts, this.thinkingLevel, this.includeExtendedUsageMetadata, this.cachedContentName,
-					this.useCachedContent, this.autoCacheThreshold, this.autoCacheTtl, this.googleSearchRetrieval,
-					this.includeServerSideToolInvocations, this.safetySettings, this.labels, this.serviceTier);
+					this.stopSequences, this.temperature, this.topK, this.topP, this.toolChoice, this.toolCallbacks,
+					this.toolContext, this.candidateCount, this.responseMimeType, this.responseSchema,
+					this.thinkingBudget, this.includeThoughts, this.thinkingLevel, this.includeExtendedUsageMetadata,
+					this.cachedContentName, this.useCachedContent, this.autoCacheThreshold, this.autoCacheTtl,
+					this.googleSearchRetrieval, this.includeServerSideToolInvocations, this.safetySettings, this.labels,
+					this.serviceTier);
 		}
 
+	}
+
+	/**
+	 * Configures function calling behavior when tools are provided.
+	 *
+	 * @since 2.0.1
+	 */
+	public static record ToolChoice(Mode mode, @Nullable List<String> allowedFunctionNames) {
+
+		public ToolChoice {
+			Assert.notNull(mode, "mode must not be null");
+		}
+
+		/**
+		 * Controls how the model selects functions to call.
+		 *
+		 * @since 2.0.1
+		 */
+		public enum Mode {
+
+			/**
+			 * Model decides whether to call a function or return a natural language
+			 * response.
+			 */
+			AUTO,
+
+			/**
+			 * Model is constrained to always predict a function call. If
+			 * {@code allowedFunctionNames} is set, the call is limited to those
+			 * functions.
+			 */
+			ANY,
+
+			/**
+			 * Model predicts either a function call or a natural language response. If
+			 * {@code allowedFunctionNames} is set, the call is limited to those
+			 * functions.
+			 */
+			VALIDATED,
+
+			/** Model will not call any functions. */
+			NONE
+
+		}
+
+		public static Builder builder() {
+			return new Builder();
+		}
+
+		public static class Builder {
+
+			private Mode mode = Mode.AUTO;
+
+			private @Nullable List<String> allowedFunctionNames;
+
+			public Builder mode(Mode mode) {
+				Assert.notNull(mode, "Mode must not be null");
+				this.mode = mode;
+				return this;
+			}
+
+			public Builder allowedFunctionNames(List<String> allowedFunctionNames) {
+				this.allowedFunctionNames = allowedFunctionNames;
+				return this;
+			}
+
+			public ToolChoice build() {
+				return new ToolChoice(this.mode, this.allowedFunctionNames);
+			}
+
+		}
 	}
 
 }

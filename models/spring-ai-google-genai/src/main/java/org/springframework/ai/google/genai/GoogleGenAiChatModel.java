@@ -32,6 +32,8 @@ import com.google.genai.types.Candidate;
 import com.google.genai.types.Content;
 import com.google.genai.types.FinishReason;
 import com.google.genai.types.FunctionCall;
+import com.google.genai.types.FunctionCallingConfig;
+import com.google.genai.types.FunctionCallingConfigMode;
 import com.google.genai.types.FunctionDeclaration;
 import com.google.genai.types.FunctionResponse;
 import com.google.genai.types.GenerateContentConfig;
@@ -44,6 +46,7 @@ import com.google.genai.types.Schema;
 import com.google.genai.types.ThinkingConfig;
 import com.google.genai.types.ThinkingLevel;
 import com.google.genai.types.Tool;
+import com.google.genai.types.ToolConfig;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
@@ -751,10 +754,29 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			configBuilder.tools(tools);
 		}
 
-		// Build ToolConfig if includeServerSideToolInvocations is enabled
-		if (Boolean.TRUE.equals(requestOptions.getIncludeServerSideToolInvocations())) {
-			configBuilder
-				.toolConfig(com.google.genai.types.ToolConfig.builder().includeServerSideToolInvocations(true));
+		if (requestOptions.getToolChoice() != null
+				|| Boolean.TRUE.equals(requestOptions.getIncludeServerSideToolInvocations())) {
+
+			ToolConfig.Builder toolConfigBuilder = ToolConfig.builder();
+
+			// Build ToolConfig if includeServerSideToolInvocations is enabled
+			if (Boolean.TRUE.equals(requestOptions.getIncludeServerSideToolInvocations())) {
+				toolConfigBuilder.includeServerSideToolInvocations(true);
+			}
+
+			if (requestOptions.getToolChoice() != null) {
+				var fccBuilder = FunctionCallingConfig.builder()
+					.mode(mapToFunctionCallingConfigMode(requestOptions.getToolChoice().mode()));
+
+				if (requestOptions.getToolChoice().mode() == GoogleGenAiChatOptions.ToolChoice.Mode.ANY
+						&& !CollectionUtils.isEmpty(requestOptions.getToolChoice().allowedFunctionNames())) {
+					fccBuilder.allowedFunctionNames(requestOptions.getToolChoice().allowedFunctionNames());
+				}
+
+				toolConfigBuilder.functionCallingConfig(fccBuilder.build());
+			}
+
+			configBuilder.toolConfig(toolConfigBuilder.build());
 		}
 
 		// Handle cached content
@@ -828,6 +850,16 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			case LOW -> new ThinkingLevel(ThinkingLevel.Known.LOW);
 			case MEDIUM -> new ThinkingLevel(ThinkingLevel.Known.MEDIUM);
 			case HIGH -> new ThinkingLevel(ThinkingLevel.Known.HIGH);
+		};
+	}
+
+	private static FunctionCallingConfigMode mapToFunctionCallingConfigMode(
+			GoogleGenAiChatOptions.ToolChoice.Mode mode) {
+		return switch (mode) {
+			case AUTO -> new FunctionCallingConfigMode(FunctionCallingConfigMode.Known.AUTO);
+			case ANY -> new FunctionCallingConfigMode(FunctionCallingConfigMode.Known.ANY);
+			case VALIDATED -> new FunctionCallingConfigMode(FunctionCallingConfigMode.Known.VALIDATED);
+			case NONE -> new FunctionCallingConfigMode(FunctionCallingConfigMode.Known.NONE);
 		};
 	}
 
