@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
@@ -49,6 +50,7 @@ import org.springframework.ai.content.Media;
 import org.springframework.util.MimeType;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Integration tests for {@link Neo4jChatMemoryRepository}.
@@ -406,6 +408,27 @@ class Neo4jChatMemoryRepositoryIT {
 		assertThat(retrievedEmptyMetadataMsg.getMetadata()).containsEntry("messageType", MessageType.USER);
 		assertThat(retrievedEmptyMetadataMsg.getMetadata().keySet()).hasSize(1); // Only
 																					// messageType
+	}
+
+	@Test
+	void saveAssistantMessageWithOptionalMetadataFails() {
+		var conversationId = UUID.randomUUID().toString();
+
+		// Simulate what the OpenAI SDK returns: Optional-typed fields like
+		// "refusal" and "toolCalls" in the AssistantMessage metadata.
+		// Neo4j's Values.value() cannot convert java.util.Optional to a Neo4j Value,
+		// which causes a ClientException during serialization.
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("Message with Optional metadata")
+			.properties(Map.of(
+				"refusal", Optional.of("I cannot answer that"),
+				"toolCalls", Optional.empty(),
+				"normalKey", "normalValue"))
+			.build();
+
+		assertThatThrownBy(() -> this.chatMemoryRepository.saveAll(conversationId, List.of(assistantMessage)))
+			.isInstanceOf(org.neo4j.driver.exceptions.ClientException.class)
+			.hasMessageContaining("Unable to convert java.util.Optional");
 	}
 
 	private Message createMessageByType(String content, MessageType messageType) {
