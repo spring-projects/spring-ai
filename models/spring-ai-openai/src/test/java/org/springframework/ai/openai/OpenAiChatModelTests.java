@@ -55,6 +55,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.util.JsonHelper;
@@ -780,5 +781,53 @@ class OpenAiChatModelTests {
 			.file();
 		assertThat(file.fileData()).contains("data:application/pdf;base64,JVBERi0xLjc=");
 	}
+
+	@Test
+	void metadataDoesNotContainOptionalValues() {
+		ChatService chatService = mock(ChatService.class);
+		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
+		when(this.openAiClient.chat()).thenReturn(chatService);
+		when(chatService.completions()).thenReturn(chatCompletionService);
+		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
+			.id("test-id")
+			.created(1777799928)
+			.model("test-model")
+			.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
+			.addChoice(ChatCompletion.Choice.builder()
+				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+				.index(0)
+				.logprobs(Optional.empty())
+				.message(ChatCompletionMessage.builder()
+					.content("hello")
+					.refusal(Optional.empty())
+					.role(JsonValue.from("assistant"))
+					.annotations(List.of())
+					.toolCalls(List.of())
+					.build())
+				.build())
+			.build());
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.call(new Prompt("hi", options));
+		Generation generation = response.getResult();
+		assertThat(generation).isNotNull();
+
+		// Verify no Optional values leak into generation metadata
+		generation.getMetadata().forEach((key, value) -> {
+			assertThat(value).isNotInstanceOf(Optional.class);
+		});
+
+		// Verify no Optional values leak into assistant message metadata
+		generation.getOutput().getMetadata().forEach((key, value) -> {
+			assertThat(value).isNotInstanceOf(Optional.class);
+		});
+	}
+
 
 }
