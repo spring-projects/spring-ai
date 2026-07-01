@@ -146,7 +146,7 @@ public class AsyncStatelessMcpToolProvider extends AbstractMcpToolProvider {
 									: ReturnMode.TEXT;
 
 					BiFunction<McpTransportContext, CallToolRequest, Mono<CallToolResult>> methodCallback = new AsyncStatelessMcpToolMethodCallback(
-							returnMode, mcpToolMethod, toolObject, this.doGetToolCallException());
+							returnMode, mcpToolMethod, toolObject);
 
 					AsyncToolSpecification toolSpec = AsyncToolSpecification.builder()
 						.tool(tool)
