@@ -443,6 +443,24 @@ public class McpServerAutoConfigurationIT {
 			});
 	}
 
+	@SuppressWarnings("unchecked")
+	@Test
+	void asyncServerSpecificationConfigurationWithEarlyServerConsumer() {
+		this.contextRunner
+			.withUserConfiguration(McpServerAnnotationScannerAutoConfiguration.class,
+					McpServerSpecificationFactoryAutoConfiguration.class, EarlyAsyncServerConsumerConfiguration.class,
+					AsyncTestMcpSpecsConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.server.type=async")
+			.run(context -> {
+				McpAsyncServer asyncServer = context.getBean(McpAsyncServer.class);
+
+				CopyOnWriteArrayList<AsyncToolSpecification> tools = (CopyOnWriteArrayList<AsyncToolSpecification>) ReflectionTestUtils
+					.getField(asyncServer, "tools");
+				assertThat(tools).hasSize(1);
+				assertThat(tools.get(0).tool().name()).isEqualTo("add");
+			});
+	}
+
 	@Configuration
 	static class TestResourceConfiguration {
 
@@ -610,6 +628,36 @@ public class McpServerAutoConfigurationIT {
 		@Bean
 		McpServerTransport customTransport() {
 			return new CustomServerTransport();
+		}
+
+	}
+
+	@Configuration
+	static class EarlyAsyncServerConsumerConfiguration {
+
+		@Bean
+		EarlyAsyncServerConsumer earlyAsyncServerConsumer(McpAsyncServer mcpAsyncServer) {
+			return new EarlyAsyncServerConsumer(mcpAsyncServer);
+		}
+
+	}
+
+	static class EarlyAsyncServerConsumer {
+
+		private final McpAsyncServer mcpAsyncServer;
+
+		EarlyAsyncServerConsumer(McpAsyncServer mcpAsyncServer) {
+			this.mcpAsyncServer = mcpAsyncServer;
+		}
+
+	}
+
+	@Configuration
+	static class AsyncTestMcpSpecsConfiguration {
+
+		@Bean
+		AsyncTestMcpSpecsComponent asyncTestMcpSpecsComponent() {
+			return new AsyncTestMcpSpecsComponent();
 		}
 
 	}

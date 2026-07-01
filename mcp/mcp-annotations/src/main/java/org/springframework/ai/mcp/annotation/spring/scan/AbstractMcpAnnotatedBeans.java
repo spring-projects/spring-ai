@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+
 /**
  * Container for Beans that have method with MCP annotations
  *
@@ -36,10 +38,30 @@ public abstract class AbstractMcpAnnotatedBeans {
 	private final Map<Class<? extends Annotation>, List<Object>> beansByAnnotation = new HashMap<>();
 
 	public void addMcpAnnotatedBean(Object bean, Set<Class<? extends Annotation>> annotations) {
-		this.beansWithCustomAnnotations.add(bean);
-		annotations
-			.forEach(annotationType -> this.beansByAnnotation.computeIfAbsent(annotationType, k -> new ArrayList<>())
-				.add(bean));
+		if (!containsBean(this.beansWithCustomAnnotations, bean)) {
+			this.beansWithCustomAnnotations.add(bean);
+		}
+		annotations.forEach(annotationType -> {
+			List<Object> beans = this.beansByAnnotation.computeIfAbsent(annotationType, k -> new ArrayList<>());
+			if (!containsBean(beans, bean)) {
+				beans.add(bean);
+			}
+		});
+	}
+
+	public void initializeBeans(ConfigurableListableBeanFactory beanFactory,
+			Set<Class<? extends Annotation>> targetAnnotations) {
+		AnnotatedMethodDiscovery discovery = new AnnotatedMethodDiscovery(targetAnnotations);
+		for (String beanName : beanFactory.getBeanDefinitionNames()) {
+			Class<?> beanClass = beanFactory.getType(beanName);
+			if (beanClass == null) {
+				continue;
+			}
+			Set<Class<? extends Annotation>> foundAnnotations = discovery.scan(beanClass);
+			if (!foundAnnotations.isEmpty()) {
+				addMcpAnnotatedBean(beanFactory.getBean(beanName), foundAnnotations);
+			}
+		}
 	}
 
 	public List<Object> getAllAnnotatedBeans() {
@@ -52,6 +74,10 @@ public abstract class AbstractMcpAnnotatedBeans {
 
 	public int getCount() {
 		return this.beansWithCustomAnnotations.size();
+	}
+
+	private boolean containsBean(List<Object> beans, Object bean) {
+		return beans.stream().anyMatch(existingBean -> existingBean == bean);
 	}
 
 }
