@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpStatelessAsyncServer;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.AsyncCompletionSpecification;
@@ -51,6 +52,8 @@ import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.customizer.McpStatelessAsyncServerCustomizer;
+import org.springframework.ai.mcp.customizer.McpStatelessSyncServerCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.StatelessServerSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
@@ -210,6 +213,26 @@ public class McpStatelessServerAutoConfigurationIT {
 			assertThat(context.getBean(McpSchema.ServerCapabilities.Builder.class))
 				.isInstanceOf(CustomCapabilitiesBuilder.class);
 		});
+	}
+
+	@Test
+	void syncServerCustomizerConfiguration() {
+		this.contextRunner.withUserConfiguration(SyncServerCustomizerConfiguration.class).run(context -> {
+			assertThat(context).hasSingleBean(McpStatelessSyncServer.class);
+			RecordingSyncServerCustomizer customizer = context.getBean(RecordingSyncServerCustomizer.class);
+			assertThat(customizer.invoked).isTrue();
+		});
+	}
+
+	@Test
+	void asyncServerCustomizerConfiguration() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
+			.withUserConfiguration(AsyncServerCustomizerConfiguration.class)
+			.run(context -> {
+				assertThat(context).hasSingleBean(McpStatelessAsyncServer.class);
+				RecordingAsyncServerCustomizer customizer = context.getBean(RecordingAsyncServerCustomizer.class);
+				assertThat(customizer.invoked).isTrue();
+			});
 	}
 
 	@Test
@@ -426,6 +449,48 @@ public class McpStatelessServerAutoConfigurationIT {
 	static class CustomCapabilitiesBuilder extends McpSchema.ServerCapabilities.Builder {
 
 		// Custom implementation for testing
+
+	}
+
+	@Configuration
+	static class SyncServerCustomizerConfiguration {
+
+		@Bean
+		RecordingSyncServerCustomizer syncServerCustomizer() {
+			return new RecordingSyncServerCustomizer();
+		}
+
+	}
+
+	static class RecordingSyncServerCustomizer implements McpStatelessSyncServerCustomizer {
+
+		private boolean invoked;
+
+		@Override
+		public void customize(McpServer.StatelessSyncSpecification serverBuilder) {
+			this.invoked = true;
+		}
+
+	}
+
+	@Configuration
+	static class AsyncServerCustomizerConfiguration {
+
+		@Bean
+		RecordingAsyncServerCustomizer asyncServerCustomizer() {
+			return new RecordingAsyncServerCustomizer();
+		}
+
+	}
+
+	static class RecordingAsyncServerCustomizer implements McpStatelessAsyncServerCustomizer {
+
+		private boolean invoked;
+
+		@Override
+		public void customize(McpServer.StatelessAsyncSpecification serverBuilder) {
+			this.invoked = true;
+		}
 
 	}
 
