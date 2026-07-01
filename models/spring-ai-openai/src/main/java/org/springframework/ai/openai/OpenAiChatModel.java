@@ -963,30 +963,27 @@ public final class OpenAiChatModel implements ChatModel {
 			FunctionParameters.Builder parametersBuilder = FunctionParameters.builder();
 
 			if (!toolDefinition.inputSchema().isEmpty()) {
-				// Parse the schema and add its properties directly
+
 				try {
 					@SuppressWarnings("unchecked")
 					Map<String, Object> schemaMap = objectMapper.readValue(toolDefinition.inputSchema(), Map.class);
 
-					// Add each property from the schema to the parameters
 					schemaMap
 						.forEach((key, value) -> parametersBuilder.putAdditionalProperty(key, JsonValue.from(value)));
-
-					// Add strict mode
-					parametersBuilder.putAdditionalProperty("strict", JsonValue.from(true)); // TODO
-																								// allow
-																								// non-strict
-																								// mode
 				}
 				catch (Exception e) {
 					logger.error("Failed to parse tool schema", e);
 				}
 			}
 
+			Boolean strictMode = (this.options != null && this.options.getStrict() != null) ? this.options.getStrict()
+					: true;
+
 			FunctionDefinition functionDefinition = FunctionDefinition.builder()
 				.name(toolDefinition.name())
 				.description(toolDefinition.description())
 				.parameters(parametersBuilder.build())
+				.strict(strictMode)
 				.build();
 
 			return ChatCompletionTool

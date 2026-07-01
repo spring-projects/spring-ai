@@ -781,4 +781,42 @@ class OpenAiChatModelTests {
 		assertThat(file.fileData()).contains("data:application/pdf;base64,JVBERi0xLjc=");
 	}
 
+	@Test
+	void toolStrictIsEmittedAtFunctionLevel() {
+		org.springframework.ai.model.tool.ToolCallingManager mockToolCallingManager = mock(
+				org.springframework.ai.model.tool.ToolCallingManager.class);
+
+		org.springframework.ai.tool.definition.ToolDefinition toolDefinition = org.springframework.ai.tool.definition.ToolDefinition
+			.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema("{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}}}")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gpt-4.1").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		var tools = request.tools().orElseThrow();
+		assertThat(tools).hasSize(1);
+
+		com.openai.models.chat.completions.ChatCompletionFunctionTool functionTool = tools.get(0)
+			.function()
+			.orElseThrow();
+		com.openai.models.FunctionDefinition functionDef = functionTool.function();
+
+		assertThat(functionDef.strict()).contains(true);
+
+		com.openai.models.FunctionParameters parameters = functionDef.parameters().orElseThrow();
+		assertThat(parameters._additionalProperties()).doesNotContainKey("strict");
+	}
+
 }
