@@ -265,8 +265,8 @@
 		<azure-json.version>1.5.1</azure-json.version>
 		<azure-search.version>11.7.6</azure-search.version>
 		<!-- NOTE: keep awssdk and bedrockruntime versions aligned -->
-		<awssdk.version>2.41.22</awssdk.version>
-		<bedrockruntime.version>2.41.22</bedrockruntime.version>
+		<awssdk.version>2.46.19</awssdk.version>
+		<bedrockruntime.version>2.46.19</bedrockruntime.version>
 		<coherence.version>24.09</coherence.version>
 		<com.google.cloud.version>26.83.0</com.google.cloud.version>
 		<com.google.genai.version>1.58.0</com.google.genai.version>
