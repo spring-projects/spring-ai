@@ -19,6 +19,8 @@ package org.springframework.ai.mcp.annotation.method.tool;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -26,6 +28,7 @@ import java.util.stream.Stream;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.Content;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.mcp.annotation.McpMeta;
@@ -167,6 +170,19 @@ public abstract class AbstractMcpToolMethodCallback<T, RC extends McpRequestCont
 		// Return the result if it's already a CallToolResult
 		if (result instanceof CallToolResult) {
 			return (CallToolResult) result;
+		}
+
+		if (result instanceof Content) {
+			return CallToolResult.builder().content(List.of((Content) result)).build();
+		}
+		if (result instanceof Content[]) {
+			return CallToolResult.builder().content(List.of((Content[]) result)).build();
+		}
+		if (result instanceof Collection<?>) {
+			Collection<?> col = (Collection<?>) result;
+			if (!col.isEmpty() && col.iterator().next() instanceof Content) {
+				return CallToolResult.builder().content(col.stream().map(c -> (Content) c).toList()).build();
+			}
 		}
 
 		Type returnType = this.toolMethod.getGenericReturnType();
