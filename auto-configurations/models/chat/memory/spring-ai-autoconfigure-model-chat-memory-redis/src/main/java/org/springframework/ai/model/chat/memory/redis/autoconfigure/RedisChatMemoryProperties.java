@@ -30,9 +30,15 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Configuration properties for Redis-based chat memory.
  *
  * @author Brian Sam-Bodden
+ * @author Yanming Zhou
  */
-@ConfigurationProperties(prefix = "spring.ai.chat.memory.redis")
+@ConfigurationProperties(prefix = RedisChatMemoryProperties.CONFIG_PREFIX)
 public class RedisChatMemoryProperties {
+
+	/**
+	 * Configuration prefix for Redis vector store properties.
+	 */
+	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.redis";
 
 	/**
 	 * Redis server host.
@@ -62,17 +68,17 @@ public class RedisChatMemoryProperties {
 	/**
 	 * Whether to initialize the Redis schema. Default is true.
 	 */
-	private Boolean initializeSchema = true;
+	private boolean initializeSchema = true;
 
 	/**
 	 * Maximum number of conversation IDs to return (defaults to 1000).
 	 */
-	private Integer maxConversationIds = RedisChatMemoryConfig.DEFAULT_MAX_RESULTS;
+	private int maxConversationIds = RedisChatMemoryConfig.DEFAULT_MAX_RESULTS;
 
 	/**
 	 * Maximum number of messages to return per conversation (defaults to 1000).
 	 */
-	private Integer maxMessagesPerConversation = RedisChatMemoryConfig.DEFAULT_MAX_RESULTS;
+	private int maxMessagesPerConversation = RedisChatMemoryConfig.DEFAULT_MAX_RESULTS;
 
 	/**
 	 * Metadata field definitions for proper indexing. Compatible with RedisVL schema
@@ -125,27 +131,27 @@ public class RedisChatMemoryProperties {
 		this.timeToLive = timeToLive;
 	}
 
-	public Boolean getInitializeSchema() {
+	public boolean isInitializeSchema() {
 		return this.initializeSchema;
 	}
 
-	public void setInitializeSchema(Boolean initializeSchema) {
+	public void setInitializeSchema(boolean initializeSchema) {
 		this.initializeSchema = initializeSchema;
 	}
 
-	public Integer getMaxConversationIds() {
+	public int getMaxConversationIds() {
 		return this.maxConversationIds;
 	}
 
-	public void setMaxConversationIds(Integer maxConversationIds) {
+	public void setMaxConversationIds(int maxConversationIds) {
 		this.maxConversationIds = maxConversationIds;
 	}
 
-	public Integer getMaxMessagesPerConversation() {
+	public int getMaxMessagesPerConversation() {
 		return this.maxMessagesPerConversation;
 	}
 
-	public void setMaxMessagesPerConversation(Integer maxMessagesPerConversation) {
+	public void setMaxMessagesPerConversation(int maxMessagesPerConversation) {
 		this.maxMessagesPerConversation = maxMessagesPerConversation;
 	}
 
